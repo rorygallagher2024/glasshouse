@@ -176,6 +176,18 @@ function renderInputsPreview(kind) {
       <span class="hm-nslg-box"><b>No Signal</b><i></i><i></i></span>
     </span>`;
   }
+  if (kind === 'nsicon') {
+    return `<span class="hm-s hm-s-nsicon">
+      <svg class="hm-nsicon-svg" viewBox="0 0 128 64" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M14 32H30"/>
+        <path d="M52 20H41C34 20 30 25 30 32C30 39 34 44 41 44H52Z"/>
+        <path d="M52 26H61M52 38H61"/>
+        <path d="M75 18V46"/>
+        <path d="M75 20H86C93 20 97 25 97 32C97 39 93 44 86 44H75"/>
+        <path d="M97 32H113"/>
+      </svg>
+    </span>`;
+  }
   return `<span class="hm-s hm-s-nsplain"><span class="hm-nsplain-txt">No Signal</span></span>`;
 }
 
@@ -241,10 +253,13 @@ function renderNoSignal() {
   grp.hidden = !ns.available;
   if (!ns.available) return false;
   const writable = !!(inputsData && inputsData.writable);
+  const mode = ns.mode || (ns.on ? 'plain' : 'lg');
   setInputsCard(q('inputs-nosignal-lg'), 'nslg', t('inputs.noSignal.lg', 'LG\u2019s screen'),
-    t('inputs.noSignal.lgDesc', 'Picture and advice with \u201cNo Signal\u201d.'), !ns.on, !writable);
+    t('inputs.noSignal.lgDesc', 'Picture and advice with \u201cNo Signal\u201d.'), mode === 'lg', !writable);
   setInputsCard(q('inputs-nosignal-plain'), 'nsplain', t('ss.noSignal.plain', 'Just \u201cNo Signal\u201d'),
-    t('ss.noSignal.desc', 'Leaves out the animated picture and the line of advice under it, so an input with nothing coming in shows only \u201cNo Signal\u201d.'), !!ns.on, !writable);
+    t('ss.noSignal.desc', 'Leaves out the animated picture and the line of advice under it, so an input with nothing coming in shows only \u201cNo Signal\u201d.'), mode === 'plain', !writable);
+  setInputsCard(q('inputs-nosignal-icon'), 'nsicon', t('inputs.noSignal.icon', 'Disconnected cable'),
+    t('inputs.noSignal.iconDesc', 'Shows a subtle disconnected cable icon instead of \u201cNo Signal\u201d.'), mode === 'icon', !writable);
   const desc = q('inputs-nosignal-desc');
   desc.hidden = !ns.restartPending;
   desc.textContent = ns.restartPending
@@ -253,10 +268,12 @@ function renderNoSignal() {
   return true;
 }
 
-async function setNoSignal(plain) {
+async function setNoSignal(mode) {
   const ns = (inputsData && inputsData.noSignal) || {};
-  if (!!ns.on === !!plain) return;
-  q('inputs-nosignal-lg').disabled = q('inputs-nosignal-plain').disabled = true;
-  await sendCommand('plainNoSignal', !!plain);
+  const cur = ns.mode || (ns.on ? 'plain' : 'lg');
+  const next = mode === 'icon' || mode === 'plain' ? mode : 'lg';
+  if (cur === next) return;
+  q('inputs-nosignal-lg').disabled = q('inputs-nosignal-plain').disabled = q('inputs-nosignal-icon').disabled = true;
+  await sendCommand('plainNoSignal', next);
   loadInputs();
 }

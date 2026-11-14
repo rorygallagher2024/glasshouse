@@ -3261,5 +3261,7 @@
  "home.customShort": {"text": "Własna aplikacja webowa lub strona", "from": "Your own web app or page"},
  "inputs.noSignal.lg": {"text": "Ekran LG", "from": "LG’s screen"},
  "inputs.noSignal.lgDesc": {"text": "Obrazek i wskazówka z komunikatem „Brak sygnału”.", "from": "Picture and advice with “No Signal”."},
+ "inputs.noSignal.icon": {"text": "Odłączony kabel", "from": "Disconnected cable"},
+ "inputs.noSignal.iconDesc": {"text": "Wyświetla subtelną ikonę odłączonego kabla zamiast komunikatu „Brak sygnału”.", "from": "Shows a subtle disconnected cable icon instead of “No Signal”."},
  "inputs.nameLabel": {"text": "Nazwa wejścia", "from": "Input name"}
 }

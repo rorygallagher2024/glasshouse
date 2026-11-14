@@ -3261,5 +3261,7 @@
  "home.customShort": {"text": "Votre propre app web ou page", "from": "Your own web app or page"},
  "inputs.noSignal.lg": {"text": "L’écran de LG", "from": "LG’s screen"},
  "inputs.noSignal.lgDesc": {"text": "Image et conseil avec « Aucun signal ».", "from": "Picture and advice with “No Signal”."},
+ "inputs.noSignal.icon": {"text": "Câble débranché", "from": "Disconnected cable"},
+ "inputs.noSignal.iconDesc": {"text": "Affiche une icône discrète de câble débranché au lieu de « Aucun signal ».", "from": "Shows a subtle disconnected cable icon instead of “No Signal”."},
  "inputs.nameLabel": {"text": "Nom de l’entrée", "from": "Input name"}
 }

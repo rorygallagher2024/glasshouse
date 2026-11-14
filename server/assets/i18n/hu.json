@@ -3275,5 +3275,7 @@
  "home.customShort": {"text": "Saját webes alkalmazás vagy oldal", "from": "Your own web app or page"},
  "inputs.noSignal.lg": {"text": "Az LG képernyője", "from": "LG’s screen"},
  "inputs.noSignal.lgDesc": {"text": "Kép és tanács a „Nincs jel” felirattal.", "from": "Picture and advice with “No Signal”."},
+ "inputs.noSignal.icon": {"text": "Kihúzott kábel", "from": "Disconnected cable"},
+ "inputs.noSignal.iconDesc": {"text": "Finom kihúzott kábel ikont mutat a „Nincs jel” helyett.", "from": "Shows a subtle disconnected cable icon instead of “No Signal”."},
  "inputs.nameLabel": {"text": "Bemenet neve", "from": "Input name"}
 }

@@ -3261,5 +3261,7 @@
  "home.customShort": {"text": "Своё веб-приложение или страница", "from": "Your own web app or page"},
  "inputs.noSignal.lg": {"text": "Экран LG", "from": "LG’s screen"},
  "inputs.noSignal.lgDesc": {"text": "Картинка и подсказка с надписью «Нет сигнала».", "from": "Picture and advice with “No Signal”."},
+ "inputs.noSignal.icon": {"text": "Кабель отключён", "from": "Disconnected cable"},
+ "inputs.noSignal.iconDesc": {"text": "Показывает неброский значок отключённого кабеля вместо надписи «Нет сигнала».", "from": "Shows a subtle disconnected cable icon instead of “No Signal”."},
  "inputs.nameLabel": {"text": "Название входа", "from": "Input name"}
 }

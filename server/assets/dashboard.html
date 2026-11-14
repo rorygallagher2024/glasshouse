@@ -1031,13 +1031,20 @@ function saverRows(d) {
   }
   // LG's No Signal screen, shown by an input with nothing coming in.
   if (d.writable && d.noSignal && d.noSignal.available) {
-    var nsOn = !!d.noSignal.on;
+    var nsMode = d.noSignal.mode || (d.noSignal.on ? 'plain' : 'lg');
+    var nsPlain = nsMode === 'plain';
+    var nsIcon = nsMode === 'icon';
     r.push(head(t('ss.noSignal', 'No Signal screen')));
     r.push({ label: t('ss.noSignal.plain', 'Just \u201cNo Signal\u201d'),
-             value: nsOn ? t('common.on', 'On') : t('common.off', 'Off'), cls: nsOn ? 'on' : 'off',
-             act: 'plainNoSignal', on: nsOn,
-             press: nsOn ? t('tv.saver.allow.off', 'Press OK to switch off') : t('tv.noSignal.on', 'Press OK to switch on'),
+             value: nsPlain ? t('common.on', 'On') : t('common.off', 'Off'), cls: nsPlain ? 'on' : 'off',
+             act: 'plainNoSignal', target: 'plain', on: nsPlain,
+             press: nsPlain ? t('tv.saver.allow.off', 'Press OK to switch off') : t('tv.noSignal.on', 'Press OK to switch on'),
              hint: t('ss.noSignal.desc', 'Leaves out the animated picture and the line of advice under it, so an input with nothing coming in shows only \u201cNo Signal\u201d.') });
+    r.push({ label: t('inputs.noSignal.icon', 'Disconnected cable'),
+             value: nsIcon ? t('common.on', 'On') : t('common.off', 'Off'), cls: nsIcon ? 'on' : 'off',
+             act: 'plainNoSignal', target: 'icon', on: nsIcon,
+             press: nsIcon ? t('tv.saver.allow.off', 'Press OK to switch off') : t('tv.noSignal.on', 'Press OK to switch on'),
+             hint: t('inputs.noSignal.iconDesc', 'Shows a subtle disconnected cable icon instead of \u201cNo Signal\u201d.') });
   }
   r.push(head(t('tv.saver.head.aFirmwareUpdatePuts', 'A firmware update puts LG’s own back')));
   return r;
@@ -3623,7 +3630,7 @@ function activate() {
     case 'saverStart':
       return startSaverAfterRelease();
     case 'plainNoSignal':
-      return send({ action: 'plainNoSignal', value: !r.on }, r.on ? t('tv.flash.switchedOff', 'Switched off') : t('tv.flash.switchedOn', 'Switched on'));
+      return send({ action: 'plainNoSignal', value: r.on ? 'lg' : r.target }, r.on ? t('tv.flash.switchedOff', 'Switched off') : t('tv.flash.switchedOn', 'Switched on'));
     case 'saverPowerOff':
       // Shown at once, as the sleep timer: a second OK before the poll would send the same step again.
       var offStep = r.next, offShown = saverPowerOffRow(offStep, true);

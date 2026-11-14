@@ -41,6 +41,59 @@ var PATCHES = [
   { find: /(\n[ \t]*visible: text\.length > 0)(?=\n)/g,
     add: ' && currentKey !== "noSignal"' }
 ];
+var HEADER_START = /\n([ \t]*)ScreensaverMainText \{\s*\n[ \t]*id: headerText(?=\n)/g;
+var HEADER_ID = /(\n([ \t]*)id: headerText)(?=\n)/g;
+
+function iconBlock(indent) {
+  var pad = indent + '    ';
+  var body = pad + '    ';
+  var lines = [
+    indent + 'Canvas {',
+    pad + 'id: glasshouseNoSignalIcon',
+    pad + 'anchors.horizontalCenter: parent.horizontalCenter',
+    pad + 'width: Math.round(128 * screensaverRoot.height / 1080)',
+    pad + 'height: Math.round(64 * screensaverRoot.height / 1080)',
+    pad + 'visible: currentKey === "noSignal"',
+    pad + 'onVisibleChanged: if (visible) requestPaint();',
+    pad + 'onWidthChanged: requestPaint();',
+    pad + 'onHeightChanged: requestPaint();',
+    pad + 'onPaint: {',
+    body + 'if (width <= 0 || height <= 0) return;',
+    body + 'var ctx = getContext("2d");',
+    body + 'var s = width / 128;',
+    body + 'ctx.clearRect(0, 0, width, height);',
+    body + 'ctx.strokeStyle = "rgba(255, 255, 255, 0.72)";',
+    body + 'ctx.lineWidth = Math.max(2, 3.2 * s);',
+    body + 'ctx.lineCap = "round";',
+    body + 'ctx.lineJoin = "round";',
+    body + 'ctx.beginPath();',
+    body + 'ctx.moveTo(14 * s, 32 * s);',
+    body + 'ctx.lineTo(30 * s, 32 * s);',
+    body + 'ctx.moveTo(52 * s, 20 * s);',
+    body + 'ctx.lineTo(41 * s, 20 * s);',
+    body + 'ctx.bezierCurveTo(34 * s, 20 * s, 30 * s, 25 * s, 30 * s, 32 * s);',
+    body + 'ctx.bezierCurveTo(30 * s, 39 * s, 34 * s, 44 * s, 41 * s, 44 * s);',
+    body + 'ctx.lineTo(52 * s, 44 * s);',
+    body + 'ctx.closePath();',
+    body + 'ctx.moveTo(52 * s, 26 * s);',
+    body + 'ctx.lineTo(61 * s, 26 * s);',
+    body + 'ctx.moveTo(52 * s, 38 * s);',
+    body + 'ctx.lineTo(61 * s, 38 * s);',
+    body + 'ctx.moveTo(75 * s, 18 * s);',
+    body + 'ctx.lineTo(75 * s, 46 * s);',
+    body + 'ctx.moveTo(75 * s, 20 * s);',
+    body + 'ctx.lineTo(86 * s, 20 * s);',
+    body + 'ctx.bezierCurveTo(93 * s, 20 * s, 97 * s, 25 * s, 97 * s, 32 * s);',
+    body + 'ctx.bezierCurveTo(97 * s, 39 * s, 93 * s, 44 * s, 86 * s, 44 * s);',
+    body + 'ctx.lineTo(75 * s, 44 * s);',
+    body + 'ctx.moveTo(97 * s, 32 * s);',
+    body + 'ctx.lineTo(113 * s, 32 * s);',
+    body + 'ctx.stroke();',
+    pad + '}',
+    indent + '}'
+  ];
+  return lines.join('\n');
+}
 // An input on screen, which restarting the input app would blank.
 var INPUT_IN_FRONT = /^com\.webos\.app\.(hdmi|externalinput|livetv|inputcommon|livemenuplayer|livezoom|acrhdmi|adhdmi)/;
 var RETRY_MS = 60000;
@@ -74,8 +127,28 @@ function init(opts) {
 function flagFile() { return path.join(stateDir, 'nosignal_plain'); }
 function ownDir() { return path.join(stateDir, 'nosignal'); }
 function ownFile() { return path.join(ownDir(), 'Screensaver.qml'); }
+function origFile() { return path.join(ownDir(), 'Screensaver.lg.qml'); }
 
-function wanted() { return fs.existsSync(flagFile()); }
+function normalizeMode(val) {
+  if (val === 'icon') return 'icon';
+  if (val === 'plain' || val === true || val === 'on' || val === 'true') return 'plain';
+  return 'lg';
+}
+
+function wanted() {
+  if (!fs.existsSync(flagFile())) return 'lg';
+  try {
+    return fs.readFileSync(flagFile(), 'utf8').trim() === 'icon' ? 'icon' : 'plain';
+  } catch (e) {
+    return 'plain';
+  }
+}
+
+function modeLabel(mode) {
+  if (mode === 'icon') return 'disconnected-cable';
+  if (mode === 'plain') return 'plain';
+  return 'LG\'s';
+}
 
 function target() {
   for (var i = 0; i < CANDIDATES.length; i++) {
@@ -96,15 +169,27 @@ function mounted(file) {
 }
 
 /*
- * The TV's own file with the two lines changed, or null where either is not
- * there exactly once.
+ * The TV's own file patched for the requested mode ('plain' or 'icon'), or
+ * null where a line this looks for is not there exactly once.
  */
-function patch(text) {
+function patch(text, mode) {
   var out = String(text || '');
   for (var i = 0; i < PATCHES.length; i++) {
     var found = out.match(PATCHES[i].find);
     if (!found || found.length !== 1) return null;
     out = out.replace(PATCHES[i].find, '$1' + PATCHES[i].add);
+  }
+  if (mode === 'icon') {
+    var heads = out.match(HEADER_START);
+    if (!heads || heads.length !== 1) return null;
+    out = out.replace(HEADER_START, function (match, indent) {
+      return '\n' + iconBlock(indent) + match;
+    });
+    var ids = out.match(HEADER_ID);
+    if (!ids || ids.length !== 1) return null;
+    out = out.replace(HEADER_ID, function (match, line, indent) {
+      return line + '\n' + indent + 'visible: currentKey !== "noSignal"';
+    });
   }
   return out;
 }
@@ -148,7 +233,7 @@ function restartWhenFree() {
     restartPending = false;
     try { fs.unlinkSync(pendingFile); } catch (e) { /* not there */ }
     execFn('/usr/bin/killall', [INPUT_APP], { timeout: 5000 }, function () {
-      console.log('nosignal: the input app restarted, so its No Signal screen is ' + (wanted() ? 'plain' : 'LG\'s'));
+      console.log('nosignal: the input app restarted, so its No Signal screen is ' + modeLabel(wanted()));
       if (reopen) ask('com.webos.applicationManager/launch', { id: reopen }, function () {});
     });
   };
@@ -172,38 +257,90 @@ function restartWhenFree() {
  * Mounts the copy, or takes it away, to match the setting. cb({ ok, ... }) once
  * the mount is done; the input app's restart may follow later.
  */
+function writePatched(text, mode, saveOrig) {
+  var next = patch(text, mode);
+  if (!next) {
+    problem('this firmware\'s No Signal screen is not the one known, so it is left as LG made it');
+    return null;
+  }
+  try {
+    util.mkdirp(ownDir());
+    if (saveOrig) fs.writeFileSync(origFile(), text, 'utf8');
+    fs.writeFileSync(ownFile(), next, 'utf8');
+  } catch (e) {
+    problem('could not write the ' + modeLabel(mode) + ' No Signal screen: ' + e.message);
+    return null;
+  }
+  return next;
+}
+
+function mountOwn(file, mode, cb) {
+  execFn('/bin/mount', ['--bind', ownFile(), file], { timeout: 5000 }, function (err) {
+    if (err) problem('could not mount the ' + modeLabel(mode) + ' No Signal screen: ' + err.message);
+    else {
+      lastProblem = '';
+      console.log('nosignal: the ' + modeLabel(mode) + ' No Signal screen is mounted');
+      restartWhenFree();
+    }
+    cb(status());
+  });
+}
+
 function apply(cb) {
   cb = cb || function () {};
   var file = target();
   if (!file) return cb(status());
-  var on = wanted(), isMounted = mounted(file);
+  var mode = wanted(), on = mode !== 'lg', isMounted = mounted(file);
   if (on && !isMounted) {
     var text;
     try { text = fs.readFileSync(file, 'utf8'); } catch (e) {
       problem('could not read the No Signal screen: ' + e.message);
       return cb(status());
     }
-    var plain = patch(text);
-    if (!plain) {
+    if (!writePatched(text, mode, true)) return cb(status());
+    return mountOwn(file, mode, cb);
+  }
+  if (on && isMounted) {
+    if (!fs.existsSync(origFile())) {
+      // Upgraded while plain was mounted: recover LG's copy before re-patching.
+      return execFn('/bin/umount', [file], { timeout: 5000 }, function (err) {
+        if (err) {
+          problem('could not unmount the No Signal screen: ' + err.message);
+          return cb(status());
+        }
+        var raw;
+        try { raw = fs.readFileSync(file, 'utf8'); } catch (e) {
+          problem('could not read the No Signal screen: ' + e.message);
+          return cb(status());
+        }
+        if (!writePatched(raw, mode, true)) return cb(status());
+        mountOwn(file, mode, cb);
+      });
+    }
+    var origText, currentOwn = '';
+    try { origText = fs.readFileSync(origFile(), 'utf8'); } catch (e2) {
+      problem('could not read the saved No Signal screen: ' + e2.message);
+      return cb(status());
+    }
+    try { currentOwn = fs.readFileSync(ownFile(), 'utf8'); } catch (e3) { /* rewrite */ }
+    var targetOwn = patch(origText, mode);
+    if (!targetOwn) {
       problem('this firmware\'s No Signal screen is not the one known, so it is left as LG made it');
       return cb(status());
     }
-    try {
-      util.mkdirp(ownDir());
-      fs.writeFileSync(ownFile(), plain, 'utf8');
-    } catch (e2) {
-      problem('could not write the plain No Signal screen: ' + e2.message);
-      return cb(status());
+    if (currentOwn !== targetOwn) {
+      if (!writePatched(origText, mode, false)) return cb(status());
+      lastProblem = '';
+      console.log('nosignal: switched to the ' + modeLabel(mode) + ' No Signal screen');
+      restartWhenFree();
+    } else if (!restartPending && fs.existsSync(pendingFile)) {
+      restartWhenFree();
     }
-    return execFn('/bin/mount', ['--bind', ownFile(), file], { timeout: 5000 }, function (err) {
-      if (err) problem('could not mount the plain No Signal screen: ' + err.message);
-      else { lastProblem = ''; console.log('nosignal: the plain No Signal screen is mounted'); restartWhenFree(); }
-      cb(status());
-    });
+    return cb(status());
   }
   if (!on && isMounted) {
     return execFn('/bin/umount', [file], { timeout: 5000 }, function (err) {
-      if (err) problem('could not unmount the plain No Signal screen: ' + err.message);
+      if (err) problem('could not unmount the No Signal screen: ' + err.message);
       else { lastProblem = ''; console.log('nosignal: LG\'s No Signal screen is back'); restartWhenFree(); }
       cb(status());
     });
@@ -212,26 +349,30 @@ function apply(cb) {
   cb(status());
 }
 
-function set(on, cb) {
+function set(val, cb) {
+  var mode = normalizeMode(val);
   try {
-    if (on) fs.writeFileSync(flagFile(), '1\n', 'utf8');
-    else if (fs.existsSync(flagFile())) fs.unlinkSync(flagFile());
+    if (mode === 'lg') {
+      if (fs.existsSync(flagFile())) fs.unlinkSync(flagFile());
+    } else {
+      fs.writeFileSync(flagFile(), mode + '\n', 'utf8');
+    }
   } catch (e) { return cb({ ok: false, error: e.message }); }
   apply(cb);
 }
 
 // What the dashboards show: offered where the TV has the screen this knows.
 function status() {
-  var file = target(), available = false;
+  var file = target(), mode = wanted(), available = false;
   if (file) {
     var isMounted = mounted(file);
     if (isMounted) available = true;
     else {
-      try { available = !!patch(fs.readFileSync(file, 'utf8')); } catch (e) { available = false; }
+      try { available = !!patch(fs.readFileSync(file, 'utf8'), 'icon'); } catch (e) { available = false; }
     }
-    return { ok: true, available: available, on: wanted(), applied: isMounted, restartPending: restartPending };
+    return { ok: true, available: available, on: mode !== 'lg', mode: mode, applied: isMounted, restartPending: restartPending };
   }
-  return { ok: true, available: false, on: wanted(), applied: false, restartPending: false };
+  return { ok: true, available: false, on: mode !== 'lg', mode: mode, applied: false, restartPending: false };
 }
 
 module.exports = { init: init, apply: apply, set: set, status: status, patch: patch };

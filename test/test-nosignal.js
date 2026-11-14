@@ -1,7 +1,7 @@
 /**
- * test/test-nosignal.js - the plain No Signal screen (lib/nosignal): LG's
- * file patched only where both lines are there once, mounted and taken away,
- * and the input app restarted only once no input is in front.
+ * test/test-nosignal.js - the plain and icon No Signal screens (lib/nosignal):
+ * LG's file patched only where the expected lines are there once, mounted and
+ * updated or taken away, and the input app restarted only once no input is in front.
  */
 var assert = require('assert');
 var fs = require('fs');
@@ -26,6 +26,9 @@ var LG = [
   '            AnimatedImage {',
   '                visible: element.isDynamic && (headerText.text || bodyText.text)',
   '                source: "../../Images/screensaver/screensaver12frame.gif"',
+  '            }',
+  '            ScreensaverMainText {',
+  '                id: headerText',
   '            }',
   '            ScreensaverSubText {',
   '                id: bodyText',
@@ -55,20 +58,27 @@ function luna(uri, params, cb) {
 nosignal.init({ luna: luna, exec: exec, stateDir: state, appQml: qml, mountinfo: mountinfo, pendingFile: path.join(root, 'pending'), retryMs: 20 });
 
 // The patch.
-var plain = nosignal.patch(LG);
+var plain = nosignal.patch(LG, 'plain');
 assert.ok(plain.indexOf('visible: element.isDynamic && (headerText.text || bodyText.text) && currentKey !== "noSignal"') !== -1, 'the picture is left out for No Signal');
 assert.ok(plain.indexOf('                visible: text.length > 0 && currentKey !== "noSignal"\n') !== -1, 'and the line under the heading');
 assert.ok(plain.indexOf('visible: photoBody.text.length > 0\n') !== -1, 'other lines are left as they are');
-assert.strictEqual(nosignal.patch(LG.replace('visible: text.length > 0\n', 'visible: true\n')), null, 'a line missing leaves LG\'s screen');
-assert.strictEqual(nosignal.patch(LG + '                visible: text.length > 0\n'), null, 'and so does a line there twice');
-assert.deepEqual(nosignal.status(), { ok: true, available: true, on: false, applied: false, restartPending: false });
-console.log('  ✓ LG\'s file is patched only where both lines are there once');
+assert.strictEqual(plain.indexOf('glasshouseNoSignalIcon'), -1, 'plain leaves out the cable icon');
+var icon = nosignal.patch(LG, 'icon');
+assert.ok(icon.indexOf('            Canvas {\n                id: glasshouseNoSignalIcon\n') !== -1, 'the icon sits before the heading');
+assert.ok(icon.indexOf('glasshouseNoSignalIcon') < icon.indexOf('            ScreensaverMainText {'), 'and inside the drifting column');
+assert.ok(icon.indexOf('                id: headerText\n                visible: currentKey !== "noSignal"\n') !== -1, 'heading hidden for No Signal');
+assert.strictEqual(nosignal.patch(LG.replace('visible: text.length > 0\n', 'visible: true\n'), 'plain'), null, 'a line missing leaves LG\'s screen');
+assert.strictEqual(nosignal.patch(LG + '                visible: text.length > 0\n', 'plain'), null, 'and so does a line there twice');
+assert.strictEqual(nosignal.patch(LG.replace('id: headerText\n', 'id: otherHeader\n'), 'icon'), null, 'missing header leaves LG\'s screen in icon mode');
+assert.deepEqual(nosignal.status(), { ok: true, available: true, on: false, mode: 'lg', applied: false, restartPending: false });
+console.log('  ✓ LG\'s file is patched only where the expected lines are there once');
 
 var steps = [
   function (next) {
     // Switched on with an input in front: mounted, the restart held back.
     nosignal.set(true, function (r) {
       assert.strictEqual(r.on, true);
+      assert.strictEqual(r.mode, 'plain');
       assert.strictEqual(r.applied, true);
       assert.deepEqual(execs, ['/bin/mount --bind ' + state + '/nosignal/Screensaver.qml ' + file]);
       assert.strictEqual(fs.readFileSync(path.join(state, 'nosignal', 'Screensaver.qml'), 'utf8'), plain);
@@ -83,6 +93,22 @@ var steps = [
           next();
         }, 'the restart once Home is in front', 2000);
       }, 80);
+    });
+  },
+  function (next) {
+    // Switching between plain and icon while mounted updates the file in place from LG's saved copy.
+    execs = [];
+    nosignal.set('icon', function (r) {
+      assert.strictEqual(r.on, true);
+      assert.strictEqual(r.mode, 'icon');
+      assert.strictEqual(r.applied, true);
+      assert.strictEqual(fs.readFileSync(path.join(state, 'nosignal', 'Screensaver.qml'), 'utf8'), icon);
+      assert.strictEqual(fs.readFileSync(path.join(state, 'nosignal', 'Screensaver.lg.qml'), 'utf8'), LG);
+      waitFor(function () { return execs.length === 1; }, function () {
+        assert.deepEqual(execs, ['/usr/bin/killall com.webos.app.inputcommon']);
+        console.log('  ✓ switched to the disconnected cable icon while mounted, updating in place');
+        next();
+      }, 'the restart after switching to icon', 2000);
     });
   },
   function (next) {

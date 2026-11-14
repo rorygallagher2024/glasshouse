@@ -3250,7 +3250,7 @@ async function visitInputsAndRemote(browser, base, problems) {
   const page = await browser.newPage();
   const fail = message => problems.push('Inputs and Remote: ' + message);
   page.on('pageerror', error => fail(error.message));
-  const noSignal = { ok: true, available: true, on: false, applied: false, restartPending: false };
+  const noSignal = { ok: true, available: true, on: false, mode: 'lg', applied: false, restartPending: false };
   const layout = { hidden: { dev: [] }, hideUnused: false, deviceNames: {} };
   const devices = [{ id: 'TV', name: 'Live TV', tuner: true }, { id: 'HDMI_1', name: 'Console', port: 1 }, { id: 'HDMI_2', name: 'HDMI 2', port: 2, unused: true }];
   const keys = [{ key: 'input', title: 'Input', action: 'lg' }, { key: 'netflix', title: 'Netflix', action: 'open', id: 'com.tvweb.inputbar', opens: 'Input bar' }];
@@ -3289,7 +3289,10 @@ async function visitInputsAndRemote(browser, base, problems) {
     await page.route('**/api/control', async route => {
       const command = route.request().postDataJSON();
       writes.push(command);
-      if (command.action === 'plainNoSignal') noSignal.on = command.value;
+      if (command.action === 'plainNoSignal') {
+        noSignal.mode = command.value === 'icon' ? 'icon' : (command.value === 'plain' || command.value === true ? 'plain' : 'lg');
+        noSignal.on = noSignal.mode !== 'lg';
+      }
       await route.fulfill({ json: Object.assign({ ok: true }, noSignal) });
     });
     await page.goto(base + '/?tab=inputs');
@@ -3322,7 +3325,10 @@ async function visitInputsAndRemote(browser, base, problems) {
     await page.locator('#inputs-nosignal-lg.on').waitFor();
     await page.locator('#inputs-nosignal-plain').click();
     await page.locator('#inputs-nosignal-plain.on').waitFor();
-    if (writes[writes.length - 1].action !== 'plainNoSignal' || writes[writes.length - 1].value !== true) fail('the No Signal card did not send it');
+    if (writes[writes.length - 1].action !== 'plainNoSignal' || writes[writes.length - 1].value !== 'plain') fail('the No Signal card did not send plain');
+    await page.locator('#inputs-nosignal-icon').click();
+    await page.locator('#inputs-nosignal-icon.on').waitFor();
+    if (writes[writes.length - 1].action !== 'plainNoSignal' || writes[writes.length - 1].value !== 'icon') fail('the No Signal icon card did not send icon');
     await page.locator('#tab-btn-remote').click();
     if (await page.evaluate(() => activeTab) !== 'remote') fail('the Remote tab button did not open Remote');
     if (!await page.locator('#remotepane #disc-remotekeys').isVisible()) fail('Remote keys are not on the Remote tab');
@@ -3330,7 +3336,7 @@ async function visitInputsAndRemote(browser, base, problems) {
     // A TV with no keys to set: no Remote tab, no input bar on Inputs, and no Your inputs while LG Home is active.
     hasKeys = false;
     await page.goto(base + '/?tab=inputs');
-    await page.locator('#inputs-nosignal-plain.on').waitFor();
+    await page.locator('#inputs-nosignal-icon.on').waitFor();
     await page.locator('#tab-btn-remote').waitFor({ state: 'hidden' });
     if (await page.locator('#inputs-grp-bar').isVisible()) fail('the input bar is offered with no keys to open it');
     if (await page.locator('#inputs-grp-list').isVisible()) fail('Your inputs is shown with neither the input bar nor a Glasshouse launcher active');

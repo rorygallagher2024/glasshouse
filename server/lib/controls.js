@@ -1321,9 +1321,9 @@ function doControl(action, value, cb) {
         cb(getUpdateSummary());
       });
 
-    // LG's No Signal screen as just "No Signal", without the picture and advice.
+    // LG's No Signal screen: as LG made it, plain "No Signal", or disconnected cable icon.
     case 'plainNoSignal':
-      return nosignal.set(value === true || value === 'on' || value === 'true', cb);
+      return nosignal.set(value, cb);
 
     // Poweroff after: minutes of screen saver before standby, 0 or blank for off.
     case 'screensaverPowerOff':

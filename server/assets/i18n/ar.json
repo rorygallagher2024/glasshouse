@@ -3261,5 +3261,7 @@
  "home.customShort": {"text": "تطبيق ويب أو صفحة خاصة بك", "from": "Your own web app or page"},
  "inputs.noSignal.lg": {"text": "شاشة LG", "from": "LG’s screen"},
  "inputs.noSignal.lgDesc": {"text": "صورة ونصيحة مع «لا توجد إشارة».", "from": "Picture and advice with “No Signal”."},
+ "inputs.noSignal.icon": {"text": "كابل غير متصل", "from": "Disconnected cable"},
+ "inputs.noSignal.iconDesc": {"text": "يعرض أيقونة بسيطة لكابل غير متصل بدلاً من «لا توجد إشارة».", "from": "Shows a subtle disconnected cable icon instead of “No Signal”."},
  "inputs.nameLabel": {"text": "اسم المدخل", "from": "Input name"}
 }

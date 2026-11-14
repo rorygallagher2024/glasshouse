@@ -1736,8 +1736,9 @@ button.tools-jump:active{background:var(--w80)}
    below while any confirmation badge sits on the screen itself. */
 .hm-grid{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:14px;max-width:1060px}
 .hm-grid.hm-grid-2{grid-auto-flow:row;grid-template-columns:repeat(2,minmax(0,260px));max-width:540px}
-@media (max-width:860px){.hm-grid{grid-auto-flow:row;grid-template-columns:repeat(3,minmax(0,1fr))}}
-@media (max-width:560px){.hm-grid,.hm-grid.hm-grid-2{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}}
+.hm-grid.hm-grid-3{grid-auto-flow:row;grid-template-columns:repeat(3,minmax(0,260px));max-width:808px}
+@media (max-width:860px){.hm-grid,.hm-grid.hm-grid-3{grid-auto-flow:row;grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (max-width:560px){.hm-grid,.hm-grid.hm-grid-2,.hm-grid.hm-grid-3{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}}
 button.hm-card{display:flex;flex-direction:column;align-items:stretch;gap:9px;min-width:0;min-height:0;padding:0;
   border:0;background:none;color:inherit;text-align:left;text-transform:none;letter-spacing:normal;font-weight:400}
 button.hm-card:hover,button.hm-card:active,button.hm-card.on,button.hm-card.on:hover,button.hm-card.warn{
@@ -1905,7 +1906,8 @@ input.inp-name-in:disabled{border-bottom-color:transparent;cursor:default}
 .hm-inpbar-tile b{flex:1;height:2.5px;border-radius:1px;background:currentColor;opacity:.75}
 .hm-inpbar-tile.focus{opacity:1;background:#fff;color:#111;border-color:#fff;transform:scale(1.06)}
 .hm-inpbar-tile.now::after{content:'';position:absolute;left:50%;bottom:-6px;width:4px;height:4px;margin-left:-2px;border-radius:50%;background:#30de61}
-.hm-s-nslg,.hm-s-nsplain{background:#000;align-items:center;justify-content:center;padding:12px}
+.hm-s-nslg,.hm-s-nsplain,.hm-s-nsicon{background:#000;align-items:center;justify-content:center;padding:12px}
+.hm-nsicon-svg{width:76px;height:38px;color:rgba(255,255,255,.72)}
 .hm-nslg-box{display:flex;flex-direction:column;align-items:center;gap:5px;width:68%}
 .hm-nslg-box b,.hm-nsplain-txt{font-family:'Outfit',sans-serif;font-weight:300;font-size:12px;letter-spacing:.04em;color:rgba(255,255,255,.88);line-height:1}
 .hm-nslg-box b{margin-bottom:2px}
