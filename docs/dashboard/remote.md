@@ -22,7 +22,7 @@ Core keys (**Home**, **Back**, volume, mute, channel, and power) are reserved an
 
 * **As LG has it:** Keeps the TV's default behavior for that key.
 * **Open an app, an HDMI input, or Live TV:** Launches the selected target directly.
-* **Input bar:** Opens Glasshouse's [input bar](inputs.md#input-bar) overlay instead of LG's inputs list.
+* **Input bar:** Opens Glasshouse's [input bar](inputs.md#glasshouse-input-bar) overlay instead of LG's inputs list.
 * **Input switcher:** Opens LG's quick input picker on TVs that support it (such as a C5 on webOS 11).
 * **Screen off:** Blanks the display while audio continues playing; pressing any key turns the screen back on.
 * **Power off:** Puts the TV into standby on key release. When using TVs side by side, assigning this to a Magic Remote's RF button allows putting one TV into standby without an IR signal affecting the other. (The dedicated Power button is unchanged, and power actions are not offered in Quick Access).
