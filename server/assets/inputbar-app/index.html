@@ -37,6 +37,10 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
 .focus .path{color:#555}
 /* The input on screen now. */
 .tile.now:after{content:"";position:absolute;left:50%;bottom:-26px;width:12px;height:12px;margin-left:-6px;border-radius:50%;background:#30de61}
+.tworow #shade{height:560px}
+.tworow #bar{bottom:54px}
+.tworow .tile{margin-top:16px;margin-bottom:16px}
+.tworow .tile.now:after{bottom:-20px}
 </style>
 </head>
 <body>
@@ -60,7 +64,7 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
   // Filled in with the dashboard's port when the app is installed.
   var PORT = 8080;                // tvweb:port
   var BASE = 'http://localhost:' + PORT;
-  var KEY = { left: 37, right: 39, ok: 13, back: 461, backspace: 8 };
+  var KEY = { left: 37, up: 38, right: 39, down: 40, ok: 13, back: 461, backspace: 8 };
   var IDLE_MS = 6000;
   // On the input already on screen there is nothing to switch to, so the bar
   // goes sooner.
@@ -71,11 +75,19 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
   var list = [], focus = 0, onPort = null, onDevs = null, underHome = false, isTransparent = false, idle = null, switchTimer = null, closing = false;
 
   function $(id) { return document.getElementById(id); }
+  function bodyClass(on) {
+    var cls = [];
+    if (on) cls.push('on');
+    if (isTransparent) cls.push('transparent');
+    if (list.length >= 6) cls.push('tworow');
+    return cls.join(' ');
+  }
   // The input last watched; under a Home screen it is not on screen, so
   // choosing it still switches to it.
   function isLast(e) {
     if (!e) return false;
     if (e.tuner) return onPort === 'tuner';
+    if (!e.port) return false;
     return e.port === onPort && (!onDevs || onDevs.indexOf(e.id) !== -1);
   }
   function isOn(e) {
@@ -103,25 +115,41 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
    * from here rather than through the server, whose POSTs refuse this page's
    * origin (file://, sent as "null").
    */
+  function callService(uri, payload, cb) {
+    try {
+      var bridge = new window.PalmServiceBridge();
+      bridge.onservicecallback = function (raw) {
+        var res = null;
+        try { res = JSON.parse(raw); } catch (e) {}
+        cb(res);
+      };
+      bridge.call(uri, JSON.stringify(payload));
+    } catch (e) {
+      cb(null);
+    }
+  }
   function launchInput(d, cb) {
+    if (d.kind === 'airplay') {
+      return callService('luna://airplay.service/showAirplayPage', {}, function (r) {
+        if (r && r.returnValue) return cb();
+        callService('luna://com.webos.applicationManager/launch', { id: 'airplay', params: {} }, cb);
+      });
+    }
+    if (d.appId) {
+      return callService('luna://com.webos.applicationManager/launch',
+        { id: d.appId, params: d.deviceId ? { requestDevice: d.deviceId } : {} }, cb);
+    }
     var id = d.tuner ? 'com.webos.app.livetv' : 'com.webos.app.' + d.input;
     var params = !d.tuner && typeof d.uniqueId === 'number' && d.uniqueId > 0 && d.uniqueId < 15 ?
       { id: 'uniqueId', value: String(d.uniqueId) } : {};
-    try {
-      var bridge = new window.PalmServiceBridge();
-      bridge.onservicecallback = function () { cb(); };
-      bridge.call('luna://com.webos.applicationManager/launch',
-        JSON.stringify({ id: id, params: params }));
-    } catch (e) {
-      cb();
-    }
+    callService('luna://com.webos.applicationManager/launch', { id: id, params: params }, cb);
   }
 
   function close() {
     if (closing) return;
     closing = true;
     clearTimeout(switchTimer);
-    document.body.className = isTransparent ? 'transparent' : '';
+    document.body.className = bodyClass(false);
     setTimeout(function () { window.close(); }, 160);
   }
   function stillThere() {
@@ -150,15 +178,24 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
   // at once on the next open, before the server has answered.
   function entry(d) {
     return { id: d.id, name: d.name, tuner: !!d.tuner, port: d.port, input: d.input, uniqueId: d.uniqueId,
+             kind: d.kind || null, appId: d.appId || null, deviceId: d.deviceId || null,
              icon: window.glasshouseDevIcon(d) };
   }
   function render() {
+    var twoRow = list.length >= 6;
+    var cols = twoRow ? Math.ceil(list.length / 2) : list.length;
+    var style = cols > 5 ? ' style="width:' + (Math.floor(1824 / cols) - 24) + 'px"' : '';
     var html = '';
     list.forEach(function (e, i) {
+      if (twoRow && i === cols) html += '<br>';
       var cls = 'tile' + (i === focus ? ' focus' : '') + (isOn(e) ? ' now' : '');
-      html += '<div class="' + cls + '" data-i="' + i + '"><div class="head">' + e.icon +
+      var sub = e.kind === 'dms' ? 'Media Server'
+        : e.kind === 'usb' ? 'USB'
+        : (e.tuner || e.kind) ? ''
+        : 'HDMI ' + e.port;
+      html += '<div class="' + cls + '" data-i="' + i + '"' + style + '><div class="head">' + e.icon +
         '<div class="txt"><div class="nm">' + esc(e.name) + '</div>' +
-        (e.tuner ? '' : '<div class="path">HDMI ' + esc(e.port) + '</div>') + '</div></div></div>';
+        (sub ? '<div class="path">' + esc(sub) + '</div>' : '') + '</div></div></div>';
     });
     $('tiles').innerHTML = html;
   }
@@ -169,7 +206,7 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
     clearTimeout(switchTimer);
     focus = (i + list.length) % list.length;
     moved = true;
-    var tiles = $('tiles').children;
+    var tiles = $('tiles').querySelectorAll('.tile');
     for (var k = 0; k < tiles.length; k++) {
       tiles[k].className = 'tile' + (k === focus ? ' focus' : '') + (isOn(list[k]) ? ' now' : '');
     }
@@ -190,7 +227,13 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
     var k = e.keyCode;
     if (k === KEY.right) setFocus(focus + 1, true);
     else if (k === KEY.left) setFocus(focus - 1, true);
-    else if (k === KEY.ok) choose();
+    else if (k === KEY.down && list.length >= 6) {
+      var colsD = Math.ceil(list.length / 2);
+      setFocus(focus < colsD ? Math.min(focus + colsD, list.length - 1) : focus - colsD, true);
+    } else if (k === KEY.up && list.length >= 6) {
+      var colsU = Math.ceil(list.length / 2);
+      setFocus(focus >= colsU ? focus - colsU : Math.min(focus + colsU, list.length - 1), true);
+    } else if (k === KEY.ok) choose();
     else if (k === KEY.back || k === KEY.backspace) close();
     else return;
     e.preventDefault();
@@ -210,7 +253,7 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
   }
   function show() {
     render();
-    document.body.className = 'on' + (isTransparent ? ' transparent' : '');
+    document.body.className = bodyClass(true);
     stillThere();
   }
 

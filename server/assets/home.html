@@ -1012,7 +1012,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     }
     if (kind === 'dev') {
       var ports = [];
-      items('dev').forEach(function (d) { if (!d.unused && !d.tuner && ports.indexOf(d.port) === -1) ports.push(d.port); });
+      items('dev').forEach(function (d) { if (!d.unused && !d.tuner && d.port && ports.indexOf(d.port) === -1) ports.push(d.port); });
       return ports.length === 1 ? t('home.row.inputsNoteOne', 'Devices on HDMI {port}', { port: ports[0] })
         : t('home.row.inputsNote', 'Devices on {n} HDMI inputs', { n: ports.length });
     }
@@ -1133,15 +1133,24 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     },
     dev: function (d, i) {
       if (d.tuner) return tunerTileHtml(d, i);
-      var last = layout.showLastOn !== false && lastOn.kind === 'input' && lastOn.port === d.port &&
+      var last = layout.showLastOn !== false && lastOn.kind === 'input' && d.port && lastOn.port === d.port &&
         (!lastOn.devices || lastOn.devices.indexOf(d.id) !== -1);
+      var isExtra = !!d.kind;
       var cls = 'tile dev' + (last ? ' last' : '') + (d.unused ? ' unused' : '') + (hidden('dev', d.id) ? ' hidden' : '');
-      var path = d.unused ? '' : d.via ? t('home.dev.through', 'HDMI {port}, through {via}', { port: d.port, via: d.via })
-                       : t('home.dev.port', 'HDMI {port}', { port: d.port });
+      var path = d.unused ? ''
+        : d.kind === 'dms' ? (d.address || 'Media Server')
+        : d.kind === 'usb' ? 'USB'
+        : isExtra ? ''
+        : d.via ? t('home.dev.through', 'HDMI {port}, through {via}', { port: d.port, via: d.via })
+        : t('home.dev.port', 'HDMI {port}', { port: d.port });
+      var status = isExtra && d.kind !== 'dms' && d.kind !== 'usb' ? ''
+        : last ? t('home.dev.last', 'Last watched')
+        : d.unused ? t('home.dev.unused', 'Nothing connected')
+        : t('home.dev.connected', 'Connected');
       return '<div class="' + cls + '" data-c="' + i + '"><div class="dhead">' + devIcon(d) + '<div class="dtx"><div class="nm">' + esc(d.name) + '</div>' +
         '<div class="path">' + esc(path) + '</div></div></div>' +
-        '<div class="st"><em>' + esc(last ? t('home.dev.last', 'Last watched') : d.unused ? t('home.dev.unused', 'Nothing connected') : t('home.dev.connected', 'Connected')) + '</em>' +
-        '<span>' + (d.address && layout.showCec !== false ? esc(t('home.dev.cec', 'CEC {address}', { address: d.address })) : '') + '</span></div>' + hiddenLabel + '</div>';
+        '<div class="st"><em>' + esc(status) + '</em>' +
+        '<span>' + (!isExtra && d.address && layout.showCec !== false ? esc(t('home.dev.cec', 'CEC {address}', { address: d.address })) : '') + '</span></div>' + hiddenLabel + '</div>';
     },
     ch: function (c, i) {
       var cls = 'tile ch' + (hidden('ch', c.id) ? ' hidden' : '');

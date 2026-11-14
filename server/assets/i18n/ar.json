@@ -3264,6 +3264,10 @@
  "inputs.noSignal.icon": {"text": "كابل غير متصل", "from": "Disconnected cable"},
  "inputs.noSignal.iconDesc": {"text": "يعرض أيقونة بسيطة لكابل غير متصل بدلاً من «لا توجد إشارة».", "from": "Shows a subtle disconnected cable icon instead of “No Signal”."},
  "inputs.nameLabel": {"text": "اسم المدخل", "from": "Input name"},
+ "inputs.kind.dms": {"text": "خادم وسائط", "from": "Media server"},
+ "inputs.kind.usb": {"text": "‏USB", "from": "USB"},
+ "inputs.kind.screenshare": {"text": "مشاركة الشاشة", "from": "Screen Share"},
+ "inputs.kind.allinputs": {"text": "كل المداخل", "from": "All inputs"},
  "inputs.bar.transparent": {"text": "مربعات شفافة", "from": "Transparent tiles"},
  "inputs.bar.transparentDesc": {"text": "يسمح للصورة بالظهور عبر مربعات الشريط. إيقافه يُبقيها معتمة ليكون التنقل بين المداخل أسرع.", "from": "Lets the picture show through the bar’s tiles. Off keeps them opaque so stepping through inputs is faster."}
 }

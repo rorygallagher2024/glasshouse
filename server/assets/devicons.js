@@ -13,6 +13,14 @@
     disc: '<circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="2"/>',
     pc: '<rect x="3" y="4" width="18" height="12" rx="1.5"/><path d="M9 20h6M12 16v4"/>',
     tv: '<rect x="3" y="5" width="18" height="12" rx="2"/><path d="M8 20h8M9 2l3 3 3-3"/>',
+    dms: '<rect x="3" y="4" width="18" height="6" rx="1.5"/><rect x="3" y="14" width="18" height="6" rx="1.5"/>' +
+      '<circle cx="7" cy="7" r=".8" fill="currentColor"/><circle cx="7" cy="17" r=".8" fill="currentColor"/><path d="M11 7h6M11 17h6"/>',
+    usb: '<rect x="6" y="9" width="12" height="11" rx="2"/><path d="M9 9V5h6v4M10.5 7v.01M13.5 7v.01"/>',
+    airplay: '<path d="M5 17H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2h-1"/><path d="M12 15l5 6H7z"/>',
+    screenshare: '<path d="M2 8V6a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-6"/>' +
+      '<path d="M2 12a9 9 0 0 1 9 9M2 16a5 5 0 0 1 5 5"/><circle cx="2.5" cy="20.5" r=".8" fill="currentColor"/>',
+    allinputs: '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/>' +
+      '<rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>',
     plug: '<path d="M5 9h14v3l-2 3H7l-2-3z"/><path d="M8 15v3h8v-3"/>'
   };
   // Handheld is tested before console so "Switch2 Game Console" gets the handheld.
@@ -35,6 +43,7 @@
   }
   function kindOf(d) {
     if (d && d.tuner) return 'tv';
+    if (d && d.kind && ICONS[d.kind]) return d.kind;
     return (d && (matchKind(d.name) || matchKind(d.id))) || 'plug';
   }
   root.glasshouseDevIcon = function (d) {

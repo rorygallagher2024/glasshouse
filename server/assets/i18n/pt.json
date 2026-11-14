@@ -3264,6 +3264,10 @@
  "inputs.noSignal.icon": {"text": "Cabo desligado", "from": "Disconnected cable"},
  "inputs.noSignal.iconDesc": {"text": "Mostra um ícone discreto de cabo desligado em vez de «Sem sinal».", "from": "Shows a subtle disconnected cable icon instead of “No Signal”."},
  "inputs.nameLabel": {"text": "Nome da entrada", "from": "Input name"},
+ "inputs.kind.dms": {"text": "Servidor de multimédia", "from": "Media server"},
+ "inputs.kind.usb": {"text": "USB", "from": "USB"},
+ "inputs.kind.screenshare": {"text": "Partilha de ecrã", "from": "Screen Share"},
+ "inputs.kind.allinputs": {"text": "Todas as entradas", "from": "All inputs"},
  "inputs.bar.transparent": {"text": "Blocos transparentes", "from": "Transparent tiles"},
  "inputs.bar.transparentDesc": {"text": "Deixa a imagem aparecer através dos blocos da barra. Desligado mantém-nos opacos para percorrer as entradas mais depressa.", "from": "Lets the picture show through the bar’s tiles. Off keeps them opaque so stepping through inputs is faster."}
 }

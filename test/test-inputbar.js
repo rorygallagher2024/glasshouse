@@ -1,6 +1,7 @@
 /**
- * test/test-inputbar.js - The input bar is offered where it has been tried,
- * elsewhere only with its experimental switch, and never on webOS 11; the
+ * test/test-inputbar.js - The input bar is offered on webOS 4 to 10 without
+ * an experimental switch, only with its experimental switch when the webOS
+ * version could not be read, and never before webOS 4 or on webOS 11; the
  * switch turned off sets its keys back to LG's; and its app is preloaded,
  * hidden, while a key opens it and the TV is on, again after each close.
  *
@@ -40,14 +41,14 @@ function run(i) {
 }
 
 step(function (next) {
-  ['4.4.3', '6.5.3', '9.2.2'].forEach(function (v) {
+  ['4.4.3', '5.5.0', '6.5.3', '7.3.1', '8.3.0', '9.2.2', '10.1.0'].forEach(function (v) {
     setUp(v);
     assert.strictEqual(bar.standing(), 'tried', 'webOS ' + v);
     assert.strictEqual(bar.allowed(), true, 'offered on webOS ' + v + ' without the switch');
   });
-  setUp('5.5.0');
-  assert.strictEqual(bar.standing(), 'experimental');
-  assert.strictEqual(bar.allowed(), false, 'held back elsewhere until switched on');
+  setUp(null);
+  assert.strictEqual(bar.standing(), 'experimental', 'a version not read is treated as untried');
+  assert.strictEqual(bar.allowed(), false, 'held back when unreadable until switched on');
   config.allowExperimentalInputBar = true;
   assert.strictEqual(bar.allowed(), true);
   delete config.allowExperimentalInputBar;
@@ -58,14 +59,12 @@ step(function (next) {
     assert.strictEqual(bar.allowed(), false, 'not even with the switch on webOS ' + v);
     delete config.allowExperimentalInputBar;
   });
-  setUp(null);
-  assert.strictEqual(bar.standing(), 'experimental', 'a version not read is treated as untried');
-  console.log('  ✓ offered on webOS 4, 6 and 9, from 5, 7, 8 and 10 with the experimental switch, and never on webOS 11 or before 4');
+  console.log('  ✓ offered on webOS 4 to 10 without the experimental switch, never on webOS 11 or before 4');
   next();
 });
 
 step(function (next) {
-  setUp('5.5.0');
+  setUp(null);
   bar.setAllowed(true, function (err) {
     assert.ifError(err);
     assert.deepEqual(written.pop(), { allowExperimentalInputBar: true });
@@ -109,7 +108,7 @@ step(function (next) {
   wanted = true;
   on = false;
   bar.poke();
-  setUp('5.5.0');
+  setUp('11.1.0');
   on = true;
   bar.poke();
   realSetTimeout(function () {

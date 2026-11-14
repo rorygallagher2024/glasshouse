@@ -9,9 +9,8 @@
  * it switches on is LG's, as without Glasshouse Home.
  *
  * It is an overlay window opened by the remote key filter, as the input bar
- * is, so it is offered where the input bar is (lib/inputbar.js): tried on
- * webOS 4, 6 and 9, and on 5, 7, 8 and 10 with the input bar's experimental
- * switch. webOS 3 has no key filters and webOS 11's keys are LG's own.
+ * is, so it is offered where the input bar is (lib/inputbar.js): webOS 4 to 10.
+ * webOS 3 has no key filters and webOS 11's keys are LG's own.
  *
  * Kept loaded in the background while chosen and the TV is on, as the input
  * bar is, so a press shows it at once.

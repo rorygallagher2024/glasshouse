@@ -111,6 +111,7 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
       });
     }
     if (e.kind === 'tuner') return launch('com.webos.app.livetv', null, cb);
+    if (e.appId) return launch(e.appId, e.deviceId ? { requestDevice: e.deviceId } : null, cb);
     if (e.kind === 'input') {
       var params = typeof e.uniqueId === 'number' && e.uniqueId > 0 && e.uniqueId < 15 ?
         { id: 'uniqueId', value: String(e.uniqueId) } : {};
@@ -158,24 +159,31 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
     });
     var devById = {};
     (cat.devices || []).forEach(function (d) { devById[d.id] = d; });
+    var seenApps = {};
+    out.forEach(function (it) { seenApps[it.id] = true; });
     var devOrder = (cat.order && cat.order.dev) || (cat.devices || []).map(function (d) { return d.id; });
     devOrder.forEach(function (id) {
       var d = devById[id];
-      if (!d || hiddenDevs.indexOf(id) !== -1) return;
+      if (!d || hiddenDevs.indexOf(id) !== -1 || seenApps[id]) return;
       if (d.unused && layout.hideUnused === true) return;
-      out.push({ kind: d.tuner ? 'tuner' : 'input', id: d.id, name: d.name, port: d.port, input: d.input,
-                 uniqueId: d.uniqueId, dicon: window.glasshouseDevIcon ? window.glasshouseDevIcon(d) : '' });
+      out.push({ kind: d.tuner ? 'tuner' : (d.kind || 'input'), id: d.id, name: d.name, port: d.port, input: d.input,
+                 uniqueId: d.uniqueId, appId: d.appId || null, deviceId: d.deviceId || null,
+                 dicon: window.glasshouseDevIcon ? window.glasshouseDevIcon(d) : '' });
     });
     return out;
   }
 
   function tileHtml(e, i) {
-    var cls = 'tile' + (e.kind === 'input' || e.kind === 'tuner' ? ' input' : '') + (i === focus ? ' focus' : '') +
-      (e.kind === 'input' && e.port === onPort ? ' now' : '');
-    if (e.kind === 'input' || e.kind === 'tuner') {
+    var isDev = e.kind === 'input' || e.kind === 'tuner' || e.kind === 'dms' || e.kind === 'usb' || e.kind === 'screenshare' || e.kind === 'allinputs';
+    var cls = 'tile' + (isDev ? ' input' : '') + (i === focus ? ' focus' : '') +
+      (e.kind === 'input' && e.port && e.port === onPort ? ' now' : '');
+    if (isDev) {
+      var sub = e.kind === 'input' ? 'HDMI ' + e.port
+        : e.kind === 'dms' ? 'Media Server'
+        : e.kind === 'usb' ? 'USB' : '';
       return '<div class="' + cls + '" data-i="' + i + '"><div class="head">' + (e.dicon || '') +
         '<div class="txt"><div class="nm">' + esc(e.name) + '</div>' +
-        (e.kind === 'input' ? '<div class="path">HDMI ' + esc(e.port) + '</div>' : '') + '</div></div></div>';
+        (sub ? '<div class="path">' + esc(sub) + '</div>' : '') + '</div></div></div>';
     }
     var ico = e.icon ? '<span class="ico" style="background-image:url(\'' + esc(e.icon) + '\')"></span>'
       : '<span class="ico letter">' + esc(e.letter) + '</span>';
@@ -184,7 +192,7 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
   function render() {
     var html = '', wasApp = true;
     list.forEach(function (e, i) {
-      var isApp = e.kind !== 'input' && e.kind !== 'tuner';
+      var isApp = e.kind === 'app' || e.kind === 'lg' || e.kind === 'airplay';
       if (wasApp && !isApp && i > 0) html += '<span class="gap"></span>';
       wasApp = isApp;
       html += tileHtml(e, i);

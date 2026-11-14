@@ -956,7 +956,7 @@ function namedDevices(c, list) {
   var custom = (c && c.deviceNames) || {};
   var byPortDefault = {};
   list.forEach(function (d) {
-    if (d.id && custom[d.id] && d.name) byPortDefault[d.port + ':' + d.name] = custom[d.id];
+    if (d.id && d.port && custom[d.id] && d.name) byPortDefault[d.port + ':' + d.name] = custom[d.id];
   });
   return list.map(function (d) {
     var customName = custom[d.id];
@@ -974,6 +974,9 @@ function namedDevices(c, list) {
     if (renamed) copy.defaultName = d.name;
     if (d.unused) copy.unused = true;
     if (d.uniqueId !== undefined) copy.uniqueId = d.uniqueId;
+    if (d.kind) copy.kind = d.kind;
+    if (d.appId) copy.appId = d.appId;
+    if (d.deviceId) copy.deviceId = d.deviceId;
     return copy;
   });
 }
@@ -992,11 +995,71 @@ function portName(key, d) {
   return null;
 }
 
+function appInfo(id, cb) {
+  luna('com.webos.applicationManager/getAppInfo', { id: id }, function (r) {
+    cb(r && r.returnValue && r.appInfo && r.appInfo.id === id ? r.appInfo : null);
+  });
+}
+
+function firstAppInfo(ids, cb) {
+  var i = 0;
+  (function next() {
+    if (i >= ids.length) return cb(null);
+    appInfo(ids[i++], function (info) {
+      if (info) return cb(info);
+      next();
+    });
+  })();
+}
+
+var SKIP_DMS_MODELS = ['LG TV Plus ContentDirectory service', 'LG ThinQ ContentDirectory service'];
+
+function extraDevices(cb) {
+  luna('com.webos.service.attachedstoragemanager/listDevices', { deviceType: ['usb', 'dms'] }, function (r) {
+    var raw = (r && isArray(r.devices) ? r.devices : []).filter(function (d) {
+      return d && (d.deviceType === 'usb' || d.deviceType === 'dms') && typeof d.deviceId === 'string' && d.deviceId &&
+        SKIP_DMS_MODELS.indexOf(d.modelDescription) === -1;
+    });
+    var needMedia = raw.length > 0;
+    firstAppInfo(needMedia ? ['com.webos.app.mediadiscovery', 'com.webos.app.photovideo'] : [], function (mediaInfo) {
+      var mediaApp = (mediaInfo && mediaInfo.id) || 'com.webos.app.mediadiscovery';
+      var out = raw.map(function (d) {
+        var kind = d.deviceType;
+        var label = String(d.deviceName || d.modelDescription || (kind === 'usb' ? 'USB' : 'Media Server')).replace(/\s+/g, ' ').trim();
+        return {
+          id: kind + ':' + slug(d.deviceId),
+          name: label,
+          input: kind,
+          kind: kind,
+          deviceId: d.deviceId,
+          appId: mediaApp,
+          port: 0,
+          via: null,
+          address: typeof d.ipAddress === 'string' && d.ipAddress ? d.ipAddress : null
+        };
+      });
+      appInfo(AIRPLAY_APP, function (ap) {
+        if (ap) out.push({ id: 'airplay', name: 'AirPlay', input: 'airplay', kind: 'airplay', appId: AIRPLAY_APP, port: 0, via: null, address: null });
+        appInfo('com.webos.app.miracast', function (mc) {
+          if (mc) out.push({ id: 'screenshare', name: String(mc.title || 'Screen Share'), input: 'screenshare', kind: 'screenshare', appId: 'com.webos.app.miracast', port: 0, via: null, address: null });
+          firstAppInfo(['com.webos.app.homeconnect', 'com.webos.app.inputmgr'], function (hub) {
+            if (hub) out.push({ id: 'allinputs', name: 'All Inputs', input: 'allinputs', kind: 'allinputs', appId: hub.id, port: 0, via: null, address: null });
+            cb(out);
+          });
+        });
+      });
+    });
+  });
+}
+
 function devices(cb) {
   cached('dev', LIST_TTL_MS, function (done) {
     luna('com.webos.service.eim/getAllInputStatus', {}, function (r) {
       if (!r || !isArray(r.devices)) return done(null);
-      pluggedPorts(r.devices, function (portsPlugged) { done(listDevices(r.devices, portsPlugged)); });
+      pluggedPorts(r.devices, function (portsPlugged) {
+        var hdmi = listDevices(r.devices, portsPlugged);
+        extraDevices(function (extra) { done(hdmi.concat(extra)); });
+      });
     });
   }, function (list) {
     cb(list ? namedDevices(readConfig(), list) : null);
@@ -1544,6 +1607,8 @@ function open(body, cb) {
       var hit = null;
       (devs || []).forEach(function (d) { if (d.id === id) hit = d; });
       if (!hit) return cb({ ok: false, error: msg('srv.home.unknownTile', 'that is not on Glasshouse Home') });
+      if (hit.kind === 'airplay') return openAirPlay(opened('dev', hit.id, cb));
+      if (hit.appId) return launch(hit.appId, hit.deviceId ? { requestDevice: hit.deviceId } : null, opened('dev', hit.id, cb));
       var input = { app: names.inputAppId(hit.input), at: nowMs() };
       tileInput = input;
       // LG's picker selects the source behind a receiver through this launch parameter.

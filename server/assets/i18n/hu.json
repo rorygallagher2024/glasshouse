@@ -3278,6 +3278,10 @@
  "inputs.noSignal.icon": {"text": "Kihúzott kábel", "from": "Disconnected cable"},
  "inputs.noSignal.iconDesc": {"text": "Finom kihúzott kábel ikont mutat a „Nincs jel” helyett.", "from": "Shows a subtle disconnected cable icon instead of “No Signal”."},
  "inputs.nameLabel": {"text": "Bemenet neve", "from": "Input name"},
+ "inputs.kind.dms": {"text": "Médiaszerver", "from": "Media server"},
+ "inputs.kind.usb": {"text": "USB", "from": "USB"},
+ "inputs.kind.screenshare": {"text": "Képernyőmegosztás", "from": "Screen Share"},
+ "inputs.kind.allinputs": {"text": "Minden bemenet", "from": "All inputs"},
  "inputs.bar.transparent": {"text": "Átlátszó csempék", "from": "Transparent tiles"},
  "inputs.bar.transparentDesc": {"text": "Átengedi a képet a sáv csempéin. Kikapcsolva átlátszatlanok maradnak, így gyorsabb a bemenetek közötti léptetés.", "from": "Lets the picture show through the bar’s tiles. Off keeps them opaque so stepping through inputs is faster."}
 }

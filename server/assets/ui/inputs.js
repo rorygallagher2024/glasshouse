@@ -65,21 +65,27 @@ function renderInputList() {
     const d = byId[id], isShown = hidden.indexOf(id) === -1;
     const leftOut = !!(d.unused && unusedOff);
     const ico = typeof window.glasshouseDevIcon === 'function' ? window.glasshouseDevIcon(d) : '';
-    let path = d.tuner
-      ? t('ctl.liveTv', 'Live TV')
-      : (d.via ? t('home.dev.through', 'HDMI {port}, through {via}', { port: d.port, via: d.via }) : t('home.dev.port', 'HDMI {port}', { port: d.port }));
+    let path;
+    if (d.tuner) path = t('ctl.liveTv', 'Live TV');
+    else if (d.kind === 'dms') path = t('inputs.kind.dms', 'Media server');
+    else if (d.kind === 'usb') path = t('inputs.kind.usb', 'USB');
+    else if (d.kind === 'airplay') path = 'AirPlay';
+    else if (d.kind === 'screenshare') path = t('inputs.kind.screenshare', 'Screen Share');
+    else if (d.kind === 'allinputs') path = t('inputs.kind.allinputs', 'All inputs');
+    else path = d.via ? t('home.dev.through', 'HDMI {port}, through {via}', { port: d.port, via: d.via }) : t('home.dev.port', 'HDMI {port}', { port: d.port });
+    const isActionTile = !!(d.tuner || d.kind === 'airplay' || d.kind === 'screenshare' || d.kind === 'allinputs');
     const defName = d.defaultName || d.name;
     const nameHtml = d.tuner
       ? `<div class="inp-name" translate="no">${esc(d.name)}</div>`
       : `<input type="text" class="inp-name inp-name-in" translate="no" maxlength="60" value="${esc(d.name)}" placeholder="${esc(defName)}" data-dev-name="${esc(id)}" data-cur="${esc(d.name)}" data-def="${esc(defName)}" aria-label="${esc(t('inputs.nameLabel', 'Input name'))}" ${writable ? '' : 'disabled'} onkeydown="inputsNameKey(event, this)" onblur="inputsRename(this)">`;
-    const stateHtml = d.tuner
+    const stateHtml = isActionTile
       ? ''
       : leftOut
         ? `<span class="pill idle">${esc(t('home.leftOut', 'Left out'))}</span>`
         : d.unused
           ? `<span class="inp-status"><i></i>${esc(t('home.dev.unused', 'Nothing connected'))}</span>`
           : `<span class="inp-status conn"><i></i>${esc(t('home.dev.connected', 'Connected'))}</span>`;
-    return `<div class="inp-card home-tile${!isShown || leftOut ? ' home-hidden' : ''}${d.unused ? ' inp-unused' : d.tuner ? '' : ' inp-conn'}">
+    return `<div class="inp-card home-tile${!isShown || leftOut ? ' home-hidden' : ''}${d.unused ? ' inp-unused' : isActionTile ? '' : ' inp-conn'}">
       <div class="inp-head">
         <div class="inp-ico">${ico}</div>
         <div class="inp-txt">

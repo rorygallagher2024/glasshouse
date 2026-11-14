@@ -331,6 +331,66 @@ async function visitInputBarBehindHome(browser, base, problems) {
       await page.close();
     }
   }
+  // Six or more inputs stack into two rows and step vertically with Up and Down.
+  const page = await browser.newPage({ viewport: { width: 1920, height: 1080 } });
+  page.on('pageerror', e => problems.push('Input bar (two rows): ' + e.message));
+  await page.addInitScript(() => {
+    window.launches = [];
+    window.PalmServiceBridge = function () {};
+    window.PalmServiceBridge.prototype.call = function (uri, body) {
+      window.launches.push({ uri, body: JSON.parse(body) });
+      if (this.onservicecallback) this.onservicecallback(JSON.stringify({ returnValue: true }));
+    };
+    window.close = function () { window.closed = true; };
+  });
+  await page.route('http://localhost:8080/**', route => {
+    const url = new URL(route.request().url());
+    if (url.pathname === '/assets/devicons.js') return route.continue({ url: base + '/assets/devicons.js' });
+    if (url.pathname === '/api/home/now') return route.fulfill({ json: { kind: 'input', port: 1, devices: ['hdmi1'], behindHome: false } });
+    if (url.pathname === '/api/home/catalogue') {
+      return route.fulfill({
+        json: {
+          ok: true,
+          layout: {},
+          order: { dev: ['TV', 'hdmi1', 'hdmi2', 'dms:sonos', 'airplay', 'allinputs'] },
+          devices: [
+            { id: 'TV', name: 'Live TV', tuner: true },
+            { id: 'hdmi1', name: 'HDMI 1', input: 'hdmi1', port: 1 },
+            { id: 'hdmi2', name: 'Mac', input: 'hdmi2', port: 2 },
+            { id: 'dms:sonos', name: 'Sonos', kind: 'dms', appId: 'com.webos.app.mediadiscovery', deviceId: 'SONOS_1', port: 0 },
+            { id: 'airplay', name: 'AirPlay', kind: 'airplay', appId: 'airplay', port: 0 },
+            { id: 'allinputs', name: 'All Inputs', kind: 'allinputs', appId: 'com.webos.app.homeconnect', port: 0 }
+          ]
+        }
+      });
+    }
+    return route.fulfill({ json: {} });
+  });
+  try {
+    await page.goto(base + '/assets/inputbar-app/index.html');
+    await page.waitForSelector('.tile.focus');
+    const rowState = await page.evaluate(() => ({
+      tworow: document.body.classList.contains('tworow'),
+      breaks: document.querySelectorAll('#tiles br').length,
+      dmsSub: document.querySelectorAll('.tile')[3].querySelector('.path').textContent
+    }));
+    if (!rowState.tworow || rowState.breaks !== 1) problems.push('Input bar: 6 inputs did not switch to two-row layout (' + JSON.stringify(rowState) + ')');
+    if (rowState.dmsSub !== 'Media Server') problems.push('Input bar: media server subtitle was ' + rowState.dmsSub);
+    // Focus starts on HDMI 1 (index 1); Down jumps to AirPlay (index 4), Right moves to All Inputs (index 5).
+    await page.keyboard.press('ArrowDown');
+    const afterDown = await page.textContent('.tile.focus .nm');
+    if (afterDown !== 'AirPlay') problems.push('Input bar: ArrowDown moved to ' + afterDown + ' instead of AirPlay');
+    await page.keyboard.press('ArrowUp');
+    const afterUp = await page.textContent('.tile.focus .nm');
+    if (afterUp !== 'HDMI 1') problems.push('Input bar: ArrowUp moved to ' + afterUp + ' instead of HDMI 1');
+    await page.keyboard.press('ArrowDown');
+    await page.keyboard.press('Enter');
+    await page.waitForTimeout(100);
+    const launches = await page.evaluate(() => window.launches);
+    if (!launches.some(l => l.uri === 'luna://airplay.service/showAirplayPage')) problems.push('Input bar: OK on AirPlay did not call showAirplayPage');
+  } finally {
+    await page.close();
+  }
 }
 
 async function visitHomeWeather(browser, base, problems) {

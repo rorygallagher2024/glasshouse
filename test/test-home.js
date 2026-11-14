@@ -189,6 +189,8 @@ function luna(uri, p, cb) {
       // As a C2 (webOS 9.2.2) has it: no launch point, visible false.
       r.appInfo = { id: p.id, title: 'AirPlay', icon: 'AirPlay_Icon-77x77.png', mediumLargeIcon: 'AirPlay_Icon-115x115.png',
                     visible: false, folderPath: '/usr/palm/applications/airplay' };
+    } else if (tv.extraInputApps && tv.extraInputApps[p.id]) {
+      r.appInfo = tv.extraInputApps[p.id];
     }
     else if (!tv.oldAppInstalled) r = { returnValue: false, errorText: 'Invalid appId specified' };
   } else if (uri === 'com.palm.webappmanager/killApp') {
@@ -246,6 +248,8 @@ function luna(uri, p, cb) {
     if (tv.windows) r.windows = copy(tv.windows);
   } else if (uri === 'com.webos.service.utp.boot/getLastChannelId') {
     r.channelId = tv.lastChannel;
+  } else if (uri === 'com.webos.service.attachedstoragemanager/listDevices') {
+    if (tv.attachedDevices) r.devices = copy(tv.attachedDevices);
   }
   process.nextTick(function () { cb(r); });
 }
@@ -3298,6 +3302,49 @@ step('custom HDMI input names apply to catalogue, now and portName, and clear on
             var ps5 = c2.devices.filter(function (d) { return d.id === 'hdmi2:playstation-5'; })[0];
             assert.strictEqual(ps5.name, 'PlayStation 5');
             assert.strictEqual(ps5.defaultName, undefined);
+            done();
+          });
+        });
+      });
+    });
+  });
+});
+
+step('media servers, USB drives, AirPlay, Screen Share and All Inputs appear in inputs, rename and open', function (done) {
+  start(null);
+  tv.airplay = true;
+  tv.extraInputApps = {
+    'com.webos.app.photovideo': { id: 'com.webos.app.photovideo', title: 'Photo & Video' },
+    'com.webos.app.miracast': { id: 'com.webos.app.miracast', title: 'Screen Share' },
+    'com.webos.app.inputmgr': { id: 'com.webos.app.inputmgr', title: 'Input Hub' }
+  };
+  tv.attachedDevices = [
+    { deviceId: 'RINCON_MS', deviceName: 'Sonos Media Server', modelDescription: 'Sonos Media Server', ipAddress: '192.168.1.129', deviceType: 'dms' },
+    { deviceId: 'LG_SKIP', deviceName: 'Phone', modelDescription: 'LG ThinQ ContentDirectory service', deviceType: 'dms' },
+    { deviceId: 'USB1', deviceName: 'SanDisk USB', deviceType: 'usb' }
+  ];
+  home.setLayout({ deviceNames: { 'dms:rincon-ms': 'Sonos Era 300' } }, function (lr) {
+    assert.ok(lr.ok);
+    home.catalogue(function (c) {
+      var byId = {};
+      c.devices.forEach(function (d) { byId[d.id] = d; });
+      assert.strictEqual(byId['dms:lg-skip'], undefined, 'LG ThinQ DMS is filtered out');
+      assert.strictEqual(byId['dms:rincon-ms'].name, 'Sonos Era 300');
+      assert.strictEqual(byId['dms:rincon-ms'].defaultName, 'Sonos Media Server');
+      assert.strictEqual(byId['dms:rincon-ms'].appId, 'com.webos.app.photovideo');
+      assert.strictEqual(byId['usb:usb1'].kind, 'usb');
+      assert.strictEqual(byId['airplay'].kind, 'airplay');
+      assert.strictEqual(byId['screenshare'].appId, 'com.webos.app.miracast');
+      assert.strictEqual(byId['allinputs'].appId, 'com.webos.app.inputmgr');
+      home.open({ kind: 'dev', id: 'dms:rincon-ms' }, function (r1) {
+        assert.ok(r1.ok);
+        assert.deepEqual(tv.launches.pop(), { id: 'com.webos.app.photovideo', params: { requestDevice: 'RINCON_MS' } });
+        home.open({ kind: 'dev', id: 'airplay' }, function (r2) {
+          assert.ok(r2.ok);
+          assert.deepEqual(tv.order.slice(-1), ['airplay page']);
+          home.open({ kind: 'dev', id: 'allinputs' }, function (r3) {
+            assert.ok(r3.ok);
+            assert.deepEqual(tv.launches.pop(), { id: 'com.webos.app.inputmgr' });
             done();
           });
         });

@@ -3264,6 +3264,10 @@
  "inputs.noSignal.icon": {"text": "Odłączony kabel", "from": "Disconnected cable"},
  "inputs.noSignal.iconDesc": {"text": "Wyświetla subtelną ikonę odłączonego kabla zamiast komunikatu „Brak sygnału”.", "from": "Shows a subtle disconnected cable icon instead of “No Signal”."},
  "inputs.nameLabel": {"text": "Nazwa wejścia", "from": "Input name"},
+ "inputs.kind.dms": {"text": "Serwer multimediów", "from": "Media server"},
+ "inputs.kind.usb": {"text": "USB", "from": "USB"},
+ "inputs.kind.screenshare": {"text": "Udostępnianie ekranu", "from": "Screen Share"},
+ "inputs.kind.allinputs": {"text": "Wszystkie wejścia", "from": "All inputs"},
  "inputs.bar.transparent": {"text": "Przezroczyste kafelki", "from": "Transparent tiles"},
  "inputs.bar.transparentDesc": {"text": "Pozwala prześwitywać obrazowi przez kafelki paska. Wyłączone utrzymuje je nieprzezroczyste, dzięki czemu przełączanie wejść jest szybsze.", "from": "Lets the picture show through the bar’s tiles. Off keeps them opaque so stepping through inputs is faster."}
 }
