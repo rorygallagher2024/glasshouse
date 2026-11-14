@@ -178,13 +178,12 @@ function renderInputsPreview(kind) {
   }
   if (kind === 'nsicon') {
     return `<span class="hm-s hm-s-nsicon">
-      <svg class="hm-nsicon-svg" viewBox="0 0 128 64" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <path d="M14 32H30"/>
-        <path d="M52 20H41C34 20 30 25 30 32C30 39 34 44 41 44H52Z"/>
-        <path d="M52 26H61M52 38H61"/>
-        <path d="M75 18V46"/>
-        <path d="M75 20H86C93 20 97 25 97 32C97 39 93 44 86 44H75"/>
-        <path d="M97 32H113"/>
+      <svg class="hm-nsicon-svg" viewBox="0 0 128 64" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M20 32H34M42 26H34V38H42"/>
+        <path d="M42 24L48 18H66V46H48L42 40Z"/>
+        <path d="M52 24V40M57 24V40"/>
+        <path d="M66 23H79V41H66M72.5 27.5V29.5M72.5 34.5V36.5"/>
+        <path d="M95 12V23H108V41H95V52M101.5 28V36"/>
       </svg>
     </span>`;
   }

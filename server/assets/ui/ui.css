@@ -1907,7 +1907,7 @@ input.inp-name-in:disabled{border-bottom-color:transparent;cursor:default}
 .hm-inpbar-tile.focus{opacity:1;background:#fff;color:#111;border-color:#fff;transform:scale(1.06)}
 .hm-inpbar-tile.now::after{content:'';position:absolute;left:50%;bottom:-6px;width:4px;height:4px;margin-left:-2px;border-radius:50%;background:#30de61}
 .hm-s-nslg,.hm-s-nsplain,.hm-s-nsicon{background:#000;align-items:center;justify-content:center;padding:12px}
-.hm-nsicon-svg{width:76px;height:38px;color:rgba(255,255,255,.72)}
+.hm-nsicon-svg{width:76px;height:38px;color:#fff;opacity:.72}
 .hm-nslg-box{display:flex;flex-direction:column;align-items:center;gap:5px;width:68%}
 .hm-nslg-box b,.hm-nsplain-txt{font-family:'Outfit',sans-serif;font-weight:300;font-size:12px;letter-spacing:.04em;color:rgba(255,255,255,.88);line-height:1}
 .hm-nslg-box b{margin-bottom:2px}
