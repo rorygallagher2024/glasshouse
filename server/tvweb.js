@@ -64,6 +64,7 @@ var doh = require('./lib/doh');
 var quickAccess = require('./lib/quickaccess');
 var remoteKeys = require('./lib/remotekeys');
 var inputBar = require('./lib/inputbar');
+var compat = require('./lib/compat');
 
 /*
  * This TV, for lib/compat's table and the report links it gives where a
@@ -606,7 +607,7 @@ homebar.init({
   setHomeKey: remoteKeys.setHome,
   allowed: function () { return inputBar.allowed(); },
   standing: function () { return inputBar.standing(); },
-  compat: function () { return inputBar.summary(); },
+  compat: function () { return compat.info('inputBar', compatTv(), 'Glasshouse Bar'); },
   on: function () { return !liveState || (liveState.state.snapshot().power || {}).systemOn !== false; },
   // Glasshouse Home, or a launcher in its place, off first: LG's Home keeps its place.
   homeOff: function (cb) {

@@ -33,7 +33,11 @@ assert.ok(decodeURIComponent(untried.report.works).indexOf(' works on webOS 8.3.
 assert.strictEqual(compat.info('home', { webos: '9.2.2' }).report, undefined, 'no links where it is tried');
 assert.ok(/remote key filters/.test(compat.info('inputBar', { webos: '3.9.3' }).reason));
 assert.ok(/webOS 11/.test(compat.info('inputBar', { webos: '11.2.0' }).reason));
-console.log('  ✓ report links carry the TV\'s webOS, model, firmware and Glasshouse version');
+var bar = compat.info('inputBar', tv, 'Glasshouse Bar').report;
+assert.ok(decodeURIComponent(bar.problem).indexOf('title=Glasshouse Bar does not work on webOS 8.3.0') !== -1, 'names the bar it came from');
+assert.ok(decodeURIComponent(bar.works).indexOf('Feature: Glasshouse Bar\n') !== -1);
+assert.ok(decodeURIComponent(compat.issueUrl('inputBar', true, tv)).indexOf('Glasshouse Bar and the input bar work on') !== -1, 'both together, plural');
+console.log('  ✓ report links carry the TV\'s webOS, model, firmware and Glasshouse version, and which bar');
 
 // docs/tested-tvs.md's table, row by row, against the code: each cell lists
 // versions as "N", "N and later" or "N and earlier".

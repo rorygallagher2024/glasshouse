@@ -104,7 +104,7 @@ function allowed() {
 function summary() {
   var tv = tvInfoFn ? tvInfoFn() : {};
   tv.webos = webosVersion;
-  var c = compat.info('inputBar', tv);
+  var c = compat.info('inputBar', tv, 'The input bar');
   c.allowed = c.standing !== 'unsupported';
   return c;
 }

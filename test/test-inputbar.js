@@ -54,7 +54,7 @@ step(function (next) {
   });
   assert.ok(decodeURIComponent(bar.summary().report.works).indexOf('webOS ?') !== -1, 'a version not read is reported as unknown');
   setUp('8.3.0');
-  assert.ok(decodeURIComponent(bar.summary().report.problem).indexOf('webOS 8.3.0 (OLED55C34LA)') !== -1, 'the report names the webOS and model');
+  assert.ok(decodeURIComponent(bar.summary().report.problem).indexOf('The input bar does not work on webOS 8.3.0 (OLED55C34LA)') !== -1, 'the report names the input bar, the webOS and model');
   ['11.1.0', '3.9.3'].forEach(function (v) {
     setUp(v);
     assert.strictEqual(bar.standing(), 'unsupported', 'webOS ' + v);

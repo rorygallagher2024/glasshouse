@@ -31,9 +31,11 @@ var FEATURES = {
   },
   // The input bar and Glasshouse Bar: overlay apps opened by the remote key
   // filter, which webOS 3 does not have and which, from webOS 11, cannot hand
-  // a key to an app of Glasshouse's own.
+  // a key to an app of Glasshouse's own. One entry, as both open the same way;
+  // a report names the one it came from.
   inputBar: {
     title: 'Glasshouse Bar and the input bar',
+    parts: ['The input bar', 'Glasshouse Bar'],
     tried: [4, 6, 9],
     from: 4,
     upTo: 10,
@@ -63,15 +65,19 @@ function standing(id, version) {
 /*
  * A new GitHub issue with what the person sees filled in: the feature, the
  * webOS version, the model and firmware, and Glasshouse's version. Nothing is
- * sent unless they submit it.
+ * sent unless they submit it. `part` names which of a feature's parts the
+ * report is about (one of its `parts`), where it has several.
  */
-function issueUrl(id, works, tv) {
+function issueUrl(id, works, tv, part) {
   var f = FEATURES[id];
   tv = tv || {};
+  var name = part || f.title;
   var where = 'webOS ' + (tv.webos || '?') + (tv.model ? ' (' + tv.model + ')' : '');
-  var title = f.title + (works ? ' works on ' : ' does not work on ') + where;
+  // A report about one part names it alone; the whole of a feature with parts is plural.
+  var plural = !part && !!f.parts;
+  var title = name + (works ? (plural ? ' work on ' : ' works on ') : (plural ? ' do not work on ' : ' does not work on ')) + where;
   var body = [
-    'Feature: ' + f.title,
+    'Feature: ' + name,
     'webOS: ' + (tv.webos || '?'),
     'Model: ' + (tv.model || '?'),
     'Firmware: ' + (tv.firmware || '?'),
@@ -86,9 +92,9 @@ function issueUrl(id, works, tv) {
 /*
  * What a dashboard needs to offer a feature on this TV: its standing, the
  * reason where it is not offered, and the links to report it where it is
- * untried. tv: { webos, model, firmware, glasshouse }.
+ * untried. tv: { webos, model, firmware, glasshouse }; part as for issueUrl.
  */
-function info(id, tv) {
+function info(id, tv, part) {
   tv = tv || {};
   var f = FEATURES[id];
   var s = standing(id, tv.webos);
@@ -97,7 +103,7 @@ function info(id, tv) {
     var m = major(tv.webos);
     out.reason = f.from !== undefined && m < f.from ? f.tooOld() : f.tooNew();
   }
-  if (s === 'untried') out.report = { problem: issueUrl(id, false, tv), works: issueUrl(id, true, tv) };
+  if (s === 'untried') out.report = { problem: issueUrl(id, false, tv, part), works: issueUrl(id, true, tv, part) };
   return out;
 }
 
