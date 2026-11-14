@@ -1176,8 +1176,10 @@ function homeAnim(style) {
  */
 const HOME_ANIMS = ['waves', 'particles', 'aquarium', 'aurora', 'glow', 'stars', 'ripples'];
 const homeBgLast = { scene: 'waves', set: 'landscape' };
+let homeBgSelectedKind = null;
 
 function homeBgKind() {
+  if (homeBgSelectedKind) return homeBgSelectedKind;
   const anim = (homeLayout && homeLayout.wallAnim) || 'off';
   if (anim !== 'off') return 'animated';
   const choice = (homeStatus && homeStatus.wallpapers && homeStatus.wallpapers.choice) || 'own';
@@ -1213,17 +1215,20 @@ function renderHomeBg() {
 
 async function homeBgChoose(kind) {
   if (!homeWritable() || homeWallUploading || kind === homeBgKind()) return;
+  homeBgSelectedKind = kind;
+  renderHomeBg();
   const choice = (homeStatus.wallpapers && homeStatus.wallpapers.choice) || 'own';
   if (kind === 'animated') return homeSaveLayout({ wallAnim: homeBgLast.scene });
   if (homeLayout && homeLayout.wallAnim && homeLayout.wallAnim !== 'off') await homeSaveLayout({ wallAnim: 'off' });
   if (kind === 'none' && choice !== 'black') return homeWallSet('black');
-  if (kind === 'video' && choice !== 'video') {
+  if (kind === 'video') {
     const walls = homeStatus.wallpapers || {};
     q('home-video-urls').value = (walls.videoInputs || walls.videoUrls || []).join('\n');
     q('home-video-shuffle').checked = !!walls.videoShuffle;
+    renderHomeBg();
     return;
   }
-  if (kind === 'pictures' && choice === 'black') return homeWallSet(homeBgLast.set);
+  if (kind === 'pictures' && (choice === 'black' || choice === 'video')) return homeWallSet(homeBgLast.set);
   renderHomeBg();
 }
 
