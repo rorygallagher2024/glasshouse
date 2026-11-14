@@ -1,6 +1,6 @@
 /*
  * lib/remotekeys.js - what the remote's keys do: a key opens an app or an
- * input, sends a media key, does nothing, or stays as LG has it
+ * input, sends a media key, takes a screenshot, does nothing, or stays as LG has it
  *
  * The compositor (surface-manager) turns remote keys into actions through a
  * chain of JavaScript filters named by the configd key
@@ -410,6 +410,7 @@ function filterSource() {
     'var glasshouseScreenOffArmed = false;',
     'var glasshousePowerOffArmed = {};',
     'var glasshouseBarPress = 0;',
+    'var glasshouseCaptureService = "com.webos.service.capture";',
     '',
     '// Key code by name; a name this firmware lacks is left out.',
     'function glasshouseKeyCodes() {',
@@ -483,6 +484,33 @@ function filterSource() {
     '    if (glasshouseMediaCodes.hasOwnProperty(name)) glasshouseSendKey(glasshouseMediaCodes[name]);',
     '}',
     '',
+    'function glasshouseCapture(id) {',
+    '    var match = /^capture:(DISPLAY|VIDEO|GRAPHIC):(3840x2160|1920x1080|960x540)$/.exec(id);',
+    '    if (!match) return;',
+    '    var size = match[2].split("x");',
+    '    var file = "/tmp/capture_" + new Date().toISOString().replace(/[:.]/g, "-") + ".png";',
+    '    var payload = { path: file, method: match[1], format: "PNG", width: Number(size[0]), height: Number(size[1]) };',
+    '    function take() {',
+    '        var service = glasshouseCaptureService;',
+    '        lunaCall.send(service, "/executeOneShot", JSON.stringify(payload), function (reply) {',
+    '            var r;',
+    '            try { r = typeof reply === "string" ? JSON.parse(reply) : reply; } catch (e) {}',
+    '            if (service === "com.webos.service.capture" && r && r.returnValue === false &&',
+    '                    typeof r.errorText === "string" && r.errorText.indexOf("Service does not exist") !== -1) {',
+    '                glasshouseCaptureService = "com.webos.service.tv.capture";',
+    '                return take();',
+    '            }',
+    '            var message = r && r.returnValue === true',
+    '                ? ' + JSON.stringify(msg('srv.remoteKeys.screenshotSaved', 'Screenshot saved: {path}')) + '.replace("{path}", file)',
+    '                : ' + JSON.stringify(msg('srv.remoteKeys.screenshotFailed', 'Screenshot failed: {error}')) + '.replace("{error}", (r && r.errorText) || ' + JSON.stringify(msg('srv.remoteKeys.noCaptureResult', 'No capture result')) + ');',
+    '            try {',
+    '                lunaCall.send("com.webos.notification", "/createToast", JSON.stringify({ sourceId: lunaCall.appId, message: message }), function () {});',
+    '            } catch (e) { console.warn("glasshouse screenshot: " + e); }',
+    '        });',
+    '    }',
+    '    take();',
+    '}',
+    '',
     '// Opens Home once the app manager runs Glasshouse Home under its id, and',
     '// says it is starting until then. The key has been kept from LG\'s filters.',
     'function glasshouseHomePressed() {',
@@ -546,6 +574,8 @@ function filterSource() {
     '                if (!autoRepeat) console.info("glasshouse keyfilter: key", key, "sends", id);',
     '                glasshouseMedia(media);',
     '            }',
+    '        } else if (id.indexOf("capture:") === 0) {',
+    '            if (pressed && !autoRepeat) glasshouseCapture(id);',
     '        } else if (id === ' + JSON.stringify(HOME_ASSISTANT) + ') {',
     '            // Nothing on the TV: Glasshouse reads the press from the remote itself.',
     '        } else if (id === ' + JSON.stringify(HOME_GUIDE) + ') {',
@@ -1448,6 +1478,23 @@ function dropBarIfUnused(hadBar) {
   });
 }
 
+function captureChoices() {
+  var titles = {
+    DISPLAY: msg('tools.screenshots.display', 'Full screen'),
+    VIDEO: msg('tools.screenshots.video', 'Video only'),
+    GRAPHIC: msg('tools.screenshots.graphic', 'Graphics only')
+  };
+  var choices = [];
+  ['1920x1080', '3840x2160', '960x540'].forEach(function (resolution) {
+    Object.keys(titles).forEach(function (method) {
+      choices.push({ id: 'capture:' + method + ':' + resolution, kind: 'capture',
+        title: msg('srv.remoteKeys.screenshotResolution', 'Screenshot · {method} · {resolution}',
+          { method: titles[method], resolution: resolution.replace('x', '×') }) });
+    });
+  });
+  return choices;
+}
+
 // The apps a key can open: those on the Home screen, by title.
 function appChoices(apps) {
   var seen = {};
@@ -1490,11 +1537,11 @@ function describeKeys(keys, inChain, cb, native) {
       var titles = {};
       (apps || []).forEach(function (a) { if (a && a.id) titles[a.id] = a.title || a.id; });
       var inputs = inputChoices();
-      var media = native ? screenOffChoice() : actionChoices().concat(mediaChoices());
+      var media = native ? screenOffChoice() : actionChoices().concat(mediaChoices(), captureChoices());
       var cc = country();
       titles[HOME_ASSISTANT] = msg('srv.remoteKeys.homeAssistant', 'Home Assistant');
       titles[HOME_GUIDE] = msg('srv.remoteKeys.homeGuide', 'Glasshouse Home\'s guide');
-      switchers.concat(inputs, actionChoices(), mediaChoices(), homeChoices(false), barChoices(false)).forEach(function (c) { titles[c.id] = c.title; });
+      switchers.concat(inputs, actionChoices(), mediaChoices(), captureChoices(), homeChoices(false), barChoices(false)).forEach(function (c) { titles[c.id] = c.title; });
       var out = keys.map(function (k) {
         var set = Object.prototype.hasOwnProperty.call(map, k.key);
         var id = set ? map[k.key] : null;
@@ -1526,7 +1573,7 @@ function describeKeys(keys, inChain, cb, native) {
 /*
  * Sets a key: action 'lg' puts it back as LG has it, 'nothing' makes it do
  * nothing, 'open' opens id, an input, an app on the Home screen or LG's input
- * switcher, or sends a media control or turns the TV or screen off where the
+ * switcher, sends a media control, takes a screenshot or turns the TV or screen off where the
  * JavaScript filter runs. It takes
  * effect at once, through the filter's configd subscription or, on webOS 11,
  * LG's own values. cb({ ok, error }).
@@ -1562,7 +1609,7 @@ function setOfferedKey(def, action, id, kind, cb) {
   switcherChoices(function (switchers) {
     listApps(function (apps) {
       if (!apps) return cb({ ok: false, error: msg('srv.remoteKeys.noApps', 'Could not read the TV\'s apps. Try again in a moment.') });
-      var media = kind === 'filter' ? actionChoices().concat(mediaChoices()) : SCREEN_OFF_BUTTONS[def.key] ? screenOffChoice() : [];
+      var media = kind === 'filter' ? actionChoices().concat(mediaChoices(), captureChoices()) : SCREEN_OFF_BUTTONS[def.key] ? screenOffChoice() : [];
       var allowed = switchers.concat(media, inputChoices(), homeChoices(kind !== 'filter'), barChoices(kind !== 'filter'), appChoices(apps))
         .some(function (c) { return c.id === id; });
       if (id === HOME_ASSISTANT && !reported(def.key)) {

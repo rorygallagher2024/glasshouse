@@ -31,6 +31,16 @@ Core keys (**Home**, **Back**, volume, mute, channel, and power) are reserved an
 * **Home Assistant:** Silences TV handling while keeping the key labelled for Home Assistant automations. When MQTT is enabled, Home Assistant receives [Remote Button](../HOME-ASSISTANT-REMOTE-BUTTONS.md) events for streaming buttons, color keys, Google Assistant, and the microphone regardless of what they are set to on the TV.
 * **Nothing:** Disables the key completely on the TV.
 
+**Screenshots** has two button groups: full screen, video only or graphics only,
+and 3840×2160, 1920×1080 or 960×540. Choosing either assigns it straight away,
+keeping the other value for an existing screenshot mapping. Both groups are
+unselected otherwise: choosing a method uses 1920×1080, and choosing a size uses
+full screen. A press saves one PNG under `/tmp/capture_` and shows its
+path or the capture error afterward; holding the key does not repeat. Capture
+support depends on the TV and content. With no video playing, **Video only**
+can return `REFUSED_PERMISSION_DENIED`. Captures work while the server is stopped
+and disappear when the TV restarts. These choices are unavailable on webOS 11.
+
 ## Remote models and regional buttons
 
 The available keys reflect what the TV's software supports, not necessarily what is present on a specific physical remote. A Magic Remote lacks color, Guide, and Info keys, while a standard IR remote lacks dedicated streaming buttons, but the TV can receive both.

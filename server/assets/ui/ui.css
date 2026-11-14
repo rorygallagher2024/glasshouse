@@ -1558,6 +1558,8 @@ button.tools-jump:active{background:var(--w80)}
 .rk-opt{display:flex;align-items:center;gap:10px;min-height:42px;padding:8px 14px}
 .rk-opt .rk-ico{width:22px;height:22px;border-radius:5px}
 .rk-opt.on{color:var(--btn-on-fg);background:var(--w100);border-color:var(--w100)}
+.rk-capture-groups{display:flex;flex-wrap:wrap;column-gap:24px}
+.rk-capture-groups>.rk-opts{flex:0 0 auto;max-width:100%}
 /* A catalog's address is one long word. */
 .catalog-url, #apps-others-list .prot-sub{overflow-wrap:anywhere}
 #apps-catalog-list .prot-main, #apps-others-list .prot-main{overflow-wrap:anywhere}
