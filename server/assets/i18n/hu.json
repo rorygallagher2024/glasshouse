@@ -3247,7 +3247,7 @@
  "tab.remote": {"text": "Távirányító", "from": "Remote"},
  "inputs.desc": {"text": "A TV HDMI-bemenetei: melyek jelennek meg, a köztük váltó sáv, és mit mutat az üres bemenet.", "from": "The TV’s HDMI inputs: which ones are offered, the bar that switches between them, and what an empty one shows."},
  "inputs.yours": {"text": "Saját bemenetek", "from": "Your inputs"},
- "inputs.yours.desc": {"text": "A Glasshouse Home Bemenetek sora és a bemeneti sáv által kínált bemenetek, a Glasshouse Home sorrendjében. Az itt elrejtett bemenet mindkettőből eltűnik.", "from": "The inputs Glasshouse Home’s Inputs row and the input bar offer, in Glasshouse Home’s order. Hiding one here hides it on both."},
+ "inputs.yours.desc": {"text": "A Glasshouse Bemeneti sáv és a Glasshouse indítók által kínált bemenetek, valamint a sorrendjük. Az itt elrejtett bemenet mindkettőből eltűnik.", "from": "The inputs Glasshouse Input bar and Glasshouse launchers offer, and their order. Hiding one here hides it on both."},
  "inputs.bar.desc": {"text": "A bemenetek sávja a kép fölött, az LG listája helyett. A távirányító egy gombja megnyitja és végiglépteti.", "from": "A strip of your inputs over the picture, in place of LG’s list. A key on the remote opens it and steps through them."},
  "inputs.noSignal.desc": {"text": "Amit a jel nélküli bemenet mutat.", "from": "What an input with nothing coming in shows."},
  "inputs.none": {"text": "Innen semmi sem módosítható ennek a TV-nek a bemenetein.", "from": "Nothing about this TV’s inputs can be changed from here."},

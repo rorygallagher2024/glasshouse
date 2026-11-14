@@ -3233,7 +3233,7 @@
  "tab.remote": {"text": "الريموت", "from": "Remote"},
  "inputs.desc": {"text": "مداخل HDMI في التلفزيون: أيّها يُعرض، والشريط الذي يبدّل بينها، وما يعرضه المدخل الفارغ.", "from": "The TV’s HDMI inputs: which ones are offered, the bar that switches between them, and what an empty one shows."},
  "inputs.yours": {"text": "مداخلك", "from": "Your inputs"},
- "inputs.yours.desc": {"text": "المداخل التي يعرضها صف المداخل في Glasshouse Home وشريط المداخل، بترتيب Glasshouse Home. إخفاء مدخل هنا يخفيه في الاثنين.", "from": "The inputs Glasshouse Home’s Inputs row and the input bar offer, in Glasshouse Home’s order. Hiding one here hides it on both."},
+ "inputs.yours.desc": {"text": "المداخل التي يعرضها شريط مداخل Glasshouse ومُشغّلات Glasshouse، وترتيبها. إخفاء مدخل هنا يخفيه في الاثنين.", "from": "The inputs Glasshouse Input bar and Glasshouse launchers offer, and their order. Hiding one here hides it on both."},
  "inputs.bar.desc": {"text": "شريط بمداخلك فوق الصورة بدلاً من قائمة LG. يفتحه زر في الريموت ويتنقل بينها.", "from": "A strip of your inputs over the picture, in place of LG’s list. A key on the remote opens it and steps through them."},
  "inputs.noSignal.desc": {"text": "ما يعرضه مدخل لا تصله إشارة.", "from": "What an input with nothing coming in shows."},
  "inputs.none": {"text": "لا يمكن تغيير شيء في مداخل هذا التلفزيون من هنا.", "from": "Nothing about this TV’s inputs can be changed from here."},

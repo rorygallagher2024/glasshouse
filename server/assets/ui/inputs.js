@@ -18,7 +18,7 @@ async function loadInputs() {
 }
 
 function renderInputs() {
-  const shown = [renderInputList(), renderInputBar(), renderNoSignal()];
+  const shown = [renderInputBar(), renderInputList(), renderNoSignal()];
   q('inputs-none').hidden = shown.some(Boolean);
 }
 
@@ -33,8 +33,12 @@ function renderInputList() {
   const byId = {};
   ((cat && cat.devices) || []).forEach(d => { byId[d.id] = d; });
   const order = cat ? ((cat.order && cat.order.dev) || (cat.devices || []).map(d => d.id)).filter(id => byId[id]) : [];
-  grp.hidden = !order.length;
-  if (!order.length) return false;
+  const rk = appsData && appsData.remoteKeys;
+  const barUsed = !!(rk && rk.keys && rk.keys.some(k => k.action === 'open' && k.id === INPUT_BAR));
+  const homeUsed = !!(cat && cat.enabled) || !!(typeof homeLauncherActive !== 'undefined' && homeLauncherActive);
+  const show = order.length > 0 && (barUsed || homeUsed);
+  grp.hidden = !show;
+  if (!show) return false;
   const writable = !!(inputsData && inputsData.writable);
   const layout = cat.layout || {};
   const hidden = (layout.hidden && layout.hidden.dev) || [];

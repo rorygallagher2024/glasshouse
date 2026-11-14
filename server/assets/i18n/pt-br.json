@@ -3233,7 +3233,7 @@
  "tab.remote": {"text": "Controle remoto", "from": "Remote"},
  "inputs.desc": {"text": "As entradas HDMI da TV: quais são oferecidas, a barra que alterna entre elas e o que uma entrada vazia mostra.", "from": "The TV’s HDMI inputs: which ones are offered, the bar that switches between them, and what an empty one shows."},
  "inputs.yours": {"text": "Suas entradas", "from": "Your inputs"},
- "inputs.yours.desc": {"text": "As entradas oferecidas pela fileira Entradas do Glasshouse Home e pela barra de entradas, na ordem do Glasshouse Home. Ocultar uma aqui a oculta nas duas.", "from": "The inputs Glasshouse Home’s Inputs row and the input bar offer, in Glasshouse Home’s order. Hiding one here hides it on both."},
+ "inputs.yours.desc": {"text": "As entradas oferecidas pela Barra de entradas Glasshouse e pelos iniciadores Glasshouse, e sua ordem. Ocultar uma aqui a oculta em ambos.", "from": "The inputs Glasshouse Input bar and Glasshouse launchers offer, and their order. Hiding one here hides it on both."},
  "inputs.bar.desc": {"text": "Uma faixa com suas entradas sobre a imagem, no lugar da lista da LG. Um botão do controle a abre e percorre as entradas.", "from": "A strip of your inputs over the picture, in place of LG’s list. A key on the remote opens it and steps through them."},
  "inputs.noSignal.desc": {"text": "O que uma entrada sem sinal mostra.", "from": "What an input with nothing coming in shows."},
  "inputs.none": {"text": "Nada nas entradas desta TV pode ser alterado por aqui.", "from": "Nothing about this TV’s inputs can be changed from here."},

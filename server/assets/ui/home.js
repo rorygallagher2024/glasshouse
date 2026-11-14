@@ -1,6 +1,7 @@
 // The Home tab: Glasshouse Home, a home screen of Glasshouse's own in place of LG's.
 
 let homeStatus = null;
+let homeLauncherActive = false;
 let homeCat = null;      // what the TV's Home lists: apps, devices, picked channels, order
 let homeLayout = null;
 let homeChannels = null; // the TV's whole channel list, for picking
@@ -44,7 +45,9 @@ async function homePost(path, body) {
 // The tab, as Game's, only where the server offers Glasshouse Home.
 function setHomeAvailable(st) {
   homeAvailable = st.available !== false;
+  homeLauncherActive = !!(st.enabled || (st.bar && st.bar.enabled));
   if (q('tab-btn-home')) q('tab-btn-home').hidden = !homeAvailable;
+  if (typeof renderInputs === 'function') renderInputs();
 }
 
 async function loadHomeAvailable() {
@@ -65,6 +68,7 @@ async function loadHome(afterSave) {
   setHomeAvailable(homeStatus);
   if (!homeAvailable && activeTab === 'home') return showTab('control');
   renderHome();
+  if (typeof renderInputs === 'function') renderInputs();
 }
 
 function homeWritable() { return !!(!homeSaving && homeStatus && (homeStatus.supported.ok || homeStatus.enabled || homeStatus.restorePending) && homeStatus.writable !== false); }
@@ -244,9 +248,14 @@ function renderHome() {
         ? t('home.isOnDesc', 'It opens in LG’s Home’s place: with the Home and Back buttons, and when the TV wakes on Home.')
         : t('home.isOnPending', 'Switched on, but LG’s Home is still in its place. Switching off and on again tries once more.');
   } else {
-    desc.textContent = t('home.isOffDesc', 'Nothing of LG’s is changed: Glasshouse Home is laid over LG’s Home while on, and switching off takes it away.');
+    desc.textContent = '';
   }
+  desc.hidden = !desc.textContent;
   desc.className = 'pv-sub' + ((st.restorePending || (st.enabled && !st.active && !st.lgHomeOpen)) ? ' warn' : '');
+  const exp = q('home-exp');
+  if (exp) exp.hidden = !st.supported.ok || !(st.enabled || homeLauncherOpen);
+  const notes = q('home-notes');
+  if (notes) notes.hidden = desc.hidden && (!restartNote || restartNote.hidden) && (!exp || exp.hidden);
   const more = q('home-more');
   if (more) {
     // Glasshouse Bar shows the same Apps and Inputs rows as a launcher does.

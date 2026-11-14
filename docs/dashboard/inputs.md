@@ -2,10 +2,6 @@
 
 The **Inputs** tab, `/?tab=inputs`, is about the TV's HDMI inputs: which ones are offered, the bar that switches between them, and what an input with nothing coming in shows. Switching to an input is on the [Control](control.md) tab.
 
-## Your inputs
-
-The inputs [Glasshouse Home](home.md)'s Inputs row and the [Glasshouse Input bar](#glasshouse-input-bar) offer, shown as cards with each device's icon, port, and connection state (tuner inputs omit the connection state), alongside **Order** (**Your order** or **Last opened**), **Hide inputs with nothing connected**, `←` / `→` buttons to reorder them, and **Shown** or **Hidden** for each input. Changes made here apply to the input bar, Glasshouse Home, [Glasshouse Bar](home.md#glasshouse-bar), and [Glasshouse Minimal](home.md#glasshouse-minimal).
-
 ## Glasshouse Input bar
 
 A strip of the HDMI inputs over the picture, in place of LG's list of inputs, opened by the **Input** key once **Glasshouse Input bar** is chosen for it here, or by any key set to **Input bar** under [Remote keys](remote.md#remote-keys). Each input shows its device's name, its port and an icon for the kind of device it is, from the name: a console, a handheld, a streaming box, a sound bar, a disc player, a computer or a cable box, or an HDMI plug for any other. The one on screen is marked with a dot.
@@ -22,6 +18,10 @@ Choosing it for a key installs its app, a web app with no tile on the Home scree
 It is offered on webOS 4, 6 and 9, where it has been tried (a B8 with 4.4.3, a C1 with 6.5.3 and a C2 with 9.2.2), and on webOS 5, 7, 8 and 10 once switched on under **Server** → **Advanced** → **Experimental features**: see [Experimental features](../experimental.md#input-bar). webOS 11's remote keys are LG's own, and cannot hand the bar the further presses, so it is not offered there.
 
 **The Input key opens** offers preview cards choosing between **LG's list** and **Glasshouse Input bar** for the remote's Input key. It is the same setting as the Input key's under [Remote keys](remote.md#remote-keys), where any other key can be set to the bar too.
+
+## Your inputs
+
+The inputs [Glasshouse Input bar](#glasshouse-input-bar) and Glasshouse launchers offer, shown when Glasshouse Input bar or a Glasshouse launcher ([Glasshouse Home](home.md), [Glasshouse Bar](home.md#glasshouse-bar), [Glasshouse Minimal](home.md#glasshouse-minimal), or [Custom](home.md#custom-launcher)) is in use. Each input appears as a card with its device icon, port, and connection state (tuner inputs omit the connection state), alongside **Order** (**Your order** or **Last opened**), **Hide inputs with nothing connected**, `←` / `→` buttons to reorder them, and **Shown** or **Hidden** for each input.
 
 ## No Signal screen
 

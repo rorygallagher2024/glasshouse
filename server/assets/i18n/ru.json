@@ -3233,7 +3233,7 @@
  "tab.remote": {"text": "Пульт", "from": "Remote"},
  "inputs.desc": {"text": "HDMI-входы телевизора: какие из них предлагаются, панель для переключения между ними и что показывает пустой вход.", "from": "The TV’s HDMI inputs: which ones are offered, the bar that switches between them, and what an empty one shows."},
  "inputs.yours": {"text": "Ваши входы", "from": "Your inputs"},
- "inputs.yours.desc": {"text": "Входы, которые предлагают ряд «Входы» в Glasshouse Home и панель входов, в порядке Glasshouse Home. Скрытый здесь вход скрывается в обоих местах.", "from": "The inputs Glasshouse Home’s Inputs row and the input bar offer, in Glasshouse Home’s order. Hiding one here hides it on both."},
+ "inputs.yours.desc": {"text": "Входы, которые предлагают панель входов Glasshouse и лаунчеры Glasshouse, и их порядок. Скрытый здесь вход скрывается в обоих местах.", "from": "The inputs Glasshouse Input bar and Glasshouse launchers offer, and their order. Hiding one here hides it on both."},
  "inputs.bar.desc": {"text": "Полоса с вашими входами поверх изображения вместо списка LG. Кнопка пульта открывает её и перебирает входы.", "from": "A strip of your inputs over the picture, in place of LG’s list. A key on the remote opens it and steps through them."},
  "inputs.noSignal.desc": {"text": "Что показывает вход без сигнала.", "from": "What an input with nothing coming in shows."},
  "inputs.none": {"text": "Отсюда нельзя изменить ничего во входах этого телевизора.", "from": "Nothing about this TV’s inputs can be changed from here."},

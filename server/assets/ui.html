@@ -1195,12 +1195,6 @@
   <div class="lbl" data-t="tab.inputs">Inputs</div>
   <div class="pv-sub apps-grp-d" data-t="inputs.desc">The TV&rsquo;s HDMI inputs: which ones are offered, the bar that switches between them, and what an empty one shows.</div>
 
-  <div class="tab-grp" id="inputs-grp-list" hidden>
-    <div class="pv-sec" data-t="inputs.yours">Your inputs</div>
-    <div class="pv-sub apps-grp-d" data-t="inputs.yours.desc">The inputs Glasshouse Home&rsquo;s Inputs row and the input bar offer, in Glasshouse Home&rsquo;s order. Hiding one here hides it on both.</div>
-    <div id="inputs-list"></div>
-  </div>
-
   <div class="tab-grp" id="inputs-grp-bar" hidden>
     <div class="pv-sec" data-t="apps.inputBar">Glasshouse Input bar</div>
     <div class="pv-sub apps-grp-d" data-t="inputs.bar.desc">A strip of your inputs over the picture, in place of LG&rsquo;s list. A key on the remote opens it and steps through them.</div>
@@ -1210,6 +1204,12 @@
       <button type="button" class="hm-card" id="inputs-bar-ours" onclick="setInputKey(true)">&mdash;</button>
     </div>
     <div class="pv-sub" id="inputs-bar-choice-note" hidden></div>
+  </div>
+
+  <div class="tab-grp" id="inputs-grp-list" hidden>
+    <div class="pv-sec" data-t="inputs.yours">Your inputs</div>
+    <div class="pv-sub apps-grp-d" data-t="inputs.yours.desc">The inputs Glasshouse Input bar and Glasshouse launchers offer, and their order. Hiding one here hides it on both.</div>
+    <div id="inputs-list"></div>
   </div>
 
   <div class="tab-grp" id="inputs-grp-nosignal" hidden>
@@ -1257,7 +1257,7 @@
     <div id="home-notes">
       <div class="pv-sub" id="home-state-desc"></div>
       <div class="pv-note warn" id="home-restart-note" hidden data-t="home.restartsAppsAny">On this TV, switching away from LG Home or back to it, or holding Home for LG&rsquo;s Home, restarts the TV&rsquo;s app manager, which closes the apps that are open.</div>
-      <details class="pv-note warn" id="home-exp">
+      <details class="pv-note warn" id="home-exp" hidden>
         <summary data-t="tv.audio.experimental">Experimental</summary>
         <div data-t="home.experimentalAny">Experimental: it may not always work as expected. Glasshouse Home, Glasshouse Minimal and custom launchers each replace LG&rsquo;s Home screen. If one misbehaves, hold Home on the remote for a second to open LG&rsquo;s Home, or choose LG Home here to switch back. For the first half minute after the TV starts from cold, Home shows a message that it is starting.</div>
       </details>

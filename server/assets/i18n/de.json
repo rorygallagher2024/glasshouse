@@ -878,7 +878,7 @@
  "tab.remote": {"text": "Fernbedienung", "from": "Remote"},
  "inputs.desc": {"text": "Die HDMI-Eingänge des TVs: welche angeboten werden, die Leiste zum Umschalten und was ein leerer Eingang zeigt.", "from": "The TV’s HDMI inputs: which ones are offered, the bar that switches between them, and what an empty one shows."},
  "inputs.yours": {"text": "Ihre Eingänge", "from": "Your inputs"},
- "inputs.yours.desc": {"text": "Die Eingänge, die die Eingangsreihe von Glasshouse Home und die Eingangsleiste anbieten, in der Reihenfolge von Glasshouse Home. Hier ausgeblendete fehlen in beiden.", "from": "The inputs Glasshouse Home’s Inputs row and the input bar offer, in Glasshouse Home’s order. Hiding one here hides it on both."},
+ "inputs.yours.desc": {"text": "Die Eingänge, die die Glasshouse-Eingangsleiste und Glasshouse-Launcher anbieten, und ihre Reihenfolge. Hier ausgeblendete fehlen in beiden.", "from": "The inputs Glasshouse Input bar and Glasshouse launchers offer, and their order. Hiding one here hides it on both."},
  "inputs.bar.desc": {"text": "Eine Leiste Ihrer Eingänge über dem Bild, anstelle der Liste von LG. Eine Taste der Fernbedienung öffnet sie und schaltet durch.", "from": "A strip of your inputs over the picture, in place of LG’s list. A key on the remote opens it and steps through them."},
  "inputs.noSignal.desc": {"text": "Was ein Eingang ohne Signal zeigt.", "from": "What an input with nothing coming in shows."},
  "inputs.none": {"text": "An den Eingängen dieses TVs lässt sich von hier aus nichts ändern.", "from": "Nothing about this TV’s inputs can be changed from here."},

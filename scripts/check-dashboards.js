@@ -2253,6 +2253,7 @@ async function visitHomeAvailability(browser, base, problems) {
     { name: 'LG\'s Home only', st: { available: true, enabled: false, lgHomeAvailable: true, lgHome: lgHome(false), homeAutoLaunch: false }, glasshouse: false },
     { name: 'webOS 10\'s banner', st: { available: true, enabled: false, lgHomeAvailable: true, homeAutoLaunch: false,
       lgHome: lgHome(false, { choice: 'black', own: false, width: 3492, height: 1685 }) }, glasshouse: false, banner: true },
+    { name: 'LG Home on supported TV', st: { available: true, enabled: false, lgHomeAvailable: true, lgHome: lgHome(false), homeAutoLaunch: false }, glasshouse: true },
     { name: 'Glasshouse Home on', st: { available: true, enabled: true, lgHomeAvailable: true, lgHome: lgHome(true) }, glasshouse: true },
     // Keep restartsApps coverage alongside webOS 6 standalone (keeps preview options) and webOS 4 (hides them).
     { name: 'restartsApps', st: { available: true, enabled: true, lgHomeAvailable: true, lgHome: lgHome(true),
@@ -2289,12 +2290,18 @@ async function visitHomeAvailability(browser, base, problems) {
       if (c.glasshouse && await page.locator('#home-restart-note').isVisible() !== restarts) {
         fail('the note that a switch closes apps ' + (restarts ? 'missing' : 'shown on a TV it does not apply to'));
       }
+      if (c.glasshouse && await page.locator('#home-exp').isVisible() !== !!st.enabled) {
+        fail('the experimental note ' + (st.enabled ? 'missing' : 'shown with LG Home selected'));
+      }
+      if (c.glasshouse && !st.enabled && await page.locator('#home-state-desc').isVisible()) {
+        fail('the state description showed with LG Home selected');
+      }
       if (c.previewOptions !== undefined) {
         for (const id of ['#home-preview-sound-row', '#home-preview-always-row', '#home-preview-tile-row']) {
           if (await page.locator(id).isVisible() !== c.previewOptions) fail(id + ' ' + (c.previewOptions ? 'missing' : 'shown'));
         }
       }
-      if (await page.locator('#disc-system-tiles').isVisible() === c.glasshouse) fail('system apps ' + (c.glasshouse ? 'shown with Glasshouse Home on' : 'missing'));
+      if (await page.locator('#disc-system-tiles').isVisible() === !!st.enabled) fail('system apps ' + (st.enabled ? 'shown with Glasshouse Home on' : 'missing'));
       if (st.homeAutoLaunch !== undefined && (!await page.locator('#home-autolaunch').isVisible() || await page.locator('#home-autolaunch').isDisabled()))
         fail('Open Home at power-on missing or unusable');
       if (!c.glasshouse && await page.locator('#home-picture-row').isVisible()) fail('Glasshouse Home\'s options shown without it');
@@ -3270,6 +3277,7 @@ async function visitInputsAndRemote(browser, base, problems) {
       } catch (e) { /* closed */ }
     });
     await page.route('**/api/remotekeys', async route => {
+      if (route.request().method() !== 'POST') return route.continue();
       const set = route.request().postDataJSON();
       writes.push(set);
       keys[0] = set.action === 'lg' ? { key: 'input', title: 'Input', action: 'lg' }
@@ -3307,12 +3315,13 @@ async function visitInputsAndRemote(browser, base, problems) {
     if (await page.evaluate(() => activeTab) !== 'remote') fail('the Remote tab button did not open Remote');
     if (!await page.locator('#remotepane #disc-remotekeys').isVisible()) fail('Remote keys are not on the Remote tab');
     if (await page.locator('#appspane #disc-remotekeys, #sspane [id*="nosignal"]').count()) fail('remote keys or No Signal remain on their old tabs');
-    // A TV with no keys to set: no Remote tab, and no input bar on Inputs.
+    // A TV with no keys to set: no Remote tab, no input bar on Inputs, and no Your inputs while LG Home is active.
     hasKeys = false;
     await page.goto(base + '/?tab=inputs');
-    await page.locator('#inputs-list .home-tile').first().waitFor();
+    await page.locator('#inputs-nosignal-plain.on').waitFor();
     await page.locator('#tab-btn-remote').waitFor({ state: 'hidden' });
     if (await page.locator('#inputs-grp-bar').isVisible()) fail('the input bar is offered with no keys to open it');
+    if (await page.locator('#inputs-grp-list').isVisible()) fail('Your inputs is shown with neither the input bar nor a Glasshouse launcher active');
   } catch (e) {
     fail(e.message);
   } finally {

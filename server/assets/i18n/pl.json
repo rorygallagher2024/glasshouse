@@ -3233,7 +3233,7 @@
  "tab.remote": {"text": "Pilot", "from": "Remote"},
  "inputs.desc": {"text": "Wejścia HDMI telewizora: które są dostępne, pasek do przełączania między nimi i co pokazuje puste wejście.", "from": "The TV’s HDMI inputs: which ones are offered, the bar that switches between them, and what an empty one shows."},
  "inputs.yours": {"text": "Twoje wejścia", "from": "Your inputs"},
- "inputs.yours.desc": {"text": "Wejścia dostępne w wierszu Wejścia w Glasshouse Home i na pasku wejść, w kolejności z Glasshouse Home. Ukrycie wejścia tutaj ukrywa je w obu miejscach.", "from": "The inputs Glasshouse Home’s Inputs row and the input bar offer, in Glasshouse Home’s order. Hiding one here hides it on both."},
+ "inputs.yours.desc": {"text": "Wejścia dostępne na Pasku wejść Glasshouse i w launcherach Glasshouse oraz ich kolejność. Ukrycie wejścia tutaj ukrywa je w obu miejscach.", "from": "The inputs Glasshouse Input bar and Glasshouse launchers offer, and their order. Hiding one here hides it on both."},
  "inputs.bar.desc": {"text": "Pasek z wejściami nad obrazem, zamiast listy LG. Przycisk pilota otwiera go i przełącza kolejne wejścia.", "from": "A strip of your inputs over the picture, in place of LG’s list. A key on the remote opens it and steps through them."},
  "inputs.noSignal.desc": {"text": "Co pokazuje wejście bez sygnału.", "from": "What an input with nothing coming in shows."},
  "inputs.none": {"text": "Z tego miejsca nie można nic zmienić we wejściach tego telewizora.", "from": "Nothing about this TV’s inputs can be changed from here."},

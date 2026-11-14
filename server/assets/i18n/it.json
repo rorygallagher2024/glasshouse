@@ -3247,7 +3247,7 @@
  "tab.remote": {"text": "Telecomando", "from": "Remote"},
  "inputs.desc": {"text": "Gli ingressi HDMI del TV: quali vengono proposti, la barra per passare dall’uno all’altro e cosa mostra un ingresso vuoto.", "from": "The TV’s HDMI inputs: which ones are offered, the bar that switches between them, and what an empty one shows."},
  "inputs.yours": {"text": "I tuoi ingressi", "from": "Your inputs"},
- "inputs.yours.desc": {"text": "Gli ingressi proposti dalla riga Ingressi di Glasshouse Home e dalla barra degli ingressi, nell’ordine di Glasshouse Home. Nasconderne uno qui lo nasconde in entrambe.", "from": "The inputs Glasshouse Home’s Inputs row and the input bar offer, in Glasshouse Home’s order. Hiding one here hides it on both."},
+ "inputs.yours.desc": {"text": "Gli ingressi proposti dalla Barra degli ingressi Glasshouse e dai launcher Glasshouse, e il loro ordine. Nasconderne uno qui lo nasconde in entrambi.", "from": "The inputs Glasshouse Input bar and Glasshouse launchers offer, and their order. Hiding one here hides it on both."},
  "inputs.bar.desc": {"text": "Una striscia dei tuoi ingressi sopra l’immagine, al posto dell’elenco di LG. Un tasto del telecomando la apre e li scorre.", "from": "A strip of your inputs over the picture, in place of LG’s list. A key on the remote opens it and steps through them."},
  "inputs.noSignal.desc": {"text": "Cosa mostra un ingresso senza segnale.", "from": "What an input with nothing coming in shows."},
  "inputs.none": {"text": "Da qui non si può modificare nulla degli ingressi di questo TV.", "from": "Nothing about this TV’s inputs can be changed from here."},
