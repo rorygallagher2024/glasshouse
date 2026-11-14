@@ -295,13 +295,15 @@ async function visitInputBarBehindHome(browser, base, problems) {
       const url = new URL(route.request().url());
       if (url.pathname === '/assets/devicons.js') return route.continue({ url: base + '/assets/devicons.js' });
       if (url.pathname === '/api/home/now') return route.fulfill({ json: { kind: 'input', port: 2, devices: ['hdmi2'], behindHome } });
-      if (url.pathname === '/api/home/catalogue') return route.fulfill({ json: { ok: true, layout: {}, order: { dev: ['hdmi1', 'hdmi2'] },
-        devices: [{ id: 'hdmi1', name: 'HDMI 1', input: 'hdmi1', port: 1 }, { id: 'hdmi2', name: 'Mac', input: 'hdmi2', port: 2 }] } });
+      if (url.pathname === '/api/home/catalogue') return route.fulfill({ json: { ok: true, layout: {}, order: { dev: ['TV', 'hdmi1', 'hdmi2'] },
+        devices: [{ id: 'TV', name: 'Live TV', tuner: true }, { id: 'hdmi1', name: 'HDMI 1', input: 'hdmi1', port: 1 }, { id: 'hdmi2', name: 'Mac', input: 'hdmi2', port: 2 }] } });
       return route.fulfill({ json: {} });
     });
     try {
       await page.goto(base + '/assets/inputbar-app/index.html');
       await page.waitForSelector('.tile.focus');
+      if (await page.locator('.tile').count() !== 3 || await page.locator('.tile').first().locator('.nm').textContent() !== 'Live TV') problems.push(name + 'Live TV was not shown');
+      if (await page.locator('.tile').first().locator('.path').count() !== 0) problems.push(name + 'Live TV showed an HDMI path');
       const focused = await page.textContent('.tile.focus .nm');
       if (focused !== 'Mac') problems.push(name + 'the bar opened on ' + focused + ', not the input last watched');
       await page.keyboard.press('Enter');
@@ -309,6 +311,16 @@ async function visitInputBarBehindHome(browser, base, problems) {
       const launches = await page.evaluate(() => window.launches);
       if (behindHome && launches.indexOf('com.webos.app.hdmi2') === -1) problems.push(name + 'OK on HDMI 2 did not switch to it');
       if (!behindHome && launches.length) problems.push(name + 'OK on the input on screen launched ' + launches.join(', '));
+      if (!behindHome) {
+        await page.goto(base + '/assets/inputbar-app/index.html');
+        await page.waitForSelector('.tile.focus');
+        await page.keyboard.press('ArrowLeft');
+        await page.keyboard.press('ArrowLeft');
+        await page.keyboard.press('Enter');
+        await page.waitForTimeout(300);
+        const tvLaunches = await page.evaluate(() => window.launches);
+        if (tvLaunches.indexOf('com.webos.app.livetv') === -1) problems.push(name + 'OK on Live TV did not launch livetv');
+      }
     } finally {
       await page.close();
     }

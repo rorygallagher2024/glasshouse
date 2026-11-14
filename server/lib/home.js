@@ -1452,15 +1452,16 @@ function now(cb) {
     });
   }
   if (id === LIVE_TV) {
+    var behind = foreground === HOME_APP || foreground === LG_HOME;
     return luna('com.webos.service.utp.boot/getLastChannelId', {}, function (r) {
       var chId = r && typeof r.channelId === 'string' ? r.channelId : null;
       channelList(function (chans) {
         /** @type {any} */
         var hit = null;
         (chans || []).forEach(function (c) { if (c.id === chId) hit = c; });
-        if (!hit) return cb({ kind: 'channel', appId: id, since: lastSource.at, channel: null });
+        if (!hit) return cb({ kind: 'channel', appId: id, since: lastSource.at, behindHome: behind, channel: null });
         luna('com.webos.service.apiadapter/tv/getChannelCurrentProgramInfo', { channelId: hit.id }, function (p) {
-          cb({ kind: 'channel', appId: id, since: lastSource.at, channel: hit, programme: programme(p) });
+          cb({ kind: 'channel', appId: id, since: lastSource.at, behindHome: behind, channel: hit, programme: programme(p) });
         });
       });
     });

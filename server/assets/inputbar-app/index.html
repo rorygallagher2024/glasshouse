@@ -18,7 +18,7 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
 .on #shade,.on #bar{-webkit-transition:none;transition:none}
 #tiles{display:inline-block;white-space:nowrap;font-size:0}
 /* The input in focus light and ringed, the rest dimmed. */
-.tile{display:inline-block;vertical-align:top;position:relative;width:360px;height:112px;margin:0 12px;padding:0 22px;border-radius:22px;text-align:left;
+.tile{display:inline-block;vertical-align:top;position:relative;width:336px;height:112px;margin:0 12px;padding:0 22px;border-radius:22px;text-align:left;
   background:#222;color:#fff;opacity:.75;box-shadow:0 0 0 2px rgba(255,255,255,.14),0 10px 30px rgba(0,0,0,.45);
   -webkit-transition:opacity .12s,-webkit-transform .12s,box-shadow .12s;transition:opacity .12s,transform .12s,box-shadow .12s}
 .tile.focus{opacity:1;background:#fff;color:#111;-webkit-transform:scale(1.06);transform:scale(1.06);box-shadow:0 0 0 5px #fff,0 14px 40px rgba(0,0,0,.6)}
@@ -68,7 +68,9 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
   // The input last watched; under a Home screen it is not on screen, so
   // choosing it still switches to it.
   function isLast(e) {
-    return !!e && e.port === onPort && (!onDevs || onDevs.indexOf(e.id) !== -1);
+    if (!e) return false;
+    if (e.tuner) return onPort === 'tuner';
+    return e.port === onPort && (!onDevs || onDevs.indexOf(e.id) !== -1);
   }
   function isOn(e) {
     return !underHome && isLast(e);
@@ -96,13 +98,14 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
    * origin (file://, sent as "null").
    */
   function launchInput(d, cb) {
-    var params = typeof d.uniqueId === 'number' && d.uniqueId > 0 && d.uniqueId < 15 ?
+    var id = d.tuner ? 'com.webos.app.livetv' : 'com.webos.app.' + d.input;
+    var params = !d.tuner && typeof d.uniqueId === 'number' && d.uniqueId > 0 && d.uniqueId < 15 ?
       { id: 'uniqueId', value: String(d.uniqueId) } : {};
     try {
       var bridge = new window.PalmServiceBridge();
       bridge.onservicecallback = function () { cb(); };
       bridge.call('luna://com.webos.applicationManager/launch',
-        JSON.stringify({ id: 'com.webos.app.' + d.input, params: params }));
+        JSON.stringify({ id: id, params: params }));
     } catch (e) {
       cb();
     }
@@ -130,7 +133,7 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
     var order = (cat.order && cat.order.dev) || (cat.devices || []).map(function (d) { return d.id; });
     order.forEach(function (id) {
       var d = byId[id];
-      if (!d || d.tuner || hidden.indexOf(id) !== -1) return;
+      if (!d || hidden.indexOf(id) !== -1) return;
       if (d.unused && layout.hideUnused === true) return;
       out.push(d);
     });
@@ -140,7 +143,7 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
   // A tile as drawn: kept with the input, so the last bar can be drawn again
   // at once on the next open, before the server has answered.
   function entry(d) {
-    return { id: d.id, name: d.name, port: d.port, input: d.input, uniqueId: d.uniqueId,
+    return { id: d.id, name: d.name, tuner: !!d.tuner, port: d.port, input: d.input, uniqueId: d.uniqueId,
              icon: window.glasshouseDevIcon(d) };
   }
   function render() {
@@ -148,7 +151,8 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
     list.forEach(function (e, i) {
       var cls = 'tile' + (i === focus ? ' focus' : '') + (isOn(e) ? ' now' : '');
       html += '<div class="' + cls + '" data-i="' + i + '"><div class="head">' + e.icon +
-        '<div class="txt"><div class="nm">' + esc(e.name) + '</div><div class="path">HDMI ' + esc(e.port) + '</div></div></div></div>';
+        '<div class="txt"><div class="nm">' + esc(e.name) + '</div>' +
+        (e.tuner ? '' : '<div class="path">HDMI ' + esc(e.port) + '</div>') + '</div></div></div>';
     });
     $('tiles').innerHTML = html;
   }
@@ -211,7 +215,7 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
     if (!cat || !window.glasshouseDevIcon) { if (!list.length) close(); return; }
     var fresh = inputsFrom(cat).map(entry);
     if (!fresh.length) return close();
-    var port = now && now.kind === 'input' ? now.port : null;
+    var port = now && now.kind === 'input' ? now.port : (now && now.kind === 'channel' ? 'tuner' : null);
     var devs = now && now.kind === 'input' && Array.isArray(now.devices) ? now.devices : null;
     var under = !!now && now.behindHome === true;
     var same = JSON.stringify(fresh) === JSON.stringify(list) && port === onPort && JSON.stringify(devs) === JSON.stringify(onDevs) && under === underHome;

@@ -4,7 +4,7 @@ The **Inputs** tab, `/?tab=inputs`, is about the TV's HDMI inputs: which ones ar
 
 ## Glasshouse Input bar
 
-A strip of the HDMI inputs over the picture, in place of LG's list of inputs, opened by the **Input** key once **Glasshouse Input bar** is chosen for it here, or by any key set to **Input bar** under [Remote keys](remote.md#remote-keys). Each input shows its device's name, its port and an icon for the kind of device it is, from the name: a console, a handheld, a streaming box, a sound bar, a disc player, a computer or a cable box, or an HDMI plug for any other. The one on screen is marked with a dot.
+A strip of the TV's inputs (Live TV and the HDMI inputs) over the picture, in place of LG's list of inputs, opened by the **Input** key once **Glasshouse Input bar** is chosen for it here, or by any key set to **Input bar** under [Remote keys](remote.md#remote-keys). Each input shows its device's name, its port for HDMI inputs, and an icon for the kind of device it is, from the name: Live TV, a console, a handheld, a streaming box, a sound bar, a disc player, a computer or a cable box, or an HDMI plug for any other. The one on screen is marked with a dot.
 
 * The first press opens it on the input on screen. Over Glasshouse Home or a launcher, it opens on the input last watched, which is not marked, and **OK** switches to it. Each further press moves to the next input, round to the first, and the TV switches to it a second after the last press, as LG's does.
 * **Left** and **Right** move too, **OK** switches at once and **Back** closes it. With the Magic Remote's pointer, hovering an input picks it and clicking switches, without the second's wait.

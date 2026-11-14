@@ -1198,6 +1198,7 @@ if (CLI_MODE) {
     // left alone: it is installed when a key is set to it.
     tvApp('refresh', function (r) {
       if (r && r.refreshed && r.ok) console.log('inputbar: app refreshed to current release');
+      inputBar.poke();
       // One at a time: the installer takes one job.
       tvApp('refresh', function (r2) {
         if (r2 && r2.refreshed && r2.ok) console.log('homebar: app refreshed to current release');
