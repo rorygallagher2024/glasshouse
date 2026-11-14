@@ -2653,7 +2653,6 @@
  "home.tv.guide": {"text": "Műsorújság", "from": "Guide"},
  "home.tv.guideAll": {"text": "Összes", "from": "All"},
  "home.tv.guideAt": {"text": "műsorújság frissítve: {when}", "from": "guide updated {when}"},
- "home.tv.guideDesc": {"text": "Most és később látható műsorok", "from": "What is on now and later"},
  "home.tv.guideFavourites": {"text": "Kedvencek", "from": "Favourites"},
  "home.tv.guideKey": {"text": "A távirányító Guide gombja", "from": "The remote’s Guide button"},
  "home.tv.guideKeyDesc": {"text": "Az LG műsorújságában az antennás és műholdas csatornák szerepelnek, a Glasshouse Home műsorújságában az itt hozzáadott internetes TV-csatornák. Az Info gomb az Internetes TV során mindkét esetben a Glasshouse Home műsorújságát nyitja meg.", "from": "LG’s guide lists the aerial and satellite channels; Glasshouse Home’s lists the Internet TV channels added here. Info on the Internet TV row opens Glasshouse Home’s guide either way."},

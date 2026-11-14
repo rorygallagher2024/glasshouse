@@ -2685,7 +2685,6 @@
  "home.tv.guide": {"text": "Guida", "from": "Guide"},
  "home.tv.guideAll": {"text": "Tutti", "from": "All"},
  "home.tv.guideAt": {"text": "guida aggiornata {when}", "from": "guide updated {when}"},
- "home.tv.guideDesc": {"text": "In onda ora e in seguito", "from": "What is on now and later"},
  "home.tv.guideFavourites": {"text": "Preferiti", "from": "Favourites"},
  "home.tv.guideKey": {"text": "Il pulsante Guida del telecomando", "from": "The remote’s Guide button"},
  "home.tv.guideKeyDesc": {"text": "La guida di LG elenca i canali dell’antenna e del satellite; quella di Glasshouse Home elenca i canali TV via Internet aggiunti qui. Info sulla riga TV via Internet apre la guida di Glasshouse Home in entrambi i casi.", "from": "LG’s guide lists the aerial and satellite channels; Glasshouse Home’s lists the Internet TV channels added here. Info on the Internet TV row opens Glasshouse Home’s guide either way."},

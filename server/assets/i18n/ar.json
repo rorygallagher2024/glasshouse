@@ -2653,7 +2653,6 @@
  "home.tv.guide": {"text": "دليل البرامج", "from": "Guide"},
  "home.tv.guideAll": {"text": "الكل", "from": "All"},
  "home.tv.guideAt": {"text": "تم تحديث دليل البرامج {when}", "from": "guide updated {when}"},
- "home.tv.guideDesc": {"text": "ما يُعرض الآن ولاحقاً", "from": "What is on now and later"},
  "home.tv.guideFavourites": {"text": "المفضّلة", "from": "Favourites"},
  "home.tv.guideKey": {"text": "زر دليل البرامج في جهاز التحكّم", "from": "The remote’s Guide button"},
  "home.tv.guideKeyDesc": {"text": "يعرض دليل LG قنوات الهوائي والأقمار الصناعية؛ ويعرض دليل واجهة Glasshouse الرئيسية قنوات تلفزيون الإنترنت المضافة هنا. يفتح زر المعلومات في صف تلفزيون الإنترنت دليل واجهة Glasshouse الرئيسية في الحالتين.", "from": "LG’s guide lists the aerial and satellite channels; Glasshouse Home’s lists the Internet TV channels added here. Info on the Internet TV row opens Glasshouse Home’s guide either way."},

@@ -2653,7 +2653,6 @@
  "home.tv.guide": {"text": "Телепрограмма", "from": "Guide"},
  "home.tv.guideAll": {"text": "Все", "from": "All"},
  "home.tv.guideAt": {"text": "телепрограмма обновлена: {when}", "from": "guide updated {when}"},
- "home.tv.guideDesc": {"text": "Что идёт сейчас и позже", "from": "What is on now and later"},
  "home.tv.guideFavourites": {"text": "Избранное", "from": "Favourites"},
  "home.tv.guideKey": {"text": "Кнопка Guide на пульте", "from": "The remote’s Guide button"},
  "home.tv.guideKeyDesc": {"text": "Телепрограмма LG показывает эфирные и спутниковые каналы, а телепрограмма Glasshouse Home — добавленные здесь каналы Интернет-ТВ. Кнопка Info в ряду Интернет-ТВ в любом случае открывает телепрограмму Glasshouse Home.", "from": "LG’s guide lists the aerial and satellite channels; Glasshouse Home’s lists the Internet TV channels added here. Info on the Internet TV row opens Glasshouse Home’s guide either way."},

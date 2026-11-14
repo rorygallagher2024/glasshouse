@@ -2653,7 +2653,6 @@
  "home.tv.guide": {"text": "Program TV", "from": "Guide"},
  "home.tv.guideAll": {"text": "Wszystkie", "from": "All"},
  "home.tv.guideAt": {"text": "program TV zaktualizowano {when}", "from": "guide updated {when}"},
- "home.tv.guideDesc": {"text": "Co jest teraz i później", "from": "What is on now and later"},
  "home.tv.guideFavourites": {"text": "Ulubione", "from": "Favourites"},
  "home.tv.guideKey": {"text": "Przycisk Guide na pilocie", "from": "The remote’s Guide button"},
  "home.tv.guideKeyDesc": {"text": "Program TV LG pokazuje kanały naziemne i satelitarne; program Glasshouse Home pokazuje dodane tutaj kanały telewizji internetowej. Przycisk Info w rzędzie Telewizja internetowa zawsze otwiera program Glasshouse Home.", "from": "LG’s guide lists the aerial and satellite channels; Glasshouse Home’s lists the Internet TV channels added here. Info on the Internet TV row opens Glasshouse Home’s guide either way."},

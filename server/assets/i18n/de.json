@@ -669,7 +669,6 @@
  "home.tv.rowFailed": {"text": "{name} nicht erreichbar", "from": "Couldn’t reach {name}"},
  "home.tv.rowUpdating": {"text": "Wird aktualisiert", "from": "Updating"},
  "home.tv.rowFrom": {"text": "{n} von {name} hinzugefügt", "from": "{n} added from {name}"},
- "home.tv.guideDesc": {"text": "Was jetzt und später läuft", "from": "What is on now and later"},
  "home.tv.addDesc": {"text": "Aus der Wiedergabeliste", "from": "From your playlist"},
  "home.tv.addArrange": {"text": "Sender hinzufügen: OK öffnet die Liste", "from": "Add channels: OK opens the list"},
  "home.tv.via": {"text": "Internet-TV, {group}: {title}", "from": "Internet TV, {group}: {title}"},
