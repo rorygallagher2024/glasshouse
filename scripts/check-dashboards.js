@@ -1588,19 +1588,28 @@ async function visitHomeColours(browser, base, problems) {
   await page.route('**/api/home/**', route => {
     const pathname = new URL(route.request().url()).pathname;
     const body = pathname === '/api/home/catalogue'
-      ? { ok: true, layout, layoutVersion: String(version), apps: [], devices: [], channels: [],
-          sources: { channels: 0 }, order: { app: ['lg-home'], dev: [], ch: [] } }
+      ? { ok: true, layout, layoutVersion: String(version), apps: [{ id: 'netflix', title: 'Netflix' }], devices: [], channels: [],
+          sources: { channels: 0 }, order: { app: ['netflix', 'lg-home'], dev: [], ch: [] } }
       : { ok: true, build: 'one', layoutVersion: String(version) };
     return route.fulfill({ contentType: 'application/json', body: JSON.stringify(body) });
   });
   const rgb = hex => 'rgb(' + hex.slice(1).match(/../g).map(v => parseInt(v, 16)).join(', ') + ')';
-  async function check(text, accent) {
-    const actual = await page.evaluate(() => ({
-      text: getComputedStyle(document.getElementById('clock')).color,
-      focus: getComputedStyle(document.querySelector('.tile.focus')).outlineColor
-    }));
+  const rgba = (hex, a) => 'rgba(' + hex.slice(1).match(/../g).map(v => parseInt(v, 16)).join(', ') + ', ' + a + ')';
+  const shadeRgb = (hex, f, a) => 'rgba(' + hex.slice(1).match(/../g).map(v => Math.round(parseInt(v, 16) * f)).join(', ') + ', ' + a + ')';
+  async function check(text, accent, focusBg, idleBg) {
+    const actual = await page.evaluate(() => {
+      const tiles = document.querySelectorAll('.row .tile');
+      return {
+        text: getComputedStyle(document.getElementById('clock')).color,
+        focus: getComputedStyle(document.querySelector('.tile.focus')).outlineColor,
+        focusBg: getComputedStyle(document.querySelector('.tile.focus')).backgroundColor,
+        idleBg: tiles[1] ? getComputedStyle(tiles[1]).backgroundColor : null
+      };
+    });
     if (actual.text !== rgb(text)) problems.push('Home colours: text ' + text + ' rendered as ' + actual.text);
     if (actual.focus !== rgb(accent)) problems.push('Home colours: accent ' + accent + ' rendered as ' + actual.focus);
+    if (focusBg && actual.focusBg !== focusBg) problems.push('Home colours: tile focus bg expected ' + focusBg + ', got ' + actual.focusBg);
+    if (idleBg && actual.idleBg !== idleBg) problems.push('Home colours: tile idle bg expected ' + idleBg + ', got ' + actual.idleBg);
   }
   try {
     await page.clock.install();
@@ -1620,6 +1629,23 @@ async function visitHomeColours(browser, base, problems) {
       await page.waitForFunction(expected => getComputedStyle(document.getElementById('clock')).color === expected, rgb(text));
       await check(text, colours ? colours.accent : text);
     }
+    // Custom tile highlight fill applies in standard view, Alternative View, and resets to the view default.
+    layout.tileHighlight = '#1c4f82';
+    version++;
+    await page.clock.fastForward(5000);
+    await page.waitForFunction(expected => getComputedStyle(document.querySelector('.tile.focus')).backgroundColor === expected, rgba('#1c4f82', 0.86));
+    await check('#ece7df', '#ece7df', rgba('#1c4f82', 0.86));
+    layout.view = 'alternative';
+    layout.colours = { text: '#d4e6f4', accent: '#5fc4ee' };
+    version++;
+    await page.clock.fastForward(5000);
+    await page.waitForSelector('#stage.alternative .tile:not(.focus)');
+    await check('#d4e6f4', '#5fc4ee', rgba('#1c4f82', 0.86), shadeRgb('#1c4f82', 0.6, 0.45));
+    layout.tileHighlight = null;
+    version++;
+    await page.clock.fastForward(5000);
+    await page.waitForFunction(expected => getComputedStyle(document.querySelector('.tile.focus')).backgroundColor === expected, 'rgba(20, 19, 16, 0.86)');
+    await check('#d4e6f4', '#5fc4ee', 'rgba(20, 19, 16, 0.86)', 'rgba(12, 11, 10, 0.45)');
   } finally { await page.close(); }
 }
 

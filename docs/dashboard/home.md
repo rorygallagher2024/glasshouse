@@ -113,7 +113,7 @@ Preview cards at the top of the **Home** tab switch between five launcher option
 
     ---
 
-    Seven built-in colour presets (starting with **Pure white**), plus custom **Text** and **Accent** colour pickers. The accent colour highlights focused tiles and active sources.
+    Seven built-in colour presets (starting with **Pure white**), plus custom **Text**, **Accent** and **Tile highlight** colour pickers. The accent colour frames focused tiles and marks active sources; **Tile highlight** sets the fill behind focused tiles (and, in **Alternative View**, a shaded fill behind unfocused tiles) in place of the built-in charcoal fill, and can also be stepped through presets on the TV app.
 
 </div>
 

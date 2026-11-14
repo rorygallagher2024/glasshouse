@@ -477,7 +477,7 @@
  "home.ch.show": {"text": "Mostra i canali", "from": "Show channels"},
  "home.colours.accent": {"text": "Accento", "from": "Accent"},
  "home.colours.custom": {"text": "Personalizzato", "from": "Custom"},
- "home.colours.desc": {"text": "Il testo di Glasshouse Home, e il colore d'accento che incornicia il riquadro scelto e indica cosa era acceso per ultimo. Il testo secondario è una sfumatura del colore del testo.", "from": "The text on Glasshouse Home, and the accent that frames the chosen tile and marks what was last on. The quieter text is a shade of the text colour."},
+ "home.colours.desc": {"from": "The text on Glasshouse Home, the highlight behind the chosen tile, and the accent that frames it and marks what was last on. The quieter text is a shade of the text colour.", "text": "Il testo su Glasshouse Home, l’evidenziazione dietro il riquadro selezionato e l’accento che lo incornicia e indica l’ultima sorgente usata. Il testo secondario è una sfumatura del colore del testo."},
  "home.colours.glasshouse": {"text": "Glasshouse", "from": "Glasshouse"},
  "home.colours.ice": {"text": "Ghiaccio", "from": "Ice"},
  "home.colours.lilac": {"text": "Lilla", "from": "Lilac"},
@@ -3299,5 +3299,14 @@
  "compat.copyFailed": {"text": "Impossibile copiare", "from": "Could not copy"},
  "home.appNameLabel": {"text": "Nome dell’app", "from": "App name"},
  "home.showAppLabels": {"text": "Nomi delle app", "from": "App labels"},
- "home.showAppLabelsDesc": {"text": "Sotto ogni icona app su Glasshouse Home e Glasshouse Bar. Disattivo lascia solo le icone.", "from": "Under each app icon on Glasshouse Home and Glasshouse Bar. Off leaves the icons on their own."}
+ "home.showAppLabelsDesc": {"text": "Sotto ogni icona app su Glasshouse Home e Glasshouse Bar. Disattivo lascia solo le icone.", "from": "Under each app icon on Glasshouse Home and Glasshouse Bar. Off leaves the icons on their own."},
+ "home.colours.highlight": {"from": "Tile highlight", "text": "Evidenziazione riquadro"},
+ "home.colours.highlightHint": {"from": "The fill colour behind the focused tile on Glasshouse Home. Any colour can be picked on the browser dashboard’s Home tab.", "text": "Il colore di riempimento dietro il riquadro a fuoco su Glasshouse Home. Qualsiasi colore può essere scelto nella scheda Home della dashboard nel browser."},
+ "home.highlight.default": {"from": "Default", "text": "Predefinito"},
+ "home.highlight.charcoal": {"from": "Charcoal", "text": "Antracite"},
+ "home.highlight.slate": {"from": "Slate", "text": "Ardesia"},
+ "home.highlight.navy": {"from": "Navy", "text": "Blu notte"},
+ "home.highlight.forest": {"from": "Forest", "text": "Verde bosco"},
+ "home.highlight.wine": {"from": "Wine", "text": "Bordeaux"},
+ "home.highlight.plum": {"from": "Plum", "text": "Prugna"}
 }

@@ -1345,6 +1345,24 @@ function glasshouseHomeRows(d) {
                press: t('tv.home.colours.press', 'Press OK for {name}', { name: lookNames[nextLook.id] || nextLook.id }),
                hint: t('home.colours.tvHint', 'The text and accent on Glasshouse Home. Any colour can be picked on the browser dashboard’s Home tab.') });
     }
+    var hlPresets = d.highlightPresets || [];
+    if (hlPresets.length) {
+      var hlCur = d.layout.tileHighlight || null, hlAt = -1;
+      for (var hi = 0; hi < hlPresets.length; hi++) {
+        if (hlPresets[hi].colour === hlCur) hlAt = hi;
+      }
+      var hlNames = { 'default': t('home.highlight.default', 'Default'), charcoal: t('home.highlight.charcoal', 'Charcoal'),
+                      slate: t('home.highlight.slate', 'Slate'), navy: t('home.highlight.navy', 'Navy'),
+                      forest: t('home.highlight.forest', 'Forest'), wine: t('home.highlight.wine', 'Wine'),
+                      plum: t('home.highlight.plum', 'Plum') };
+      var hlNext = hlPresets[(hlAt + 1) % hlPresets.length];
+      r.push({ label: t('home.colours.highlight', 'Tile highlight'),
+               value: hlAt === -1 ? t('home.colours.custom', 'Custom') : hlNames[hlPresets[hlAt].id] || hlPresets[hlAt].id,
+               cls: 'act',
+               act: can ? 'homeHighlight' : null, key: hlNext.colour,
+               press: t('tv.home.colours.press', 'Press OK for {name}', { name: hlNames[hlNext.id] || hlNext.id }),
+               hint: t('home.colours.highlightHint', 'The fill colour behind the focused tile on Glasshouse Home. Any colour can be picked on the browser dashboard’s Home tab.') });
+    }
     // OK steps down from full to off; the browser dashboard's slider sets any 5% step.
     var dark = typeof d.layout.darkening === 'number' ? d.layout.darkening : 100;
     var darkNext = dark > 75 ? 75 : dark > 50 ? 50 : dark > 25 ? 25 : dark > 0 ? 0 : 100;
@@ -3590,6 +3608,8 @@ function activate() {
     case 'homeColours':
       // The view's own look is saved as none chosen.
       return homeLayout({ colours: r.key.own ? null : { text: r.key.text, accent: r.key.accent } });
+    case 'homeHighlight':
+      return homeLayout({ tileHighlight: r.key });
     case 'homeOpen':
       // webOS 3 to 6 run it as an app of its own, beside LG's Home (#1454).
       return send({ action: 'launchApp', value: homeData && homeData.supported && homeData.supported.standalone ? 'com.tvweb.home' : 'com.webos.app.home' });

@@ -1809,8 +1809,8 @@ button.hm-card.warn .hm-name{color:var(--cand)}
 .hm-gh-row{display:flex;gap:3.5px}
 .hm-gh-tile{width:23px;height:13px;border-radius:2.5px;background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.08);
   display:grid;place-items:center;overflow:hidden;flex:none}
-.hm-s-gh.alt .hm-gh-tile{border-radius:4.5px;background:rgba(255,255,255,.15)}
-.hm-gh-tile.focus{border-color:var(--look-accent,#e9ad55);box-shadow:0 0 0 1px var(--look-accent,#e9ad55)}
+.hm-s-gh.alt .hm-gh-tile{border-radius:4.5px;background:color-mix(in srgb,var(--look-highlight,#141310) 60%,rgba(0,0,0,.55))}
+.hm-gh-tile.focus{background:var(--look-highlight,#141310);border-color:var(--look-accent,#e9ad55);box-shadow:0 0 0 1px var(--look-accent,#e9ad55)}
 .hm-gh-tile img{width:9px;height:9px;object-fit:contain;border-radius:1.5px}
 .hm-gh-glyph{width:7px;height:7px;border-radius:1.5px;background:rgba(255,255,255,.35)}
 .hm-gh-tile.inp{height:10px;opacity:.7}

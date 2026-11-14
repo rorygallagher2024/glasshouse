@@ -416,7 +416,7 @@
  "home.ch.show": {"text": "Csatornák megjelenítése", "from": "Show channels"},
  "home.colours.accent": {"text": "Kiemelőszín", "from": "Accent"},
  "home.colours.custom": {"text": "Egyéni", "from": "Custom"},
- "home.colours.desc": {"text": "A Glasshouse Home szövegszíne és kiemelőszíne. A kiemelőszín keretezi a kiválasztott csempét, és jelöli a legutóbb nézett tartalmat. A halványabb szövegek a szövegszín egy árnyalatát használják.", "from": "The text on Glasshouse Home, and the accent that frames the chosen tile and marks what was last on. The quieter text is a shade of the text colour."},
+ "home.colours.desc": {"from": "The text on Glasshouse Home, the highlight behind the chosen tile, and the accent that frames it and marks what was last on. The quieter text is a shade of the text colour.", "text": "A Glasshouse Home szövegszíne, a kiválasztott csempe mögötti kiemelés színe, valamint a keretezésre és a legutóbb nézett tartalom jelölésére szolgáló kiemelőszín. A halványabb szövegek a szövegszín egy árnyalatát használják."},
  "home.colours.glasshouse": {"text": "Glasshouse", "from": "Glasshouse"},
  "home.colours.ice": {"text": "Jég", "from": "Ice"},
  "home.colours.lilac": {"text": "Lila", "from": "Lilac"},
@@ -3299,5 +3299,14 @@
  "compat.copyFailed": {"text": "Nem sikerült másolni", "from": "Could not copy"},
  "home.appNameLabel": {"text": "Alkalmazás neve", "from": "App name"},
  "home.showAppLabels": {"text": "Alkalmazásnevek", "from": "App labels"},
- "home.showAppLabelsDesc": {"text": "Minden alkalmazás ikonja alatt a Glasshouse Home-on és a Glasshouse Bar-on. Kikapcsolva csak az ikonok maradnak.", "from": "Under each app icon on Glasshouse Home and Glasshouse Bar. Off leaves the icons on their own."}
+ "home.showAppLabelsDesc": {"text": "Minden alkalmazás ikonja alatt a Glasshouse Home-on és a Glasshouse Bar-on. Kikapcsolva csak az ikonok maradnak.", "from": "Under each app icon on Glasshouse Home and Glasshouse Bar. Off leaves the icons on their own."},
+ "home.colours.highlight": {"from": "Tile highlight", "text": "Csempe kiemelése"},
+ "home.colours.highlightHint": {"from": "The fill colour behind the focused tile on Glasshouse Home. Any colour can be picked on the browser dashboard’s Home tab.", "text": "A kijelölt csempe mögötti kitöltőszín a Glasshouse Home felületén. A böngészős vezérlőpult Home fülén bármilyen szín kiválasztható."},
+ "home.highlight.default": {"from": "Default", "text": "Alapértelmezett"},
+ "home.highlight.charcoal": {"from": "Charcoal", "text": "Faszén"},
+ "home.highlight.slate": {"from": "Slate", "text": "Pala"},
+ "home.highlight.navy": {"from": "Navy", "text": "Tengerkék"},
+ "home.highlight.forest": {"from": "Forest", "text": "Erdőzöld"},
+ "home.highlight.wine": {"from": "Wine", "text": "Bordó"},
+ "home.highlight.plum": {"from": "Plum", "text": "Szilva"}
 }

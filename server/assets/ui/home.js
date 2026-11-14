@@ -146,6 +146,7 @@ function renderLauncherPreview(kind, st) {
     const presets = (st && st.colourPresets) || [];
     const c = (homeLayout && homeLayout.colours) || homeOwnLook(presets) || { text: '#ece7df', accent: '#e9ad55' };
     const alt = !!(homeLayout && homeLayout.view === 'alternative');
+    const hl = (homeLayout && homeLayout.tileHighlight) || homeHighlightDefault();
     const bottom = !!(homeLayout && homeLayout.rowsBottom);
     const preview = !!(homeLayout && homeLayout.livePreview);
     const showClock = !homeLayout || homeLayout.showClock !== false;
@@ -158,7 +159,7 @@ function renderLauncherPreview(kind, st) {
         : `<span class="${cls}"><i class="hm-gh-glyph"></i></span>`;
     }).join('');
     const inputs = [0, 1, 2].map(() => `<span class="hm-gh-tile inp"><i></i></span>`).join('');
-    return `<span class="hm-s hm-s-gh${alt ? ' alt' : ''}${bottom ? ' bottom' : ''}" style="--look-text:${c.text};--look-accent:${c.accent}">
+    return `<span class="hm-s hm-s-gh${alt ? ' alt' : ''}${bottom ? ' bottom' : ''}" style="--look-text:${c.text};--look-accent:${c.accent};--look-highlight:${hl}">
       <span class="hm-gh-head">
         ${showClock ? `<span class="hm-gh-clock">${clock}</span>` : '<span></span>'}
         ${preview ? `<span class="hm-gh-pip"><i></i></span>` : ''}
@@ -474,6 +475,11 @@ function homeLookNow() {
   return presets.find(p => p.text === c.text && p.accent === c.accent) || null;
 }
 
+// The view's built-in tile highlight colour when none is chosen.
+function homeHighlightDefault() {
+  return '#141310';
+}
+
 // Each preset as a small Glasshouse Home: the clock in its text, a row's name in the quieter shade, the accent's mark.
 function renderHomeColours() {
   const box = q('home-looks');
@@ -493,13 +499,16 @@ function renderHomeColours() {
       <span class="home-look-name">${esc(names[p.id] || p.id)}</span>
     </button>`).join('');
   const c = (homeLayout && homeLayout.colours) || homeOwnLook(presets) || { text: '#ece7df', accent: '#e9ad55' };
-  const text = q('home-col-text'), accent = q('home-col-accent');
+  const text = q('home-col-text'), accent = q('home-col-accent'), hl = q('home-col-highlight');
   if (text && document.activeElement !== text) text.value = c.text;
   if (accent && document.activeElement !== accent) accent.value = c.accent;
-  [text, accent].forEach(el => { if (el) el.disabled = !can; });
+  const hlNow = (homeLayout && homeLayout.tileHighlight) || homeHighlightDefault();
+  if (hl && document.activeElement !== hl) hl.value = hlNow;
+  [text, accent, hl].forEach(el => { if (el) el.disabled = !can; });
   const reset = q('home-col-reset');
   const fresh = homeDefaultLook(), cur = homeLayout && homeLayout.colours;
-  if (reset) reset.disabled = !can || !!(cur && cur.text === fresh.text && cur.accent === fresh.accent);
+  const hasHl = !!(homeLayout && homeLayout.tileHighlight);
+  if (reset) reset.disabled = !can || (!hasHl && !!(cur && cur.text === fresh.text && cur.accent === fresh.accent));
 }
 
 // The animated background's colour presets, each as a small screen with a
@@ -542,6 +551,10 @@ function homeAnimCustom() {
 
 function homeCustomColours() {
   homeSaveLayout({ colours: { text: q('home-col-text').value, accent: q('home-col-accent').value } });
+}
+
+function homeCustomHighlight() {
+  homeSaveLayout({ tileHighlight: q('home-col-highlight').value });
 }
 
 function homeItem(kind, id) {

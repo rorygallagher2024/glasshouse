@@ -1586,12 +1586,13 @@
   <div id="home-tv"></div>
 
   <div class="pv-g" data-t="home.colours.title">Colours</div>
-  <div class="sub" data-t="home.colours.desc">The text on Glasshouse Home, and the accent that frames the chosen tile and marks what was last on. The quieter text is a shade of the text colour.</div>
+  <div class="sub" data-t="home.colours.desc">The text on Glasshouse Home, the highlight behind the chosen tile, and the accent that frames it and marks what was last on. The quieter text is a shade of the text colour.</div>
   <div class="home-looks" id="home-looks"></div>
   <div class="home-custom">
     <label><input type="color" id="home-col-text" onchange="homeCustomColours()"> <span data-t="home.colours.text">Text</span></label>
     <label><input type="color" id="home-col-accent" onchange="homeCustomColours()"> <span data-t="home.colours.accent">Accent</span></label>
-    <button type="button" id="home-col-reset" onclick="homeSaveLayout({ colours: homeDefaultLook() })" data-t="home.colours.reset">Use the default colours</button>
+    <label><input type="color" id="home-col-highlight" onchange="homeCustomHighlight()"> <span data-t="home.colours.highlight">Tile highlight</span></label>
+    <button type="button" id="home-col-reset" onclick="homeSaveLayout({ colours: homeDefaultLook(), tileHighlight: null })" data-t="home.colours.reset">Use the default colours</button>
   </div>
 
   <div class="pv-g" data-t="home.bg.title">Background</div>

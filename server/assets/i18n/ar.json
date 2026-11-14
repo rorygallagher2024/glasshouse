@@ -458,7 +458,7 @@
  "home.ch.show": {"text": "إظهار القنوات", "from": "Show channels"},
  "home.colours.accent": {"text": "اللون المميز (Accent)", "from": "Accent"},
  "home.colours.custom": {"text": "مخصص", "from": "Custom"},
- "home.colours.desc": {"text": "لون النص في واجهة Glasshouse الرئيسية، واللون المميز الذي يحيط بالأيقونة المحددة ويميز آخر ما كان مشغلاً.", "from": "The text on Glasshouse Home, and the accent that frames the chosen tile and marks what was last on. The quieter text is a shade of the text colour."},
+ "home.colours.desc": {"from": "The text on Glasshouse Home, the highlight behind the chosen tile, and the accent that frames it and marks what was last on. The quieter text is a shade of the text colour.", "text": "لون النص في Glasshouse Home، والتظليل خلف الأيقونة المحددة، واللون المميز الذي يحيط بها ويميز آخر ما كان مشغلاً. النص الأهدأ هو درجة أغمق من لون النص."},
  "home.colours.glasshouse": {"text": "Glasshouse الافتراضي", "from": "Glasshouse"},
  "home.colours.ice": {"text": "ثلجي", "from": "Ice"},
  "home.colours.lilac": {"text": "أرجواني فاتح", "from": "Lilac"},
@@ -3285,5 +3285,14 @@
  "compat.copyFailed": {"text": "تعذّر النسخ", "from": "Could not copy"},
  "home.appNameLabel": {"text": "اسم التطبيق", "from": "App name"},
  "home.showAppLabels": {"text": "تسميات التطبيقات", "from": "App labels"},
- "home.showAppLabelsDesc": {"text": "تحت كل أيقونة تطبيق في واجهة Glasshouse الرئيسية وGlasshouse Bar. إيقافها يترك الأيقونات وحدها.", "from": "Under each app icon on Glasshouse Home and Glasshouse Bar. Off leaves the icons on their own."}
+ "home.showAppLabelsDesc": {"text": "تحت كل أيقونة تطبيق في واجهة Glasshouse الرئيسية وGlasshouse Bar. إيقافها يترك الأيقونات وحدها.", "from": "Under each app icon on Glasshouse Home and Glasshouse Bar. Off leaves the icons on their own."},
+ "home.colours.highlight": {"from": "Tile highlight", "text": "تظليل الأيقونة"},
+ "home.colours.highlightHint": {"from": "The fill colour behind the focused tile on Glasshouse Home. Any colour can be picked on the browser dashboard’s Home tab.", "text": "لون التعبئة خلف الأيقونة المحددة في Glasshouse Home. يمكن اختيار أي لون من تبويب الرئيسية في لوحة التحكم على المتصفح."},
+ "home.highlight.default": {"from": "Default", "text": "الافتراضي"},
+ "home.highlight.charcoal": {"from": "Charcoal", "text": "فحمي"},
+ "home.highlight.slate": {"from": "Slate", "text": "رمادي أردوازي"},
+ "home.highlight.navy": {"from": "Navy", "text": "كحلي"},
+ "home.highlight.forest": {"from": "Forest", "text": "أخضر غامق"},
+ "home.highlight.wine": {"from": "Wine", "text": "عنابي"},
+ "home.highlight.plum": {"from": "Plum", "text": "برقوقي"}
 }
