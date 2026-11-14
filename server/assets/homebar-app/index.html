@@ -18,14 +18,20 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
 .on #shade,.on #bar{-webkit-transition:none;transition:none}
 #clock{position:absolute;right:96px;bottom:312px;font-size:40px;font-weight:300;opacity:0;text-shadow:0 2px 12px rgba(0,0,0,.6)}
 .on #clock{opacity:1}
-#row{position:absolute;left:96px;top:18px;white-space:nowrap;font-size:0;
-  -webkit-transition:-webkit-transform .16s ease-out;transition:transform .16s ease-out}
-/* The tile in focus light and ringed, the rest dimmed. */
+/*
+ * Moving is drawn by the compositor alone: the row slides and the tile in
+ * focus scales, each on a layer of its own. Nothing that has to be painted
+ * again (a shadow, a blur, opacity over the picture) changes as it moves,
+ * which on a C2 (webOS 9.2.2) made each step visibly slower.
+ */
+#row{position:absolute;left:96px;top:18px;white-space:nowrap;font-size:0;will-change:transform;
+  -webkit-transition:-webkit-transform .12s ease-out;transition:transform .12s ease-out}
+/* Opaque, so a bright picture behind never shows through or hides a name. */
 .tile{display:inline-block;vertical-align:top;position:relative;width:180px;height:200px;margin-right:24px;padding-top:22px;border-radius:24px;
-  text-align:center;background:rgba(34,34,34,.92);color:#fff;opacity:.8;box-shadow:0 0 0 2px rgba(255,255,255,.12),0 10px 30px rgba(0,0,0,.45);
-  -webkit-transition:opacity .12s,-webkit-transform .12s,box-shadow .12s;transition:opacity .12s,transform .12s,box-shadow .12s}
+  text-align:center;background:#1e1e1e;color:#c8c8c8;border:2px solid #2e2e2e;will-change:transform;
+  -webkit-transition:-webkit-transform .1s ease-out;transition:transform .1s ease-out}
 .tile.input{width:300px;padding:0 22px;text-align:left}
-.tile.focus{opacity:1;background:#fff;color:#111;-webkit-transform:scale(1.07);transform:scale(1.07);box-shadow:0 0 0 5px #fff,0 14px 40px rgba(0,0,0,.6)}
+.tile.focus{background:#fff;color:#111;border-color:#fff;-webkit-transform:scale(1.07);transform:scale(1.07)}
 .ico{display:block;width:112px;height:112px;margin:0 auto 14px;border-radius:20px;background:#333 center/contain no-repeat}
 .ico.letter{line-height:112px;font-size:52px;font-weight:600;color:#fff;background:#3a3a3a}
 .nm{font-size:24px;padding:0 12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -34,7 +40,7 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
 .dico svg{display:block;width:100%;height:100%}
 .txt{-webkit-flex:1 1 auto;flex:1 1 auto;min-width:0}
 .input .nm{padding:0;font-size:27px}
-.path{font-size:19px;color:#9e9e9e;margin-top:6px;white-space:nowrap}
+.path{font-size:19px;color:#8a8a8a;margin-top:6px;white-space:nowrap}
 .focus .path{color:#555}
 /* Between the apps and the inputs. */
 .gap{display:inline-block;width:24px}
@@ -194,14 +200,17 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
     if (right > room) shift = right - room + 24;
     $('row').style.webkitTransform = $('row').style.transform = 'translateX(' + (-shift) + 'px)';
   }
+  // Only the tile left and the tile reached change, so the rest are not styled again.
   function setFocus(i) {
     if (!list.length) return;
-    focus = Math.max(0, Math.min(list.length - 1, i));
-    var tiles = $('row').querySelectorAll('.tile');
-    for (var k = 0; k < tiles.length; k++) {
-      var j = +tiles[k].getAttribute('data-i');
-      tiles[k].className = tiles[k].className.replace(/ focus/g, '') + (j === focus ? ' focus' : '');
-    }
+    var next = Math.max(0, Math.min(list.length - 1, i));
+    if (next === focus && moved) return;
+    var row = $('row');
+    var was = row.querySelector('[data-i="' + focus + '"]');
+    if (was) was.className = was.className.replace(/ focus/g, '');
+    focus = next;
+    var now = row.querySelector('[data-i="' + focus + '"]');
+    if (now && now.className.indexOf(' focus') === -1) now.className += ' focus';
     moved = true;
     scrollTo();
   }

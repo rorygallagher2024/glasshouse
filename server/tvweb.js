@@ -1199,6 +1199,9 @@ if (CLI_MODE) {
       // One at a time: the installer takes one job.
       tvApp('refresh', function (r2) {
         if (r2 && r2.refreshed && r2.ok) console.log('homebar: app refreshed to current release');
+        // A reinstall closes the copy kept loaded, so it is loaded again now
+        // rather than at the first press.
+        homebar.poke();
       }, 'homebar-app');
     }, 'inputbar-app');
   });
