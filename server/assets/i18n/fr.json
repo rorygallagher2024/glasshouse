@@ -876,7 +876,7 @@
  "home.tv.groupCount": {"from": "{n} channels", "text": "{n} chaînes"},
  "home.tv.groupsAll": {"from": "{n} groups, {channels} live channels", "text": "{n} groupes, {channels} chaînes en direct"},
  "home.tv.groupsSome": {"from": "{n} groups; type to search them all", "text": "{n} groupes ; tapez pour les chercher tous"},
- "home.tv.guide": {"from": "Guide", "text": "Guide"},
+ "home.tv.guide": {"text": "Guide IPTV", "from": "IPTV Guide"},
  "home.tv.guideAll": {"from": "All", "text": "Toutes"},
  "home.tv.guideAt": {"from": "guide updated {when}", "text": "guide mis à jour {when}"},
  "home.tv.guideFavourites": {"from": "Favourites", "text": "Favoris"},

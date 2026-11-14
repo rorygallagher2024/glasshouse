@@ -243,11 +243,11 @@ When opening a channel from the Internet TV row or live preview, playback opens 
 
 ### Electronic Programme Guide (EPG)
 
-Whenever the lineup contains channels, a **Guide** tile remains accessible on the Internet TV row (even if no channels are currently starred):
+Whenever the lineup contains channels, an **IPTV Guide** tile remains accessible on the Internet TV row (even if no channels are currently starred):
 
 ![The guide on a G3](../screenshots/iptv-home-guide.jpg)
 
-* **EPG grid view:** Selecting **Guide** (or pressing **Info** while on the Internet TV row) displays a 2.5-hour programme timeline starting 30 minutes before the current time, marked with an amber vertical line at the current time.
+* **EPG grid view:** Selecting **IPTV Guide** (or pressing **Info** while on the Internet TV row) displays a 2.5-hour programme timeline starting 30 minutes before the current time, marked with an amber vertical line at the current time.
 * **Navigation:**
     * **Up / Down:** Moves through channels at the current time slot.
     * **Left / Right:** Scrolls horizontally through time (from 2 hours in the past up to 24 hours ahead).

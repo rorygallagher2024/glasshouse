@@ -2650,7 +2650,7 @@
  "home.tv.groupCount": {"text": "{n} csatorna", "from": "{n} channels"},
  "home.tv.groupsAll": {"text": "{n} csoport, {channels} élő csatorna", "from": "{n} groups, {channels} live channels"},
  "home.tv.groupsSome": {"text": "{n} csoport; gépeljen az összesben való kereséshez", "from": "{n} groups; type to search them all"},
- "home.tv.guide": {"text": "Műsorújság", "from": "Guide"},
+ "home.tv.guide": {"text": "IPTV-műsorújság", "from": "IPTV Guide"},
  "home.tv.guideAll": {"text": "Összes", "from": "All"},
  "home.tv.guideAt": {"text": "műsorújság frissítve: {when}", "from": "guide updated {when}"},
  "home.tv.guideFavourites": {"text": "Kedvencek", "from": "Favourites"},

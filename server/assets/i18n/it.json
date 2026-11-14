@@ -2682,7 +2682,7 @@
  "home.tv.groupCount": {"text": "{n} canali", "from": "{n} channels"},
  "home.tv.groupsAll": {"text": "{n} gruppi, {channels} canali in diretta", "from": "{n} groups, {channels} live channels"},
  "home.tv.groupsSome": {"text": "{n} gruppi; digita per cercare in tutti", "from": "{n} groups; type to search them all"},
- "home.tv.guide": {"text": "Guida", "from": "Guide"},
+ "home.tv.guide": {"text": "Guida IPTV", "from": "IPTV Guide"},
  "home.tv.guideAll": {"text": "Tutti", "from": "All"},
  "home.tv.guideAt": {"text": "guida aggiornata {when}", "from": "guide updated {when}"},
  "home.tv.guideFavourites": {"text": "Preferiti", "from": "Favourites"},

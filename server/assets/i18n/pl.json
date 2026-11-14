@@ -2650,7 +2650,7 @@
  "home.tv.groupCount": {"text": "Kanały: {n}", "from": "{n} channels"},
  "home.tv.groupsAll": {"text": "Grupy: {n}, kanały na żywo: {channels}", "from": "{n} groups, {channels} live channels"},
  "home.tv.groupsSome": {"text": "Grupy: {n}; zacznij pisać, aby przeszukać wszystkie", "from": "{n} groups; type to search them all"},
- "home.tv.guide": {"text": "Program TV", "from": "Guide"},
+ "home.tv.guide": {"text": "Przewodnik IPTV", "from": "IPTV Guide"},
  "home.tv.guideAll": {"text": "Wszystkie", "from": "All"},
  "home.tv.guideAt": {"text": "program TV zaktualizowano {when}", "from": "guide updated {when}"},
  "home.tv.guideFavourites": {"text": "Ulubione", "from": "Favourites"},

@@ -663,7 +663,7 @@
  "home.search.placeholder": {"text": "Film oder Serie", "from": "Film or series"},
  "home.tv.addTitle": {"text": "Sender hinzufügen", "from": "Add channels"},
  "home.tv.find": {"text": "Sender suchen", "from": "Find a channel"},
- "home.tv.guide": {"text": "Programmführer", "from": "Guide"},
+ "home.tv.guide": {"text": "IPTV-Programmführer", "from": "IPTV Guide"},
  "home.tv.rowLogin": {"text": "{name} hat die Anmeldung abgelehnt: im Dashboard prüfen", "from": "{name} refused the login: check it on the dashboard"},
  "home.tv.rowFailedSince": {"text": "{name} nicht erreichbar, Liste vom {date} wird angezeigt", "from": "Couldn’t reach {name}, showing the list from {date}"},
  "home.tv.rowFailed": {"text": "{name} nicht erreichbar", "from": "Couldn’t reach {name}"},

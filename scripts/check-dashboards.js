@@ -3167,7 +3167,7 @@ async function visitHomeInternetTv(browser, base, problems) {
     await page.goto(base + '/assets/home.html');
     await page.waitForSelector('.row[data-key="iptv"] .tile');
     const names = await page.locator('.row[data-key="iptv"] .tile .nm').allTextContents();
-    if (names[0] !== 'BBC News' || names[2] !== 'Guide') fail('row names ' + JSON.stringify(names));
+    if (names[0] !== 'BBC News' || names[2] !== 'IPTV Guide') fail('row names ' + JSON.stringify(names));
     await page.waitForFunction(() => window.played.includes('http://s.test/x1.m3u8'));
     if (streams[0] !== 'x1' || !(await page.evaluate(() => window.played)).includes('http://s.test/x1.m3u8')) fail('the focused channel was not previewed');
     if (!await waitUntil(page, () => leases.some(l => l.on === true && l.full === false))) fail('no lease while previewing');
@@ -3288,7 +3288,7 @@ async function visitHomeInternetTv(browser, base, problems) {
     await page.goto(base + '/assets/home.html');
     await loaded;
     await page.waitForSelector('.row[data-key="iptv"] .tile');
-    if (await page.locator('.row[data-key="iptv"] .tile .nm').first().textContent() !== 'Guide') fail('a lineup without favourites has no Guide tile');
+    if (await page.locator('.row[data-key="iptv"] .tile .nm').first().textContent() !== 'IPTV Guide') fail('a lineup without favourites has no IPTV Guide tile');
     await key(13);
     await page.waitForSelector('#stage.guiding .gr');
     await key(13);
