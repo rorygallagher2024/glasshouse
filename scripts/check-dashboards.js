@@ -986,14 +986,52 @@ async function visitHomeVisibility(browser, base, problems) {
     hidden: { app: [], dev: [], ch: [] }, channels: [], hintSeen: true,
     showLastOn: false, showAppCount: false, showCec: false };
   let version = 1, releaseCatalogue = null;
+  const zlib = require('zlib');
+  const crc32 = buf => {
+    let c = 0xffffffff;
+    for (let i = 0; i < buf.length; i++) {
+      c ^= buf[i];
+      for (let k = 0; k < 8; k++) c = (c >>> 1) ^ (c & 1 ? 0xedb88320 : 0);
+    }
+    return (c ^ 0xffffffff) >>> 0;
+  };
+  const chunk = (type, data) => {
+    const b = Buffer.alloc(12 + data.length);
+    b.writeUInt32BE(data.length, 0); b.write(type, 4, 4, 'ascii');
+    data.copy(b, 8); b.writeUInt32BE(crc32(b.subarray(4, 8 + data.length)), 8 + data.length);
+    return b;
+  };
+  const iconPng = (r, g, b, transBg) => {
+    const ihdr = Buffer.alloc(13);
+    ihdr.writeUInt32BE(24, 0); ihdr.writeUInt32BE(24, 4); ihdr[8] = 8; ihdr[9] = 6;
+    const raw = Buffer.alloc(24 * (1 + 24 * 4));
+    for (let y = 0; y < 24; y++) {
+      const row = y * 97;
+      for (let x = 0; x < 24; x++) {
+        const inside = !transBg || (x >= 8 && x < 16 && y >= 8 && y < 16);
+        const o = row + 1 + x * 4;
+        raw[o] = r; raw[o + 1] = g; raw[o + 2] = b; raw[o + 3] = inside ? 255 : 0;
+      }
+    }
+    return Buffer.concat([Buffer.from('89504e470d0a1a0a', 'hex'), chunk('IHDR', ihdr),
+      chunk('IDAT', zlib.deflateSync(raw)), chunk('IEND', Buffer.alloc(0))]);
+  };
+  const darkTransPng = iconPng(0, 0, 0, true), brightPng = iconPng(255, 255, 255, false);
   const reply = (route, body) => route.fulfill({ contentType: 'application/json', body: JSON.stringify(body) });
   await page.route('**/api/home/**', route => {
-    const pathname = new URL(route.request().url()).pathname;
+    const url = new URL(route.request().url());
+    const pathname = url.pathname;
+    if (pathname === '/api/home/icon') {
+      const body = url.searchParams.get('id') === 'airplay' ? darkTransPng : brightPng;
+      return route.fulfill({ contentType: 'image/png', body });
+    }
     if (pathname === '/api/home/now') return reply(route, { kind: 'input', port: 1, title: 'Player' });
     if (pathname === '/api/home/catalogue') {
-      const body = { ok: true, layout, layoutVersion: String(version), apps: [],
+      const body = { ok: true, layout, layoutVersion: String(version),
+        apps: [{ id: 'airplay', title: 'AirPlay', icon: '/api/home/icon?id=airplay' },
+          { id: 'opaque', title: 'Opaque', icon: '/api/home/icon?id=opaque' }],
         devices: [{ id: 'player', name: 'Player', port: 1, address: '1.0.0.0' }], channels: [],
-        sources: { channels: 0 }, order: { app: ['lg-home'], dev: ['player'], ch: [] } };
+        sources: { channels: 0 }, order: { app: ['airplay', 'opaque', 'lg-home'], dev: ['player'], ch: [] } };
       const snapshot = JSON.parse(JSON.stringify(body));
       releaseCatalogue = () => reply(route, snapshot);
       return;
@@ -1080,6 +1118,14 @@ async function visitHomeVisibility(browser, base, problems) {
       titles: [].slice.call(document.querySelectorAll('.row > h2')).filter(h => h.offsetHeight).length
     }));
     if (!(alt.when > alt.source) || alt.titles) problems.push('Home visibility: Alternative View did not apply: ' + JSON.stringify(alt));
+    await page.waitForSelector('.tile.app img.dark-ico');
+    const iconBg = await page.evaluate(() => [].slice.call(document.querySelectorAll('.tile.app img')).map(i => ({
+      src: i.getAttribute('src'), dark: i.classList.contains('dark-ico'), bg: getComputedStyle(i).backgroundColor
+    })));
+    const ap = iconBg.find(i => i.src.includes('id=airplay')), op = iconBg.find(i => i.src.includes('id=opaque'));
+    if (!ap || !ap.dark || ap.bg !== 'rgb(236, 231, 223)' || !op || op.dark) {
+      problems.push('Home visibility: dark transparent icon check failed: ' + JSON.stringify(iconBg));
+    }
   } finally { await page.close(); }
 }
 

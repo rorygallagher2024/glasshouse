@@ -3622,7 +3622,10 @@ and filesystem do (#1369).
 
 LG's AirPlay app, `airplay`, has `"visible": false` in its appinfo, and on the C2
 no launch point at all, as on a B4 with webOS 10.3.2 (#1435); on a B8 with
-webOS 4.4.3 its tile is a bookmark that `airplay-adaptor` adds. Home Hub opens
+webOS 4.4.3 its tile is a bookmark that `airplay-adaptor` adds, and its
+`AirPlay_Icon-115x115.png` (8-bit gray+alpha) draws pure black (`0`) on a
+transparent background with `iconColor` and `bgColor` empty on its launch
+point. Home Hub opens
 it with `airplay.service/showAirplayPage`, which is in the public group. On the
 C2 that call and a plain `applicationManager/launch` of `airplay` open the same
 page: the Wi-Fi network, the TV's AirPlay name, How to Use AirPlay, and AirPlay
