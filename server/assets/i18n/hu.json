@@ -3289,5 +3289,6 @@
  "inputs.compat.untried": {"text": "Még senki nem jelezte, hogy a bemenetsáv működik webOS {version} alatt. Ha rosszul működik, állítsa vissza a Bemenet gombot az LG listájára.", "from": "The input bar has not yet been reported working on webOS {version}. If it misbehaves, set the Input key back to LG’s list."},
  "tv.compat.untried": {"text": "Még nem jelezték, hogy működik webOS {version} alatt. A webes vezérlőpult Kezdőlap lapján linkek vannak annak jelzésére, hogy hogyan működik.", "from": "Not yet reported working on webOS {version}. The Home tab of the web dashboard has links to report how it goes."},
  "compat.reportProblem": {"text": "Probléma jelzése", "from": "Report a problem"},
- "compat.reportWorks": {"text": "Jelezze, hogy működik", "from": "Tell us it works"}
+ "compat.reportWorks": {"text": "Jelezze, hogy működik", "from": "Tell us it works"},
+ "home.compat.untriedBoth": {"text": "Még senki nem jelezte, hogy a Glasshouse Home, a Minimal, az egyéni indítók és a Glasshouse Bar működnek webOS {version} alatt. Ha valamelyik rosszul működik, válassza az LG Home-ot, hogy minden visszaálljon.", "from": "Glasshouse Home, Minimal, custom launchers and Glasshouse Bar have not yet been reported working on webOS {version}. If one misbehaves, choose LG Home to put everything back."}
 }

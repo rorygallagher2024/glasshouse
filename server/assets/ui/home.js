@@ -777,24 +777,32 @@ function homeResetLayout() { homeSaveLayout({ reset: true }); }
  * with a note saying so and links to report how it went, pre-filled with the
  * TV's model and versions. Nothing is sent unless the issue is submitted.
  */
+// A warning with links to report how it went: `report` is one feature's
+// { problem, works }, or a list of { name, report } where the note covers several.
 function homeCompatNote(text, report) {
-  return `<div class="pv-note warn home-compat-note">${esc(text)}
-    <span class="home-compat-links"><a href="${esc(report.problem)}" target="_blank" rel="noopener">${esc(t('compat.reportProblem', 'Report a problem'))}</a>
-    &middot; <a href="${esc(report.works)}" target="_blank" rel="noopener">${esc(t('compat.reportWorks', 'Tell us it works'))}</a></span></div>`;
+  const links = (r) => `<a href="${esc(r.problem)}" target="_blank" rel="noopener">${esc(t('compat.reportProblem', 'Report a problem'))}</a>
+    &middot; <a href="${esc(r.works)}" target="_blank" rel="noopener">${esc(t('compat.reportWorks', 'Tell us it works'))}</a>`;
+  const rows = Array.isArray(report)
+    ? report.map((x) => `<span class="home-compat-links">${esc(x.name)}: ${links(x.report)}</span>`).join('')
+    : `<span class="home-compat-links">${links(report)}</span>`;
+  return `<div class="pv-note warn home-compat-note">${esc(text)}${rows}</div>`;
 }
 
 function renderHomeCompat(st) {
   const box = q('home-compat');
   if (!box) return;
   const v = (st.supported && st.supported.webos) || '?';
-  let html = '';
-  if (st.supported && st.supported.untried && st.supported.report) {
-    html += homeCompatNote(t('home.compat.untried', 'Glasshouse Home, Minimal and custom launchers have not yet been reported working on webOS {version}. If one misbehaves, choose LG Home to put everything back.', { version: v }), st.supported.report);
-  }
-  if (st.bar && st.bar.offered && st.bar.standing === 'untried' && st.bar.report) {
-    html += homeCompatNote(t('home.compat.untriedBar', 'Glasshouse Bar has not yet been reported working on webOS {version}. If it misbehaves, choose LG Home to put everything back.', { version: v }), st.bar.report);
-  }
-  box.innerHTML = html;
+  const home = !!(st.supported && st.supported.untried && st.supported.report);
+  const bar = !!(st.bar && st.bar.offered && st.bar.standing === 'untried' && st.bar.report);
+  // One note where both are untried, as on webOS 8, with each one's links.
+  box.innerHTML = home && bar
+    ? homeCompatNote(t('home.compat.untriedBoth', 'Glasshouse Home, Minimal, custom launchers and Glasshouse Bar have not yet been reported working on webOS {version}. If one misbehaves, choose LG Home to put everything back.', { version: v }),
+        [{ name: t('home.title', 'Glasshouse Home'), report: st.supported.report }, { name: t('home.bar.name', 'Glasshouse Bar'), report: st.bar.report }])
+    : home
+    ? homeCompatNote(t('home.compat.untried', 'Glasshouse Home, Minimal and custom launchers have not yet been reported working on webOS {version}. If one misbehaves, choose LG Home to put everything back.', { version: v }), st.supported.report)
+    : bar
+    ? homeCompatNote(t('home.compat.untriedBar', 'Glasshouse Bar has not yet been reported working on webOS {version}. If it misbehaves, choose LG Home to put everything back.', { version: (st.bar.webos || v) }), st.bar.report)
+    : '';
 }
 
 function homeBarOn() { return !!(homeStatus && homeStatus.bar && homeStatus.bar.enabled); }

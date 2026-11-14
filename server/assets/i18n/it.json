@@ -3289,5 +3289,6 @@
  "inputs.compat.untried": {"text": "Nessuno ha ancora segnalato che la barra degli ingressi funziona su webOS {version}. Se si comporta male, rimetti il tasto Ingresso sull’elenco di LG.", "from": "The input bar has not yet been reported working on webOS {version}. If it misbehaves, set the Input key back to LG’s list."},
  "tv.compat.untried": {"text": "Non ancora segnalato come funzionante su webOS {version}. La scheda Home della dashboard web ha i link per segnalare come va.", "from": "Not yet reported working on webOS {version}. The Home tab of the web dashboard has links to report how it goes."},
  "compat.reportProblem": {"text": "Segnala un problema", "from": "Report a problem"},
- "compat.reportWorks": {"text": "Dicci che funziona", "from": "Tell us it works"}
+ "compat.reportWorks": {"text": "Dicci che funziona", "from": "Tell us it works"},
+ "home.compat.untriedBoth": {"text": "Nessuno ha ancora segnalato che Glasshouse Home, Minimal, i launcher personalizzati e la Glasshouse Bar funzionano su webOS {version}. Se uno si comporta male, scegli LG Home per ripristinare tutto.", "from": "Glasshouse Home, Minimal, custom launchers and Glasshouse Bar have not yet been reported working on webOS {version}. If one misbehaves, choose LG Home to put everything back."}
 }
