@@ -369,9 +369,11 @@ change is merged.
 
 ## Releases
 
-Publishing a release runs [`homebrew-channel.yml`](https://github.com/rorygallagher2024/glasshouse/blob/main/.github/workflows/homebrew-channel.yml), which builds the `.ipk`,
-attaches it and the Homebrew Channel manifest to the release, and records the
-package's sha256 in the manifest.
+Publishing a release runs [`homebrew-channel.yml`](https://github.com/rorygallagher2024/glasshouse/blob/main/.github/workflows/homebrew-channel.yml), which checks
+that the tag matches `TVWEB_VERSION`, verifies the release notes have a plain
+summary above `## Details`, builds the `.ipk`, attaches it and the Homebrew
+Channel manifest to the release, and records the package's sha256 in the
+manifest.
 
 A release's notes open with a short summary for people using Glasshouse, one
 to three plain lines, then a `## Details` heading with the full notes and their
