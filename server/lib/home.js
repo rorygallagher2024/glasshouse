@@ -818,6 +818,7 @@ function layoutOf(c) {
  */
 var savedLists = null;
 var listsRevision = 0;
+var REDRAWN_LISTS = { dev: true, lp: true };
 var listLoading = {};
 
 function listsFile() { return path.join(stateDir, 'home-lists.json'); }
@@ -861,9 +862,11 @@ function cached(key, ttl, load, cb) {
     if (value) {
       var known = savedList(key) !== null;
       listCache[key] = { at: nowMs(), value: value };
-      // A list that changes after it was first read, as a port's tile when a
-      // CEC device appears on it, has the view draw its tiles again (#1462).
-      if (saveList(key, value) && known) listsRevision++;
+      // The inputs or apps changing after they were first read, as a port's
+      // tile when a CEC device appears on it, has the view draw its tiles
+      // again (#1462). Not the content cards or channels, whose changes would
+      // reload Home under someone browsing it.
+      if (saveList(key, value) && known && REDRAWN_LISTS[key]) listsRevision++;
     }
     cb(value);
   });
