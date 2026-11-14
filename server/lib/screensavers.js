@@ -1335,7 +1335,11 @@ function stageSaverFiles(e, level, choice) {
   var effEnts = effectiveFromSpecs(specs);
   var entityList = effectiveSaverEntityList(e);
   var mainSource = fs.readFileSync(path.join(e.dir, e.main), 'utf8');
-  if (e.runtime === 'web') fs.writeFileSync(path.join(SCREENSAVER_DIR, e.main), fillSaverWeb(e, mainSource, level));
+  if (e.runtime === 'web') {
+    var webMain = path.join(SCREENSAVER_DIR, e.main);
+    mkdirp(path.dirname(webMain));
+    fs.writeFileSync(webMain, fillSaverWeb(e, mainSource, level));
+  }
   else fs.writeFileSync(path.join(qmlDir, 'main.qml'), fillSaverQml(e, mainSource, level, choice, effEnts, entityList));
   fs.writeFileSync(path.join(SCREENSAVER_DIR, SCREENSAVER_LEVEL_MARKER), String(level));
   stagedEntities = mergeActiveEntities(activeSaverEntities(effEnts), entityList);
