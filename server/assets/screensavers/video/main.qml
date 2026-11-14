@@ -14,10 +14,10 @@ WebOSWindow {
 
     property int level: __TVWEB_LEVEL__
     property var playlist: __TVWEB_VIDEOS__
-    property bool hour12: __TVWEB_CLOCK12__
     property string weatherUrl: "__TVWEB_HOME_WEATHER__"
     property int current: 0
     property int videoRetries: 0
+    property bool playWhenLoaded: false
     property string caption: ""
     property string clockText: ""
     property string dateText: ""
@@ -25,6 +25,7 @@ WebOSWindow {
     property string weatherCondition: ""
     property string weatherTemp: ""
     property string playbackIssue: ""
+    property string videoFrameSize: ""
     readonly property color mainInk: "#ece7df"
     readonly property color quietInk: "#a39d93"
 
@@ -41,10 +42,7 @@ WebOSWindow {
 
     function updateClock() {
         var now = new Date(), hours = now.getHours(), minutes = pad(now.getMinutes());
-        var locale = Qt.locale();
-        clockText = hour12
-            ? (((hours + 11) % 12 + 1) + ":" + minutes + " " + (hours < 12 ? locale.amText : locale.pmText))
-            : (pad(hours) + ":" + minutes);
+        clockText = pad(hours) + ":" + minutes;
         dateText = Qt.formatDate(now, "dddd d MMMM");
     }
 
@@ -92,13 +90,26 @@ WebOSWindow {
         var item = playlist.items[current];
         caption = item.title || "";
         playbackIssue = "";
+        videoFrameSize = "";
         videoRetries = 0;
+        loadCurrentVideo();
+    }
+
+    function loadCurrentVideo() {
+        if (!playlist || !playlist.items || !playlist.items.length) return;
+        var item = playlist.items[current];
+        videoWatch.stop();
+        playWhenLoaded = true;
+        player.stop();
+        player.source = "";
         player.source = item.url;
-        player.play();
-        videoWatch.restart();
+        loadWatch.restart();
     }
 
     function retryVideo(reason) {
+        if (retryTimer.running) return;
+        loadWatch.stop();
+        videoWatch.stop();
         if (videoRetries >= 2) {
             playbackIssue = reason || player.errorString || ("Video did not start (player status " + player.status + ").");
             return;
@@ -138,20 +149,32 @@ WebOSWindow {
     }
 
     VideoOutput {
+        id: videoOutput
         anchors.fill: parent
         source: player
         fillMode: VideoOutput.PreserveAspectCrop
+        onSourceRectChanged: {
+            if (sourceRect.width > 0 && sourceRect.height > 0) {
+                win.videoFrameSize = Math.round(sourceRect.width) + " × " + Math.round(sourceRect.height);
+                if (player.position > 0) win.playbackIssue = "";
+            }
+        }
     }
 
     MediaPlayer {
         id: player
         muted: true
         onStatusChanged: {
-            if (status === MediaPlayer.EndOfMedia) win.advance();
+            if ((status === MediaPlayer.Loaded || status === MediaPlayer.Buffered) && win.playWhenLoaded) {
+                win.playWhenLoaded = false;
+                loadWatch.stop();
+                player.play();
+                videoWatch.restart();
+            } else if (status === MediaPlayer.EndOfMedia) win.advance();
             else if (status === MediaPlayer.Stalled)
                 win.retryVideo(errorString || "The TV video player is busy or waiting for data.");
             else if (status === MediaPlayer.InvalidMedia)
-                win.playbackIssue = errorString || "The TV cannot play this video format.";
+                win.retryVideo(errorString || "The TV cannot play this video format.");
         }
         onAvailabilityChanged: if (availability === MediaPlayer.Busy)
             win.retryVideo("Another app is still releasing the TV video decoder.");
@@ -161,9 +184,11 @@ WebOSWindow {
         }
         onPositionChanged: {
             if (position > 0) {
-                win.videoRetries = 0;
-                win.playbackIssue = "";
-                videoWatch.stop();
+                if (win.videoFrameSize !== "") {
+                    win.videoRetries = 0;
+                    win.playbackIssue = "";
+                    videoWatch.stop();
+                }
             }
         }
     }
@@ -171,65 +196,79 @@ WebOSWindow {
     Timer { interval: 500; running: true; repeat: true; onTriggered: { win.updateCaption(); win.updateClock(); } }
     Timer { interval: 600000; running: true; repeat: true; onTriggered: win.refreshWeather() }
     Timer {
+        id: loadWatch
+        interval: 18000
+        repeat: false
+        onTriggered: if (win.playWhenLoaded)
+            win.retryVideo(player.errorString || ("TV player did not load the video (status " + player.status + ")."))
+    }
+    Timer {
         id: retryTimer
         interval: 1800
         repeat: false
         onTriggered: {
-            player.stop();
-            player.source = "";
-            player.source = win.playlist.items[win.current].url;
-            player.play();
-            videoWatch.restart();
+            win.loadCurrentVideo();
         }
     }
     Timer {
         id: videoWatch
         interval: 12000
         repeat: false
-        onTriggered: if (player.position <= 0)
-            win.retryVideo(player.errorString || ("Video did not start (player status " + player.status + ")."))
+        onTriggered: {
+            if (player.position <= 0) {
+                win.retryVideo(player.errorString || ("No playback progress (player status " + player.status + ")."));
+            } else if (win.videoFrameSize === "") {
+                win.playbackIssue = "No video frames reported by the TV player (status " + player.status + ", " + Math.floor(player.position / 1000) + "s" + (player.errorString ? ", " + player.errorString : "") + ").";
+                win.retryVideo(win.playbackIssue);
+            }
+        }
     }
 
-    // Home's clock and weather strip: Outfit for the large numerals,
-    // Manrope for the quiet date and weather line, and Home's warm-white palette.
-    Row {
+    // Smaller Home-style clock at upper left; weather sits independently at upper right.
+    Item {
         id: homeInfo
-        anchors.left: parent.left
-        anchors.top: parent.top
-        anchors.leftMargin: 112
-        anchors.topMargin: 72
-        spacing: 56
+        anchors.fill: parent
         z: 100
 
         Column {
+            id: clockInfo
+            anchors.left: parent.left
+            anchors.top: parent.top
+            anchors.leftMargin: 112
+            anchors.topMargin: 72
             width: 520
-            spacing: 18
+            spacing: 12
             Text {
                 text: win.clockText
                 color: win.mainInk
                 font.family: outfitLight.name || "sans-serif"
-                font.pixelSize: 176
+                font.pixelSize: 112
                 font.weight: Font.Light
-                font.letterSpacing: -4
+                font.letterSpacing: -2
             }
             Text {
                 text: win.dateText
                 color: win.quietInk
                 font.family: manropeRegular.name || "sans-serif"
-                font.pixelSize: 28
+                font.pixelSize: 22
             }
         }
 
         Row {
+            id: weatherInfo
+            anchors.top: parent.top
+            anchors.right: parent.right
+            anchors.topMargin: 72
+            anchors.rightMargin: 112
             spacing: 20
             visible: win.weatherTemp !== ""
             Item {
-                width: 112
-                height: 228
+                width: 80
+                height: 150
                 Canvas {
                     id: weatherIcon
-                    width: 112
-                    height: 112
+                    width: 80
+                    height: 80
                     anchors.centerIn: parent
                     onPaint: {
                     var ctx = getContext("2d");
@@ -297,14 +336,17 @@ WebOSWindow {
                 }
             }
             Column {
-                spacing: 18
+                width: 360
+                spacing: 8
                 Text {
                     text: win.weatherTemp
                     color: win.mainInk
                     font.family: outfitLight.name || "sans-serif"
-                    font.pixelSize: 176
+                    font.pixelSize: 96
                     font.weight: Font.Light
-                    font.letterSpacing: -4
+                    font.letterSpacing: -2
+                    horizontalAlignment: Text.AlignRight
+                    width: parent.width
                 }
                 Text {
                     text: (win.weatherCity ? win.weatherCity : "") +
@@ -312,8 +354,10 @@ WebOSWindow {
                           win.conditionLabel(win.weatherCondition)
                     color: win.quietInk
                     font.family: manropeRegular.name || "sans-serif"
-                    font.pixelSize: 28
+                    font.pixelSize: 22
                     wrapMode: Text.WordWrap
+                    horizontalAlignment: Text.AlignRight
+                    width: parent.width
                 }
             }
         }
