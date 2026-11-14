@@ -3325,27 +3325,35 @@ step('media servers, USB drives, AirPlay, Screen Share and All Inputs appear in 
   ];
   home.setLayout({ deviceNames: { 'dms:rincon-ms': 'Sonos Era 300' } }, function (lr) {
     assert.ok(lr.ok);
-    home.catalogue(function (c) {
-      var byId = {};
-      c.devices.forEach(function (d) { byId[d.id] = d; });
-      assert.strictEqual(byId['dms:lg-skip'], undefined, 'LG ThinQ DMS is filtered out');
-      assert.strictEqual(byId['dms:rincon-ms'].name, 'Sonos Era 300');
-      assert.strictEqual(byId['dms:rincon-ms'].defaultName, 'Sonos Media Server');
-      assert.strictEqual(byId['dms:rincon-ms'].appId, 'com.webos.app.photovideo');
-      assert.strictEqual(byId['usb:usb1'].kind, 'usb');
-      assert.strictEqual(byId['airplay'].kind, 'airplay');
-      assert.strictEqual(byId['screenshare'].appId, 'com.webos.app.miracast');
-      assert.strictEqual(byId['allinputs'].appId, 'com.webos.app.inputmgr');
-      home.open({ kind: 'dev', id: 'dms:rincon-ms' }, function (r1) {
-        assert.ok(r1.ok);
-        assert.deepEqual(tv.launches.pop(), { id: 'com.webos.app.photovideo', params: { requestDevice: 'RINCON_MS' } });
-        home.open({ kind: 'dev', id: 'airplay' }, function (r2) {
-          assert.ok(r2.ok);
-          assert.deepEqual(tv.order.slice(-1), ['airplay page']);
-          home.open({ kind: 'dev', id: 'allinputs' }, function (r3) {
-            assert.ok(r3.ok);
-            assert.deepEqual(tv.launches.pop(), { id: 'com.webos.app.inputmgr' });
-            done();
+    home.catalogue(function (c0) {
+      var byId0 = {};
+      c0.devices.forEach(function (d) { byId0[d.id] = d; });
+      assert.strictEqual(byId0['dms:rincon-ms'], undefined, 'media servers are hidden by default');
+      assert.strictEqual(byId0['usb:usb1'].kind, 'usb');
+      assert.strictEqual(byId0['airplay'].kind, 'airplay');
+      assert.strictEqual(byId0['screenshare'].appId, 'com.webos.app.miracast');
+      assert.strictEqual(byId0['allinputs'].appId, 'com.webos.app.inputmgr');
+      home.setLayout({ showMediaServers: true }, function (lr2) {
+        assert.ok(lr2.ok);
+        home.catalogue(function (c) {
+          var byId = {};
+          c.devices.forEach(function (d) { byId[d.id] = d; });
+          assert.strictEqual(byId['dms:lg-skip'], undefined, 'LG ThinQ DMS is filtered out');
+          assert.strictEqual(byId['dms:rincon-ms'].name, 'Sonos Era 300');
+          assert.strictEqual(byId['dms:rincon-ms'].defaultName, 'Sonos Media Server');
+          assert.strictEqual(byId['dms:rincon-ms'].appId, 'com.webos.app.photovideo');
+          home.open({ kind: 'dev', id: 'dms:rincon-ms' }, function (r1) {
+            assert.ok(r1.ok);
+            assert.deepEqual(tv.launches.pop(), { id: 'com.webos.app.photovideo', params: { requestDevice: 'RINCON_MS' } });
+            home.open({ kind: 'dev', id: 'airplay' }, function (r2) {
+              assert.ok(r2.ok);
+              assert.deepEqual(tv.order.slice(-1), ['airplay page']);
+              home.open({ kind: 'dev', id: 'allinputs' }, function (r3) {
+                assert.ok(r3.ok);
+                assert.deepEqual(tv.launches.pop(), { id: 'com.webos.app.inputmgr' });
+                done();
+              });
+            });
           });
         });
       });

@@ -45,6 +45,7 @@ function renderInputList() {
   const layout = cat.layout || {};
   const hidden = (layout.hidden && layout.hidden.dev) || [];
   const unusedOff = layout.hideUnused === true;
+  const showMedia = layout.showMediaServers === true;
   const sort = layout.sort && layout.sort.dev === 'recent' ? 'recent' : 'custom';
   const movable = writable && sort !== 'recent';
   const sortRow = `<div class="prot-row">
@@ -61,6 +62,11 @@ function renderInputList() {
       <div class="prot-desc">${esc(t('home.hideUnusedDesc', 'Leaves inputs with nothing plugged in out of the Inputs row, instead of showing them greyed out. They still show while arranging.'))}</div></div>
     <div class="prot-status">${renderToggle({ id: 'home-hide-unused', cls: unusedOff ? 'good' : 'idle', label: unusedOff ? t('common.on', 'On') : t('common.off', 'Off'),
       on: unusedOff, disabled: !writable, onclick: `inputsSave({ hideUnused: ${unusedOff ? 'false' : 'true'} })` })}</div></div>`;
+  const mediaRow = `<div class="prot-row">
+    <div class="prot-main"><div class="prot-title">${esc(t('inputs.showMediaServers', 'Show media servers'))}</div>
+      <div class="prot-desc">${esc(t('inputs.showMediaServersDesc', 'Shows DLNA media servers discovered on your network alongside your TV’s inputs. Leave off to hide all current and future media servers.'))}</div></div>
+    <div class="prot-status">${renderToggle({ id: 'inputs-show-media-servers', cls: showMedia ? 'good' : 'idle', label: showMedia ? t('common.on', 'On') : t('common.off', 'Off'),
+      on: showMedia, disabled: !writable, onclick: `inputsSave({ showMediaServers: ${showMedia ? 'false' : 'true'} })` })}</div></div>`;
   const rows = order.map((id, i) => {
     const d = byId[id], isShown = hidden.indexOf(id) === -1;
     const leftOut = !!(d.unused && unusedOff);
@@ -103,7 +109,7 @@ function renderInputList() {
       </div>
     </div>`;
   });
-  q('inputs-list').innerHTML = `<div class="prot-table">${sortRow}${unusedRow}</div><div class="inp-grid">${rows.join('')}</div>`;
+  q('inputs-list').innerHTML = `<div class="prot-table">${sortRow}${unusedRow}${mediaRow}</div><div class="inp-grid">${rows.join('')}</div>`;
   return true;
 }
 

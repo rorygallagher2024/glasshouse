@@ -3268,6 +3268,8 @@
  "inputs.kind.usb": {"text": "‏USB", "from": "USB"},
  "inputs.kind.screenshare": {"text": "مشاركة الشاشة", "from": "Screen Share"},
  "inputs.kind.allinputs": {"text": "كل المداخل", "from": "All inputs"},
+ "inputs.showMediaServers": {"text": "إظهار خوادم الوسائط", "from": "Show media servers"},
+ "inputs.showMediaServersDesc": {"text": "يعرض خوادم وسائط DLNA المكتشفة على شبكتك إلى جانب مداخل التلفاز. اتركه مغلقاً لإخفاء جميع خوادم الوسائط الحالية والمستقبلية.", "from": "Shows DLNA media servers discovered on your network alongside your TV’s inputs. Leave off to hide all current and future media servers."},
  "inputs.bar.transparent": {"text": "مربعات شفافة", "from": "Transparent tiles"},
  "inputs.bar.transparentDesc": {"text": "يسمح للصورة بالظهور عبر مربعات الشريط. إيقافه يُبقيها معتمة ليكون التنقل بين المداخل أسرع.", "from": "Lets the picture show through the bar’s tiles. Off keeps them opaque so stepping through inputs is faster."}
 }

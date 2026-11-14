@@ -3268,6 +3268,8 @@
  "inputs.kind.usb": {"text": "USB", "from": "USB"},
  "inputs.kind.screenshare": {"text": "Демонстрация экрана", "from": "Screen Share"},
  "inputs.kind.allinputs": {"text": "Все входы", "from": "All inputs"},
+ "inputs.showMediaServers": {"text": "Показывать медиасерверы", "from": "Show media servers"},
+ "inputs.showMediaServersDesc": {"text": "Показывает найденные в сети медиасерверы DLNA рядом со входами телевизора. Если выключено, скрывает все текущие и будущие медиасерверы.", "from": "Shows DLNA media servers discovered on your network alongside your TV’s inputs. Leave off to hide all current and future media servers."},
  "inputs.bar.transparent": {"text": "Прозрачные плитки", "from": "Transparent tiles"},
  "inputs.bar.transparentDesc": {"text": "Пропускает изображение сквозь плитки панели. Если выключено, плитки остаются непрозрачными, чтобы переключение между входами работало быстрее.", "from": "Lets the picture show through the bar’s tiles. Off keeps them opaque so stepping through inputs is faster."}
 }

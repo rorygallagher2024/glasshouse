@@ -914,6 +914,8 @@
  "inputs.kind.usb": {"text": "USB", "from": "USB"},
  "inputs.kind.screenshare": {"text": "Screen Share", "from": "Screen Share"},
  "inputs.kind.allinputs": {"text": "Alle Eingänge", "from": "All inputs"},
+ "inputs.showMediaServers": {"text": "Medienserver anzeigen", "from": "Show media servers"},
+ "inputs.showMediaServersDesc": {"text": "Zeigt im Netzwerk gefundene DLNA-Medienserver neben den TV-Eingängen an. Aus blendet alle aktuellen und künftigen Medienserver aus.", "from": "Shows DLNA media servers discovered on your network alongside your TV’s inputs. Leave off to hide all current and future media servers."},
  "inputs.bar.transparent": {"text": "Transparente Kacheln", "from": "Transparent tiles"},
  "inputs.bar.transparentDesc": {"text": "Lässt das Bild durch die Kacheln der Leiste scheinen. Aus lässt sie deckend, damit das Weiterschalten durch die Eingänge schneller reagiert.", "from": "Lets the picture show through the bar’s tiles. Off keeps them opaque so stepping through inputs is faster."}
 }

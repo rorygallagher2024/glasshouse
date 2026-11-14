@@ -24,7 +24,7 @@ Each tile shows its name, subtitle (such as HDMI port or source type), and an au
 
 * **Live TV** tuner (when broadcast or cable channels are tuned).
 * **HDMI ports & SIMPLINK (CEC) devices**, including devices connected through an AV receiver or soundbar, waking and routing them on selection.
-* **Media Servers & USB storage** discovered by the TV over DLNA/UPnP or attached over USB.
+* **USB storage** attached to the TV, and **Media Servers** discovered over DLNA/UPnP when **Show media servers** is switched on under [Your inputs](#your-inputs).
 * **AirPlay**, **Screen Share**, and **All Inputs** (LG's Input Hub / Home Hub), wherever the TV includes them.
 
 ### Supported TVs & background preloading
@@ -38,6 +38,7 @@ Shows when **Glasshouse Input bar** or a Glasshouse launcher ([Glasshouse Home](
 
 * **Order:** Choose **Your order** to keep your manual arrangement, or **Last opened** to automatically bubble recently used inputs to the front.
 * **Hide inputs with nothing connected:** Completely omits disconnected HDMI ports instead of showing them dimmed (labelled **Left out**). They still show dimmed in arrange mode on Glasshouse Home and reappear automatically when a cable or device is connected.
+* **Show media servers:** Off by default so speakers and network devices broadcasting DLNA do not clutter your inputs list. Switch it on to show discovered DLNA media servers across your inputs; leave it off to omit all current and future media servers.
 * **Input cards:** Each input card lets you:
   * **Rename** the input inline by clicking its name (HDMI ports and extra sources keep their physical port or source type in the subtitle; clearing the name restores the TV's own name).
   * **Reorder** with `←` and `→` when **Order** is set to **Your order**.

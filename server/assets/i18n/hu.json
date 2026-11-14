@@ -3282,6 +3282,8 @@
  "inputs.kind.usb": {"text": "USB", "from": "USB"},
  "inputs.kind.screenshare": {"text": "Képernyőmegosztás", "from": "Screen Share"},
  "inputs.kind.allinputs": {"text": "Minden bemenet", "from": "All inputs"},
+ "inputs.showMediaServers": {"text": "Médiaszerverek megjelenítése", "from": "Show media servers"},
+ "inputs.showMediaServersDesc": {"text": "Megjeleníti a hálózaton talált DLNA-médiaszervereket a TV bemenetei mellett. Kikapcsolva az összes jelenlegi és jövőbeli médiaszervert elrejti.", "from": "Shows DLNA media servers discovered on your network alongside your TV’s inputs. Leave off to hide all current and future media servers."},
  "inputs.bar.transparent": {"text": "Átlátszó csempék", "from": "Transparent tiles"},
  "inputs.bar.transparentDesc": {"text": "Átengedi a képet a sáv csempéin. Kikapcsolva átlátszatlanok maradnak, így gyorsabb a bemenetek közötti léptetés.", "from": "Lets the picture show through the bar’s tiles. Off keeps them opaque so stepping through inputs is faster."}
 }

@@ -480,6 +480,9 @@ function defaults() {
     // Inputs with nothing plugged in left out of the Inputs row, rather than
     // shown greyed out.
     hideUnused: false,
+    // Discovered DLNA media servers shown alongside inputs; off by default so
+    // speakers and network devices do not clutter the list unless wanted.
+    showMediaServers: false,
     // Custom names keyed by device id (e.g. 'hdmi2:apple-tv' or 'hdmi1').
     deviceNames: {},
     // Transparent tiles on the Glasshouse Input bar: off by default so stepping
@@ -574,6 +577,7 @@ function normalise(raw) {
   MOTION_KEYS.forEach(function (k) { d[k] = raw[k] !== false; });
   d.darkening = validDarkening(raw.darkening);
   d.hideUnused = raw.hideUnused === true;
+  d.showMediaServers = raw.showMediaServers === true;
   d.deviceNames = validDeviceNames(raw.deviceNames);
   d.inputBarTransparent = raw.inputBarTransparent === true;
   // null, saved, is the view's own look; none saved keeps the default.
@@ -759,6 +763,7 @@ function setLayout(body, cb) {
     slidePanels: typeof body.slidePanels === 'boolean' ? body.slidePanels : c.slidePanels,
     darkening: body.darkening !== undefined ? body.darkening : c.darkening,
     hideUnused: typeof body.hideUnused === 'boolean' ? body.hideUnused : c.hideUnused,
+    showMediaServers: typeof body.showMediaServers === 'boolean' ? body.showMediaServers : c.showMediaServers,
     deviceNames: body.deviceNames !== undefined ? validDeviceNames(body.deviceNames, c.deviceNames) : c.deviceNames,
     inputBarTransparent: typeof body.inputBarTransparent === 'boolean' ? body.inputBarTransparent : c.inputBarTransparent,
     // null puts the view's own colours back.
@@ -793,7 +798,7 @@ function layoutOf(c) {
     excludedRecents: c.excludedRecents,
     searchHintSeen: c.searchHintSeen, picture: c.picture, livePreview: c.livePreview, search: c.search, recommended: c.recommended,
     fade: c.fade, wallDrift: c.wallDrift, wallCrossfade: c.wallCrossfade, smoothScroll: c.smoothScroll, slidePanels: c.slidePanels,
-    darkening: c.darkening, hideUnused: c.hideUnused, deviceNames: c.deviceNames, inputBarTransparent: c.inputBarTransparent, showClock: c.showClock, rowsBottom: c.rowsBottom, view: c.view,
+    darkening: c.darkening, hideUnused: c.hideUnused, showMediaServers: c.showMediaServers, deviceNames: c.deviceNames, inputBarTransparent: c.inputBarTransparent, showClock: c.showClock, rowsBottom: c.rowsBottom, view: c.view,
     showLastOn: c.showLastOn, showAppCount: c.showAppCount, showCec: c.showCec, showTvLogos: c.showTvLogos, showPointer: c.showPointer, weather: c.weather, weatherPlace: c.weatherPlace, previewAlways: c.previewAlways, previewInTile: c.previewInTile, previewSize: c.previewSize, previewSound: c.previewSound, wallAnim: c.wallAnim,
     animTheme: c.animTheme, animSky: c.animSky, animLight: c.animLight, animThemes: ANIM_THEMES,
     wallShuffleMinutes: c.wallShuffleMinutes, shuffleMinutes: SHUFFLE_MINUTES, colours: c.colours,
@@ -1062,7 +1067,10 @@ function devices(cb) {
       });
     });
   }, function (list) {
-    cb(list ? namedDevices(readConfig(), list) : null);
+    if (!list) return cb(null);
+    var c = readConfig();
+    if (!c.showMediaServers) list = list.filter(function (d) { return d.kind !== 'dms'; });
+    cb(namedDevices(c, list));
   });
 }
 

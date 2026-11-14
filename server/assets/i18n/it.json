@@ -3282,6 +3282,8 @@
  "inputs.kind.usb": {"text": "USB", "from": "USB"},
  "inputs.kind.screenshare": {"text": "Condivisione schermo", "from": "Screen Share"},
  "inputs.kind.allinputs": {"text": "Tutti gli ingressi", "from": "All inputs"},
+ "inputs.showMediaServers": {"text": "Mostra server multimediali", "from": "Show media servers"},
+ "inputs.showMediaServersDesc": {"text": "Mostra i server multimediali DLNA rilevati sulla rete accanto agli ingressi della TV. Lascia spento per nascondere tutti i server multimediali attuali e futuri.", "from": "Shows DLNA media servers discovered on your network alongside your TV’s inputs. Leave off to hide all current and future media servers."},
  "inputs.bar.transparent": {"text": "Riquadri trasparenti", "from": "Transparent tiles"},
  "inputs.bar.transparentDesc": {"text": "Lascia intravedere l’immagine attraverso i riquadri della barra. Disattivato li mantiene opachi per scorrere gli ingressi più velocemente.", "from": "Lets the picture show through the bar’s tiles. Off keeps them opaque so stepping through inputs is faster."}
 }
