@@ -1747,6 +1747,7 @@ button.hm-card{display:flex;flex-direction:column;align-items:stretch;gap:9px;mi
   border:0;background:none;color:inherit;text-align:left;text-transform:none;letter-spacing:normal;font-weight:400}
 button.hm-card:hover,button.hm-card:active,button.hm-card.on,button.hm-card.on:hover,button.hm-card.warn{
   background:none;border:0;color:inherit;font-weight:400}
+button.hm-card:focus-visible{outline:2px solid var(--w90);outline-offset:6px}
 button.hm-card[disabled]{opacity:.45;cursor:not-allowed}
 .hm-screen{position:relative;display:block;width:100%;aspect-ratio:16/9;border-radius:7px;overflow:hidden;background:#000;
   border:1px solid rgba(255,255,255,.14);outline:2px solid transparent;outline-offset:3px;transition:border-color .16s ease,outline-color .16s ease}
@@ -1754,17 +1755,17 @@ button.hm-card[disabled]{opacity:.45;cursor:not-allowed}
 button.hm-card:hover:not([disabled]):not(.on):not(.warn) .hm-screen{border-color:var(--w60)}
 button.hm-card.on .hm-screen{border-color:transparent;outline-color:var(--green)}
 button.hm-card.warn .hm-screen{border-color:transparent;outline-color:var(--cand)}
-.hm-badge{position:absolute;right:7px;top:7px;z-index:2;max-width:calc(100% - 14px);padding:2px 7px;border-radius:999px;
-  font-family:'Manrope',sans-serif;font-weight:700;font-size:9px;letter-spacing:.08em;text-transform:uppercase;
+.hm-badge{position:absolute;right:7px;top:7px;z-index:2;max-width:calc(100% - 14px);padding:3px 9px;border-radius:999px;
+  font-family:'Manrope',sans-serif;font-weight:700;font-size:11px;letter-spacing:.08em;text-transform:uppercase;
   line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#000;background:#30de61;
   box-shadow:0 2px 8px rgba(0,0,0,.55)}
 button.hm-card.warn .hm-badge{background:#ffb04f;color:#000}
-.hm-meta{display:flex;flex-direction:column;gap:2px;min-width:0}
-.hm-name{font-family:'Manrope',sans-serif;font-size:13.5px;font-weight:600;color:var(--w80);line-height:1.25}
+.hm-meta{display:flex;flex-direction:column;gap:4px;min-width:0}
+.hm-name{font-family:'Manrope',sans-serif;font-size:15px;font-weight:600;letter-spacing:.01em;color:var(--w90);line-height:1.35}
 button.hm-card:hover:not([disabled]) .hm-name,button.hm-card.on .hm-name{color:var(--w100)}
 button.hm-card.on .hm-name{color:var(--green)}
 button.hm-card.warn .hm-name{color:var(--cand)}
-.hm-sub{font-size:12px;line-height:1.35;color:var(--w60);overflow-wrap:anywhere}
+.hm-sub{font-size:14px;line-height:1.45;color:var(--w60);overflow-wrap:anywhere}
 
 /* Miniature screen previews */
 .hm-s{position:relative;display:flex;flex-direction:column;width:100%;height:100%;padding:8px;overflow:hidden;pointer-events:none;color:#fff}
@@ -2347,13 +2348,9 @@ h3 .tvm-tags i{font-size:11px}
 @media (max-width:860px){#ab-cards{grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}}
 @media (max-width:740px){#ab-cards{grid-template-columns:1fr;max-width:460px;gap:22px}}
 #ab-cards button.hm-card{height:100%;gap:11px;border-radius:6px}
-#ab-cards button.hm-card:focus-visible{outline:2px solid var(--w90);outline-offset:6px}
-#ab-cards .hm-badge{font-size:11px;letter-spacing:.08em;padding:3px 9px}
 #ab-cards .hm-meta{flex:1;gap:5px}
-#ab-cards .hm-name{font-size:15px;font-weight:600;letter-spacing:.01em;line-height:1.35;color:var(--w90)}
-#ab-cards button.hm-card.on .hm-name{color:var(--green)}
 #ab-cards button.hm-card.on.ab-warn .hm-name{color:var(--cand)}
-#ab-cards .hm-sub{font-size:14px;line-height:1.5;color:var(--w60);margin-bottom:8px}
+#ab-cards .hm-sub{line-height:1.5;margin-bottom:8px}
 .hm-card.on.ab-warn .hm-screen{border-color:transparent;outline-color:var(--cand)}
 .hm-card.on.ab-warn .hm-badge{background:#ffb04f;color:#000}
 .hm-s-ab{padding:0;background:#000;align-items:center;justify-content:center}
