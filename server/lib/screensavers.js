@@ -219,6 +219,8 @@ function readSaver(root, name) {
   if (name_) e.label = say.define('saver.' + id + '.name', name_.en, name_);
   if (desc) e.description = say.define('saver.' + id + '.desc', desc.en, desc);
   e.version = typeof m.version === 'string' ? m.version : '';
+  e.runtime = m.runtime === undefined ? 'qml' : m.runtime;
+  if (e.runtime !== 'qml' && e.runtime !== 'web') return problem(msg('srv.saver.badRuntime', '{file}: runtime must be "qml" or "web".', { file: MANIFEST }));
   e.author = typeof m.author === 'string' ? m.author : '';
   e.license = typeof m.license === 'string' ? m.license : '';
   e.homepage = typeof m.homepage === 'string' ? m.homepage : '';
@@ -230,9 +232,9 @@ function readSaver(root, name) {
   if (!name_ || !desc || !e.version) {
     return problem(msg('srv.saver.missing', '{file} needs a name, a description and a version.', { file: MANIFEST }));
   }
-  e.main = m.main === undefined ? 'main.qml' : m.main;
-  if (typeof e.main !== 'string' || !/^[\w.-]+\.qml$/.test(e.main)) {
-    return problem(msg('srv.saver.badMain', '{file}: main must name a .qml file in the folder.', { file: MANIFEST }));
+  e.main = m.main === undefined ? (e.runtime === 'web' ? 'web/index.html' : 'main.qml') : m.main;
+  if (typeof e.main !== 'string' || (e.runtime === 'qml' ? !/^[\w.-]+\.qml$/.test(e.main) : e.main !== 'web/index.html')) {
+    return problem(msg('srv.saver.badMain', '{file}: main must name a .qml file, or web/index.html for a web saver.', { file: MANIFEST }));
   }
   var uses = m.uses === undefined ? [] : m.uses;
   if (!Array.isArray(uses)) return problem(msg('srv.saver.badUses', '{file}: uses must be a list.', { file: MANIFEST }));
@@ -294,12 +296,12 @@ function readSaver(root, name) {
     return problem(msg('srv.saver.tooBig', 'Its folder is over the limit of {files} files and {mb} MB.',
                        { files: String(MAX_SAVER_FILES), mb: String(MAX_SAVER_BYTES / 1048576) }));
   }
-  // A placeholder it did not ask for would be left in, and the QML fail.
-  var qml;
-  try { qml = fs.readFileSync(path.join(dir, e.main), 'utf8'); }
+  // A placeholder it did not ask for would be left in the staged page.
+  var mainSource;
+  try { mainSource = fs.readFileSync(path.join(dir, e.main), 'utf8'); }
   catch (err3) { return problem(msg('srv.saver.unreadable', 'Its folder could not be read: {error}', { error: err3.message })); }
   for (var u in USES) {
-    if (USES[u] && qml.indexOf(USES[u]) !== -1 && uses.indexOf(u) === -1) {
+    if (USES[u] && mainSource.indexOf(USES[u]) !== -1 && uses.indexOf(u) === -1) {
       return problem(msg('srv.saver.undeclared', '{main} uses {placeholder} without "{use}" in uses.',
                          { main: e.main, placeholder: USES[u], use: u }));
     }
@@ -308,7 +310,7 @@ function readSaver(root, name) {
   // other, since a name it did not declare would be left in and draw nothing.
   var haPlaceholder = /__TVWEB_HA_([a-z0-9_]*)__/g;
   var found;
-  while ((found = haPlaceholder.exec(qml)) !== null) {
+  while ((found = haPlaceholder.exec(mainSource)) !== null) {
     if (!e.entities || !Object.prototype.hasOwnProperty.call(e.entities, found[1])) {
       return problem(msg('srv.saver.undeclaredHa', '{main} uses {placeholder}, and saver.json does not name that entity under entities.', { main: e.main, placeholder: found[0] }));
     }
@@ -995,13 +997,29 @@ function advanceRandomSaver() {
   var curStaged = stagedScreensaver();
   var nextSaver = pickNextRandomSaver(curStaged);
   if (!nextSaver || nextSaver.problem) return;
+  // Runtime changes must go through switchTo(), which closes a saver that
+  // might still be on screen before changing the system app manifest.
+  if (stagedRunner() !== (nextSaver.runtime === 'web' ? 'web' : 'qml')) {
+    return switchTo(nextSaver, 'random', screensaverBrightness(), screensaverChoice(nextSaver), function (r) {
+      if (!r.ok) console.error('screensaver: could not switch random saver: ' + (r.error || 'unknown error'));
+    });
+  }
   try {
+    stageScreensaverAppinfo(nextSaver);
     stageSaverFiles(nextSaver, screensaverBrightness(), screensaverChoice(nextSaver));
     fs.writeFileSync(path.join(SCREENSAVER_DIR, SCREENSAVER_MARKER), nextSaver.id);
     try { fs.writeFileSync(path.join(SCREENSAVER_APP_DIR, SCREENSAVER_MARKER), nextSaver.id); } catch (errApp) {}
     console.log('screensaver: random mode queued "' + nextSaver.id + '" for next screen saver');
   } catch (e) {
     console.error('screensaver: could not stage random screen saver: ' + e.message);
+  }
+}
+
+function stagedRunner() {
+  try {
+    return JSON.parse(fs.readFileSync(path.join(SCREENSAVER_APP_DIR, 'appinfo.json'), 'utf8')).type;
+  } catch (e) {
+    return null;
   }
 }
 
@@ -1229,14 +1247,14 @@ function screensaverList() {
   return res;
 }
 
-function stageScreensaverAppinfo() {
+function stageScreensaverAppinfo(e) {
   var stock = fs.readFileSync(path.join(SCREENSAVER_APP_DIR, 'appinfo.json'), 'utf8');
   rememberStockType(stock);
   var out = stock;
   try {
     var info = JSON.parse(stock);
-    info.type = 'qml';
-    info.main = 'qml/main.qml';
+    info.type = e && e.runtime === 'web' ? 'web' : 'qml';
+    info.main = e && e.runtime === 'web' ? 'web/index.html' : 'qml/main.qml';
     out = JSON.stringify(info, null, 2);
   } catch (e) {
     console.error('screensaver: stock appinfo.json did not parse, staging it unchanged: ' + e.message);
@@ -1302,19 +1320,23 @@ function stageSaverFiles(e, level, choice) {
   if (e.choices) choice = pickChoice(e, choice);
   var qmlDir = path.join(SCREENSAVER_DIR, 'qml');
   removeTree(qmlDir);
-  mkdirp(qmlDir);
+  removeTree(path.join(SCREENSAVER_DIR, 'web'));
+  var targetDir = e.runtime === 'web' ? SCREENSAVER_DIR : qmlDir;
+  mkdirp(targetDir);
   // An app's screen saver loads the rest from its own folder.
   var files = e.fromApp ? [] : saverFiles(e.dir);
   for (var i = 0; i < files.length; i++) {
     var rel = files[i].rel;
     if (rel === MANIFEST || rel === e.main) continue;
-    mkdirp(path.dirname(path.join(qmlDir, rel)));
-    fs.writeFileSync(path.join(qmlDir, rel), fs.readFileSync(path.join(e.dir, rel)));
+    mkdirp(path.dirname(path.join(targetDir, rel)));
+    fs.writeFileSync(path.join(targetDir, rel), fs.readFileSync(path.join(e.dir, rel)));
   }
   var specs = effectiveSaverEntitySpecs(e);
   var effEnts = effectiveFromSpecs(specs);
   var entityList = effectiveSaverEntityList(e);
-  fs.writeFileSync(path.join(qmlDir, 'main.qml'), fillSaverQml(e, fs.readFileSync(path.join(e.dir, e.main), 'utf8'), level, choice, effEnts, entityList));
+  var mainSource = fs.readFileSync(path.join(e.dir, e.main), 'utf8');
+  if (e.runtime === 'web') fs.writeFileSync(path.join(SCREENSAVER_DIR, e.main), fillSaverWeb(e, mainSource, level));
+  else fs.writeFileSync(path.join(qmlDir, 'main.qml'), fillSaverQml(e, mainSource, level, choice, effEnts, entityList));
   fs.writeFileSync(path.join(SCREENSAVER_DIR, SCREENSAVER_LEVEL_MARKER), String(level));
   stagedEntities = mergeActiveEntities(activeSaverEntities(effEnts), entityList);
   stagedEntityLabels = mergeActiveLabels(activeSaverLabels(specs), entityList);
@@ -1392,6 +1414,17 @@ function withLayer(qml, opacity) {
     '\n    // Glasshouse\'s brightness: a black layer over the screen saver.\n' +
     '    Rectangle { anchors.fill: parent; color: "black"; opacity: ' + opacity + '; z: 1000000 }\n' +
     qml.slice(end);
+}
+
+function fillSaverWeb(e, html, level) {
+  var port = (configObj && configObj.port) || 8080;
+  var token = configObj && configObj.token;
+  var videos = JSON.stringify(homeWallpapers.videoSources()).replace(/</g, '\\u003c').replace(/\u2028/g, '\\u2028').replace(/\u2029/g, '\\u2029');
+  var weather = 'http://127.0.0.1:' + port + '/api/home/weather' + (token ? '?k=' + encodeURIComponent(token) : '');
+  html = html.replace(/__TVWEB_VIDEOS__/g, function () { return videos; });
+  html = html.replace(/__TVWEB_HOME_WEATHER__/g, function () { return weather; });
+  html = html.replace(/__TVWEB_LAYER_OPACITY__/g, String(layerOpacity(e, level)));
+  return html;
 }
 
 function fillSaverQml(e, qml, level, choice, effEnts, entityList) {
@@ -1475,8 +1508,13 @@ function setScreensaver(mode, level, cb, choice) {
     if (!nextSaver || nextSaver.problem) {
       nextSaver = pickNextRandomSaver() || saverById('starfield') || catalog()[1];
     }
+    if (stagedScreensaver() !== 'stock' &&
+        stagedRunner() !== (nextSaver.runtime === 'web' ? 'web' : 'qml')) {
+      return switchTo(nextSaver, 'random', level, choice, cb);
+    }
     if (stagedScreensaver() !== 'stock') {
       try {
+        stageScreensaverAppinfo(nextSaver);
         stageSaverFiles(nextSaver, level, screensaverChoice(nextSaver));
         fs.writeFileSync(path.join(SCREENSAVER_DIR, SCREENSAVER_MARKER), nextSaver.id);
         try { fs.writeFileSync(path.join(SCREENSAVER_APP_DIR, SCREENSAVER_MARKER), nextSaver.id); } catch (errApp) {}
@@ -1583,7 +1621,7 @@ function swapScreensaver(saver, mode, level, choice, cb) {
 
     try {
       mkdirp(path.join(SCREENSAVER_DIR, 'qml'));
-      stageScreensaverAppinfo();
+      stageScreensaverAppinfo(saver);
       stageSaverFiles(saver, level, choice);
       fs.writeFileSync(path.join(SCREENSAVER_DIR, SCREENSAVER_MARKER), saver.id);
     } catch (e) {
@@ -1639,8 +1677,22 @@ function restageScreensaver() {
   if (isRandomEnabled() && (saverMissingHa(saver) || saverMinEntitiesError(saver))) {
     return advanceRandomSaver();
   }
+  // A webOS update may add a web-runtime saver while LG's app manager still
+  // has the old QML runner cached. Do not remove its working QML files or
+  // change the app manifest during startup: the saver could still be showing.
+  // Re-selecting the saver goes through switchTo(), which closes it before
+  // changing runners and staging the new files.
   try {
-    var staged = path.join(SCREENSAVER_DIR, 'qml', 'main.qml');
+    var appInfo = JSON.parse(fs.readFileSync(path.join(SCREENSAVER_APP_DIR, 'appinfo.json'), 'utf8'));
+    if ((appInfo.type === 'web') !== (saver.runtime === 'web')) {
+      console.log('screensaver: "' + saver.id + '" needs to be re-selected to change its runner safely');
+      return;
+    }
+  } catch (eInfo) {}
+  try {
+    var staged = saver.runtime === 'web'
+      ? path.join(SCREENSAVER_DIR, saver.main)
+      : path.join(SCREENSAVER_DIR, 'qml', 'main.qml');
     var before = fs.existsSync(staged) ? fs.readFileSync(staged, 'utf8') : '';
     stageSaverFiles(saver, screensaverBrightness(), screensaverChoice(saver));
     // An old id stored is written again as the one it now is.

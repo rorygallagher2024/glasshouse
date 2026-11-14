@@ -12,7 +12,9 @@ var SCREENSAVER_APP_DIR = '/usr/palm/applications/com.webos.app.screensaver';
 // Build a mock env that includes screensaver marker files
 var env = mockEnv.createMockEnv({
   files: {
-    // no marker => stock mode
+    // no marker => stock mode; the system app's stock manifest is QML
+    '/usr/palm/applications/com.webos.app.screensaver/appinfo.json':
+      '{"type":"qml","main":"qml/main.qml"}'
   }
 });
 env.install();
@@ -150,7 +152,10 @@ console.log('Running test-screensavers.js ...');
   assert.ok(ids.indexOf('tesseract') !== -1, 'catalog must include tesseract');
   assert.strictEqual(ids.length, 18, 'catalog must have exactly 18 entries');
   assert.ok(ids.indexOf('video') !== -1, 'catalog must include the Video screen saver');
-  assert.ok(all.filter(function (s) { return s.id === 'video'; })[0].problem, 'Video needs a configured playlist');
+  var video = all.filter(function (s) { return s.id === 'video'; })[0];
+  assert.strictEqual(video.runtime, 'web', 'Video uses the browser playback runtime');
+  assert.strictEqual(video.main, 'web/index.html', 'Video starts its web page');
+  assert.ok(video.problem, 'Video needs a configured playlist');
   assert.ok(ids.indexOf('ha-display') !== -1, 'ha-display must be in catalog');
 
   // Each of Glasshouse's own reads cleanly from its folder
