@@ -1001,16 +1001,28 @@ async function visitHomeVisibility(browser, base, problems) {
     return reply(route, { ok: true, build: 'one', layoutVersion: String(version) });
   });
   async function check(shown) {
-    const actual = await page.evaluate(() => ({
-      source: document.getElementById('srcTitle').textContent.trim(),
-      last: !!document.querySelector('.tile.dev.last'),
-      count: !!document.querySelector('[data-key="app"] h2 span'),
-      cec: document.querySelector('.tile.dev .st span').textContent.trim(),
-      clock: document.getElementById('clock').getBoundingClientRect().left
-    }));
+    const actual = await page.evaluate(() => {
+      const tile = document.querySelector('.tile.dev');
+      const pathEl = tile.querySelector('.path');
+      const st = tile.querySelector('.st');
+      const scale = document.getElementById('stage').getBoundingClientRect().width / 1920 || 1;
+      const tr = tile.getBoundingClientRect(), pr = pathEl.getBoundingClientRect(), sr = st.getBoundingClientRect();
+      return {
+        source: document.getElementById('srcTitle').textContent.trim(),
+        last: !!document.querySelector('.tile.dev.last'),
+        count: !!document.querySelector('[data-key="app"] h2 span'),
+        cec: tile.querySelector('.st span').textContent.trim(),
+        gap: Math.round((sr.top - pr.bottom) / scale * 10) / 10,
+        bottomPad: Math.round((tr.bottom - sr.bottom) / scale * 10) / 10,
+        clock: document.getElementById('clock').getBoundingClientRect().left
+      };
+    });
     if (actual.source !== (shown ? 'Player' : '') || actual.last !== shown || actual.count !== shown ||
         actual.cec !== (shown ? 'CEC 1.0.0.0' : '')) {
       problems.push('Home visibility: details did not follow the loaded switches: ' + JSON.stringify(actual));
+    }
+    if (!(actual.gap >= 10) || !(actual.bottomPad >= 16)) {
+      problems.push('Home visibility: input tile path and status are cramped: ' + JSON.stringify(actual));
     }
     return actual.clock;
   }
