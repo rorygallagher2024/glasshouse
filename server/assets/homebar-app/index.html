@@ -19,8 +19,9 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
 #clock{position:absolute;right:96px;bottom:312px;font-size:40px;font-weight:300;opacity:0;text-shadow:0 2px 12px rgba(0,0,0,.6)}
 .on #clock{opacity:1}
 /*
- * Moving is drawn by the compositor alone: the row slides and the tile in
- * focus scales, each on a layer of its own. Nothing that has to be painted
+ * Moving is drawn by the compositor alone: the row slides, on a layer of its
+ * own, and the tile in focus scales. A layer for each tile cost a B8 (webOS
+ * 4.4.3) more than it saved. Nothing that has to be painted
  * again (a shadow, a blur, opacity over the picture) changes as it moves,
  * which on a C2 (webOS 9.2.2) made each step visibly slower.
  */
@@ -28,7 +29,7 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
   -webkit-transition:-webkit-transform .12s ease-out;transition:transform .12s ease-out}
 /* Opaque, so a bright picture behind never shows through or hides a name. */
 .tile{display:inline-block;vertical-align:top;position:relative;width:180px;height:200px;margin-right:24px;padding-top:22px;border-radius:24px;
-  text-align:center;background:#1e1e1e;color:#c8c8c8;border:2px solid #2e2e2e;will-change:transform;
+  text-align:center;background:#1e1e1e;color:#c8c8c8;border:2px solid #2e2e2e;
   -webkit-transition:-webkit-transform .1s ease-out;transition:transform .1s ease-out}
 .tile.input{width:300px;padding:0 22px;text-align:left}
 .tile.focus{background:#fff;color:#111;border-color:#fff;-webkit-transform:scale(1.07);transform:scale(1.07)}
@@ -71,7 +72,7 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
   var KEY = { left: 37, right: 39, ok: 13, back: 461, backspace: 8 };
   var LG_HOME = 'com.webos.app.home';
   var LG_HOME_TILE = 'lg-home';
-  var list = [], focus = 0, onPort = null, closing = false, clockTimer = null;
+  var list = [], focus = 0, onPort = null, closing = false, clockTimer = null, closeTimer = null;
 
   function $(id) { return document.getElementById(id); }
   function esc(s) {
@@ -124,7 +125,7 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
     visibleSince = 0;
     clearInterval(clockTimer);
     document.body.className = '';
-    setTimeout(function () { window.close(); }, 160);
+    closeTimer = setTimeout(function () { closeTimer = null; window.close(); }, 160);
   }
 
   function pad(n) { return n < 10 ? '0' + n : String(n); }
@@ -201,7 +202,9 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
     $('row').style.webkitTransform = $('row').style.transform = 'translateX(' + (-shift) + 'px)';
   }
   // Only the tile left and the tile reached change, so the rest are not styled again.
-  function setFocus(i) {
+  // byPointer: the row is not slid under the pointer, which would put another
+  // tile beneath it and move the focus on again.
+  function setFocus(i, byPointer) {
     if (!list.length) return;
     var next = Math.max(0, Math.min(list.length - 1, i));
     if (next === focus && moved) return;
@@ -212,7 +215,7 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
     var now = row.querySelector('[data-i="' + focus + '"]');
     if (now && now.className.indexOf(' focus') === -1) now.className += ' focus';
     moved = true;
-    scrollTo();
+    if (!byPointer) scrollTo();
   }
   function choose() {
     var e = list[focus];
@@ -235,7 +238,7 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
   $('row').addEventListener('mouseover', function (ev) {
     var el = ev.target;
     while (el && el !== this && !el.getAttribute('data-i')) el = el.parentNode;
-    if (el && el !== this) setFocus(+el.getAttribute('data-i'));
+    if (el && el !== this) setFocus(+el.getAttribute('data-i'), true);
   });
   $('row').addEventListener('click', function () { choose(); });
 
@@ -271,6 +274,9 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
    * preloaded app is opened.
    */
   function start() {
+    // Opened again while it fades out: it stays.
+    clearTimeout(closeTimer);
+    closeTimer = null;
     closing = false;
     moved = false;
     focus = 0;
@@ -306,15 +312,18 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
     try { p = JSON.parse(window.PalmSystem.launchParams || '{}') || {}; } catch (e) {}
     return !!p.preload;
   }
-  var idleUntilOpened = preloaded();
-  /*
-   * A relaunch is a second press of Home only once the bar has been on screen
-   * a moment. On a B8 (webOS 4.4.3) the preload's launch parameters did not
-   * say so, the page drew itself hidden, and the first press, taken for a
-   * second, closed it again within 0.2 s.
-   */
-  var SECOND_PRESS_MS = 600;
   function hidden() { return document.hidden === true || document.webkitHidden === true; }
+  /*
+   * Preloaded, the page starts with no window, so hidden. On a B8 (webOS
+   * 4.4.3) the preload's launch parameters did not say so: the page drew
+   * itself, and the first press, taken for a second, closed it at once.
+   */
+  var idleUntilOpened = preloaded() || hidden();
+  /*
+   * A relaunch is a second press of Home, and closes the bar, once it is on
+   * screen; one within this time of opening still opens it, as a backstop.
+   */
+  var SECOND_PRESS_MS = 250;
   var visibleSince = hidden() ? 0 : Date.now();
   function visibilityChanged() { visibleSince = hidden() ? 0 : (visibleSince || Date.now()); }
   document.addEventListener('visibilitychange', visibilityChanged);
