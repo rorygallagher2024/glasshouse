@@ -328,8 +328,18 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
   function visibilityChanged() { visibleSince = hidden() ? 0 : (visibleSince || Date.now()); }
   document.addEventListener('visibilitychange', visibilityChanged);
   document.addEventListener('webkitvisibilitychange', visibilityChanged);
+  /*
+   * One press can arrive as two relaunches close together: taken as two
+   * presses, the second reopened the bar the first had just closed (a B8,
+   * webOS 4.4.3). Those within this time of the last are the same press.
+   */
+  var SAME_PRESS_MS = 200;
+  var lastRelaunch = 0;
   document.addEventListener('webOSRelaunch', function () {
-    var shownFor = visibleSince ? Date.now() - visibleSince : 0;
+    var at = Date.now();
+    if (at - lastRelaunch < SAME_PRESS_MS) return;
+    lastRelaunch = at;
+    var shownFor = visibleSince ? at - visibleSince : 0;
     if (idleUntilOpened || closing || document.body.className !== 'on' || shownFor < SECOND_PRESS_MS) {
       idleUntilOpened = false;
       visibleSince = visibleSince || Date.now();
