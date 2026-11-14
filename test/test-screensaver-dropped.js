@@ -18,6 +18,7 @@ function tv(options) {
     closeOK: true, closeReply: null, runningReply: null, watches: [], pointerWatches: [], screenOns: 0,
     power: 'Active', foreground: 'com.webos.app.home', media: { state: 'idle', fullScreen: false }
   };
+  state.homeVideo = !!options.homeVideo;
   state.luna = function (uri, params, cb) {
     if (/getPowerState$/.test(uri)) {
       return cb({ returnValue: true, state: options.startsItself && state.requested ? 'Screen Saver' : state.power });
@@ -47,6 +48,7 @@ function tv(options) {
       inputKey: require('../server/lib/names').shortAppId,
       watchKeys: function (on) { state.watches.push(on); },
       watchPointer: function (on) { state.pointerWatches.push(on); },
+      homeVideoBackground: function () { return state.homeVideo; },
       mediaState: function (cb, fresh) {
         assert.strictEqual(fresh, true, 'playback is read afresh before a fallback');
         if (state.onMedia) state.onMedia();
@@ -207,6 +209,16 @@ test('the pointer ends a Glasshouse screen saver tvpower started, and not LG\'s 
         done();
       });
     });
+  });
+});
+
+test('a Home video wallpaper may hand over to its selected screen saver', function (done) {
+  var state = tv({ invalidState: true, homeVideo: true });
+  state.media = { state: 'playing', fullScreen: true };
+  screensavers.trigger(function (r) {
+    assert.strictEqual(r.ok, true, r.error);
+    assert.strictEqual(state.launched, 1);
+    done();
   });
 });
 

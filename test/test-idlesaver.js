@@ -31,9 +31,10 @@ function advance(ms) {
   due.forEach(function (t) { t.fn(); });
 }
 
-var calls, foreground, powerState, setReply, media, pendingMedia, deferMedia, pendingPolicy, video;
+var calls, foreground, powerState, setReply, media, pendingMedia, deferMedia, pendingPolicy, video, homeVideo;
 function reset() {
   timers = []; marker = ''; deferMedia = false;
+  homeVideo = false;
   calls = []; foreground = 'com.webos.app.home'; powerState = 'Screen Saver';
   setReply = { returnValue: true }; media = { state: 'idle', fullScreen: false }; video = [];
 }
@@ -63,7 +64,8 @@ function refusal(saver) {
 function start() {
   reset();
   var saver = load();
-  saver.init({ luna: luna, mediaState: function (cb) { if (deferMedia) pendingMedia = cb; else cb(media); } });
+  saver.init({ luna: luna, mediaState: function (cb) { if (deferMedia) pendingMedia = cb; else cb(media); },
+    homeVideoBackground: function () { return homeVideo; } });
   return saver;
 }
 
@@ -140,6 +142,15 @@ media = null;
 advance(10000);
 refusal(saver);
 assert.strictEqual(calls.length, 0);
+
+// Glasshouse Home's video wallpaper is a background, not watched content: its
+// configured screen saver can take over at idle while actual app playback stays protected.
+saver = start();
+homeVideo = true;
+media = { state: 'playing', fullScreen: true };
+refusal(saver);
+assert.strictEqual(policies().length, 1);
+assert.strictEqual(requests(), 1);
 
 // An app's non-preview video on the main screen while the media service reads
 // idle, as for a player it does not list: left alone. Paused (reported),

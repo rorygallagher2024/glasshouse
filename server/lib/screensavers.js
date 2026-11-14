@@ -715,6 +715,7 @@ var closeCallbacks = [];
 var watchKeysFn = function () {};
 /** @type {function(function(?{state: string, fullScreen: boolean}): void, boolean=): void} */
 var mediaStateFn = function (cb) { cb(null); };
+var homeVideoBackgroundFn = function () { return false; };
 
 function clearStagedScreensaver() {
   stagedEntities = null;
@@ -786,6 +787,7 @@ function init(opts) {
   watchPointerFn = opts.watchPointer || function () {};
   lastPointerEnd = 0;
   mediaStateFn = opts.mediaState || function (cb) { cb(null); };
+  homeVideoBackgroundFn = opts.homeVideoBackground || function () { return false; };
   launchedDirectly = false;
   launchGeneration++;
   closeCallbacks = [];
@@ -1778,8 +1780,9 @@ function launchScreensaverApp(cb) {
   // tvpower's refusal also protects playback. An unavailable media service
   // is not evidence that nothing is playing, including on older firmware.
   mediaStateFn(function (media) {
-    if (!media) return cb(false, msg('srv.saver.unknownPlayback', 'the TV could not check whether anything is playing'));
-    if (media.state === 'playing' && media.fullScreen) {
+    var homeVideo = homeVideoBackgroundFn();
+    if (!media && !homeVideo) return cb(false, msg('srv.saver.unknownPlayback', 'the TV could not check whether anything is playing'));
+    if (media && media.state === 'playing' && media.fullScreen && !homeVideo) {
       return cb(false, msg('srv.saver.playing', 'the TV does not start a screen saver while something is playing'));
     }
     // The request and media checks can take seconds. Do not cover an input

@@ -2682,6 +2682,12 @@ function viewInFront() {
   return foreground === homeId && !escaped && readConfig().enabled && isHomeInPlace();
 }
 
+// Home's muted wallpaper video is not watched content: let the TV's screen
+// saver take over from Home when idle, then play the same playlist there.
+function videoBackgroundActive() {
+  return viewInFront() && config.wallAnim === 'off' && wallpapers.status().choice === 'video';
+}
+
 function stopBeatWatch() {
   if (beatTimer) clearTimeout(beatTimer);
   beatTimer = null;
@@ -3434,6 +3440,7 @@ module.exports = {
   status: status,
   catalogue: catalogue,
   viewStatus: viewStatus,
+  videoBackgroundActive: videoBackgroundActive,
   channelList: channelList,
   guide: guide,
   now: now,
