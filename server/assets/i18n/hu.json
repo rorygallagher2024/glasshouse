@@ -382,7 +382,7 @@
  "home.arrange.emptyRow": {"text": "Ez a sor üres", "from": "This row is empty"},
  "home.arrange.hide": {"text": "Elrejtés vagy megjelenítés", "from": "Hide or show"},
  "home.arrange.isHidden": {"text": "(rejtett)", "from": "(hidden)"},
- "home.arrange.keys": {"text": "Az OK gombbal felveheti vagy leteheti a csempét. A felvett csempét vagy annak sorát a nyílgombokkal mozgathatja. A Vissza gomb elrejti vagy megjeleníti a csempét, illetve eltávolítja a csatornát. A sor bal szélén az OK gombbal állíthatja be a rendezés módját.", "from": "OK picks a tile up or puts it down. Held, the arrows move it or its row, and Back hides or shows it, or removes a channel. Left of a row, OK sets its order."},
+ "home.arrange.keys": {"text": "Az OK felveszi vagy leteszi a csempét. Felveve a nyilak mozgatják a csempét vagy a sorát; letéve a Fel vagy Le eléri ezt a sávot. A Zöld a További alkalmazásokba teszi vagy kiveszi az appot, a Piros vagy Vissza elrejti vagy eltávolítja. A sor bal szélén az OK állítja a sorrendet.", "from": "OK picks up or puts down. Held, arrows move it or its row; put down, Up or Down reaches this bar. Green moves an app in or out of More apps, and Red or Back hides or removes it. Left of a row, OK sets its order."},
  "home.arrange.moving": {"text": "Mozgatás: {name}", "from": "Moving {name}"},
  "home.arrange.nowCustom": {"text": "{row}: mostantól az Ön sorrendjében", "from": "{row} are now in your order"},
  "home.arrange.nowCustomDesc": {"text": "A sor első csempéjétől balra található Sorrend beállítással visszaállítható a megnyitás ideje szerinti rendezés", "from": "The row's Order, left of its first tile, puts them back in last opened order"},

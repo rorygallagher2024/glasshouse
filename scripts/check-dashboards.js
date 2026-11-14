@@ -1557,7 +1557,7 @@ async function visitHomeArrangement(browser, base, problems) {
   page.on('pageerror', e => problems.push('Home arranging: ' + e.message));
   const layout = {
     rows: ['app', 'dev', 'ch'], order: { app: [], dev: [], ch: [] },
-    hidden: { app: [], dev: [], ch: [] }, channels: [], hintSeen: true, searchHintSeen: true
+    hidden: { app: [], dev: [], ch: [] }, folder: [], channels: [], hintSeen: true, searchHintSeen: true
   };
   const defaultOrder = ['netflix', 'youtube', 'lg-home'];
   const saves = [];
@@ -1583,10 +1583,12 @@ async function visitHomeArrangement(browser, base, problems) {
         layout.rows = ['app', 'dev', 'ch'];
         layout.order = { app: [], dev: [], ch: [] };
         layout.hidden = { app: [], dev: [], ch: [] };
+        layout.folder = [];
       } else {
         if (patch.order) Object.assign(layout.order, patch.order);
         if (patch.rows) layout.rows = patch.rows;
         if (patch.hidden) layout.hidden = patch.hidden;
+        if (patch.folder) layout.folder = patch.folder;
       }
       body = { ok: true, layout };
     }
@@ -1633,6 +1635,31 @@ async function visitHomeArrangement(browser, base, problems) {
     await saved;
     await resetCatalogue;
     await page.waitForTimeout(50);
+    // Up from the top row reaches the bottom bar without losing the focused app, and Down returns.
+    await page.keyboard.press('ArrowUp');
+    if (!await page.locator('#btnHide.focus').count()) {
+      problems.push('Home arranging: Up from top row did not focus the bottom bar');
+    }
+    await page.keyboard.press('ArrowDown');
+    if (await page.locator('#banner .btn.focus').count()) {
+      problems.push('Home arranging: Down did not return from the top-row bar jump');
+    }
+    await page.keyboard.press('ArrowUp');
+    await page.keyboard.press('ArrowRight');
+    if (!await page.locator('#btnFolder.focus').count()) {
+      problems.push('Home arranging: Right did not focus Into or out of More apps');
+    }
+    await page.keyboard.press('Enter');
+    if (!await page.locator('#bannerState', { hasText: '(in More apps)' }).count()) {
+      problems.push('Home arranging: Into or out of More apps from top row did not folder the app');
+    }
+    // Green toggles More apps even while a tile is picked up, dropping the held state.
+    await page.keyboard.press('ArrowRight');
+    await page.keyboard.press('Enter');
+    await page.evaluate(() => document.dispatchEvent(new KeyboardEvent('keydown', { keyCode: 404, bubbles: true })));
+    if (await page.locator('.tile.held').count() || !await page.locator('#bannerState', { hasText: 'YouTube (in More apps)' }).count()) {
+      problems.push('Home arranging: Green key did not folder the held app cleanly');
+    }
     // An update noticed while arranging must still reload after arranging ends.
     build = 'second';
     const beat = page.waitForResponse(r => new URL(r.url()).pathname === '/api/home/beat');

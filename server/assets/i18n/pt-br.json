@@ -530,7 +530,7 @@
  "home.arrange.hide": {"text": "Ocultar ou mostrar", "from": "Hide or show"},
  "home.arrange.isHidden": {"text": "(oculto)", "from": "(hidden)"},
  "home.arrange.isInFolder": {"text": "{name} (em Mais apps)", "from": "{name} (in More apps)"},
- "home.arrange.keys": {"text": "OK pega ou solta um bloco. Com ele pego, as setas movem o bloco ou a fileira, e Voltar oculta, mostra ou remove um canal. À esquerda de uma fileira, OK define a ordem.", "from": "OK picks a tile up or puts it down. Held, the arrows move it or its row, and Back hides or shows it, or removes a channel. Left of a row, OK sets its order."},
+ "home.arrange.keys": {"text": "OK pega ou solta um bloco. Pego, as setas movem o bloco ou a fileira; solto, Cima ou Baixo alcança esta barra. Verde coloca ou tira um app de Mais apps, e Vermelho ou Voltar oculta ou remove. À esquerda de uma fileira, OK define a ordem.", "from": "OK picks up or puts down. Held, arrows move it or its row; put down, Up or Down reaches this bar. Green moves an app in or out of More apps, and Red or Back hides or removes it. Left of a row, OK sets its order."},
  "home.arrange.moving": {"text": "Movendo {name}", "from": "Moving {name}"},
  "home.arrange.nowCustom": {"text": "{row} agora estão na sua ordem", "from": "{row} are now in your order"},
  "home.arrange.nowCustomDesc": {"text": "A Ordem da fileira, à esquerda do primeiro bloco, volta à ordem de abertura mais recente", "from": "The row's Order, left of its first tile, puts them back in last opened order"},

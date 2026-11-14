@@ -382,7 +382,7 @@
  "home.arrange.emptyRow": {"text": "Этот ряд пуст", "from": "This row is empty"},
  "home.arrange.hide": {"text": "Скрыть или показать", "from": "Hide or show"},
  "home.arrange.isHidden": {"text": "(скрыто)", "from": "(hidden)"},
- "home.arrange.keys": {"text": "OK берет плитку или кладет ее на место. При удержании стрелки двигают плитку или ее ряд, а «Назад» скрывает или показывает плитку либо удаляет канал. Слева от ряда OK задает его порядок.", "from": "OK picks a tile up or puts it down. Held, the arrows move it or its row, and Back hides or shows it, or removes a channel. Left of a row, OK sets its order."},
+ "home.arrange.keys": {"text": "OK берет или опускает плитку. Взятую стрелки двигают саму или ее ряд; опущенную Вверх или Вниз открывают эту панель. Зеленая кнопка убирает или достает приложение из «Других приложений», а Красная или «Назад» скрывает или удаляет. Слева от ряда OK задает порядок.", "from": "OK picks up or puts down. Held, arrows move it or its row; put down, Up or Down reaches this bar. Green moves an app in or out of More apps, and Red or Back hides or removes it. Left of a row, OK sets its order."},
  "home.arrange.moving": {"text": "Перемещение: {name}", "from": "Moving {name}"},
  "home.arrange.nowCustom": {"text": "{row}: теперь в заданном порядке", "from": "{row} are now in your order"},
  "home.arrange.nowCustomDesc": {"text": "Кнопка «Порядок» слева от первой плитки ряда возвращает порядок по последнему открытию", "from": "The row's Order, left of its first tile, puts them back in last opened order"},

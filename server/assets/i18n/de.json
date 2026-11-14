@@ -28,8 +28,8 @@
     "from": "{name} (in More apps)"
   },
   "home.arrange.keys": {
-    "text": "OK nimmt eine Kachel auf oder legt sie ab. Gehalten verschieben die Pfeile sie oder ihre Reihe, Zurück blendet sie aus oder ein bzw. entfernt einen Sender. Links von einer Reihe legt OK ihre Reihenfolge fest.",
-    "from": "OK picks a tile up or puts it down. Held, the arrows move it or its row, and Back hides or shows it, or removes a channel. Left of a row, OK sets its order."
+    "text": "OK nimmt eine Kachel auf oder legt sie ab. Aufgenommen verschieben die Pfeile sie oder ihre Reihe; abgelegt erreichen Hoch oder Runter diese Leiste. Grün verschiebt eine App in „Weitere Apps“ oder heraus, Rot oder Zurück blendet aus oder entfernt. Links von einer Reihe legt OK die Reihenfolge fest.",
+    "from": "OK picks up or puts down. Held, arrows move it or its row; put down, Up or Down reaches this bar. Green moves an app in or out of More apps, and Red or Back hides or removes it. Left of a row, OK sets its order."
   },
   "home.arrange.moving": {
     "text": "{name} wird verschoben",
