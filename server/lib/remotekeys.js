@@ -1461,6 +1461,8 @@ function describeKeys(keys, inChain, cb, native) {
       var inputs = inputChoices();
       var media = native ? screenOffChoice() : actionChoices().concat(mediaChoices());
       var cc = country();
+      titles[HOME_ASSISTANT] = msg('srv.remoteKeys.homeAssistant', 'Home Assistant');
+      titles[HOME_GUIDE] = msg('srv.remoteKeys.homeGuide', 'Glasshouse Home\'s guide');
       switchers.concat(inputs, actionChoices(), mediaChoices(), homeChoices(false), barChoices(false)).forEach(function (c) { titles[c.id] = c.title; });
       var out = keys.map(function (k) {
         var set = Object.prototype.hasOwnProperty.call(map, k.key);

@@ -1035,7 +1035,9 @@ button.pill.flash.idle[disabled]:hover{color:var(--w60);border-color:var(--edge)
 /* A group on a tab with no lists to open, as the Inputs tab's. */
 .tab-grp{margin-top:clamp(34px,4.5vw,48px)}
 .tab-grp[hidden]{display:none}
-.inputs-pair{display:flex;gap:8px}
+.tab-grp .pv-sec{margin-bottom:10px}
+#inputspane .pv-g{margin:20px 0 10px}
+#inputs-bar-choice-note,#inputs-nosignal-desc{margin:12px 0 0}
 .apps-grp-h{font-weight:500;font-size:13px;letter-spacing:.11em;text-transform:uppercase;color:var(--w80);margin:0 0 6px}
 .apps-grp-d{margin-bottom:6px}
 /* The Advanced tab's settings, side by side in at most two columns where
@@ -1732,8 +1734,9 @@ button.tools-jump:active{background:var(--w80)}
 /* The choices as 16:9 miniature TV cards, keeping the launcher's name visible
    below while any confirmation badge sits on the screen itself. */
 .hm-grid{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:14px;max-width:1060px}
+.hm-grid.hm-grid-2{grid-auto-flow:row;grid-template-columns:repeat(2,minmax(0,260px));max-width:540px}
 @media (max-width:860px){.hm-grid{grid-auto-flow:row;grid-template-columns:repeat(3,minmax(0,1fr))}}
-@media (max-width:560px){.hm-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}}
+@media (max-width:560px){.hm-grid,.hm-grid.hm-grid-2{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}}
 button.hm-card{display:flex;flex-direction:column;align-items:stretch;gap:9px;min-width:0;min-height:0;padding:0;
   border:0;background:none;color:inherit;text-align:left;text-transform:none;letter-spacing:normal;font-weight:400}
 button.hm-card:hover,button.hm-card:active,button.hm-card.on,button.hm-card.on:hover,button.hm-card.warn{
@@ -1858,6 +1861,53 @@ button.hm-card.warn .hm-name{color:var(--cand)}
 .hm-cus-blocks{display:flex;gap:4px;width:72%}
 .hm-cus-blocks i{flex:1;height:10px;border-radius:2px;background:rgba(255,255,255,.08);border:1px dashed rgba(255,255,255,.16)}
 .hm-s-custom.has .hm-cus-blocks i{border-style:solid;background:rgba(255,255,255,.12)}
+
+/* The Inputs tab: device cards and 16:9 previews for the input bar and No Signal screen */
+.inp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px;margin-top:18px}
+.inp-card{display:flex;flex-direction:column;justify-content:space-between;gap:14px;padding:16px;
+  border:1px solid var(--w25);border-radius:8px;background:rgba(var(--fg),.025);transition:border-color .15s ease,opacity .15s ease}
+.inp-card.home-hidden{border-style:dashed}
+.inp-card.home-hidden .inp-head{opacity:.48}
+.inp-head{display:flex;align-items:flex-start;gap:14px;min-width:0}
+.inp-ico{flex:0 0 44px;width:44px;height:44px;border-radius:10px;background:var(--w06);border:1px solid var(--w25);
+  display:grid;place-items:center;color:var(--w90);margin-top:2px}
+.inp-card.inp-conn:not(.home-hidden) .inp-ico{border-color:color-mix(in srgb,var(--green) 42%,var(--w25))}
+.inp-ico .dico{display:block;width:24px;height:24px}
+.inp-ico svg{display:block;width:100%;height:100%}
+.inp-txt{flex:1;min-width:0}
+.inp-name{font-family:'Manrope',sans-serif;font-size:15px;font-weight:600;color:var(--w100);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.inp-port{font-size:12.5px;color:var(--w60);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.inp-state{margin-top:6px;min-height:18px;display:flex;align-items:center}
+.inp-state .pill{height:auto;line-height:1.3;font-size:11px;letter-spacing:.07em}
+.inp-foot{display:flex;align-items:center;justify-content:space-between;gap:8px;padding-top:12px;border-top:1px solid var(--w06)}
+.inp-moves{display:flex;align-items:center;gap:6px}
+.inp-foot button[data-dev]{min-width:88px}
+.inp-status{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--w60)}
+.inp-status i{width:7px;height:7px;border-radius:50%;background:var(--w25);flex:none}
+.inp-status.conn{color:var(--w80)}
+.inp-status.conn i{background:var(--green);box-shadow:0 0 6px color-mix(in srgb,var(--green) 55%,transparent)}
+.hm-s-inplg,.hm-s-inpbar{padding:0;background:#0d1118}
+.hm-inplg-panel{position:absolute;top:10px;left:10px;bottom:10px;width:38%;border-radius:5px;padding:6px;
+  background:rgba(14,17,24,.88);border:1px solid rgba(255,255,255,.14);display:flex;flex-direction:column;gap:4px}
+.hm-inplg-panel i{flex:1;border-radius:2.5px;background:rgba(255,255,255,.14)}
+.hm-inplg-panel i.on{background:#fff;box-shadow:0 0 0 1px #fff}
+.hm-inpbar-row{position:absolute;left:10px;right:10px;bottom:12px;display:flex;justify-content:center;gap:6px}
+.hm-inpbar-tile{position:relative;width:44px;height:18px;border-radius:3.5px;padding:0 5px;background:#222;
+  border:1px solid rgba(255,255,255,.14);display:flex;align-items:center;gap:4px;opacity:.75}
+.hm-inpbar-tile i{width:7px;height:7px;border-radius:1.5px;border:1.2px solid currentColor;flex:none;opacity:.85}
+.hm-inpbar-tile b{flex:1;height:2.5px;border-radius:1px;background:currentColor;opacity:.75}
+.hm-inpbar-tile.focus{opacity:1;background:#fff;color:#111;border-color:#fff;transform:scale(1.06)}
+.hm-inpbar-tile.now::after{content:'';position:absolute;left:50%;bottom:-6px;width:4px;height:4px;margin-left:-2px;border-radius:50%;background:#30de61}
+.hm-s-nslg{background:#090b10;align-items:center;justify-content:center;gap:7px;padding:12px}
+.hm-nslg-art{position:relative;width:42%;height:42%;border-radius:2px;border:1px solid rgba(255,255,255,.28);overflow:hidden;
+  background:linear-gradient(155deg,#35536e,#9a5a42 58%,#222738)}
+.hm-nslg-art i{position:absolute;left:-15%;right:-15%;bottom:-22%;height:55%;border-radius:50%;background:rgba(15,18,28,.85)}
+.hm-nslg-box{display:flex;flex-direction:column;align-items:center;gap:3px;width:64%}
+.hm-nslg-box b{font-family:'Manrope',sans-serif;font-weight:600;font-size:8.5px;letter-spacing:.02em;color:#fff;line-height:1}
+.hm-nslg-box i{display:block;height:2px;width:82%;border-radius:1px;background:rgba(255,255,255,.45)}
+.hm-nslg-box i:last-child{width:54%;opacity:.7}
+.hm-s-nsplain{background:#000;align-items:center;justify-content:center}
+.hm-nsplain-txt{font-family:'Outfit',sans-serif;font-weight:300;font-size:12px;letter-spacing:.04em;color:rgba(255,255,255,.88)}
 #home-rows{margin-top:14px}
 .home-row{border-top:1px solid var(--edge);padding:10px 0}
 .home-row summary{display:flex;align-items:center;justify-content:space-between;gap:12px;cursor:pointer;list-style:none;padding:6px 0}

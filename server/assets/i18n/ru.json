@@ -3239,12 +3239,9 @@
  "inputs.none": {"text": "Отсюда нельзя изменить ничего во входах этого телевизора.", "from": "Nothing about this TV’s inputs can be changed from here."},
  "inputs.bar.inputKey": {"text": "Кнопка Input открывает", "from": "The Input key opens"},
  "inputs.bar.lg": {"text": "Список LG", "from": "LG’s list"},
- "inputs.bar.otherKeys": {"text": "Другие кнопки", "from": "Other keys"},
  "inputs.bar.isOurs": {"text": "Каждое нажатие переходит к следующему входу, и телевизор переключается через секунду после последнего.", "from": "Each press steps to the next input, and the TV switches a second after the last."},
  "inputs.bar.isLg": {"text": "Собственный список входов LG, как было изначально.", "from": "LG’s own list of inputs, as the TV came."},
  "inputs.bar.isOther": {"text": "На вкладке «Пульт» назначено другое: {opens}.", "from": "Set to something else on the Remote tab: {opens}."},
- "inputs.bar.alsoBy": {"text": "Также открывается кнопкой {keys}. Любой кнопке можно назначить «Панель входов» в разделе «Кнопки пульта».", "from": "Also opened by {keys}. Any key can be set to Input bar under Remote keys."},
- "inputs.bar.anyKey": {"text": "Её может открывать и любая другая кнопка: назначьте ей «Панель входов» в разделе «Кнопки пульта».", "from": "Any other key can open it too: set it to Input bar under Remote keys."},
  "srv.service.accountmanager": {"text": "Учётная запись LG", "from": "LG Account"},
  "srv.service.accountmanager.desc": {"text": "Поддерживает вход телевизора в учётную запись LG. Настройки ждут её перед открытием, до 30 с, если серверы LG заблокированы. Если выключить, перестаёт работать всё, что требует учётной записи LG: вход, ThinQ и LG Content Store.", "from": "Keeps the TV signed in to an LG account. Settings waits for it before it opens, for up to 30 s where LG's servers are blocked. Off, anything that needs the LG account, such as signing in, ThinQ and the LG Content Store, stops working."},
  "home.bar.name": {"text": "Glasshouse Bar", "from": "Glasshouse Bar"},
@@ -3261,5 +3258,7 @@
  "home.ghShort": {"text": "Часы, ряды, обои и предпросмотр", "from": "Clock, rows, wallpapers & preview"},
  "home.minimalShort": {"text": "Простые текстовые списки на чёрном", "from": "Plain text lists on black"},
  "home.bar.short": {"text": "Нижняя панель поверх изображения", "from": "Bottom bar over the picture"},
- "home.customShort": {"text": "Своё веб-приложение или страница", "from": "Your own web app or page"}
+ "home.customShort": {"text": "Своё веб-приложение или страница", "from": "Your own web app or page"},
+ "inputs.noSignal.lg": {"text": "Экран LG", "from": "LG’s screen"},
+ "inputs.noSignal.lgDesc": {"text": "Картинка и подсказка с надписью «Нет сигнала».", "from": "Picture and advice with “No Signal”."}
 }

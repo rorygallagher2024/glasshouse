@@ -1196,47 +1196,30 @@
   <div class="pv-sub apps-grp-d" data-t="inputs.desc">The TV&rsquo;s HDMI inputs: which ones are offered, the bar that switches between them, and what an empty one shows.</div>
 
   <div class="tab-grp" id="inputs-grp-list" hidden>
-    <div class="apps-grp-h" data-t="inputs.yours">Your inputs</div>
+    <div class="pv-sec" data-t="inputs.yours">Your inputs</div>
     <div class="pv-sub apps-grp-d" data-t="inputs.yours.desc">The inputs Glasshouse Home&rsquo;s Inputs row and the input bar offer, in Glasshouse Home&rsquo;s order. Hiding one here hides it on both.</div>
-    <div class="prot-table" id="inputs-list"></div>
+    <div id="inputs-list"></div>
   </div>
 
   <div class="tab-grp" id="inputs-grp-bar" hidden>
-    <div class="apps-grp-h" data-t="apps.inputBar">Input bar</div>
+    <div class="pv-sec" data-t="apps.inputBar">Input bar</div>
     <div class="pv-sub apps-grp-d" data-t="inputs.bar.desc">A strip of your inputs over the picture, in place of LG&rsquo;s list. A key on the remote opens it and steps through them.</div>
-    <div class="prot-table">
-      <div class="prot-row" id="inputs-bar-choice">
-        <div class="prot-main">
-          <div class="prot-title" data-t="inputs.bar.inputKey">The Input key opens</div>
-          <div class="prot-desc" id="inputs-bar-choice-note"></div>
-        </div>
-        <div class="prot-status inputs-pair">
-          <button type="button" class="pill idle" id="inputs-bar-lg" onclick="setInputKey(false)" data-t="inputs.bar.lg">LG&rsquo;s list</button>
-          <button type="button" class="pill idle" id="inputs-bar-ours" onclick="setInputKey(true)" data-t="apps.inputBar">Input bar</button>
-        </div>
-      </div>
-      <div class="prot-row">
-        <div class="prot-main">
-          <div class="prot-title" data-t="inputs.bar.otherKeys">Other keys</div>
-          <div class="prot-desc" id="inputs-bar-note"></div>
-        </div>
-        <div class="prot-status"><button type="button" class="pill idle" onclick="openRemoteKeys()" data-t="apps.remoteKeys">Remote keys</button></div>
-      </div>
+    <div class="pv-g" data-t="inputs.bar.inputKey">The Input key opens</div>
+    <div class="hm-grid hm-grid-2" id="inputs-bar-choice">
+      <button type="button" class="hm-card" id="inputs-bar-lg" onclick="setInputKey(false)">&mdash;</button>
+      <button type="button" class="hm-card" id="inputs-bar-ours" onclick="setInputKey(true)">&mdash;</button>
     </div>
+    <div class="pv-sub" id="inputs-bar-choice-note" hidden></div>
   </div>
 
   <div class="tab-grp" id="inputs-grp-nosignal" hidden>
-    <div class="apps-grp-h" data-t="ss.noSignal">No Signal screen</div>
+    <div class="pv-sec" data-t="ss.noSignal">No Signal screen</div>
     <div class="pv-sub apps-grp-d" data-t="inputs.noSignal.desc">What an input with nothing coming in shows.</div>
-    <div class="prot-table">
-      <div class="prot-row">
-        <div class="prot-main">
-          <div class="prot-title" id="inputs-nosignal-lbl" data-t="ss.noSignal.plain">Just “No Signal”</div>
-          <div class="prot-desc" id="inputs-nosignal-desc"></div>
-        </div>
-        <div class="prot-status"><button type="button" class="pill idle" id="inputs-nosignal-btn" aria-labelledby="inputs-nosignal-lbl inputs-nosignal-btn" onclick="toggleNoSignal()">&mdash;</button></div>
-      </div>
+    <div class="hm-grid hm-grid-2" id="inputs-nosignal-cards">
+      <button type="button" class="hm-card" id="inputs-nosignal-lg" onclick="setNoSignal(false)">&mdash;</button>
+      <button type="button" class="hm-card" id="inputs-nosignal-plain" onclick="setNoSignal(true)">&mdash;</button>
     </div>
+    <div class="pv-sub" id="inputs-nosignal-desc" hidden></div>
   </div>
 
   <div class="pv-note" id="inputs-none" hidden data-t="inputs.none">Nothing about this TV&rsquo;s inputs can be changed from here.</div>
@@ -2385,6 +2368,7 @@
 </div>
 
 <script src="/assets/i18n.js"></script>
+<script src="/assets/devicons.js"></script>
 <!-- The server puts these back inline as one script, in this order: see inlineUI in lib/routes.js. -->
 <script src="/assets/ui/core.js"></script>
 <script src="/assets/ui/theme.js"></script>

@@ -27,6 +27,7 @@
     ['tv', /cable|satellite|xfinity|directv|\bdish\b|tivo/]
   ];
   function kindOf(d) {
+    if (d && d.tuner) return 'tv';
     var s = ((d && d.name) || '') + ' ' + ((d && d.id) || '');
     s = s.toLowerCase();
     for (var k = 0; k < KINDS.length; k++) {

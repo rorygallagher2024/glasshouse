@@ -3283,31 +3283,33 @@ async function visitInputsAndRemote(browser, base, problems) {
       await route.fulfill({ json: Object.assign({ ok: true }, noSignal) });
     });
     await page.goto(base + '/?tab=inputs');
-    await page.locator('#inputs-list .prot-row').first().waitFor();
-    if (await page.locator('#inputs-list .prot-row').count() !== 4) fail('the inputs and their controls are not listed');
+    await page.locator('#inputs-list .home-tile').first().waitFor();
+    if (await page.locator('#inputs-list .home-tile').count() !== 2) fail('the inputs are not listed');
+    if (await page.locator('#inputs-list .home-tile .inp-ico svg').count() !== 2) fail('input cards have no device icons');
+    if (!await page.locator('#inputs-sort').isVisible() || !await page.locator('#home-hide-unused').isVisible()) fail('the input list options are missing');
     await page.locator('#inputs-list [data-dev="HDMI_2"]').click();
     await page.locator('#inputs-list [data-dev="HDMI_2"].idle').waitFor();
     if (JSON.stringify(writes[0]) !== JSON.stringify({ hidden: { dev: ['HDMI_2'] } })) fail('hiding an input did not save it');
-    // The Input key: LG's list or the bar, chosen here; another key that opens it is named.
-    await page.locator('#inputs-bar-lg.good').waitFor();
-    if (!/Netflix/.test(await page.locator('#inputs-bar-note').textContent())) fail('another key that opens the input bar is not named');
+    // The Input key: LG's list or the bar, chosen here.
+    await page.locator('#inputs-bar-lg.on').waitFor();
     await page.locator('#inputs-bar-ours').click();
-    await page.locator('#inputs-bar-ours.good').waitFor();
+    await page.locator('#inputs-bar-ours.on').waitFor();
     if (JSON.stringify(writes[writes.length - 1]) !== JSON.stringify({ key: 'input', action: 'open', id: 'com.tvweb.inputbar' })) fail('choosing the input bar did not set the Input key');
     await page.locator('#inputs-bar-lg').click();
-    await page.locator('#inputs-bar-lg.good').waitFor();
+    await page.locator('#inputs-bar-lg.on').waitFor();
     if (writes[writes.length - 1].action !== 'lg') fail('choosing LG\'s list did not put the Input key back');
-    await page.locator('#inputs-nosignal-btn').click();
-    await page.locator('#inputs-nosignal-btn.good').waitFor();
-    if (writes[writes.length - 1].action !== 'plainNoSignal' || writes[writes.length - 1].value !== true) fail('the No Signal switch did not send it');
-    await page.locator('#inputs-grp-bar button', { hasText: 'Remote keys' }).click();
-    if (await page.evaluate(() => activeTab) !== 'remote') fail('the input bar\'s button did not open Remote');
+    await page.locator('#inputs-nosignal-lg.on').waitFor();
+    await page.locator('#inputs-nosignal-plain').click();
+    await page.locator('#inputs-nosignal-plain.on').waitFor();
+    if (writes[writes.length - 1].action !== 'plainNoSignal' || writes[writes.length - 1].value !== true) fail('the No Signal card did not send it');
+    await page.locator('#tab-btn-remote').click();
+    if (await page.evaluate(() => activeTab) !== 'remote') fail('the Remote tab button did not open Remote');
     if (!await page.locator('#remotepane #disc-remotekeys').isVisible()) fail('Remote keys are not on the Remote tab');
     if (await page.locator('#appspane #disc-remotekeys, #sspane [id*="nosignal"]').count()) fail('remote keys or No Signal remain on their old tabs');
     // A TV with no keys to set: no Remote tab, and no input bar on Inputs.
     hasKeys = false;
     await page.goto(base + '/?tab=inputs');
-    await page.locator('#inputs-list .prot-row').first().waitFor();
+    await page.locator('#inputs-list .home-tile').first().waitFor();
     await page.locator('#tab-btn-remote').waitFor({ state: 'hidden' });
     if (await page.locator('#inputs-grp-bar').isVisible()) fail('the input bar is offered with no keys to open it');
   } catch (e) {

@@ -3239,12 +3239,9 @@
  "inputs.none": {"text": "لا يمكن تغيير شيء في مداخل هذا التلفزيون من هنا.", "from": "Nothing about this TV’s inputs can be changed from here."},
  "inputs.bar.inputKey": {"text": "زر Input يفتح", "from": "The Input key opens"},
  "inputs.bar.lg": {"text": "قائمة LG", "from": "LG’s list"},
- "inputs.bar.otherKeys": {"text": "أزرار أخرى", "from": "Other keys"},
  "inputs.bar.isOurs": {"text": "كل ضغطة تنتقل إلى المدخل التالي، ويبدّل التلفزيون بعد ثانية من آخر ضغطة.", "from": "Each press steps to the next input, and the TV switches a second after the last."},
  "inputs.bar.isLg": {"text": "قائمة المداخل الخاصة بـ LG، كما جاء التلفزيون.", "from": "LG’s own list of inputs, as the TV came."},
  "inputs.bar.isOther": {"text": "معيَّن على شيء آخر في تبويب الريموت: {opens}.", "from": "Set to something else on the Remote tab: {opens}."},
- "inputs.bar.alsoBy": {"text": "يفتحه أيضاً {keys}. يمكن تعيين أي زر على شريط المداخل ضمن أزرار الريموت.", "from": "Also opened by {keys}. Any key can be set to Input bar under Remote keys."},
- "inputs.bar.anyKey": {"text": "يمكن لأي زر آخر فتحه أيضاً: عيّنه على شريط المداخل ضمن أزرار الريموت.", "from": "Any other key can open it too: set it to Input bar under Remote keys."},
  "srv.service.accountmanager": {"text": "حساب LG", "from": "LG Account"},
  "srv.service.accountmanager.desc": {"text": "يُبقي التلفزيون مسجَّل الدخول إلى حساب LG. تنتظره الإعدادات قبل أن تُفتح، حتى 30 ثانية عند حظر خوادم LG. عند إيقافه يتوقف كل ما يحتاج إلى حساب LG، مثل تسجيل الدخول وThinQ وLG Content Store.", "from": "Keeps the TV signed in to an LG account. Settings waits for it before it opens, for up to 30 s where LG's servers are blocked. Off, anything that needs the LG account, such as signing in, ThinQ and the LG Content Store, stops working."},
  "home.bar.name": {"text": "Glasshouse Bar", "from": "Glasshouse Bar"},
@@ -3261,5 +3258,7 @@
  "home.ghShort": {"text": "ساعة وصفوف وخلفيات ومعاينة", "from": "Clock, rows, wallpapers & preview"},
  "home.minimalShort": {"text": "قوائم نصية بسيطة على خلفية سوداء", "from": "Plain text lists on black"},
  "home.bar.short": {"text": "شريط سفلي فوق الصورة", "from": "Bottom bar over the picture"},
- "home.customShort": {"text": "تطبيق ويب أو صفحة خاصة بك", "from": "Your own web app or page"}
+ "home.customShort": {"text": "تطبيق ويب أو صفحة خاصة بك", "from": "Your own web app or page"},
+ "inputs.noSignal.lg": {"text": "شاشة LG", "from": "LG’s screen"},
+ "inputs.noSignal.lgDesc": {"text": "صورة ونصيحة مع «لا توجد إشارة».", "from": "Picture and advice with “No Signal”."}
 }

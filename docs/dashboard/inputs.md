@@ -4,7 +4,7 @@ The **Inputs** tab, `/?tab=inputs`, is about the TV's HDMI inputs: which ones ar
 
 ## Your inputs
 
-The inputs [Glasshouse Home](home.md)'s Inputs row and the [input bar](#input-bar) offer, with **Order** (**Your order** or **Last opened**), **Hide inputs with nothing connected**, `↑` / `↓` buttons to reorder them, and **Shown** or **Hidden** for each input. Changes made here apply to the input bar, Glasshouse Home, [Glasshouse Bar](home.md#glasshouse-bar), and [Glasshouse Minimal](home.md#glasshouse-minimal).
+The inputs [Glasshouse Home](home.md)'s Inputs row and the [input bar](#input-bar) offer, shown as cards with each device's icon, port, and connection state, alongside **Order** (**Your order** or **Last opened**), **Hide inputs with nothing connected**, `←` / `→` buttons to reorder them, and **Shown** or **Hidden** for each input. Changes made here apply to the input bar, Glasshouse Home, [Glasshouse Bar](home.md#glasshouse-bar), and [Glasshouse Minimal](home.md#glasshouse-minimal).
 
 ## Input bar
 
@@ -21,8 +21,8 @@ Choosing it for a key installs its app, a web app with no tile on the Home scree
 
 It is offered on webOS 4, 6 and 9, where it has been tried (a B8 with 4.4.3, a C1 with 6.5.3 and a C2 with 9.2.2), and on webOS 5, 7, 8 and 10 once switched on under **Server** → **Advanced** → **Experimental features**: see [Experimental features](../experimental.md#input-bar). webOS 11's remote keys are LG's own, and cannot hand the bar the further presses, so it is not offered there.
 
-**The Input key opens** chooses between **LG's list** and the **Input bar** for the remote's Input key. It is the same setting as the Input key's under [Remote keys](remote.md#remote-keys), where any other key can be set to the bar too; the tab names the other keys that open it.
+**The Input key opens** offers preview cards choosing between **LG's list** and **Input bar** for the remote's Input key. It is the same setting as the Input key's under [Remote keys](remote.md#remote-keys), where any other key can be set to the bar too.
 
 ## No Signal screen
 
-**Just “No Signal”** leaves the animated picture and the line of advice off LG's No Signal screen, the one an input with nothing coming in shows, so only the words “No Signal” drift over the screen. LG's other messages there, such as a scrambled channel, are unchanged. Switching it on or off takes effect at once on an input with nothing coming in, and otherwise the next time no input is on screen, such as at the Home screen: the TV's input app has to restart to pick it up, which would blank an input's picture for a moment. Offered where the TV's No Signal screen is one Glasshouse knows: tried on a B8 (webOS 4.4.3) and a C2 (webOS 9.2.2). It is kept across restarts. On the TV app the switch is in the Screen saver section.
+Preview cards choose between **LG's screen** and **Just “No Signal”**, which leaves the animated picture and the line of advice off LG's No Signal screen so only the words “No Signal” drift over the screen. LG's other messages there, such as a scrambled channel, are unchanged. Switching between them takes effect at once on an input with nothing coming in, and otherwise the next time no input is on screen, such as at the Home screen: the TV's input app has to restart to pick it up, which would blank an input's picture for a moment. Offered where the TV's No Signal screen is one Glasshouse knows: tried on a B8 (webOS 4.4.3) and a C2 (webOS 9.2.2). It is kept across restarts. On the TV app the switch is in the Screen saver section.

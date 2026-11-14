@@ -58,21 +58,34 @@ function renderInputList() {
   const rows = order.map((id, i) => {
     const d = byId[id], isShown = hidden.indexOf(id) === -1;
     const leftOut = !!(d.unused && unusedOff);
-    const sub = d.tuner
+    const ico = typeof window.glasshouseDevIcon === 'function' ? window.glasshouseDevIcon(d) : '';
+    const path = d.tuner
       ? t('ctl.liveTv', 'Live TV')
-      : (d.via ? t('home.dev.through', 'HDMI {port}, through {via}', { port: d.port, via: d.via }) : t('home.dev.port', 'HDMI {port}', { port: d.port }))
-        + (d.unused ? ' · ' + t('home.dev.unused', 'Nothing connected') : '');
-    return `<div class="prot-row home-tile${!isShown || leftOut ? ' home-hidden' : ''}"><div class="prot-main">
-        <div class="prot-title" translate="no">${esc(d.name)}</div>
-        <div class="prot-desc">${esc(sub)}</div></div>
-      <div class="prot-status">
-        ${leftOut ? `<span class="pill idle">${esc(t('home.leftOut', 'Left out'))}</span>` : ''}
-        <button type="button" class="pill idle home-move" ${movable && i > 0 ? '' : 'disabled'} onclick="inputsMove(${i}, -1)" aria-label="${esc(t('home.earlier', 'Earlier'))}">↑</button>
-        <button type="button" class="pill idle home-move" ${movable && i < order.length - 1 ? '' : 'disabled'} onclick="inputsMove(${i}, 1)" aria-label="${esc(t('home.later', 'Later'))}">↓</button>
+      : (d.via ? t('home.dev.through', 'HDMI {port}, through {via}', { port: d.port, via: d.via }) : t('home.dev.port', 'HDMI {port}', { port: d.port }));
+    const stateHtml = leftOut
+      ? `<span class="pill idle">${esc(t('home.leftOut', 'Left out'))}</span>`
+      : d.unused
+        ? `<span class="inp-status"><i></i>${esc(t('home.dev.unused', 'Nothing connected'))}</span>`
+        : `<span class="inp-status conn"><i></i>${esc(t('home.dev.connected', 'Connected'))}</span>`;
+    return `<div class="inp-card home-tile${!isShown || leftOut ? ' home-hidden' : ''}${d.unused ? ' inp-unused' : ' inp-conn'}">
+      <div class="inp-head">
+        <div class="inp-ico">${ico}</div>
+        <div class="inp-txt">
+          <div class="inp-name" translate="no">${esc(d.name)}</div>
+          <div class="inp-port">${esc(path)}</div>
+          <div class="inp-state">${stateHtml}</div>
+        </div>
+      </div>
+      <div class="inp-foot">
+        <div class="inp-moves">
+          <button type="button" class="pill idle home-move" ${movable && i > 0 ? '' : 'disabled'} onclick="inputsMove(${i}, -1)" aria-label="${esc(t('home.earlier', 'Earlier'))}">←</button>
+          <button type="button" class="pill idle home-move" ${movable && i < order.length - 1 ? '' : 'disabled'} onclick="inputsMove(${i}, 1)" aria-label="${esc(t('home.later', 'Later'))}">→</button>
+        </div>
         <button type="button" class="pill ${isShown ? 'good' : 'idle'}" ${writable ? '' : 'disabled'} data-dev="${esc(id)}" onclick="inputsToggleInput(this)">${esc(isShown ? t('home.shown', 'Shown') : t('home.hidden', 'Hidden'))}</button>
-      </div></div>`;
+      </div>
+    </div>`;
   });
-  q('inputs-list').innerHTML = [sortRow, unusedRow].concat(rows).join('');
+  q('inputs-list').innerHTML = `<div class="prot-table">${sortRow}${unusedRow}</div><div class="inp-grid">${rows.join('')}</div>`;
   return true;
 }
 
@@ -112,48 +125,73 @@ function inputsToggleInput(btn) {
   inputsSave({ hidden: { dev: hidden } });
 }
 
-// From the input bar's row to where its key is set.
-function openRemoteKeys() {
-  showTab('remote');
-  const keys = q('disc-remotekeys');
-  keys.open = true;
-  keys.scrollIntoView({ block: 'start' });
+function renderInputsPreview(kind) {
+  if (kind === 'inplg') {
+    return `<span class="hm-s hm-s-inplg">
+      <span class="hm-bar-scene"></span>
+      <span class="hm-inplg-panel"><i class="on"></i><i></i><i></i><i></i></span>
+    </span>`;
+  }
+  if (kind === 'inpbar') {
+    return `<span class="hm-s hm-s-inpbar">
+      <span class="hm-bar-scene"></span>
+      <span class="hm-bar-shade"></span>
+      <span class="hm-inpbar-row">
+        <span class="hm-inpbar-tile focus now"><i></i><b></b></span>
+        <span class="hm-inpbar-tile"><i></i><b></b></span>
+        <span class="hm-inpbar-tile"><i></i><b></b></span>
+      </span>
+    </span>`;
+  }
+  if (kind === 'nslg') {
+    return `<span class="hm-s hm-s-nslg">
+      <span class="hm-nslg-art"><i></i></span>
+      <span class="hm-nslg-box"><b>No Signal</b><i></i><i></i></span>
+    </span>`;
+  }
+  return `<span class="hm-s hm-s-nsplain"><span class="hm-nsplain-txt">No Signal</span></span>`;
+}
+
+function setInputsCard(btn, kind, title, sub, active, disabled) {
+  if (!btn) return;
+  btn.className = 'hm-card' + (active ? ' on' : '');
+  btn.disabled = !!disabled;
+  btn.setAttribute('aria-pressed', String(!!active));
+  const badge = active ? t('ss.inUse', 'In use') : '';
+  btn.innerHTML = `<span class="hm-screen">
+      ${renderInputsPreview(kind)}
+      <span class="hm-badge"${badge ? '' : ' hidden'}>${esc(badge)}</span>
+    </span>
+    <span class="hm-meta">
+      <span class="hm-name">${esc(title)}</span>
+      <span class="hm-sub">${esc(sub)}</span>
+    </span>`;
 }
 
 /*
  * The input bar: the Input key's choice between LG's list of inputs and the
- * bar, which is the remote key's setting, made here; any other key is pointed
- * at the bar on the Remote tab.
+ * bar, which is the remote key's setting, made here.
  */
 function renderInputBar() {
   const grp = q('inputs-grp-bar');
   const rk = appsData && appsData.remoteKeys;
   const bar = inputsData && inputsData.inputBar;
-  // Offered where a key can be set to it: not where it is untried and switched off.
-  const offered = !!(rk && bar && (bar.allowed || rk.keys.some(k => k.id === INPUT_BAR)));
+  const opens = k => k.action === 'open' && k.id === INPUT_BAR;
+  const input = rk && rk.keys && rk.keys.find(k => k.key === 'input');
+  // Offered where the Input key can be set to it: not where it is untried and switched off.
+  const offered = !!(rk && input && bar && (bar.allowed || opens(input)));
   grp.hidden = !offered;
   if (!offered) return false;
-  const opens = k => k.action === 'open' && k.id === INPUT_BAR;
-  const input = rk.keys.find(k => k.key === 'input');
   const writable = !!(appsData.writable && inputsData.writable);
-  // A TV whose Input key cannot be set has only the other keys' row.
-  q('inputs-bar-choice').hidden = !input;
-  if (input) {
-    const ours = opens(input), lg = input.action === 'lg';
-    q('inputs-bar-lg').className = 'pill ' + (lg ? 'good' : 'idle');
-    q('inputs-bar-ours').className = 'pill ' + (ours ? 'good' : 'idle');
-    q('inputs-bar-lg').disabled = q('inputs-bar-ours').disabled = !writable;
-    q('inputs-bar-lg').setAttribute('aria-pressed', String(lg));
-    q('inputs-bar-ours').setAttribute('aria-pressed', String(ours));
-    q('inputs-bar-choice-note').textContent = ours
-      ? t('inputs.bar.isOurs', 'Each press steps to the next input, and the TV switches a second after the last.')
-      : lg ? t('inputs.bar.isLg', 'LG\u2019s own list of inputs, as the TV came.')
-      : t('inputs.bar.isOther', 'Set to something else on the Remote tab: {opens}.', { opens: input.opens || t('apps.remoteKeys.doesNothing', 'Does nothing') });
-  }
-  const others = rk.keys.filter(k => k.key !== 'input' && opens(k)).map(k => k.title || k.key);
-  q('inputs-bar-note').textContent = others.length
-    ? t('inputs.bar.alsoBy', 'Also opened by {keys}. Any key can be set to Input bar under Remote keys.', { keys: others.join(', ') })
-    : t('inputs.bar.anyKey', 'Any other key can open it too: set it to Input bar under Remote keys.');
+  const ours = opens(input), lg = input.action === 'lg';
+  setInputsCard(q('inputs-bar-lg'), 'inplg', t('inputs.bar.lg', 'LG\u2019s list'),
+    t('inputs.bar.isLg', 'LG\u2019s own list of inputs, as the TV came.'), lg, !writable);
+  setInputsCard(q('inputs-bar-ours'), 'inpbar', t('apps.inputBar', 'Input bar'),
+    t('inputs.bar.isOurs', 'Each press steps to the next input, and the TV switches a second after the last.'), ours, !writable);
+  const note = q('inputs-bar-choice-note');
+  note.hidden = lg || ours;
+  note.textContent = lg || ours ? ''
+    : t('inputs.bar.isOther', 'Set to something else on the Remote tab: {opens}.', { opens: input.opens || t('apps.remoteKeys.doesNothing', 'Does nothing') });
   return true;
 }
 
@@ -175,21 +213,23 @@ function renderNoSignal() {
   const ns = (inputsData && inputsData.noSignal) || {};
   grp.hidden = !ns.available;
   if (!ns.available) return false;
-  q('inputs-nosignal-desc').textContent = ns.restartPending
+  const writable = !!(inputsData && inputsData.writable);
+  setInputsCard(q('inputs-nosignal-lg'), 'nslg', t('inputs.noSignal.lg', 'LG\u2019s screen'),
+    t('inputs.noSignal.lgDesc', 'Picture and advice with \u201cNo Signal\u201d.'), !ns.on, !writable);
+  setInputsCard(q('inputs-nosignal-plain'), 'nsplain', t('ss.noSignal.plain', 'Just \u201cNo Signal\u201d'),
+    t('ss.noSignal.desc', 'Leaves out the animated picture and the line of advice under it, so an input with nothing coming in shows only \u201cNo Signal\u201d.'), !!ns.on, !writable);
+  const desc = q('inputs-nosignal-desc');
+  desc.hidden = !ns.restartPending;
+  desc.textContent = ns.restartPending
     ? t('ss.noSignal.pending', 'It takes effect once no input with a picture is on screen, such as at the Home screen.')
-    : t('ss.noSignal.desc', 'Leaves out the animated picture and the line of advice under it, so an input with nothing coming in shows only \u201cNo Signal\u201d.');
-  updateToggle('inputs-nosignal-btn', {
-    cls: ns.on ? 'good' : 'idle',
-    label: ns.on ? t('common.on', 'On') : t('common.off', 'Off'),
-    on: !!ns.on,
-    disabled: !inputsData.writable
-  });
+    : '';
   return true;
 }
 
-async function toggleNoSignal() {
-  const b = q('inputs-nosignal-btn');
-  b.disabled = true;
-  await sendCommand('plainNoSignal', !b.dataset.on);
+async function setNoSignal(plain) {
+  const ns = (inputsData && inputsData.noSignal) || {};
+  if (!!ns.on === !!plain) return;
+  q('inputs-nosignal-lg').disabled = q('inputs-nosignal-plain').disabled = true;
+  await sendCommand('plainNoSignal', !!plain);
   loadInputs();
 }

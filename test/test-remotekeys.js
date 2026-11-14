@@ -440,15 +440,19 @@ step(function (next) {
             assert.ok(!('guide' in tv.keys.keys), 'left to LG while unavailable');
             assert.strictEqual(JSON.parse(fs.readFileSync(MAP, 'utf8')).keys.guide, 'action:homeGuide', 'still saved');
             assert.strictEqual(loadFilter().handle(1003, true, false), 'next');
-            on = true;
-            rk.availabilityChanged();
-            setTimeout(function () {
-              assert.strictEqual(tv.keys.keys.guide, 'action:homeGuide', 'back once available');
-          rk.setRemoteKey('guide', 'lg', '', guard(function () {
-            console.log('  ✓ with Glasshouse Home on and a playlist, Guide can open its Internet TV guide instead of LG\'s, and is LG\'s again while it cannot');
-            next();
-          }));
-            }, 50);
+            rk.getRemoteKeys(guard(function (whileOff) {
+              var g = whileOff.keys.filter(function (k) { return k.key === 'guide'; })[0];
+              assert.strictEqual(g.opens, 'Glasshouse Home\'s guide', 'saved guide keeps its label while unavailable');
+              on = true;
+              rk.availabilityChanged();
+              setTimeout(function () {
+                assert.strictEqual(tv.keys.keys.guide, 'action:homeGuide', 'back once available');
+                rk.setRemoteKey('guide', 'lg', '', guard(function () {
+                  console.log('  ✓ with Glasshouse Home on and a playlist, Guide can open its Internet TV guide instead of LG\'s, and is LG\'s again while it cannot');
+                  next();
+                }));
+              }, 50);
+            }));
           }, 50);
         }));
       }));

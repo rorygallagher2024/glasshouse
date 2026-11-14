@@ -3253,12 +3253,9 @@
  "inputs.none": {"text": "Innen semmi sem módosítható ennek a TV-nek a bemenetein.", "from": "Nothing about this TV’s inputs can be changed from here."},
  "inputs.bar.inputKey": {"text": "Az Input gomb megnyitja", "from": "The Input key opens"},
  "inputs.bar.lg": {"text": "Az LG listáját", "from": "LG’s list"},
- "inputs.bar.otherKeys": {"text": "Más gombok", "from": "Other keys"},
  "inputs.bar.isOurs": {"text": "Minden gombnyomás a következő bemenetre lép, és a TV az utolsó után egy másodperccel vált.", "from": "Each press steps to the next input, and the TV switches a second after the last."},
  "inputs.bar.isLg": {"text": "Az LG saját bemenetlistája, ahogy a TV gyárilag érkezett.", "from": "LG’s own list of inputs, as the TV came."},
  "inputs.bar.isOther": {"text": "Másra van állítva a Távirányító lapon: {opens}.", "from": "Set to something else on the Remote tab: {opens}."},
- "inputs.bar.alsoBy": {"text": "Ez is megnyitja: {keys}. Bármely gomb beállítható a Bemeneti sáv értékre a Távirányító gombjai alatt.", "from": "Also opened by {keys}. Any key can be set to Input bar under Remote keys."},
- "inputs.bar.anyKey": {"text": "Bármely más gomb is megnyithatja: állítsa a Bemeneti sáv értékre a Távirányító gombjai alatt.", "from": "Any other key can open it too: set it to Input bar under Remote keys."},
  "srv.service.accountmanager": {"text": "LG-fiók", "from": "LG Account"},
  "srv.service.accountmanager.desc": {"text": "Bejelentkezve tartja a TV-t egy LG-fiókba. A Beállítások megnyitás előtt megvárják, akár 30 mp-ig, ha az LG szerverei le vannak tiltva. Kikapcsolva minden leáll, amihez LG-fiók kell, például a bejelentkezés, a ThinQ és az LG Content Store.", "from": "Keeps the TV signed in to an LG account. Settings waits for it before it opens, for up to 30 s where LG's servers are blocked. Off, anything that needs the LG account, such as signing in, ThinQ and the LG Content Store, stops working."},
  "home.bar.name": {"text": "Glasshouse Bar", "from": "Glasshouse Bar"},
@@ -3275,5 +3272,7 @@
  "home.ghShort": {"text": "Óra, sorok, hátterek és előnézet", "from": "Clock, rows, wallpapers & preview"},
  "home.minimalShort": {"text": "Egyszerű szöveges listák feketén", "from": "Plain text lists on black"},
  "home.bar.short": {"text": "Alsó sáv a kép fölött", "from": "Bottom bar over the picture"},
- "home.customShort": {"text": "Saját webes alkalmazás vagy oldal", "from": "Your own web app or page"}
+ "home.customShort": {"text": "Saját webes alkalmazás vagy oldal", "from": "Your own web app or page"},
+ "inputs.noSignal.lg": {"text": "Az LG képernyője", "from": "LG’s screen"},
+ "inputs.noSignal.lgDesc": {"text": "Kép és tanács a „Nincs jel” felirattal.", "from": "Picture and advice with “No Signal”."}
 }

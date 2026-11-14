@@ -3239,12 +3239,9 @@
  "inputs.none": {"text": "Nada nas entradas desta TV pode ser alterado por aqui.", "from": "Nothing about this TV’s inputs can be changed from here."},
  "inputs.bar.inputKey": {"text": "O botão Input abre", "from": "The Input key opens"},
  "inputs.bar.lg": {"text": "A lista da LG", "from": "LG’s list"},
- "inputs.bar.otherKeys": {"text": "Outros botões", "from": "Other keys"},
  "inputs.bar.isOurs": {"text": "Cada toque passa para a próxima entrada, e a TV troca um segundo depois do último.", "from": "Each press steps to the next input, and the TV switches a second after the last."},
  "inputs.bar.isLg": {"text": "A lista de entradas da LG, como a TV veio.", "from": "LG’s own list of inputs, as the TV came."},
  "inputs.bar.isOther": {"text": "Definido para outra coisa na aba Controle remoto: {opens}.", "from": "Set to something else on the Remote tab: {opens}."},
- "inputs.bar.alsoBy": {"text": "Também aberta por {keys}. Qualquer botão pode ser definido como Barra de entradas em Botões do controle remoto.", "from": "Also opened by {keys}. Any key can be set to Input bar under Remote keys."},
- "inputs.bar.anyKey": {"text": "Qualquer outro botão também pode abri-la: defina-o como Barra de entradas em Botões do controle remoto.", "from": "Any other key can open it too: set it to Input bar under Remote keys."},
  "srv.service.accountmanager": {"text": "Conta LG", "from": "LG Account"},
  "srv.service.accountmanager.desc": {"text": "Mantém a TV conectada a uma conta LG. As Configurações esperam por ela antes de abrir, até 30 s quando os servidores da LG estão bloqueados. Desligada, para de funcionar tudo o que precisa da conta LG, como entrar, o ThinQ e a LG Content Store.", "from": "Keeps the TV signed in to an LG account. Settings waits for it before it opens, for up to 30 s where LG's servers are blocked. Off, anything that needs the LG account, such as signing in, ThinQ and the LG Content Store, stops working."},
  "home.bar.name": {"text": "Glasshouse Bar", "from": "Glasshouse Bar"},
@@ -3261,5 +3258,7 @@
  "home.ghShort": {"text": "Relógio, fileiras, fundos e prévia", "from": "Clock, rows, wallpapers & preview"},
  "home.minimalShort": {"text": "Listas de texto simples sobre preto", "from": "Plain text lists on black"},
  "home.bar.short": {"text": "Barra inferior sobre a imagem", "from": "Bottom bar over the picture"},
- "home.customShort": {"text": "Seu próprio app web ou página", "from": "Your own web app or page"}
+ "home.customShort": {"text": "Seu próprio app web ou página", "from": "Your own web app or page"},
+ "inputs.noSignal.lg": {"text": "A tela da LG", "from": "LG’s screen"},
+ "inputs.noSignal.lgDesc": {"text": "Imagem e dica com “Sem sinal”.", "from": "Picture and advice with “No Signal”."}
 }
