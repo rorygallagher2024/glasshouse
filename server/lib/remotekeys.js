@@ -93,6 +93,7 @@ var LIVE_TV = 'com.webos.app.livetv';
 var HOME_APP = 'com.webos.app.home';
 // Glasshouse's input bar, an overlay app (assets/inputbar-app/).
 var INPUT_BAR = 'com.tvweb.inputbar';
+var HOME_BAR = 'com.tvweb.homebar';
 var INPUT_BAR_DIR = '/media/developer/apps/usr/palm/applications/' + INPUT_BAR;
 // The separate app earlier Glasshouse Home builds installed, now removed; a key
 // still set to it opened nothing, and is moved to HOME_APP at start.
@@ -399,6 +400,7 @@ function filterSource() {
     'var glasshousePowerState = "Active";',
     'var glasshouseScreenOffArmed = false;',
     'var glasshousePowerOffArmed = {};',
+    'var glasshouseBarPress = 0;',
     '',
     '// Key code by name; a name this firmware lacks is left out.',
     'function glasshouseKeyCodes() {',
@@ -561,9 +563,12 @@ function filterSource() {
     '            if (!autoRepeat) global.sendKeyToFocusWindow(Qt.Key_Right, pressed, 106);',
     '        } else if (pressed && !autoRepeat && id) {',
     '            console.info("glasshouse keyfilter: key", key, "opens", id);',
-    // Home opened as the Home key opens it, so Glasshouse Home opens as Home.
+    // Home opened as the Home key opens it, so Glasshouse Home opens as Home;
+    // Glasshouse Bar carries a per-press sequence number so duplicate relaunches
+    // can be dropped without swallowing rapid open/close toggles.
     '            applicationManager.launch(id, id === ' + JSON.stringify(HOME_APP),
-    '                ? JSON.stringify({ "activateType": "home", "launchType": "homeKey" }) : "{}");',
+    '                ? JSON.stringify({ "activateType": "home", "launchType": "homeKey" })',
+    '                : (id === ' + JSON.stringify(HOME_BAR) + ' ? JSON.stringify({ "glasshouse": "bar", "press": ++glasshouseBarPress }) : "{}"));',
     '        }',
     '        return KeyPolicy.Accepted;',
     '    } catch (e) {',

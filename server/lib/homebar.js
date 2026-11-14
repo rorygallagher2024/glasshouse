@@ -25,7 +25,7 @@ var util = require('./util');
 var msg = require('./say').msg;
 
 var APP = 'com.tvweb.homebar';
-var AFTER_CLOSE_MS = 300;
+var AFTER_CLOSE_MS = 1200;
 var AFTER_START_MS = 5000;
 var AFTER_SWITCH_ON_MS = 5000;
 var afterCloseMs = AFTER_CLOSE_MS, afterStartMs = AFTER_START_MS, afterSwitchOnMs = AFTER_SWITCH_ON_MS;
@@ -82,7 +82,12 @@ function runningChanged(r) {
   var now = r.running.some(function (a) { return a && a.id === APP; });
   var was = running;
   running = now;
-  if (!now && was !== false) schedule(afterCloseMs);
+  if (now) {
+    clearTimeout(timer);
+    timer = null;
+  } else if (was !== false) {
+    schedule(afterCloseMs);
+  }
 }
 
 /*

@@ -454,6 +454,25 @@ async function visitHomeBarPrewarm(browser, base, problems) {
     if (!post.sameNode) problems.push('Glasshouse Bar: redrew icon DOM node when opened with changed active input');
     if (post.nowNames.length !== 1 || post.nowNames[0] !== 'HDMI 2') problems.push('Glasshouse Bar: active input dot was ' + JSON.stringify(post.nowNames));
     if (post.closed) problems.push('Glasshouse Bar: closed on first open');
+
+    // A preload relaunch while open is ignored; distinct keyfilter press ids
+    // toggle immediately (even within 200 ms) while duplicates of the same press do not.
+    await page.evaluate(() => document.dispatchEvent(new CustomEvent('webOSRelaunch', { detail: { preload: 'full' } })));
+    const afterPreload = await page.evaluate(() => ({ cls: document.body.className, closed: !!window.__closed }));
+    if (afterPreload.cls !== 'on' || afterPreload.closed) problems.push('Glasshouse Bar: preload relaunch toggled bar: ' + JSON.stringify(afterPreload));
+
+    await page.evaluate(() => document.dispatchEvent(new CustomEvent('webOSRelaunch', { detail: { glasshouse: 'bar', press: 10 } })));
+    const afterClose = await page.evaluate(() => document.body.className);
+    if (afterClose !== '') problems.push('Glasshouse Bar: rapid press 10 did not start close: ' + JSON.stringify(afterClose));
+
+    await page.evaluate(() => document.dispatchEvent(new CustomEvent('webOSRelaunch', { detail: { glasshouse: 'bar', press: 10 } })));
+    const afterDup = await page.evaluate(() => document.body.className);
+    if (afterDup !== '') problems.push('Glasshouse Bar: duplicate press 10 cancelled close: ' + JSON.stringify(afterDup));
+
+    await page.evaluate(() => document.dispatchEvent(new CustomEvent('webOSRelaunch', { detail: { glasshouse: 'bar', press: 11 } })));
+    await page.waitForTimeout(200);
+    const afterReopen = await page.evaluate(() => ({ cls: document.body.className, closed: !!window.__closed }));
+    if (afterReopen.cls !== 'on' || afterReopen.closed) problems.push('Glasshouse Bar: rapid press 11 did not cancel fade-out: ' + JSON.stringify(afterReopen));
   } finally {
     await page.close();
   }

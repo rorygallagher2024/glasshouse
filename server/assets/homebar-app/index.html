@@ -421,46 +421,54 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
 
   /*
    * Preloaded: the Glasshouse server starts the app hidden ({"preload":
-   * "full"}) at boot, at switch-on and after each close, so a press finds the
-   * page loaded. A preloaded page draws nothing until that press, which
-   * reaches it as a relaunch; a press of Home while it is up closes it.
+   * "full"}) at boot, at switch-on and after a pause following each close, so
+   * a press finds the page loaded. A preloaded page draws nothing until that
+   * press, which reaches it as a relaunch; a press of Home while it is up
+   * closes it.
    */
-  function preloaded() {
-    var p = {};
-    try { p = JSON.parse(window.PalmSystem.launchParams || '{}') || {}; } catch (e) {}
-    return !!p.preload;
+  function launchInfo() {
+    try { return JSON.parse((window.PalmSystem && window.PalmSystem.launchParams) || '{}') || {}; } catch (e) { return {}; }
   }
   function hidden() { return document.hidden === true || document.webkitHidden === true; }
+  var initial = launchInfo();
+  var seenPress = initial.press || 0;
   /*
    * Preloaded, the page starts with no window, so hidden. On a B8 (webOS
-   * 4.4.3) the preload's launch parameters did not say so: the page drew
-   * itself, and the first press, taken for a second, closed it at once.
+   * 4.4.3) a preload's launch parameters did not always say so: without a
+   * keyfilter press marker, a hidden launch still waits for the first press.
    */
-  var idleUntilOpened = preloaded() || hidden();
+  var idleUntilOpened = !!initial.preload || (!seenPress && hidden());
   /*
-   * A relaunch is a second press of Home, and closes the bar, once it is on
-   * screen; one within this time of opening still opens it, as a backstop.
+   * Without a press sequence number, a single press can reach webOSRelaunch
+   * twice close together on webOS 4.4.3; time windows still guard that path.
    */
   var SECOND_PRESS_MS = 250;
   var visibleSince = hidden() ? 0 : Date.now();
   function visibilityChanged() { visibleSince = hidden() ? 0 : (visibleSince || Date.now()); }
   document.addEventListener('visibilitychange', visibilityChanged);
   document.addEventListener('webkitvisibilitychange', visibilityChanged);
-  /*
-   * One press can arrive as two relaunches close together: taken as two
-   * presses, the second reopened the bar the first had just closed (a B8,
-   * webOS 4.4.3). Those within this time of the last are the same press.
-   */
   var SAME_PRESS_MS = 200;
   var lastRelaunch = 0;
-  document.addEventListener('webOSRelaunch', function () {
+  document.addEventListener('webOSRelaunch', function (ev) {
+    var detail = (ev && ev.detail) || {};
+    if (detail.preload) return;
     var at = Date.now();
-    if (at - lastRelaunch < SAME_PRESS_MS) return;
+    if (detail.press) {
+      if (detail.press === seenPress) return;
+      seenPress = detail.press;
+    } else {
+      if (at - lastRelaunch < SAME_PRESS_MS) return;
+      var shownFor = visibleSince ? at - visibleSince : 0;
+      if (!idleUntilOpened && !closing && document.body.className === 'on' && shownFor < SECOND_PRESS_MS) {
+        lastRelaunch = at;
+        start();
+        return;
+      }
+    }
     lastRelaunch = at;
-    var shownFor = visibleSince ? at - visibleSince : 0;
-    if (idleUntilOpened || closing || document.body.className !== 'on' || shownFor < SECOND_PRESS_MS) {
+    if (idleUntilOpened || closing || document.body.className !== 'on') {
       idleUntilOpened = false;
-      visibleSince = visibleSince || Date.now();
+      visibleSince = visibleSince || at;
       start();
     } else {
       close();
