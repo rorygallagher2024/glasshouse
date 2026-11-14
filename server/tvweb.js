@@ -1413,12 +1413,15 @@ function setupHomeAssistant() {
       if (item.type === 'media_player') {
         /*
          * The integration reads payload_not_available literally, with no
-         * availability_template support - status is "asleep" once nothing
-         * is listening on the command topic, "off" while the TV is off but
-         * the server still answers (see setTvOff), "online" otherwise.
+         * availability_template support. Nothing is listening on the command
+         * topic for either broker will: "asleep" once the TV has gone fully
+         * to sleep after being told it is off, "offline" for a connection
+         * lost some other way (the TV stays on, e.g. a Wi-Fi drop). "off"
+         * (the TV off but the server still answering, see setTvOff) and
+         * "online" both mean the command topic still has a listener.
          */
         delete conf.availability_template;
-        conf.payload_not_available = 'asleep';
+        conf.payload_not_available = ['asleep', 'offline'];
       }
 
       /*
