@@ -220,6 +220,8 @@ before its first read.
 
 `test-saver-entity-slots.js` checks that a Home Assistant screen saver's entity slot declared blank, as Ambient's are, is saved, labelled and cleared, and that a slot the screen saver does not declare is refused.
 
+`test-homebar.js` checks that choosing Glasshouse Bar gives LG's Home its place back, installs its app and points the Home key at it, then keeps it preloaded, that a refused Home key removes the app again, that it is not offered where the input bar is not, and that switching it off gives the Home key back and removes the app.
+
 `test-nosignal.js` checks that the No Signal screen is patched only where both lines it changes are there exactly once, that switching it on mounts the copy and restarts the input app only once no input is in front or the one in front has nothing coming in, that a server start leaves a mounted copy alone, and that switching it off unmounts it.
 
 `test-idlesaver.js` checks that an idle screen saver refused by panel care is asked for again without its hold, and that the hold is put back when it closes or is still refused, but not over an app that has come to the front since. An app that still refuses it is not lifted again until another app is in front or the TV leaves On. Failed restores are retried, a lost policy reply remains tracked, and a server restart recovers an outstanding lift. Delayed idle callbacks respect later power changes, and a dashboard lift expires if no screen saver starts. Its own request's refusal, playback (non-preview app video on the main screen included while the media state reads idle, while Home, broadcast and inset tile previews still lift it) and a TV without `setEplAppInfo` are left alone. The assertions run on Node 0.10 and 0.12 as well as newer versions.

@@ -1234,6 +1234,14 @@ function glasshouseHomeRows(d) {
              hint: mini ? t('home.minimalDesc', 'Glasshouse’s plainest home screen: the TV’s apps and inputs as two lists of names on black, and the time.')
                    : t('tv.home.launcher.hint', 'Your own home screen, set up on the Home tab of the web dashboard, shown in Glasshouse Home\u2019s place.') });
   }
+  // Glasshouse Bar: Home opens a row over the picture; LG's Home keeps its place.
+  if (d.bar && d.bar.offered && !d.restorePending) {
+    var barOn = !!d.bar.enabled;
+    r.push({ label: t('home.bar.name', 'Glasshouse Bar'), value: barOn ? t('common.on', 'On') : t('common.off', 'Off'), cls: barOn ? 'on' : 'off',
+             act: can ? 'homeBar' : null, on: barOn,
+             press: barOn ? t('tv.home.switch.off', 'Press OK to use LG Home again') : t('tv.home.bar.on', 'Press OK to use Glasshouse Bar'),
+             hint: t('home.bar.isOnDesc', 'The Home button opens a row of your apps and inputs over the picture; Back or Home closes it. LG’s Home stays in its place, and its tile is at the end of the apps.') });
+  }
   if (!d.enabled || launcherOn) return r;
   var c = d.catalogue, lay = d.layout;
   // The rows first, as the screen shows them; each opens a list of its own.
@@ -3504,6 +3512,11 @@ function activate() {
           sendPost('/api/home/enable', {}, t('home.launcher.isOn', '{title} is the TV\u2019s Home', { title: r.title }));
         })
         .catch(function () { busy = false; flash(t('tv.failed', 'That did not work')); });
+    case 'homeBar':
+      if (!r.on && confirmFirst(r, t('home.confirmOn', 'Press again to switch on'))) return;
+      r.value = t('apps.service.updating', 'Updating\u2026');
+      render();
+      return sendPost('/api/home/bar', { on: !r.on }, r.on ? t('tv.home.off', 'LG\u2019s Home is the TV\u2019s Home again') : t('home.bar.isOn', 'Glasshouse Bar opens on Home'));
     case 'homeHideLg':
       if (!r.on && confirmFirst(r, t('home.hideLgConfirm', 'Press again to hide it'))) return;
       r.value = t('apps.service.updating', 'Updating\u2026');

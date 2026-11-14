@@ -3262,5 +3262,14 @@
  "inputs.bar.isLg": {"text": "Az LG saját bemenetlistája, ahogy a TV gyárilag érkezett.", "from": "LG’s own list of inputs, as the TV came."},
  "inputs.bar.isOther": {"text": "Másra van állítva a Távirányító lapon: {opens}.", "from": "Set to something else on the Remote tab: {opens}."},
  "inputs.bar.alsoBy": {"text": "Ez is megnyitja: {keys}. Bármely gomb beállítható a Bemeneti sáv értékre a Távirányító gombjai alatt.", "from": "Also opened by {keys}. Any key can be set to Input bar under Remote keys."},
- "inputs.bar.anyKey": {"text": "Bármely más gomb is megnyithatja: állítsa a Bemeneti sáv értékre a Távirányító gombjai alatt.", "from": "Any other key can open it too: set it to Input bar under Remote keys."}
+ "inputs.bar.anyKey": {"text": "Bármely más gomb is megnyithatja: állítsa a Bemeneti sáv értékre a Távirányító gombjai alatt.", "from": "Any other key can open it too: set it to Input bar under Remote keys."},
+ "home.bar.name": {"text": "Glasshouse Bar", "from": "Glasshouse Bar"},
+ "home.bar.isOn": {"text": "A Glasshouse Bar a Home gombra nyílik meg", "from": "Glasshouse Bar opens on Home"},
+ "home.bar.isOnDesc": {"text": "A Home gomb egy sort nyit az alkalmazásaival és bemeneteivel a kép fölött; a Vissza vagy a Home bezárja. Az LG kezdőképernyője a helyén marad, csempéje az alkalmazások végén van.", "from": "The Home button opens a row of your apps and inputs over the picture; Back or Home closes it. LG’s Home stays in its place, and its tile is at the end of the apps."},
+ "tv.home.bar.on": {"text": "Nyomja meg az OK gombot a Glasshouse Bar használatához", "from": "Press OK to use Glasshouse Bar"},
+ "srv.homebar.notOffered": {"text": "A Glasshouse Bar nem érhető el ezen a TV-n.", "from": "Glasshouse Bar is not offered on this TV."},
+ "srv.homebar.homeOff": {"text": "Nem sikerült visszaadni a helyét az LG kezdőképernyőjének.", "from": "Could not give LG's Home its place back."},
+ "srv.homebar.install": {"text": "Nem sikerült telepíteni a Glasshouse Bar alkalmazását.", "from": "Could not install Glasshouse Bar's app."},
+ "srv.homebar.key": {"text": "Nem sikerült a Home gombot a Glasshouse Barhoz rendelni.", "from": "Could not give the Home key to Glasshouse Bar."},
+ "srv.homebar.keyBack": {"text": "Nem sikerült visszaadni a Home gombot az LG-nek.", "from": "Could not give the Home key back to LG."}
 }

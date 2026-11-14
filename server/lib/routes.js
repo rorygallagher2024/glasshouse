@@ -94,6 +94,8 @@ var clockModule = null;
 var homePictureModule = null;
 /** @type {typeof import('./home-launcher')} */
 var homeLauncherModule = null;
+/** @type {typeof import('./homebar') | null} */
+var homebarModule = null;
 /** @type {typeof import('./iptv')} */
 var iptvModule = null;
 /** @type {typeof import('./screensavers')} */
@@ -1212,6 +1214,7 @@ function handleHomeRoute(req, res, u, pathname) {
       return homeModule.status(function (st) {
         st.writable = !!config.allowControl || fromTV(req);
         st.launchers = homeLauncherModule ? homeLauncherModule.status() : null;
+        st.bar = homebarModule ? homebarModule.status() : null;
         st.launcherUpload = sideloadVia(req) !== null;
         // What the Home pane draws its colour previews' clock as.
         st.clockHour12 = clockHour12();
@@ -1331,7 +1334,14 @@ function handleHomeRoute(req, res, u, pathname) {
       if (pathname === '/api/home/layout') return homeModule.setLayout(body, reply);
       if (pathname === '/api/home/start-layout') return homeModule.setHideLgHomeAtStart(body, reply);
       if (pathname === '/api/home/wallpapers') return homeModule.setWallpapers(body, reply);
-      if (pathname === '/api/home/enable') return homeModule.enable(reply);
+      // Glasshouse Bar leaves LG's Home its place, so it is switched off first.
+      if (pathname === '/api/home/enable') {
+        if (!homebarModule || !homebarModule.enabled()) return homeModule.enable(reply);
+        return homebarModule.disable(function (r) { if (!r.ok) return reply(r); homeModule.enable(reply); });
+      }
+      if (pathname === '/api/home/bar' && homebarModule) {
+        return body && body.on ? homebarModule.enable(reply) : homebarModule.disable(reply);
+      }
       if (pathname === '/api/home/disable') return homeModule.disable(reply);
       if (pathname === '/api/home/open') return homeModule.open(body, reply);
       if (pathname === '/api/home/launcher' && homeLauncherModule) {
@@ -2589,6 +2599,7 @@ function init(opts) {
   if (opts.clock) clockModule = opts.clock;
   if (opts.homePicture) homePictureModule = opts.homePicture;
   if (opts.homeLauncher) homeLauncherModule = opts.homeLauncher;
+  if (opts.homebar) homebarModule = opts.homebar;
   if (opts.iptv) iptvModule = opts.iptv;
   if (opts.screensavers) screensaversModule = opts.screensavers;
   if (opts.haEntity) haEntityModule = opts.haEntity;

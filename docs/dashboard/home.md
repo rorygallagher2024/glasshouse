@@ -365,6 +365,14 @@ Under **Choose your launcher** on the web dashboard's **Home** tab, choose **Gla
 
 ![Glasshouse Minimal on a C2 (webOS 9.2.2): Apps and Inputs, with the apps listed as names on black](../screenshots/launcher-minimal.jpg)
 
+## Glasshouse Bar
+
+**Glasshouse Bar**, under **Choose your launcher**, is a launcher that leaves the picture on screen. The remote's **Home** button brings up a row along the bottom, over whatever is playing: the apps of Glasshouse Home's Apps row, in the order and with the hiding set on this tab (apps in **More apps** and saved web pages are left out), the **LG Home** tile where that row has it, and the inputs and Live TV as the Inputs row has them, the input on screen marked. **Left** and **Right** move along it, **OK** opens, and **Back** or **Home** closes it. With the Magic Remote, pointing at a tile picks it and clicking opens it.
+
+LG's Home keeps its place, so the TV shows LG's Home when an app closes and at power-on, as it does without Glasshouse Home; choosing Glasshouse Bar switches Glasshouse Home off. It is an overlay window opened by the remote's Home key, as the [input bar](inputs.md#input-bar) is, so it is offered where the input bar is: webOS 4, 6 and 9, where it has been tried, and webOS 5, 7, 8 and 10 with the input bar's switch under **Server** → **Advanced** → **Experimental features**. webOS 3 and 11 do not offer it.
+
+Its app, `com.tvweb.homebar`, has no tile of its own. It is kept loaded in the background while chosen, so a press shows it at once. Choosing any other launcher gives the Home button back and removes the app.
+
 ## Custom launcher
 
 A home screen of your own can take Glasshouse Home's place: a launcher you have written or downloaded, or a web page such as a Home Assistant dashboard. Everything above still applies to it. The Home and Back buttons open it, it opens when the TV wakes on Home, holding **Home** opens LG's Home, and if it stops working, LG's Home takes its place by itself.

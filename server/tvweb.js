@@ -64,6 +64,7 @@ var doh = require('./lib/doh');
 var quickAccess = require('./lib/quickaccess');
 var remoteKeys = require('./lib/remotekeys');
 var inputBar = require('./lib/inputbar');
+var homebar = require('./lib/homebar');
 var clockFormat = require('./lib/clock');
 var homeScreen = require('./lib/homescreen');
 /*
@@ -587,9 +588,29 @@ inputBar.init({
   webosVersion: telemetry.detectWebosVersion(),
   writeSettings: routes.writeSettings,
   wanted: remoteKeys.opensInputBar,
-  drop: function (cb) { remoteKeys.dropInputBar(cb); },
+  // Glasshouse Bar is an overlay as the bar is, so it goes where the bar does.
+  drop: function (cb) {
+    remoteKeys.dropInputBar(function () {
+      if (!homebar.enabled() || inputBar.allowed()) return cb();
+      homebar.disable(function () { cb(); });
+    });
+  },
   // liveState is set up further on; the bar only asks once started.
   on: function () { return !liveState || (liveState.state.snapshot().power || {}).systemOn !== false; }
+});
+homebar.init({
+  luna: luna,
+  stateDir: __dirname,
+  app: function (action, cb) { tvApp(action, cb, 'homebar-app'); },
+  setHomeKey: remoteKeys.setHome,
+  allowed: function () { return inputBar.allowed(); },
+  standing: function () { return inputBar.standing(); },
+  on: function () { return !liveState || (liveState.state.snapshot().power || {}).systemOn !== false; },
+  // Glasshouse Home, or a launcher in its place, off first: LG's Home keeps its place.
+  homeOff: function (cb) {
+    if (!glasshouseHome || !glasshouseHome.enabled()) return cb({ ok: true });
+    glasshouseHome.disable(cb);
+  }
 });
 homeScreen.init({ luna: luna, config: CONFIG, inputNames: telemetry.inputNameMap, stateDir: __dirname, webosVersion: telemetry.detectWebosVersion() });
 // webOS 10's layout is an overlay mount, gone after a restart of the TV.
@@ -1036,6 +1057,7 @@ routes.init({
   home: glasshouseHome,
   homePicture: homePicture,
   homeLauncher: homeLauncher,
+  homebar: homebar,
   iptv: iptv,
   screensavers: screensavers,
   haEntity: haEntity,
@@ -1174,6 +1196,10 @@ if (CLI_MODE) {
     // left alone: it is installed when a key is set to it.
     tvApp('refresh', function (r) {
       if (r && r.refreshed && r.ok) console.log('inputbar: app refreshed to current release');
+      // One at a time: the installer takes one job.
+      tvApp('refresh', function (r2) {
+        if (r2 && r2.refreshed && r2.ok) console.log('homebar: app refreshed to current release');
+      }, 'homebar-app');
     }, 'inputbar-app');
   });
 } else {
@@ -2141,8 +2167,9 @@ if (!CLI_MODE) {
   });
   // The input bar is preloaded while a remote key opens it and the TV is on.
   inputBar.start();
+  homebar.start();
   liveState.state.onChange(function (ev) {
-    if (ev.group === 'power' && ev.key === 'systemOn' && ev.value === true) inputBar.poke();
+    if (ev.group === 'power' && ev.key === 'systemOn' && ev.value === true) { inputBar.poke(); homebar.poke(); }
   });
 
   telemetry.detectDeviceInfo(function() {

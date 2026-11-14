@@ -2160,7 +2160,8 @@ async function visitHomeLauncher(browser, base, problems) {
   try {
     await page.goto(base + '/?tab=home');
     await page.waitForFunction(() => typeof homeStatus !== 'undefined' && homeStatus && document.getElementById('home-mode-minimal').textContent === 'Glasshouse Minimal');
-    const names = await page.locator('#home-mode-btns button').allTextContents();
+    // Those shown: Glasshouse Bar is offered only where the input bar is.
+    const names = await page.locator('#home-mode-btns button:not([hidden])').allTextContents();
     if (names.join() !== 'LG Home,Glasshouse Home,Glasshouse Minimal,Custom') problems.push('Home launcher: the choices read ' + names.join());
     if (await page.locator('#home-launcher').isVisible()) problems.push('Home launcher: Custom\'s settings showed with Glasshouse Home chosen');
     // Custom with none set up opens its settings, and chooses nothing.

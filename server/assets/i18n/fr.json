@@ -3248,5 +3248,14 @@
  "inputs.bar.isLg": {"text": "La liste des entrées de LG, comme à l’origine.", "from": "LG’s own list of inputs, as the TV came."},
  "inputs.bar.isOther": {"text": "Réglée sur autre chose dans l’onglet Télécommande : {opens}.", "from": "Set to something else on the Remote tab: {opens}."},
  "inputs.bar.alsoBy": {"text": "Ouverte aussi par {keys}. Toute touche peut être réglée sur Barre des entrées sous Touches de la télécommande.", "from": "Also opened by {keys}. Any key can be set to Input bar under Remote keys."},
- "inputs.bar.anyKey": {"text": "Toute autre touche peut aussi l’ouvrir : réglez-la sur Barre des entrées sous Touches de la télécommande.", "from": "Any other key can open it too: set it to Input bar under Remote keys."}
+ "inputs.bar.anyKey": {"text": "Toute autre touche peut aussi l’ouvrir : réglez-la sur Barre des entrées sous Touches de la télécommande.", "from": "Any other key can open it too: set it to Input bar under Remote keys."},
+ "home.bar.name": {"text": "Glasshouse Bar", "from": "Glasshouse Bar"},
+ "home.bar.isOn": {"text": "Glasshouse Bar s’ouvre avec Home", "from": "Glasshouse Bar opens on Home"},
+ "home.bar.isOnDesc": {"text": "Le bouton Home ouvre une rangée de vos applications et entrées par-dessus l’image ; Retour ou Home la ferme. L’accueil de LG reste à sa place, et sa vignette est au bout des applications.", "from": "The Home button opens a row of your apps and inputs over the picture; Back or Home closes it. LG’s Home stays in its place, and its tile is at the end of the apps."},
+ "tv.home.bar.on": {"text": "Appuyez sur OK pour utiliser Glasshouse Bar", "from": "Press OK to use Glasshouse Bar"},
+ "srv.homebar.notOffered": {"text": "Glasshouse Bar n’est pas proposé sur ce téléviseur.", "from": "Glasshouse Bar is not offered on this TV."},
+ "srv.homebar.homeOff": {"text": "Impossible de rendre sa place à l’accueil de LG.", "from": "Could not give LG's Home its place back."},
+ "srv.homebar.install": {"text": "Impossible d’installer l’application de Glasshouse Bar.", "from": "Could not install Glasshouse Bar's app."},
+ "srv.homebar.key": {"text": "Impossible de confier la touche Home à Glasshouse Bar.", "from": "Could not give the Home key to Glasshouse Bar."},
+ "srv.homebar.keyBack": {"text": "Impossible de rendre la touche Home à LG.", "from": "Could not give the Home key back to LG."}
 }

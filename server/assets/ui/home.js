@@ -137,6 +137,9 @@ function renderHome() {
     desc.textContent = st.lgHomeOpen
       ? t('home.launcher.isOnLgOpenTitle', 'LG’s Home is open for now. {title} comes back when something else is opened, or Home is pressed.', { title })
       : t('home.launcher.isOnDescTitle', '{title} opens in LG’s Home’s place: with the Home and Back buttons, and when the TV wakes on Home.', { title });
+  } else if (homeBarOn()) {
+    state.textContent = t('home.bar.isOn', 'Glasshouse Bar opens on Home');
+    desc.textContent = t('home.bar.isOnDesc', 'The Home button opens a row of your apps and inputs over the picture; Back or Home closes it. LG’s Home stays in its place, and its tile is at the end of the apps.');
   } else if (st.enabled) {
     state.textContent = t('home.isOn', 'Glasshouse Home is the TV’s Home');
     desc.textContent = st.lgHomeOpen
@@ -300,13 +303,16 @@ function renderHome() {
       btn.className = armed ? 'warn' : '';
       btn.textContent = armed ? again : t('home.retryRestore', 'Retry restoring LG Home');
     } else {
-      choice(lgBtn, t('home.lgHome', 'LG Home'), !st.enabled, st.enabled && armed, false, !homeWritable());
+      choice(lgBtn, t('home.lgHome', 'LG Home'), !st.enabled && !homeBarOn(), (st.enabled || homeBarOn()) && (armed || homeArmed === 'bar:off'), false, !homeWritable());
       choice(btn, t('home.title', 'Glasshouse Home'), st.enabled && !chosenId, !st.enabled && armed, false, !homeWritable());
     }
   }
   const unavailable = !!st.restorePending || !st.supported.ok;
   choice(q('home-mode-minimal'), t('home.minimalName', 'Glasshouse Minimal'), chosenId === 'minimal', homeArmed === 'use:minimal',
     unavailable || !homeLaunchersAll().some(l => l.id === 'minimal'), !homeWritable() || homeLauncherBusy);
+  // Offered where the input bar is: both are overlays over the picture.
+  choice(q('home-mode-bar'), t('home.bar.name', 'Glasshouse Bar'), homeBarOn(), homeArmed === 'bar:on',
+    !st.bar || !st.bar.offered || !!st.restorePending, !homeWritable() || homeLauncherBusy);
   choice(q('home-mode-launcher'), t('home.custom', 'Custom'), !!chosenId && chosenId !== 'minimal', homeArmed === 'use:own',
     unavailable, !homeWritable() || homeLauncherBusy);
   const hist = q('home-history-note');
@@ -661,8 +667,35 @@ function homeSetPlace(id, place) {
 
 function homeResetLayout() { homeSaveLayout({ reset: true }); }
 
+function homeBarOn() { return !!(homeStatus && homeStatus.bar && homeStatus.bar.enabled); }
+
+/*
+ * Glasshouse Bar, chosen or put back to LG's Home: a second press within five
+ * seconds acts, as the other choices.
+ */
+async function homeChooseBar(on) {
+  if (!homeStatus || !homeWritable() || homeLauncherBusy) return;
+  if (homeBarOn() === on) return;
+  const want = 'bar:' + (on ? 'on' : 'off');
+  if (homeArmed !== want) {
+    homeArmed = want;
+    clearTimeout(homeArmTimer);
+    homeArmTimer = setTimeout(() => { homeArmed = null; renderHome(); }, 5000);
+    return renderHome();
+  }
+  homeArmed = null;
+  clearTimeout(homeArmTimer);
+  homeLauncherBusy = true;
+  renderHome();
+  try { await homePost('/api/home/bar', { on }); } catch (e) { showErr(e.message); }
+  homeLauncherBusy = false;
+  loadHome();
+}
+
 function homeChooseMode(wantOn) {
   if (!homeStatus) return;
+  // LG Home from Glasshouse Bar.
+  if (!wantOn && homeBarOn()) { homeChooseBar(false); return; }
   // Custom's settings belong to Custom alone.
   homeLauncherOpen = false;
   if (homeStatus.restorePending) { homeSwitch(); return; }

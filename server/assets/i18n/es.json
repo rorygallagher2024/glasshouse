@@ -3248,5 +3248,14 @@
  "inputs.bar.isLg": {"text": "La lista de entradas de LG, como venía el televisor.", "from": "LG’s own list of inputs, as the TV came."},
  "inputs.bar.isOther": {"text": "Asignada a otra cosa en la pestaña Mando: {opens}.", "from": "Set to something else on the Remote tab: {opens}."},
  "inputs.bar.alsoBy": {"text": "También se abre con {keys}. Cualquier tecla puede asignarse a Barra de entradas en Teclas del mando.", "from": "Also opened by {keys}. Any key can be set to Input bar under Remote keys."},
- "inputs.bar.anyKey": {"text": "Cualquier otra tecla también puede abrirla: asígnala a Barra de entradas en Teclas del mando.", "from": "Any other key can open it too: set it to Input bar under Remote keys."}
+ "inputs.bar.anyKey": {"text": "Cualquier otra tecla también puede abrirla: asígnala a Barra de entradas en Teclas del mando.", "from": "Any other key can open it too: set it to Input bar under Remote keys."},
+ "home.bar.name": {"text": "Glasshouse Bar", "from": "Glasshouse Bar"},
+ "home.bar.isOn": {"text": "Glasshouse Bar se abre con Home", "from": "Glasshouse Bar opens on Home"},
+ "home.bar.isOnDesc": {"text": "El botón Home abre una fila con tus aplicaciones y entradas sobre la imagen; Atrás o Home la cierra. El inicio de LG sigue en su sitio, y su icono está al final de las aplicaciones.", "from": "The Home button opens a row of your apps and inputs over the picture; Back or Home closes it. LG’s Home stays in its place, and its tile is at the end of the apps."},
+ "tv.home.bar.on": {"text": "Pulsa OK para usar Glasshouse Bar", "from": "Press OK to use Glasshouse Bar"},
+ "srv.homebar.notOffered": {"text": "Glasshouse Bar no se ofrece en este televisor.", "from": "Glasshouse Bar is not offered on this TV."},
+ "srv.homebar.homeOff": {"text": "No se pudo devolver su sitio al inicio de LG.", "from": "Could not give LG's Home its place back."},
+ "srv.homebar.install": {"text": "No se pudo instalar la aplicación de Glasshouse Bar.", "from": "Could not install Glasshouse Bar's app."},
+ "srv.homebar.key": {"text": "No se pudo asignar la tecla Home a Glasshouse Bar.", "from": "Could not give the Home key to Glasshouse Bar."},
+ "srv.homebar.keyBack": {"text": "No se pudo devolver la tecla Home a LG.", "from": "Could not give the Home key back to LG."}
 }
