@@ -3281,7 +3281,6 @@
  "inputs.showMediaServersDesc": {"text": "Megjeleníti a hálózaton talált DLNA-médiaszervereket a TV bemenetei mellett. Kikapcsolva az összes jelenlegi és jövőbeli médiaszervert elrejti.", "from": "Shows DLNA media servers discovered on your network alongside your TV’s inputs. Leave off to hide all current and future media servers."},
  "inputs.bar.transparent": {"text": "Átlátszó csempék", "from": "Transparent tiles"},
  "inputs.bar.transparentDesc": {"text": "Átengedi a képet a sáv csempéin.", "from": "Lets the picture show through the bar’s tiles."},
- "srv.compat.home.old": {"text": "A Glasshouse Home-hoz webOS 3 vagy újabb kell.", "from": "Glasshouse Home needs webOS 3 or later."},
  "srv.compat.bar.old": {"text": "A webOS 3-ban nincsenek távirányító-gombszűrők, amelyek megnyitják a bemenetsávot és a Glasshouse Bart.", "from": "webOS 3 has no remote key filters, which open the input bar and Glasshouse Bar."},
  "srv.compat.bar.new": {"text": "A webOS 11-től a távirányító gombjai az LG-éi, és nem nyithatnak meg Glasshouse-alkalmazást.", "from": "From webOS 11 the remote's keys are LG's own, and cannot open an app of Glasshouse's."},
  "home.compat.untried": {"text": "Még senki nem jelezte, hogy a Glasshouse Home, a Minimal és az egyéni indítók működnek webOS {version} alatt. Ha valamelyik rosszul működik, válassza az LG Home-ot, hogy minden visszaálljon.", "from": "Glasshouse Home, Minimal and custom launchers have not yet been reported working on webOS {version}. If one misbehaves, choose LG Home to put everything back."},

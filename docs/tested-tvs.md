@@ -158,10 +158,20 @@ Glasshouse Home and the launchers in its place, and the overlay bars the remote 
 
 | Feature | Reported working | Offered, with a warning | Not offered |
 | :------ | :--------------- | :---------------------- | :---------- |
-| Glasshouse Home, Minimal and custom launchers | 4, 5, 6, 7, 9, 10, 11 | 3, 8, 12 and later | 2 and earlier |
+| Glasshouse Home, Minimal and custom launchers | 4, 5, 6, 7, 9, 10, 11 | 3 and earlier, 8, 12 and later | None |
 | Glasshouse Bar and the input bar | 4, 6, 9 | 5, 7, 8, 10 | 3 and earlier, 11 and later |
 
-webOS 3 has no remote key filters, which open the bars, and from webOS 11 the remote's keys cannot open an app of Glasshouse's. Tile hiding, and custom screen savers on webOS 12 and later, can leave a TV needing a restart when they go wrong, so they stay [experimental](experimental.md) with their own switches.
+On webOS 2 and 3, Glasshouse Home runs as an app beside LG's Home, and reads the Home press from the remote itself. Tile hiding, and custom screen savers on webOS 12 and later, can leave a TV needing a restart when they go wrong, so they stay [experimental](experimental.md) with their own switches.
+
+### Why some versions are not offered
+
+Only Glasshouse Bar and the input bar are refused anywhere, and each refusal comes from something found on a TV. Each could change: if you have a TV on one of these versions and want to try, [open an issue](https://github.com/rorygallagher2024/glasshouse/issues/new) or a pull request ([CONTRIBUTING.md](CONTRIBUTING.md#testing-on-a-real-tv) explains how), and add what you find to [TV research](development/TV-RESEARCH.md).
+
+**webOS 3: no remote key filters.** Both bars are opened by LG's remote key filters: files the TV's compositor loads that say which app a key opens, where Glasshouse points the Home or Input key at its own app. webOS 3 has none. A 60UJ6519-ZA (webOS 3.9.3) had no `KeyFilters` folder and no setting for one, and every Home press opened LG's ribbon ([details](development/TV-RESEARCH.md#no-remote-key-filters-on-webos-3-60uj6519-za-webos-393)).
+*The lead:* Glasshouse Home gets around this on webOS 3 by reading the Home press from the remote's input device and opening over LG's ribbon. The bars could do the same, with LG's own list or ribbon opening underneath; no one has tried it yet.
+
+**webOS 11 and later: the keys are LG's own.** The key filters became native libraries with no file to add to. On a C5 (webOS 11.2.0) Home always launched LG's Home app, and Input always opened LG's input picker, whatever the settings held ([details](development/TV-RESEARCH.md#native-key-filters-c5-webos-1120)). Glasshouse Home still works there because it takes the place of LG's Home app itself. webOS 12 and later are taken to be the same, but no one has looked.
+*The lead:* the TV logs every button press by name as it happens, and Glasshouse already acts on that log for the Netflix and AI buttons, with an app in front 0.6 to 1 second after the press. A bar opened that way would follow LG's picker or Home rather than replace it.
 
 ## webOS version numbers
 

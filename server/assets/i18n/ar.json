@@ -3267,7 +3267,6 @@
  "inputs.showMediaServersDesc": {"text": "يعرض خوادم وسائط DLNA المكتشفة على شبكتك إلى جانب مداخل التلفاز. اتركه مغلقاً لإخفاء جميع خوادم الوسائط الحالية والمستقبلية.", "from": "Shows DLNA media servers discovered on your network alongside your TV’s inputs. Leave off to hide all current and future media servers."},
  "inputs.bar.transparent": {"text": "مربعات شفافة", "from": "Transparent tiles"},
  "inputs.bar.transparentDesc": {"text": "يسمح للصورة بالظهور عبر مربعات الشريط.", "from": "Lets the picture show through the bar’s tiles."},
- "srv.compat.home.old": {"text": "يحتاج Glasshouse Home إلى webOS 3 أو أحدث.", "from": "Glasshouse Home needs webOS 3 or later."},
  "srv.compat.bar.old": {"text": "لا يحتوي webOS 3 على مرشحات أزرار جهاز التحكم، التي تفتح شريط المدخلات وGlasshouse Bar.", "from": "webOS 3 has no remote key filters, which open the input bar and Glasshouse Bar."},
  "srv.compat.bar.new": {"text": "بدءًا من webOS 11، أزرار جهاز التحكم خاصة بـ LG ولا يمكنها فتح تطبيق من Glasshouse.", "from": "From webOS 11 the remote's keys are LG's own, and cannot open an app of Glasshouse's."},
  "home.compat.untried": {"text": "لم يُبلغ أحد بعد أن Glasshouse Home وMinimal والمشغّلات المخصصة تعمل على webOS {version}. إذا أساء أحدها التصرف، اختر LG Home لإعادة كل شيء.", "from": "Glasshouse Home, Minimal and custom launchers have not yet been reported working on webOS {version}. If one misbehaves, choose LG Home to put everything back."},

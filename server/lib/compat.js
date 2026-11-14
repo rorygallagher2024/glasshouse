@@ -11,7 +11,8 @@
  *               report that it works or that it does not
  *   unsupported known not to work, for the reason given: not offered
  *
- * A test report moves a version into `tried` here. Features whose failure can
+ * A test report moves a version into `tried` here; docs/tested-tvs.md says
+ * why each `from` and `upTo` is where it is, with what was found on the TV. Features whose failure can
  * need the TV unplugged (custom screen savers on webOS 12 and later, tile
  * hiding) are not in this table: they keep their own confirmation.
  *
@@ -23,14 +24,10 @@ var REPO = 'https://github.com/rorygallagher2024/glasshouse';
 
 var FEATURES = {
   // Glasshouse Home, and the launchers that take its place: Glasshouse
-  // Minimal and a custom launcher.
+  // Minimal and a custom launcher. No version is known not to run it.
   home: {
     title: 'Glasshouse Home',
-    tried: [4, 5, 6, 7, 9, 10, 11],
-    from: 3,
-    tooOld: function () {
-      return msg('srv.compat.home.old', 'Glasshouse Home needs webOS 3 or later.');
-    }
+    tried: [4, 5, 6, 7, 9, 10, 11]
   },
   // The input bar and Glasshouse Bar: overlay apps opened by the remote key
   // filter, which webOS 3 does not have and which, from webOS 11, cannot hand
@@ -98,7 +95,7 @@ function info(id, tv) {
   var out = { standing: s, webos: tv.webos || null };
   if (s === 'unsupported') {
     var m = major(tv.webos);
-    out.reason = m < f.from ? f.tooOld() : f.tooNew();
+    out.reason = f.from !== undefined && m < f.from ? f.tooOld() : f.tooNew();
   }
   if (s === 'untried') out.report = { problem: issueUrl(id, false, tv), works: issueUrl(id, true, tv) };
   return out;

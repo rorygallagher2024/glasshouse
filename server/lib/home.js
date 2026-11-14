@@ -1998,11 +1998,11 @@ function change(action, cb) {
 
 function copy(o) { return JSON.parse(JSON.stringify(o)); }
 
-// webOS 3-6 run Glasshouse Home as a standalone app (com.tvweb.home) with the
+// webOS 2-6 run Glasshouse Home as a standalone app (com.tvweb.home) with the
 // Home key directed to it by the remote key filter, avoiding the sam restarts
 // of takeover that break Widevine DRM, ESN, and HDMI EDID audio on webOS 5 and 6.
 function isStandalone() {
-  return /^[3456]\./.test(String(webosVersion || ''));
+  return /^[23456]\./.test(String(webosVersion || ''));
 }
 
 /*
@@ -2010,9 +2010,10 @@ function isStandalone() {
  * KeyFilters folders nor the configd key, #1222), so every Home press opens
  * LG's ribbon. The press is read from the remote instead (lib/remotebuttons),
  * and a short one opens the view over the ribbon; a held one leaves it.
+ * webOS 2, untried, is taken to be the same.
  */
 function homeKeyRead() {
-  return /^3\./.test(String(webosVersion || ''));
+  return /^[23]\./.test(String(webosVersion || ''));
 }
 
 /*
@@ -2044,11 +2045,11 @@ function supported() {
   var out = { ok: true, webos: v };
   // Untried: offered, with a warning and the links to report how it went.
   if (c.standing === 'untried') { out.untried = true; out.report = c.report; }
-  // webOS 3 to 6 run it as an app of its own, beside LG's Home (isStandalone).
-  if (/^[3456]\./.test(v)) out.standalone = true;
+  // webOS 2 to 6 run it as an app of its own, beside LG's Home (isStandalone).
+  if (isStandalone()) out.standalone = true;
   // The live preview options (Preview sound, Keep the preview on, Preview in
-  // the tile) are omitted on webOS 3 and 4.
-  if (/^[34]\./.test(v)) out.previewOptions = false;
+  // the tile) are omitted on webOS 2 to 4.
+  if (/^[234]\./.test(v)) out.previewOptions = false;
   // On the C2's webOS 9 it has been in use longest; elsewhere it says it is experimental.
   if (!/^9\./.test(v)) out.experimental = true;
   return out;

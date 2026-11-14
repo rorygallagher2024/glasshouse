@@ -15,7 +15,7 @@ console.log('Running test-compat.js ...');
 assert.strictEqual(compat.standing('home', '9.2.2'), 'tried');
 assert.strictEqual(compat.standing('home', '8.3.0'), 'untried');
 assert.strictEqual(compat.standing('home', '12.0.1'), 'untried');
-assert.strictEqual(compat.standing('home', '2.2.3'), 'unsupported');
+assert.strictEqual(compat.standing('home', '2.2.3'), 'untried', 'no version is known not to run Glasshouse Home');
 assert.strictEqual(compat.standing('inputBar', '11.2.0'), 'unsupported');
 assert.strictEqual(compat.standing('inputBar', '3.9.3'), 'unsupported');
 assert.strictEqual(compat.standing('inputBar', null), 'untried', 'a version not read is untried, not refused');
@@ -31,7 +31,7 @@ assert.ok(untried.report.problem.indexOf(compat.REPO + '/issues/new?title=') ===
 });
 assert.ok(decodeURIComponent(untried.report.works).indexOf(' works on webOS 8.3.0 (OLED55C34LA)') !== -1);
 assert.strictEqual(compat.info('home', { webos: '9.2.2' }).report, undefined, 'no links where it is tried');
-assert.ok(/webOS 3 or later/.test(compat.info('home', { webos: '2.2.3' }).reason));
+assert.ok(/remote key filters/.test(compat.info('inputBar', { webos: '3.9.3' }).reason));
 assert.ok(/webOS 11/.test(compat.info('inputBar', { webos: '11.2.0' }).reason));
 console.log('  ✓ report links carry the TV\'s webOS, model, firmware and Glasshouse version');
 

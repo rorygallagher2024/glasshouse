@@ -56,7 +56,7 @@ Switching modes takes effect immediately when an idle input is already on screen
 
 ## webOS versions
 
-**Glasshouse Input bar** is offered on webOS 4 to 10. Where no one has yet reported it working on the TV's version, a note above the choice says so, with links to report a problem or that it works; see [Launchers and overlays by webOS version](../tested-tvs.md#launchers-and-overlays-by-webos-version).
+**Glasshouse Input bar** is offered on webOS 4 to 10; [why not elsewhere](../tested-tvs.md#why-some-versions-are-not-offered). Where no one has yet reported it working on the TV's version, a note above the choice says so, with links to report a problem or that it works; see [Launchers and overlays by webOS version](../tested-tvs.md#launchers-and-overlays-by-webos-version).
 
 ## TVs without the Input bar
 

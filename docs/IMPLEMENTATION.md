@@ -1707,7 +1707,7 @@ feature off, or `tvwebctl restore-home` before uninstalling, deletes the webOS
 ## Glasshouse Home
 
 `lib/home.js` runs a home screen of Glasshouse's own in place of LG's, opt-in
-from the dashboard's Home tab on webOS 3 and later, standalone on webOS 3 to 6 and laid over LG's Home from webOS 7. `lib/compat.js` says where it has been reported working; elsewhere the dashboard warns and links to a report. The view is `assets/home.html`,
+from the dashboard's Home tab on every webOS version, standalone on webOS 2 to 6 and laid over LG's Home from webOS 7. `lib/compat.js` says where it has been reported working; elsewhere the dashboard warns and links to a report. The view is `assets/home.html`,
 opened by a small web app whose files are `assets/home-app/index.html` and its
 icons.
 
@@ -1943,7 +1943,7 @@ server's 10-second limit; launches allow 20 seconds for sequential detail reads.
 
 `lib/home-launcher.js` puts another page in the view's place; everything that
 gets the view in front of the TV is unchanged. The app in LG's Home's place
-(or `com.tvweb.home` on webOS 3 to 6, refreshed on server start once it is not in front) opens
+(or `com.tvweb.home` on webOS 2 to 6, refreshed on server start once it is not in front) opens
 `/assets/home.html` as before, and while a launcher is chosen
 and Glasshouse Home is on, the server answers that with a redirect to
 `/home/launcher/`. The heartbeat's reply carries `launcher`, a revision that

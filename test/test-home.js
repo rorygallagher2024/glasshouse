@@ -23,6 +23,7 @@ var assert = require('assert');
 var fs = require('fs');
 var os = require('os');
 var path = require('path');
+var compat = require('../server/lib/compat');
 var home = require('../server/lib/home');
 
 console.log('Running test-home.js ...');
@@ -1478,9 +1479,19 @@ step('webOS 7, which has no defaultApps setting, still starts: it takes the plac
   });
 });
 
-step('switched on where it is not offered (webOS 2), it is switched off at start', function (done) {
+// No version is known not to run Glasshouse Home; these give lib/compat a
+// limit for the steps that need one, and take it away again.
+function homeLimit(from) {
+  compat.FEATURES.home.from = from;
+  compat.FEATURES.home.tooOld = function () { return 'Glasshouse Home needs webOS ' + from + ' or later.'; };
+}
+function noHomeLimit() { delete compat.FEATURES.home.from; delete compat.FEATURES.home.tooOld; }
+
+step('switched on where it is not offered, it is switched off at start', function (done) {
+  homeLimit(3);
   start({ enabled: true }, { webosVersion: '2.2.3' });
   home.start(function () {
+    noHomeLimit();
     assert.strictEqual(home.enabled(), false);
     assert.ok(tv.events.indexOf('mount') === -1, 'LG\'s Home is not touched');
     assert.ok(!taken());
@@ -2154,9 +2165,22 @@ step('the default port stages the page at 8080', function (done) {
   });
 });
 
-step('switching on is refused where it cannot run (webOS 2), changing nothing', function (done) {
+step('webOS 2, untried, runs it standalone with the Home press read from the remote, as webOS 3', function (done) {
+  start(null, { webosVersion: '2.2.3' });
+  home.status(function (st) {
+    assert.strictEqual(st.supported.ok, true);
+    assert.strictEqual(st.supported.untried, true);
+    assert.strictEqual(st.supported.standalone, true);
+    assert.strictEqual(st.supported.previewOptions, false);
+    done();
+  });
+});
+
+step('switching on is refused where it cannot run, changing nothing', function (done) {
+  homeLimit(3);
   start(null, { webosVersion: '2.2.3' });
   home.enable(function (r2) {
+    noHomeLimit();
     assert.strictEqual(r2.ok, false);
     assert.ok(/webOS 3 or later/.test(r2.error), r2.error);
     assert.deepEqual(tv.events, []);

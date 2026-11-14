@@ -3267,7 +3267,6 @@
  "inputs.showMediaServersDesc": {"text": "Wyświetla wykryte w sieci serwery multimediów DLNA obok wejść telewizora. Wyłączenie ukrywa wszystkie obecne i przyszłe serwery multimediów.", "from": "Shows DLNA media servers discovered on your network alongside your TV’s inputs. Leave off to hide all current and future media servers."},
  "inputs.bar.transparent": {"text": "Przezroczyste kafelki", "from": "Transparent tiles"},
  "inputs.bar.transparentDesc": {"text": "Pozwala prześwitywać obrazowi przez kafelki paska.", "from": "Lets the picture show through the bar’s tiles."},
- "srv.compat.home.old": {"text": "Glasshouse Home wymaga webOS 3 lub nowszego.", "from": "Glasshouse Home needs webOS 3 or later."},
  "srv.compat.bar.old": {"text": "webOS 3 nie ma filtrów przycisków pilota, które otwierają pasek wejść i Glasshouse Bar.", "from": "webOS 3 has no remote key filters, which open the input bar and Glasshouse Bar."},
  "srv.compat.bar.new": {"text": "Od webOS 11 przyciski pilota należą do LG i nie mogą otworzyć aplikacji Glasshouse.", "from": "From webOS 11 the remote's keys are LG's own, and cannot open an app of Glasshouse's."},
  "home.compat.untried": {"text": "Nikt jeszcze nie zgłosił, że Glasshouse Home, Minimal i własne launchery działają na webOS {version}. Jeśli któryś działa źle, wybierz LG Home, aby wszystko przywrócić.", "from": "Glasshouse Home, Minimal and custom launchers have not yet been reported working on webOS {version}. If one misbehaves, choose LG Home to put everything back."},
