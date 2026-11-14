@@ -1627,9 +1627,11 @@ function buildEntities(opts) {
   entities.push({
     type: 'binary_sensor', id: 'power',
     payload: {
+      // The status topic, not telemetry's tvOff: it is what the broker's will
+      // sets when a TV sleeps too fast to say so, and Power must read off then.
       name: 'Power',
-      state_topic: topic.telemetry,
-      value_template: '{{ "OFF" if value_json.tvOff else "ON" }}',
+      state_topic: topic.status,
+      value_template: '{{ "ON" if value == "online" else "OFF" }}',
       device_class: 'power'
     }
   });
@@ -1641,38 +1643,29 @@ function buildEntities(opts) {
 
 /*
  * What each entity shows while the TV is switched off (telemetry's tvOff).
- * A reading of what is on screen says Off, asleep or not. Live measurements
- * keep reporting while the TV is off but still up (Always-on, panel
- * compensation), since the server can still take them, and go unavailable
- * once it sleeps, when the last one sent would be stale: see AWAKE_ONLY.
- * Settings and facts that stay true while the TV is off - picture mode,
- * volume, panel hours, model - keep their last value.
+ * While the TV is off but still up (Active Standby) a reading of what is on
+ * screen says Off. Once it sleeps every entity but Power is unavailable: all
+ * of them are read from, or sent to, the TV, and with it off the network none
+ * of it can be kept current.
  */
 var OFF_TEXT = ['active_app', 'play_state', 'sound_format', 'dynamic_range', 'video_signal', 'hdmi_link_mode',
                 'hdmi_chroma', 'hdmi_hdcp', 'video_colorimetry', 'panel_dimming'];
 var OFF_BINARY = ['hdmi_allm', 'hdmi_vrr', 'screen_saver_active', 'oled_asbl_dimmer'];
-var AWAKE_ONLY = {
-  soc_temperature: 1, cpu_load: 1, memory_usage: 1, swap_usage: 1, wifi_signal: 1, gpu_clock: 1,
-  ambient_light: 1, download_rate: 1, upload_rate: 1
-};
-
-// Entities that send commands, which need the server awake to receive them.
-var CONTROL_TYPES = { 'switch': 1, 'select': 1, 'number': 1, 'button': 1, 'text': 1, 'event': 1 };
 
 /*
  * Whether Home Assistant shows an entity as available, from the status topic:
- * controls and live readings only while the TV is up, everything else unless
- * the server itself is gone. An entity with an availability list of its own
- * (volume and mute, from telemetry's volume_control) gets the status check
- * added to that list, with both required. Home Assistant rejects a config
- * that has the list and availability_topic together (#437), and so created
- * none of those four entities.
+ * every entity while the TV is up, or off but still up, and only Power once
+ * it has slept, where it reads off. An entity with an availability list of
+ * its own (volume and mute, from telemetry's volume_control) gets the status
+ * check added to that list, with both required. Home Assistant rejects a
+ * config that has the list and availability_topic together (#437), and so
+ * created none of those four entities.
  */
 function withAvailability(item, statusTopic) {
   var conf = item.payload;
-  var template = CONTROL_TYPES[item.type] || AWAKE_ONLY[item.id]
-    ? "{{ 'online' if value in ['online', 'off'] else 'offline' }}"
-    : "{{ 'offline' if value == 'offline' else 'online' }}";
+  var template = item.type === 'binary_sensor' && item.id === 'power'
+    ? "{{ 'offline' if value == 'offline' else 'online' }}"
+    : "{{ 'online' if value in ['online', 'off'] else 'offline' }}";
   if (Array.isArray(conf.availability)) {
     // A new list: the entity's own may be shared with others.
     conf.availability = [{ topic: statusTopic, value_template: template }].concat(conf.availability);
@@ -1840,7 +1833,6 @@ function filterWithholds(entities, opts) {
 
 module.exports = {
   LG_SETTING_ENTITIES: LG_SETTING_ENTITIES,
-  AWAKE_ONLY: AWAKE_ONLY,
   withAvailability: withAvailability,
   HA_CATEGORIES: HA_CATEGORIES,
   HA_ENTITIES: HA_ENTITIES,

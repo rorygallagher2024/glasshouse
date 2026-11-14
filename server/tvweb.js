@@ -1241,9 +1241,25 @@ function setupHomeAssistant() {
     username: CONFIG.mqtt.username || null,
     password: CONFIG.mqtt.password || null,
     clientId: (CONFIG.mqtt.clientId || (devId + '_tvweb')),
+    /*
+     * A TV without an Active Standby stage (an LCD, and an OLED not running
+     * panel care) goes from Active straight to Suspend: the system sleeps
+     * within milliseconds, too soon for the "off" setTvOff publishes to
+     * leave, and the broker's will is the only word of it. The default (60s)
+     * keepalive leaves that up to a minute and a half behind.
+     */
+    keepAlive: 10,
+    /*
+     * "asleep" whenever the connection drops, the TV on or not: that is how
+     * a TV with no Active Standby stage goes off. Power reads off and the
+     * other entities go unavailable, as for a TV that told the broker it
+     * was off. A server that died with the TV on reads the same, until the
+     * watchdog brings it back. Fixed for the connection, so switching on or
+     * off no longer reconnects to change it.
+     */
     will: {
       topic: mqttTopics.status,
-      payload: 'offline',
+      payload: 'asleep',
       retain: true
     }
   });
@@ -1457,16 +1473,25 @@ function setupHomeAssistant() {
    * Switched off is a state of the TV, not a loss of it. While the TV is off
    * but still up (Active Standby, for Always-on or panel compensation) the
    * status reads "off"; once it sleeps the broker publishes the will,
-   * "asleep". Readings stay available through both and show a switched-off
-   * TV. Controls stay available while "off", since the server can still act,
-   * and not while "asleep", when a command would reach nothing. While the TV
-   * is on, a dropped connection means the server died: the will is "offline".
+   * "asleep". Every entity stays available while "off", since the server can
+   * still read and act, and every one but Power does not while "asleep",
+   * when a reading would be stale and a command would reach nothing.
    */
   var tvOff = false;
   function statusPayload() { return tvOff ? 'off' : 'online'; }
+  /*
+   * The connection comes back - the TV waking, Wi-Fi back - a couple of
+   * seconds before the power group's own subscription answers with the same
+   * change on a TV that wakes this way, and the flag is still the one from
+   * before it slept. Publishing it at once means a moment of "off" right
+   * before the "online" that setTvOff corrects it to, so the reconnect's
+   * status is queued, and setTvOff cancels it once it has the answer.
+   */
+  var reconnectStatusTimer = null;
   function setTvOff(off) {
     if (off === tvOff) return;
     tvOff = off;
+    clearTimeout(reconnectStatusTimer);
     console.log('mqtt: TV switched ' + (off ? 'off' : 'on') + ' - status ' + statusPayload());
     if (mqttClient.connected) {
       mqttClient.publish(mqttTopics.status, statusPayload(), true);
@@ -1474,8 +1499,6 @@ function setupHomeAssistant() {
       piccap.refreshAndPublishState();
       huesync.refreshAndPublishState();
     }
-    // After the publishes above: on a B8 the TV can be asleep within 5s.
-    mqttClient.setWill(off ? 'asleep' : 'offline');
   }
   liveState.state.onChange(function (ev) {
     if (ev.group === 'power' && ev.key === 'systemOn' && typeof ev.value === 'boolean') setTvOff(!ev.value);
@@ -1672,7 +1695,10 @@ function setupHomeAssistant() {
     flushMqttErrorRepeats();
     console.log('mqtt: connected to ' + hostPort(CONFIG.mqtt.host, mqttClient.opts.port) +
                 (useTls ? ' (tls)' : ' (plaintext)'));
-    mqttClient.publish(mqttTopics.status, statusPayload(), true);
+    clearTimeout(reconnectStatusTimer);
+    reconnectStatusTimer = setTimeout(function () {
+      if (mqttClient.connected) mqttClient.publish(mqttTopics.status, statusPayload(), true);
+    }, 2500);
     // Republish the in-memory state because broker retention is not assumed.
     stateMqtt.publishSnapshot();
     // Do not assert a guessed screen state before the TV reports one.

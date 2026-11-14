@@ -267,6 +267,23 @@ console.log('Running test-ha.js ...');
 
 // The blocker's switch turns on the tier that leaves the app store and
 // updates working, and reads on for either tier
+// A TV that sleeps without an Active Standby stage leaves the broker's will as
+// its only word, so Power reads the status topic and stays available through
+// it, and every other entity goes unavailable once the TV sleeps
+(function testAvailabilityAsleep() {
+  var all = ha.buildEntities({ pfx: 'test/tv', allowPower: true, isOled: true });
+  all.forEach(function (e) { ha.withAvailability(e, 'test/tv/status'); });
+  var byId = {};
+  all.forEach(function (e) { byId[e.id] = e.payload; });
+  assert.strictEqual(byId.power.state_topic, 'test/tv/status');
+  assert.ok(byId.power.value_template.indexOf('"ON" if value == "online"') !== -1, 'asleep and off both read off');
+  assert.ok(byId.power.availability_template.indexOf("value == 'offline'") !== -1, 'Power stays available asleep');
+  ['screen_saver_active', 'oled_panel_hours', 'soc_temperature', 'power_off'].forEach(function (id) {
+    assert.ok(byId[id].availability_template.indexOf("['online', 'off']") !== -1, id + ' is unavailable asleep');
+  });
+  console.log('  \u2713 asleep, Power reads off and stays available, and every other entity is unavailable');
+})();
+
 (function testAdBlocker() {
   var ab = ha.buildEntities({ pfx: 'test/tv' }).filter(function (e) { return e.id === 'ad_blocker'; })[0];
   assert.strictEqual(ab.payload.command_topic, 'test/tv/command/adblock');
