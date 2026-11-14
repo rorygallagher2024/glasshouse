@@ -1933,7 +1933,8 @@ input.inp-name-in:disabled{border-bottom-color:transparent;cursor:default}
 @media(max-width:600px){.home-row-move{min-width:0;flex-wrap:wrap;justify-content:flex-end}}
 .home-tile .prot-title{display:flex;align-items:center;gap:10px}
 .home-tile .prot-status{display:flex;gap:6px;align-items:center}
-.home-tile .rk-ico{width:28px;height:28px;border-radius:6px}
+.home-tile .rk-ico{width:28px;height:28px;border-radius:6px;flex:none}
+#homepane input.home-app-name{flex:1;min-width:0;font-size:14px;font-weight:600;color:var(--w90)}
 .home-hidden .prot-main{opacity:.45}
 .home-tile .home-move{min-width:0;width:36px;padding:0}
 span.pill.home-fixed-pill{min-width:116px;padding:0 12px;justify-content:center;text-align:center}

@@ -3282,5 +3282,8 @@
  "home.compat.untriedBoth": {"text": "لم يُبلغ أحد بعد أن Glasshouse Home وMinimal والمشغّلات المخصصة وGlasshouse Bar تعمل على webOS {version}. إذا أساء أحدها التصرف، اختر LG Home لإعادة كل شيء.", "from": "Glasshouse Home, Minimal, custom launchers and Glasshouse Bar have not yet been reported working on webOS {version}. If one misbehaves, choose LG Home to put everything back."},
  "compat.copyDetails": {"text": "نسخ التفاصيل", "from": "Copy details"},
  "compat.copied": {"text": "تم النسخ", "from": "Copied"},
- "compat.copyFailed": {"text": "تعذّر النسخ", "from": "Could not copy"}
+ "compat.copyFailed": {"text": "تعذّر النسخ", "from": "Could not copy"},
+ "home.appNameLabel": {"text": "اسم التطبيق", "from": "App name"},
+ "home.showAppLabels": {"text": "تسميات التطبيقات", "from": "App labels"},
+ "home.showAppLabelsDesc": {"text": "تحت كل أيقونة تطبيق في واجهة Glasshouse الرئيسية وGlasshouse Bar. إيقافها يترك الأيقونات وحدها.", "from": "Under each app icon on Glasshouse Home and Glasshouse Bar. Off leaves the icons on their own."}
 }

@@ -926,5 +926,8 @@
  "home.compat.untriedBoth": {"text": "Für Glasshouse Home, Minimal, eigene Launcher und die Glasshouse Bar liegt noch keine Meldung vor, dass sie unter webOS {version} funktionieren. Falls einer Probleme macht, wählen Sie LG Home, um alles zurückzusetzen.", "from": "Glasshouse Home, Minimal, custom launchers and Glasshouse Bar have not yet been reported working on webOS {version}. If one misbehaves, choose LG Home to put everything back."},
  "compat.copyDetails": {"text": "Details kopieren", "from": "Copy details"},
  "compat.copied": {"text": "Kopiert", "from": "Copied"},
- "compat.copyFailed": {"text": "Kopieren fehlgeschlagen", "from": "Could not copy"}
+ "compat.copyFailed": {"text": "Kopieren fehlgeschlagen", "from": "Could not copy"},
+ "home.appNameLabel": {"text": "App-Name", "from": "App name"},
+ "home.showAppLabels": {"text": "App-Namen", "from": "App labels"},
+ "home.showAppLabelsDesc": {"text": "Unter jedem App-Symbol auf Glasshouse Home und der Glasshouse Bar. Aus lässt nur die Symbole.", "from": "Under each app icon on Glasshouse Home and Glasshouse Bar. Off leaves the icons on their own."}
 }

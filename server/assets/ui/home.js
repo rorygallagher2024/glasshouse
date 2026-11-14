@@ -545,7 +545,11 @@ function homeCustomColours() {
 }
 
 function homeItem(kind, id) {
-  if (kind === 'app' && id === 'lg-home') return { title: t('home.lgHome', 'LG Home'), lg: true };
+  const customApp = kind === 'app' && homeLayout && homeLayout.appNames && homeLayout.appNames[id];
+  if (kind === 'app' && id === 'lg-home') {
+    const def = t('home.lgHome', 'LG Home');
+    return { title: customApp || def, defTitle: def, lg: true };
+  }
   if (kind === 'iptv') {
     const tv = (homeCat.iptv || []).find(x => x.id === id);
     if (!tv) return null;
@@ -556,13 +560,20 @@ function homeItem(kind, id) {
   const it = list.find(x => x.id === id);
   if (!it) return null;
   if (kind === 'ch') return { title: it.number + ' ' + it.name };
+  if (kind === 'app') {
+    const defTitle = it.defaultTitle || it.title;
+    return { title: customApp || defTitle, defTitle, icon: it.icon };
+  }
   return { title: it.title, icon: it.icon };
 }
 
 function renderHomeRows() {
   const box = q('home-rows');
   if (!box || !homeCat) return;
+  const active = document.activeElement;
+  if (active && active.closest && active.closest('#home-rows') && active.classList.contains('home-app-name')) return;
   const usable = homeWritable();
+  const editable = !homeStatus || homeStatus.writable !== false;
   // Redrawing after each change keeps the rows that were open, and what was typed in the channel search.
   const open = box.children.length ? [...box.querySelectorAll('details[open]')].map(d => d.dataset.kind) : [];
   const filter = q('home-ch-filter') ? q('home-ch-filter').value : '';
@@ -598,8 +609,11 @@ function renderHomeRows() {
       const hidden = kind !== 'ch' && homeLayout.hidden[kind].includes(id);
       const folded = kind === 'app' && (homeLayout.folder || []).includes(id);
       const icon = it.icon ? `<img class="rk-ico" src="${esc(api(it.icon))}" alt="">` : '';
+      const titleHtml = kind === 'app'
+        ? `<input type="text" class="inp-name inp-name-in home-app-name" translate="no" maxlength="60" value="${esc(it.title)}" placeholder="${esc(it.defTitle)}" data-app-name="${esc(id)}" data-cur="${esc(it.title)}" data-def="${esc(it.defTitle)}" aria-label="${esc(t('home.appNameLabel', 'App name'))}" ${editable ? '' : 'disabled'} onkeydown="homeAppNameKey(event, this)" onblur="homeRenameApp(this)">`
+        : `<span translate="no">${esc(it.title)}</span>`;
       return `<div class="prot-row home-tile${hidden || folded ? ' home-hidden' : ''}">
-        <div class="prot-main"><div class="prot-title">${icon}<span translate="no">${esc(it.title)}</span></div>
+        <div class="prot-main"><div class="prot-title">${icon}${titleHtml}</div>
           ${it.sub ? `<div class="prot-desc">${esc(it.sub)}</div>` : ''}</div>
         <div class="prot-status">
           <button type="button" class="pill idle home-move" ${movable && i > 0 ? '' : 'disabled'} onclick="homeMoveTile('${kind}', ${i}, -1)" aria-label="${esc(t('home.earlier', 'Earlier'))}">↑</button>
@@ -611,10 +625,16 @@ function renderHomeRows() {
               disabled: !usable, onclick: `homeToggleTile('${kind}', '${jsq(id)}')` })}
         </div></div>`;
     }).join('');
+    const labelsOn = !homeLayout || homeLayout.showAppLabels !== false;
+    const barLabelsRow = kind === 'app' ? `<div class="prot-row home-bar-only">
+      <div class="prot-main"><div class="prot-title">${esc(t('home.showAppLabels', 'App labels'))}</div>
+        <div class="prot-desc">${esc(t('home.showAppLabelsDesc', 'Under each app icon on Glasshouse Home and Glasshouse Bar. Off leaves the icons on their own.'))}</div></div>
+      <div class="prot-status">${renderToggle({ id: 'home-bar-app-labels', cls: labelsOn ? 'good' : 'idle', label: labelsOn ? t('common.on', 'On') : t('common.off', 'Off'),
+        on: labelsOn, disabled: !usable, onclick: "homeShow('showAppLabels')" })}</div></div>` : '';
     return `<details class="home-row" data-kind="${kind}"${open.includes(kind) ? ' open' : ''}>
       <summary><span class="prot-title">${esc(HOME_ROWS[kind]())}</span>
         ${rowMove}</summary>
-      <div class="prot-table">${homeSortRow(kind, usable)}${tiles || `<div class="sub">${esc(kind === 'ch' ? t('home.ch.empty', 'No channels yet. Add them below.') : kind === 'iptv' ? t('home.tv.rowEmpty', 'No channels yet. Add them in Internet TV below, or from the row on the TV.') : t('home.rowEmpty', 'Nothing to show in this row yet.'))}</div>`}</div>
+      <div class="prot-table">${homeSortRow(kind, usable)}${barLabelsRow}${tiles || `<div class="sub">${esc(kind === 'ch' ? t('home.ch.empty', 'No channels yet. Add them below.') : kind === 'iptv' ? t('home.tv.rowEmpty', 'No channels yet. Add them in Internet TV below, or from the row on the TV.') : t('home.rowEmpty', 'Nothing to show in this row yet.'))}</div>`}</div>
       ${kind === 'ch' ? homeChannelPicker() : ''}
     </details>`;
   }).join('');
@@ -765,6 +785,27 @@ function homeSetPlace(id, place) {
   if (place === 'hidden') hidden.app.push(id);
   if (place === 'folder') folder.push(id);
   homeSaveLayout({ hidden, folder });
+}
+
+function homeAppNameKey(e, el) {
+  if (e.key === 'Enter') { e.preventDefault(); el.blur(); }
+  else if (e.key === 'Escape') { e.preventDefault(); el.value = el.dataset.cur || ''; el.blur(); }
+}
+
+function homeRenameApp(el) {
+  const id = el.dataset.appName;
+  const cur = el.dataset.cur || '';
+  const def = el.dataset.def || '';
+  const raw = el.value.replace(/\s+/g, ' ').trim();
+  const next = raw || def;
+  if (next === cur) { el.value = cur; return; }
+  el.dataset.cur = next;
+  if (homeLayout) {
+    homeLayout.appNames = Object.assign({}, homeLayout.appNames);
+    if (next === def) delete homeLayout.appNames[id];
+    else homeLayout.appNames[id] = next;
+  }
+  homeSaveLayout({ appNames: { [id]: next === def ? '' : next } });
 }
 
 function homeResetLayout() { homeSaveLayout({ reset: true }); }
@@ -1038,7 +1079,7 @@ function homePreviewOption(field) {
 }
 
 // The details Glasshouse Home shows unless switched off, and their toggles.
-const HOME_SHOW = [['showClock', 'home-show-clock'], ['showLastOn', 'home-show-last'], ['showAppCount', 'home-show-count'], ['showCec', 'home-show-cec'], ['showTvLogos', 'home-show-tv-logos'], ['showPointer', 'home-show-pointer']];
+const HOME_SHOW = [['showClock', 'home-show-clock'], ['showLastOn', 'home-show-last'], ['showAppCount', 'home-show-count'], ['showAppLabels', 'home-show-app-labels'], ['showCec', 'home-show-cec'], ['showTvLogos', 'home-show-tv-logos'], ['showPointer', 'home-show-pointer']];
 
 /*
  * The weather: off, from Home Assistant, or from Open-Meteo for a place found

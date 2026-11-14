@@ -3296,5 +3296,8 @@
  "home.compat.untriedBoth": {"text": "Még senki nem jelezte, hogy a Glasshouse Home, a Minimal, az egyéni indítók és a Glasshouse Bar működnek webOS {version} alatt. Ha valamelyik rosszul működik, válassza az LG Home-ot, hogy minden visszaálljon.", "from": "Glasshouse Home, Minimal, custom launchers and Glasshouse Bar have not yet been reported working on webOS {version}. If one misbehaves, choose LG Home to put everything back."},
  "compat.copyDetails": {"text": "Részletek másolása", "from": "Copy details"},
  "compat.copied": {"text": "Másolva", "from": "Copied"},
- "compat.copyFailed": {"text": "Nem sikerült másolni", "from": "Could not copy"}
+ "compat.copyFailed": {"text": "Nem sikerült másolni", "from": "Could not copy"},
+ "home.appNameLabel": {"text": "Alkalmazás neve", "from": "App name"},
+ "home.showAppLabels": {"text": "Alkalmazásnevek", "from": "App labels"},
+ "home.showAppLabelsDesc": {"text": "Minden alkalmazás ikonja alatt a Glasshouse Home-on és a Glasshouse Bar-on. Kikapcsolva csak az ikonok maradnak.", "from": "Under each app icon on Glasshouse Home and Glasshouse Bar. Off leaves the icons on their own."}
 }

@@ -36,6 +36,9 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
 .ico{display:block;width:112px;height:112px;margin:0 auto 14px;border-radius:20px;background:#333 center/contain no-repeat}
 .ico.letter{line-height:112px;font-size:52px;font-weight:600;color:#fff;background:#3a3a3a}
 .nm{font-size:24px;padding:0 12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.no-app-labels .tile:not(.input){width:156px;height:156px;margin-top:22px;padding-top:20px}
+.no-app-labels .tile:not(.input) .ico{margin-bottom:0}
+.no-app-labels .tile:not(.input) .nm{display:none}
 .input .head{display:-webkit-flex;display:flex;-webkit-align-items:center;align-items:center;height:100%}
 .dico{-webkit-flex:0 0 auto;flex:0 0 auto;width:60px;height:60px;margin-right:18px}
 .dico svg{display:block;width:100%;height:100%}
@@ -148,7 +151,10 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
     var order = (cat.order && cat.order.app) || (cat.apps || []).map(function (a) { return a.id; });
     order.forEach(function (id) {
       if (hiddenApps.indexOf(id) !== -1 || folder.indexOf(id) !== -1) return;
-      if (id === LG_HOME_TILE) return out.push({ kind: 'lg', id: id, name: 'LG Home', letter: 'LG' });
+      if (id === LG_HOME_TILE) {
+        var lgName = (layout.appNames && layout.appNames[id]) || 'LG Home';
+        return out.push({ kind: 'lg', id: id, name: lgName, letter: lgName.slice(0, 2).toUpperCase() || 'LG' });
+      }
       var a = byId[id];
       // Saved web pages are left out: their addresses are not sent out by the
       // server (#1268), and its POSTs, which open one, refuse this page.
@@ -251,8 +257,9 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
   $('row').addEventListener('click', function () { choose(); });
 
   var CACHE = 'glasshouse.homebar';
-  var moved = false, waiting = 0, now = null, cat = null;
+  var moved = false, waiting = 0, now = null, cat = null, labelsOff = false;
   function show() {
+    $('bar').className = labelsOff ? 'no-app-labels' : '';
     render();
     tick();
     clearInterval(clockTimer);
@@ -264,13 +271,15 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
     if (!cat) { if (!list.length) close(); return; }
     var fresh = tilesFrom(cat);
     if (!fresh.length) return close();
+    var nextLabelsOff = !!(cat.layout && cat.layout.showAppLabels === false);
     var port = now && now.kind === 'input' && now.behindHome !== true ? now.port : null;
-    var same = JSON.stringify(fresh) === JSON.stringify(list) && port === onPort;
-    try { window.localStorage.setItem(CACHE, JSON.stringify({ list: fresh, onPort: port })); } catch (e) {}
+    var same = JSON.stringify(fresh) === JSON.stringify(list) && port === onPort && nextLabelsOff === labelsOff;
+    try { window.localStorage.setItem(CACHE, JSON.stringify({ list: fresh, onPort: port, labelsOff: nextLabelsOff })); } catch (e) {}
     if (same && document.body.className === 'on') return;
     var keepId = moved && list[focus] ? list[focus].id : null;
     list = fresh;
     onPort = port;
+    labelsOff = nextLabelsOff;
     focus = 0;
     if (keepId) for (var i = 0; i < list.length; i++) if (list[i].id === keepId) focus = i;
     show();
@@ -293,6 +302,7 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
       if (kept && kept.list && kept.list.length) {
         list = kept.list;
         onPort = kept.onPort;
+        labelsOff = !!kept.labelsOff;
         show();
       }
     } catch (e) {}
