@@ -1252,6 +1252,13 @@ function setupHomeAssistant() {
     username: CONFIG.mqtt.username || null,
     password: CONFIG.mqtt.password || null,
     clientId: (CONFIG.mqtt.clientId || (devId + '_tvweb')),
+    /*
+     * The default (60s) leaves the broker's will up to a minute and a half
+     * behind a connection that just vanished (the TV asleep, Wi-Fi dropped) -
+     * long past the few seconds setTvOff's own fast path already covers for
+     * a TV that stays reachable while switching off.
+     */
+    keepAlive: 15,
     will: {
       topic: mqttTopics.status,
       payload: 'offline',
