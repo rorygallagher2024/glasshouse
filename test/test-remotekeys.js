@@ -23,9 +23,9 @@ var filtersDir = path.join(dir, 'KeyFilters');
 fs.mkdirSync(dir);
 fs.mkdirSync(stateDir);
 fs.mkdirSync(filtersDir);
-// A CX's filters name Netflix, Prime Video, the Movies button, Guide and the
-// color keys; no Disney+ key.
-fs.writeFileSync(path.join(filtersDir, 'systemUi.js'), 'case Qt.Key_Super_L: case WebOS.Key_webOS_Red:');
+// A TV's filters name Netflix, Prime Video, the Movies button, Guide and two
+// colour keys (as webOS 4 names only Yellow and Blue); no Disney+ key.
+fs.writeFileSync(path.join(filtersDir, 'systemUi.js'), 'case Qt.Key_Super_L: case WebOS.Key_webOS_Yellow: case WebOS.Key_webOS_Blue:');
 fs.writeFileSync(path.join(filtersDir, 'appLaunch.js'), 'case WebOS.Key_webOS_Netflix: case WebOS.Key_webOS_Amazon: case WebOS.Key_webOS_USP: case WebOS.Key_webOS_TVGuide:');
 fs.writeFileSync(path.join(filtersDir, 'notes.txt'), 'WebOS.Key_webOS_Disneyplus');
 
@@ -144,7 +144,7 @@ function guard(fn) {
 step(function (next) {
   rk.getRemoteKeys(guard(function (r) {
     assert.strictEqual(r.supported, true);
-    assert.deepEqual(r.keys.map(function (k) { return k.key; }), ['netflix', 'amazon', 'movies', 'guide', 'red']);
+    assert.deepEqual(r.keys.map(function (k) { return k.key; }), ['netflix', 'amazon', 'movies', 'guide', 'red', 'green', 'yellow', 'blue']);
     assert.ok(r.keys.every(function (k) { return k.action === 'lg' && k.id === ''; }));
     assert.strictEqual(r.inChain, false);
     assert.deepEqual(r.choices.map(function (c) { return c.id; }),
@@ -228,7 +228,7 @@ step(function (next) {
 
 step(function (next) {
   rk.getRemoteKeys(guard(function (r) {
-    assert.deepEqual(r.keys.map(function (k) { return k.action + ':' + k.opens; }), ['open:YouTube', 'lg:', 'open:Netflix', 'nothing:', 'lg:']);
+    assert.deepEqual(r.keys.map(function (k) { return k.action + ':' + k.opens; }), ['open:YouTube', 'lg:', 'open:Netflix', 'nothing:', 'lg:', 'lg:', 'lg:', 'lg:']);
     assert.strictEqual(r.inChain, true);
     rk.setRemoteKey('disneyplus', 'open', 'netflix', guard(function (s1) {
       assert.strictEqual(s1.ok, false);
@@ -385,7 +385,7 @@ step(function (next) {
     rk.getRemoteKeys(guard(function (on) {
       assert.ok(on.choices.some(function (c) { return c.id === 'action:homeAssistant' && c.kind === 'ha'; }));
       var offered = on.keys.filter(function (k) { return k.homeAssistant; }).map(function (k) { return k.key; });
-      assert.deepEqual(offered, ['netflix', 'amazon', 'movies', 'red'], 'the keys Home Assistant receives, not Guide');
+      assert.deepEqual(offered, ['netflix', 'amazon', 'movies', 'red', 'green', 'yellow', 'blue'], 'the keys Home Assistant receives, not Guide');
       rk.setRemoteKey('guide', 'open', 'action:homeAssistant', guard(function (refused) {
         assert.strictEqual(refused.ok, false);
         assert.ok(/does not receive/.test(refused.error));

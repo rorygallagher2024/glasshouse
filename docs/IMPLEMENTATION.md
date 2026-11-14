@@ -898,7 +898,10 @@ the file and leaves `glasshouse.remoteKeys` as an empty map.
 
 Only keys this TV's own filter files name are offered, found by searching them
 for the symbol (`WebOS.Key_webOS_Disneyplus` is in a C5's `appLaunch.js` and
-not a CX's). The compositor's enum knows more names than a given remote sends,
+not a CX's), with the four colour keys offered together when any one of them
+is named, since webOS 4's filters only match `WebOS.Key_webOS_Yellow` and
+`WebOS.Key_webOS_Blue` and pass Red and Green straight to the foreground app.
+The compositor's enum knows more names than a given remote sends,
 and a case on an unknown symbol would never match. Home and Back are not
 offered, since the dashboard's own Home screen changes rely on them; volume,
 mute, channel and power are handled by the microcontroller before any filter

@@ -1704,6 +1704,14 @@ app in front. Remote Keys puts its own filter first.
   On a CX (webOS 5.5), the microphone button set to an app through the filter
   opened it on a press and on a hold alike, and set back to LG's own it started
   voice control again (#1034).
+- **Red and Green pass straight through on webOS 4.** On a B8 (webOS 4.4.3),
+  `/usr/lib/qt5/qml/KeyFilters/` matches `WebOS.Key_webOS_Yellow`
+  (`appLaunch.js`, a 5 s hold calling `global.launchAGP`) and
+  `WebOS.Key_webOS_Blue` (`systemUi.js`, `magnifier.blueReleased()`), while
+  `WebOS.Key_webOS_Red` and `WebOS.Key_webOS_Green` have no filter case and
+  reach the foreground app directly, though `libwebosglobalplugin.so` and
+  `/usr/share/X11/xkb/keycodes/lg` (`IR_KEY_RED`..`IR_KEY_BLUE`, 406–409)
+  define all four.
 - **Filters get the compositor's timers.** `StarfishKeyFilter.qml` hands every
   filter `genericTimer` (`set(ms, callback)`, `cancel`, `isRunning`), as LG's
   `appLaunch.js` uses it. On a change to the key it cancels every
