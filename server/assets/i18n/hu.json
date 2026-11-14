@@ -3277,5 +3277,7 @@
  "inputs.noSignal.lgDesc": {"text": "Kép és tanács a „Nincs jel” felirattal.", "from": "Picture and advice with “No Signal”."},
  "inputs.noSignal.icon": {"text": "Kihúzott kábel", "from": "Disconnected cable"},
  "inputs.noSignal.iconDesc": {"text": "Finom kihúzott kábel ikont mutat a „Nincs jel” helyett.", "from": "Shows a subtle disconnected cable icon instead of “No Signal”."},
- "inputs.nameLabel": {"text": "Bemenet neve", "from": "Input name"}
+ "inputs.nameLabel": {"text": "Bemenet neve", "from": "Input name"},
+ "inputs.bar.transparent": {"text": "Átlátszó csempék", "from": "Transparent tiles"},
+ "inputs.bar.transparentDesc": {"text": "Átengedi a képet a sáv csempéin. Kikapcsolva átlátszatlanok maradnak, így gyorsabb a bemenetek közötti léptetés.", "from": "Lets the picture show through the bar’s tiles. Off keeps them opaque so stepping through inputs is faster."}
 }

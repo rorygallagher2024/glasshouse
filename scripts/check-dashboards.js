@@ -295,7 +295,7 @@ async function visitInputBarBehindHome(browser, base, problems) {
       const url = new URL(route.request().url());
       if (url.pathname === '/assets/devicons.js') return route.continue({ url: base + '/assets/devicons.js' });
       if (url.pathname === '/api/home/now') return route.fulfill({ json: { kind: 'input', port: 2, devices: ['hdmi2'], behindHome } });
-      if (url.pathname === '/api/home/catalogue') return route.fulfill({ json: { ok: true, layout: {}, order: { dev: ['TV', 'hdmi1', 'hdmi2'] },
+      if (url.pathname === '/api/home/catalogue') return route.fulfill({ json: { ok: true, layout: behindHome ? {} : { inputBarTransparent: true }, order: { dev: ['TV', 'hdmi1', 'hdmi2'] },
         devices: [{ id: 'TV', name: 'Live TV', tuner: true }, { id: 'hdmi1', name: 'HDMI 1', input: 'hdmi1', port: 1 }, { id: 'hdmi2', name: 'Mac', input: 'hdmi2', port: 2 }] } });
       return route.fulfill({ json: {} });
     });
@@ -304,6 +304,12 @@ async function visitInputBarBehindHome(browser, base, problems) {
       await page.waitForSelector('.tile.focus');
       if (await page.locator('.tile').count() !== 3 || await page.locator('.tile').first().locator('.nm').textContent() !== 'Live TV') problems.push(name + 'Live TV was not shown');
       if (await page.locator('.tile').first().locator('.path').count() !== 0) problems.push(name + 'Live TV showed an HDMI path');
+      const visual = await page.evaluate(() => {
+        const unfocused = document.querySelector('.tile:not(.focus)');
+        return { transparent: document.body.classList.contains('transparent'), opacity: unfocused ? getComputedStyle(unfocused).opacity : '' };
+      });
+      if (behindHome && (visual.transparent || visual.opacity !== '1')) problems.push(name + 'default tiles were not opaque (' + JSON.stringify(visual) + ')');
+      if (!behindHome && (!visual.transparent || visual.opacity !== '0.75')) problems.push(name + 'transparent tiles were not enabled (' + JSON.stringify(visual) + ')');
       const focused = await page.textContent('.tile.focus .nm');
       if (focused !== 'Mac') problems.push(name + 'the bar opened on ' + focused + ', not the input last watched');
       await page.keyboard.press('Enter');
@@ -3277,6 +3283,7 @@ async function visitInputsAndRemote(browser, base, problems) {
       writes.push(patch);
       if (patch.hidden) layout.hidden = patch.hidden;
       if (typeof patch.hideUnused === 'boolean') layout.hideUnused = patch.hideUnused;
+      if (typeof patch.inputBarTransparent === 'boolean') layout.inputBarTransparent = patch.inputBarTransparent;
       if (patch.deviceNames) Object.assign(layout.deviceNames, patch.deviceNames);
       await route.fulfill({ json: { ok: true } });
     });
@@ -3334,6 +3341,9 @@ async function visitInputsAndRemote(browser, base, problems) {
     await page.locator('#inputs-bar-lg').click();
     await page.locator('#inputs-bar-lg.on').waitFor();
     if (writes[writes.length - 1].action !== 'lg') fail('choosing LG\'s list did not put the Input key back');
+    await page.locator('#inputs-bar-transparent').click();
+    await page.locator('#inputs-bar-transparent.good').waitFor();
+    if (JSON.stringify(writes[writes.length - 1]) !== JSON.stringify({ inputBarTransparent: true })) fail('the Transparent tiles switch did not save inputBarTransparent');
     await page.locator('#inputs-nosignal-lg.on').waitFor();
     await page.locator('#inputs-nosignal-plain').click();
     await page.locator('#inputs-nosignal-plain.on').waitFor();

@@ -3263,5 +3263,7 @@
  "inputs.noSignal.lgDesc": {"text": "Картинка и подсказка с надписью «Нет сигнала».", "from": "Picture and advice with “No Signal”."},
  "inputs.noSignal.icon": {"text": "Кабель отключён", "from": "Disconnected cable"},
  "inputs.noSignal.iconDesc": {"text": "Показывает неброский значок отключённого кабеля вместо надписи «Нет сигнала».", "from": "Shows a subtle disconnected cable icon instead of “No Signal”."},
- "inputs.nameLabel": {"text": "Название входа", "from": "Input name"}
+ "inputs.nameLabel": {"text": "Название входа", "from": "Input name"},
+ "inputs.bar.transparent": {"text": "Прозрачные плитки", "from": "Transparent tiles"},
+ "inputs.bar.transparentDesc": {"text": "Пропускает изображение сквозь плитки панели. Если выключено, плитки остаются непрозрачными, чтобы переключение между входами работало быстрее.", "from": "Lets the picture show through the bar’s tiles. Off keeps them opaque so stepping through inputs is faster."}
 }

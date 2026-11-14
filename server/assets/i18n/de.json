@@ -909,5 +909,7 @@
  "inputs.noSignal.icon": {"text": "Getrenntes Kabel", "from": "Disconnected cable"},
  "inputs.noSignal.iconDesc": {"text": "Zeigt ein dezentes Symbol für ein getrenntes Kabel statt „Kein Signal“.", "from": "Shows a subtle disconnected cable icon instead of “No Signal”."},
  "apps.inputBar": {"text": "Glasshouse-Eingangsleiste", "from": "Glasshouse Input bar"},
- "inputs.nameLabel": {"text": "Eingangsname", "from": "Input name"}
+ "inputs.nameLabel": {"text": "Eingangsname", "from": "Input name"},
+ "inputs.bar.transparent": {"text": "Transparente Kacheln", "from": "Transparent tiles"},
+ "inputs.bar.transparentDesc": {"text": "Lässt das Bild durch die Kacheln der Leiste scheinen. Aus lässt sie deckend, damit das Weiterschalten durch die Eingänge schneller reagiert.", "from": "Lets the picture show through the bar’s tiles. Off keeps them opaque so stepping through inputs is faster."}
 }

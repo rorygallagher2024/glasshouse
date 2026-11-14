@@ -17,11 +17,17 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
 /* Opening is at once: only closing fades. */
 .on #shade,.on #bar{-webkit-transition:none;transition:none}
 #tiles{display:inline-block;white-space:nowrap;font-size:0}
-/* The input in focus light and ringed, the rest dimmed. */
+/*
+ * Opaque by default, so stepping through inputs is drawn by the compositor
+ * alone without repainting translucent tiles or shadows over the picture.
+ */
 .tile{display:inline-block;vertical-align:top;position:relative;width:336px;height:112px;margin:0 12px;padding:0 22px;border-radius:22px;text-align:left;
-  background:#222;color:#fff;opacity:.75;box-shadow:0 0 0 2px rgba(255,255,255,.14),0 10px 30px rgba(0,0,0,.45);
+  background:#1e1e1e;color:#c8c8c8;border:2px solid #2e2e2e;
+  -webkit-transition:-webkit-transform .1s ease-out;transition:transform .1s ease-out}
+.tile.focus{background:#fff;color:#111;border-color:#fff;-webkit-transform:scale(1.06);transform:scale(1.06)}
+.transparent .tile{background:#222;color:#fff;border:0;opacity:.75;box-shadow:0 0 0 2px rgba(255,255,255,.14),0 10px 30px rgba(0,0,0,.45);
   -webkit-transition:opacity .12s,-webkit-transform .12s,box-shadow .12s;transition:opacity .12s,transform .12s,box-shadow .12s}
-.tile.focus{opacity:1;background:#fff;color:#111;-webkit-transform:scale(1.06);transform:scale(1.06);box-shadow:0 0 0 5px #fff,0 14px 40px rgba(0,0,0,.6)}
+.transparent .tile.focus{opacity:1;background:#fff;color:#111;box-shadow:0 0 0 5px #fff,0 14px 40px rgba(0,0,0,.6)}
 .tile .head{display:-webkit-flex;display:flex;-webkit-align-items:center;align-items:center;height:100%}
 .dico{-webkit-flex:0 0 auto;flex:0 0 auto;width:52px;height:52px;margin-right:18px}
 .dico svg{display:block;width:100%;height:100%}
@@ -62,7 +68,7 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
   // A press landing on another input switches to it this long after, as
   // LG's input bar does, unless another press moves on first.
   var SWITCH_MS = 1000;
-  var list = [], focus = 0, onPort = null, onDevs = null, underHome = false, idle = null, switchTimer = null, closing = false;
+  var list = [], focus = 0, onPort = null, onDevs = null, underHome = false, isTransparent = false, idle = null, switchTimer = null, closing = false;
 
   function $(id) { return document.getElementById(id); }
   // The input last watched; under a Home screen it is not on screen, so
@@ -115,7 +121,7 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
     if (closing) return;
     closing = true;
     clearTimeout(switchTimer);
-    document.body.className = '';
+    document.body.className = isTransparent ? 'transparent' : '';
     setTimeout(function () { window.close(); }, 160);
   }
   function stillThere() {
@@ -204,7 +210,7 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
   }
   function show() {
     render();
-    document.body.className = 'on';
+    document.body.className = 'on' + (isTransparent ? ' transparent' : '');
     stillThere();
   }
 
@@ -218,15 +224,17 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
     var port = now && now.kind === 'input' ? now.port : (now && now.kind === 'channel' ? 'tuner' : null);
     var devs = now && now.kind === 'input' && Array.isArray(now.devices) ? now.devices : null;
     var under = !!now && now.behindHome === true;
-    var same = JSON.stringify(fresh) === JSON.stringify(list) && port === onPort && JSON.stringify(devs) === JSON.stringify(onDevs) && under === underHome;
-    try { window.localStorage.setItem(CACHE, JSON.stringify({ list: fresh, onPort: port, onDevs: devs, underHome: under })); } catch (e) {}
-    if (same && document.body.className === 'on') return;
+    var trans = !!(cat.layout && cat.layout.inputBarTransparent);
+    var same = JSON.stringify(fresh) === JSON.stringify(list) && port === onPort && JSON.stringify(devs) === JSON.stringify(onDevs) && under === underHome && trans === isTransparent;
+    try { window.localStorage.setItem(CACHE, JSON.stringify({ list: fresh, onPort: port, onDevs: devs, underHome: under, transparent: trans })); } catch (e) {}
+    if (same && /\bon\b/.test(document.body.className)) return;
     // Moved already: the focus stays on the same input where it is still there.
     var keepId = moved && list[focus] ? list[focus].id : null;
     list = fresh;
     onPort = port;
     onDevs = devs;
     underHome = under;
+    isTransparent = trans;
     focusOn();
     if (keepId) for (var i = 0; i < list.length; i++) if (list[i].id === keepId) focus = i;
     show();
@@ -248,6 +256,7 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
         onPort = kept.onPort;
         onDevs = Array.isArray(kept.onDevs) ? kept.onDevs : null;
         underHome = kept.underHome === true;
+        isTransparent = kept.transparent === true;
         focusOn();
         show();
       }

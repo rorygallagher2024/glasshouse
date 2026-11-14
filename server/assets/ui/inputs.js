@@ -230,6 +230,13 @@ function renderInputBar() {
   note.hidden = lg || ours;
   note.textContent = lg || ours ? ''
     : t('inputs.bar.isOther', 'Set to something else on the Remote tab: {opens}.', { opens: input.opens || t('apps.remoteKeys.doesNothing', 'Does nothing') });
+  const layout = (inputsCat && inputsCat.layout) || {};
+  const transparent = layout.inputBarTransparent === true;
+  q('inputs-bar-opts').innerHTML = `<div class="prot-row">
+    <div class="prot-main"><div class="prot-title">${esc(t('inputs.bar.transparent', 'Transparent tiles'))}</div>
+      <div class="prot-desc">${esc(t('inputs.bar.transparentDesc', 'Lets the picture show through the bar\u2019s tiles. Off keeps them opaque so stepping through inputs is faster.'))}</div></div>
+    <div class="prot-status">${renderToggle({ id: 'inputs-bar-transparent', cls: transparent ? 'good' : 'idle', label: transparent ? t('common.on', 'On') : t('common.off', 'Off'),
+      on: transparent, disabled: !writable, onclick: `inputsSave({ inputBarTransparent: ${transparent ? 'false' : 'true'} })` })}</div></div>`;
   return true;
 }
 

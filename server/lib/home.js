@@ -482,6 +482,9 @@ function defaults() {
     hideUnused: false,
     // Custom names keyed by device id (e.g. 'hdmi2:apple-tv' or 'hdmi1').
     deviceNames: {},
+    // Transparent tiles on the Glasshouse Input bar: off by default so stepping
+    // through inputs does not repaint translucent tiles over the picture.
+    inputBarTransparent: false,
     // How strongly the wallpaper is darkened behind the text and rows, in
     // percent of the view's own darkening; 0 leaves the picture as it is.
     darkening: 100,
@@ -572,6 +575,7 @@ function normalise(raw) {
   d.darkening = validDarkening(raw.darkening);
   d.hideUnused = raw.hideUnused === true;
   d.deviceNames = validDeviceNames(raw.deviceNames);
+  d.inputBarTransparent = raw.inputBarTransparent === true;
   // null, saved, is the view's own look; none saved keeps the default.
   if (Object.prototype.hasOwnProperty.call(raw, 'colours')) d.colours = validColours(raw.colours);
   if (typeof raw.hideLgHomeAtStart === 'boolean') d.hideLgHomeAtStart = raw.hideLgHomeAtStart;
@@ -756,6 +760,7 @@ function setLayout(body, cb) {
     darkening: body.darkening !== undefined ? body.darkening : c.darkening,
     hideUnused: typeof body.hideUnused === 'boolean' ? body.hideUnused : c.hideUnused,
     deviceNames: body.deviceNames !== undefined ? validDeviceNames(body.deviceNames, c.deviceNames) : c.deviceNames,
+    inputBarTransparent: typeof body.inputBarTransparent === 'boolean' ? body.inputBarTransparent : c.inputBarTransparent,
     // null puts the view's own colours back.
     colours: body.colours !== undefined ? body.colours : c.colours
   });
@@ -788,7 +793,7 @@ function layoutOf(c) {
     excludedRecents: c.excludedRecents,
     searchHintSeen: c.searchHintSeen, picture: c.picture, livePreview: c.livePreview, search: c.search, recommended: c.recommended,
     fade: c.fade, wallDrift: c.wallDrift, wallCrossfade: c.wallCrossfade, smoothScroll: c.smoothScroll, slidePanels: c.slidePanels,
-    darkening: c.darkening, hideUnused: c.hideUnused, deviceNames: c.deviceNames, showClock: c.showClock, rowsBottom: c.rowsBottom, view: c.view,
+    darkening: c.darkening, hideUnused: c.hideUnused, deviceNames: c.deviceNames, inputBarTransparent: c.inputBarTransparent, showClock: c.showClock, rowsBottom: c.rowsBottom, view: c.view,
     showLastOn: c.showLastOn, showAppCount: c.showAppCount, showCec: c.showCec, showTvLogos: c.showTvLogos, showPointer: c.showPointer, weather: c.weather, weatherPlace: c.weatherPlace, previewAlways: c.previewAlways, previewInTile: c.previewInTile, previewSize: c.previewSize, previewSound: c.previewSound, wallAnim: c.wallAnim,
     animTheme: c.animTheme, animSky: c.animSky, animLight: c.animLight, animThemes: ANIM_THEMES,
     wallShuffleMinutes: c.wallShuffleMinutes, shuffleMinutes: SHUFFLE_MINUTES, colours: c.colours,

@@ -3263,5 +3263,7 @@
  "inputs.noSignal.lgDesc": {"text": "Imagem e dica com “Sem sinal”.", "from": "Picture and advice with “No Signal”."},
  "inputs.noSignal.icon": {"text": "Cabo desconectado", "from": "Disconnected cable"},
  "inputs.noSignal.iconDesc": {"text": "Mostra um ícone discreto de cabo desconectado em vez de “Sem sinal”.", "from": "Shows a subtle disconnected cable icon instead of “No Signal”."},
- "inputs.nameLabel": {"text": "Nome da entrada", "from": "Input name"}
+ "inputs.nameLabel": {"text": "Nome da entrada", "from": "Input name"},
+ "inputs.bar.transparent": {"text": "Blocos transparentes", "from": "Transparent tiles"},
+ "inputs.bar.transparentDesc": {"text": "Deixa a imagem aparecer através dos blocos da barra. Desativado os mantém opacos para alternar entre entradas mais rápido.", "from": "Lets the picture show through the bar’s tiles. Off keeps them opaque so stepping through inputs is faster."}
 }

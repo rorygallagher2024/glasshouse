@@ -3263,5 +3263,7 @@
  "inputs.noSignal.lgDesc": {"text": "Image et conseil avec « Aucun signal ».", "from": "Picture and advice with “No Signal”."},
  "inputs.noSignal.icon": {"text": "Câble débranché", "from": "Disconnected cable"},
  "inputs.noSignal.iconDesc": {"text": "Affiche une icône discrète de câble débranché au lieu de « Aucun signal ».", "from": "Shows a subtle disconnected cable icon instead of “No Signal”."},
- "inputs.nameLabel": {"text": "Nom de l’entrée", "from": "Input name"}
+ "inputs.nameLabel": {"text": "Nom de l’entrée", "from": "Input name"},
+ "inputs.bar.transparent": {"text": "Vignettes transparentes", "from": "Transparent tiles"},
+ "inputs.bar.transparentDesc": {"text": "Laisse apparaître l’image à travers les vignettes de la barre. Désactivé, elles restent opaques pour passer d’une entrée à l’autre plus rapidement.", "from": "Lets the picture show through the bar’s tiles. Off keeps them opaque so stepping through inputs is faster."}
 }

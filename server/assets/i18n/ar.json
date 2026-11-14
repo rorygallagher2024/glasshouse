@@ -3263,5 +3263,7 @@
  "inputs.noSignal.lgDesc": {"text": "صورة ونصيحة مع «لا توجد إشارة».", "from": "Picture and advice with “No Signal”."},
  "inputs.noSignal.icon": {"text": "كابل غير متصل", "from": "Disconnected cable"},
  "inputs.noSignal.iconDesc": {"text": "يعرض أيقونة بسيطة لكابل غير متصل بدلاً من «لا توجد إشارة».", "from": "Shows a subtle disconnected cable icon instead of “No Signal”."},
- "inputs.nameLabel": {"text": "اسم المدخل", "from": "Input name"}
+ "inputs.nameLabel": {"text": "اسم المدخل", "from": "Input name"},
+ "inputs.bar.transparent": {"text": "مربعات شفافة", "from": "Transparent tiles"},
+ "inputs.bar.transparentDesc": {"text": "يسمح للصورة بالظهور عبر مربعات الشريط. إيقافه يُبقيها معتمة ليكون التنقل بين المداخل أسرع.", "from": "Lets the picture show through the bar’s tiles. Off keeps them opaque so stepping through inputs is faster."}
 }
