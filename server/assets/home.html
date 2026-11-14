@@ -202,8 +202,8 @@ html.resting #wall .layer{-webkit-animation-play-state:paused;animation-play-sta
 .alternative #clock{font-variant-numeric:tabular-nums;-webkit-font-feature-settings:"tnum";font-feature-settings:"tnum"}
 .alternative:not(.arranging) .row > h2{display:none}
 .alternative .row{margin-bottom:10px}
-.alternative .tile{border-radius:18px;margin-right:12px;background:rgba(20,15,29,.45)}
-.alternative .tile.focus{background:rgba(34,25,48,.86)}
+.alternative .tile{border-radius:18px;margin-right:12px;background:rgba(12,11,10,.45)}
+.alternative .tile.focus{background:rgba(20,19,16,.86)}
 .alternative .app{width:160px;padding:12px}
 .alternative .app img,.alternative .app .mono{width:100px;height:100px;border-radius:16px}
 .alternative .app .mono{line-height:100px}
@@ -5706,13 +5706,20 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
    * accent.
    */
   var LOOK = $('look').textContent, lookShown = '';
+  function hexRgb(hex) {
+    var n = parseInt(hex.slice(1), 16);
+    return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+  }
   function shade(hex, f) {
-    var n = parseInt(hex.slice(1), 16), out = '#';
-    [n >> 16, (n >> 8) & 255, n & 255].forEach(function (v) {
+    var out = '#';
+    hexRgb(hex).forEach(function (v) {
       var x = Math.round(v * f);
       out += (x < 16 ? '0' : '') + x.toString(16);
     });
     return out;
+  }
+  function rgbaStr(rgb, f, a) {
+    return 'rgba(' + Math.round(rgb[0] * f) + ',' + Math.round(rgb[1] * f) + ',' + Math.round(rgb[2] * f) + ',' + a + ')';
   }
   function applyMotion(l) {
     smoothScroll = l.smoothScroll !== false;
@@ -5729,19 +5736,33 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     $('scrim').style.opacity = String(n / 100 * (anim.style === 'off' ? 1 : ANIM_SCRIM));
   }
 
-  function applyColours(c) {
-    var key = c ? c.text + c.accent : '';
+  function applyColours(c, highlight) {
+    var key = (c ? c.text + c.accent : '') + '|' + (highlight || '');
     if (key === lookShown) return;
     lookShown = key;
     // Rebuilt at the next render, so the tiles take the colours at once
     // rather than fading their frames to them.
     renderedRows = '';
-    if (!c) { $('look').textContent = LOOK; return; }
-    var swap = { '#ece7df': c.text, '#a39d93': shade(c.text, 0.69), '#6b665e': shade(c.text, 0.45),
-                 '#e9ad55': c.accent, '#231d12': shade(c.accent, 0.15) };
-    // Replace once: a chosen accent may itself be one of the original colours.
-    $('look').textContent = LOOK.replace(/outline-color:#ece7df\b|#(?:ece7df|a39d93|6b665e|e9ad55|231d12)\b/g,
-      function (m) { return m === 'outline-color:#ece7df' ? 'outline-color:' + c.accent : swap[m]; });
+    if (!c && !highlight) { $('look').textContent = LOOK; return; }
+    var css = LOOK;
+    if (c) {
+      var swap = { '#ece7df': c.text, '#a39d93': shade(c.text, 0.69), '#6b665e': shade(c.text, 0.45),
+                   '#e9ad55': c.accent, '#231d12': shade(c.accent, 0.15) };
+      // Replace once: a chosen accent may itself be one of the original colours.
+      css = css.replace(/outline-color:#ece7df\b|#(?:ece7df|a39d93|6b665e|e9ad55|231d12)\b/g,
+        function (m) { return m === 'outline-color:#ece7df' ? 'outline-color:' + c.accent : swap[m]; });
+    }
+    if (highlight) {
+      var hRgb = hexRgb(highlight);
+      var focusRgba = rgbaStr(hRgb, 1, '.86');
+      var tileRgba = rgbaStr(hRgb, 0.6, '.45');
+      css = css.replace(/rgba\(20,19,16,\.86\)|rgba\(12,11,10,\.45\)|#24211b\b/g, function (m) {
+        if (m === 'rgba(12,11,10,.45)') return tileRgba;
+        if (m === '#24211b') return highlight;
+        return focusRgba;
+      });
+    }
+    $('look').textContent = css;
   }
 
   // ---------------------------------------------------------------- data
@@ -5774,7 +5795,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
       if (!searchOn()) { closeSearch(); state.rail = false; }
       setFadeOn(layout.fade === true);
       applyMotion(layout);
-      applyColours(layout.colours);
+      applyColours(layout.colours, layout.tileHighlight);
       applyDarkening(layout.darkening);
       stageClass();
       renderNow();

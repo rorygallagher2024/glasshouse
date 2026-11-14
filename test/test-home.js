@@ -2949,6 +2949,34 @@ step('only #rrggbb colours are kept, since the view writes them into its stylesh
   rejectNext();
 });
 
+step('tile highlight accepts #rrggbb only, stays independent of colours presets, and resets to null', function (done) {
+  start(null);
+  home.status(function (st) {
+    assert.strictEqual(st.layout.tileHighlight, null, 'default is view fill');
+    assert.ok(Array.isArray(st.highlightPresets) && st.highlightPresets[0].id === 'default' && st.highlightPresets[0].colour === null);
+    var bad = ['red;}body{display:none', '#12345', 123, { toString: {} }];
+    function nextBad() {
+      if (bad.length) {
+        return home.setLayout({ tileHighlight: bad.shift() }, function (r) {
+          assert.strictEqual(r.layout.tileHighlight, null);
+          nextBad();
+        });
+      }
+      home.setLayout({ tileHighlight: '#1A2B3C' }, function (r2) {
+        assert.strictEqual(r2.layout.tileHighlight, '#1a2b3c');
+        home.setLayout({ colours: { text: '#d4e6f4', accent: '#5fc4ee' } }, function (r3) {
+          assert.strictEqual(r3.layout.tileHighlight, '#1a2b3c', 'kept when colours preset changes');
+          home.setLayout({ tileHighlight: null }, function (r4) {
+            assert.strictEqual(r4.layout.tileHighlight, null);
+            done();
+          });
+        });
+      });
+    }
+    nextBad();
+  });
+});
+
 step('a failed save switches nothing', function (done) {
   start(null);
   var blocked = path.join(dir, 'home.json.tmp');

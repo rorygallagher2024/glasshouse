@@ -167,10 +167,7 @@
     "text": "Eigene",
     "from": "Custom"
   },
-  "home.colours.desc": {
-    "text": "Die Schrift auf Glasshouse Home und der Akzent, der die gewählte Kachel umrahmt und markiert, was zuletzt lief. Der leisere Text ist ein dunklerer Ton der Textfarbe.",
-    "from": "The text on Glasshouse Home, and the accent that frames the chosen tile and marks what was last on. The quieter text is a shade of the text colour."
-  },
+  "home.colours.desc": {"from": "The text on Glasshouse Home, the highlight behind the chosen tile, and the accent that frames it and marks what was last on. The quieter text is a shade of the text colour.", "text": "Der Text auf Glasshouse Home, die Hervorhebung hinter der gewählten Kachel sowie die Akzentfarbe für deren Rahmen und die zuletzt genutzte Quelle. Gedimmter Text ist eine Abstufung der Textfarbe."},
   "home.colours.glasshouse": {
     "text": "Glasshouse",
     "from": "Glasshouse"
@@ -929,5 +926,14 @@
  "compat.copyFailed": {"text": "Kopieren fehlgeschlagen", "from": "Could not copy"},
  "home.appNameLabel": {"text": "App-Name", "from": "App name"},
  "home.showAppLabels": {"text": "App-Namen", "from": "App labels"},
- "home.showAppLabelsDesc": {"text": "Unter jedem App-Symbol auf Glasshouse Home und der Glasshouse Bar. Aus lässt nur die Symbole.", "from": "Under each app icon on Glasshouse Home and Glasshouse Bar. Off leaves the icons on their own."}
+ "home.showAppLabelsDesc": {"text": "Unter jedem App-Symbol auf Glasshouse Home und der Glasshouse Bar. Aus lässt nur die Symbole.", "from": "Under each app icon on Glasshouse Home and Glasshouse Bar. Off leaves the icons on their own."},
+ "home.colours.highlight": {"from": "Tile highlight", "text": "Kachelhervorhebung"},
+ "home.colours.highlightHint": {"from": "The fill colour behind the focused tile on Glasshouse Home. Any colour can be picked on the browser dashboard’s Home tab.", "text": "Die Füllfarbe hinter der fokussierten Kachel auf Glasshouse Home. Im Home-Tab des Browser-Dashboards lässt sich jede beliebige Farbe wählen."},
+ "home.highlight.default": {"from": "Default", "text": "Standard"},
+ "home.highlight.charcoal": {"from": "Charcoal", "text": "Anthrazit"},
+ "home.highlight.slate": {"from": "Slate", "text": "Schiefer"},
+ "home.highlight.navy": {"from": "Navy", "text": "Marineblau"},
+ "home.highlight.forest": {"from": "Forest", "text": "Waldgrün"},
+ "home.highlight.wine": {"from": "Wine", "text": "Weinrot"},
+ "home.highlight.plum": {"from": "Plum", "text": "Pflaume"}
 }

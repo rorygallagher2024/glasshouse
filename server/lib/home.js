@@ -156,6 +156,20 @@ var COLOUR_PRESETS = [
   { id: 'rose', text: '#f4dcdc', accent: '#ec7f8c' },
   { id: 'lilac', text: '#e0d9f6', accent: '#a98ff0' }
 ];
+/*
+ * Tile highlight colours offered on the TV app (any #rrggbb can be picked on
+ * the browser dashboard). Default (null) uses the view's built-in charcoal fill
+ * (#141310).
+ */
+var HIGHLIGHT_PRESETS = [
+  { id: 'default', colour: null },
+  { id: 'charcoal', colour: '#141310' },
+  { id: 'slate', colour: '#1c2430' },
+  { id: 'navy', colour: '#12223d' },
+  { id: 'forest', colour: '#142b1d' },
+  { id: 'wine', colour: '#2d1620' },
+  { id: 'plum', colour: '#221930' }
+];
 var COLOUR_RE = /^#[0-9a-f]{6}$/;
 
 // The settings earlier builds changed, as their snapshot kept them.
@@ -499,6 +513,8 @@ function defaults() {
     // { text, accent } as #rrggbb, or null for the view's own colours. Pure
     // white until one is chosen.
     colours: { text: '#ffffff', accent: '#ffffff' },
+    // Tile highlight fill colour as #rrggbb, or null for the view's own fill.
+    tileHighlight: null,
     // null until chosen: the first start keeps an empty layout an earlier build left.
     hideLgHomeAtStart: null,
     // LG's Home auto launch as it was before Glasshouse Home switched it off,
@@ -588,6 +604,7 @@ function normalise(raw) {
   d.inputBarTransparent = raw.inputBarTransparent === true;
   // null, saved, is the view's own look; none saved keeps the default.
   if (Object.prototype.hasOwnProperty.call(raw, 'colours')) d.colours = validColours(raw.colours);
+  d.tileHighlight = validHexColour(raw.tileHighlight);
   if (typeof raw.hideLgHomeAtStart === 'boolean') d.hideLgHomeAtStart = raw.hideLgHomeAtStart;
   if (typeof raw.lgAutoLaunch === 'string' && raw.lgAutoLaunch) d.lgAutoLaunch = raw.lgAutoLaunch;
   if (typeof raw.lgAutoLaunchCheck === 'string' && raw.lgAutoLaunchCheck) d.lgAutoLaunchCheck = raw.lgAutoLaunchCheck;
@@ -601,10 +618,16 @@ function validDarkening(v) {
   return n >= 0 && n <= 100 ? n : 100;
 }
 
+function validHexColour(v) {
+  if (typeof v !== 'string') return null;
+  var s = v.toLowerCase();
+  return COLOUR_RE.test(s) ? s : null;
+}
+
 function validColours(v) {
-  if (!v || typeof v.text !== 'string' || typeof v.accent !== 'string') return null;
-  var text = v.text.toLowerCase(), accent = v.accent.toLowerCase();
-  return COLOUR_RE.test(text) && COLOUR_RE.test(accent) ? { text: text, accent: accent } : null;
+  if (!v || typeof v !== 'object') return null;
+  var text = validHexColour(v.text), accent = validHexColour(v.accent);
+  return text && accent ? { text: text, accent: accent } : null;
 }
 
 function validCustomNames(v, base, maxKeys) {
@@ -778,7 +801,8 @@ function setLayout(body, cb) {
     appNames: body.appNames !== undefined ? validAppNames(body.appNames, c.appNames) : c.appNames,
     inputBarTransparent: typeof body.inputBarTransparent === 'boolean' ? body.inputBarTransparent : c.inputBarTransparent,
     // null puts the view's own colours back.
-    colours: body.colours !== undefined ? body.colours : c.colours
+    colours: body.colours !== undefined ? body.colours : c.colours,
+    tileHighlight: body.tileHighlight !== undefined ? body.tileHighlight : c.tileHighlight
   });
   // A moved or emptied Internet TV row reorders, or removes from, its channels.
   if (iptvModule && body.order && isArray(body.order.iptv)) iptvModule.setOrder(stringList(body.order.iptv, 100));
@@ -896,6 +920,7 @@ function layoutOf(c) {
     showLastOn: c.showLastOn, showAppCount: c.showAppCount, showAppLabels: c.showAppLabels, showCec: c.showCec, showTvLogos: c.showTvLogos, showPointer: c.showPointer, weather: c.weather, weatherPlace: c.weatherPlace, previewAlways: c.previewAlways, previewInTile: c.previewInTile, previewSize: c.previewSize, previewSound: c.previewSound, wallAnim: c.wallAnim,
     animTheme: c.animTheme, animSky: c.animSky, animLight: c.animLight, animThemes: ANIM_THEMES,
     wallShuffleMinutes: c.wallShuffleMinutes, shuffleMinutes: SHUFFLE_MINUTES, colours: c.colours,
+    tileHighlight: c.tileHighlight,
     // Not saved: { host, by } while the ad blocker blocks LG's search (lib/home-search).
     searchBlocked: search.blocked() };
 }
@@ -3081,6 +3106,7 @@ function status(cb) {
         history: !!(historyModule && historyModule.enabled && historyModule.enabled()),
         wallpapers: wallpapers.status(),
         colourPresets: COLOUR_PRESETS,
+        highlightPresets: HIGHLIGHT_PRESETS,
         layout: layoutOf(c)
       };
       if (c.lgAutoLaunch === 'on' || hal === 'on' || hal === 'off') {

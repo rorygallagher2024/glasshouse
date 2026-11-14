@@ -1834,7 +1834,7 @@
  "home.ch.addDesc": {"text": "De los que la TV tiene sintonizados.", "from": "From those the TV has tuned."},
  "home.colours.accent": {"text": "Acento", "from": "Accent"},
  "home.colours.custom": {"text": "Personalizado", "from": "Custom"},
- "home.colours.desc": {"text": "El texto de Glasshouse Home y el acento que enmarca la tarjeta elegida y marca lo último visto. El texto secundario es un tono más apagado del color del texto.", "from": "The text on Glasshouse Home, and the accent that frames the chosen tile and marks what was last on. The quieter text is a shade of the text colour."},
+ "home.colours.desc": {"from": "The text on Glasshouse Home, the highlight behind the chosen tile, and the accent that frames it and marks what was last on. The quieter text is a shade of the text colour.", "text": "El texto de Glasshouse Home, el resaltado detrás de la tarjeta elegida y el acento que la enmarca y marca lo último visto. El texto secundario es un tono más apagado del color del texto."},
  "home.colours.glasshouse": {"text": "Glasshouse", "from": "Glasshouse"},
  "home.colours.ice": {"text": "Hielo", "from": "Ice"},
  "home.colours.lilac": {"text": "Lila", "from": "Lilac"},
@@ -3285,5 +3285,14 @@
  "compat.copyFailed": {"text": "No se pudo copiar", "from": "Could not copy"},
  "home.appNameLabel": {"text": "Nombre de la app", "from": "App name"},
  "home.showAppLabels": {"text": "Etiquetas de las apps", "from": "App labels"},
- "home.showAppLabelsDesc": {"text": "Debajo de cada icono de app en Glasshouse Home y Glasshouse Bar. Desactivado deja solo los iconos.", "from": "Under each app icon on Glasshouse Home and Glasshouse Bar. Off leaves the icons on their own."}
+ "home.showAppLabelsDesc": {"text": "Debajo de cada icono de app en Glasshouse Home y Glasshouse Bar. Desactivado deja solo los iconos.", "from": "Under each app icon on Glasshouse Home and Glasshouse Bar. Off leaves the icons on their own."},
+ "home.colours.highlight": {"from": "Tile highlight", "text": "Resaltado de tarjeta"},
+ "home.colours.highlightHint": {"from": "The fill colour behind the focused tile on Glasshouse Home. Any colour can be picked on the browser dashboard’s Home tab.", "text": "El color de fondo detrás de la tarjeta enfocada en Glasshouse Home. Se puede elegir cualquier color en la pestaña Home del panel del navegador."},
+ "home.highlight.default": {"from": "Default", "text": "Por defecto"},
+ "home.highlight.charcoal": {"from": "Charcoal", "text": "Carbón"},
+ "home.highlight.slate": {"from": "Slate", "text": "Pizarra"},
+ "home.highlight.navy": {"from": "Navy", "text": "Azul marino"},
+ "home.highlight.forest": {"from": "Forest", "text": "Verde bosque"},
+ "home.highlight.wine": {"from": "Wine", "text": "Burdeos"},
+ "home.highlight.plum": {"from": "Plum", "text": "Ciruela"}
 }

@@ -416,7 +416,7 @@
  "home.ch.show": {"text": "Показать каналы", "from": "Show channels"},
  "home.colours.accent": {"text": "Акцент", "from": "Accent"},
  "home.colours.custom": {"text": "Пользовательский", "from": "Custom"},
- "home.colours.desc": {"text": "Цвет текста на Glasshouse Home и акцент, который обводит выбранную плитку и отмечает то, что шло последним. Приглушенный текст — оттенок основного цвета текста.", "from": "The text on Glasshouse Home, and the accent that frames the chosen tile and marks what was last on. The quieter text is a shade of the text colour."},
+ "home.colours.desc": {"from": "The text on Glasshouse Home, the highlight behind the chosen tile, and the accent that frames it and marks what was last on. The quieter text is a shade of the text colour.", "text": "Цвет текста на Glasshouse Home, подсветка выбранной плитки и акцент, который обводит её и отмечает последний источник. Приглушённый текст является оттенком цвета текста."},
  "home.colours.glasshouse": {"text": "Glasshouse", "from": "Glasshouse"},
  "home.colours.ice": {"text": "Лед", "from": "Ice"},
  "home.colours.lilac": {"text": "Сирень", "from": "Lilac"},
@@ -3285,5 +3285,14 @@
  "compat.copyFailed": {"text": "Не удалось скопировать", "from": "Could not copy"},
  "home.appNameLabel": {"text": "Название приложения", "from": "App name"},
  "home.showAppLabels": {"text": "Подписи приложений", "from": "App labels"},
- "home.showAppLabelsDesc": {"text": "Под каждым значком приложения в Glasshouse Home и Glasshouse Bar. Если выключено, остаются только значки.", "from": "Under each app icon on Glasshouse Home and Glasshouse Bar. Off leaves the icons on their own."}
+ "home.showAppLabelsDesc": {"text": "Под каждым значком приложения в Glasshouse Home и Glasshouse Bar. Если выключено, остаются только значки.", "from": "Under each app icon on Glasshouse Home and Glasshouse Bar. Off leaves the icons on their own."},
+ "home.colours.highlight": {"from": "Tile highlight", "text": "Подсветка плитки"},
+ "home.colours.highlightHint": {"from": "The fill colour behind the focused tile on Glasshouse Home. Any colour can be picked on the browser dashboard’s Home tab.", "text": "Цвет фона выбранной плитки на Glasshouse Home. Любой цвет можно выбрать на вкладке Home в браузерной панели."},
+ "home.highlight.default": {"from": "Default", "text": "По умолчанию"},
+ "home.highlight.charcoal": {"from": "Charcoal", "text": "Угольный"},
+ "home.highlight.slate": {"from": "Slate", "text": "Сланцевый"},
+ "home.highlight.navy": {"from": "Navy", "text": "Тёмно-синий"},
+ "home.highlight.forest": {"from": "Forest", "text": "Хвойный"},
+ "home.highlight.wine": {"from": "Wine", "text": "Бордовый"},
+ "home.highlight.plum": {"from": "Plum", "text": "Сливовый"}
 }

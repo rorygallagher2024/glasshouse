@@ -455,7 +455,7 @@
  "home.ch.show": {"text": "Mostrar canais", "from": "Show channels"},
  "home.colours.accent": {"text": "Destaque", "from": "Accent"},
  "home.colours.custom": {"text": "Personalizada", "from": "Custom"},
- "home.colours.desc": {"text": "O texto no Glasshouse Home e a cor de destaque que enquadra o mosaico escolhido e assinala o último conteúdo visto. O texto mais discreto é um tom da cor do texto.", "from": "The text on Glasshouse Home, and the accent that frames the chosen tile and marks what was last on. The quieter text is a shade of the text colour."},
+ "home.colours.desc": {"from": "The text on Glasshouse Home, the highlight behind the chosen tile, and the accent that frames it and marks what was last on. The quieter text is a shade of the text colour.", "text": "O texto da Glasshouse Home, o destaque atrás do mosaico selecionado e o acento que o contorna e marca o último utilizado. O texto secundário é um tom da cor do texto."},
  "home.colours.glasshouse": {"text": "Glasshouse", "from": "Glasshouse"},
  "home.colours.ice": {"text": "Gelo", "from": "Ice"},
  "home.colours.lilac": {"text": "Lilás", "from": "Lilac"},
@@ -3285,5 +3285,14 @@
  "compat.copyFailed": {"text": "Não foi possível copiar", "from": "Could not copy"},
  "home.appNameLabel": {"text": "Nome da aplicação", "from": "App name"},
  "home.showAppLabels": {"text": "Rótulos das aplicações", "from": "App labels"},
- "home.showAppLabelsDesc": {"text": "Por baixo de cada ícone de aplicação no Glasshouse Home e no Glasshouse Bar. Desligado deixa apenas os ícones.", "from": "Under each app icon on Glasshouse Home and Glasshouse Bar. Off leaves the icons on their own."}
+ "home.showAppLabelsDesc": {"text": "Por baixo de cada ícone de aplicação no Glasshouse Home e no Glasshouse Bar. Desligado deixa apenas os ícones.", "from": "Under each app icon on Glasshouse Home and Glasshouse Bar. Off leaves the icons on their own."},
+ "home.colours.highlight": {"from": "Tile highlight", "text": "Destaque do mosaico"},
+ "home.colours.highlightHint": {"from": "The fill colour behind the focused tile on Glasshouse Home. Any colour can be picked on the browser dashboard’s Home tab.", "text": "A cor de preenchimento atrás do mosaico focado na Glasshouse Home. Qualquer cor pode ser escolhida no separador Home do painel no navegador."},
+ "home.highlight.default": {"from": "Default", "text": "Predefinido"},
+ "home.highlight.charcoal": {"from": "Charcoal", "text": "Carvão"},
+ "home.highlight.slate": {"from": "Slate", "text": "Ardósia"},
+ "home.highlight.navy": {"from": "Navy", "text": "Azul-marinho"},
+ "home.highlight.forest": {"from": "Forest", "text": "Verde-floresta"},
+ "home.highlight.wine": {"from": "Wine", "text": "Bordô"},
+ "home.highlight.plum": {"from": "Plum", "text": "Ameixa"}
 }
