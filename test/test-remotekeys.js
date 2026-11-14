@@ -553,6 +553,7 @@ step(function (next) {
   rk.setRemoteKey('netflix', 'open', 'com.webos.app.home', guard(function (s) {
     assert.ok(s.ok, s.error);
     assert.ok(rk.filterSource().indexOf('"activateType": "home", "launchType": "homeKey"') !== -1, 'opened as the Home key opens it');
+    assert.ok(rk.filterSource().indexOf('"glasshouse": "bar", "press": ++glasshouseBarPress') !== -1, 'homebar launch carries a per-press sequence number');
     rk.setRemoteKey('netflix', 'lg', '', guard(function () {
       console.log('  ✓ a key can be set to Home, which the filter opens as the Home key does');
       rk.restore(guard(function () { next(); }));

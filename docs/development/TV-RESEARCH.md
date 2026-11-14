@@ -3443,7 +3443,13 @@ HDMI 3 in front.
   `document.hidden` true. A later launch reaches it as a relaunch
   (`APP_RELAUNCH`), and the window was shown 0.35 s after it. WebAppMgr waits
   for a new frame first (`Not PageFrameSwapped; Pending Show()`): a page with
-  nothing new to draw was shown 2.1 s later.
+  nothing new to draw was shown 2.1 s later. On a B8 (webOS 4.4.3), a normal
+  `launch` arriving 50–250 ms into a `"preload": "full"` start—or a preload
+  arriving 40–100 ms into a normal cold launch—leaves the app hidden with
+  `PalmSystem.launchParams` set to `{"preload":"full"}`; once running in front,
+  a `"preload": "full"` launch emits no `webOSRelaunch`. On the same B8, a single
+  relaunch with `params` dispatches duplicate `webOSRelaunch` events 1–19 ms
+  apart, each carrying `ev.detail` populated from `params`.
 - Launching a card window already on screen, as Glasshouse Home is, redraws
   it, which shows as a flash on each press.
 - In the compositor's key filters, `global.isForegroundApp(id)` is true for

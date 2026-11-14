@@ -258,37 +258,121 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
 
   var CACHE = 'glasshouse.homebar';
   var moved = false, waiting = 0, now = null, cat = null, labelsOff = false;
-  function show() {
-    $('bar').className = labelsOff ? 'no-app-labels' : '';
-    render();
+  var renderedJson = '', warmed = {}, iconScript = null, iconCallbacks = [], seq = 0;
+
+  // Keep decoded app icons in memory while hidden so opening does not paint blank boxes first.
+  function warmIcons(items) {
+    items.forEach(function (e) {
+      if (!e.icon || warmed[e.icon]) return;
+      var img = new Image();
+      warmed[e.icon] = img;
+      img.src = e.icon;
+      if (typeof img.decode === 'function') img.decode().then(null, function () {});
+    });
+  }
+  function ensureDevIcons(cb) {
+    if (window.glasshouseDevIcon) return cb();
+    iconCallbacks.push(cb);
+    if (iconScript) return;
+    iconScript = document.createElement('script');
+    iconScript.onload = iconScript.onerror = function () {
+      if (!window.glasshouseDevIcon) iconScript = null;
+      var q = iconCallbacks.splice(0, iconCallbacks.length);
+      q.forEach(function (fn) { fn(); });
+    };
+    iconScript.src = BASE + '/assets/devicons.js';
+    document.head.appendChild(iconScript);
+  }
+  function syncFocus() {
+    var tiles = $('row').querySelectorAll('.tile');
+    for (var k = 0; k < tiles.length; k++) {
+      var cls = tiles[k].className.replace(/ focus/g, '') + (k === focus ? ' focus' : '');
+      if (tiles[k].className !== cls) tiles[k].className = cls;
+    }
+    scrollTo();
+  }
+  function updateNow() {
+    var tiles = $('row').querySelectorAll('.tile.input');
+    for (var k = 0; k < tiles.length; k++) {
+      var idx = +tiles[k].getAttribute('data-i');
+      var e = list[idx];
+      var on = !!(e && e.kind === 'input' && e.port && e.port === onPort);
+      var cls = tiles[k].className.replace(/ now/g, '') + (on ? ' now' : '');
+      if (tiles[k].className !== cls) tiles[k].className = cls;
+    }
+  }
+  function applyRow(nextList, port, nextLabelsOff) {
+    var nextJson = JSON.stringify(nextList);
+    var barCls = nextLabelsOff ? 'no-app-labels' : '';
+    var labelsChanged = nextLabelsOff !== labelsOff || $('bar').className !== barCls;
+    labelsOff = nextLabelsOff;
+    if (labelsChanged) $('bar').className = barCls;
+    if (nextJson !== renderedJson) {
+      var keepId = moved && list[focus] ? list[focus].id : null;
+      list = nextList;
+      onPort = port;
+      focus = 0;
+      if (keepId) for (var i = 0; i < list.length; i++) if (list[i].id === keepId) focus = i;
+      renderedJson = nextJson;
+      render();
+      warmIcons(list);
+      return;
+    }
+    if (port !== onPort) {
+      onPort = port;
+      updateNow();
+    }
+    if (labelsChanged) scrollTo();
+  }
+  function openWindow() {
     tick();
     clearInterval(clockTimer);
     clockTimer = setInterval(tick, 10000);
     document.body.className = 'on';
   }
-  function ready() {
-    if (--waiting > 0 || closing) return;
-    if (!cat) { if (!list.length) close(); return; }
-    var fresh = tilesFrom(cat);
-    if (!fresh.length) return close();
-    var nextLabelsOff = !!(cat.layout && cat.layout.showAppLabels === false);
-    var port = now && now.kind === 'input' && now.behindHome !== true ? now.port : null;
-    var same = JSON.stringify(fresh) === JSON.stringify(list) && port === onPort && nextLabelsOff === labelsOff;
+  function hydrateFromCache() {
+    try {
+      var kept = JSON.parse(window.localStorage.getItem(CACHE) || 'null');
+      if (kept && kept.list && kept.list.length) {
+        applyRow(kept.list, kept.onPort, !!kept.labelsOff);
+        return true;
+      }
+    } catch (e) {}
+    return false;
+  }
+  function portFrom(j) {
+    return j && j.kind === 'input' && j.behindHome !== true ? j.port : null;
+  }
+  function saveCache(fresh, port, nextLabelsOff) {
     try { window.localStorage.setItem(CACHE, JSON.stringify({ list: fresh, onPort: port, labelsOff: nextLabelsOff })); } catch (e) {}
-    if (same && document.body.className === 'on') return;
-    var keepId = moved && list[focus] ? list[focus].id : null;
-    list = fresh;
-    onPort = port;
-    labelsOff = nextLabelsOff;
-    focus = 0;
-    if (keepId) for (var i = 0; i < list.length; i++) if (list[i].id === keepId) focus = i;
-    show();
   }
 
   /*
-   * Opening: the last row drawn at once, so the window comes up with its first
-   * frame, then what the server says. Run at load and again each time the
-   * preloaded app is opened.
+   * Prewarming while hidden: renders the cached row and fetches the catalogue
+   * and app icons ahead of the Home press without showing the window, so the
+   * press only switches body.on and updates the active input dot in place.
+   */
+  function prewarm() {
+    var mySeq = ++seq;
+    hydrateFromCache();
+    var preCat = null, need = 2;
+    function donePrewarm() {
+      if (--need > 0 || mySeq !== seq || !idleUntilOpened || closing) return;
+      if (!preCat) return;
+      var fresh = tilesFrom(preCat);
+      if (!fresh.length) return;
+      var nextLabelsOff = !!(preCat.layout && preCat.layout.showAppLabels === false);
+      saveCache(fresh, onPort, nextLabelsOff);
+      applyRow(fresh, onPort, nextLabelsOff);
+    }
+    ensureDevIcons(donePrewarm);
+    getJson(BASE + '/api/home/catalogue', function (j) { preCat = j; donePrewarm(); });
+  }
+
+  /*
+   * Opening: shows the prewarmed or cached row at once so the window comes up
+   * with its first frame, then updates the active input or any changed tiles
+   * without tearing down unchanged icon elements.
    */
   function start() {
     // Opened again while it fades out: it stays.
@@ -297,82 +381,101 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
     closing = false;
     moved = false;
     focus = 0;
-    try {
-      var kept = JSON.parse(window.localStorage.getItem(CACHE) || 'null');
-      if (kept && kept.list && kept.list.length) {
-        list = kept.list;
-        onPort = kept.onPort;
-        labelsOff = !!kept.labelsOff;
-        show();
-      }
-    } catch (e) {}
+    var mySeq = ++seq;
+    if (!renderedJson) hydrateFromCache();
+    else syncFocus();
+    if (list.length) openWindow();
     now = null;
     cat = null;
-    waiting = window.glasshouseDevIcon ? 2 : 3;
-    if (!window.glasshouseDevIcon) {
-      var icons = document.createElement('script');
-      icons.onload = icons.onerror = ready;
-      icons.src = BASE + '/assets/devicons.js';
-      document.head.appendChild(icons);
+    waiting = 3;
+    function readyFor() {
+      if (mySeq !== seq || --waiting > 0 || closing) return;
+      if (!cat) { if (!list.length) close(); return; }
+      var fresh = tilesFrom(cat);
+      if (!fresh.length) return close();
+      var nextLabelsOff = !!(cat.layout && cat.layout.showAppLabels === false);
+      var port = portFrom(now);
+      saveCache(fresh, port, nextLabelsOff);
+      applyRow(fresh, port, nextLabelsOff);
+      if (document.body.className !== 'on') openWindow();
     }
-    getJson(BASE + '/api/home/now', function (j) { now = j; ready(); });
-    getJson(BASE + '/api/home/catalogue', function (j) { cat = j; ready(); });
+    ensureDevIcons(readyFor);
+    getJson(BASE + '/api/home/now', function (j) {
+      if (mySeq !== seq || closing) return;
+      now = j;
+      if (renderedJson) {
+        var port = portFrom(j);
+        if (port !== onPort) {
+          onPort = port;
+          updateNow();
+        }
+      }
+      readyFor();
+    });
+    getJson(BASE + '/api/home/catalogue', function (j) {
+      if (mySeq !== seq || closing) return;
+      cat = j;
+      readyFor();
+    });
   }
 
   /*
    * Preloaded: the Glasshouse server starts the app hidden ({"preload":
-   * "full"}) at boot, at switch-on and after each close, so a press finds the
-   * page loaded. A preloaded page draws nothing until that press, which
-   * reaches it as a relaunch; a press of Home while it is up closes it.
+   * "full"}) at boot, at switch-on and after a pause following each close, so
+   * a press finds the page loaded. A preloaded page draws nothing until that
+   * press, which reaches it as a relaunch; a press of Home while it is up
+   * closes it.
    */
-  function preloaded() {
-    var p = {};
-    try { p = JSON.parse(window.PalmSystem.launchParams || '{}') || {}; } catch (e) {}
-    return !!p.preload;
+  function launchInfo() {
+    try { return JSON.parse((window.PalmSystem && window.PalmSystem.launchParams) || '{}') || {}; } catch (e) { return {}; }
   }
   function hidden() { return document.hidden === true || document.webkitHidden === true; }
+  var initial = launchInfo();
+  var seenPress = initial.press || 0;
   /*
    * Preloaded, the page starts with no window, so hidden. On a B8 (webOS
-   * 4.4.3) the preload's launch parameters did not say so: the page drew
-   * itself, and the first press, taken for a second, closed it at once.
+   * 4.4.3) a preload's launch parameters did not always say so: without a
+   * keyfilter press marker, a hidden launch still waits for the first press.
    */
-  var idleUntilOpened = preloaded() || hidden();
+  var idleUntilOpened = !!initial.preload || (!seenPress && hidden());
   /*
-   * A relaunch is a second press of Home, and closes the bar, once it is on
-   * screen; one within this time of opening still opens it, as a backstop.
+   * Without a press sequence number, a single press can reach webOSRelaunch
+   * twice close together on webOS 4.4.3; time windows still guard that path.
    */
   var SECOND_PRESS_MS = 250;
   var visibleSince = hidden() ? 0 : Date.now();
   function visibilityChanged() { visibleSince = hidden() ? 0 : (visibleSince || Date.now()); }
   document.addEventListener('visibilitychange', visibilityChanged);
   document.addEventListener('webkitvisibilitychange', visibilityChanged);
-  /*
-   * One press can arrive as two relaunches close together: taken as two
-   * presses, the second reopened the bar the first had just closed (a B8,
-   * webOS 4.4.3). Those within this time of the last are the same press.
-   */
   var SAME_PRESS_MS = 200;
   var lastRelaunch = 0;
-  document.addEventListener('webOSRelaunch', function () {
+  document.addEventListener('webOSRelaunch', function (ev) {
+    var detail = (ev && ev.detail) || {};
+    if (detail.preload) return;
     var at = Date.now();
-    if (at - lastRelaunch < SAME_PRESS_MS) return;
+    if (detail.press) {
+      if (detail.press === seenPress) return;
+      seenPress = detail.press;
+    } else {
+      if (at - lastRelaunch < SAME_PRESS_MS) return;
+      var shownFor = visibleSince ? at - visibleSince : 0;
+      if (!idleUntilOpened && !closing && document.body.className === 'on' && shownFor < SECOND_PRESS_MS) {
+        lastRelaunch = at;
+        start();
+        return;
+      }
+    }
     lastRelaunch = at;
-    var shownFor = visibleSince ? at - visibleSince : 0;
-    if (idleUntilOpened || closing || document.body.className !== 'on' || shownFor < SECOND_PRESS_MS) {
+    if (idleUntilOpened || closing || document.body.className !== 'on') {
       idleUntilOpened = false;
-      visibleSince = visibleSince || Date.now();
+      visibleSince = visibleSince || at;
       start();
     } else {
       close();
     }
   });
-  if (idleUntilOpened) {
-    var icons = document.createElement('script');
-    icons.src = BASE + '/assets/devicons.js';
-    document.head.appendChild(icons);
-  } else {
-    start();
-  }
+  if (idleUntilOpened) prewarm();
+  else start();
 })();
 </script>
 </body>

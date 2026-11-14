@@ -393,6 +393,91 @@ async function visitInputBarBehindHome(browser, base, problems) {
   }
 }
 
+async function visitHomeBarPrewarm(browser, base, problems) {
+  const page = await browser.newPage({ viewport: { width: 1920, height: 1080 } });
+  page.on('pageerror', e => problems.push('Glasshouse Bar: ' + e.message));
+  let port = 1, iconHits = 0, catHits = 0;
+  const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==', 'base64');
+  await page.addInitScript(() => {
+    window.PalmSystem = { launchParams: '{"preload":"full"}' };
+    window.PalmServiceBridge = function () {};
+    window.PalmServiceBridge.prototype.call = function (uri, body) {
+      if (this.onservicecallback) this.onservicecallback(JSON.stringify({ returnValue: true }));
+    };
+    window.close = function () { window.closed = true; };
+  });
+  await page.route('http://localhost:8080/**', route => {
+    const url = new URL(route.request().url());
+    if (url.pathname === '/assets/devicons.js') return route.continue({ url: base + '/assets/devicons.js' });
+    if (url.pathname === '/api/home/icon') {
+      iconHits++;
+      return route.fulfill({ status: 200, contentType: 'image/png', body: png });
+    }
+    if (url.pathname === '/api/home/now') return route.fulfill({ json: { kind: 'input', port, behindHome: false } });
+    if (url.pathname === '/api/home/catalogue') {
+      catHits++;
+      return route.fulfill({
+        json: {
+          ok: true,
+          layout: {},
+          order: { app: ['app1'], dev: ['hdmi1', 'hdmi2'] },
+          apps: [{ id: 'app1', title: 'Test App', icon: '/api/home/icon?id=app1' }],
+          devices: [
+            { id: 'hdmi1', name: 'HDMI 1', input: 'hdmi1', port: 1 },
+            { id: 'hdmi2', name: 'HDMI 2', input: 'hdmi2', port: 2 }
+          ]
+        }
+      });
+    }
+    return route.fulfill({ json: {} });
+  });
+  try {
+    await page.goto(base + '/assets/homebar-app/index.html');
+    await page.waitForSelector('#row .ico');
+    await page.waitForFunction(() => document.querySelectorAll('#row .tile').length === 3);
+    const pre = await page.evaluate(() => {
+      window.__icoNode = document.querySelector('#row .ico');
+      return { on: document.body.classList.contains('on'), tiles: document.querySelectorAll('#row .tile').length };
+    });
+    if (pre.on) problems.push('Glasshouse Bar: showed window during preload');
+    if (pre.tiles !== 3 || iconHits < 1 || catHits < 1) problems.push('Glasshouse Bar: did not prewarm row and icons while hidden');
+    port = 2;
+    const beforeCat = catHits;
+    await page.evaluate(() => document.dispatchEvent(new CustomEvent('webOSRelaunch')));
+    await page.waitForSelector('body.on');
+    await page.waitForFunction(n => window.performance.getEntriesByType('resource').filter(r => r.name.indexOf('/api/home/catalogue') !== -1).length > n, beforeCat);
+    const post = await page.evaluate(() => ({
+      sameNode: document.querySelector('#row .ico') === window.__icoNode,
+      nowNames: Array.from(document.querySelectorAll('#row .tile.now .nm')).map(el => el.textContent),
+      closed: !!window.closed
+    }));
+    if (!post.sameNode) problems.push('Glasshouse Bar: redrew icon DOM node when opened with changed active input');
+    if (post.nowNames.length !== 1 || post.nowNames[0] !== 'HDMI 2') problems.push('Glasshouse Bar: active input dot was ' + JSON.stringify(post.nowNames));
+    if (post.closed) problems.push('Glasshouse Bar: closed on first open');
+
+    // A preload relaunch while open is ignored; distinct keyfilter press ids
+    // toggle immediately (even within 200 ms) while duplicates of the same press do not.
+    await page.evaluate(() => document.dispatchEvent(new CustomEvent('webOSRelaunch', { detail: { preload: 'full' } })));
+    const afterPreload = await page.evaluate(() => ({ cls: document.body.className, closed: !!window.__closed }));
+    if (afterPreload.cls !== 'on' || afterPreload.closed) problems.push('Glasshouse Bar: preload relaunch toggled bar: ' + JSON.stringify(afterPreload));
+
+    await page.evaluate(() => document.dispatchEvent(new CustomEvent('webOSRelaunch', { detail: { glasshouse: 'bar', press: 10 } })));
+    const afterClose = await page.evaluate(() => document.body.className);
+    if (afterClose !== '') problems.push('Glasshouse Bar: rapid press 10 did not start close: ' + JSON.stringify(afterClose));
+
+    await page.evaluate(() => document.dispatchEvent(new CustomEvent('webOSRelaunch', { detail: { glasshouse: 'bar', press: 10 } })));
+    const afterDup = await page.evaluate(() => document.body.className);
+    if (afterDup !== '') problems.push('Glasshouse Bar: duplicate press 10 cancelled close: ' + JSON.stringify(afterDup));
+
+    await page.evaluate(() => document.dispatchEvent(new CustomEvent('webOSRelaunch', { detail: { glasshouse: 'bar', press: 11 } })));
+    await page.waitForTimeout(200);
+    const afterReopen = await page.evaluate(() => ({ cls: document.body.className, closed: !!window.__closed }));
+    if (afterReopen.cls !== 'on' || afterReopen.closed) problems.push('Glasshouse Bar: rapid press 11 did not cancel fade-out: ' + JSON.stringify(afterReopen));
+  } finally {
+    await page.close();
+  }
+}
+
 async function visitHomeWeather(browser, base, problems) {
   const page = await browser.newPage();
   page.on('pageerror', e => problems.push('Home weather: ' + e.message));
@@ -4016,7 +4101,7 @@ function groups(web, tv) {
     { job: 'tabs', tabs: web.map(t => ({ path: '/?tab=' + t, label: 'web ' + t })), visits: [visitHomeAnimations, visitHuesyncSettings, visitInputsAndRemote, visitAdblockCards, visitSaverEntitySlots] },
     { job: 'tabs', tabs: tv.map(t => ({ path: '/assets/dashboard.html?tab=' + t, label: 'TV ' + t })),
       visits: [visitTvDashboard, visitTvAudio, visitTvPictureWrites, visitPictureUnavailable, visitTvNonOled, visitTvHuesync] },
-    { job: 'home', tabs: [], visits: [visitHomePicture, visitHomePreview, visitHomePreviewOptions, visitHomePreviewWebos4, visitHomePreviewSize, visitHomePreviewSizeDetails, visitInputBarBehindHome, visitHomeUpDown, visitHomePointerOff, visitHomeOrder, visitHomeAvailability, visitHomeSearch, visitHomeWeather, visitHomeWeatherSetting] },
+    { job: 'home', tabs: [], visits: [visitHomePicture, visitHomePreview, visitHomePreviewOptions, visitHomePreviewWebos4, visitHomePreviewSize, visitHomePreviewSizeDetails, visitInputBarBehindHome, visitHomeBarPrewarm, visitHomeUpDown, visitHomePointerOff, visitHomeOrder, visitHomeAvailability, visitHomeSearch, visitHomeWeather, visitHomeWeatherSetting] },
     { job: 'home', tabs: [], visits: [visitHomeArrangement, visitHomeVisibility, visitHomeColours, visitHomeInputsEditor, visitHomeEditor,
       visitHomeRecentsHidden, visitHomeUploads, visitHomeShuffle, visitHomeLauncher, visitHomeReadiness, visitAudioOverride, visitHomeRecents, visitHomeGuide,
       visitHomeFadeAndInputs] },
