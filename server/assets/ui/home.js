@@ -5,7 +5,7 @@ let homeLauncherActive = false;
 let homeCat = null;      // what the TV's Home lists: apps, devices, picked channels, order
 let homeLayout = null;
 let homeChannels = null; // the TV's whole channel list, for picking
-let homeArmed = null;    // the control waiting for its second press: 'on', 'off' or 'hide'
+let homeArmed = null;    // the control waiting for its second press: 'hide'
 let homeArmTimer = null;
 let homeSaving = false;
 let homeLoadRevision = 0;
@@ -384,12 +384,11 @@ function renderHome() {
   }
   /*
    * The choice of launcher: each as a 16:9 miniature TV screen with its name
-   * and a short line beneath. The active one and a card awaiting confirmation
-   * carry a badge on the screen itself so the launcher's name stays visible.
+   * and a short line beneath. The active one carries a badge on the screen
+   * itself so the launcher's name stays visible.
    */
   const lgBtn = q('home-mode-lg');
   const chosenId = homeLauncherOn() ? st.launchers.chosen : null;
-  const again = t('home.pressAgain', 'Press again to confirm');
   const inUse = t('ss.inUse', 'In use');
   const ownKept = homeLaunchersKept().find(l => l.id === 'own');
   let customSub = t('home.customShort', 'Your own web app or page');
@@ -400,40 +399,38 @@ function renderHome() {
       customSub = ownKept.title || customSub;
     }
   }
-  const choice = (el, kind, name, sub, on, armed, hidden, disabled) => {
+  const choice = (el, kind, name, sub, on, hidden, disabled) => {
     if (!el) return;
     el.hidden = hidden;
     el.disabled = disabled;
-    el.className = 'hm-card' + (on ? ' on' : armed ? ' warn' : '');
-    const badge = armed ? again : on ? inUse : '';
+    el.className = 'hm-card' + (on ? ' on' : '');
     el.innerHTML = `<span class="hm-screen">
         ${renderLauncherPreview(kind, st)}
-        <span class="hm-badge"${badge ? '' : ' hidden'}>${esc(badge)}</span>
+        <span class="hm-badge"${on ? '' : ' hidden'}>${on ? esc(inUse) : ''}</span>
       </span>
       <span class="hm-meta">
         <span class="hm-name">${esc(name)}</span>
         <span class="hm-sub">${esc(sub)}</span>
       </span>`;
   };
+  const cardBusy = !homeWritable() || homeLauncherBusy;
   if (btn) {
-    const wantOn = !(st.enabled || st.restorePending);
-    const armed = homeArmed === (wantOn ? 'on' : 'off');
     if (st.restorePending) {
       if (lgBtn) lgBtn.hidden = true;
-      choice(btn, 'gh', t('home.retryRestore', 'Retry restoring LG Home'), t('home.restorePending', 'LG Home restoration is incomplete'), false, armed, false, !homeWritable());
+      choice(btn, 'gh', t('home.retryRestore', 'Retry restoring LG Home'), t('home.restorePending', 'LG Home restoration is incomplete'), false, false, cardBusy);
     } else {
-      choice(lgBtn, 'lg', t('home.lgHome', 'LG Home'), t('home.lgHomeShort', 'LG\u2019s built-in home screen'), !st.enabled && !homeBarOn(), (st.enabled || homeBarOn()) && (armed || homeArmed === 'bar:off'), false, !homeWritable());
-      choice(btn, 'gh', t('home.title', 'Glasshouse Home'), t('home.ghShort', 'Clock, rows, wallpapers & preview'), st.enabled && !chosenId, !st.enabled && armed, false, !homeWritable());
+      choice(lgBtn, 'lg', t('home.lgHome', 'LG Home'), t('home.lgHomeShort', 'LG\u2019s built-in home screen'), !st.enabled && !homeBarOn(), false, cardBusy);
+      choice(btn, 'gh', t('home.title', 'Glasshouse Home'), t('home.ghShort', 'Clock, rows, wallpapers & preview'), st.enabled && !chosenId, false, cardBusy);
     }
   }
   const unavailable = !!st.restorePending || !st.supported.ok;
-  choice(q('home-mode-minimal'), 'minimal', t('home.minimalName', 'Glasshouse Minimal'), t('home.minimalShort', 'Plain text lists on black'), chosenId === 'minimal', homeArmed === 'use:minimal',
-    unavailable || !homeLaunchersAll().some(l => l.id === 'minimal'), !homeWritable() || homeLauncherBusy);
+  choice(q('home-mode-minimal'), 'minimal', t('home.minimalName', 'Glasshouse Minimal'), t('home.minimalShort', 'Plain text lists on black'), chosenId === 'minimal',
+    unavailable || !homeLaunchersAll().some(l => l.id === 'minimal'), cardBusy);
   // Offered where the input bar is: both are overlays over the picture.
-  choice(q('home-mode-bar'), 'bar', t('home.bar.name', 'Glasshouse Bar'), t('home.bar.short', 'Bottom bar over the picture'), homeBarOn(), homeArmed === 'bar:on',
-    !st.bar || !st.bar.offered || !!st.restorePending, !homeWritable() || homeLauncherBusy);
-  choice(q('home-mode-launcher'), 'custom', t('home.custom', 'Custom'), customSub, !!chosenId && chosenId !== 'minimal', homeArmed === 'use:own',
-    unavailable, !homeWritable() || homeLauncherBusy);
+  choice(q('home-mode-bar'), 'bar', t('home.bar.name', 'Glasshouse Bar'), t('home.bar.short', 'Bottom bar over the picture'), homeBarOn(),
+    !st.bar || !st.bar.offered || !!st.restorePending, cardBusy);
+  choice(q('home-mode-launcher'), 'custom', t('home.custom', 'Custom'), customSub, !!chosenId && chosenId !== 'minimal',
+    unavailable, cardBusy);
   renderHomeCompat(st);
   const hist = q('home-history-note');
   if (hist) hist.hidden = st.history;
@@ -821,24 +818,22 @@ function renderHomeCompat(st) {
 
 function homeBarOn() { return !!(homeStatus && homeStatus.bar && homeStatus.bar.enabled); }
 
-/*
- * Glasshouse Bar, chosen or put back to LG's Home: a second press within five
- * seconds acts, as the other choices.
- */
+function homeShowUpdating(el) {
+  const badge = el && el.querySelector('.hm-badge');
+  if (badge) {
+    badge.textContent = t('apps.service.updating', 'Updating…');
+    badge.hidden = false;
+  } else if (el) {
+    el.textContent = t('apps.service.updating', 'Updating…');
+  }
+}
+
 async function homeChooseBar(on) {
   if (!homeStatus || !homeWritable() || homeLauncherBusy) return;
   if (homeBarOn() === on) return;
-  const want = 'bar:' + (on ? 'on' : 'off');
-  if (homeArmed !== want) {
-    homeArmed = want;
-    clearTimeout(homeArmTimer);
-    homeArmTimer = setTimeout(() => { homeArmed = null; renderHome(); }, 5000);
-    return renderHome();
-  }
-  homeArmed = null;
-  clearTimeout(homeArmTimer);
   homeLauncherBusy = true;
   renderHome();
+  homeShowUpdating(on ? q('home-mode-bar') : q('home-mode-lg'));
   try { await homePost('/api/home/bar', { on }); } catch (e) { showErr(e.message); }
   homeLauncherBusy = false;
   loadHome();
@@ -851,7 +846,7 @@ function homeChooseMode(wantOn) {
   // Custom's settings belong to Custom alone.
   homeLauncherOpen = false;
   if (homeStatus.restorePending) { homeSwitch(); return; }
-  // From the custom launcher to Glasshouse Home: the same place, another page, so no second press.
+  // From the custom launcher to Glasshouse Home: the same place, another page.
   if (wantOn && homeLauncherOn()) { homeLauncherChoose(false); return; }
   if (Boolean(homeStatus.enabled) === Boolean(wantOn)) {
     if (wantOn && !homeStatus.supported.ok) homeSwitch();
@@ -860,35 +855,20 @@ function homeChooseMode(wantOn) {
   homeSwitch();
 }
 
-// The master switch: one press arms it, a second within five seconds acts.
 async function homeSwitch() {
-  if (!homeWritable()) return;
+  if (!homeWritable() || homeLauncherBusy) return;
   const want = homeStatus.enabled || homeStatus.restorePending ? 'off' : 'on';
-  if (homeArmed !== want) {
-    homeArmed = want;
-    clearTimeout(homeArmTimer);
-    homeArmTimer = setTimeout(() => { homeArmed = null; renderHome(); }, 5000);
-    return renderHome();
-  }
-  homeArmed = null;
-  clearTimeout(homeArmTimer);
+  homeLauncherBusy = true;
+  renderHome();
   const btn = q('home-switch');
   const lgBtn = q('home-mode-lg');
-  const activeBtn = want === 'off' && !homeStatus.restorePending && lgBtn ? lgBtn : btn;
-  if (btn) btn.disabled = true;
-  if (lgBtn) lgBtn.disabled = true;
-  const badge = activeBtn && activeBtn.querySelector('.hm-badge');
-  if (badge) {
-    badge.textContent = t('apps.service.updating', 'Updating…');
-    badge.hidden = false;
-  } else if (activeBtn) {
-    activeBtn.textContent = t('apps.service.updating', 'Updating…');
-  }
+  homeShowUpdating(want === 'off' && !homeStatus.restorePending && lgBtn ? lgBtn : btn);
   try {
     // Glasshouse Home's own button: the custom launcher left set up, but not chosen.
     if (want === 'on' && homeStatus.launchers && homeStatus.launchers.chosen) await homePost('/api/home/launcher', { choose: false });
     await homePost(want === 'on' ? '/api/home/enable' : '/api/home/disable');
   } catch (e) { showErr(e.message); }
+  homeLauncherBusy = false;
   loadHome();
 }
 
@@ -906,29 +886,17 @@ function homeChooseLauncher() {
   if (box && !wasOpen) box.scrollIntoView({ block: 'start', behavior: 'smooth' });
 }
 
-/*
- * A launcher kept: with Glasshouse Home on it swaps at once; from LG's Home it
- * takes a second press, as Glasshouse Home's own button does.
- */
 function homeLauncherUse(id) {
   if (!homeWritable() || homeLauncherBusy) return;
   if (id !== 'own') homeLauncherOpen = false;
   if (homeLauncherOn() && homeStatus.launchers.chosen === id) return;
-  if (homeStatus.enabled) return homeLauncherChoose(id);
-  if (homeArmed !== 'use:' + id) {
-    homeArmed = 'use:' + id;
-    clearTimeout(homeArmTimer);
-    homeArmTimer = setTimeout(() => { homeArmed = null; renderHome(); }, 5000);
-    return renderHome();
-  }
-  homeArmed = null;
-  clearTimeout(homeArmTimer);
   homeLauncherChoose(id);
 }
 
 async function homeLauncherChoose(id) {
   homeLauncherBusy = true;
   renderHome();
+  homeShowUpdating(id === 'minimal' ? q('home-mode-minimal') : id === 'own' ? q('home-mode-launcher') : q('home-switch'));
   try {
     await homePost('/api/home/launcher', { choose: id });
     if (id !== false && !homeStatus.enabled) await homePost('/api/home/enable');
@@ -984,7 +952,7 @@ async function homeLauncherDone() {
     await homePost('/api/home/launcher', { choose: 'own' });
     note.textContent = t('home.launcher.doneOn', 'Done. The TV’s Home shows it within a few seconds.');
   } else {
-    note.textContent = t('home.launcher.doneOffCustom', 'Done. Press Custom above, then again, to make it the TV’s Home.');
+    note.textContent = t('home.launcher.doneOffCustom', 'Done. Press Custom above to make it the TV’s Home.');
   }
 }
 

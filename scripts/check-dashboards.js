@@ -2215,7 +2215,7 @@ async function visitHomeLauncher(browser, base, problems) {
   page.on('pageerror', e => problems.push('Home launcher: ' + e.message));
   const layout = { rows: ['app', 'dev', 'ch'], order: { app: [], dev: [], ch: [] },
     hidden: { app: [], dev: [], ch: [] }, channels: [], hintSeen: true, searchHintSeen: true };
-  let kept = [], chosen = null, launcherUpload = true;
+  let kept = [], chosen = null, launcherUpload = true, enabled = true, barOffered = false, barEnabled = false;
   const sent = [];
   const minimal = { id: 'minimal', kind: 'builtin', title: 'Glasshouse Minimal', source: 'builtin' };
   const status = () => ({ chosen, launchers: [minimal].concat(kept).map(l => Object.assign({}, l, { chosen: l.id === chosen })) });
@@ -2229,8 +2229,24 @@ async function visitHomeLauncher(browser, base, problems) {
       else if (req.remove) { kept = kept.filter(l => l.id !== req.remove); if (chosen === req.remove) chosen = null; }
       else if ('choose' in req) chosen = req.choose || null;
       body = { ok: true, launchers: status() };
+    } else if (pathname === '/api/home/enable') {
+      sent.push('enable');
+      barEnabled = false;
+      enabled = true;
+      body = { ok: true };
+    } else if (pathname === '/api/home/disable') {
+      sent.push('disable');
+      enabled = false;
+      body = { ok: true };
+    } else if (pathname === '/api/home/bar') {
+      const req = route.request().postDataJSON();
+      sent.push('bar:' + Boolean(req.on));
+      barEnabled = Boolean(req.on);
+      if (barEnabled) enabled = false;
+      body = { ok: true };
     } else if (pathname === '/api/home') {
-      body = { ok: true, supported: { ok: true }, installed: true, enabled: true, active: true, writable: true, layout,
+      body = { ok: true, supported: { ok: true }, installed: true, enabled, active: enabled, writable: true, layout,
+        bar: barOffered ? { offered: true, enabled: barEnabled, standing: 'supported' } : { offered: false, enabled: false },
         launchers: status(), launcherUpload, wallpapers: { choices: ['black'], choice: 'black', slots: {} } };
     } else {
       body = { ok: true, layout, apps: [], devices: [], channels: [], order: { app: [], dev: [], ch: [] }, sources: { channels: 0 } };
@@ -2283,6 +2299,34 @@ async function visitHomeLauncher(browser, base, problems) {
     await stateNames(/ha\.local:8123/);
     if (sent.join() !== '{"choose":"own"}') problems.push('Home launcher: Custom with one set up sent ' + sent.join());
     await page.locator('#home-launcher').waitFor();
+    // All five launcher choices act on a single click, including from LG Home and Glasshouse Bar.
+    barOffered = true;
+    await page.evaluate(() => loadHome());
+    await page.locator('#home-mode-bar').waitFor({ state: 'visible' });
+    sent.length = 0;
+    await page.locator('#home-mode-lg').click();
+    await page.waitForFunction(() => /\bon\b/.test(document.getElementById('home-mode-lg').className));
+    if (sent.join() !== 'disable') problems.push('Home launcher: single-click LG Home sent ' + sent.join());
+    sent.length = 0;
+    await page.locator('#home-switch').click();
+    await page.waitForFunction(() => /\bon\b/.test(document.getElementById('home-switch').className));
+    if (sent.join() !== '{"choose":false},enable') problems.push('Home launcher: single-click Glasshouse Home from LG Home sent ' + sent.join());
+    sent.length = 0;
+    await page.locator('#home-mode-bar').click();
+    await page.waitForFunction(() => /\bon\b/.test(document.getElementById('home-mode-bar').className));
+    if (sent.join() !== 'bar:true') problems.push('Home launcher: single-click Glasshouse Bar sent ' + sent.join());
+    sent.length = 0;
+    await page.locator('#home-mode-minimal').click();
+    await page.waitForFunction(() => /\bon\b/.test(document.getElementById('home-mode-minimal').className));
+    if (sent.join() !== '{"choose":"minimal"},enable') problems.push('Home launcher: single-click Glasshouse Minimal from Bar sent ' + sent.join());
+    sent.length = 0;
+    await page.locator('#home-mode-lg').click();
+    await page.waitForFunction(() => /\bon\b/.test(document.getElementById('home-mode-lg').className));
+    if (sent.join() !== 'disable') problems.push('Home launcher: single-click LG Home from Minimal sent ' + sent.join());
+    sent.length = 0;
+    await page.locator('#home-mode-launcher').click();
+    await page.waitForFunction(() => /\bon\b/.test(document.getElementById('home-mode-launcher').className));
+    if (sent.join() !== '{"choose":"own"},enable') problems.push('Home launcher: single-click Custom from LG Home sent ' + sent.join());
     launcherUpload = false;
     await page.evaluate(() => loadHome());
     await page.locator('#home-launcher-upload-off').waitFor();

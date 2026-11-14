@@ -277,8 +277,9 @@ the section, a web address with Glasshouse Home on becomes the TV's Home at
 once, the Apps and Inputs rows stay to arrange while it is in use without
 Glasshouse Home's other settings, the four choices read LG Home, Glasshouse
 Home, Glasshouse Minimal and Custom, Custom's settings show only while it is
-chosen or being set up, and Glasshouse Minimal, Glasshouse Home and Custom
-swap without a second press, the upload is offered only where installing from a file is,
+chosen or being set up, and all five launcher choices (LG Home, Glasshouse
+Home, Glasshouse Minimal, Glasshouse Bar and Custom) switch on a single
+click, the upload is offered only where installing from a file is,
 and Remove takes it away. It
 then uploads a page to the real server and checks that `window.Glasshouse`
 lists the fake TV's apps before the page's own script runs.
