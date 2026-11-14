@@ -3263,6 +3263,8 @@
  "inputs.bar.isOther": {"text": "Másra van állítva a Távirányító lapon: {opens}.", "from": "Set to something else on the Remote tab: {opens}."},
  "inputs.bar.alsoBy": {"text": "Ez is megnyitja: {keys}. Bármely gomb beállítható a Bemeneti sáv értékre a Távirányító gombjai alatt.", "from": "Also opened by {keys}. Any key can be set to Input bar under Remote keys."},
  "inputs.bar.anyKey": {"text": "Bármely más gomb is megnyithatja: állítsa a Bemeneti sáv értékre a Távirányító gombjai alatt.", "from": "Any other key can open it too: set it to Input bar under Remote keys."},
+ "srv.service.accountmanager": {"text": "LG-fiók", "from": "LG Account"},
+ "srv.service.accountmanager.desc": {"text": "Bejelentkezve tartja a TV-t egy LG-fiókba. A Beállítások megnyitás előtt megvárják, akár 30 mp-ig, ha az LG szerverei le vannak tiltva. Kikapcsolva minden leáll, amihez LG-fiók kell, például a bejelentkezés, a ThinQ és az LG Content Store.", "from": "Keeps the TV signed in to an LG account. Settings waits for it before it opens, for up to 30 s where LG's servers are blocked. Off, anything that needs the LG account, such as signing in, ThinQ and the LG Content Store, stops working."},
  "home.bar.name": {"text": "Glasshouse Bar", "from": "Glasshouse Bar"},
  "home.bar.isOn": {"text": "A Glasshouse Bar a Home gombra nyílik meg", "from": "Glasshouse Bar opens on Home"},
  "home.bar.isOnDesc": {"text": "A Home gomb egy sort nyit az alkalmazásaival és bemeneteivel a kép fölött; a Vissza vagy a Home bezárja. Az LG kezdőképernyője a helyén marad, csempéje az alkalmazások végén van.", "from": "The Home button opens a row of your apps and inputs over the picture; Back or Home closes it. LG’s Home stays in its place, and its tile is at the end of the apps."},

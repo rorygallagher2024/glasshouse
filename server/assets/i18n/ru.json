@@ -3249,6 +3249,8 @@
  "inputs.bar.isOther": {"text": "На вкладке «Пульт» назначено другое: {opens}.", "from": "Set to something else on the Remote tab: {opens}."},
  "inputs.bar.alsoBy": {"text": "Также открывается кнопкой {keys}. Любой кнопке можно назначить «Панель входов» в разделе «Кнопки пульта».", "from": "Also opened by {keys}. Any key can be set to Input bar under Remote keys."},
  "inputs.bar.anyKey": {"text": "Её может открывать и любая другая кнопка: назначьте ей «Панель входов» в разделе «Кнопки пульта».", "from": "Any other key can open it too: set it to Input bar under Remote keys."},
+ "srv.service.accountmanager": {"text": "Учётная запись LG", "from": "LG Account"},
+ "srv.service.accountmanager.desc": {"text": "Поддерживает вход телевизора в учётную запись LG. Настройки ждут её перед открытием, до 30 с, если серверы LG заблокированы. Если выключить, перестаёт работать всё, что требует учётной записи LG: вход, ThinQ и LG Content Store.", "from": "Keeps the TV signed in to an LG account. Settings waits for it before it opens, for up to 30 s where LG's servers are blocked. Off, anything that needs the LG account, such as signing in, ThinQ and the LG Content Store, stops working."},
  "home.bar.name": {"text": "Glasshouse Bar", "from": "Glasshouse Bar"},
  "home.bar.isOn": {"text": "Glasshouse Bar открывается кнопкой Home", "from": "Glasshouse Bar opens on Home"},
  "home.bar.isOnDesc": {"text": "Кнопка Home открывает ряд ваших приложений и входов поверх изображения; «Назад» или Home закрывает его. Главный экран LG остаётся на месте, а его плитка — в конце приложений.", "from": "The Home button opens a row of your apps and inputs over the picture; Back or Home closes it. LG’s Home stays in its place, and its tile is at the end of the apps."},
