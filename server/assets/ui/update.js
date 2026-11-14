@@ -181,20 +181,6 @@ function renderUpdate(d) {
     applyPointerSettings(Object.assign({ allowControl: !!d.writable }, d.pointer));
   }
 
-  // Offered where the input bar has not been tried; where it has, it needs no switch.
-  const barRow = q('exp-inputbar-row');
-  if (barRow) {
-    barRow.hidden = !(d.inputBar && d.inputBar.standing === 'experimental');
-    if (d.inputBar) {
-      updateToggle('exp-inputbar', {
-        cls: d.inputBar.experimental ? 'good' : 'idle',
-        label: d.inputBar.experimental ? t('common.on', 'On') : t('common.off', 'Off'),
-        on: d.inputBar.experimental,
-        disabled: !d.writable
-      });
-    }
-  }
-
   msg.textContent = (d.state === 'error' || d.state === 'offline') ? (d.error || t('server.checkFailed', 'the check failed'))
     : d.state === 'installed' ? t('server.installed', 'Installed. The server is restarting - this page reconnects on its own.')
     : updArrival;
@@ -918,13 +904,6 @@ async function savePointerSettings() {
 }
 q('exp-pointer-transport').addEventListener('change', savePointerSettings);
 q('exp-pointer-rate').addEventListener('change', savePointerSettings);
-
-async function toggleExpInputBar() {
-  const b = q('exp-inputbar');
-  b.disabled = true;
-  const r = await sendCommand('setInputBarAllowed', !b.dataset.on);
-  if (r && r.ok) renderUpdate(r); else loadUpdate();
-}
 
 async function toggleNetworkDebugger() {
   const b = q('srv-devtools');

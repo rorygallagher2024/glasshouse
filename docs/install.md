@@ -134,9 +134,7 @@ Glasshouse can be configured either directly on the TV screen with the remote or
     | `ntp.server` | `""` | Hostname of an NTP server (e.g., `"pool.ntp.org"`) to synchronize the TV's clock on boot and hourly. |
     | `syslog.server` | `""` | Remote syslog server address to forward TV and Glasshouse logs over RFC 5424 UDP (port `514`). |
     | `allowTileHiding` | `false` | Experimental: allows hiding built-in LG system tiles and apps on the home screen. |
-    | `allowExperimentalHome` | `false` | Experimental: offers [Glasshouse Home](dashboard/home.md) on webOS 3, webOS 8, and on webOS 12 and later, where it is untried. |
     | `allowExperimentalScreensavers` | `false` | Experimental: allows custom QML screensavers on webOS 12 and newer, which are untried there. Named `allowOnWebos10` before 0.105; that name is still read, and renamed when the server starts. |
-    | `allowExperimentalInputBar` | `false` | Offers the [input bar](dashboard/inputs.md#glasshouse-input-bar) when the webOS version could not be read; webOS 4 to 10 now offer it without this switch, and webOS 11 never. |
     | `screensaverPowerOffMinutes` | unset (off) | Puts the TV in standby once a screen saver has been on this many minutes (1 to 1440). Also set from the Screensaver tab as **Poweroff after**. |
     | `allowNetworkDebugger` | `false` | Exposes the webOS app inspector on port `9998` over the local network for developers using `ares-inspect`. |
     | `iconServer` | `false` | Serves installed apps' icons, read-only and without a token, at `http://<tv-ip>:8082/icons/<appId>.png` (the dashboard's port plus two), for launchers on other devices. Home Assistant's Launch App select then lists each icon's address in `app_icons`. Also switched from the HA & MQTT tab. |

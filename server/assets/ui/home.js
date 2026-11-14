@@ -434,6 +434,7 @@ function renderHome() {
     !st.bar || !st.bar.offered || !!st.restorePending, !homeWritable() || homeLauncherBusy);
   choice(q('home-mode-launcher'), 'custom', t('home.custom', 'Custom'), customSub, !!chosenId && chosenId !== 'minimal', homeArmed === 'use:own',
     unavailable, !homeWritable() || homeLauncherBusy);
+  renderHomeCompat(st);
   const hist = q('home-history-note');
   if (hist) hist.hidden = st.history;
   renderHomeRows();
@@ -770,6 +771,31 @@ function homeSetPlace(id, place) {
 }
 
 function homeResetLayout() { homeSaveLayout({ reset: true }); }
+
+/*
+ * A launcher not yet reported working on this TV's webOS (lib/compat): offered,
+ * with a note saying so and links to report how it went, pre-filled with the
+ * TV's model and versions. Nothing is sent unless the issue is submitted.
+ */
+function homeCompatNote(text, report) {
+  return `<div class="pv-note warn home-compat-note">${esc(text)}
+    <span class="home-compat-links"><a href="${esc(report.problem)}" target="_blank" rel="noopener">${esc(t('compat.reportProblem', 'Report a problem'))}</a>
+    &middot; <a href="${esc(report.works)}" target="_blank" rel="noopener">${esc(t('compat.reportWorks', 'Tell us it works'))}</a></span></div>`;
+}
+
+function renderHomeCompat(st) {
+  const box = q('home-compat');
+  if (!box) return;
+  const v = (st.supported && st.supported.webos) || '?';
+  let html = '';
+  if (st.supported && st.supported.untried && st.supported.report) {
+    html += homeCompatNote(t('home.compat.untried', 'Glasshouse Home, Minimal and custom launchers have not yet been reported working on webOS {version}. If one misbehaves, choose LG Home to put everything back.', { version: v }), st.supported.report);
+  }
+  if (st.bar && st.bar.offered && st.bar.standing === 'untried' && st.bar.report) {
+    html += homeCompatNote(t('home.compat.untriedBar', 'Glasshouse Bar has not yet been reported working on webOS {version}. If it misbehaves, choose LG Home to put everything back.', { version: v }), st.bar.report);
+  }
+  box.innerHTML = html;
+}
 
 function homeBarOn() { return !!(homeStatus && homeStatus.bar && homeStatus.bar.enabled); }
 

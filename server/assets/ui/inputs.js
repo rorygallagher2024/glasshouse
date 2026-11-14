@@ -228,11 +228,15 @@ function renderInputBar() {
   const bar = inputsData && inputsData.inputBar;
   const opens = k => k.action === 'open' && k.id === INPUT_BAR;
   const input = rk && rk.keys && rk.keys.find(k => k.key === 'input');
-  // Offered where the Input key can be set to it: not where it is untried and switched off.
+  // Offered where the Input key can be set to it: wherever it can work (lib/compat).
   const offered = !!(rk && input && bar && (bar.allowed || opens(input)));
   grp.hidden = !offered;
   if (!offered) return false;
   const writable = !!(appsData.writable && inputsData.writable);
+  // Not yet reported working on this webOS (lib/compat): said so, with links to report how it went.
+  q('inputs-bar-compat').innerHTML = bar.standing === 'untried' && bar.report
+    ? homeCompatNote(t('inputs.compat.untried', 'The input bar has not yet been reported working on webOS {version}. If it misbehaves, set the Input key back to LG\u2019s list.', { version: bar.webos || '?' }), bar.report)
+    : '';
   const ours = opens(input), lg = input.action === 'lg';
   setInputsCard(q('inputs-bar-lg'), 'inplg', t('inputs.bar.lg', 'LG\u2019s list'),
     t('inputs.bar.isLg', 'LG\u2019s own list of inputs, as the TV came.'), lg, !writable);

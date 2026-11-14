@@ -9,7 +9,8 @@
  * it switches on is LG's, as without Glasshouse Home.
  *
  * It is an overlay window opened by the remote key filter, as the input bar
- * is, so it is offered where the input bar is (lib/inputbar.js): webOS 4 to 10.
+ * is, so it is offered where the input bar is (lib/compat): webOS 4 to 10,
+ * with a warning and links to report how it went where it is untried.
  * webOS 3 has no key filters and webOS 11's keys are LG's own.
  *
  * Kept loaded in the background while chosen and the TV is on, as the input
@@ -36,6 +37,9 @@ var appFn = function (action, cb) { cb({ ok: false }); };
 var setHomeKeyFn = function (id, cb) { cb({ ok: false }); };
 var allowedFn = function () { return false; };
 var standingFn = function () { return 'unsupported'; };
+// The input bar's standing on this TV (lib/compat's info): the webOS version, and
+// the links to report how it went where it is untried.
+var compatFn = function () { return {}; };
 var onFn = function () { return true; };
 // Glasshouse Home, or a launcher in its place, given back to LG's Home first.
 var homeOffFn = function (cb) { cb({ ok: true }); };
@@ -95,6 +99,7 @@ function init(opts) {
   if (typeof opts.setHomeKey === 'function') setHomeKeyFn = opts.setHomeKey;
   if (typeof opts.allowed === 'function') allowedFn = opts.allowed;
   if (typeof opts.standing === 'function') standingFn = opts.standing;
+  if (typeof opts.compat === 'function') compatFn = opts.compat;
   if (typeof opts.on === 'function') onFn = opts.on;
   if (typeof opts.homeOff === 'function') homeOffFn = opts.homeOff;
   if (opts.Subscription) Subscription = opts.Subscription;
@@ -103,7 +108,13 @@ function init(opts) {
 }
 
 function status() {
-  return { enabled: enabled(), offered: allowedFn(), standing: standingFn() };
+  var s = { enabled: enabled(), offered: allowedFn(), standing: standingFn() };
+  if (s.standing === 'untried') {
+    var c = compatFn();
+    s.webos = c.webos || null;
+    if (c.report) s.report = c.report;
+  }
+  return s;
 }
 
 function fail(error) { return { ok: false, error: error }; }

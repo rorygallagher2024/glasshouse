@@ -152,6 +152,17 @@ Confirmed on **80 TVs across 53 series** running **webOS 2.2 through 11** (LG's 
 > [!TIP]
 > **Tested on another model?** Please [open an issue](https://github.com/rorygallagher2024/glasshouse/issues/new) with the TV model, webOS version, and the contents of `/var/lib/tvweb/tvweb.log` — whether everything worked or something broke — and we will add a row.
 
+## Launchers and overlays by webOS version
+
+Glasshouse Home and the launchers in its place, and the overlay bars the remote opens, depend on parts of webOS that change between versions. Each is offered wherever it can work. Where no one has yet reported it working, the dashboard says so, with links to report how it went; where it is known not to work, it is not offered.
+
+| Feature | Reported working | Offered, with a warning | Not offered |
+| :------ | :--------------- | :---------------------- | :---------- |
+| Glasshouse Home, Minimal and custom launchers | 4, 5, 6, 7, 9, 10, 11 | 3, 8, 12 and later | 2 and earlier |
+| Glasshouse Bar and the input bar | 4, 6, 9 | 5, 7, 8, 10 | 3 and earlier, 11 and later |
+
+webOS 3 has no remote key filters, which open the bars, and from webOS 11 the remote's keys cannot open an app of Glasshouse's. Tile hiding, and custom screen savers on webOS 12 and later, can leave a TV needing a restart when they go wrong, so they stay [experimental](experimental.md) with their own switches.
+
 ## webOS version numbers
 
 LG names webOS versions two ways. The TV itself, and this project, use the version it reports (`/etc/issue`, or the dashboard's Metrics tab): 3.4, 4.4, 9.2 and so on. From 2022 LG markets them by year instead, so the same software is also called webOS 22, 23, 24 and so on: always the reported major version plus 15.

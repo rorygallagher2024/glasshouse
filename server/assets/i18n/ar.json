@@ -1313,7 +1313,6 @@
  "srv.home.unknownPart": {"text": "لا يوجد قسم بهذا الاسم في الشاشة الرئيسية", "from": "There is no such part of the Home screen"},
  "srv.home.unknownTile": {"text": "هذه الأيقونة غير موجودة في واجهة Glasshouse الرئيسية", "from": "that is not on Glasshouse Home"},
  "srv.home.unsupported": {"text": "لا يمكن تعديل الشاشة الرئيسية لهذا التلفاز من هنا", "from": "This TV's Home screen cannot be changed from here"},
- "srv.home.untested": {"text": "جُرّبت واجهة Glasshouse الرئيسية فقط على webOS 4 و5 و6 و7 و9 و10 و11. يعمل هذا التلفاز بنظام webOS {version}.", "from": "Glasshouse Home has been tried only on webOS 4, 5, 6, 7, 9, 10 and 11. This TV runs webOS {version}."},
  "srv.home.wallExampleBad": {"text": "لم يكتمل تنزيل الخلفية بشكل سليم. حاول مجدداً لاحقاً.", "from": "A wallpaper did not download intact. Try again later."},
  "srv.home.wallSlot": {"text": "فترة خلفية غير معروفة", "from": "unknown wallpaper slot"},
  "srv.home.wallUploadImage": {"text": "اختر صورة JPEG صالحة بأبعاد تصل إلى 1920 × 1080 بكسل.", "from": "Choose a valid JPEG up to 1920 × 1080 pixels."},
@@ -3106,9 +3105,6 @@
  "srv.saver.notClosed": {"text": "لم تُغلق شاشة التوقف على التلفاز، لذا لم يتم التبديل", "from": "the screen saver on the TV did not close, so the switch was left undone"},
  "ss.choice": {"text": "الحركة", "from": "Animation"},
  "apps.inputBar": {"text": "شريط مداخل Glasshouse", "from": "Glasshouse Input bar"},
- "server.experimental.inputBar": {"text": "شريط المداخل", "from": "Input bar"},
- "server.experimental.inputBar.short": {"text": "يتيح شريط المداخل ضمن أزرار الريموت في تبويب الريموت: شريط لمداخل HDMI يظهر فوق الصورة، يُتنقّل بينها بزر المدخل في الريموت.", "from": "Offers the input bar under Remote keys on the Remote tab: a strip of the HDMI inputs over the picture, stepped through with the remote’s Input key."},
- "server.experimental.inputBar.warn": {"text": "جُرِّب على webOS 4 و6 و9 فقط. إيقافه يعيد أي زر يستخدمه إلى إعداد LG ويزيل تطبيقه.", "from": "Tried on webOS 4, 6 and 9 only. Switching it off sets any key using it back to LG’s and removes its app."},
  "srv.remoteKeys.inputBar": {"text": "شريط المداخل", "from": "Input bar"},
  "srv.remoteKeys.inputBarInstall": {"text": "تعذّر تثبيت شريط المداخل على التلفاز. حاول مرة أخرى بعد لحظات.", "from": "The input bar could not be put on the TV. Try again in a moment."},
  "home.tv.paused": {"text": "متوقف مؤقتًا", "from": "Paused"},
@@ -3270,5 +3266,14 @@
  "inputs.showMediaServers": {"text": "إظهار خوادم الوسائط", "from": "Show media servers"},
  "inputs.showMediaServersDesc": {"text": "يعرض خوادم وسائط DLNA المكتشفة على شبكتك إلى جانب مداخل التلفاز. اتركه مغلقاً لإخفاء جميع خوادم الوسائط الحالية والمستقبلية.", "from": "Shows DLNA media servers discovered on your network alongside your TV’s inputs. Leave off to hide all current and future media servers."},
  "inputs.bar.transparent": {"text": "مربعات شفافة", "from": "Transparent tiles"},
- "inputs.bar.transparentDesc": {"text": "يسمح للصورة بالظهور عبر مربعات الشريط.", "from": "Lets the picture show through the bar’s tiles."}
+ "inputs.bar.transparentDesc": {"text": "يسمح للصورة بالظهور عبر مربعات الشريط.", "from": "Lets the picture show through the bar’s tiles."},
+ "srv.compat.home.old": {"text": "يحتاج Glasshouse Home إلى webOS 3 أو أحدث.", "from": "Glasshouse Home needs webOS 3 or later."},
+ "srv.compat.bar.old": {"text": "لا يحتوي webOS 3 على مرشحات أزرار جهاز التحكم، التي تفتح شريط المدخلات وGlasshouse Bar.", "from": "webOS 3 has no remote key filters, which open the input bar and Glasshouse Bar."},
+ "srv.compat.bar.new": {"text": "بدءًا من webOS 11، أزرار جهاز التحكم خاصة بـ LG ولا يمكنها فتح تطبيق من Glasshouse.", "from": "From webOS 11 the remote's keys are LG's own, and cannot open an app of Glasshouse's."},
+ "home.compat.untried": {"text": "لم يُبلغ أحد بعد أن Glasshouse Home وMinimal والمشغّلات المخصصة تعمل على webOS {version}. إذا أساء أحدها التصرف، اختر LG Home لإعادة كل شيء.", "from": "Glasshouse Home, Minimal and custom launchers have not yet been reported working on webOS {version}. If one misbehaves, choose LG Home to put everything back."},
+ "home.compat.untriedBar": {"text": "لم يُبلغ أحد بعد أن Glasshouse Bar يعمل على webOS {version}. إذا أساء التصرف، اختر LG Home لإعادة كل شيء.", "from": "Glasshouse Bar has not yet been reported working on webOS {version}. If it misbehaves, choose LG Home to put everything back."},
+ "inputs.compat.untried": {"text": "لم يُبلغ أحد بعد أن شريط المدخلات يعمل على webOS {version}. إذا أساء التصرف، أعد زر الإدخال إلى قائمة LG.", "from": "The input bar has not yet been reported working on webOS {version}. If it misbehaves, set the Input key back to LG’s list."},
+ "tv.compat.untried": {"text": "لم يُبلغ بعد أنه يعمل على webOS {version}. في تبويب الرئيسية في لوحة التحكم على الويب روابط للإبلاغ عن النتيجة.", "from": "Not yet reported working on webOS {version}. The Home tab of the web dashboard has links to report how it goes."},
+ "compat.reportProblem": {"text": "الإبلاغ عن مشكلة", "from": "Report a problem"},
+ "compat.reportWorks": {"text": "أخبرنا أنه يعمل", "from": "Tell us it works"}
 }

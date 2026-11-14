@@ -32,6 +32,7 @@ var names = require('./names');
 var writeJsonAtomic = require('./util').writeJsonAtomic;
 var wallpapers = require('./home-wallpapers');
 var takeover = require('./home-takeover');
+var compat = require('./compat');
 var recent = require('./home-recent');
 var recentApps = require('./home-recent-apps');
 var search = require('./home-search');
@@ -266,7 +267,8 @@ var pictureDetailsFn = function () {};
  * pointed it at their app; only cleanLegacy calls it now.
  * @type {function(string, function(Object): void): void}
  */
-var allowExperimentalFn = function () { return false; };
+// The TV, for the compatibility table and its report links: { webos, model, firmware, glasshouse }.
+var tvInfoFn = function () { return { webos: webosVersion }; };
 var setHomeKeyFn = function (id, cb) { cb({ ok: true, none: true }); };
 // Whether the remote's keys can be read (lib/remotebuttons), for webOS 3's Home button.
 var readsHomeKeyFn = function () { return false; };
@@ -2036,24 +2038,20 @@ function isHomeInPlace() {
 
 function supported() {
   var v = String(webosVersion || '');
-  // Tried on a B8 (4.4.3), CX (5.5.0), and C1 (6.5.3). webOS 5 and 6 run
-  // standalone too, while the live preview options (Preview sound, Keep the
-  // preview on, Preview in the tile) are omitted only on webOS 3 and 4.
-  if (/^[56]\./.test(v)) return { ok: true, webos: v, experimental: true, standalone: true };
-  if (/^4\./.test(v) || (/^3\./.test(v) && allowExperimentalFn())) return { ok: true, webos: v, experimental: true, standalone: true, previewOptions: false };
-  if (/^9\./.test(v)) return { ok: true, webos: v };
-  // LG's Home is the same native app as on webOS 9; sam is nudged from the
-  // country's blocked list (lib/samrescan). Tried on a 65UQ801C0SB (7.6.0);
-  // webOS 8 is untried and needs allowExperimentalHome.
-  if (/^7\./.test(v) || (/^8\./.test(v) && allowExperimentalFn())) return { ok: true, webos: v, experimental: true };
-  // LG's Home is a Flutter app there, under the same id and folder (#612).
-  // Tried on a G5 (webOS 10.3.1), and a C5, G3, G4 and C3 (11.2.0); a later
-  // version, not tried, needs the setting.
-  if (/^1[01]\./.test(v) || (parseInt(v, 10) >= 12 && allowExperimentalFn())) return { ok: true, webos: v, experimental: true };
-  return {
-    ok: false, webos: v || null,
-    reason: msg('srv.home.untested', 'Glasshouse Home has been tried only on webOS 4, 5, 6, 7, 9, 10 and 11. This TV runs webOS {version}.', { version: v || '?' })
-  };
+  // Which versions it has been tried on, and which it cannot run on: lib/compat.
+  var c = compat.info('home', tvInfoFn());
+  if (c.standing === 'unsupported') return { ok: false, webos: v || null, reason: c.reason };
+  var out = { ok: true, webos: v };
+  // Untried: offered, with a warning and the links to report how it went.
+  if (c.standing === 'untried') { out.untried = true; out.report = c.report; }
+  // webOS 3 to 6 run it as an app of its own, beside LG's Home (isStandalone).
+  if (/^[3456]\./.test(v)) out.standalone = true;
+  // The live preview options (Preview sound, Keep the preview on, Preview in
+  // the tile) are omitted on webOS 3 and 4.
+  if (/^[34]\./.test(v)) out.previewOptions = false;
+  // On the C2's webOS 9 it has been in use longest; elsewhere it says it is experimental.
+  if (!/^9\./.test(v)) out.experimental = true;
+  return out;
 }
 
 /*
@@ -3141,7 +3139,7 @@ function init(opts) {
   execFn = opts.exec || execFile;
   systemctlPath = opts.systemctl !== undefined ? opts.systemctl
     : SYSTEMCTLS.filter(function (p) { return fs.existsSync(p); })[0] || '';
-  allowExperimentalFn = opts.allowExperimental || function () { return false; };
+  if (typeof opts.tvInfo === 'function') tvInfoFn = opts.tvInfo;
   homeKeysFn = opts.homeKeys || function () {};
   handOverFn = opts.handOverTileHiding || function () {};
   pictureDetailsFn = opts.pictureDetails || function () {};
@@ -3241,8 +3239,8 @@ function start(done) {
     }
     /*
      * Switched on where it is not offered: a webOS 11 TV updated to webOS 12,
-     * say, or allowExperimentalHome taken out. LG's Home is put back rather
-     * than taken on a version it was never tried on.
+     * say, where lib/compat knows it not to work. LG's Home is put back
+     * rather than taken where it cannot work.
      */
     if (c.enabled && !supported().ok) {
       console.log('home: not offered on this TV (' + supported().reason + '); switched off');

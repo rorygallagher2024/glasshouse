@@ -64,6 +64,20 @@ var doh = require('./lib/doh');
 var quickAccess = require('./lib/quickaccess');
 var remoteKeys = require('./lib/remotekeys');
 var inputBar = require('./lib/inputbar');
+
+/*
+ * This TV, for lib/compat's table and the report links it gives where a
+ * feature is untried here. The model reads "webOS TV" until it is detected.
+ */
+function compatTv() {
+  var dev = CONFIG.device || {};
+  return {
+    webos: telemetry.detectWebosVersion(),
+    model: dev.model && dev.model !== 'webOS TV' ? dev.model : null,
+    firmware: dev.sw_version || null,
+    glasshouse: TVWEB_DISPLAY_VERSION
+  };
+}
 var homebar = require('./lib/homebar');
 var clockFormat = require('./lib/clock');
 var homeScreen = require('./lib/homescreen');
@@ -224,13 +238,7 @@ var CONFIG = {
   // untried (#366, #768). Set here or from the Server tab. It was named
   // allowOnWebos10 until 0.105, and migrateConfigFile() renames that.
   allowExperimentalScreensavers: false,
-  allowExperimentalInputBar: false,
   pointer: { enabled: true, transport: 'websocket', updatesPerSecond: 120 },
-
-  // Glasshouse Home is offered on webOS 4 to 7 and 9 to 11, where it has been
-  // tried. This lets it be switched on on webOS 3 and 12 and later too,
-  // untried there. File-only.
-  allowExperimentalHome: false,
 
   // Hiding built-in system tiles is experimental: restarting the app manager
   // mid-boot can lock up the display engine on some TVs, leaving the picture
@@ -585,17 +593,9 @@ remoteKeys.init({ luna: luna, subscription: lunaTransport.Subscription, services
   onInputBarKey: function () { inputBar.poke(); } });
 inputBar.init({
   luna: luna,
-  config: CONFIG,
   webosVersion: telemetry.detectWebosVersion(),
-  writeSettings: routes.writeSettings,
   wanted: remoteKeys.opensInputBar,
-  // Glasshouse Bar is an overlay as the bar is, so it goes where the bar does.
-  drop: function (cb) {
-    remoteKeys.dropInputBar(function () {
-      if (!homebar.enabled() || inputBar.allowed()) return cb();
-      homebar.disable(function () { cb(); });
-    });
-  },
+  tvInfo: compatTv,
   // liveState is set up further on; the bar only asks once started.
   on: function () { return !liveState || (liveState.state.snapshot().power || {}).systemOn !== false; }
 });
@@ -606,6 +606,7 @@ homebar.init({
   setHomeKey: remoteKeys.setHome,
   allowed: function () { return inputBar.allowed(); },
   standing: function () { return inputBar.standing(); },
+  compat: function () { return inputBar.summary(); },
   on: function () { return !liveState || (liveState.state.snapshot().power || {}).systemOn !== false; },
   // Glasshouse Home, or a launcher in its place, off first: LG's Home keeps its place.
   homeOff: function (cb) {
@@ -2057,7 +2058,7 @@ function startGlasshouseHome() {
     luna: luna,
     Subscription: lunaTransport.Subscription,
     blockedBy: privacy.blockedBy,
-    allowExperimental: function () { return CONFIG.allowExperimentalHome === true; },
+    tvInfo: compatTv,
     liveState: liveState,
     history: history,
     stateDir: __dirname,

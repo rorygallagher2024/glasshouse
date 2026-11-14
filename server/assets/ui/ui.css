@@ -1035,6 +1035,9 @@ button.pill.flash.idle[disabled]:hover{color:var(--w60);border-color:var(--edge)
 /* A group on a tab with no lists to open, as the Inputs tab's. */
 .tab-grp{margin-top:clamp(34px,4.5vw,48px)}
 .tab-grp[hidden]{display:none}
+.home-compat-note{margin-top:10px}
+.home-compat-links{display:block;margin-top:6px}
+.home-compat-links a{color:inherit;text-decoration:underline}
 .tab-grp .pv-sec{margin-bottom:10px}
 #inputspane .pv-g{margin:20px 0 10px}
 #inputs-nosignal-cards{margin-top:16px}

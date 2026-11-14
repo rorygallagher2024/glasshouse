@@ -54,6 +54,10 @@ Offered on TVs whose No Signal overlay Glasshouse knows how to replace (tried on
 
 Switching modes takes effect immediately when an idle input is already on screen, and otherwise the next time no HDMI input is active (such as at Home), so restarting the input app never interrupts what you are watching. LG's other messages, such as a scrambled channel notice, remain untouched. The chosen mode is preserved across restarts and is also available in the TV app under **Screen saver**.
 
+## webOS versions
+
+**Glasshouse Input bar** is offered on webOS 4 to 10. Where no one has yet reported it working on the TV's version, a note above the choice says so, with links to report a problem or that it works; see [Launchers and overlays by webOS version](../tested-tvs.md#launchers-and-overlays-by-webos-version).
+
 ## TVs without the Input bar
 
 On TVs where **Glasshouse Input bar** cannot be offered (for example, **webOS 11** and **webOS 3**):

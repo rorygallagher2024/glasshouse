@@ -1357,7 +1357,6 @@
  "srv.home.unknownPart": {"text": "Questa parte della schermata Home non esiste", "from": "There is no such part of the Home screen"},
  "srv.home.unknownTile": {"text": "non è in Glasshouse Home", "from": "that is not on Glasshouse Home"},
  "srv.home.unsupported": {"text": "La schermata Home di questa TV non si può modificare da qui", "from": "This TV's Home screen cannot be changed from here"},
- "srv.home.untested": {"text": "Glasshouse Home è stato provato solo su webOS 4, 5, 6, 7, 9, 10 e 11. Questa TV ha webOS {version}.", "from": "Glasshouse Home has been tried only on webOS 4, 5, 6, 7, 9, 10 and 11. This TV runs webOS {version}."},
  "srv.home.wallExampleBad": {"text": "Uno sfondo non è stato scaricato per intero. Riprova più tardi.", "from": "A wallpaper did not download intact. Try again later."},
  "srv.home.wallPicture": {"text": "immagine dello sfondo sconosciuta", "from": "unknown wallpaper picture"},
  "srv.home.wallShuffleFull": {"text": "La raccolta contiene già {max} immagini. Rimuovine una per aggiungerne un'altra.", "from": "The collection holds {max} pictures. Remove one to add another."},
@@ -3120,9 +3119,6 @@
  "srv.saver.notClosed": {"text": "il salvaschermo sulla TV non si è chiuso, quindi il cambio non è stato fatto", "from": "the screen saver on the TV did not close, so the switch was left undone"},
  "ss.choice": {"text": "Animazione", "from": "Animation"},
  "apps.inputBar": {"text": "Barra degli ingressi Glasshouse", "from": "Glasshouse Input bar"},
- "server.experimental.inputBar": {"text": "Barra degli ingressi", "from": "Input bar"},
- "server.experimental.inputBar.short": {"text": "Offre la barra degli ingressi sotto Tasti del telecomando nella scheda Telecomando: una striscia degli ingressi HDMI sopra l’immagine, da scorrere con il tasto Ingresso del telecomando.", "from": "Offers the input bar under Remote keys on the Remote tab: a strip of the HDMI inputs over the picture, stepped through with the remote’s Input key."},
- "server.experimental.inputBar.warn": {"text": "Provata solo su webOS 4, 6 e 9. Disattivandola, i tasti che la usano tornano come impostati da LG e la sua app viene rimossa.", "from": "Tried on webOS 4, 6 and 9 only. Switching it off sets any key using it back to LG’s and removes its app."},
  "srv.remoteKeys.inputBar": {"text": "Barra degli ingressi", "from": "Input bar"},
  "srv.remoteKeys.inputBarInstall": {"text": "Impossibile installare la barra degli ingressi sulla TV. Riprova tra un momento.", "from": "The input bar could not be put on the TV. Try again in a moment."},
  "home.tv.paused": {"text": "In pausa", "from": "Paused"},
@@ -3284,5 +3280,14 @@
  "inputs.showMediaServers": {"text": "Mostra server multimediali", "from": "Show media servers"},
  "inputs.showMediaServersDesc": {"text": "Mostra i server multimediali DLNA rilevati sulla rete accanto agli ingressi della TV. Lascia spento per nascondere tutti i server multimediali attuali e futuri.", "from": "Shows DLNA media servers discovered on your network alongside your TV’s inputs. Leave off to hide all current and future media servers."},
  "inputs.bar.transparent": {"text": "Riquadri trasparenti", "from": "Transparent tiles"},
- "inputs.bar.transparentDesc": {"text": "Lascia intravedere l’immagine attraverso i riquadri della barra.", "from": "Lets the picture show through the bar’s tiles."}
+ "inputs.bar.transparentDesc": {"text": "Lascia intravedere l’immagine attraverso i riquadri della barra.", "from": "Lets the picture show through the bar’s tiles."},
+ "srv.compat.home.old": {"text": "Glasshouse Home richiede webOS 3 o successivo.", "from": "Glasshouse Home needs webOS 3 or later."},
+ "srv.compat.bar.old": {"text": "webOS 3 non ha filtri per i tasti del telecomando, che aprono la barra degli ingressi e la Glasshouse Bar.", "from": "webOS 3 has no remote key filters, which open the input bar and Glasshouse Bar."},
+ "srv.compat.bar.new": {"text": "Da webOS 11 i tasti del telecomando sono di LG e non possono aprire un’app di Glasshouse.", "from": "From webOS 11 the remote's keys are LG's own, and cannot open an app of Glasshouse's."},
+ "home.compat.untried": {"text": "Nessuno ha ancora segnalato che Glasshouse Home, Minimal e i launcher personalizzati funzionano su webOS {version}. Se uno si comporta male, scegli LG Home per ripristinare tutto.", "from": "Glasshouse Home, Minimal and custom launchers have not yet been reported working on webOS {version}. If one misbehaves, choose LG Home to put everything back."},
+ "home.compat.untriedBar": {"text": "Nessuno ha ancora segnalato che la Glasshouse Bar funziona su webOS {version}. Se si comporta male, scegli LG Home per ripristinare tutto.", "from": "Glasshouse Bar has not yet been reported working on webOS {version}. If it misbehaves, choose LG Home to put everything back."},
+ "inputs.compat.untried": {"text": "Nessuno ha ancora segnalato che la barra degli ingressi funziona su webOS {version}. Se si comporta male, rimetti il tasto Ingresso sull’elenco di LG.", "from": "The input bar has not yet been reported working on webOS {version}. If it misbehaves, set the Input key back to LG’s list."},
+ "tv.compat.untried": {"text": "Non ancora segnalato come funzionante su webOS {version}. La scheda Home della dashboard web ha i link per segnalare come va.", "from": "Not yet reported working on webOS {version}. The Home tab of the web dashboard has links to report how it goes."},
+ "compat.reportProblem": {"text": "Segnala un problema", "from": "Report a problem"},
+ "compat.reportWorks": {"text": "Dicci che funziona", "from": "Tell us it works"}
 }

@@ -1,6 +1,6 @@
 # Experimental features
 
-Four features are experimental and off by default. Three are turned on under **Server** → **Advanced** → **Experimental features**, and Glasshouse Home on its own **Home** tab.
+Three features are experimental and off by default, turned on under **Server** → **Advanced** → **Experimental features**: each can leave a TV needing a restart when it goes wrong. Glasshouse Home, its launchers and the overlay bars are not among them: they are offered on every webOS version they can work on, with a warning where no one has reported them working yet; see [Launchers and overlays by webOS version](tested-tvs.md#launchers-and-overlays-by-webos-version).
 
 ## Hiding home screen system apps
 
@@ -18,20 +18,9 @@ Switches off parts of LG's Home screen, chosen on the **Home** tab under **Home 
 
 webOS 10's home app keeps its layout on the TV's read-only system and looks nowhere else for it, so Glasshouse lays its own over LG's with an overlay mount and restarts the home app to read it. The mount does not survive a restart of the TV, so it is put back when Glasshouse starts, and LG's Home screen can show for a moment before that. It has been tried through Glasshouse on a C2 with webOS 10.3.1, and on a few other webOS 10 TVs outside it. **Put back LG's Home screen**, or switching it off, takes the overlay away and brings LG's Home screen back. It does not restart the app manager, so the problem below does not apply to it.
 
-## Glasshouse Home
-
-A home screen of Glasshouse's own in place of LG's, switched on from its own [Home tab](dashboard/home.md) rather than under Advanced. It is offered without anything else turned on where it has been tried:
-
-* webOS 4 (a B8 with 4.4.3), webOS 5 (a CX with 5.5.0) and webOS 6 (C1s with 6.4.0 and 6.5.3, and a B1 with 6.5.3), where it runs as an app of its own and the Home key is pointed at it.
-* webOS 7 (a 65UQ801C0SB with 7.6.0), webOS 9 (a G3 and a C2 with 9.2.2), webOS 10 (a G5 with 10.3.1) and webOS 11 (a C5, G3, G4 and C3 with 11.2.0), where it is laid over LG's Home app in its place.
-
-On webOS 3, webOS 8, and webOS 12 and later, untried, it needs `"allowExperimentalHome": true` in `config.json`.
-
-On webOS 5 and 6 the app manager has no way to read an appinfo.json again without a restart, so each switch restarts it, which is the restart described below, and the app in front comes back a moment later. Switching it off takes it away again; no TV setting is changed. A view that stops answering, and a server that stops or keeps failing, each give LG's Home its place back.
-
 ## Why tile hiding is experimental
 
-To hide an app, the TV's app manager has to read its apps again. Up to now that meant restarting it when the TV starts up, and on some TVs that restart has been followed by a black picture or lost sound that only a full reboot clears ([#366](https://github.com/rorygallagher2024/glasshouse/issues/366)). Glasshouse Home on webOS 5 and 6 restarts it too, as above. Custom screen savers once did and no longer do; they stay experimental on webOS 12 and later only because they have not been tried there.
+To hide an app, the TV's app manager has to read its apps again. Up to now that meant restarting it when the TV starts up, and on some TVs that restart has been followed by a black picture or lost sound that only a full reboot clears ([#366](https://github.com/rorygallagher2024/glasshouse/issues/366)). Glasshouse Home on webOS 5 and 6 restarts it too, at each switch, but only then. Custom screen savers once did and no longer do; they stay experimental on webOS 12 and later only because they have not been tried there.
 
 * On a B8 (webOS 4), live TV and HDMI went black. The TV's kernel log showed its video pipeline crashing and locking up during start-up, at the same moment as the restart, while a source on HDMI was changing its picture mode.
 * On webOS 10 and 11, picture, sound to a soundbar over ARC, and HDMI-CEC have been lost, alongside reports of a black screen and stuck picture settings.

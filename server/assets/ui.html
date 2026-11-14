@@ -1197,6 +1197,7 @@
   <div class="tab-grp" id="inputs-grp-bar" hidden>
     <div class="pv-sec" data-t="apps.inputBar">Glasshouse Input bar</div>
     <div class="pv-sub apps-grp-d" data-t="inputs.bar.desc">A strip of your inputs over the picture, in place of LG&rsquo;s list. A key on the remote opens it and steps through them.</div>
+    <div id="inputs-bar-compat"></div>
     <div class="pv-g" data-t="inputs.bar.inputKey">The Input key opens</div>
     <div class="hm-grid hm-grid-2" id="inputs-bar-choice">
       <button type="button" class="hm-card" id="inputs-bar-lg" onclick="setInputKey(false)">&mdash;</button>
@@ -1254,6 +1255,7 @@
         <button type="button" id="home-mode-bar" onclick="homeChooseBar(true)" hidden>&mdash;</button>
         <button type="button" id="home-mode-launcher" onclick="homeChooseLauncher()">&mdash;</button>
       </div>
+      <div id="home-compat"></div>
     </div>
     <div id="home-notes">
       <div class="pv-sub" id="home-state-desc"></div>
@@ -2211,14 +2213,6 @@
             <div class="prot-desc" data-t="server.experimental.screensaver.short">Allows the dashboard's own screen savers on webOS 12 and later, on the Screensaver tab.</div>
           </div>
           <div class="prot-status"><button type="button" class="pill idle" id="exp-screensaver" onclick="toggleExpScreensaver()">&mdash;</button></div>
-        </div>
-        <div class="prot-row" id="exp-inputbar-row" hidden>
-          <div class="prot-main">
-            <div class="prot-title" data-t="server.experimental.inputBar">Input bar</div>
-            <div class="prot-desc" data-t="server.experimental.inputBar.short">Offers the input bar under Remote keys on the Remote tab: a strip of the HDMI inputs over the picture, stepped through with the remote&rsquo;s Input key.</div>
-            <div class="prot-desc" data-t="server.experimental.inputBar.warn">Tried on webOS 4, 6 and 9 only. Switching it off sets any key using it back to LG&rsquo;s and removes its app.</div>
-          </div>
-          <div class="prot-status"><button type="button" class="pill idle" id="exp-inputbar" onclick="toggleExpInputBar()">&mdash;</button></div>
         </div>
       </div>
     </details>

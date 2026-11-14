@@ -1,9 +1,9 @@
 /**
- * test/test-inputbar.js - The input bar is offered on webOS 4 to 10 without
- * an experimental switch, only with its experimental switch when the webOS
- * version could not be read, and never before webOS 4 or on webOS 11; the
- * switch turned off sets its keys back to LG's; and its app is preloaded,
- * hidden, while a key opens it and the TV is on, again after each close.
+ * test/test-inputbar.js - The input bar is offered on webOS 4 to 10, as
+ * tried where it has been and with the links to report how it went
+ * elsewhere, and never before webOS 4 or on webOS 11 and later (lib/compat);
+ * and its app is preloaded, hidden, while a key opens it and the TV is on,
+ * again after each close.
  *
  * Strict ES5: runs on node 0.12.
  */
@@ -17,18 +17,16 @@ var bar = require('../server/lib/inputbar');
 
 console.log('Running test-inputbar.js ...');
 
-var launches = [], refuse = false, wanted = true, on = true, dropped = 0, written = [];
-var config = {};
+var launches = [], refuse = false, wanted = true, on = true;
 function luna(uri, params, cb) {
   if (uri === 'com.webos.applicationManager/launch') launches.push(params);
   process.nextTick(function () { cb(refuse ? { returnValue: false, errorText: 'no such app' } : { returnValue: true }); });
 }
 function setUp(version) {
   bar.init({
-    luna: luna, config: config, webosVersion: version,
-    writeSettings: function (patch, cb) { written.push(patch); process.nextTick(function () { cb(null); }); },
-    wanted: function () { return wanted; }, on: function () { return on; },
-    drop: function (cb) { dropped++; process.nextTick(cb); }
+    luna: luna, webosVersion: version,
+    tvInfo: function () { return { model: 'OLED55C34LA' }; },
+    wanted: function () { return wanted; }, on: function () { return on; }
   });
 }
 
@@ -41,47 +39,30 @@ function run(i) {
 }
 
 step(function (next) {
-  ['4.4.3', '5.5.0', '6.5.3', '7.3.1', '8.3.0', '9.2.2', '10.1.0'].forEach(function (v) {
+  ['4.4.3', '6.5.3', '9.2.2'].forEach(function (v) {
     setUp(v);
     assert.strictEqual(bar.standing(), 'tried', 'webOS ' + v);
-    assert.strictEqual(bar.allowed(), true, 'offered on webOS ' + v + ' without the switch');
+    assert.strictEqual(bar.allowed(), true);
+    assert.strictEqual(bar.summary().report, undefined, 'no report links where it has been tried');
   });
-  setUp(null);
-  assert.strictEqual(bar.standing(), 'experimental', 'a version not read is treated as untried');
-  assert.strictEqual(bar.allowed(), false, 'held back when unreadable until switched on');
-  config.allowExperimentalInputBar = true;
-  assert.strictEqual(bar.allowed(), true);
-  delete config.allowExperimentalInputBar;
+  ['5.5.0', '7.3.1', '8.3.0', '10.1.0', null].forEach(function (v) {
+    setUp(v);
+    assert.strictEqual(bar.standing(), 'untried', 'webOS ' + v);
+    assert.strictEqual(bar.allowed(), true, 'offered on webOS ' + v + ', untried');
+    var report = bar.summary().report;
+    assert.ok(/issues\/new\?title=/.test(report.problem) && /issues\/new\?title=/.test(report.works), 'with links to report how it went');
+  });
+  assert.ok(decodeURIComponent(bar.summary().report.works).indexOf('webOS ?') !== -1, 'a version not read is reported as unknown');
+  setUp('8.3.0');
+  assert.ok(decodeURIComponent(bar.summary().report.problem).indexOf('webOS 8.3.0 (OLED55C34LA)') !== -1, 'the report names the webOS and model');
   ['11.1.0', '3.9.3'].forEach(function (v) {
     setUp(v);
     assert.strictEqual(bar.standing(), 'unsupported', 'webOS ' + v);
-    config.allowExperimentalInputBar = true;
-    assert.strictEqual(bar.allowed(), false, 'not even with the switch on webOS ' + v);
-    delete config.allowExperimentalInputBar;
+    assert.strictEqual(bar.allowed(), false);
+    assert.ok(bar.summary().reason, 'with the reason');
   });
-  console.log('  ✓ offered on webOS 4 to 10 without the experimental switch, never on webOS 11 or before 4');
+  console.log('  ✓ offered on webOS 4 to 10, untried where no report says it works, never on webOS 11 or before 4');
   next();
-});
-
-step(function (next) {
-  setUp(null);
-  bar.setAllowed(true, function (err) {
-    assert.ifError(err);
-    assert.deepEqual(written.pop(), { allowExperimentalInputBar: true });
-    assert.strictEqual(bar.allowed(), true);
-    assert.strictEqual(bar.summary().experimental, true);
-    bar.setAllowed(false, function (err2) {
-      assert.ifError(err2);
-      assert.deepEqual(written.pop(), { allowExperimentalInputBar: undefined }, 'off leaves it out of config.json');
-      assert.strictEqual(dropped, 1, 'its keys go back to LG\'s');
-      setUp('6.5.3');
-      bar.setAllowed(false, function () {
-        assert.strictEqual(dropped, 1, 'where it is not experimental, the switch takes nothing away');
-        console.log('  ✓ the switch is saved to config.json, and off where the bar is experimental sets its keys back to LG\'s');
-        next();
-      });
-    });
-  });
 });
 
 step(function (next) {

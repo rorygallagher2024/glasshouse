@@ -1367,14 +1367,10 @@ function doControl(action, value, cb) {
         cb(getUpdateSummary());
       });
 
-    // The input bar where it is experimental; off sets its keys back to LG's.
+    // Once the input bar's experimental switch. It is offered wherever it can
+    // work now (lib/compat), so an older backup that sets it changes nothing.
     case 'setInputBarAllowed':
-      if (!inputBar) return cb({ ok: false, error: 'input bar unavailable' });
-      var allowBar = (value === true || value === 'on' || value === 'true');
-      return inputBar.setAllowed(allowBar, function (err) {
-        if (err) return cb({ ok: false, error: 'could not save setting: ' + err.message });
-        cb(getUpdateSummary());
-      });
+      return cb(getUpdateSummary());
 
     case 'setWebos10ScreensaversAllowed':
       var allowSs = (value === true || value === 'on' || value === 'true');

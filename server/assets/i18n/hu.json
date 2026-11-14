@@ -1205,7 +1205,6 @@
  "srv.home.unknownPart": {"text": "A Kezdőképernyőnek nincs ilyen része", "from": "There is no such part of the Home screen"},
  "srv.home.unknownTile": {"text": "ez nincs a Glasshouse Home-on", "from": "that is not on Glasshouse Home"},
  "srv.home.unsupported": {"text": "Ennek a TV-nek a Kezdőképernyője innen nem módosítható", "from": "This TV's Home screen cannot be changed from here"},
- "srv.home.untested": {"text": "A Glasshouse Home-ot eddig csak webOS 4, 5, 6, 7, 9, 10 és 11 rendszeren próbálták ki. Ezen a TV-n webOS {version} fut.", "from": "Glasshouse Home has been tried only on webOS 4, 5, 6, 7, 9, 10 and 11. This TV runs webOS {version}."},
  "srv.home.wallUploadImage": {"text": "Válasszon érvényes, legfeljebb 1920 × 1080 képpontos JPEG-képet.", "from": "Choose a valid JPEG up to 1920 × 1080 pixels."},
  "srv.home.wallUploadSize": {"text": "A feltöltött JPEG-fájl legfeljebb 5 MB lehet, és a feltöltési kérésnek tartalmaznia kell a fájl méretét.", "from": "The uploaded JPEG must be at most 5 MB and state its size."},
  "srv.home.wallUploadSpace": {"text": "Nincs elég igazoltan szabad hely a háttérképhez.", "from": "Not enough confirmed free space for the wallpaper."},
@@ -3106,9 +3105,6 @@
  "srv.saver.notClosed": {"text": "a TV képernyővédője nem zárult be, ezért a váltás elmaradt", "from": "the screen saver on the TV did not close, so the switch was left undone"},
  "ss.choice": {"text": "Animáció", "from": "Animation"},
  "apps.inputBar": {"text": "Glasshouse Bemeneti sáv", "from": "Glasshouse Input bar"},
- "server.experimental.inputBar": {"text": "Bemeneti sáv", "from": "Input bar"},
- "server.experimental.inputBar.short": {"text": "Felkínálja a bemeneti sávot a Távirányító gombjai alatt az Távirányító lapon: a HDMI-bemenetek sávja a kép felett, amelyen a távirányító Bemenet gombjával lehet végiglépkedni.", "from": "Offers the input bar under Remote keys on the Remote tab: a strip of the HDMI inputs over the picture, stepped through with the remote’s Input key."},
- "server.experimental.inputBar.warn": {"text": "Csak webOS 4, 6 és 9 rendszeren próbálták ki. Kikapcsolásakor minden gomb, amely ezt használja, visszaáll az LG beállítására, és az alkalmazása törlődik.", "from": "Tried on webOS 4, 6 and 9 only. Switching it off sets any key using it back to LG’s and removes its app."},
  "srv.remoteKeys.inputBar": {"text": "Bemeneti sáv", "from": "Input bar"},
  "srv.remoteKeys.inputBarInstall": {"text": "A bemeneti sávot nem sikerült feltenni a TV-re. Próbálja újra egy pillanat múlva.", "from": "The input bar could not be put on the TV. Try again in a moment."},
  "home.tv.paused": {"text": "Szüneteltetve", "from": "Paused"},
@@ -3284,5 +3280,14 @@
  "inputs.showMediaServers": {"text": "Médiaszerverek megjelenítése", "from": "Show media servers"},
  "inputs.showMediaServersDesc": {"text": "Megjeleníti a hálózaton talált DLNA-médiaszervereket a TV bemenetei mellett. Kikapcsolva az összes jelenlegi és jövőbeli médiaszervert elrejti.", "from": "Shows DLNA media servers discovered on your network alongside your TV’s inputs. Leave off to hide all current and future media servers."},
  "inputs.bar.transparent": {"text": "Átlátszó csempék", "from": "Transparent tiles"},
- "inputs.bar.transparentDesc": {"text": "Átengedi a képet a sáv csempéin.", "from": "Lets the picture show through the bar’s tiles."}
+ "inputs.bar.transparentDesc": {"text": "Átengedi a képet a sáv csempéin.", "from": "Lets the picture show through the bar’s tiles."},
+ "srv.compat.home.old": {"text": "A Glasshouse Home-hoz webOS 3 vagy újabb kell.", "from": "Glasshouse Home needs webOS 3 or later."},
+ "srv.compat.bar.old": {"text": "A webOS 3-ban nincsenek távirányító-gombszűrők, amelyek megnyitják a bemenetsávot és a Glasshouse Bart.", "from": "webOS 3 has no remote key filters, which open the input bar and Glasshouse Bar."},
+ "srv.compat.bar.new": {"text": "A webOS 11-től a távirányító gombjai az LG-éi, és nem nyithatnak meg Glasshouse-alkalmazást.", "from": "From webOS 11 the remote's keys are LG's own, and cannot open an app of Glasshouse's."},
+ "home.compat.untried": {"text": "Még senki nem jelezte, hogy a Glasshouse Home, a Minimal és az egyéni indítók működnek webOS {version} alatt. Ha valamelyik rosszul működik, válassza az LG Home-ot, hogy minden visszaálljon.", "from": "Glasshouse Home, Minimal and custom launchers have not yet been reported working on webOS {version}. If one misbehaves, choose LG Home to put everything back."},
+ "home.compat.untriedBar": {"text": "Még senki nem jelezte, hogy a Glasshouse Bar működik webOS {version} alatt. Ha rosszul működik, válassza az LG Home-ot, hogy minden visszaálljon.", "from": "Glasshouse Bar has not yet been reported working on webOS {version}. If it misbehaves, choose LG Home to put everything back."},
+ "inputs.compat.untried": {"text": "Még senki nem jelezte, hogy a bemenetsáv működik webOS {version} alatt. Ha rosszul működik, állítsa vissza a Bemenet gombot az LG listájára.", "from": "The input bar has not yet been reported working on webOS {version}. If it misbehaves, set the Input key back to LG’s list."},
+ "tv.compat.untried": {"text": "Még nem jelezték, hogy működik webOS {version} alatt. A webes vezérlőpult Kezdőlap lapján linkek vannak annak jelzésére, hogy hogyan működik.", "from": "Not yet reported working on webOS {version}. The Home tab of the web dashboard has links to report how it goes."},
+ "compat.reportProblem": {"text": "Probléma jelzése", "from": "Report a problem"},
+ "compat.reportWorks": {"text": "Jelezze, hogy működik", "from": "Tell us it works"}
 }

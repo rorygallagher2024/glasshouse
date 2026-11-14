@@ -257,19 +257,13 @@ webos_major=$(sed -n 's/.*webOS[^0-9]*\([0-9][0-9]*\)\..*/\1/p' /etc/issue 2>/de
 # under it, and its own layout too. The server does the same at its start,
 # for a hook that did not run.
 # On webOS 10 and later LG's Home is a Flutter app run as
-# "flutter-client -i com.webos.app.home"; webOS 8 and webOS 12 and later, where
-# it is untried, only with allowExperimentalHome in config.json. sam ignores the
-# nudge there (above), so the app is reread with a block and release first.
+# "flutter-client -i com.webos.app.home". sam ignores the nudge there (above),
+# so the app is reread with a block and release first. Laid over LG's Home on
+# webOS 7 and later, as lib/home.js offers it there (lib/compat).
 homeapp=/usr/palm/applications/com.webos.app.home
 homestage=/var/lib/tvweb/home-takeover
 home_os=0
-[ "$webos_major" = "7" ] && home_os=1
-[ "$webos_major" = "9" ] && home_os=1
-[ "$webos_major" = "10" ] && home_os=1
-[ "$webos_major" = "11" ] && home_os=1
-if [ "$webos_major" = "8" ] || [ "${webos_major:-0}" -ge 12 ] 2>/dev/null; then
-  grep -q '"allowExperimentalHome"[[:space:]]*:[[:space:]]*true' /var/lib/tvweb/config.json 2>/dev/null && home_os=1
-fi
+[ "${webos_major:-0}" -ge 7 ] 2>/dev/null && home_os=1
 # Only Glasshouse Home's own staged copy, told by device and inode as
 # lib/home-takeover.js does: another launcher, such as CleanYourTV, may be
 # mounted here by a hook that ran before this one.

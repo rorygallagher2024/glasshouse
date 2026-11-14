@@ -1214,6 +1214,11 @@ function lgHomeRows(d) {
   return r;
 }
 
+// Untried on this webOS (lib/compat): the report links are on the web dashboard, as a TV cannot open them.
+function tvCompatWarn(webos) {
+  return t('tv.compat.untried', 'Not yet reported working on webOS {version}. The Home tab of the web dashboard has links to report how it goes.', { version: webos || '?' });
+}
+
 function glasshouseHomeRows(d) {
   var r = [head(t('home.title', 'Glasshouse Home'))];
   var can = d.writable !== false;
@@ -1229,7 +1234,8 @@ function glasshouseHomeRows(d) {
                  : d.enabled ? t('home.isOnDesc', 'It opens in LG\u2019s Home\u2019s place: with the Home and Back buttons, and when the TV wakes on Home.')
                  : t('home.isOffDesc', 'Nothing of LG\u2019s is changed: Glasshouse Home is laid over LG\u2019s Home while on, and switching off takes it away.'),
            warn: d.supported && d.supported.restartsApps
-             ? t('home.restartsApps', 'On this TV, switching Glasshouse Home on or off, or holding Home for LG\u2019s Home, restarts the TV\u2019s app manager, which closes the apps that are open.') : undefined });
+             ? t('home.restartsApps', 'On this TV, switching Glasshouse Home on or off, or holding Home for LG\u2019s Home, restarts the TV\u2019s app manager, which closes the apps that are open.')
+             : d.supported && d.supported.untried ? tvCompatWarn(d.supported.webos) : undefined });
   for (var li = 0; li < kept.length; li++) {
     var lc = kept[li], lcOn = lc.id === chosenId, mini = lc.source === 'builtin';
     r.push({ label: mini ? t('home.minimalName', 'Glasshouse Minimal') : t('tv.home.launcher', 'Custom launcher: {title}', { title: lc.title }), key: lc.id,
@@ -1247,7 +1253,8 @@ function glasshouseHomeRows(d) {
     r.push({ label: t('home.bar.name', 'Glasshouse Bar'), value: barOn ? t('common.on', 'On') : t('common.off', 'Off'), cls: barOn ? 'on' : 'off',
              act: can ? 'homeBar' : null, on: barOn,
              press: barOn ? t('tv.home.switch.off', 'Press OK to use LG Home again') : t('tv.home.bar.on', 'Press OK to use Glasshouse Bar'),
-             hint: t('home.bar.isOnDesc', 'The Home button opens a row of your apps and inputs over the picture; Back or Home closes it. LG’s Home stays in its place, and its tile is at the end of the apps.') });
+             hint: t('home.bar.isOnDesc', 'The Home button opens a row of your apps and inputs over the picture; Back or Home closes it. LG’s Home stays in its place, and its tile is at the end of the apps.'),
+             warn: d.bar.report ? tvCompatWarn(d.bar.webos) : undefined });
   }
   if (!d.enabled || launcherOn) return r;
   var c = d.catalogue, lay = d.layout;

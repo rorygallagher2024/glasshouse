@@ -1478,8 +1478,8 @@ step('webOS 7, which has no defaultApps setting, still starts: it takes the plac
   });
 });
 
-step('switched on where it is not offered, as after a firmware update to webOS 12, it is switched off at start', function (done) {
-  start({ enabled: true }, { webosVersion: '12.0.0' });
+step('switched on where it is not offered (webOS 2), it is switched off at start', function (done) {
+  start({ enabled: true }, { webosVersion: '2.2.3' });
   home.start(function () {
     assert.strictEqual(home.enabled(), false);
     assert.ok(tv.events.indexOf('mount') === -1, 'LG\'s Home is not touched');
@@ -1488,42 +1488,33 @@ step('switched on where it is not offered, as after a firmware update to webOS 1
   });
 });
 
-step('webOS 11 is offered, experimental; webOS 12 and later only with allowExperimentalHome', function (done) {
+step('webOS 11 is offered as tried; webOS 12, untried, is offered with the links to report how it went', function (done) {
   start(null, { webosVersion: '11.2.0' });
   home.status(function (st11) {
-    assert.strictEqual(st11.supported.ok, true, 'no setting needed on webOS 11');
+    assert.strictEqual(st11.supported.ok, true);
     assert.strictEqual(st11.supported.experimental, true);
+    assert.strictEqual(st11.supported.untried, undefined);
     start(null, { webosVersion: '12.0.0' });
-    home.status(function (st0) {
-      assert.strictEqual(st0.supported.ok, false, 'untried there, so not offered by default');
-      start(null, { webosVersion: '12.0.0', allowExperimental: function () { return true; } });
-      home.status(function (st) {
-        assert.strictEqual(st.supported.ok, true);
-        assert.strictEqual(st.supported.experimental, true);
-        done();
-      });
+    home.status(function (st) {
+      assert.strictEqual(st.supported.ok, true, 'offered, untried');
+      assert.strictEqual(st.supported.untried, true);
+      assert.ok(/issues\/new/.test(st.supported.report.problem) && /issues\/new/.test(st.supported.report.works));
+      done();
     });
   });
 });
 
-step('webOS 8 is offered only with allowExperimentalHome, using takeover', function (done) {
+step('webOS 8, untried, is offered and uses takeover', function (done) {
   start(null, { webosVersion: '8.3.1' });
-  home.status(function (st0) {
-    assert.strictEqual(st0.supported.ok, false, 'untried there, so not offered by default');
-    home.enable(function (errRes) {
-      assert.strictEqual(errRes.ok, false, 'enable rejected without allowExperimentalHome');
-      start(null, { webosVersion: '8.3.1', allowExperimental: function () { return true; } });
-      home.status(function (st) {
-        assert.strictEqual(st.supported.ok, true);
-        assert.strictEqual(st.supported.experimental, true);
-        assert.strictEqual(st.supported.standalone, undefined, 'uses takeover rather than standalone');
-        done();
-      });
-    });
+  home.status(function (st) {
+    assert.strictEqual(st.supported.ok, true);
+    assert.strictEqual(st.supported.untried, true);
+    assert.strictEqual(st.supported.standalone, undefined, 'uses takeover rather than standalone');
+    done();
   });
 });
 
-step('webOS 5 and 6 are offered, experimental, standalone, without restarting sam; webOS 3 standalone only with allowExperimentalHome', function (done) {
+step('webOS 5 and 6 are offered, experimental, standalone, without restarting sam; webOS 3, untried, standalone', function (done) {
   start(null, { webosVersion: '5.5.0' });
   home.status(function (st5) {
     assert.strictEqual(st5.supported.ok, true, 'no setting needed on a CX');
@@ -1552,15 +1543,12 @@ step('webOS 5 and 6 are offered, experimental, standalone, without restarting sa
             assert.strictEqual(st4.supported.previewOptions, false, 'webOS 4 omits live preview options');
             assert.strictEqual(st4.supported.restartsApps, undefined);
             start(null, { webosVersion: '3.9.3' });
-            home.status(function (st3) {
-              assert.strictEqual(st3.supported.ok, false, 'untried on webOS 3, so not offered by default');
-              start(null, { webosVersion: '3.9.3', allowExperimental: function () { return true; } });
-              home.status(function (st3on) {
-                assert.strictEqual(st3on.supported.ok, true);
-                assert.strictEqual(st3on.supported.standalone, true, 'run as on webOS 4');
-                assert.strictEqual(st3on.supported.previewOptions, false, 'webOS 3 omits live preview options');
-                done();
-              });
+            home.status(function (st3on) {
+              assert.strictEqual(st3on.supported.ok, true, 'offered on webOS 3, untried');
+              assert.strictEqual(st3on.supported.untried, true);
+              assert.strictEqual(st3on.supported.standalone, true, 'run as on webOS 4');
+              assert.strictEqual(st3on.supported.previewOptions, false, 'webOS 3 omits live preview options');
+              done();
             });
           });
         });
@@ -2166,11 +2154,11 @@ step('the default port stages the page at 8080', function (done) {
   });
 });
 
-step('switching on is refused on an untried webOS, changing nothing', function (done) {
-  start(null, { webosVersion: '8.0.0' });
+step('switching on is refused where it cannot run (webOS 2), changing nothing', function (done) {
+  start(null, { webosVersion: '2.2.3' });
   home.enable(function (r2) {
     assert.strictEqual(r2.ok, false);
-    assert.ok(/webOS 8\.0\.0/.test(r2.error));
+    assert.ok(/webOS 3 or later/.test(r2.error), r2.error);
     assert.deepEqual(tv.events, []);
     done();
   });
