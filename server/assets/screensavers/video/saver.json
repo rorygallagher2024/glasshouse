@@ -30,7 +30,8 @@
   "license": "MIT",
   "uses": [
     "level",
-    "videos"
+    "videos",
+    "home-weather"
   ],
   "order": 60
 }

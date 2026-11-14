@@ -126,7 +126,7 @@ var MAX_SAVER_BYTES = 5 * 1024 * 1024;
 var MAX_SAVER_FILES = 200;
 // What a saver may ask Glasshouse to fill in, and the placeholder for each.
 // "ha" has one placeholder per entity it declares, so it carries no value here.
-var USES = { level: '__TVWEB_LEVEL__', stats: '__TVWEB_URL__', choice: '__TVWEB_CHOICE__', videos: '__TVWEB_VIDEOS__', ha: '', 'ha-list': '__TVWEB_HA_LIST__', 'ha-all': '__TVWEB_HA_ALL__', color: '__TVWEB_COLOR__' };
+var USES = { level: '__TVWEB_LEVEL__', stats: '__TVWEB_URL__', choice: '__TVWEB_CHOICE__', videos: '__TVWEB_VIDEOS__', 'home-weather': '__TVWEB_HOME_WEATHER__', ha: '', 'ha-list': '__TVWEB_HA_LIST__', 'ha-all': '__TVWEB_HA_ALL__', color: '__TVWEB_COLOR__' };
 var DEFAULT_SAVER_COLOR = 'white';
 var COLOR_PRESETS = [
   { id: 'white', label: msg('srv.saver.color.white', 'White'), bright: '#ffffff', dim: '#a8aeb6' },
@@ -1436,6 +1436,10 @@ function fillSaverQml(e, qml, level, choice, effEnts, entityList) {
   if (e.uses.indexOf('videos') !== -1) {
     var videoJson = JSON.stringify(homeWallpapers.videoSources()).replace(/\u2028/g, '\\u2028').replace(/\u2029/g, '\\u2029');
     qml = qml.replace(/__TVWEB_VIDEOS__/g, function () { return videoJson; });
+  }
+  if (e.uses.indexOf('home-weather') !== -1) {
+    var weatherUrl = 'http://127.0.0.1:' + port + '/api/home/weather' + (token ? '?k=' + encodeURIComponent(token) : '');
+    qml = qml.replace(/__TVWEB_HOME_WEATHER__/g, function () { return weatherUrl; });
   }
   if (e.uses.indexOf('color') !== -1) {
     var preset = findColorPreset(screensaverColor(e));
