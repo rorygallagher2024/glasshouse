@@ -301,7 +301,8 @@ before that process replies.
 
 `test-pointer.js` checks pointer-event validation, batched LG text commands,
 big-endian Unix-socket framing, connection reuse, shutdown, failure cooldown and
-refused socket creation. `test-pointer-websocket.js` checks the dashboard's
+refused socket creation. Successful batches report activity once, including
+scrolling; failed socket creation reports none. `test-pointer-websocket.js` checks the dashboard's
 WebSocket upgrade, 403 refusal with controls disabled and masked JSON messages
 into LG's pointer stream.
 

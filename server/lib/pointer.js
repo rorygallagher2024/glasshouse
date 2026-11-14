@@ -12,6 +12,7 @@ var lunaFn = null;
 var hasServiceFn = null;
 var authedFn = null;
 var connectFn = null;
+var onActivityFn = function () {};
 var config = {};
 var clients = [];
 var socket = null;
@@ -35,6 +36,7 @@ function init(opts) {
   hasServiceFn = opts.hasService || null;
   authedFn = opts.authed || null;
   connectFn = opts.connect || null;
+  onActivityFn = opts.onActivity || function () {};
   config = opts.config || {};
   retryMs = typeof opts.retryMs === 'number' ? opts.retryMs : RETRY_COOLDOWN_MS;
   nowFn = typeof opts.now === 'function' ? opts.now : Date.now;
@@ -196,7 +198,11 @@ function send(body, cb) {
     if (err) {
       console.error('pointer: socket write failed: ' + err.message);
       closeSocket();
-    } else closeAfterIdle();
+    } else {
+      closeAfterIdle();
+      // Network input bypasses the evdev events watched for the Magic Remote.
+      onActivityFn();
+    }
     cb(err ? { ok: false, error: err.message } : { ok: true, count: checked.commands.length });
   });
   if (!connecting && nowFn() < retryAfter) {

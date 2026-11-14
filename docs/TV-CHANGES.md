@@ -74,7 +74,8 @@ connected asks for confirmation.
 An authenticated `POST /api/pointer` opens LG's network-input pointer socket on
 demand and sends relative movement, button and scroll events through it. The
 socket is reused for later requests and closed when the server stops. No input
-device, setting or persistent file is created.
+device, setting or persistent file is created. Successful pointer input also
+dismisses a Glasshouse screen saver, as movement of the Magic Remote does.
 
 ## Files and startup
 
