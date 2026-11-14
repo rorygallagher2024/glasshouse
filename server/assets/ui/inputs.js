@@ -173,7 +173,6 @@ function renderInputsPreview(kind) {
   }
   if (kind === 'nslg') {
     return `<span class="hm-s hm-s-nslg">
-      <span class="hm-nslg-art"><i></i></span>
       <span class="hm-nslg-box"><b>No Signal</b><i></i><i></i></span>
     </span>`;
   }
