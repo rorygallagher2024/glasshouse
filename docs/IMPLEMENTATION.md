@@ -198,6 +198,20 @@ its own, `lib/iptv-worker.js` with its readers in `lib/iptv-parse.js`:
   its key; two whose links differ only in a token, both rotated, are not
   guessed. A key gone after a refresh is matched again only to the one entry
   with its name and group, else shown as gone.
+- **Enigma2 tuner.** A tuner is a playlist kind (`enigma2`) read through
+  its OpenWebif: `/api/getservices` lists the bouquets (references starting
+  `1:7:`), and each bouquet's `/web/services.m3u` is read as an M3U feed, so a
+  channel's key is the SHA-1 carry of its stream URL and its `tvg-id` is the
+  service reference the guide is matched on. Markers (`1:64:`) are dropped.
+  Picons come from the same host and are the only logos fetched with the
+  tuner's login (Basic, passed to curl through its config on stdin, never in
+  the command line). The guide is `/api/epgmulti` per bouquet that holds a
+  lineup channel, parsed an element at a time and written out a service at a
+  time, since the tuner answers grouped by service and ignores an end time
+  (about 13 MB for three days of a 200-channel bouquet): events are kept for
+  seven days ahead, 2,500 a channel, descriptions cut at 240 characters.
+  The tuner is read one request at a time with a pause between, as Enigma2
+  becomes unresponsive under many rapid requests.
 - **Schedule.** A playlist is read daily between 03:00 and 05:00, the guide
   every six hours (an Xtream login's `xmltv.php` once the lineup goes beyond
   the row's favourites, and its short EPG for the favourites every 30

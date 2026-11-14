@@ -149,6 +149,11 @@ files 600), and they stay there:
   https and only without a user name in them; a logo is kept only if its
   first bytes are a PNG, JPEG or WebP, and is 256 KB at most.
 
+A satellite tuner's login is kept the same way. It goes to curl on its
+standard input, never in a command line, and is sent only to the tuner's own
+address: a picon on another host is fetched without it. The tuner's address
+is stored as a bare origin, and an address with a user name in it is refused.
+
 Removing a playlist on the Home tab deletes its folder at once.
 
 ## Narrowing access

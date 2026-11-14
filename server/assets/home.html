@@ -2481,6 +2481,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     if (!hasLogo(it)) return named ? nameHtml(it) : '';
     var look = null;
     try { look = window.localStorage.getItem(LOGO_KEY + it.logo); } catch (e) {}
+    if (!look && /[?&]look=plate$/.test(it.logo)) look = 'plate';
     return '<img src="' + esc(it.logo) + '" alt=""' + (named ? ' data-name="' + esc(it.name) + '"' : '') +
       (look ? ' class="' + look + '"' : ' data-judge="1" style="visibility:hidden"') + '>';
   }
