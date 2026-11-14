@@ -2744,17 +2744,17 @@ step('the picture details stay off until switched on, and the server is told of 
 step('last watched, the app count, CEC addresses and channel logos show until switched off, one at a time', function (done) {
   start(null);
   var l = home.layout();
-  assert.deepEqual([l.showLastOn, l.showAppCount, l.showCec, l.showTvLogos], [true, true, true, true]);
-  home.setLayout({ showCec: false, showTvLogos: false }, function (r) {
-    assert.deepEqual([r.layout.showLastOn, r.layout.showAppCount, r.layout.showCec, r.layout.showTvLogos], [true, true, false, false]);
-    home.setLayout({ showLastOn: false, showAppCount: 'no' }, function (r2) {
-      assert.deepEqual([r2.layout.showLastOn, r2.layout.showAppCount, r2.layout.showCec, r2.layout.showTvLogos], [false, true, false, false]);
+  assert.deepEqual([l.showLastOn, l.showAppCount, l.showAppLabels, l.showCec, l.showTvLogos], [true, true, true, true, true]);
+  home.setLayout({ showCec: false, showTvLogos: false, showAppLabels: false }, function (r) {
+    assert.deepEqual([r.layout.showLastOn, r.layout.showAppCount, r.layout.showAppLabels, r.layout.showCec, r.layout.showTvLogos], [true, true, false, false, false]);
+    home.setLayout({ showLastOn: false, showAppCount: 'no', showAppLabels: 'no' }, function (r2) {
+      assert.deepEqual([r2.layout.showLastOn, r2.layout.showAppCount, r2.layout.showAppLabels, r2.layout.showCec, r2.layout.showTvLogos], [false, true, false, false, false]);
       var saved = home.normalise(JSON.parse(fs.readFileSync(path.join(dir, 'home.json'), 'utf8')));
-      assert.deepEqual([saved.showLastOn, saved.showAppCount, saved.showCec, saved.showTvLogos], [false, true, false, false]);
+      assert.deepEqual([saved.showLastOn, saved.showAppCount, saved.showAppLabels, saved.showCec, saved.showTvLogos], [false, true, false, false, false]);
       home.setLayout({ showAppCount: false }, function (r3) {
-        assert.deepEqual([r3.layout.showLastOn, r3.layout.showAppCount, r3.layout.showCec, r3.layout.showTvLogos], [false, false, false, false]);
-        home.setLayout({ showLastOn: true, showAppCount: true, showCec: true, showTvLogos: true }, function (r4) {
-          assert.deepEqual([r4.layout.showLastOn, r4.layout.showAppCount, r4.layout.showCec, r4.layout.showTvLogos], [true, true, true, true]);
+        assert.deepEqual([r3.layout.showLastOn, r3.layout.showAppCount, r3.layout.showAppLabels, r3.layout.showCec, r3.layout.showTvLogos], [false, false, false, false, false]);
+        home.setLayout({ showLastOn: true, showAppCount: true, showAppLabels: true, showCec: true, showTvLogos: true }, function (r4) {
+          assert.deepEqual([r4.layout.showLastOn, r4.layout.showAppCount, r4.layout.showAppLabels, r4.layout.showCec, r4.layout.showTvLogos], [true, true, true, true, true]);
           done();
         });
       });
@@ -3444,6 +3444,34 @@ step('media servers, USB drives, AirPlay, Screen Share and All Inputs appear in 
                 done();
               });
             });
+          });
+        });
+      });
+    });
+  });
+});
+
+step('custom appNames rename apps in the catalogue and last opened, and clear back to default', function (done) {
+  start({ enabled: true });
+  foreground('netflix');
+  home.setLayout({ appNames: { netflix: '  Flix  ', youtube: '   ' } }, function (r) {
+    assert.ok(r.ok, r.error);
+    assert.deepEqual(r.layout.appNames, { netflix: 'Flix' });
+    home.catalogue(function (c) {
+      var nf = c.apps.filter(function (a) { return a.id === 'netflix'; })[0];
+      assert.strictEqual(nf.title, 'Flix');
+      assert.strictEqual(nf.defaultTitle, 'Netflix');
+      assert.strictEqual(nf.renamed, true);
+      home.now(function (n) {
+        assert.strictEqual(n.title, 'Flix');
+        home.setLayout({ appNames: { netflix: '' } }, function (r2) {
+          assert.ok(r2.ok);
+          assert.strictEqual(r2.layout.appNames.netflix, undefined, 'empty string removes app override');
+          home.catalogue(function (c2) {
+            var nf2 = c2.apps.filter(function (a) { return a.id === 'netflix'; })[0];
+            assert.strictEqual(nf2.title, 'Netflix');
+            assert.strictEqual(nf2.defaultTitle, undefined);
+            done();
           });
         });
       });

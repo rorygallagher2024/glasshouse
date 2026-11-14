@@ -52,7 +52,7 @@ var SETTINGS = 'com.webos.service.settings/';
 var ROWS = ['app', 'rec', 'dev', 'ch', 'iptv'];
 // How a row is ordered: as arranged ('custom'), or the tile opened last first ('recent').
 var SORTS = ['custom', 'recent'];
-var SHOW_KEYS = ['showClock', 'showLastOn', 'showAppCount', 'showCec', 'showTvLogos', 'showPointer'];
+var SHOW_KEYS = ['showClock', 'showLastOn', 'showAppCount', 'showAppLabels', 'showCec', 'showTvLogos', 'showPointer'];
 // Where the weather badge's weather comes from: nowhere, Home Assistant's pushes, or Open-Meteo.
 var WEATHER_SOURCES = ['off', 'ha', 'internet'];
 // The live preview beside the clock: 356x200, 512x288 or 640x360 on the 1920x1080 view.
@@ -437,6 +437,7 @@ function defaults() {
     showClock: true,
     showLastOn: true,
     showAppCount: true,
+    showAppLabels: true,
     showCec: true,
     showTvLogos: true,
     // The Magic Remote's pointer on the view (#1212).
@@ -487,6 +488,8 @@ function defaults() {
     showMediaServers: false,
     // Custom names keyed by device id (e.g. 'hdmi2:apple-tv' or 'hdmi1').
     deviceNames: {},
+    // Custom app labels keyed by app id.
+    appNames: {},
     // Transparent tiles on the Glasshouse Input bar: off by default so stepping
     // through inputs does not repaint translucent tiles over the picture.
     inputBarTransparent: false,
@@ -581,6 +584,7 @@ function normalise(raw) {
   d.hideUnused = raw.hideUnused === true;
   d.showMediaServers = raw.showMediaServers === true;
   d.deviceNames = validDeviceNames(raw.deviceNames);
+  d.appNames = validAppNames(raw.appNames);
   d.inputBarTransparent = raw.inputBarTransparent === true;
   // null, saved, is the view's own look; none saved keeps the default.
   if (Object.prototype.hasOwnProperty.call(raw, 'colours')) d.colours = validColours(raw.colours);
@@ -603,7 +607,7 @@ function validColours(v) {
   return COLOUR_RE.test(text) && COLOUR_RE.test(accent) ? { text: text, accent: accent } : null;
 }
 
-function validDeviceNames(v, base) {
+function validCustomNames(v, base, maxKeys) {
   var out = {};
   if (base && typeof base === 'object') {
     Object.keys(base).forEach(function (k) { out[k] = base[k]; });
@@ -619,12 +623,15 @@ function validDeviceNames(v, base) {
     if (typeof val !== 'string') return;
     val = val.replace(/\s+/g, ' ').trim();
     if (!val) delete out[k];
-    else if (Object.keys(out).length < 32 || Object.prototype.hasOwnProperty.call(out, k)) {
+    else if (Object.keys(out).length < maxKeys || Object.prototype.hasOwnProperty.call(out, k)) {
       out[k] = val.slice(0, 60);
     }
   });
   return out;
 }
+
+function validDeviceNames(v, base) { return validCustomNames(v, base, 32); }
+function validAppNames(v, base) { return validCustomNames(v, base, 200); }
 
 function validSnapshot(s) {
   return !!(s && typeof s === 'object' && s.settings && typeof s.settings === 'object' &&
@@ -740,6 +747,7 @@ function setLayout(body, cb) {
     view: body.view !== undefined ? body.view : c.view,
     showLastOn: typeof body.showLastOn === 'boolean' ? body.showLastOn : c.showLastOn,
     showAppCount: typeof body.showAppCount === 'boolean' ? body.showAppCount : c.showAppCount,
+    showAppLabels: typeof body.showAppLabels === 'boolean' ? body.showAppLabels : c.showAppLabels,
     showCec: typeof body.showCec === 'boolean' ? body.showCec : c.showCec,
     showTvLogos: typeof body.showTvLogos === 'boolean' ? body.showTvLogos : c.showTvLogos,
     showPointer: typeof body.showPointer === 'boolean' ? body.showPointer : c.showPointer,
@@ -767,6 +775,7 @@ function setLayout(body, cb) {
     hideUnused: typeof body.hideUnused === 'boolean' ? body.hideUnused : c.hideUnused,
     showMediaServers: typeof body.showMediaServers === 'boolean' ? body.showMediaServers : c.showMediaServers,
     deviceNames: body.deviceNames !== undefined ? oneNamePerPort(validDeviceNames(body.deviceNames, c.deviceNames), body.deviceNames) : c.deviceNames,
+    appNames: body.appNames !== undefined ? validAppNames(body.appNames, c.appNames) : c.appNames,
     inputBarTransparent: typeof body.inputBarTransparent === 'boolean' ? body.inputBarTransparent : c.inputBarTransparent,
     // null puts the view's own colours back.
     colours: body.colours !== undefined ? body.colours : c.colours
@@ -883,8 +892,8 @@ function layoutOf(c) {
     excludedRecents: c.excludedRecents,
     searchHintSeen: c.searchHintSeen, picture: c.picture, livePreview: c.livePreview, search: c.search, recommended: c.recommended,
     fade: c.fade, wallDrift: c.wallDrift, wallCrossfade: c.wallCrossfade, smoothScroll: c.smoothScroll, slidePanels: c.slidePanels,
-    darkening: c.darkening, hideUnused: c.hideUnused, showMediaServers: c.showMediaServers, deviceNames: devNamesNow(c.deviceNames), inputBarTransparent: c.inputBarTransparent, showClock: c.showClock, rowsBottom: c.rowsBottom, view: c.view,
-    showLastOn: c.showLastOn, showAppCount: c.showAppCount, showCec: c.showCec, showTvLogos: c.showTvLogos, showPointer: c.showPointer, weather: c.weather, weatherPlace: c.weatherPlace, previewAlways: c.previewAlways, previewInTile: c.previewInTile, previewSize: c.previewSize, previewSound: c.previewSound, wallAnim: c.wallAnim,
+    darkening: c.darkening, hideUnused: c.hideUnused, showMediaServers: c.showMediaServers, deviceNames: devNamesNow(c.deviceNames), appNames: c.appNames, inputBarTransparent: c.inputBarTransparent, showClock: c.showClock, rowsBottom: c.rowsBottom, view: c.view,
+    showLastOn: c.showLastOn, showAppCount: c.showAppCount, showAppLabels: c.showAppLabels, showCec: c.showCec, showTvLogos: c.showTvLogos, showPointer: c.showPointer, weather: c.weather, weatherPlace: c.weatherPlace, previewAlways: c.previewAlways, previewInTile: c.previewInTile, previewSize: c.previewSize, previewSound: c.previewSound, wallAnim: c.wallAnim,
     animTheme: c.animTheme, animSky: c.animSky, animLight: c.animLight, animThemes: ANIM_THEMES,
     wallShuffleMinutes: c.wallShuffleMinutes, shuffleMinutes: SHUFFLE_MINUTES, colours: c.colours,
     // Not saved: { host, by } while the ad blocker blocks LG's search (lib/home-search).
@@ -1274,7 +1283,12 @@ function build(c, apps, devs, chans, recs, tv) {
   order.rec = cards.map(function (r) { return r.id; });
   return {
     apps: appList.map(function (a) {
-      var app = { id: a.id, title: a.title, icon: a.icon ? '/api/home/icon?id=' + encodeURIComponent(a.id) : null };
+      var custom = c.appNames && c.appNames[a.id];
+      var app = { id: a.id, title: custom || a.title, icon: a.icon ? '/api/home/icon?id=' + encodeURIComponent(a.id) : null };
+      if (custom && custom !== a.title) {
+        app.defaultTitle = a.title;
+        app.renamed = true;
+      }
       if (a.overlay) app.overlay = true;
       return app;
     }),
@@ -1640,8 +1654,8 @@ function now(cb) {
     });
   }
   launchPoints(function (apps) {
-    var title = null;
-    (apps || []).forEach(function (a) { if (a.id === id) title = a.title; });
+    var title = null, namesMap = readConfig().appNames || {};
+    (apps || []).forEach(function (a) { if (a.id === id) title = namesMap[id] || a.title; });
     cb({ kind: 'app', appId: id, since: lastSource.at, title: title });
   });
 }

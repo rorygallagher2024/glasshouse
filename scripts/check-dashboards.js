@@ -1141,6 +1141,16 @@ async function visitHomeVisibility(browser, base, problems) {
     if (!ap || !ap.dark || ap.bg !== 'rgb(236, 231, 223)' || !op || op.dark) {
       problems.push('Home visibility: dark transparent icon check failed: ' + JSON.stringify(iconBg));
     }
+    layout.showAppLabels = false;
+    version++;
+    await page.clock.fastForward(5000);
+    await release();
+    const labelBox = await page.evaluate(() => {
+      const stage = document.getElementById('stage');
+      const nm = document.querySelector('.tile.app .nm');
+      return { cls: stage.classList.contains('no-app-labels'), h: nm ? nm.offsetHeight : -1 };
+    });
+    if (!labelBox.cls || labelBox.h !== 0) problems.push('Home visibility: App labels off left app titles visible: ' + JSON.stringify(labelBox));
   } finally { await page.close(); }
 }
 
@@ -2020,7 +2030,8 @@ async function visitHomeEditor(browser, base, problems) {
   const page = await browser.newPage();
   page.on('pageerror', e => problems.push('Home editor: ' + e.message));
   let layout = { rows: ['app', 'dev', 'ch'], order: { app: [], dev: [], ch: [] },
-    hidden: { app: [], dev: [], ch: [] }, channels: ['a'], hintSeen: true, searchHintSeen: true };
+    hidden: { app: [], dev: [], ch: [] }, channels: ['a'], appNames: {}, hintSeen: true, searchHintSeen: true };
+  const baseApps = [{ id: 'one', title: 'One' }, { id: 'two', title: 'Two' }];
   const channels = ['a', 'b', 'c'].map(id => ({ id, name: id.toUpperCase(), number: id }));
   const saves = [];
   let release = null, refuse = false, pendingRestore = false, portChanged = false;
@@ -2029,7 +2040,9 @@ async function visitHomeEditor(browser, base, problems) {
     let body;
     if (pathname === '/api/home') body = { ok: true, supported: { ok: !portChanged }, installed: true,
       enabled: !pendingRestore, restorePending: pendingRestore, active: true, writable: true, layout, history: true };
-    else if (pathname.endsWith('/catalogue')) body = { ok: true, apps: [{ id: 'one', title: 'One' }, { id: 'two', title: 'Two' }], devices: [],
+    else if (pathname.endsWith('/catalogue')) body = { ok: true,
+      apps: baseApps.map(a => layout.appNames[a.id] ? { id: a.id, title: layout.appNames[a.id], defaultTitle: a.title, renamed: true } : a),
+      devices: [],
       channels: channels.filter(c => layout.channels.includes(c.id)),
       order: { app: layout.order.app.length ? layout.order.app : ['one', 'two', 'lg-home'], dev: [], ch: layout.channels }, layout };
     else if (pathname.endsWith('/channels')) body = { ok: true, channels };
@@ -2040,6 +2053,8 @@ async function visitHomeEditor(browser, base, problems) {
       else {
         if (patch.channels) layout.channels = patch.channels;
         if (patch.order) Object.assign(layout.order, patch.order);
+        if (patch.appNames) Object.entries(patch.appNames).forEach(([k, v]) => { if (v) layout.appNames[k] = v; else delete layout.appNames[k]; });
+        if (typeof patch.showAppLabels === 'boolean') layout.showAppLabels = patch.showAppLabels;
         body = { ok: true, layout: JSON.parse(JSON.stringify(layout)) };
         if (saves.length === 1) await new Promise(resolve => { release = resolve; });
       }
@@ -2072,7 +2087,22 @@ async function visitHomeEditor(browser, base, problems) {
     const refused = page.waitForResponse(r => new URL(r.url()).pathname === '/api/home/layout');
     await appRows.first().getByRole('button', { name: 'Later', exact: true }).click();
     await refused; await ready();
-    if (await appRows.first().locator('[translate="no"]').textContent() !== 'One') problems.push('Home editor: refused move remained visible');
+    if (await appRows.first().locator('[translate="no"]').inputValue() !== 'One') problems.push('Home editor: refused move remained visible');
+    refuse = false;
+    const appName = appRows.first().locator('.home-app-name');
+    const renameSave = page.waitForResponse(r => new URL(r.url()).pathname === '/api/home/layout');
+    await appName.fill('Custom One');
+    await appName.press('Enter');
+    await renameSave;
+    if (JSON.stringify(saves[saves.length - 1]) !== JSON.stringify({ appNames: { one: 'Custom One' } })) {
+      problems.push('Home editor: renaming an app did not save appNames: ' + JSON.stringify(saves[saves.length - 1]));
+    }
+    const labelSave = page.waitForResponse(r => new URL(r.url()).pathname === '/api/home/layout');
+    await page.locator('#home-show-app-labels').click();
+    await labelSave;
+    if (JSON.stringify(saves[saves.length - 1]) !== JSON.stringify({ showAppLabels: false })) {
+      problems.push('Home editor: toggling App labels did not save showAppLabels');
+    }
     pendingRestore = true;
     await page.reload();
     await page.waitForSelector('#home-switch:not(:disabled)');

@@ -252,6 +252,9 @@ html.resting #wall .layer{-webkit-animation-play-state:paused;animation-play-sta
 .app img,.app .mono{display:block;width:112px;height:112px;margin:0 auto;border-radius:14px}
 .app .mono{background:#2a2825;color:#ece7df;font-family:'Outfit',sans-serif;font-size:44px;font-weight:300;line-height:112px}
 .app .nm{font-size:21px;font-weight:600;margin-top:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.no-app-labels .app{width:140px}
+.no-app-labels.alternative .app{width:124px}
+.no-app-labels .app .nm{display:none}
 /* Dark monochrome icons on transparent (AirPlay on webOS 4) sit on warm white
    so a black background never swallows them. */
 .app img.dark-ico,.chip img.dark-ico{background:#ece7df}
@@ -889,7 +892,9 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
 
   function byId(kind, id) {
     if (kind === 'app') {
-      if (id === LG_HOME_TILE) return { id: LG_HOME_TILE, title: t('home.lgHome', 'LG Home'), lg: true };
+      if (id === LG_HOME_TILE) {
+        return { id: LG_HOME_TILE, title: (layout && layout.appNames && layout.appNames[id]) || t('home.lgHome', 'LG Home'), lg: true };
+      }
       return find(data.apps, id);
     }
     if (kind === 'rec') return find(data.recommended, id);
@@ -2068,7 +2073,8 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     $('stage').className = (state.arranging ? 'arranging' : '') + (recents.open ? ' recents' : '') +
       (finder.open ? ' finding' : '') + (finder.typing ? ' typing' : '') + (searchOn() ? '' : ' no-search') + (folder.open ? ' folder' : '') +
       (!layout || layout.showClock === false ? ' no-clock' : '') + (layout && layout.rowsBottom === true ? ' rows-bottom' : '') +
-      (layout && layout.view === 'alternative' ? ' alternative' : '') + (player.open ? ' playing' : '') + (adder.open ? ' adding' : '') +
+      (layout && layout.view === 'alternative' ? ' alternative' : '') + (layout && layout.showAppLabels === false ? ' no-app-labels' : '') +
+      (player.open ? ' playing' : '') + (adder.open ? ' adding' : '') +
       (adder.open && adder.typing ? ' adtyping' : '') + (guide.open ? ' guiding' : '') + previewSizeClass();
     applyPointer(false);
     followPreview();
@@ -4116,10 +4122,12 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     // Decoded off the page's thread: decoded on it, the screenshots of five
     // apps held the page 300 to 350 ms as Recent apps opened on a C2 (9.2.2).
     recents.apps.forEach(function (a, i) {
-      var mono = '<span class="mono">' + esc(String(a.title).charAt(0)) + '</span>';
+      var app = find(data.apps, a.id);
+      var title = (app && app.title) || (layout && layout.appNames && layout.appNames[a.id]) || a.title;
+      var mono = '<span class="mono">' + esc(String(title).charAt(0)) + '</span>';
       var shot = a.image ? '<img src="/api/home/recents/image?id=' + encodeURIComponent(a.id) + '&v=' + encodeURIComponent(a.imageVersion || recents.stamp) + '" alt="" decoding="async">' : mono;
       html += '<div class="tile rc" data-c="' + i + '"><div class="shot">' + shot + '</div>' +
-        '<div class="nm">' + esc(a.title) + '</div><span class="x">' + esc(t('home.recents.close', 'Close')) + '</span></div>';
+        '<div class="nm">' + esc(title) + '</div><span class="x">' + esc(t('home.recents.close', 'Close')) + '</span></div>';
     });
     $('recentsTrack').innerHTML = html || '<div class="empty"><b>' + esc(t('home.recents.none', 'Nothing is open')) + '</b>' +
       esc(t('home.recents.noneDesc', 'Apps stay here while they are open.')) + '</div>';

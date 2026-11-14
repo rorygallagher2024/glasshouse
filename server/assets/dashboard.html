@@ -1059,7 +1059,10 @@ var homeData = null;
 
 function homeItemTitle(kind, id) {
   var c = homeData.catalogue, list = kind === 'app' ? c.apps : kind === 'dev' ? c.devices : kind === 'iptv' ? c.iptv : c.channels, i;
-  if (kind === 'app' && id === 'lg-home') return t('home.lgHome', 'LG Home');
+  if (kind === 'app' && id === 'lg-home') {
+    var appNames = homeData.layout && homeData.layout.appNames;
+    return (appNames && appNames[id]) || t('home.lgHome', 'LG Home');
+  }
   for (i = 0; i < list.length; i++) {
     if (list[i].id !== id) continue;
     if (kind === 'app') return list[i].title;
@@ -1548,6 +1551,8 @@ function homeRowRows(kind, d) {
       t('home.showAppCountDesc', 'Beside the Apps row: how many of the TV’s apps it shows.'), 'homeShow', lay.showAppCount !== false);
     if (unused) { countRow.act = null; countRow.cls = 'off'; countRow.hint = t('home.showAppCountAlt', 'Not shown in Alternative View, whose rows have no titles.'); }
     r.push(countRow);
+    r.push(homeSwitchRow(d, 'showAppLabels', t('home.showAppLabels', 'App labels'),
+      t('home.showAppLabelsDesc', 'Under each app icon on Glasshouse Home and Glasshouse Bar. Off leaves the icons on their own.'), 'homeShow', lay.showAppLabels !== false));
     r.push(homeSearchRow(d));
   }
   if (kind === 'dev') {

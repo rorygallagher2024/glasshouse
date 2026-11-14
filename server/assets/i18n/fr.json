@@ -3283,5 +3283,8 @@
  "pv.adblock.state.works": {"text": "Fonctionne", "from": "Works"},
  "compat.copyDetails": {"text": "Copier les détails", "from": "Copy details"},
  "compat.copied": {"text": "Copié", "from": "Copied"},
- "compat.copyFailed": {"text": "Copie impossible", "from": "Could not copy"}
+ "compat.copyFailed": {"text": "Copie impossible", "from": "Could not copy"},
+ "home.appNameLabel": {"text": "Nom de l’app", "from": "App name"},
+ "home.showAppLabels": {"text": "Noms des apps", "from": "App labels"},
+ "home.showAppLabelsDesc": {"text": "Sous chaque icône d’app sur Glasshouse Home et Glasshouse Bar. Désactivé ne laisse que les icônes.", "from": "Under each app icon on Glasshouse Home and Glasshouse Bar. Off leaves the icons on their own."}
 }
