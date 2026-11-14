@@ -793,12 +793,78 @@ function setLayout(body, cb) {
   cb({ ok: true, layout: layoutOf(config), layoutVersion: layoutVersion() });
 }
 
+/*
+ * An input's settings follow it whether the TV lists its port's device or
+ * not. A port's tile is hdmiN until a CEC device on it is listed, and
+ * hdmiN:<device> after, and many devices drop off the list when switched off,
+ * so a setting kept under one ID was lost under the other: a hidden input
+ * came back, a moved one went to the end (#1462). Where a port has one tile,
+ * a setting under any ID on that port is that tile's; with several (a console
+ * behind a receiver) each keeps its own. Nothing saved is rewritten: the IDs
+ * are read this way, and a change saves the ones on screen.
+ */
+function hdmiPort(id) {
+  var m = /^(hdmi\d+)(?::|$)/.exec(String(id || ''));
+  return m ? m[1] : null;
+}
+
+// The devices as last read, for the layout handed out without reading them again.
+function knownDevices() {
+  var hit = listCache.dev;
+  return (hit && hit.value) || savedList('dev') || [];
+}
+
+// The tile of each HDMI port that has exactly one.
+function soleTiles(devs) {
+  var count = {}, only = {}, out = {};
+  (devs || []).forEach(function (d) {
+    if (!d || d.appId || d.tuner || !/^hdmi\d+$/.test(String(d.input))) return;
+    count[d.input] = (count[d.input] || 0) + 1;
+    only[d.input] = d.id;
+  });
+  Object.keys(count).forEach(function (p) { if (count[p] === 1) out[p] = only[p]; });
+  return out;
+}
+
+// A list of tile IDs as the tiles on screen now name them.
+function devIdsNow(ids, devs) {
+  devs = devs || knownDevices();
+  var listed = {}, sole = soleTiles(devs), out = [];
+  devs.forEach(function (d) { if (d && d.id) listed[d.id] = true; });
+  (ids || []).forEach(function (id) {
+    var port = listed[id] ? null : hdmiPort(id);
+    var now = port && sole[port] ? sole[port] : id;
+    if (out.indexOf(now) === -1) out.push(now);
+  });
+  return out;
+}
+
+// Custom names, keyed as the tiles on screen now are; a name kept under the tile's own ID wins.
+function devNamesNow(names, devs) {
+  devs = devs || knownDevices();
+  var listed = {}, sole = soleTiles(devs), out = {};
+  devs.forEach(function (d) { if (d && d.id) listed[d.id] = true; });
+  Object.keys(names || {}).forEach(function (id) {
+    var port = listed[id] ? null : hdmiPort(id);
+    var now = port && sole[port] ? sole[port] : id;
+    if (now === id || !Object.prototype.hasOwnProperty.call(names, now)) out[now] = names[id];
+  });
+  return out;
+}
+
+function withDevIdsNow(lists) {
+  var out = {};
+  Object.keys(lists || {}).forEach(function (k) { out[k] = lists[k]; });
+  if (lists && Array.isArray(lists.dev)) out.dev = devIdsNow(lists.dev);
+  return out;
+}
+
 function layoutOf(c) {
-  return { rows: c.rows, order: c.order, sort: c.sort, hidden: c.hidden, hiddenRows: c.hiddenRows, folder: c.folder, channels: c.channels, hintSeen: c.hintSeen,
+  return { rows: c.rows, order: withDevIdsNow(c.order), sort: c.sort, hidden: withDevIdsNow(c.hidden), hiddenRows: c.hiddenRows, folder: c.folder, channels: c.channels, hintSeen: c.hintSeen,
     excludedRecents: c.excludedRecents,
     searchHintSeen: c.searchHintSeen, picture: c.picture, livePreview: c.livePreview, search: c.search, recommended: c.recommended,
     fade: c.fade, wallDrift: c.wallDrift, wallCrossfade: c.wallCrossfade, smoothScroll: c.smoothScroll, slidePanels: c.slidePanels,
-    darkening: c.darkening, hideUnused: c.hideUnused, showMediaServers: c.showMediaServers, deviceNames: c.deviceNames, inputBarTransparent: c.inputBarTransparent, showClock: c.showClock, rowsBottom: c.rowsBottom, view: c.view,
+    darkening: c.darkening, hideUnused: c.hideUnused, showMediaServers: c.showMediaServers, deviceNames: devNamesNow(c.deviceNames), inputBarTransparent: c.inputBarTransparent, showClock: c.showClock, rowsBottom: c.rowsBottom, view: c.view,
     showLastOn: c.showLastOn, showAppCount: c.showAppCount, showCec: c.showCec, showTvLogos: c.showTvLogos, showPointer: c.showPointer, weather: c.weather, weatherPlace: c.weatherPlace, previewAlways: c.previewAlways, previewInTile: c.previewInTile, previewSize: c.previewSize, previewSound: c.previewSound, wallAnim: c.wallAnim,
     animTheme: c.animTheme, animSky: c.animSky, animLight: c.animLight, animThemes: ANIM_THEMES,
     wallShuffleMinutes: c.wallShuffleMinutes, shuffleMinutes: SHUFFLE_MINUTES, colours: c.colours,
@@ -958,7 +1024,7 @@ function pluggedPorts(devs, cb) {
 }
 
 function namedDevices(c, list) {
-  var custom = (c && c.deviceNames) || {};
+  var custom = devNamesNow((c && c.deviceNames) || {}, list);
   var byPortDefault = {};
   list.forEach(function (d) {
     if (d.id && d.port && custom[d.id] && d.name) byPortDefault[d.port + ':' + d.name] = custom[d.id];
@@ -1165,7 +1231,7 @@ function build(c, apps, devs, chans, recs, tv) {
   picked.sort(function (a, b) { return c.channels.indexOf(a.id) - c.channels.indexOf(b.id); });
   var order = {
     app: ordered(c.order.app, appIds),
-    dev: tunerFirst(c.order.dev, ordered(c.order.dev, devIds)),
+    dev: tunerFirst(c.order.dev, ordered(devIdsNow(c.order.dev, devs || []), devIds)),
     ch: picked.map(function (p) { return p.id; }),
     rec: [],
     iptv: (tv || []).map(function (t) { return t.id; })
@@ -1239,7 +1305,13 @@ function lastOpenedFirst(row, ids) {
   var times = recent.of(row);
   var timeOf = function (id) {
     var t = times[id] || 0;
-    if (row === 'dev') t = Math.max(t, times[id.split(':')[0]] || 0);
+    if (row !== 'dev') return t;
+    // An input opened from the TV is stamped as its port, and counts for every
+    // device on it; a port's own tile counts its device's, from before it went.
+    var port = id.split(':')[0];
+    Object.keys(times).forEach(function (k) {
+      if (k === port || (id === port && k.indexOf(port + ':') === 0)) t = Math.max(t, times[k] || 0);
+    });
     return t;
   };
   var sorted = ids.filter(function (id) { return id !== LG_HOME_TILE; })
