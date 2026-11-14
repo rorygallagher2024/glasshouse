@@ -3559,7 +3559,8 @@ function activate() {
       // The view's own look is saved as none chosen.
       return homeLayout({ colours: r.key.own ? null : { text: r.key.text, accent: r.key.accent } });
     case 'homeOpen':
-      return send({ action: 'launchApp', value: 'com.webos.app.home' });
+      // webOS 3 to 6 run it as an app of its own, beside LG's Home (#1454).
+      return send({ action: 'launchApp', value: homeData && homeData.supported && homeData.supported.standalone ? 'com.tvweb.home' : 'com.webos.app.home' });
     case 'homeRowUp':
       var rowsNow = homeData.layout.rows.slice(), ri = rowsNow.indexOf(r.key);
       rowsNow.splice(ri, 1);
