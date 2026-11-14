@@ -1723,6 +1723,28 @@ function openAirPlay(cb) {
 }
 
 /*
+ * Plays an Internet TV channel full screen on Home: the view is launched with
+ * the channel in its parameters and opens its player on it.
+ */
+function playChannel(pl, key, cb) {
+  if (!/^[0-9A-Za-z_-]{1,40}$/.test(String(pl)) || !/^[a-z][0-9a-z]{1,24}$/.test(String(key))) {
+    return cb({ ok: false, error: msg('srv.home.unknownTile', 'that is not on Glasshouse Home') });
+  }
+  if (!readConfig().enabled) return cb({ ok: false, error: msg('srv.home.notInUse', 'Glasshouse Home is not in use') });
+  launch(LG_HOME, { glasshouse: 'play', pl: pl, key: key }, cb);
+}
+
+/*
+ * Opens Internet TV's guide on Home, for a source picked in Home Assistant's
+ * media player: the view is launched asking for its guide, as the remote's
+ * Guide key does (lib/remotekeys).
+ */
+function openInternetTv(cb) {
+  if (!readConfig().enabled) return cb({ ok: false, error: msg('srv.home.notInUse', 'Glasshouse Home is not in use') });
+  launch(LG_HOME, { glasshouse: 'guide' }, cb);
+}
+
+/*
  * Opens a tile: { kind: 'app'|'dev'|'ch'|'lg', id }. Only what the catalogue
  * lists can be opened, so this is not a way to launch anything at all. A
  * device opens its HDMI input with LG's CEC selection parameters where known.
@@ -2704,6 +2726,8 @@ function beat(body) {
   if (body && typeof body.focused === 'boolean') {
     viewFocus = { focused: body.focused, visible: String(body.visible || ''), at: lastBeatAt };
   }
+  // Whether Internet TV is in front, its guide or a player: Home Assistant's media player shows IPTV then.
+  if (iptvModule && body && typeof body.iptv === 'boolean') iptvModule.front(body.iptv && viewInFront());
   beats++;
   if (viewInFront()) watchBeat(beatGraceMs);
   return { ok: true, enabled: readConfig().enabled, standalone: isStandalone(), covered: viewCovered(), saver: powerState === 'Screen Saver',
@@ -3381,6 +3405,8 @@ function stop() {
 
 module.exports = {
   LG_HOME: LG_HOME,
+  playChannel: playChannel,
+  openInternetTv: openInternetTv,
   init: init,
   start: start,
   stop: stop,

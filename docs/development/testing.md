@@ -320,7 +320,8 @@ nothing is opened with Home already in front.
 ## Home Assistant
 
 [`home-assistant.yml`](https://github.com/rorygallagher2024/glasshouse/blob/main/.github/workflows/home-assistant.yml) builds every discovery config the server can publish and
-runs each through Home Assistant's own validation, then checks that the volume
+runs each through Home Assistant's own validation (the media player's, which a
+separate integration reads, is left out), then checks that the volume
 entities are available exactly when the TV lets their volume be changed. Home
 Assistant creates no entity for a config it rejects, and says so only in its
 own log, which is how Volume and Mute went missing in 0.78.0. It also renders

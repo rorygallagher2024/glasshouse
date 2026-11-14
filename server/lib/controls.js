@@ -31,7 +31,10 @@ var RCU_KEY_CODES = {
   stop: 128,
   fastForward: 208,
   fastforward: 208,
-  rewind: 168
+  rewind: 168,
+  // The remote's CH+ and CH-: Live TV changes channel, and so does Internet TV in Home.
+  channelUp: 402,
+  channelDown: 403
 };
 
 /*
@@ -686,6 +689,11 @@ function doControl(action, value, cb) {
           if (ok || !sAlias) return done(ok);
           setOut(sAlias, done);
         });
+      });
+
+    case 'channel':
+      return sendMediaKey(String(value).toLowerCase() === 'down' ? 'channelDown' : 'channelUp', function (ok) {
+        cb({ ok: ok });
       });
 
     case 'playback':

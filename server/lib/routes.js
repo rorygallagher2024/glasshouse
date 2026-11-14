@@ -1456,7 +1456,7 @@ function handleIptvRoute(req, res, u, pathname) {
       if (pathname === '/api/iptv/playlists') return iptvModule.playlistsAction(body, reply);
       if (pathname === '/api/iptv/selection') return iptvModule.setSelection(body, reply);
       if (pathname === '/api/iptv/lineup') return iptvModule.setLineup(body, reply);
-      if (pathname === '/api/iptv/lease') return reply(iptvModule.lease(body && body.on === true, body && body.full === true));
+      if (pathname === '/api/iptv/lease') return reply(iptvModule.lease(body && body.on === true, body && body.full === true, body && body.open === true));
       if (pathname === '/api/iptv/event') return reply(iptvModule.streamEvent(body));
       if (pathname === '/api/iptv/output') return reply(iptvModule.setOutput(body));
       if (pathname === '/api/iptv/timeshift') return reply(iptvModule.setTimeshift(body));

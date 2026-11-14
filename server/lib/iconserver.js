@@ -1,7 +1,7 @@
 /*
  * Installed apps' icons for other devices on the LAN, such as a launcher on
  * an Android TV box, while the dashboard itself stays bound to the TV.
- * Read-only, unauthenticated, and nothing but GET or HEAD /icons/<appId>.png,
+ * Read-only, unauthenticated, and nothing but GET or HEAD /icons/<appId>.png and the logo of the Internet TV channel playing, /logos/<playlist>/<id>,
  * resolved through apps.getIconPath. Off unless `iconServer` is true.
  *
  * Strict ES5 for Node 0.12.2 on webOS 4.
@@ -16,10 +16,13 @@ var hostPort = require('./util').hostPort;
 // A leading dot is refused as well, so '.' and '..' never reach a path join.
 var APP_ID_RE = /^[A-Za-z0-9_-][A-Za-z0-9._-]{0,127}$/;
 var ICON_PATH_RE = /^\/icons\/([^\/]+)\.png$/;
+// A playing Internet TV channel's logo: /logos/<playlist>/<logo id>
+var LOGO_PATH_RE = /^\/logos\/([0-9A-Za-z_-]{1,40})\/([0-9a-f]{16})$/;
 
 var config = {};
 /** @type {typeof import('./apps')} */
 var appsModule = null;
+var iptvModule = null;
 /** @type {http.Server} */
 var server = null;
 var listening = false;
@@ -28,6 +31,7 @@ function init(opts) {
   opts = opts || {};
   if (opts.config) config = opts.config;
   if (opts.apps) appsModule = opts.apps;
+  if (opts.iptv) iptvModule = opts.iptv;
 }
 
 function enabled() {
@@ -74,8 +78,33 @@ function notFound(res) {
   res.end('not found');
 }
 
+/*
+ * A logo is wider than tall and Home Assistant's media card crops a picture to
+ * a square, so it goes out as a square SVG around the logo, whole and centred.
+ * The worker checked the bytes already: only the type is read from them.
+ */
+function sendLogo(req, res, file) {
+  fs.readFile(file, function (err, buf) {
+    if (err || !buf || buf.length < 12 || buf.length > 524288) return notFound(res);
+    var t = buf[0] === 0x89 && buf[1] === 0x50 ? 'image/png' : buf[0] === 0xff && buf[1] === 0xd8 ? 'image/jpeg'
+      : buf.toString('ascii', 8, 12) === 'WEBP' ? 'image/webp' : null;
+    if (!t) return notFound(res);
+    var svg = '<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="512" height="512" viewBox="0 0 100 100">' +
+      '<image x="0" y="0" width="100" height="100" preserveAspectRatio="xMidYMid meet" xlink:href="data:' + t + ';base64,' + buf.toString('base64') + '"/></svg>';
+    var body = new Buffer(svg, 'utf8');
+    var headers = { 'Content-Type': 'image/svg+xml', 'Content-Length': body.length, 'Cache-Control': 'public, max-age=3600' };
+    res.writeHead(200, headers);
+    res.end(req.method === 'HEAD' ? undefined : body);
+  });
+}
+
 function handleRequest(req, res) {
   if (req.method !== 'GET' && req.method !== 'HEAD') return notFound(res);
+  var lm = LOGO_PATH_RE.exec(url.parse(req.url || '').pathname || '');
+  if (lm) {
+    var file = iptvModule && iptvModule.logoPath(lm[1], lm[2]);
+    return file ? sendLogo(req, res, file) : notFound(res);
+  }
   var m = ICON_PATH_RE.exec(url.parse(req.url || '').pathname || '');
   if (!m || !APP_ID_RE.test(m[1]) || !appsModule) return notFound(res);
   appsModule.getIconPath(m[1], function (iconPath) {
@@ -138,6 +167,12 @@ function baseUrl() {
   return ip4 ? 'http://' + hostPort(ip4, port()) + '/icons/' : null;
 }
 
+// Where a channel's logo is reached from the LAN, or null as baseUrl is.
+function logoUrl(pl, logoId) {
+  var base = baseUrl();
+  return base && pl && logoId ? base.replace(/icons\/$/, 'logos/') + encodeURIComponent(pl) + '/' + logoId : null;
+}
+
 module.exports = {
   APP_ID_RE: APP_ID_RE,
   init: init,
@@ -146,6 +181,7 @@ module.exports = {
   start: start,
   stop: stop,
   baseUrl: baseUrl,
+  logoUrl: logoUrl,
   handleRequest: handleRequest,
   sendIconFile: sendIconFile
 };
