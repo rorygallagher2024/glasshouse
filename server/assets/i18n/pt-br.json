@@ -612,9 +612,7 @@
  "home.hint.desc": {"text": "Mova ou oculte blocos e fileiras. A tela inicial da LG é o último bloco em Apps.", "from": "Move or hide tiles and rows. LG's Home is the last tile in Apps."},
  "home.hint.title": {"text": "Mantenha OK pressionado para organizar", "from": "Hold OK to arrange"},
  "home.historyNote": {"text": "Os apps estão na ordem da LG. Com o Histórico ligado em Avançado, novos apps são posicionados conforme o uso de cada um.", "from": "Apps are in LG's order. With History switched on in Advanced, new apps are placed by how much each is used."},
- "home.isOff": {"text": "A tela inicial da LG é a tela inicial da TV", "from": "LG’s Home is the TV’s Home"},
  "home.isOffDesc": {"text": "Nada da LG é alterado: o Glasshouse Home fica sobre a tela inicial da LG enquanto ligado, e desligá-lo o remove.", "from": "Nothing of LG’s is changed: Glasshouse Home is laid over LG’s Home while on, and switching off takes it away."},
- "home.isOn": {"text": "O Glasshouse Home é a tela inicial da TV", "from": "Glasshouse Home is the TV’s Home"},
  "home.isOnDesc": {"text": "Ele abre no lugar da tela inicial da LG: com os botões Home e Voltar, e quando a TV desperta na tela inicial.", "from": "It opens in LG’s Home’s place: with the Home and Back buttons, and when the TV wakes on Home."},
  "home.isOnLgOpen": {"text": "A tela inicial da LG está aberta por enquanto. O Glasshouse Home volta quando outra coisa for aberta ou Home for pressionado.", "from": "LG’s Home is open for now. Glasshouse Home comes back when something else is opened, or Home is pressed."},
  "home.isOnPending": {"text": "Ligado, mas a tela inicial da LG ainda está no lugar dele. Desligar e ligar de novo faz outra tentativa.", "from": "Switched on, but LG’s Home is still in its place. Switching off and on again tries once more."},
@@ -755,7 +753,6 @@
  "home.sortRecent": {"text": "Aberto por último", "from": "Last opened"},
  "home.sortRecentDesc": {"text": "O bloco aberto por último vem primeiro, tenha sido aberto pelo Glasshouse Home ou não. Blocos ainda não abertos vêm depois, na ordem da fileira.", "from": "The tile opened last comes first, whether it was opened from Glasshouse Home or not. Tiles not yet opened follow in this row’s own order."},
  "home.title": {"text": "Glasshouse Home", "from": "Glasshouse Home"},
- "home.unavailable": {"text": "Indisponível nesta TV", "from": "Not available on this TV"},
  "home.wall.add": {"text": "Adicionar uma imagem", "from": "Add a picture"},
  "home.wall.choose": {"text": "Escolher uma imagem para {name}", "from": "Choose a picture for {name}"},
  "home.wall.chooseImage": {"text": "Escolha uma imagem JPEG, PNG ou WebP de até 25 MB.", "from": "Choose a JPEG, PNG or WebP image up to 25 MB."},
@@ -3260,5 +3257,10 @@
  "srv.homebar.install": {"text": "Não foi possível instalar o app do Glasshouse Bar.", "from": "Could not install Glasshouse Bar's app."},
  "srv.homebar.key": {"text": "Não foi possível atribuir o botão Home ao Glasshouse Bar.", "from": "Could not give the Home key to Glasshouse Bar."},
  "srv.homebar.keyBack": {"text": "Não foi possível devolver o botão Home à LG.", "from": "Could not give the Home key back to LG."},
- "home.layoutDescBar": {"text": "Quais apps e entradas da TV o Glasshouse Bar mostra, e em que ordem. Os apps em Mais apps ficam de fora.", "from": "Which of the TV’s apps and inputs Glasshouse Bar shows, and in what order. Apps in More apps are left out of it."}
+ "home.layoutDescBar": {"text": "Quais apps e entradas da TV o Glasshouse Bar mostra, e em que ordem. Os apps em Mais apps ficam de fora.", "from": "Which of the TV’s apps and inputs Glasshouse Bar shows, and in what order. Apps in More apps are left out of it."},
+ "home.lgHomeShort": {"text": "Tela inicial integrada da LG", "from": "LG’s built-in home screen"},
+ "home.ghShort": {"text": "Relógio, fileiras, fundos e prévia", "from": "Clock, rows, wallpapers & preview"},
+ "home.minimalShort": {"text": "Listas de texto simples sobre preto", "from": "Plain text lists on black"},
+ "home.bar.short": {"text": "Barra inferior sobre a imagem", "from": "Bottom bar over the picture"},
+ "home.customShort": {"text": "Seu próprio app web ou página", "from": "Your own web app or page"}
 }

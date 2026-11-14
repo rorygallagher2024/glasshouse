@@ -516,9 +516,7 @@
  "home.hint.desc": {"text": "Sposta o nascondi riquadri e righe. La Home di LG è l'ultimo riquadro in App.", "from": "Move or hide tiles and rows. LG's Home is the last tile in Apps."},
  "home.hint.title": {"text": "Tieni premuto OK per disporre", "from": "Hold OK to arrange"},
  "home.historyNote": {"text": "Le app sono nell'ordine di LG. Con Cronologia attiva in Avanzate, le nuove app vengono posizionate in base a quanto vengono usate.", "from": "Apps are in LG's order. With History switched on in Advanced, new apps are placed by how much each is used."},
- "home.isOff": {"text": "La Home di LG è la Home della TV", "from": "LG’s Home is the TV’s Home"},
  "home.isOffDesc": {"text": "Nulla di LG viene modificato: Glasshouse Home si sovrappone alla Home di LG mentre è attiva, e disattivandola viene tolta.", "from": "Nothing of LG’s is changed: Glasshouse Home is laid over LG’s Home while on, and switching off takes it away."},
- "home.isOn": {"text": "Glasshouse Home è la Home della TV", "from": "Glasshouse Home is the TV’s Home"},
  "home.isOnDesc": {"text": "Si apre al posto della Home di LG: con i tasti Home e Indietro, e quando la TV si risveglia sulla Home.", "from": "It opens in LG’s Home’s place: with the Home and Back buttons, and when the TV wakes on Home."},
  "home.isOnLgOpen": {"text": "Per ora è aperta la Home di LG. Glasshouse Home torna quando si apre qualcos'altro o si preme Home.", "from": "LG’s Home is open for now. Glasshouse Home comes back when something else is opened, or Home is pressed."},
  "home.isOnPending": {"text": "Attivata, ma al suo posto c'è ancora la Home di LG. Disattivando e riattivando si riprova.", "from": "Switched on, but LG’s Home is still in its place. Switching off and on again tries once more."},
@@ -633,7 +631,6 @@
  "home.sortRecent": {"text": "Ultima apertura", "from": "Last opened"},
  "home.sortRecentDesc": {"text": "Il riquadro aperto per ultimo va per primo, che sia stato aperto da Glasshouse Home o no. I riquadri non ancora aperti seguono nell'ordine proprio della riga.", "from": "The tile opened last comes first, whether it was opened from Glasshouse Home or not. Tiles not yet opened follow in this row’s own order."},
  "home.title": {"text": "Glasshouse Home", "from": "Glasshouse Home"},
- "home.unavailable": {"text": "Non disponibile su questa TV", "from": "Not available on this TV"},
  "home.wall.add": {"text": "Aggiungi un'immagine", "from": "Add a picture"},
  "home.wall.addPictures": {"text": "Aggiungi immagini", "from": "Add pictures"},
  "home.wall.choose": {"text": "Scegli un'immagine per {name}", "from": "Choose a picture for {name}"},
@@ -3274,5 +3271,10 @@
  "srv.homebar.install": {"text": "Impossibile installare l’app di Glasshouse Bar.", "from": "Could not install Glasshouse Bar's app."},
  "srv.homebar.key": {"text": "Impossibile assegnare il tasto Home a Glasshouse Bar.", "from": "Could not give the Home key to Glasshouse Bar."},
  "srv.homebar.keyBack": {"text": "Impossibile restituire il tasto Home a LG.", "from": "Could not give the Home key back to LG."},
- "home.layoutDescBar": {"text": "Quali app e ingressi del TV mostra Glasshouse Bar, e in che ordine. Le app in Altre app ne restano fuori.", "from": "Which of the TV’s apps and inputs Glasshouse Bar shows, and in what order. Apps in More apps are left out of it."}
+ "home.layoutDescBar": {"text": "Quali app e ingressi del TV mostra Glasshouse Bar, e in che ordine. Le app in Altre app ne restano fuori.", "from": "Which of the TV’s apps and inputs Glasshouse Bar shows, and in what order. Apps in More apps are left out of it."},
+ "home.lgHomeShort": {"text": "Schermata Home integrata di LG", "from": "LG’s built-in home screen"},
+ "home.ghShort": {"text": "Orologio, righe, sfondi e anteprima", "from": "Clock, rows, wallpapers & preview"},
+ "home.minimalShort": {"text": "Elenchi di solo testo su nero", "from": "Plain text lists on black"},
+ "home.bar.short": {"text": "Barra in basso sopra l’immagine", "from": "Bottom bar over the picture"},
+ "home.customShort": {"text": "La tua app web o pagina", "from": "Your own web app or page"}
 }

@@ -112,12 +112,112 @@ function renderHomeCustom(autoVal) {
   if (box) box.hidden = !(glasshouseOn || autoVal !== undefined || (layout && !layout.hidden) || (tiles && !tiles.hidden));
 }
 
+function homePreviewTiles(count) {
+  if (!homeCat || !homeCat.apps || !homeCat.order || !homeCat.order.app) return [];
+  const hidden = new Set((homeLayout && homeLayout.hidden && homeLayout.hidden.app) || []);
+  const folder = new Set((homeLayout && homeLayout.folder) || []);
+  const byId = new Map(homeCat.apps.map(a => [a.id, a]));
+  const out = [];
+  for (const id of homeCat.order.app) {
+    if (id === 'lg-home' || hidden.has(id) || folder.has(id)) continue;
+    const app = byId.get(id);
+    if (app) out.push(app);
+    if (out.length >= count) break;
+  }
+  return out;
+}
+
+function renderLauncherPreview(kind, st) {
+  const clock = st && st.clockHour12 ? '9:40' : '21:40';
+  if (kind === 'lg') {
+    return `<span class="hm-s hm-s-lg">
+      <span class="hm-lg-top"><i></i><i></i><i></i></span>
+      <span class="hm-lg-hero"><span></span><span></span></span>
+      <span class="hm-lg-cards"><i></i><i></i><i></i><i></i></span>
+      <span class="hm-lg-apps"><i class="a1"></i><i class="a2"></i><i class="a3"></i><i class="a4"></i><i class="a5"></i><i class="a6"></i></span>
+    </span>`;
+  }
+  if (kind === 'gh') {
+    const presets = (st && st.colourPresets) || [];
+    const c = (homeLayout && homeLayout.colours) || homeOwnLook(presets) || { text: '#ece7df', accent: '#e9ad55' };
+    const alt = !!(homeLayout && homeLayout.view === 'alternative');
+    const bottom = !!(homeLayout && homeLayout.rowsBottom);
+    const preview = !!(homeLayout && homeLayout.livePreview);
+    const showClock = !homeLayout || homeLayout.showClock !== false;
+    const apps = homePreviewTiles(4);
+    const tiles = [0, 1, 2, 3].map(i => {
+      const app = apps[i];
+      const cls = `hm-gh-tile${i === 0 ? ' focus' : ''}`;
+      return app && app.icon
+        ? `<span class="${cls}"><img src="${esc(api(app.icon))}" alt=""></span>`
+        : `<span class="${cls}"><i class="hm-gh-glyph"></i></span>`;
+    }).join('');
+    const inputs = [0, 1, 2].map(() => `<span class="hm-gh-tile inp"><i></i></span>`).join('');
+    return `<span class="hm-s hm-s-gh${alt ? ' alt' : ''}${bottom ? ' bottom' : ''}" style="--look-text:${c.text};--look-accent:${c.accent}">
+      <span class="hm-gh-head">
+        ${showClock ? `<span class="hm-gh-clock">${clock}</span>` : '<span></span>'}
+        ${preview ? `<span class="hm-gh-pip"><i></i></span>` : ''}
+      </span>
+      <span class="hm-gh-rows">
+        <span class="hm-gh-lbl">${esc(t('home.row.apps', 'Apps'))}</span>
+        <span class="hm-gh-row">${tiles}</span>
+        <span class="hm-gh-lbl">${esc(t('home.row.inputs', 'Inputs'))}</span>
+        <span class="hm-gh-row">${inputs}</span>
+      </span>
+    </span>`;
+  }
+  if (kind === 'minimal') {
+    return `<span class="hm-s hm-s-minimal">
+      <span class="hm-min-clock">${clock}</span>
+      <span class="hm-min-tabs"><span class="on">${esc(t('home.row.apps', 'Apps'))}</span><span>${esc(t('home.row.inputs', 'Inputs'))}</span></span>
+      <span class="hm-min-list"><i class="on"></i><i></i><i></i><i></i></span>
+    </span>`;
+  }
+  if (kind === 'bar') {
+    const apps = homePreviewTiles(4);
+    const tiles = [0, 1, 2, 3].map(i => {
+      const app = apps[i];
+      const cls = `hm-bar-tile${i === 0 ? ' focus' : ''}`;
+      return app && app.icon
+        ? `<span class="${cls}"><img src="${esc(api(app.icon))}" alt=""></span>`
+        : `<span class="${cls}"><i></i></span>`;
+    }).join('');
+    return `<span class="hm-s hm-s-bar">
+      <span class="hm-bar-scene"></span>
+      <span class="hm-bar-shade"></span>
+      <span class="hm-bar-clock">${clock}</span>
+      <span class="hm-bar-dock">
+        ${tiles}
+        <span class="hm-bar-gap"></span>
+        <span class="hm-bar-tile inp now"><i></i></span>
+      </span>
+    </span>`;
+  }
+  const own = homeLaunchersKept().find(l => l.id === 'own');
+  let label = '&lt;/&gt;';
+  if (own) {
+    if (own.kind === 'web' && own.address) {
+      try { label = esc(new URL(own.address).host); } catch (e) { label = esc(own.address); }
+    } else {
+      label = esc(own.title || 'Custom');
+    }
+  }
+  return `<span class="hm-s hm-s-custom${own ? ' has' : ''}">
+    <span class="hm-cus-win">
+      <span class="hm-cus-bar"><i></i><i></i><i></i></span>
+      <span class="hm-cus-body">
+        <span class="hm-cus-tag">${label}</span>
+        <span class="hm-cus-blocks"><i></i><i></i><i></i></span>
+      </span>
+    </span>
+  </span>`;
+}
+
 function renderHome() {
   const st = homeStatus;
-  const state = q('home-state');
   const desc = q('home-state-desc');
   const btn = q('home-switch');
-  if (!st || !state) return;
+  if (!st || !desc) return;
   // A TV without Glasshouse Home (a B8) has the tab for LG's Home's options alone.
   const glasshouse = st.supported.ok || st.enabled || st.restorePending;
   const hero = q('home-hero');
@@ -126,36 +226,26 @@ function renderHome() {
   const restartNote = q('home-restart-note');
   if (restartNote) restartNote.hidden = !st.supported.restartsApps;
   if (st.restorePending) {
-    state.textContent = t('home.restorePending', 'LG Home restoration is incomplete');
     desc.textContent = t('home.restoreRetry', 'Retry restoring LG Home before switching Glasshouse Home on again.');
   } else if (!st.supported.ok) {
-    state.textContent = t('home.unavailable', 'Not available on this TV');
     desc.textContent = st.supported.reason || '';
   } else if (homeLauncherOn()) {
-    state.textContent = t('home.launcher.isOn', '{title} is the TV’s Home', { title: homeLauncherChosen().title });
     const title = homeLauncherChosen().title;
     desc.textContent = st.lgHomeOpen
       ? t('home.launcher.isOnLgOpenTitle', 'LG’s Home is open for now. {title} comes back when something else is opened, or Home is pressed.', { title })
       : t('home.launcher.isOnDescTitle', '{title} opens in LG’s Home’s place: with the Home and Back buttons, and when the TV wakes on Home.', { title });
   } else if (homeBarOn()) {
-    state.textContent = t('home.bar.isOn', 'Glasshouse Bar opens on Home');
     desc.textContent = t('home.bar.isOnDesc', 'The Home button opens a row of your apps and inputs over the picture; Back or Home closes it. LG’s Home stays in its place, and its tile is at the end of the apps.');
   } else if (st.enabled) {
-    state.textContent = t('home.isOn', 'Glasshouse Home is the TV’s Home');
     desc.textContent = st.lgHomeOpen
       ? t('home.isOnLgOpen', 'LG’s Home is open for now. Glasshouse Home comes back when something else is opened, or Home is pressed.')
       : st.active
         ? t('home.isOnDesc', 'It opens in LG’s Home’s place: with the Home and Back buttons, and when the TV wakes on Home.')
         : t('home.isOnPending', 'Switched on, but LG’s Home is still in its place. Switching off and on again tries once more.');
   } else {
-    state.textContent = t('home.isOff', 'LG’s Home is the TV’s Home');
     desc.textContent = t('home.isOffDesc', 'Nothing of LG’s is changed: Glasshouse Home is laid over LG’s Home while on, and switching off takes it away.');
   }
-  const dot = q('home-dot');
-  // Orange only when something needs attention: switched on but not in LG's
-  // Home's place, or a switch-off left unfinished. LG's Home opened on purpose
-  // (its tile, or holding Home) leaves Glasshouse Home the TV's Home.
-  if (dot) dot.className = 'ps-dot' + (st.restorePending ? ' warn' : st.enabled ? (st.active || st.lgHomeOpen ? ' good' : ' warn') : '');
+  desc.className = 'pv-sub' + ((st.restorePending || (st.enabled && !st.active && !st.lgHomeOpen)) ? ' warn' : '');
   const more = q('home-more');
   if (more) {
     // Glasshouse Bar shows the same Apps and Inputs rows as a launcher does.
@@ -283,39 +373,56 @@ function renderHome() {
     hide.disabled = !homeWritable();
   }
   /*
-   * The choice of launcher: the one in use marked, and one whose press waits
-   * for a second marked as waiting. Each button keeps its name.
+   * The choice of launcher: each as a 16:9 miniature TV screen with its name
+   * and a short line beneath. The active one and a card awaiting confirmation
+   * carry a badge on the screen itself so the launcher's name stays visible.
    */
   const lgBtn = q('home-mode-lg');
   const chosenId = homeLauncherOn() ? st.launchers.chosen : null;
   const again = t('home.pressAgain', 'Press again to confirm');
-  const choice = (el, name, on, armed, hidden, disabled) => {
+  const inUse = t('ss.inUse', 'In use');
+  const ownKept = homeLaunchersKept().find(l => l.id === 'own');
+  let customSub = t('home.customShort', 'Your own web app or page');
+  if (ownKept) {
+    if (ownKept.kind === 'web' && ownKept.address) {
+      try { customSub = new URL(ownKept.address).host; } catch (e) { customSub = ownKept.address; }
+    } else {
+      customSub = ownKept.title || customSub;
+    }
+  }
+  const choice = (el, kind, name, sub, on, armed, hidden, disabled) => {
     if (!el) return;
     el.hidden = hidden;
     el.disabled = disabled;
-    el.className = on ? 'on' : armed ? 'warn' : '';
-    el.textContent = armed ? again : name;
+    el.className = 'hm-card' + (on ? ' on' : armed ? ' warn' : '');
+    const badge = armed ? again : on ? inUse : '';
+    el.innerHTML = `<span class="hm-screen">
+        ${renderLauncherPreview(kind, st)}
+        <span class="hm-badge"${badge ? '' : ' hidden'}>${esc(badge)}</span>
+      </span>
+      <span class="hm-meta">
+        <span class="hm-name">${esc(name)}</span>
+        <span class="hm-sub">${esc(sub)}</span>
+      </span>`;
   };
   if (btn) {
     const wantOn = !(st.enabled || st.restorePending);
     const armed = homeArmed === (wantOn ? 'on' : 'off');
     if (st.restorePending) {
       if (lgBtn) lgBtn.hidden = true;
-      btn.disabled = !homeWritable();
-      btn.className = armed ? 'warn' : '';
-      btn.textContent = armed ? again : t('home.retryRestore', 'Retry restoring LG Home');
+      choice(btn, 'gh', t('home.retryRestore', 'Retry restoring LG Home'), t('home.restorePending', 'LG Home restoration is incomplete'), false, armed, false, !homeWritable());
     } else {
-      choice(lgBtn, t('home.lgHome', 'LG Home'), !st.enabled && !homeBarOn(), (st.enabled || homeBarOn()) && (armed || homeArmed === 'bar:off'), false, !homeWritable());
-      choice(btn, t('home.title', 'Glasshouse Home'), st.enabled && !chosenId, !st.enabled && armed, false, !homeWritable());
+      choice(lgBtn, 'lg', t('home.lgHome', 'LG Home'), t('home.lgHomeShort', 'LG\u2019s built-in home screen'), !st.enabled && !homeBarOn(), (st.enabled || homeBarOn()) && (armed || homeArmed === 'bar:off'), false, !homeWritable());
+      choice(btn, 'gh', t('home.title', 'Glasshouse Home'), t('home.ghShort', 'Clock, rows, wallpapers & preview'), st.enabled && !chosenId, !st.enabled && armed, false, !homeWritable());
     }
   }
   const unavailable = !!st.restorePending || !st.supported.ok;
-  choice(q('home-mode-minimal'), t('home.minimalName', 'Glasshouse Minimal'), chosenId === 'minimal', homeArmed === 'use:minimal',
+  choice(q('home-mode-minimal'), 'minimal', t('home.minimalName', 'Glasshouse Minimal'), t('home.minimalShort', 'Plain text lists on black'), chosenId === 'minimal', homeArmed === 'use:minimal',
     unavailable || !homeLaunchersAll().some(l => l.id === 'minimal'), !homeWritable() || homeLauncherBusy);
   // Offered where the input bar is: both are overlays over the picture.
-  choice(q('home-mode-bar'), t('home.bar.name', 'Glasshouse Bar'), homeBarOn(), homeArmed === 'bar:on',
+  choice(q('home-mode-bar'), 'bar', t('home.bar.name', 'Glasshouse Bar'), t('home.bar.short', 'Bottom bar over the picture'), homeBarOn(), homeArmed === 'bar:on',
     !st.bar || !st.bar.offered || !!st.restorePending, !homeWritable() || homeLauncherBusy);
-  choice(q('home-mode-launcher'), t('home.custom', 'Custom'), !!chosenId && chosenId !== 'minimal', homeArmed === 'use:own',
+  choice(q('home-mode-launcher'), 'custom', t('home.custom', 'Custom'), customSub, !!chosenId && chosenId !== 'minimal', homeArmed === 'use:own',
     unavailable, !homeWritable() || homeLauncherBusy);
   const hist = q('home-history-note');
   if (hist) hist.hidden = st.history;
@@ -727,7 +834,13 @@ async function homeSwitch() {
   const activeBtn = want === 'off' && !homeStatus.restorePending && lgBtn ? lgBtn : btn;
   if (btn) btn.disabled = true;
   if (lgBtn) lgBtn.disabled = true;
-  if (activeBtn) activeBtn.textContent = t('apps.service.updating', 'Updating…');
+  const badge = activeBtn && activeBtn.querySelector('.hm-badge');
+  if (badge) {
+    badge.textContent = t('apps.service.updating', 'Updating…');
+    badge.hidden = false;
+  } else if (activeBtn) {
+    activeBtn.textContent = t('apps.service.updating', 'Updating…');
+  }
   try {
     // Glasshouse Home's own button: the custom launcher left set up, but not chosen.
     if (want === 'on' && homeStatus.launchers && homeStatus.launchers.chosen) await homePost('/api/home/launcher', { choose: false });

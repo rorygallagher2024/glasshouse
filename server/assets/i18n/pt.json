@@ -494,9 +494,7 @@
  "home.hint.desc": {"text": "Mova ou oculte mosaicos e filas. O ecrã inicial da LG é o último mosaico em Aplicações.", "from": "Move or hide tiles and rows. LG's Home is the last tile in Apps."},
  "home.hint.title": {"text": "Mantenha OK premido para organizar", "from": "Hold OK to arrange"},
  "home.historyNote": {"text": "As aplicações estão pela ordem da LG. Com o Histórico ativado em Avançadas, as novas aplicações são colocadas conforme o uso de cada uma.", "from": "Apps are in LG's order. With History switched on in Advanced, new apps are placed by how much each is used."},
- "home.isOff": {"text": "O ecrã inicial da LG é o Início da TV", "from": "LG’s Home is the TV’s Home"},
  "home.isOffDesc": {"text": "Nada da LG é alterado: o Glasshouse Home sobrepõe-se ao ecrã inicial da LG enquanto ativo, e desativá-lo retira-o.", "from": "Nothing of LG’s is changed: Glasshouse Home is laid over LG’s Home while on, and switching off takes it away."},
- "home.isOn": {"text": "O Glasshouse Home é o Início da TV", "from": "Glasshouse Home is the TV’s Home"},
  "home.isOnDesc": {"text": "Abre no lugar do ecrã inicial da LG: com os botões Início e Retroceder, e quando a TV acorda no ecrã inicial.", "from": "It opens in LG’s Home’s place: with the Home and Back buttons, and when the TV wakes on Home."},
  "home.isOnLgOpen": {"text": "O ecrã inicial da LG está aberto por agora. O Glasshouse Home volta quando outra coisa for aberta ou Início for premido.", "from": "LG’s Home is open for now. Glasshouse Home comes back when something else is opened, or Home is pressed."},
  "home.isOnPending": {"text": "Ativado, mas o ecrã inicial da LG continua no seu lugar. Desativar e voltar a ativar tenta mais uma vez.", "from": "Switched on, but LG’s Home is still in its place. Switching off and on again tries once more."},
@@ -593,7 +591,6 @@
  "home.sortRecent": {"text": "Última abertura", "from": "Last opened"},
  "home.sortRecentDesc": {"text": "O último mosaico aberto fica em primeiro, quer tenha sido aberto a partir do Glasshouse Home ou não. Os mosaicos ainda não abertos seguem a ordem própria desta fila.", "from": "The tile opened last comes first, whether it was opened from Glasshouse Home or not. Tiles not yet opened follow in this row’s own order."},
  "home.title": {"text": "Glasshouse Home", "from": "Glasshouse Home"},
- "home.unavailable": {"text": "Não disponível nesta TV", "from": "Not available on this TV"},
  "home.wall.add": {"text": "Adicionar uma imagem", "from": "Add a picture"},
  "home.wall.choose": {"text": "Escolher uma imagem para {name}", "from": "Choose a picture for {name}"},
  "home.wall.chooseImage": {"text": "Escolha uma imagem JPEG, PNG ou WebP até 25 MB.", "from": "Choose a JPEG, PNG or WebP image up to 25 MB."},
@@ -3260,5 +3257,10 @@
  "srv.homebar.install": {"text": "Não foi possível instalar a aplicação do Glasshouse Bar.", "from": "Could not install Glasshouse Bar's app."},
  "srv.homebar.key": {"text": "Não foi possível atribuir a tecla Home ao Glasshouse Bar.", "from": "Could not give the Home key to Glasshouse Bar."},
  "srv.homebar.keyBack": {"text": "Não foi possível devolver a tecla Home à LG.", "from": "Could not give the Home key back to LG."},
- "home.layoutDescBar": {"text": "Que aplicações e entradas da TV o Glasshouse Bar mostra, e por que ordem. As aplicações em Mais aplicações ficam de fora.", "from": "Which of the TV’s apps and inputs Glasshouse Bar shows, and in what order. Apps in More apps are left out of it."}
+ "home.layoutDescBar": {"text": "Que aplicações e entradas da TV o Glasshouse Bar mostra, e por que ordem. As aplicações em Mais aplicações ficam de fora.", "from": "Which of the TV’s apps and inputs Glasshouse Bar shows, and in what order. Apps in More apps are left out of it."},
+ "home.lgHomeShort": {"text": "Ecrã inicial integrado da LG", "from": "LG’s built-in home screen"},
+ "home.ghShort": {"text": "Relógio, filas, fundos e pré-visualização", "from": "Clock, rows, wallpapers & preview"},
+ "home.minimalShort": {"text": "Listas de texto simples sobre preto", "from": "Plain text lists on black"},
+ "home.bar.short": {"text": "Barra inferior sobre a imagem", "from": "Bottom bar over the picture"},
+ "home.customShort": {"text": "A tua própria app web ou página", "from": "Your own web app or page"}
 }

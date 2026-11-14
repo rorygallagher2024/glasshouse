@@ -497,9 +497,7 @@
  "home.hint.desc": {"text": "انقل أو أخفِ الأيقونات والصفوف. شاشة LG الرئيسية موجودة كآخر أيقونة في صف التطبيقات.", "from": "Move or hide tiles and rows. LG's Home is the last tile in Apps."},
  "home.hint.title": {"text": "اضغط مطولاً على OK للترتيب", "from": "Hold OK to arrange"},
  "home.historyNote": {"text": "التطبيقات مرتبة حسب ترتيب LG. عند تفعيل السجل في الإعدادات المتقدمة، توضع التطبيقات الجديدة حسب الأكثر استخداماً.", "from": "Apps are in LG's order. With History switched on in Advanced, new apps are placed by how much each is used."},
- "home.isOff": {"text": "شاشة LG هي الشاشة الرئيسية الحالية للتلفاز", "from": "LG’s Home is the TV’s Home"},
  "home.isOffDesc": {"text": "لا يتغير شيء في نظام LG: تُعرض واجهة Glasshouse فوق شاشة LG عند تفعيلها، وإيقافها يزيلها فوراً.", "from": "Nothing of LG’s is changed: Glasshouse Home is laid over LG’s Home while on, and switching off takes it away."},
- "home.isOn": {"text": "واجهة Glasshouse هي الشاشة الرئيسية للتلفاز", "from": "Glasshouse Home is the TV’s Home"},
  "home.isOnDesc": {"text": "تفتح بدلاً من شاشة LG الرئيسية عند الضغط على زر الرئيسية (Home) أو الرجوع، وعند تشغيل التلفاز.", "from": "It opens in LG’s Home’s place: with the Home and Back buttons, and when the TV wakes on Home."},
  "home.isOnLgOpen": {"text": "شاشة LG الرئيسية مفتوحة مؤقتاً الآن. ستعود واجهة Glasshouse عند فتح أي شيء آخر أو الضغط على زر الرئيسية.", "from": "LG’s Home is open for now. Glasshouse Home comes back when something else is opened, or Home is pressed."},
  "home.isOnPending": {"text": "مفعّلة، لكن شاشة LG ما زالت في مكانها. جرب إيقافها ثم تشغيلها مرة أخرى.", "from": "Switched on, but LG’s Home is still in its place. Switching off and on again tries once more."},
@@ -596,7 +594,6 @@
  "home.sortRecent": {"text": "آخر ما فُتح", "from": "Last opened"},
  "home.sortRecentDesc": {"text": "تظهر الأيقونة التي فُتحت أخيراً في المقدمة، سواء فُتحت من واجهة Glasshouse أو من غيرها.", "from": "The tile opened last comes first, whether it was opened from Glasshouse Home or not. Tiles not yet opened follow in this row’s own order."},
  "home.title": {"text": "واجهة Glasshouse الرئيسية", "from": "Glasshouse Home"},
- "home.unavailable": {"text": "غير متاح على هذا التلفاز", "from": "Not available on this TV"},
  "home.wall.add": {"text": "إضافة صورة", "from": "Add a picture"},
  "home.wall.choose": {"text": "اختر صورة لـ {name}", "from": "Choose a picture for {name}"},
  "home.wall.chooseImage": {"text": "اختر صورة بصيغة JPEG أو PNG أو WebP بحجم أقصى 25 ميجابايت.", "from": "Choose a JPEG, PNG or WebP image up to 25 MB."},
@@ -3260,5 +3257,10 @@
  "srv.homebar.install": {"text": "تعذّر تثبيت تطبيق Glasshouse Bar.", "from": "Could not install Glasshouse Bar's app."},
  "srv.homebar.key": {"text": "تعذّر إسناد زر Home إلى Glasshouse Bar.", "from": "Could not give the Home key to Glasshouse Bar."},
  "srv.homebar.keyBack": {"text": "تعذّر إعادة زر Home إلى LG.", "from": "Could not give the Home key back to LG."},
- "home.layoutDescBar": {"text": "أي تطبيقات التلفزيون ومداخله يعرضها Glasshouse Bar وبأي ترتيب. تُستثنى التطبيقات الموجودة في «المزيد من التطبيقات».", "from": "Which of the TV’s apps and inputs Glasshouse Bar shows, and in what order. Apps in More apps are left out of it."}
+ "home.layoutDescBar": {"text": "أي تطبيقات التلفزيون ومداخله يعرضها Glasshouse Bar وبأي ترتيب. تُستثنى التطبيقات الموجودة في «المزيد من التطبيقات».", "from": "Which of the TV’s apps and inputs Glasshouse Bar shows, and in what order. Apps in More apps are left out of it."},
+ "home.lgHomeShort": {"text": "شاشة LG الرئيسية المدمجة", "from": "LG’s built-in home screen"},
+ "home.ghShort": {"text": "ساعة وصفوف وخلفيات ومعاينة", "from": "Clock, rows, wallpapers & preview"},
+ "home.minimalShort": {"text": "قوائم نصية بسيطة على خلفية سوداء", "from": "Plain text lists on black"},
+ "home.bar.short": {"text": "شريط سفلي فوق الصورة", "from": "Bottom bar over the picture"},
+ "home.customShort": {"text": "تطبيق ويب أو صفحة خاصة بك", "from": "Your own web app or page"}
 }

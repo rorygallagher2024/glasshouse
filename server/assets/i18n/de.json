@@ -295,17 +295,9 @@
     "text": "Apps stehen in LGs Reihenfolge. Mit eingeschalteter Historie unter Erweitert werden neue Apps nach Nutzung einsortiert.",
     "from": "Apps are in LG's order. With History switched on in Advanced, new apps are placed by how much each is used."
   },
-  "home.isOff": {
-    "text": "LGs Home ist der Startbildschirm des TVs",
-    "from": "LG’s Home is the TV’s Home"
-  },
   "home.isOffDesc": {
     "text": "An LGs Home wird nichts geändert: Glasshouse Home liegt darüber, solange es eingeschaltet ist; Ausschalten nimmt es wieder weg.",
     "from": "Nothing of LG’s is changed: Glasshouse Home is laid over LG’s Home while on, and switching off takes it away."
-  },
-  "home.isOn": {
-    "text": "Glasshouse Home ist der Startbildschirm des TVs",
-    "from": "Glasshouse Home is the TV’s Home"
   },
   "home.isOnDesc": {
     "text": "Es öffnet sich an LGs Home statt: mit Home- und Zurück-Taste und wenn der TV auf Home aufwacht.",
@@ -538,10 +530,6 @@
   "home.title": {
     "text": "Glasshouse Home",
     "from": "Glasshouse Home"
-  },
-  "home.unavailable": {
-    "text": "Auf diesem TV nicht verfügbar",
-    "from": "Not available on this TV"
   },
   "home.wall.chooseImage": {
     "text": "Ein Bild als JPEG, PNG oder WebP bis 25 MB wählen.",
@@ -913,5 +901,10 @@
  "srv.homebar.install": {"text": "Die App von Glasshouse Bar konnte nicht installiert werden.", "from": "Could not install Glasshouse Bar's app."},
  "srv.homebar.key": {"text": "Die Home-Taste konnte nicht an Glasshouse Bar gegeben werden.", "from": "Could not give the Home key to Glasshouse Bar."},
  "srv.homebar.keyBack": {"text": "Die Home-Taste konnte nicht an LG zurückgegeben werden.", "from": "Could not give the Home key back to LG."},
- "home.layoutDescBar": {"text": "Welche Apps und Eingänge des TVs Glasshouse Bar zeigt, und in welcher Reihenfolge. Apps in „Weitere Apps“ fehlen darin.", "from": "Which of the TV’s apps and inputs Glasshouse Bar shows, and in what order. Apps in More apps are left out of it."}
+ "home.layoutDescBar": {"text": "Welche Apps und Eingänge des TVs Glasshouse Bar zeigt, und in welcher Reihenfolge. Apps in „Weitere Apps“ fehlen darin.", "from": "Which of the TV’s apps and inputs Glasshouse Bar shows, and in what order. Apps in More apps are left out of it."},
+ "home.lgHomeShort": {"text": "Integrierter LG-Startbildschirm", "from": "LG’s built-in home screen"},
+ "home.ghShort": {"text": "Uhr, Reihen, Hintergrundbilder und Vorschau", "from": "Clock, rows, wallpapers & preview"},
+ "home.minimalShort": {"text": "Schlichte Textlisten auf Schwarz", "from": "Plain text lists on black"},
+ "home.bar.short": {"text": "Untere Leiste über dem Bild", "from": "Bottom bar over the picture"},
+ "home.customShort": {"text": "Eigene Web-App oder Webseite", "from": "Your own web app or page"}
 }

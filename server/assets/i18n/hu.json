@@ -446,9 +446,7 @@
  "home.hint.desc": {"text": "Csempék és sorok mozgatása vagy elrejtése. Az LG Kezdőképernyő az Alkalmazások sor utolsó csempéje.", "from": "Move or hide tiles and rows. LG's Home is the last tile in Apps."},
  "home.hint.title": {"text": "Az elrendezéshez tartsa lenyomva az OK gombot", "from": "Hold OK to arrange"},
  "home.historyNote": {"text": "Az alkalmazások az LG sorrendjében vannak. Ha a Speciális részben az Előzmények be van kapcsolva, az új alkalmazások használati gyakoriság szerint kerülnek a helyükre.", "from": "Apps are in LG's order. With History switched on in Advanced, new apps are placed by how much each is used."},
- "home.isOff": {"text": "Az LG Kezdőképernyő a TV kezdőképernyője", "from": "LG’s Home is the TV’s Home"},
  "home.isOffDesc": {"text": "Az LG rendszerében semmi sem módosul: a Glasshouse Home bekapcsolt állapotban az LG kezdőképernyője helyett jelenik meg, kikapcsolásakor pedig visszaadja a helyét.", "from": "Nothing of LG’s is changed: Glasshouse Home is laid over LG’s Home while on, and switching off takes it away."},
- "home.isOn": {"text": "A Glasshouse Home a TV kezdőképernyője", "from": "Glasshouse Home is the TV’s Home"},
  "home.isOnDesc": {"text": "Az LG kezdőképernyője helyett nyílik meg a Kezdőképernyő és a Vissza gomb használatakor, illetve ha a TV bekapcsoláskor a kezdőképernyőt jeleníti meg.", "from": "It opens in LG’s Home’s place: with the Home and Back buttons, and when the TV wakes on Home."},
  "home.isOnLgOpen": {"text": "Egyelőre az LG Kezdőképernyő van megnyitva. A Glasshouse Home visszatér, ha valami más nyílik meg, vagy megnyomják a Kezdőképernyő gombot.", "from": "LG’s Home is open for now. Glasshouse Home comes back when something else is opened, or Home is pressed."},
  "home.isOnPending": {"text": "A funkció be van kapcsolva, de még az LG kezdőképernyője látható. Kapcsolja ki, majd be a funkciót az újrapróbáláshoz.", "from": "Switched on, but LG’s Home is still in its place. Switching off and on again tries once more."},
@@ -505,7 +503,6 @@
  "home.sortRecent": {"text": "Legutóbb megnyitott", "from": "Last opened"},
  "home.sortRecentDesc": {"text": "A legutóbb megnyitott csempe kerül előre, akár a Glasshouse Home-ról nyitották meg, akár nem. A még meg nem nyitott csempék a sor saját sorrendjében következnek.", "from": "The tile opened last comes first, whether it was opened from Glasshouse Home or not. Tiles not yet opened follow in this row’s own order."},
  "home.title": {"text": "Glasshouse Home", "from": "Glasshouse Home"},
- "home.unavailable": {"text": "Ezen a TV-n nem érhető el", "from": "Not available on this TV"},
  "home.wall.chooseImage": {"text": "Válasszon legfeljebb 25 MB-os JPEG, PNG vagy WebP képet.", "from": "Choose a JPEG, PNG or WebP image up to 25 MB."},
  "home.wall.slotAfternoon": {"text": "Délután", "from": "Afternoon"},
  "home.wall.slotEvening": {"text": "Este", "from": "Evening"},
@@ -3274,5 +3271,10 @@
  "srv.homebar.install": {"text": "Nem sikerült telepíteni a Glasshouse Bar alkalmazását.", "from": "Could not install Glasshouse Bar's app."},
  "srv.homebar.key": {"text": "Nem sikerült a Home gombot a Glasshouse Barhoz rendelni.", "from": "Could not give the Home key to Glasshouse Bar."},
  "srv.homebar.keyBack": {"text": "Nem sikerült visszaadni a Home gombot az LG-nek.", "from": "Could not give the Home key back to LG."},
- "home.layoutDescBar": {"text": "A TV mely alkalmazásait és bemeneteit mutatja a Glasshouse Bar, és milyen sorrendben. A További alkalmazásokban lévők kimaradnak.", "from": "Which of the TV’s apps and inputs Glasshouse Bar shows, and in what order. Apps in More apps are left out of it."}
+ "home.layoutDescBar": {"text": "A TV mely alkalmazásait és bemeneteit mutatja a Glasshouse Bar, és milyen sorrendben. A További alkalmazásokban lévők kimaradnak.", "from": "Which of the TV’s apps and inputs Glasshouse Bar shows, and in what order. Apps in More apps are left out of it."},
+ "home.lgHomeShort": {"text": "Az LG beépített kezdőképernyője", "from": "LG’s built-in home screen"},
+ "home.ghShort": {"text": "Óra, sorok, hátterek és előnézet", "from": "Clock, rows, wallpapers & preview"},
+ "home.minimalShort": {"text": "Egyszerű szöveges listák feketén", "from": "Plain text lists on black"},
+ "home.bar.short": {"text": "Alsó sáv a kép fölött", "from": "Bottom bar over the picture"},
+ "home.customShort": {"text": "Saját webes alkalmazás vagy oldal", "from": "Your own web app or page"}
 }

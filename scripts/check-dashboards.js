@@ -2155,13 +2155,16 @@ async function visitHomeLauncher(browser, base, problems) {
     await route.fulfill({ contentType: 'application/json', body: JSON.stringify(body) });
   });
   const keptRow = title => page.locator('#home-launchers .prot-row', { hasText: title });
-  const stateNames = re => page.waitForFunction(r => new RegExp(r).test(document.getElementById('home-state').textContent), re.source);
+  const stateNames = re => page.waitForFunction(r => new RegExp(r).test(document.getElementById('home-state-desc').textContent), re.source);
   const marked = async id => /\bon\b/.test(await page.locator('#' + id).getAttribute('class'));
   try {
     await page.goto(base + '/?tab=home');
-    await page.waitForFunction(() => typeof homeStatus !== 'undefined' && homeStatus && document.getElementById('home-mode-minimal').textContent === 'Glasshouse Minimal');
+    await page.waitForFunction(() => {
+      const name = document.querySelector('#home-mode-minimal .hm-name');
+      return typeof homeStatus !== 'undefined' && homeStatus && name && name.textContent === 'Glasshouse Minimal';
+    });
     // Those shown: Glasshouse Bar is offered only where the input bar is.
-    const names = await page.locator('#home-mode-btns button:not([hidden])').allTextContents();
+    const names = await page.locator('#home-mode-btns button:not([hidden]) .hm-name').allTextContents();
     if (names.join() !== 'LG Home,Glasshouse Home,Glasshouse Minimal,Custom') problems.push('Home launcher: the choices read ' + names.join());
     if (await page.locator('#home-launcher').isVisible()) problems.push('Home launcher: Custom\'s settings showed with Glasshouse Home chosen');
     // Custom with none set up opens its settings, and chooses nothing.

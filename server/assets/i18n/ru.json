@@ -446,9 +446,7 @@
  "home.hint.desc": {"text": "Перемещение и скрытие плиток и рядов. Главный экран LG — последняя плитка в ряду «Приложения».", "from": "Move or hide tiles and rows. LG's Home is the last tile in Apps."},
  "home.hint.title": {"text": "Удерживайте OK для расстановки", "from": "Hold OK to arrange"},
  "home.historyNote": {"text": "Приложения идут в порядке LG. Если в разделе «Дополнительно» включена история, новые приложения размещаются по частоте использования.", "from": "Apps are in LG's order. With History switched on in Advanced, new apps are placed by how much each is used."},
- "home.isOff": {"text": "Главный экран телевизора — LG Home", "from": "LG’s Home is the TV’s Home"},
  "home.isOffDesc": {"text": "Ничего из LG не изменено: Glasshouse Home накладывается поверх главного экрана LG, пока включен, а при выключении исчезает.", "from": "Nothing of LG’s is changed: Glasshouse Home is laid over LG’s Home while on, and switching off takes it away."},
- "home.isOn": {"text": "Главный экран телевизора — Glasshouse Home", "from": "Glasshouse Home is the TV’s Home"},
  "home.isOnDesc": {"text": "Открывается вместо главного экрана LG: по кнопкам Home и «Назад», а также когда телевизор включается на главном экране.", "from": "It opens in LG’s Home’s place: with the Home and Back buttons, and when the TV wakes on Home."},
  "home.isOnLgOpen": {"text": "Пока открыт главный экран LG. Glasshouse Home вернется, когда откроется что-то другое или будет нажата кнопка Home.", "from": "LG’s Home is open for now. Glasshouse Home comes back when something else is opened, or Home is pressed."},
  "home.isOnPending": {"text": "Включено, но главный экран LG пока на своем месте. Выключение и повторное включение повторяют попытку.", "from": "Switched on, but LG’s Home is still in its place. Switching off and on again tries once more."},
@@ -505,7 +503,6 @@
  "home.sortRecent": {"text": "Последние открытые", "from": "Last opened"},
  "home.sortRecentDesc": {"text": "Последняя открытая плитка идет первой, независимо от того, открыли ее с Glasshouse Home или нет. Еще не открывавшиеся плитки следуют в собственном порядке ряда.", "from": "The tile opened last comes first, whether it was opened from Glasshouse Home or not. Tiles not yet opened follow in this row’s own order."},
  "home.title": {"text": "Glasshouse Home", "from": "Glasshouse Home"},
- "home.unavailable": {"text": "Недоступно на этом телевизоре", "from": "Not available on this TV"},
  "home.wall.chooseImage": {"text": "Выберите изображение JPEG, PNG или WebP размером до 25 МБ.", "from": "Choose a JPEG, PNG or WebP image up to 25 MB."},
  "home.wall.slotAfternoon": {"text": "День", "from": "Afternoon"},
  "home.wall.slotEvening": {"text": "Вечер", "from": "Evening"},
@@ -3260,5 +3257,10 @@
  "srv.homebar.install": {"text": "Не удалось установить приложение Glasshouse Bar.", "from": "Could not install Glasshouse Bar's app."},
  "srv.homebar.key": {"text": "Не удалось назначить кнопку Home для Glasshouse Bar.", "from": "Could not give the Home key to Glasshouse Bar."},
  "srv.homebar.keyBack": {"text": "Не удалось вернуть кнопку Home LG.", "from": "Could not give the Home key back to LG."},
- "home.layoutDescBar": {"text": "Какие приложения и входы телевизора показывает Glasshouse Bar и в каком порядке. Приложения в «Другие приложения» в нём не показываются.", "from": "Which of the TV’s apps and inputs Glasshouse Bar shows, and in what order. Apps in More apps are left out of it."}
+ "home.layoutDescBar": {"text": "Какие приложения и входы телевизора показывает Glasshouse Bar и в каком порядке. Приложения в «Другие приложения» в нём не показываются.", "from": "Which of the TV’s apps and inputs Glasshouse Bar shows, and in what order. Apps in More apps are left out of it."},
+ "home.lgHomeShort": {"text": "Встроенный главный экран LG", "from": "LG’s built-in home screen"},
+ "home.ghShort": {"text": "Часы, ряды, обои и предпросмотр", "from": "Clock, rows, wallpapers & preview"},
+ "home.minimalShort": {"text": "Простые текстовые списки на чёрном", "from": "Plain text lists on black"},
+ "home.bar.short": {"text": "Нижняя панель поверх изображения", "from": "Bottom bar over the picture"},
+ "home.customShort": {"text": "Своё веб-приложение или страница", "from": "Your own web app or page"}
 }
