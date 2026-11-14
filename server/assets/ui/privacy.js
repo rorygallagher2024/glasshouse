@@ -254,22 +254,98 @@ async function loadPrivacy() {
     // ad blocker
     const ab = d.adblock || {};
     const mode = ab.mode || (ab.enabled ? 'full' : 'off');
-    q('adblock-detail').textContent = mode === 'off'
-      ? t('pv.adblock.off.detail', 'Nothing is blocked. LG\u2019s advertising and telemetry addresses work as normal.')
-      : mode === 'ads'
-      ? t('pv.adblock.ads.detail', 'Blocks advertising, tracking and diagnostics addresses. LG\'s app store and software updates still work.')
-      : mode === 'full'
-      ? t('pv.adblock.full.detail', 'Also blocks LG\'s platform services, so the LG ThinQ app can no longer control the TV, and the app store, software updates and LG Channels may stop working.')
-      : '';
-    q('adblock-help').hidden = mode === 'off';
-    for (const m of ['off', 'ads', 'full']) {
-      const btn = q('ab-' + m);
-      if (btn) btn.classList.toggle('on', m === mode);
+    renderAdBlockCards(mode);
+    const abDetail = q('adblock-detail');
+    if (abDetail) {
+      abDetail.hidden = true;
+      abDetail.textContent = '';
     }
+    q('adblock-help').hidden = mode === 'off';
     renderCustomHosts(ab.custom, mode);
   } catch (e) {
     q('pv-live').innerHTML = `<div class="d">${esc(t('pv.failed', 'Could not load privacy information \u2014 {error}', { error: e.message }))}</div>`;
   }
+}
+
+function renderAdBlockPreview(mode) {
+  const tv = '<rect x="14" y="25" width="36" height="24" rx="2.5" fill="none" stroke="rgba(255,255,255,.82)" stroke-width="1.6"/>' +
+    '<path d="M26 49v5M38 49v5M21 54h22" stroke="rgba(255,255,255,.52)" stroke-width="1.6" stroke-linecap="round"/>';
+  let paths;
+  if (mode === 'off') {
+    paths = '<path d="M50 32h74" stroke="rgba(255,176,79,.8)" stroke-width="1.6" stroke-dasharray="3 2.5"/>' +
+      '<circle cx="131" cy="32" r="4" fill="none" stroke="rgba(255,176,79,.9)" stroke-width="1.6"/>' +
+      '<path d="M50 43h74" stroke="rgba(255,255,255,.75)" stroke-width="1.6"/>' +
+      '<circle cx="131" cy="43" r="4" fill="rgba(255,255,255,.88)"/>';
+  } else if (mode === 'ads') {
+    paths = '<path d="M50 32h34" stroke="rgba(255,255,255,.5)" stroke-width="1.6"/>' +
+      '<path d="M88 24v16" stroke="#30de61" stroke-width="2.2" stroke-linecap="round"/>' +
+      '<path d="M94 32h30" stroke="rgba(255,255,255,.22)" stroke-width="1.4" stroke-dasharray="2 3"/>' +
+      '<circle cx="131" cy="32" r="4" fill="none" stroke="rgba(255,255,255,.3)" stroke-width="1.4"/>' +
+      '<path d="M50 43h74" stroke="#30de61" stroke-width="1.8"/>' +
+      '<circle cx="131" cy="43" r="4" fill="#30de61"/>';
+  } else {
+    paths = '<path d="M50 32h34M50 43h34" stroke="rgba(255,255,255,.5)" stroke-width="1.6"/>' +
+      '<path d="M88 23v29" stroke="#ffb04f" stroke-width="2.2" stroke-linecap="round"/>' +
+      '<path d="M94 32h30M94 43h30" stroke="rgba(255,255,255,.22)" stroke-width="1.4" stroke-dasharray="2 3"/>' +
+      '<circle cx="131" cy="32" r="4" fill="none" stroke="rgba(255,255,255,.3)" stroke-width="1.4"/>' +
+      '<circle cx="131" cy="43" r="4" fill="none" stroke="rgba(255,255,255,.3)" stroke-width="1.4"/>';
+  }
+  return `<span class="hm-s hm-s-ab ab-${mode}">
+    <svg class="hm-ab-svg" viewBox="0 0 156 80" aria-hidden="true">${tv}${paths}</svg>
+  </span>`;
+}
+
+function renderAdBlockCards(mode) {
+  const tiers = [
+    {
+      id: 'off',
+      title: t('common.off', 'Off'),
+      sub: t('pv.adblock.off.detail', 'Nothing is blocked. LG\u2019s advertising and telemetry addresses work as normal.'),
+      rows: [
+        [t('pv.adblock.row.ads', 'Home ads & ACR'), t('pv.adblock.state.allowed', 'Allowed'), 'muted'],
+        [t('pv.adblock.row.diag', 'Diagnostics & logs'), t('pv.adblock.state.allowed', 'Allowed'), 'muted'],
+        [t('pv.adblock.row.lg', 'Store, ThinQ & Channels'), t('pv.adblock.state.works', 'Works'), 'good']
+      ]
+    },
+    {
+      id: 'ads',
+      title: t('pv.adblock.ads', 'Ads & telemetry'),
+      sub: t('pv.adblock.ads.detail', 'Blocks advertising, tracking and diagnostics addresses. LG\'s app store and software updates still work.'),
+      rows: [
+        [t('pv.adblock.row.ads', 'Home ads & ACR'), t('pv.adblock.state.blocked', 'Blocked'), 'good'],
+        [t('pv.adblock.row.diag', 'Diagnostics & logs'), t('pv.adblock.state.blocked', 'Blocked'), 'good'],
+        [t('pv.adblock.row.lg', 'Store, ThinQ & Channels'), t('pv.adblock.state.works', 'Works'), 'good']
+      ]
+    },
+    {
+      id: 'full',
+      title: t('pv.adblock.full', 'Everything'),
+      sub: t('pv.adblock.full.detail', 'Also blocks LG\'s platform services, so the LG ThinQ app can no longer control the TV, and the app store, software updates and LG Channels may stop working.'),
+      rows: [
+        [t('pv.adblock.row.ads', 'Home ads & ACR'), t('pv.adblock.state.blocked', 'Blocked'), 'good'],
+        [t('pv.adblock.row.diag', 'Diagnostics & logs'), t('pv.adblock.state.blocked', 'Blocked'), 'good'],
+        [t('pv.adblock.row.lg', 'Store, ThinQ & Channels'), t('pv.adblock.state.blocked', 'Blocked'), 'warn']
+      ]
+    }
+  ];
+  const badge = t('ss.inUse', 'In use');
+  tiers.forEach(tier => {
+    const btn = q('ab-' + tier.id);
+    if (!btn) return;
+    const active = mode === tier.id;
+    btn.className = 'hm-card' + (active ? (tier.id === 'full' ? ' on ab-warn' : ' on') : '');
+    btn.setAttribute('aria-pressed', String(active));
+    const ledger = tier.rows.map(r => `<span class="ab-lrow"><span>${esc(r[0])}</span><span class="ab-lval ${r[2]}">${esc(r[1])}</span></span>`).join('');
+    btn.innerHTML = `<span class="hm-screen">
+        ${renderAdBlockPreview(tier.id)}
+        <span class="hm-badge"${active ? '' : ' hidden'}>${esc(badge)}</span>
+      </span>
+      <span class="hm-meta">
+        <span class="hm-name">${esc(tier.title)}</span>
+        <span class="hm-sub">${esc(tier.sub)}</span>
+        <span class="ab-ledger">${ledger}</span>
+      </span>`;
+  });
 }
 
 /*
@@ -348,8 +424,11 @@ function renderCustomHosts(cu, mode) {
   q('abc-clear').hidden = !cu;
   q('abc-mode').value = cu ? cu.mode : customHostsMode;
   if (cu && cu.enabled && cu.mode === 'replace' && mode !== 'off') {
+    q('adblock-detail').hidden = false;
     q('adblock-detail').textContent = t('pv.adblock.custom.replacing',
       'Blocks the names in your hosts file and none of Glasshouse’s, on either tier.');
+  } else if (q('adblock-detail')) {
+    q('adblock-detail').hidden = true;
   }
   const el = q('abc-detail');
   el.textContent = customHostsNote ? customHostsNote.text : customHostsStatus(cu, mode);

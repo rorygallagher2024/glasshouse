@@ -1661,37 +1661,35 @@
   <details class="pv-d" id="pv-adv">
   <summary><span data-t="tab.advanced">Advanced</span> <span class="cur" data-t="pv.advanced.sub">Every setting, one by one</span></summary>
 
-  <div class="pv-top">
-    <div>
-      <div class="pv-h" data-t="pv.adblock">Ad &amp; telemetry blocker</div>
-      <div class="pv-sub" data-t="pv.adblock.desc">Stops the TV reaching LG's ad, tracking and diagnostics servers.</div>
-      <div class="btns" style="max-width:520px">
-        <button id="ab-off" onclick="setAdBlockMode('off')" data-t="common.off">Off</button>
-        <button id="ab-ads" onclick="setAdBlockMode('ads')" data-t="pv.adblock.ads">Ads &amp; telemetry</button>
-        <button id="ab-full" onclick="setAdBlockMode('full')" data-t="pv.adblock.full">Everything</button>
-      </div>
-      <div class="sub" id="adblock-detail" style="margin-top:12px">&mdash;</div>
-      <div class="pv-note" id="adblock-reconnect" hidden data-t="pv.adblock.reconnect">LG's apps, such as the Content Store and LG Channels, can take about a minute to connect again. If one shows an error, exit it and open it again after a minute.</div>
-      <div class="pv-note warn" id="adblock-help" hidden data-t="pv.adblock.troubleshoot">If an app or one of LG's
-        services stops working while the blocker is on, switch it off to check whether it is the cause.</div>
-      <div class="pv-note warn"><b data-t="pv.adblock.full.warn">Everything also blocks LG's platform services, so
-        the LG ThinQ app can no longer control the TV, and the app store, software updates and LG
-        Channels may stop working.</b> <span data-t="pv.adblock.full.search">Where it blocks LG's search, Glasshouse Home's
-        search is hidden until the blocker is back on Ads &amp; telemetry or off.</span> <span data-t="pv.adblock.full.updates">To stop only system updates, use Block TV software
-        updates in the Advanced tab.</span></div>
+  <div class="pv-ab">
+    <div class="pv-h" data-t="pv.adblock">Ad &amp; telemetry blocker</div>
+    <div class="pv-sub" data-t="pv.adblock.desc">Stops the TV reaching LG's ad, tracking and diagnostics servers.</div>
+    <div class="hm-grid hm-grid-3" id="ab-cards">
+      <button type="button" class="hm-card" id="ab-off" onclick="setAdBlockMode('off')">&mdash;</button>
+      <button type="button" class="hm-card" id="ab-ads" onclick="setAdBlockMode('ads')">&mdash;</button>
+      <button type="button" class="hm-card" id="ab-full" onclick="setAdBlockMode('full')">&mdash;</button>
     </div>
+    <div class="sub" id="adblock-detail" style="margin-top:14px" hidden>&mdash;</div>
+    <div class="pv-note" id="adblock-reconnect" hidden data-t="pv.adblock.reconnect">LG's apps, such as the Content Store and LG Channels, can take about a minute to connect again. If one shows an error, exit it and open it again after a minute.</div>
+    <div class="pv-note warn" id="adblock-help" hidden data-t="pv.adblock.troubleshoot">If an app or one of LG's
+      services stops working while the blocker is on, switch it off to check whether it is the cause.</div>
+    <div class="pv-note warn"><b data-t="pv.adblock.full.warn">Everything also blocks LG's platform services, so
+      the LG ThinQ app can no longer control the TV, and the app store, software updates and LG
+      Channels may stop working.</b> <span data-t="pv.adblock.full.search">Where it blocks LG's search, Glasshouse Home's
+      search is hidden until the blocker is back on Ads &amp; telemetry or off.</span> <span data-t="pv.adblock.full.updates">To stop only system updates, use Block TV software
+      updates in the Advanced tab.</span></div>
+  </div>
 
-    <div>
-      <div class="pv-h" data-t="pv.adid">Advertising identifier</div>
-      <div class="pv-sub" data-t="pv.adid.desc">A unique ID your TV hands to advertisers so they can recognise it and
-        target ads at you. Resetting it breaks the link to any profile built from past activity.</div>
-      <div id="pv-adid"></div>
-      <div id="pv-lmt"></div>
-      <div class="sub" id="pv-adnote" style="margin-top:8px"></div>
-      <div class="btns" style="margin-top:14px;max-width:520px">
-        <button id="adid-reset" onclick="privAction('resetAdId')" data-t="pv.adid.reset">Reset advertising ID</button>
-        <button id="adcookies-clear" onclick="privAction('clearAdCookies')" data-t="pv.cookies.clear">Clear ad cookies</button>
-      </div>
+  <div class="pv-adid-sec">
+    <div class="pv-h" data-t="pv.adid">Advertising identifier</div>
+    <div class="pv-sub" data-t="pv.adid.desc">A unique ID your TV hands to advertisers so they can recognise it and
+      target ads at you. Resetting it breaks the link to any profile built from past activity.</div>
+    <div id="pv-adid"></div>
+    <div id="pv-lmt"></div>
+    <div class="sub" id="pv-adnote" style="margin-top:8px"></div>
+    <div class="btns" style="margin-top:14px;max-width:520px">
+      <button id="adid-reset" onclick="privAction('resetAdId')" data-t="pv.adid.reset">Reset advertising ID</button>
+      <button id="adcookies-clear" onclick="privAction('clearAdCookies')" data-t="pv.cookies.clear">Clear ad cookies</button>
     </div>
   </div>
 
