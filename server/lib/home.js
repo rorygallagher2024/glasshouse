@@ -1750,6 +1750,17 @@ function homeKeyRead() {
   return /^3\./.test(String(webosVersion || ''));
 }
 
+/*
+ * webOS 5 and 6 open LG's full-screen Home when an app closes, where webOS 4
+ * shows the input behind it with LG's ribbon only on Home. The standalone
+ * view does not hold LG's Home's place, so a C1 (webOS 6.5.3) showed LG's
+ * Home after every app (#1454).
+ */
+function lgHomeOpensOnClose() {
+  return /^[56]\./.test(String(webosVersion || ''));
+}
+
+
 // The Home key's target in the key filter, where the TV has one.
 function setHomeKey(id, cb) {
   if (homeKeyRead()) return cb({ ok: true, none: true });
@@ -2422,11 +2433,21 @@ function foregroundChanged(id) {
     return;
   }
   stopBeatWatch();
+  // LG's Home opened by the TV itself, not by one of the ways back to it,
+  // which set escaped: Glasshouse Home is opened over it, as Home would.
+  if (isStandalone() && lgHomeOpensOnClose() && !escaped && powerActive && (id === LG_HOME || id === LG_FULLHOME)) {
+    console.log('home: LG\'s Home opened on its own (from ' + (was || 'nothing') + '); opening Glasshouse Home');
+    return launch(HOME_APP, null, function (r) {
+      if (!r || !r.ok) console.error('home: could not open Glasshouse Home over LG\'s Home');
+    });
+  }
   // sam names nothing in front for a moment between apps.
   if (!id || !escaped) return;
   // webOS 4: LG's ribbon opens over the view, so anything opened from it
   // comes after the view; Glasshouse Home has the Home key again.
   if (isStandalone()) {
+    // webOS 5 and 6: LG's Home itself in front is the trip there, not an app after it.
+    if (lgHomeOpensOnClose() && (id === LG_HOME || id === LG_FULLHOME)) return;
     escaped = false;
     setHomeKey(HOME_APP, function () {});
     return;

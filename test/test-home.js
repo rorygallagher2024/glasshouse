@@ -1572,6 +1572,57 @@ step('on webOS 4, a Home press the view does not answer closes it and opens it a
   });
 });
 
+// A C1 (webOS 6.5.3) showed LG's Home after every app closed (#1454).
+step('on webOS 5 and 6, LG\'s Home opened by the TV is covered by Glasshouse Home, and one asked for is left', function (done) {
+  var homeKey = '';
+  start(null, {
+    webosVersion: '6.5.3',
+    allowExperimental: function () { return true; },
+    installApp: function (action, cb) { tv.oldAppInstalled = true; cb({ ok: true }); },
+    setHomeKey: function (id, cb) { homeKey = id; cb({ ok: true }); },
+    injectKey: function (code, cb) { if (cb) cb(true); }
+  });
+  home.enable(function (r) {
+    assert.ok(r.ok, r.error);
+    foreground('netflix');
+    tv.launched = [];
+    // The app closes, and the TV opens LG's Home.
+    foreground(LG_HOME);
+    assert.deepEqual(tv.launched, [OLD_APP], 'Glasshouse Home opened over it');
+    foreground(OLD_APP);
+    // The LG Home tile: LG's Home asked for, and left.
+    home.open({ kind: 'lg' }, function () {
+      tv.launched = [];
+      foreground(LG_HOME);
+      assert.deepEqual(tv.launched, [], 'not covered when asked for');
+      assert.strictEqual(homeKey, '', 'and the Home key is LG\'s while it is open');
+      // An app opened from it: the Home key is Glasshouse Home's again, and
+      // LG's Home opened when that app closes is covered once more.
+      foreground('netflix');
+      assert.strictEqual(homeKey, OLD_APP);
+      foreground(LG_HOME);
+      assert.deepEqual(tv.launched, [OLD_APP]);
+      home.disable(function () {
+        // webOS 4 shows LG's ribbon over the input: nothing to cover.
+        start(null, {
+          webosVersion: '4.4.3',
+          allowExperimental: function () { return true; },
+          installApp: function (action, cb) { tv.oldAppInstalled = true; cb({ ok: true }); },
+          setHomeKey: function (id, cb) { cb({ ok: true }); }
+        });
+        home.enable(function (r2) {
+          assert.ok(r2.ok, r2.error);
+          foreground('netflix');
+          tv.launched = [];
+          foreground(LG_HOME);
+          assert.deepEqual(tv.launched, [], 'webOS 4 left as it was');
+          home.disable(function () { done(); });
+        });
+      });
+    });
+  });
+});
+
 step('a switch-on that cannot give the Home key to the app removes the app it installed', function (done) {
   var actions = [];
   start(null, {
