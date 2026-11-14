@@ -35,7 +35,7 @@
   }
   function kindOf(d) {
     if (d && d.tuner) return 'tv';
-    return (d && (matchKind(d.name) || matchKind(d.defaultName) || matchKind(d.id))) || 'plug';
+    return (d && (matchKind(d.name) || matchKind(d.id))) || 'plug';
   }
   root.glasshouseDevIcon = function (d) {
     return '<i class="dico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" ' +

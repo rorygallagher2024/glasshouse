@@ -3308,7 +3308,7 @@ async function visitInputsAndRemote(browser, base, problems) {
     await page.waitForFunction(() => {
       const inp = document.querySelector('#inputs-list [data-dev-name="HDMI_1"]');
       const port = inp && inp.parentElement && inp.parentElement.querySelector('.inp-port');
-      return inp && inp.value === 'Living Room' && port && port.textContent.indexOf('Console') !== -1;
+      return inp && inp.value === 'Living Room' && inp.getAttribute('data-cur') === 'Living Room' && port && port.textContent === 'HDMI 1';
     });
     if (JSON.stringify(writes[writes.length - 1]) !== JSON.stringify({ deviceNames: { HDMI_1: 'Living Room' } })) fail('renaming an input did not save deviceNames');
     // The Input key: LG's list or the bar, chosen here.

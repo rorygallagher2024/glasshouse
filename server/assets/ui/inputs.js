@@ -69,7 +69,6 @@ function renderInputList() {
       ? t('ctl.liveTv', 'Live TV')
       : (d.via ? t('home.dev.through', 'HDMI {port}, through {via}', { port: d.port, via: d.via }) : t('home.dev.port', 'HDMI {port}', { port: d.port }));
     const defName = d.defaultName || d.name;
-    if (!d.tuner && d.defaultName && d.defaultName !== d.name && d.defaultName !== ('HDMI ' + d.port)) path += ' \u00b7 ' + d.defaultName;
     const nameHtml = d.tuner
       ? `<div class="inp-name" translate="no">${esc(d.name)}</div>`
       : `<input type="text" class="inp-name inp-name-in" translate="no" maxlength="60" value="${esc(d.name)}" placeholder="${esc(defName)}" data-dev-name="${esc(id)}" data-cur="${esc(d.name)}" data-def="${esc(defName)}" aria-label="${esc(t('inputs.nameLabel', 'Input name'))}" ${writable ? '' : 'disabled'} onkeydown="inputsNameKey(event, this)" onblur="inputsRename(this)">`;
