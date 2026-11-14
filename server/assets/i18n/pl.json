@@ -3260,5 +3260,6 @@
  "home.bar.short": {"text": "Dolny pasek nad obrazem", "from": "Bottom bar over the picture"},
  "home.customShort": {"text": "Własna aplikacja webowa lub strona", "from": "Your own web app or page"},
  "inputs.noSignal.lg": {"text": "Ekran LG", "from": "LG’s screen"},
- "inputs.noSignal.lgDesc": {"text": "Obrazek i wskazówka z komunikatem „Brak sygnału”.", "from": "Picture and advice with “No Signal”."}
+ "inputs.noSignal.lgDesc": {"text": "Obrazek i wskazówka z komunikatem „Brak sygnału”.", "from": "Picture and advice with “No Signal”."},
+ "inputs.nameLabel": {"text": "Nazwa wejścia", "from": "Input name"}
 }

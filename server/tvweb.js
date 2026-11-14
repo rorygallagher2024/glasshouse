@@ -2054,6 +2054,7 @@ function startGlasshouseHome() {
       homeWatchesForeground = on;
     },
     pictureDetails: function (on) { homePicture.want('details', on); },
+    onDeviceNames: function () { telemetry.expireInputNames(); },
     handOverTileHiding: function (hide) { appsModule.handOverToHome(hide); }
   });
   homeLauncher.init({ stateDir: __dirname, version: TVWEB_DISPLAY_VERSION });

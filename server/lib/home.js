@@ -255,6 +255,8 @@ var systemctlPath = '';
 var homeKeysFn = function () {};
 /** @type {(hide: (ids: string[]) => void) => void} */
 var handOverFn = function () {};
+/** @type {function(): void} */
+var onDeviceNamesFn = function () {};
 // Told whether the plate's picture details are on, at start and on each change.
 /** @type {function(boolean): void} */
 var pictureDetailsFn = function () {};
@@ -478,6 +480,8 @@ function defaults() {
     // Inputs with nothing plugged in left out of the Inputs row, rather than
     // shown greyed out.
     hideUnused: false,
+    // Custom names keyed by device id (e.g. 'hdmi2:apple-tv' or 'hdmi1').
+    deviceNames: {},
     // How strongly the wallpaper is darkened behind the text and rows, in
     // percent of the view's own darkening; 0 leaves the picture as it is.
     darkening: 100,
@@ -567,6 +571,7 @@ function normalise(raw) {
   MOTION_KEYS.forEach(function (k) { d[k] = raw[k] !== false; });
   d.darkening = validDarkening(raw.darkening);
   d.hideUnused = raw.hideUnused === true;
+  d.deviceNames = validDeviceNames(raw.deviceNames);
   // null, saved, is the view's own look; none saved keeps the default.
   if (Object.prototype.hasOwnProperty.call(raw, 'colours')) d.colours = validColours(raw.colours);
   if (typeof raw.hideLgHomeAtStart === 'boolean') d.hideLgHomeAtStart = raw.hideLgHomeAtStart;
@@ -586,6 +591,29 @@ function validColours(v) {
   if (!v || typeof v.text !== 'string' || typeof v.accent !== 'string') return null;
   var text = v.text.toLowerCase(), accent = v.accent.toLowerCase();
   return COLOUR_RE.test(text) && COLOUR_RE.test(accent) ? { text: text, accent: accent } : null;
+}
+
+function validDeviceNames(v, base) {
+  var out = {};
+  if (base && typeof base === 'object') {
+    Object.keys(base).forEach(function (k) { out[k] = base[k]; });
+  }
+  if (!v || typeof v !== 'object' || isArray(v)) return out;
+  Object.keys(v).forEach(function (k) {
+    if (typeof k !== 'string' || !k || k.length > 200) return;
+    var val = v[k];
+    if (val === null || val === '') {
+      delete out[k];
+      return;
+    }
+    if (typeof val !== 'string') return;
+    val = val.replace(/\s+/g, ' ').trim();
+    if (!val) delete out[k];
+    else if (Object.keys(out).length < 32 || Object.prototype.hasOwnProperty.call(out, k)) {
+      out[k] = val.slice(0, 60);
+    }
+  });
+  return out;
 }
 
 function validSnapshot(s) {
@@ -727,6 +755,7 @@ function setLayout(body, cb) {
     slidePanels: typeof body.slidePanels === 'boolean' ? body.slidePanels : c.slidePanels,
     darkening: body.darkening !== undefined ? body.darkening : c.darkening,
     hideUnused: typeof body.hideUnused === 'boolean' ? body.hideUnused : c.hideUnused,
+    deviceNames: body.deviceNames !== undefined ? validDeviceNames(body.deviceNames, c.deviceNames) : c.deviceNames,
     // null puts the view's own colours back.
     colours: body.colours !== undefined ? body.colours : c.colours
   });
@@ -747,6 +776,7 @@ function setLayout(body, cb) {
     return cb({ ok: false, error: msg('srv.home.saveFailed', 'could not save the layout') });
   }
   if (c.picture !== config.picture) pictureDetailsFn(config.picture);
+  if (JSON.stringify(c.deviceNames) !== JSON.stringify(config.deviceNames)) onDeviceNamesFn();
   if (config.weather === 'internet') setTimeout(internetWeatherTick, 0);
   // A row back in its own order keeps no record of what was opened.
   ROWS.forEach(function (r) { if (config.sort[r] !== 'recent') recent.forget(r); });
@@ -758,7 +788,7 @@ function layoutOf(c) {
     excludedRecents: c.excludedRecents,
     searchHintSeen: c.searchHintSeen, picture: c.picture, livePreview: c.livePreview, search: c.search, recommended: c.recommended,
     fade: c.fade, wallDrift: c.wallDrift, wallCrossfade: c.wallCrossfade, smoothScroll: c.smoothScroll, slidePanels: c.slidePanels,
-    darkening: c.darkening, hideUnused: c.hideUnused, showClock: c.showClock, rowsBottom: c.rowsBottom, view: c.view,
+    darkening: c.darkening, hideUnused: c.hideUnused, deviceNames: c.deviceNames, showClock: c.showClock, rowsBottom: c.rowsBottom, view: c.view,
     showLastOn: c.showLastOn, showAppCount: c.showAppCount, showCec: c.showCec, showTvLogos: c.showTvLogos, showPointer: c.showPointer, weather: c.weather, weatherPlace: c.weatherPlace, previewAlways: c.previewAlways, previewInTile: c.previewInTile, previewSize: c.previewSize, previewSound: c.previewSound, wallAnim: c.wallAnim,
     animTheme: c.animTheme, animSky: c.animSky, animLight: c.animLight, animThemes: ANIM_THEMES,
     wallShuffleMinutes: c.wallShuffleMinutes, shuffleMinutes: SHUFFLE_MINUTES, colours: c.colours,
@@ -917,13 +947,55 @@ function pluggedPorts(devs, cb) {
   });
 }
 
+function namedDevices(c, list) {
+  var custom = (c && c.deviceNames) || {};
+  var byPortDefault = {};
+  list.forEach(function (d) {
+    if (d.id && custom[d.id] && d.name) byPortDefault[d.port + ':' + d.name] = custom[d.id];
+  });
+  return list.map(function (d) {
+    var customName = custom[d.id];
+    var renamed = !!(customName && customName !== d.name);
+    var via = d.via && byPortDefault[d.port + ':' + d.via] ? byPortDefault[d.port + ':' + d.via] : d.via;
+    if (!renamed && via === d.via) return d;
+    var copy = {
+      id: d.id,
+      name: renamed ? customName : d.name,
+      input: d.input,
+      port: d.port,
+      via: via,
+      address: d.address
+    };
+    if (renamed) copy.defaultName = d.name;
+    if (d.unused) copy.unused = true;
+    if (d.uniqueId !== undefined) copy.uniqueId = d.uniqueId;
+    return copy;
+  });
+}
+
+function portName(key, d) {
+  var custom = readConfig().deviceNames;
+  if (!custom || !key) return null;
+  if (custom[key]) return custom[key];
+  var subs = d && isArray(d.subList) ? d.subList.filter(function (s) {
+    return s && s.id === 'SIMPLINK' && typeof s.osdName === 'string' && s.osdName.trim();
+  }) : [];
+  if (subs.length === 1) {
+    var devId = key + ':' + slug(subs[0].osdName.replace(/\s+/g, ' ').trim());
+    if (custom[devId]) return custom[devId];
+  }
+  return null;
+}
+
 function devices(cb) {
   cached('dev', LIST_TTL_MS, function (done) {
     luna('com.webos.service.eim/getAllInputStatus', {}, function (r) {
       if (!r || !isArray(r.devices)) return done(null);
       pluggedPorts(r.devices, function (portsPlugged) { done(listDevices(r.devices, portsPlugged)); });
     });
-  }, cb);
+  }, function (list) {
+    cb(list ? namedDevices(readConfig(), list) : null);
+  });
 }
 
 function listDevices(devs, portsPlugged) {
@@ -2882,6 +2954,7 @@ function init(opts) {
   homeKeysFn = opts.homeKeys || function () {};
   handOverFn = opts.handOverTileHiding || function () {};
   pictureDetailsFn = opts.pictureDetails || function () {};
+  onDeviceNamesFn = opts.onDeviceNames || function () {};
   setHomeKeyFn = opts.setHomeKey || function (id, cb) { cb({ ok: true, none: true }); };
   readsHomeKeyFn = opts.readsHomeKey || function () { return false; };
   holdMs = opts.holdMs || HOLD_MS;
@@ -3139,6 +3212,7 @@ module.exports = {
   layout: function () { return layoutOf(readConfig()); },
   programme: programme,
   enabled: function () { return readConfig().enabled; },
+  portName: portName,
   refreshApp: refreshApp,
   autoLaunchHeld: autoLaunchHeld,
   setAutoLaunch: setAutoLaunch,

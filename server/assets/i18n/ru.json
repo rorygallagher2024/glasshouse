@@ -3260,5 +3260,6 @@
  "home.bar.short": {"text": "Нижняя панель поверх изображения", "from": "Bottom bar over the picture"},
  "home.customShort": {"text": "Своё веб-приложение или страница", "from": "Your own web app or page"},
  "inputs.noSignal.lg": {"text": "Экран LG", "from": "LG’s screen"},
- "inputs.noSignal.lgDesc": {"text": "Картинка и подсказка с надписью «Нет сигнала».", "from": "Picture and advice with “No Signal”."}
+ "inputs.noSignal.lgDesc": {"text": "Картинка и подсказка с надписью «Нет сигнала».", "from": "Picture and advice with “No Signal”."},
+ "inputs.nameLabel": {"text": "Название входа", "from": "Input name"}
 }

@@ -21,7 +21,7 @@ It is offered on webOS 4, 6 and 9, where it has been tried (a B8 with 4.4.3, a C
 
 ## Your inputs
 
-The inputs [Glasshouse Input bar](#glasshouse-input-bar) and Glasshouse launchers offer, shown when Glasshouse Input bar or a Glasshouse launcher ([Glasshouse Home](home.md), [Glasshouse Bar](home.md#glasshouse-bar), [Glasshouse Minimal](home.md#glasshouse-minimal), or [Custom](home.md#custom-launcher)) is in use. Each input appears as a card with its device icon, port, and connection state (tuner inputs omit the connection state), alongside **Order** (**Your order** or **Last opened**), **Hide inputs with nothing connected**, `←` / `→` buttons to reorder them, and **Shown** or **Hidden** for each input.
+The inputs [Glasshouse Input bar](#glasshouse-input-bar) and Glasshouse launchers offer, shown when Glasshouse Input bar or a Glasshouse launcher ([Glasshouse Home](home.md), [Glasshouse Bar](home.md#glasshouse-bar), [Glasshouse Minimal](home.md#glasshouse-minimal), or [Custom](home.md#custom-launcher)) is in use. Each input appears as a card with its device icon, editable HDMI name (click the name to rename it across Glasshouse, or clear it to put the TV's own name back), port, and connection state (tuner inputs omit the connection state), alongside **Order** (**Your order** or **Last opened**), **Hide inputs with nothing connected**, `←` / `→` buttons to reorder them, and **Shown** or **Hidden** for each input.
 
 ## No Signal screen
 

@@ -3260,5 +3260,6 @@
  "home.bar.short": {"text": "شريط سفلي فوق الصورة", "from": "Bottom bar over the picture"},
  "home.customShort": {"text": "تطبيق ويب أو صفحة خاصة بك", "from": "Your own web app or page"},
  "inputs.noSignal.lg": {"text": "شاشة LG", "from": "LG’s screen"},
- "inputs.noSignal.lgDesc": {"text": "صورة ونصيحة مع «لا توجد إشارة».", "from": "Picture and advice with “No Signal”."}
+ "inputs.noSignal.lgDesc": {"text": "صورة ونصيحة مع «لا توجد إشارة».", "from": "Picture and advice with “No Signal”."},
+ "inputs.nameLabel": {"text": "اسم المدخل", "from": "Input name"}
 }

@@ -26,14 +26,16 @@
     ['pc', /\bpc\b|computer|\bmac\b|macbook|laptop|desktop/],
     ['tv', /cable|satellite|xfinity|directv|\bdish\b|tivo/]
   ];
-  function kindOf(d) {
-    if (d && d.tuner) return 'tv';
-    var s = ((d && d.name) || '') + ' ' + ((d && d.id) || '');
-    s = s.toLowerCase();
+  function matchKind(s) {
+    s = String(s || '').toLowerCase();
     for (var k = 0; k < KINDS.length; k++) {
       if (KINDS[k][1].test(s)) return KINDS[k][0];
     }
-    return 'plug';
+    return null;
+  }
+  function kindOf(d) {
+    if (d && d.tuner) return 'tv';
+    return (d && (matchKind(d.name) || matchKind(d.defaultName) || matchKind(d.id))) || 'plug';
   }
   root.glasshouseDevIcon = function (d) {
     return '<i class="dico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" ' +

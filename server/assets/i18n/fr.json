@@ -3260,5 +3260,6 @@
  "home.bar.short": {"text": "Barre inférieure par-dessus l’image", "from": "Bottom bar over the picture"},
  "home.customShort": {"text": "Votre propre app web ou page", "from": "Your own web app or page"},
  "inputs.noSignal.lg": {"text": "L’écran de LG", "from": "LG’s screen"},
- "inputs.noSignal.lgDesc": {"text": "Image et conseil avec « Aucun signal ».", "from": "Picture and advice with “No Signal”."}
+ "inputs.noSignal.lgDesc": {"text": "Image et conseil avec « Aucun signal ».", "from": "Picture and advice with “No Signal”."},
+ "inputs.nameLabel": {"text": "Nom de l’entrée", "from": "Input name"}
 }

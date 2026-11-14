@@ -906,5 +906,6 @@
  "home.customShort": {"text": "Eigene Web-App oder Webseite", "from": "Your own web app or page"},
  "inputs.noSignal.lg": {"text": "LGs Bildschirm", "from": "LG’s screen"},
  "inputs.noSignal.lgDesc": {"text": "Bild und Hinweis mit „Kein Signal“.", "from": "Picture and advice with “No Signal”."},
- "apps.inputBar": {"text": "Glasshouse-Eingangsleiste", "from": "Glasshouse Input bar"}
+ "apps.inputBar": {"text": "Glasshouse-Eingangsleiste", "from": "Glasshouse Input bar"},
+ "inputs.nameLabel": {"text": "Eingangsname", "from": "Input name"}
 }

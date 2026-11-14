@@ -3261,4 +3261,49 @@ step('an app opened from the view has time to start before the hidden view count
   });
 });
 
+step('custom HDMI input names apply to catalogue, now and portName, and clear on empty string', function (done) {
+  var notified = 0;
+  start(null, { onDeviceNames: function () { notified++; } });
+  tv.devices = [
+    { id: 'HDMI_1', label: 'HDMI 1', connected: true, hdmiPlugIn: false },
+    { id: 'HDMI_2', label: 'STEREO 70s', connected: true, hdmiPlugIn: true, lastUniqueId: 8, subList: [
+      { id: 'SIMPLINK', depth: 1, physicalAddress: 8192, uniqueId: 5, osdName: 'STEREO 70s' },
+      { id: 'SIMPLINK', depth: 2, physicalAddress: 9216, uniqueId: 8, osdName: 'PlayStation 5' }
+    ] },
+    { id: 'HDMI_3', label: 'Apple TV', connected: true, hdmiPlugIn: true, subList: [
+      { id: 'SIMPLINK', depth: 1, uniqueId: 4, osdName: 'Apple TV' }
+    ] }
+  ];
+  foreground('com.webos.app.hdmi2');
+  home.setLayout({ deviceNames: { 'hdmi2:stereo-70s': 'AVR', 'hdmi2:playstation-5': 'Living Room PS5', 'hdmi3:apple-tv': 'Stream Box' } }, function (r) {
+    assert.ok(r.ok, r.error);
+    assert.strictEqual(notified, 1, 'notified on change');
+    assert.deepEqual(r.layout.deviceNames, { 'hdmi2:stereo-70s': 'AVR', 'hdmi2:playstation-5': 'Living Room PS5', 'hdmi3:apple-tv': 'Stream Box' });
+    assert.strictEqual(home.portName('hdmi3', tv.devices[2]), 'Stream Box', 'single SIMPLINK device renames the port');
+    assert.strictEqual(home.portName('hdmi2', tv.devices[1]), null, 'multi-device port keeps its own name');
+    home.catalogue(function (c) {
+      var byId = {};
+      c.devices.forEach(function (d) { byId[d.id] = d; });
+      assert.strictEqual(byId['hdmi2:playstation-5'].name, 'Living Room PS5');
+      assert.strictEqual(byId['hdmi2:playstation-5'].defaultName, 'PlayStation 5');
+      assert.strictEqual(byId['hdmi2:playstation-5'].via, 'AVR', 'parent receiver rename carries into via');
+      home.now(function (n) {
+        assert.strictEqual(n.title, 'Living Room PS5');
+        assert.strictEqual(n.via, 'AVR');
+        home.setLayout({ deviceNames: { 'hdmi2:playstation-5': '' } }, function (r2) {
+          assert.ok(r2.ok);
+          assert.strictEqual(notified, 2);
+          assert.strictEqual(r2.layout.deviceNames['hdmi2:playstation-5'], undefined, 'empty string removes override');
+          home.catalogue(function (c2) {
+            var ps5 = c2.devices.filter(function (d) { return d.id === 'hdmi2:playstation-5'; })[0];
+            assert.strictEqual(ps5.name, 'PlayStation 5');
+            assert.strictEqual(ps5.defaultName, undefined);
+            done();
+          });
+        });
+      });
+    });
+  });
+});
+
 next();

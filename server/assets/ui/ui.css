@@ -1877,6 +1877,12 @@ button.hm-card.warn .hm-name{color:var(--cand)}
 .inp-ico svg{display:block;width:100%;height:100%}
 .inp-txt{flex:1;min-width:0}
 .inp-name{font-family:'Manrope',sans-serif;font-size:15px;font-weight:600;color:var(--w100);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+input.inp-name-in{display:block;width:100%;min-width:0;height:auto;line-height:1.3;padding:0 0 2px;margin:0;border:0;
+  border-bottom:1px dashed var(--w25);border-radius:0;background:transparent;box-shadow:none;outline:none;
+  transition:border-color .15s ease}
+input.inp-name-in:hover:not(:disabled){border-bottom-color:var(--w60)}
+input.inp-name-in:focus{border-bottom:1px solid var(--w100)}
+input.inp-name-in:disabled{border-bottom-color:transparent;cursor:default}
 .inp-port{font-size:12.5px;color:var(--w60);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .inp-state{margin-top:6px;min-height:18px;display:flex;align-items:center}
 .inp-state .pill{height:auto;line-height:1.3;font-size:11px;letter-spacing:.07em}

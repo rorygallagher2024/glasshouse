@@ -3251,19 +3251,21 @@ async function visitInputsAndRemote(browser, base, problems) {
   const fail = message => problems.push('Inputs and Remote: ' + message);
   page.on('pageerror', error => fail(error.message));
   const noSignal = { ok: true, available: true, on: false, applied: false, restartPending: false };
-  const layout = { hidden: { dev: [] }, hideUnused: false };
+  const layout = { hidden: { dev: [] }, hideUnused: false, deviceNames: {} };
+  const devices = [{ id: 'TV', name: 'Live TV', tuner: true }, { id: 'HDMI_1', name: 'Console', port: 1 }, { id: 'HDMI_2', name: 'HDMI 2', port: 2, unused: true }];
   const keys = [{ key: 'input', title: 'Input', action: 'lg' }, { key: 'netflix', title: 'Netflix', action: 'open', id: 'com.tvweb.inputbar', opens: 'Input bar' }];
   let hasKeys = true;
   const writes = [];
   try {
     await page.route('**/api/inputs', route => route.fulfill({ json: { ok: true, writable: true, noSignal, inputBar: { standing: 'tried', allowed: true, experimental: false } } }));
     await page.route('**/api/home/catalogue', route => route.fulfill({ json: { ok: true, layout, order: { dev: ['TV', 'HDMI_1', 'HDMI_2'] },
-      devices: [{ id: 'TV', name: 'Live TV', tuner: true }, { id: 'HDMI_1', name: 'Console', port: 1 }, { id: 'HDMI_2', name: 'HDMI 2', port: 2, unused: true }] } }));
+      devices: devices.map(d => layout.deviceNames[d.id] ? Object.assign({}, d, { name: layout.deviceNames[d.id], defaultName: d.name }) : d) } }));
     await page.route('**/api/home/layout', async route => {
       const patch = route.request().postDataJSON();
       writes.push(patch);
       if (patch.hidden) layout.hidden = patch.hidden;
       if (typeof patch.hideUnused === 'boolean') layout.hideUnused = patch.hideUnused;
+      if (patch.deviceNames) Object.assign(layout.deviceNames, patch.deviceNames);
       await route.fulfill({ json: { ok: true } });
     });
     await page.route('**/api/apps', async route => {
@@ -3299,6 +3301,16 @@ async function visitInputsAndRemote(browser, base, problems) {
     await page.locator('#inputs-list [data-dev="HDMI_2"]').click();
     await page.locator('#inputs-list [data-dev="HDMI_2"].idle').waitFor();
     if (JSON.stringify(writes[0]) !== JSON.stringify({ hidden: { dev: ['HDMI_2'] } })) fail('hiding an input did not save it');
+    // Editing an HDMI input's name directly on its card.
+    const nameIn = page.locator('#inputs-list [data-dev-name="HDMI_1"]');
+    await nameIn.fill('Living Room');
+    await nameIn.press('Enter');
+    await page.waitForFunction(() => {
+      const inp = document.querySelector('#inputs-list [data-dev-name="HDMI_1"]');
+      const port = inp && inp.parentElement && inp.parentElement.querySelector('.inp-port');
+      return inp && inp.value === 'Living Room' && port && port.textContent.indexOf('Console') !== -1;
+    });
+    if (JSON.stringify(writes[writes.length - 1]) !== JSON.stringify({ deviceNames: { HDMI_1: 'Living Room' } })) fail('renaming an input did not save deviceNames');
     // The Input key: LG's list or the bar, chosen here.
     await page.locator('#inputs-bar-lg.on').waitFor();
     await page.locator('#inputs-bar-ours').click();

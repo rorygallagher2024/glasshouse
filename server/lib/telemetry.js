@@ -1287,7 +1287,8 @@ function refreshInputNames(cb) {
         var d = res.devices[i];
         var key = names.hdmiKeyForPortId(d.id);
         if (!key) continue;
-        inputNameMap[key] = d.label || names.input(key).display;
+        var custom = homeModule && typeof homeModule.portName === 'function' ? homeModule.portName(key, d) : null;
+        inputNameMap[key] = custom || d.label || names.input(key).display;
         var shortId = d.appId ? names.shortAppId(d.appId) : key;
         if (shortId !== key) inputAppAliases[shortId] = key;
       }
@@ -2599,6 +2600,7 @@ module.exports = {
   formatDynamicRange: formatDynamicRange,
   pictureModes: pictureModes,
   refreshInputNames: refreshInputNames,
+  expireInputNames: function () { lastInputScan = 0; refreshInputNames(); },
   refreshInstalledApps: refreshInstalledApps,
   getInstalledApps: getInstalledApps,
   appTitle: appTitle,
