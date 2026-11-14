@@ -1330,10 +1330,12 @@ function handleHomeRoute(req, res, u, pathname) {
     if (pathname === '/api/home/store' && homeLauncherModule) {
       return readJsonBody(req, res, function (body) { homeLauncherModule.setStore(body, reply); }, homeLauncherModule.MAX_STORE + 1024);
     }
+    if (pathname === '/api/home/wallpapers') {
+      return readJsonBody(req, res, function (body) { homeModule.setWallpapers(body, reply); }, 128 * 1024);
+    }
     return readJsonBody(req, res, function (body) {
       if (pathname === '/api/home/layout') return homeModule.setLayout(body, reply);
       if (pathname === '/api/home/start-layout') return homeModule.setHideLgHomeAtStart(body, reply);
-      if (pathname === '/api/home/wallpapers') return homeModule.setWallpapers(body, reply);
       // Glasshouse Bar leaves LG's Home its place, so it is switched off first.
       if (pathname === '/api/home/enable') {
         if (!homebarModule || !homebarModule.enabled()) return homeModule.enable(reply);

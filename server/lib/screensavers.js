@@ -23,6 +23,7 @@ var idlesaver = require('./idlesaver');
 var names = require('./names');
 var saverPowerOff = require('./saverpoweroff');
 var qmlcheck = require('./qmlcheck');
+var homeWallpapers = require('./home-wallpapers');
 
 var SCREENSAVER_APP_ID = 'com.webos.app.screensaver';
 var SCREENSAVER_APP_DIR = '/usr/palm/applications/' + SCREENSAVER_APP_ID;
@@ -125,7 +126,7 @@ var MAX_SAVER_BYTES = 5 * 1024 * 1024;
 var MAX_SAVER_FILES = 200;
 // What a saver may ask Glasshouse to fill in, and the placeholder for each.
 // "ha" has one placeholder per entity it declares, so it carries no value here.
-var USES = { level: '__TVWEB_LEVEL__', stats: '__TVWEB_URL__', choice: '__TVWEB_CHOICE__', ha: '', 'ha-list': '__TVWEB_HA_LIST__', 'ha-all': '__TVWEB_HA_ALL__', color: '__TVWEB_COLOR__' };
+var USES = { level: '__TVWEB_LEVEL__', stats: '__TVWEB_URL__', choice: '__TVWEB_CHOICE__', videos: '__TVWEB_VIDEOS__', ha: '', 'ha-list': '__TVWEB_HA_LIST__', 'ha-all': '__TVWEB_HA_ALL__', color: '__TVWEB_COLOR__' };
 var DEFAULT_SAVER_COLOR = 'white';
 var COLOR_PRESETS = [
   { id: 'white', label: msg('srv.saver.color.white', 'White'), bright: '#ffffff', dim: '#a8aeb6' },
@@ -286,6 +287,9 @@ function readSaver(root, name) {
     if (files[j].rel === e.main) hasMain = true;
   }
   if (!hasMain) return problem(msg('srv.saver.noMain', '{main} is missing from its folder.', { main: e.main }));
+  if (e.uses.indexOf('videos') !== -1 && !homeWallpapers.videoSources().urls.length) {
+    return problem(msg('srv.saver.videoSources', 'Add video URLs in Home background settings before choosing this screen saver.'));
+  }
   if (files.length > MAX_SAVER_FILES || bytes > MAX_SAVER_BYTES) {
     return problem(msg('srv.saver.tooBig', 'Its folder is over the limit of {files} files and {mb} MB.',
                        { files: String(MAX_SAVER_FILES), mb: String(MAX_SAVER_BYTES / 1048576) }));
@@ -688,7 +692,8 @@ function savers() { return catalogCache || scanSavers(); }
 function catalog() { return scanSavers().list; }
 
 function saverById(id) {
-  var byId = savers().byId;
+  // A built-in saver can become available when Home's playlist is saved.
+  var byId = scanSavers().byId;
   return Object.prototype.hasOwnProperty.call(byId, id) ? byId[id] : null;
 }
 
@@ -1426,6 +1431,10 @@ function fillSaverQml(e, qml, level, choice, effEnts, entityList) {
     qml = qml.replace(/__TVWEB_HA_LIST__/g, function () { return listJson; });
   }
   if (e.uses.indexOf('level') !== -1) qml = qml.replace(/__TVWEB_LEVEL__/g, String(tunedLevel(level)));
+  if (e.uses.indexOf('videos') !== -1) {
+    var videoJson = JSON.stringify(homeWallpapers.videoSources()).replace(/\u2028/g, '\\u2028').replace(/\u2029/g, '\\u2029');
+    qml = qml.replace(/__TVWEB_VIDEOS__/g, function () { return videoJson; });
+  }
   if (e.uses.indexOf('color') !== -1) {
     var preset = findColorPreset(screensaverColor(e));
     var hex = tunedLevel(level) ? preset.bright : preset.dim;

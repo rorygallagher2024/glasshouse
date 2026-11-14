@@ -3297,5 +3297,15 @@
  "inputs.kind.av": {"text": "AV", "from": "AV"},
  "inputs.kind.component": {"text": "Componente", "from": "Component"},
  "srv.remoteKeys.ok": {"text": "OK", "from": "OK"},
- "apps.remoteKeys.buttons": {"text": "Botões", "from": "Buttons"}
+ "apps.remoteKeys.buttons": {"text": "Botões", "from": "Buttons"},
+ "home.bg.video": {"text": "Vídeo", "from": "Video"},
+ "home.video.help": {"text": "Adicione links diretos de vídeo ou a URL de uma playlist Aerial no formato entries.json. As legendas de pointsOfInterest aparecem durante a reprodução.", "from": "Add direct video links or an Aerial entries.json playlist URL. Captions from pointsOfInterest are shown as each video plays."},
+ "home.video.shuffle": {"text": "Reproduzir vídeos em ordem aleatória", "from": "Play videos in a random order"},
+ "home.video.save": {"text": "Salvar fontes de vídeo", "from": "Save video sources"},
+ "home.video.urlsLabel": {"text": "Links de vídeo ou playlists, um por linha", "from": "Video URLs, one per line"},
+ "srv.home.videoCount": {"text": "Adicione até {max} URLs de vídeo.", "from": "Add up to {max} video URLs."},
+ "srv.home.videoUrl": {"text": "Use uma URL de vídeo HTTP ou HTTPS sem nome de usuário ou senha.", "from": "Use an HTTP or HTTPS video URL without a user name or password."},
+ "srv.home.videoManifest": {"text": "A playlist de vídeo não contém JSON válido.", "from": "The video playlist did not contain valid JSON."},
+ "srv.home.videoManifestEmpty": {"text": "A playlist de vídeo não contém entradas utilizáveis.", "from": "The video playlist contained no usable video entries."},
+ "srv.home.videoEmpty": {"text": "Adicione primeiro pelo menos uma URL de vídeo.", "from": "Add at least one video URL first."}
 }

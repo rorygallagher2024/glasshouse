@@ -1181,7 +1181,7 @@ function homeBgKind() {
   const anim = (homeLayout && homeLayout.wallAnim) || 'off';
   if (anim !== 'off') return 'animated';
   const choice = (homeStatus && homeStatus.wallpapers && homeStatus.wallpapers.choice) || 'own';
-  return choice === 'black' ? 'none' : 'pictures';
+  return choice === 'black' ? 'none' : choice === 'video' ? 'video' : 'pictures';
 }
 
 function renderHomeBg() {
@@ -1191,12 +1191,16 @@ function renderHomeBg() {
   const anim = (homeLayout && homeLayout.wallAnim) || 'off';
   const choice = (homeStatus.wallpapers && homeStatus.wallpapers.choice) || 'own';
   if (anim !== 'off') homeBgLast.scene = anim;
-  if (choice !== 'black') homeBgLast.set = choice;
-  const kinds = [['none', t('home.bg.none', 'None')], ['pictures', t('home.bg.pictures', 'Pictures')], ['animated', t('home.bg.animated', 'Animated')]];
+  if (choice !== 'black' && choice !== 'video') homeBgLast.set = choice;
+  const kinds = [['none', t('home.bg.none', 'None')], ['pictures', t('home.bg.pictures', 'Pictures')], ['animated', t('home.bg.animated', 'Animated')], ['video', t('home.bg.video', 'Video')]];
   kindBox.innerHTML = kinds.map(([k, label]) => `<button type="button" class="${k === kind ? 'on' : ''}" ${busy ? 'disabled' : ''}
     aria-pressed="${k === kind}" onclick="homeBgChoose('${k}')">${esc(label)}</button>`).join('');
   q('home-bg-pictures').hidden = kind !== 'pictures';
   q('home-bg-animated').hidden = kind !== 'animated';
+  q('home-bg-video').hidden = kind !== 'video';
+  const videoUrls = q('home-video-urls'), videoShuffle = q('home-video-shuffle');
+  if (videoUrls && document.activeElement !== videoUrls) videoUrls.value = ((homeStatus.wallpapers || {}).videoInputs || (homeStatus.wallpapers || {}).videoUrls || []).join('\n');
+  if (videoShuffle && document.activeElement !== videoShuffle) videoShuffle.checked = !!((homeStatus.wallpapers || {}).videoShuffle);
   const dark = document.querySelector('#homepane .home-dark') || document.querySelector('.home-dark');
   if (dark) dark.hidden = kind === 'none';
   const names = { waves: t('home.anim.waves', 'Light waves'), particles: t('home.anim.particles', 'Particles'),
@@ -1213,8 +1217,32 @@ async function homeBgChoose(kind) {
   if (kind === 'animated') return homeSaveLayout({ wallAnim: homeBgLast.scene });
   if (homeLayout && homeLayout.wallAnim && homeLayout.wallAnim !== 'off') await homeSaveLayout({ wallAnim: 'off' });
   if (kind === 'none' && choice !== 'black') return homeWallSet('black');
+  if (kind === 'video' && choice !== 'video') {
+    const walls = homeStatus.wallpapers || {};
+    q('home-video-urls').value = (walls.videoInputs || walls.videoUrls || []).join('\n');
+    q('home-video-shuffle').checked = !!walls.videoShuffle;
+    return;
+  }
   if (kind === 'pictures' && choice === 'black') return homeWallSet(homeBgLast.set);
   renderHomeBg();
+}
+
+async function homeVideoSave() {
+  if (!homeWritable() || homeWallUploading) return;
+  const note = q('home-video-note');
+  note.textContent = '';
+  homeWallUploading = 'video';
+  renderHomeBg();
+  try {
+    const urls = q('home-video-urls').value.split(/\r?\n/).map(value => value.trim()).filter(Boolean);
+    if (homeLayout && homeLayout.wallAnim && homeLayout.wallAnim !== 'off') await homeSaveLayout({ wallAnim: 'off' });
+    await homePost('/api/home/wallpapers', { videoUrls: urls, videoShuffle: q('home-video-shuffle').checked });
+  } catch (e) { note.textContent = e.message; }
+  finally {
+    homeWallUploading = false;
+    await loadHome();
+    renderHomeWalls();
+  }
 }
 
 function homeRowsBottom() {
@@ -1349,9 +1377,9 @@ function renderHomeWalls() {
   if (choiceBox) {
     const label = { black: t('home.wall.setBlack', 'Black'), landscape: t('home.wall.setLandscape', 'Landscape'),
       abstract: t('home.wall.setAbstract', 'Abstract'), own: t('home.wall.setOwn', 'Your own'),
-      shuffle: t('home.wall.setShuffle', 'Your own, shuffled') };
+      shuffle: t('home.wall.setShuffle', 'Your own, shuffled'), video: t('home.bg.video', 'Video') };
     // Black is the background's None, chosen above.
-    choiceBox.innerHTML = (walls.choices || ['black', 'landscape', 'abstract', 'own']).filter(name => name !== 'black').map(name =>
+    choiceBox.innerHTML = (walls.choices || ['black', 'landscape', 'abstract', 'own']).filter(name => name !== 'black' && name !== 'video').map(name =>
       `<button type="button" class="${name === choice ? 'on' : ''}${name === getting ? ' busy' : ''}" ${busy ? 'disabled' : ''}
         aria-pressed="${name === choice}" onclick="homeWallSet('${name}')">${esc(name === getting ? t('home.wall.examplesBusy', 'Downloading…') : label[name] || name)}</button>`).join('');
   }

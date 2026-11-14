@@ -3479,8 +3479,9 @@ module.exports = {
     // The shuffled collection: one picture, or every one.
     if (body && typeof body.removePicture === 'string') return wallpapers.removePictures(cb, body.removePicture);
     if (body && body.removePictures === true) return wallpapers.removePictures(cb);
+    if (body && Array.isArray(body.videoUrls)) return wallpapers.setVideoSources(body.videoUrls, body.videoShuffle, cb);
     if (body && typeof body.choose === 'string') return wallpapers.choose(body.choose, cb);
-    cb({ ok: false, error: 'removeUploads, remove, removePicture, removePictures or choose expected' });
+    cb({ ok: false, error: 'removeUploads, remove, removePicture, removePictures, videoUrls or choose expected' });
   },
   normalise: normalise,
   hideApps: hideApps,

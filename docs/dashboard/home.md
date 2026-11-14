@@ -324,6 +324,10 @@ An animated background keeps the TV busy while Glasshouse Home is on screen, and
 
 Its colours: **Time of day**, the default, follows the four times of day, and the aquarium dims in the evening and at night; five presets, **Night blue**, **Sunset**, **Emerald**, **Ember** and **Silver**; or **Your own**, a background and a light colour picked on the web dashboard. In the aquarium they are the water and the light through it. The TV app's **Animation** and **Background colours** rows move through the choices with OK.
 
+### Video
+
+Enter one direct HTTP or HTTPS video URL per line, or an Aerial `entries.json` playlist URL. The TV loads playlist entries and streams up to 50 videos without downloading them, muted on Home and in the **Video** screen saver. For Aerial entries, `pointsOfInterest` captions are shown at their listed times. **Play videos in a random order** shuffles the playlist; otherwise videos play in order and repeat. Home's existing darkening setting applies over the video. URLs with embedded user names or passwords are refused.
+
 ### Darkening
 
 **Darkening** sets how much the background is darkened behind the clock and the rows, which keeps them easy to read on a bright picture. It is 100% by default; the web dashboard's slider goes down in steps of 5% to **Off**, which shows the picture as it is, and the TV app's **Darkening** row steps through 100%, 75%, 50%, 25% and Off with OK. Behind an animated background it is lighter, as these are dark already. With **None** chosen it is not shown.

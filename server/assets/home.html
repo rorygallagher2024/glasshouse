@@ -33,6 +33,10 @@ body{font-family:'Manrope',sans-serif;color:#ece7df;-webkit-font-smoothing:antia
 #wall .layer{position:absolute;left:-3%;top:-3%;right:-3%;bottom:-3%;background-position:center;background-size:cover;
   background-repeat:no-repeat;opacity:0;-webkit-transition:opacity 2.4s ease;transition:opacity 2.4s ease;
   -webkit-animation:drift 180s steps(360) infinite alternate;animation:drift 180s steps(360) infinite alternate}
+#wall video{position:absolute;left:0;top:0;width:100%;height:100%;object-fit:cover;opacity:0;
+  -webkit-transition:opacity 2.4s ease;transition:opacity 2.4s ease}
+#wall-caption{position:absolute;left:8%;right:8%;bottom:8%;z-index:4;text-align:center;color:#fff;
+  font-size:1.5vw;line-height:1.35;text-shadow:0 2px 8px #000,0 0 18px #000;pointer-events:none}
 /* At rest while covered: the wallpaper is not drawn or animated under the screen
    saver or another app. */
 html.resting #wall{visibility:hidden}
@@ -638,7 +642,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
 </head>
 <body>
 <div id="stage" class="no-search no-clock">
-  <div id="wall"><canvas id="anim" width="0" height="0"></canvas><div class="layer"></div><div class="layer"></div></div>
+  <div id="wall"><canvas id="anim" width="0" height="0"></canvas><div class="layer"></div><div class="layer"></div><video id="wallVideo" muted playsinline></video><div id="wall-caption"></div></div>
   <div id="scrim"></div>
 
   <section id="now">
@@ -784,6 +788,8 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     // in front), so the live preview and the animated background stop here as
     // well: under the screen saver the preview kept the tuner playing (#1209).
     followPreview();
+    if (on && wallVideoEl) wallVideoEl.pause();
+    else if (!on) updateWall();
     if (!anim) return;
     if (on) animStop();
     else animRun();
@@ -811,6 +817,8 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
   // takes about a minute (a B8, webOS 4.4.3): the logo stays until then.
   var pageOpenedAt = Date.now(), STARTING_MS = 60000;
   var wallSlots = null, wallRevision = '', wallChoice = '', wallPictures = [];
+  var wallVideoSources = [], wallVideoItems = [], wallVideoShuffle = false, wallVideoRevision = '', wallVideoKey = '', wallVideoIndex = -1;
+  var wallVideoEl = $('wallVideo');
 
   function $(id) { return document.getElementById(id); }
   function pad(n) { return (n < 10 ? '0' : '') + n; }
@@ -5013,6 +5021,10 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     wallRevision = w && w.revision || '';
     wallChoice = w && w.choice || '';
     wallPictures = w && w.pictures || [];
+    wallVideoSources = w && w.videoUrls || [];
+    wallVideoItems = w && w.videoItems || wallVideoSources.map(function (source) { return { url: source, title: '', pointsOfInterest: [] }; });
+    wallVideoShuffle = !!(w && w.videoShuffle);
+    wallVideoRevision = w && w.videoRevision || '';
   }
 
   /*
@@ -5045,6 +5057,31 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
   function updateWall() {
     syncAnim();
     var slot = wallSlot(), shuffled = wallChoice === 'shuffle';
+    if (wallChoice === 'video') {
+      var videoLayers = $('wall').querySelectorAll('.layer');
+      if (anim.style !== 'off' || !wallAvailable || !wallVideoSources.length || document.hidden || document.documentElement.classList.contains('resting')) {
+        if (wallVideoEl) { wallVideoEl.style.opacity = 0; wallVideoEl.pause(); }
+        if ($('wall-caption')) $('wall-caption').textContent = '';
+        if (anim.style !== 'off' || !wallVideoSources.length) wallVideoKey = '';
+        for (var blankVideo = 0; blankVideo < videoLayers.length; blankVideo++) { videoLayers[blankVideo].style.opacity = 0; videoLayers[blankVideo].style.backgroundImage = ''; }
+        return;
+      }
+      var videoKey = wallVideoRevision;
+      if (videoKey !== wallVideoKey) {
+        wallVideoKey = videoKey;
+        wallVideoIndex = wallVideoShuffle ? Math.floor(Math.random() * wallVideoSources.length) : 0;
+        playWallVideo(wallVideoIndex, slot.strength);
+      } else if (wallVideoEl) {
+        wallVideoEl.style.opacity = slot.strength;
+        if (wallVideoEl.paused) wallVideoEl.play();
+      }
+      for (var v = 0; v < videoLayers.length; v++) { videoLayers[v].style.opacity = 0; videoLayers[v].style.backgroundImage = ''; }
+      wallShown = null;
+      return;
+    }
+    if (wallVideoEl) { wallVideoEl.style.opacity = 0; wallVideoEl.pause(); }
+    if ($('wall-caption')) $('wall-caption').textContent = '';
+    wallVideoKey = '';
     var picture = shuffled && anim.style === 'off' && wallAvailable ? shufflePick() : null;
     if (anim.style !== 'off' || !wallAvailable || (shuffled ? !picture : wallSlots && !wallSlots[slot.key])) {
       var blank = $('wall').querySelectorAll('.layer');
@@ -5071,6 +5108,45 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
       wallFront = 1 - wallFront;
     };
     img.src = src;
+  }
+
+  var wallVideoFailures = 0;
+  function playWallVideo(index, strength) {
+    if (!wallVideoEl || !wallVideoSources.length) return;
+    wallVideoIndex = ((index % wallVideoSources.length) + wallVideoSources.length) % wallVideoSources.length;
+    var video = wallVideoEl, item = wallVideoItems[wallVideoIndex] || { url: wallVideoSources[wallVideoIndex] }, source = item.url;
+    video.style.opacity = 0;
+    video.muted = true;
+    video.oncanplay = function () {
+      wallVideoFailures = 0;
+      video.style.opacity = strength;
+      var playing = video.play();
+      if (playing && typeof playing.catch === 'function') playing.catch(function () { video.style.opacity = 0; });
+    };
+    video.onended = function () { playWallVideo(nextWallVideoIndex(), wallSlot().strength); };
+    video.ontimeupdate = function () {
+      var points = item.pointsOfInterest || [], caption = item.title || '', time = video.currentTime || 0;
+      for (var p = 0; p < points.length; p++) {
+        if (Number(points[p].at) > time) break;
+        caption = points[p].text || caption;
+      }
+      $('wall-caption').textContent = caption;
+    };
+    video.onerror = function () {
+      video.style.opacity = 0;
+      if (++wallVideoFailures < wallVideoSources.length) playWallVideo(nextWallVideoIndex(), strength);
+    };
+    video.pause();
+    video.src = source;
+    video.load();
+  }
+
+  function nextWallVideoIndex() {
+    if (wallVideoSources.length < 2) return 0;
+    if (!wallVideoShuffle) return (wallVideoIndex + 1) % wallVideoSources.length;
+    var next = Math.floor(Math.random() * (wallVideoSources.length - 1));
+    if (next >= wallVideoIndex) next++;
+    return next;
   }
 
   // ---------------------------------------------------------------- animated background

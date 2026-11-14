@@ -48,6 +48,10 @@ env.install();
 
 var screensavers = require('../server/lib/screensavers');
 var samrescan = require('../server/lib/samrescan');
+var wallpapers = require('../server/lib/home-wallpapers');
+var wallpaperDir = '/var/lib/tvweb/test-video-' + process.pid;
+wallpapers.init(wallpaperDir);
+wallpapers.setVideoSources(['https://media.example/aerial.mov'], false, function () {});
 
 console.log('Running test-screensaver-choices.js ...');
 
@@ -56,7 +60,10 @@ screensavers.init({
   luna: env.mockLuna,
   config: { port: 8080, allowControl: true },
   webosVersion: '10.3.1',
-  saverRoots: [{ dir: path.join(__dirname, 'fixtures', 'savers-builtin'), builtin: true }]
+  saverRoots: [
+    { dir: path.join(__dirname, 'fixtures', 'savers-builtin'), builtin: true },
+    { dir: path.join(__dirname, '..', 'server', 'assets', 'screensavers'), builtin: true }
+  ]
 });
 
 function byId(id) { return screensavers.screensaverList().modes.filter(function (m) { return m.id === id; })[0]; }
@@ -91,7 +98,14 @@ process.nextTick(checked(function () {
       assert.strictEqual(r2.ok, true, r2.error);
       assert.ok(env.files[path.join(STAGE, 'qml', 'main.qml')].indexOf('"vis=one"') !== -1);
       console.log('  ✓ an option it does not have is its default');
-      done();
+      screensavers.setScreensaver('video', 'dim', checked(function (r3) {
+        assert.strictEqual(r3.ok, true, r3.error);
+        var videoQml = env.files[path.join(STAGE, 'qml', 'main.qml')];
+        assert.ok(videoQml.indexOf('https://media.example/aerial.mov') !== -1, 'playlist URL is filled into the screen saver');
+        assert.ok(videoQml.indexOf('pointsOfInterest') !== -1, 'playlist metadata is filled into QML');
+        console.log('  ✓ the Video screen saver receives the configured playlist');
+        done();
+      }));
     }), 'nonsense');
   }), 'two');
 }));

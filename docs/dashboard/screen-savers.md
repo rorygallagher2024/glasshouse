@@ -23,6 +23,10 @@ A firmware update restores the LG default.
 
 ## Built-in screen savers
 
+### Video
+
+Plays the muted video playlist configured under **Home → Background → Video**. Aerial `entries.json` playlists include their timed points of interest as captions. The same list is shared with Glasshouse Home; the screen saver is unavailable until at least one usable video is saved. The playlist repeats in order or random order as configured there.
+
 ### Clock
 
 ![Clock screen saver: digital clock on pure black](../screenshots/screensaver-clock.png)

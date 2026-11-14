@@ -1633,6 +1633,13 @@
       </div>
     </div>
   </div>
+  <div id="home-bg-video" hidden>
+    <div class="sub" data-t="home.video.help">Add direct video links or an Aerial entries.json playlist URL. Captions from pointsOfInterest are shown as each video plays.</div>
+    <textarea id="home-video-urls" rows="4" spellcheck="false" aria-label="Video URLs, one per line" data-t-aria-label="home.video.urlsLabel"></textarea>
+    <label><input type="checkbox" id="home-video-shuffle"> <span data-t="home.video.shuffle">Play videos in a random order</span></label>
+    <button type="button" id="home-video-save" onclick="homeVideoSave()" data-t="home.video.save">Save video sources</button>
+    <div class="sub" id="home-video-note" role="status"></div>
+  </div>
   <div class="set home-dark"><div class="lbl"><span data-t="home.darkening">Darkening</span> &middot; <span id="home-dark-lbl" class="num">&mdash;</span></div>
     <div class="sub" data-t="home.darkeningDesc">How much the wallpaper is darkened behind the clock and the rows, to keep them easy to read. Off shows the picture as it is.</div>
     <div class="vol-row">

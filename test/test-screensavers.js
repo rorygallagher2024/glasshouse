@@ -148,16 +148,18 @@ console.log('Running test-screensavers.js ...');
   assert.ok(ids.indexOf('currents') !== -1, 'catalog must include currents');
   assert.ok(ids.indexOf('veils') !== -1, 'catalog must include veils');
   assert.ok(ids.indexOf('tesseract') !== -1, 'catalog must include tesseract');
-  assert.strictEqual(ids.length, 17, 'catalog must have exactly 17 entries');
+  assert.strictEqual(ids.length, 18, 'catalog must have exactly 18 entries');
+  assert.ok(ids.indexOf('video') !== -1, 'catalog must include the Video screen saver');
+  assert.ok(all.filter(function (s) { return s.id === 'video'; })[0].problem, 'Video needs a configured playlist');
   assert.ok(ids.indexOf('ha-display') !== -1, 'ha-display must be in catalog');
 
   // Each of Glasshouse's own reads cleanly from its folder
   for (var i = 0; i < all.length; i++) {
-    assert.ok(!all[i].problem, all[i].id + ': ' + all[i].problem);
+    if (all[i].id !== 'video') assert.ok(!all[i].problem, all[i].id + ': ' + all[i].problem);
     assert.strictEqual(all[i].builtin, true);
   }
 
-  console.log('  ✓ the catalog has Glasshouse\'s 15 screen savers and LG\'s, each read from its folder');
+  console.log('  ✓ the catalog has Glasshouse\'s screen savers and LG\'s, each read from its folder');
 })();
 
 // 8. trigger returns error when luna is not available
@@ -210,11 +212,12 @@ console.log('Running test-screensavers.js ...');
     (function testHaOffersEveryScreensaver() {
       var ha = require('../server/lib/ha');
       var sel = ha.buildEntities({}).filter(function (e) { return e.id === 'screensaver_mode'; })[0];
-      screensavers.catalog().forEach(function (e) {
+      screensavers.catalog().filter(function (e) { return !e.problem; }).forEach(function (e) {
         var k = e.id, label = e.label;
         assert.ok(sel.payload.options.indexOf(label) !== -1, label + ' missing from Home Assistant');
         assert.ok(sel.payload.value_template.indexOf('"' + k + '":"' + label + '"') !== -1, k + ' not mapped');
       });
+      assert.strictEqual(sel.payload.options.indexOf('Video'), -1, 'Video is not offered until its playlist is configured');
       // Clock with date stays offered, sent by its old id and shown for Clock's date option.
       assert.ok(sel.payload.options.indexOf('Clock with date') !== -1, 'Clock with date kept');
       assert.ok(sel.payload.command_template.indexOf('"Clock with date":"clock-date"') !== -1);
