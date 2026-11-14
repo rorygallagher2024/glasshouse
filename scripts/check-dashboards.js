@@ -549,6 +549,9 @@ async function visitHomePreviewWebos4(browser, base, problems) {
     await page.clock.install();
     await page.goto(base + '/assets/home.html');
     await page.waitForSelector('.tile');
+    if (!await page.locator('.tile.dev.tuner .dhead .dico svg').count()) {
+      problems.push('Home preview on webOS 4: the TV tuner tile has no icon');
+    }
     await page.clock.fastForward(400);
     await page.waitForTimeout(100);
     const type = await page.evaluate(() => {

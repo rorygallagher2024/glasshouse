@@ -1122,6 +1122,13 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
   // Input tile icons, shared with the input bar (devicons.js).
   var devIcon = window.glasshouseDevIcon;
 
+  function devTileHtml(d, i, cls, path, status, cec) {
+    return '<div class="' + cls + '" data-c="' + i + '"><div class="dhead">' + devIcon(d) + '<div class="dtx"><div class="nm">' + esc(d.name) + '</div>' +
+      '<div class="path">' + esc(path) + '</div></div></div>' +
+      '<div class="st"><em>' + esc(status) + '</em><span>' + (cec ? esc(cec) : '') + '</span></div>' +
+      hiddenLabel + '</div>';
+  }
+
   var TILE = {
     app: function (a, i) {
       if (a.folder) {
@@ -1147,10 +1154,8 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
         : last ? t('home.dev.last', 'Last watched')
         : d.unused ? t('home.dev.unused', 'Nothing connected')
         : t('home.dev.connected', 'Connected');
-      return '<div class="' + cls + '" data-c="' + i + '"><div class="dhead">' + devIcon(d) + '<div class="dtx"><div class="nm">' + esc(d.name) + '</div>' +
-        '<div class="path">' + esc(path) + '</div></div></div>' +
-        '<div class="st"><em>' + esc(status) + '</em>' +
-        '<span>' + (!isExtra && d.address && layout.showCec !== false ? esc(t('home.dev.cec', 'CEC {address}', { address: d.address })) : '') + '</span></div>' + hiddenLabel + '</div>';
+      var cec = !isExtra && d.address && layout.showCec !== false ? t('home.dev.cec', 'CEC {address}', { address: d.address }) : '';
+      return devTileHtml(d, i, cls, path, status, cec);
     },
     ch: function (c, i) {
       var cls = 'tile ch' + (hidden('ch', c.id) ? ' hidden' : '');
@@ -1202,10 +1207,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     var last = layout.showLastOn !== false && lastOn.kind === 'channel';
     var cls = 'tile dev tuner' + (last ? ' last' : '') + (hidden('dev', d.id) ? ' hidden' : '');
     var path = d.channel ? d.channel.number + ' ' + d.channel.name : '';
-    return '<div class="' + cls + '" data-c="' + i + '"><div><div class="nm">' + esc(d.name) + '</div>' +
-      '<div class="path">' + esc(path) + '</div></div>' +
-      '<div class="st"><em>' + esc(last ? t('home.dev.last', 'Last watched') : t('ctl.liveTv', 'Live TV')) + '</em><span></span></div>' +
-      hiddenLabel + '</div>';
+    return devTileHtml(d, i, cls, path, last ? t('home.dev.last', 'Last watched') : t('ctl.liveTv', 'Live TV'), '');
   }
 
   // noScroll: focus only, as the pointer does, leaving each row where it is.
