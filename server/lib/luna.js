@@ -18,7 +18,8 @@ var LUNA_SEND = process.env.TVWEB_LUNA_SEND || '/usr/bin/luna-send';
 // switches to the legacy name and retries transparently.
 var SERVICE_MAP = [
   { newer: 'com.webos.service.settings/',       legacy: 'com.webos.settingsservice/' },
-  { newer: 'com.webos.service.systemservice/',   legacy: 'com.palm.systemservice/' }
+  { newer: 'com.webos.service.systemservice/',   legacy: 'com.palm.systemservice/' },
+  { newer: 'com.webos.service.capture/',         legacy: 'com.webos.service.tv.capture/' }
 ];
 // Learned on first call: which service name the TV actually uses.
 var _serviceName = {};

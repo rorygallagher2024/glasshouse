@@ -156,6 +156,29 @@ function testBothIndependent() {
       'independent: systemservice should use the new name');
     console.log('  ✓ services are probed independently');
 
-    console.log('ALL test-luna-webos3.js assertions passed!\n');
+    testCaptureService();
+  });
+}
+
+function testCaptureService() {
+  calls = [];
+  nextResponse = function (uri) {
+    return { returnValue: false, errorText: uri.indexOf('com.webos.service.capture/') === 0 ? 'Service does not exist' : 'No video is playing' };
+  };
+  var transport = freshLuna();
+  transport.call('com.webos.service.capture/executeOneShot', { method: 'VIDEO', width: 1920, height: 1080 }, function (r) {
+    assert.strictEqual(r.errorText, 'No video is playing');
+    assert.deepEqual(calls, ['com.webos.service.capture/executeOneShot', 'com.webos.service.tv.capture/executeOneShot']);
+    transport.call('com.webos.service.capture/executeOneShot', {}, function () {
+      assert.strictEqual(calls[2], 'com.webos.service.tv.capture/executeOneShot');
+      calls = [];
+      transport = freshLuna();
+      nextResponse = { returnValue: false, errorText: 'No video is playing' };
+      transport.call('com.webos.service.capture/executeOneShot', {}, function () {
+        assert.strictEqual(calls.length, 1, 'a capture error is not a missing service');
+        console.log('  ✓ capture fallback is remembered even when video capture fails');
+        console.log('ALL test-luna-webos3.js assertions passed!\n');
+      });
+    });
   });
 }

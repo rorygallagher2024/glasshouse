@@ -198,7 +198,7 @@ function phase(name, chaos, next, mqttDisabled, missingModule) {
             // are read a group at a time, and each call that never answers is
             // cut off at 3.5s. CI on node 8.12 saw a 12s gap.
             var gapLimit = chaos ? 25000 : 12000;
-            var until = Date.now() + SECS * 1000, worst = 0, worstPage = 0, pending = false, installChecked = false;
+            var until = Date.now() + SECS * 1000, worst = 0, worstPage = 0, pending = false, installChecked = false, screenshotsChecked = false;
             var probe = setInterval(function () {
               if (exited) { clearInterval(probe); return fail('server exited: ' + JSON.stringify(exited)); }
               if (pending) return;
@@ -215,6 +215,12 @@ function phase(name, chaos, next, mqttDisabled, missingModule) {
                     try { st = JSON.parse(ib); } catch (e) {}
                     if (ic !== 200 || !st || st.state !== 'idle') fail('install status answered ' + ic + ': ' + ib);
                   });
+                  get(port, '/api/screenshots', function (sc, sb) {
+                    var result = null;
+                    try { result = JSON.parse(sb); } catch (e) {}
+                    if (sc !== 200 || !result || !result.ok || !Array.isArray(result.screenshots)) return fail('screenshots answered ' + sc + ': ' + sb);
+                    screenshotsChecked = true;
+                  });
                   http.get({ host: '127.0.0.1', port: port, path: '/api/apps/catalog', headers: { host: 'evil.example' }, agent: false }, function (hr) {
                     hr.resume();
                     if (hr.statusCode !== 403) fail('a foreign Host reached the catalog route: ' + hr.statusCode);
@@ -227,7 +233,7 @@ function phase(name, chaos, next, mqttDisabled, missingModule) {
                 });
                 var t = broker.last(/^boot\/telemetry$/);
                 if (!mqttDisabled && Date.now() - t.at > gapLimit) { clearInterval(probe); return fail('no telemetry for ' + Math.round((Date.now() - t.at) / 1000) + 's'); }
-                if (Date.now() < until) return;
+                if (Date.now() < until || !screenshotsChecked) return;
                 clearInterval(probe);
                 if (worst >= statsLimit) return fail('slowest stats answer ' + worst + 'ms');
                 console.log('  ✓ ' + name + ': answered for ' + SECS + 's (slowest stats ' + worst + 'ms, page ' +
