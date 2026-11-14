@@ -78,13 +78,14 @@ var nextRun = 0;
 var progressTimer = setInterval(function () {
   if (left <= 0) { clearInterval(progressTimer); return; }
   var elapsed = Math.round((Date.now() - startedAt) / 1000);
-  var running = runs.filter(function (r) { return r.started && !r.finished; }).map(function (r) { return r.suite; });
-  if (running.length <= 4) {
-    console.log('[' + elapsed + 's] ' + (runs.length - left) + '/' + runs.length + ' done; running: ' + running.join(', '));
-  } else {
-    console.log('[' + elapsed + 's] ' + (runs.length - left) + '/' + runs.length + ' done (' + running.length + ' running)');
-  }
-}, 10000);
+  // Every suite running is named, with how long it has run: a CI job whose
+  // runner stops answering keeps no log, and the lines its page streamed
+  // before then are the only word of what was running.
+  var running = runs.filter(function (r) { return r.started && !r.finished; }).map(function (r) {
+    return r.suite.replace(/^test-|\.js$/g, '') + (r.shard ? '#' + r.shard : '') + ' ' + Math.round((Date.now() - r.startedAt) / 1000) + 's';
+  });
+  console.log('[' + elapsed + 's] ' + (runs.length - left) + '/' + runs.length + ' done; running: ' + running.join(', '));
+}, 5000);
 if (progressTimer.unref) progressTimer.unref();
 
 function startNext() {
