@@ -120,14 +120,19 @@ function startRun(run) {
 
   proc.on('exit', function (code, sig) {
     var exitCode = (code !== null) ? code : (sig ? 128 : 1);
+    // SIGKILL from outside: in CI, the memory cap on the unit tests.
+    if (sig) run.out.signal = sig;
     closeTimer = setTimeout(function () {
       try { proc.kill('SIGKILL'); } catch (e) {}
       finish(exitCode);
     }, 500);
   });
 
-  proc.on('close', function (code) {
-    finish(code !== null ? code : 0);
+  // A suite ended by a signal has no exit code: it failed, as killed by the
+  // memory cap in CI, though 'close' can come before 'exit' says so.
+  proc.on('close', function (code, sig) {
+    if (sig) run.out.signal = sig;
+    finish(code !== null ? code : (sig ? 128 : 0));
   });
 
   var suiteTimeoutMs = (run.suite.indexOf('boot') !== -1 ? Math.max(90, defaultTimeoutSecs) : defaultTimeoutSecs) * 1000;
@@ -150,7 +155,8 @@ function report() {
     process.stdout.write(run.out.stdout);
     if (run.out.stderr) process.stderr.write(run.out.stderr);
     if (run.out.code !== 0) {
-      console.error('FAIL: ' + run.suite + (run.shard ? ' (shard ' + run.shard + ')' : '') + ' exited with code ' + run.out.code);
+      console.error('FAIL: ' + run.suite + (run.shard ? ' (shard ' + run.shard + ')' : '') +
+        (run.out.signal ? ' was killed by ' + run.out.signal : ' exited with code ' + run.out.code));
       failed[run.suite] = true;
     }
   });
