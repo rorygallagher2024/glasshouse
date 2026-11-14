@@ -3231,7 +3231,6 @@
  "nav.grp.tv": {"text": "Ajustes del televisor", "from": "TV settings"},
  "tab.inputs": {"text": "Entradas", "from": "Inputs"},
  "tab.remote": {"text": "Mando", "from": "Remote"},
- "inputs.desc": {"text": "Las entradas HDMI del televisor: cuáles se ofrecen, la barra que cambia entre ellas y qué muestra una vacía.", "from": "The TV’s HDMI inputs: which ones are offered, the bar that switches between them, and what an empty one shows."},
  "inputs.yours": {"text": "Tus entradas", "from": "Your inputs"},
  "inputs.yours.desc": {"text": "Las entradas que ofrecen la barra de entradas Glasshouse y los lanzadores de Glasshouse, y su orden. Ocultar una aquí la oculta en ambos.", "from": "The inputs Glasshouse Input bar and Glasshouse launchers offer, and their order. Hiding one here hides it on both."},
  "inputs.bar.desc": {"text": "Una franja con tus entradas sobre la imagen, en lugar de la lista de LG. Una tecla del mando la abre y pasa de una a otra.", "from": "A strip of your inputs over the picture, in place of LG’s list. A key on the remote opens it and steps through them."},
@@ -3271,5 +3270,5 @@
  "inputs.showMediaServers": {"text": "Mostrar servidores multimedia", "from": "Show media servers"},
  "inputs.showMediaServersDesc": {"text": "Muestra los servidores multimedia DLNA detectados en la red junto a las entradas del televisor. Déjalo desactivado para ocultar todos los actuales y futuros.", "from": "Shows DLNA media servers discovered on your network alongside your TV’s inputs. Leave off to hide all current and future media servers."},
  "inputs.bar.transparent": {"text": "Tarjetas transparentes", "from": "Transparent tiles"},
- "inputs.bar.transparentDesc": {"text": "Deja ver la imagen a través de las tarjetas de la barra. Desactivado las mantiene opacas para que cambiar entre entradas sea más rápido.", "from": "Lets the picture show through the bar’s tiles. Off keeps them opaque so stepping through inputs is faster."}
+ "inputs.bar.transparentDesc": {"text": "Deja ver la imagen a través de las tarjetas de la barra.", "from": "Lets the picture show through the bar’s tiles."}
 }

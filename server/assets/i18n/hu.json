@@ -3245,7 +3245,6 @@
  "nav.grp.tv": {"text": "TV-beállítások", "from": "TV settings"},
  "tab.inputs": {"text": "Bemenetek", "from": "Inputs"},
  "tab.remote": {"text": "Távirányító", "from": "Remote"},
- "inputs.desc": {"text": "A TV HDMI-bemenetei: melyek jelennek meg, a köztük váltó sáv, és mit mutat az üres bemenet.", "from": "The TV’s HDMI inputs: which ones are offered, the bar that switches between them, and what an empty one shows."},
  "inputs.yours": {"text": "Saját bemenetek", "from": "Your inputs"},
  "inputs.yours.desc": {"text": "A Glasshouse Bemeneti sáv és a Glasshouse indítók által kínált bemenetek, valamint a sorrendjük. Az itt elrejtett bemenet mindkettőből eltűnik.", "from": "The inputs Glasshouse Input bar and Glasshouse launchers offer, and their order. Hiding one here hides it on both."},
  "inputs.bar.desc": {"text": "A bemenetek sávja a kép fölött, az LG listája helyett. A távirányító egy gombja megnyitja és végiglépteti.", "from": "A strip of your inputs over the picture, in place of LG’s list. A key on the remote opens it and steps through them."},
@@ -3285,5 +3284,5 @@
  "inputs.showMediaServers": {"text": "Médiaszerverek megjelenítése", "from": "Show media servers"},
  "inputs.showMediaServersDesc": {"text": "Megjeleníti a hálózaton talált DLNA-médiaszervereket a TV bemenetei mellett. Kikapcsolva az összes jelenlegi és jövőbeli médiaszervert elrejti.", "from": "Shows DLNA media servers discovered on your network alongside your TV’s inputs. Leave off to hide all current and future media servers."},
  "inputs.bar.transparent": {"text": "Átlátszó csempék", "from": "Transparent tiles"},
- "inputs.bar.transparentDesc": {"text": "Átengedi a képet a sáv csempéin. Kikapcsolva átlátszatlanok maradnak, így gyorsabb a bemenetek közötti léptetés.", "from": "Lets the picture show through the bar’s tiles. Off keeps them opaque so stepping through inputs is faster."}
+ "inputs.bar.transparentDesc": {"text": "Átengedi a képet a sáv csempéin.", "from": "Lets the picture show through the bar’s tiles."}
 }

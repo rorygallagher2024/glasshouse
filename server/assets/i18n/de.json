@@ -876,7 +876,6 @@
  "nav.grp.tv": {"text": "TV-Einstellungen", "from": "TV settings"},
  "tab.inputs": {"text": "Eingänge", "from": "Inputs"},
  "tab.remote": {"text": "Fernbedienung", "from": "Remote"},
- "inputs.desc": {"text": "Die HDMI-Eingänge des TVs: welche angeboten werden, die Leiste zum Umschalten und was ein leerer Eingang zeigt.", "from": "The TV’s HDMI inputs: which ones are offered, the bar that switches between them, and what an empty one shows."},
  "inputs.yours": {"text": "Ihre Eingänge", "from": "Your inputs"},
  "inputs.yours.desc": {"text": "Die Eingänge, die die Glasshouse-Eingangsleiste und Glasshouse-Launcher anbieten, und ihre Reihenfolge. Hier ausgeblendete fehlen in beiden.", "from": "The inputs Glasshouse Input bar and Glasshouse launchers offer, and their order. Hiding one here hides it on both."},
  "inputs.bar.desc": {"text": "Eine Leiste Ihrer Eingänge über dem Bild, anstelle der Liste von LG. Eine Taste der Fernbedienung öffnet sie und schaltet durch.", "from": "A strip of your inputs over the picture, in place of LG’s list. A key on the remote opens it and steps through them."},
@@ -917,5 +916,5 @@
  "inputs.showMediaServers": {"text": "Medienserver anzeigen", "from": "Show media servers"},
  "inputs.showMediaServersDesc": {"text": "Zeigt im Netzwerk gefundene DLNA-Medienserver neben den TV-Eingängen an. Aus blendet alle aktuellen und künftigen Medienserver aus.", "from": "Shows DLNA media servers discovered on your network alongside your TV’s inputs. Leave off to hide all current and future media servers."},
  "inputs.bar.transparent": {"text": "Transparente Kacheln", "from": "Transparent tiles"},
- "inputs.bar.transparentDesc": {"text": "Lässt das Bild durch die Kacheln der Leiste scheinen. Aus lässt sie deckend, damit das Weiterschalten durch die Eingänge schneller reagiert.", "from": "Lets the picture show through the bar’s tiles. Off keeps them opaque so stepping through inputs is faster."}
+ "inputs.bar.transparentDesc": {"text": "Lässt das Bild durch die Kacheln der Leiste scheinen.", "from": "Lets the picture show through the bar’s tiles."}
 }

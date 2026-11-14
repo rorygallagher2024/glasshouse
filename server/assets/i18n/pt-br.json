@@ -3231,7 +3231,6 @@
  "nav.grp.tv": {"text": "Configurações da TV", "from": "TV settings"},
  "tab.inputs": {"text": "Entradas", "from": "Inputs"},
  "tab.remote": {"text": "Controle remoto", "from": "Remote"},
- "inputs.desc": {"text": "As entradas HDMI da TV: quais são oferecidas, a barra que alterna entre elas e o que uma entrada vazia mostra.", "from": "The TV’s HDMI inputs: which ones are offered, the bar that switches between them, and what an empty one shows."},
  "inputs.yours": {"text": "Suas entradas", "from": "Your inputs"},
  "inputs.yours.desc": {"text": "As entradas oferecidas pela Barra de entradas Glasshouse e pelos iniciadores Glasshouse, e sua ordem. Ocultar uma aqui a oculta em ambos.", "from": "The inputs Glasshouse Input bar and Glasshouse launchers offer, and their order. Hiding one here hides it on both."},
  "inputs.bar.desc": {"text": "Uma faixa com suas entradas sobre a imagem, no lugar da lista da LG. Um botão do controle a abre e percorre as entradas.", "from": "A strip of your inputs over the picture, in place of LG’s list. A key on the remote opens it and steps through them."},
@@ -3271,5 +3270,5 @@
  "inputs.showMediaServers": {"text": "Mostrar servidores de mídia", "from": "Show media servers"},
  "inputs.showMediaServersDesc": {"text": "Mostra servidores de mídia DLNA encontrados na sua rede junto às entradas da TV. Deixe desativado para ocultar todos os servidores atuais e futuros.", "from": "Shows DLNA media servers discovered on your network alongside your TV’s inputs. Leave off to hide all current and future media servers."},
  "inputs.bar.transparent": {"text": "Blocos transparentes", "from": "Transparent tiles"},
- "inputs.bar.transparentDesc": {"text": "Deixa a imagem aparecer através dos blocos da barra. Desativado os mantém opacos para alternar entre entradas mais rápido.", "from": "Lets the picture show through the bar’s tiles. Off keeps them opaque so stepping through inputs is faster."}
+ "inputs.bar.transparentDesc": {"text": "Deixa a imagem aparecer através dos blocos da barra.", "from": "Lets the picture show through the bar’s tiles."}
 }

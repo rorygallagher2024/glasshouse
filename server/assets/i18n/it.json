@@ -3245,7 +3245,6 @@
  "nav.grp.tv": {"text": "Impostazioni TV", "from": "TV settings"},
  "tab.inputs": {"text": "Ingressi", "from": "Inputs"},
  "tab.remote": {"text": "Telecomando", "from": "Remote"},
- "inputs.desc": {"text": "Gli ingressi HDMI del TV: quali vengono proposti, la barra per passare dall’uno all’altro e cosa mostra un ingresso vuoto.", "from": "The TV’s HDMI inputs: which ones are offered, the bar that switches between them, and what an empty one shows."},
  "inputs.yours": {"text": "I tuoi ingressi", "from": "Your inputs"},
  "inputs.yours.desc": {"text": "Gli ingressi proposti dalla Barra degli ingressi Glasshouse e dai launcher Glasshouse, e il loro ordine. Nasconderne uno qui lo nasconde in entrambi.", "from": "The inputs Glasshouse Input bar and Glasshouse launchers offer, and their order. Hiding one here hides it on both."},
  "inputs.bar.desc": {"text": "Una striscia dei tuoi ingressi sopra l’immagine, al posto dell’elenco di LG. Un tasto del telecomando la apre e li scorre.", "from": "A strip of your inputs over the picture, in place of LG’s list. A key on the remote opens it and steps through them."},
@@ -3285,5 +3284,5 @@
  "inputs.showMediaServers": {"text": "Mostra server multimediali", "from": "Show media servers"},
  "inputs.showMediaServersDesc": {"text": "Mostra i server multimediali DLNA rilevati sulla rete accanto agli ingressi della TV. Lascia spento per nascondere tutti i server multimediali attuali e futuri.", "from": "Shows DLNA media servers discovered on your network alongside your TV’s inputs. Leave off to hide all current and future media servers."},
  "inputs.bar.transparent": {"text": "Riquadri trasparenti", "from": "Transparent tiles"},
- "inputs.bar.transparentDesc": {"text": "Lascia intravedere l’immagine attraverso i riquadri della barra. Disattivato li mantiene opachi per scorrere gli ingressi più velocemente.", "from": "Lets the picture show through the bar’s tiles. Off keeps them opaque so stepping through inputs is faster."}
+ "inputs.bar.transparentDesc": {"text": "Lascia intravedere l’immagine attraverso i riquadri della barra.", "from": "Lets the picture show through the bar’s tiles."}
 }

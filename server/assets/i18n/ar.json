@@ -3231,7 +3231,6 @@
  "nav.grp.tv": {"text": "إعدادات التلفزيون", "from": "TV settings"},
  "tab.inputs": {"text": "المداخل", "from": "Inputs"},
  "tab.remote": {"text": "الريموت", "from": "Remote"},
- "inputs.desc": {"text": "مداخل HDMI في التلفزيون: أيّها يُعرض، والشريط الذي يبدّل بينها، وما يعرضه المدخل الفارغ.", "from": "The TV’s HDMI inputs: which ones are offered, the bar that switches between them, and what an empty one shows."},
  "inputs.yours": {"text": "مداخلك", "from": "Your inputs"},
  "inputs.yours.desc": {"text": "المداخل التي يعرضها شريط مداخل Glasshouse ومُشغّلات Glasshouse، وترتيبها. إخفاء مدخل هنا يخفيه في الاثنين.", "from": "The inputs Glasshouse Input bar and Glasshouse launchers offer, and their order. Hiding one here hides it on both."},
  "inputs.bar.desc": {"text": "شريط بمداخلك فوق الصورة بدلاً من قائمة LG. يفتحه زر في الريموت ويتنقل بينها.", "from": "A strip of your inputs over the picture, in place of LG’s list. A key on the remote opens it and steps through them."},
@@ -3271,5 +3270,5 @@
  "inputs.showMediaServers": {"text": "إظهار خوادم الوسائط", "from": "Show media servers"},
  "inputs.showMediaServersDesc": {"text": "يعرض خوادم وسائط DLNA المكتشفة على شبكتك إلى جانب مداخل التلفاز. اتركه مغلقاً لإخفاء جميع خوادم الوسائط الحالية والمستقبلية.", "from": "Shows DLNA media servers discovered on your network alongside your TV’s inputs. Leave off to hide all current and future media servers."},
  "inputs.bar.transparent": {"text": "مربعات شفافة", "from": "Transparent tiles"},
- "inputs.bar.transparentDesc": {"text": "يسمح للصورة بالظهور عبر مربعات الشريط. إيقافه يُبقيها معتمة ليكون التنقل بين المداخل أسرع.", "from": "Lets the picture show through the bar’s tiles. Off keeps them opaque so stepping through inputs is faster."}
+ "inputs.bar.transparentDesc": {"text": "يسمح للصورة بالظهور عبر مربعات الشريط.", "from": "Lets the picture show through the bar’s tiles."}
 }

@@ -3231,7 +3231,6 @@
  "nav.grp.tv": {"text": "Réglages du téléviseur", "from": "TV settings"},
  "tab.inputs": {"text": "Entrées", "from": "Inputs"},
  "tab.remote": {"text": "Télécommande", "from": "Remote"},
- "inputs.desc": {"text": "Les entrées HDMI du téléviseur : celles qui sont proposées, la barre qui passe de l’une à l’autre et ce qu’affiche une entrée vide.", "from": "The TV’s HDMI inputs: which ones are offered, the bar that switches between them, and what an empty one shows."},
  "inputs.yours": {"text": "Vos entrées", "from": "Your inputs"},
  "inputs.yours.desc": {"text": "Les entrées proposées par la barre des entrées Glasshouse et les lanceurs Glasshouse, et leur ordre. En masquer une ici la masque dans les deux.", "from": "The inputs Glasshouse Input bar and Glasshouse launchers offer, and their order. Hiding one here hides it on both."},
  "inputs.bar.desc": {"text": "Une bande de vos entrées par-dessus l’image, à la place de la liste de LG. Une touche de la télécommande l’ouvre et les fait défiler.", "from": "A strip of your inputs over the picture, in place of LG’s list. A key on the remote opens it and steps through them."},
@@ -3271,5 +3270,5 @@
  "inputs.showMediaServers": {"text": "Afficher les serveurs multimédias", "from": "Show media servers"},
  "inputs.showMediaServersDesc": {"text": "Affiche les serveurs multimédias DLNA découverts sur votre réseau avec les entrées du téléviseur. Laissez désactivé pour masquer tous les serveurs multimédias actuels et futurs.", "from": "Shows DLNA media servers discovered on your network alongside your TV’s inputs. Leave off to hide all current and future media servers."},
  "inputs.bar.transparent": {"text": "Vignettes transparentes", "from": "Transparent tiles"},
- "inputs.bar.transparentDesc": {"text": "Laisse apparaître l’image à travers les vignettes de la barre. Désactivé, elles restent opaques pour passer d’une entrée à l’autre plus rapidement.", "from": "Lets the picture show through the bar’s tiles. Off keeps them opaque so stepping through inputs is faster."}
+ "inputs.bar.transparentDesc": {"text": "Laisse apparaître l’image à travers les vignettes de la barre.", "from": "Lets the picture show through the bar’s tiles."}
 }

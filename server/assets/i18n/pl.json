@@ -3231,7 +3231,6 @@
  "nav.grp.tv": {"text": "Ustawienia telewizora", "from": "TV settings"},
  "tab.inputs": {"text": "Wejścia", "from": "Inputs"},
  "tab.remote": {"text": "Pilot", "from": "Remote"},
- "inputs.desc": {"text": "Wejścia HDMI telewizora: które są dostępne, pasek do przełączania między nimi i co pokazuje puste wejście.", "from": "The TV’s HDMI inputs: which ones are offered, the bar that switches between them, and what an empty one shows."},
  "inputs.yours": {"text": "Twoje wejścia", "from": "Your inputs"},
  "inputs.yours.desc": {"text": "Wejścia dostępne na Pasku wejść Glasshouse i w launcherach Glasshouse oraz ich kolejność. Ukrycie wejścia tutaj ukrywa je w obu miejscach.", "from": "The inputs Glasshouse Input bar and Glasshouse launchers offer, and their order. Hiding one here hides it on both."},
  "inputs.bar.desc": {"text": "Pasek z wejściami nad obrazem, zamiast listy LG. Przycisk pilota otwiera go i przełącza kolejne wejścia.", "from": "A strip of your inputs over the picture, in place of LG’s list. A key on the remote opens it and steps through them."},
@@ -3271,5 +3270,5 @@
  "inputs.showMediaServers": {"text": "Pokaż serwery multimediów", "from": "Show media servers"},
  "inputs.showMediaServersDesc": {"text": "Wyświetla wykryte w sieci serwery multimediów DLNA obok wejść telewizora. Wyłączenie ukrywa wszystkie obecne i przyszłe serwery multimediów.", "from": "Shows DLNA media servers discovered on your network alongside your TV’s inputs. Leave off to hide all current and future media servers."},
  "inputs.bar.transparent": {"text": "Przezroczyste kafelki", "from": "Transparent tiles"},
- "inputs.bar.transparentDesc": {"text": "Pozwala prześwitywać obrazowi przez kafelki paska. Wyłączone utrzymuje je nieprzezroczyste, dzięki czemu przełączanie wejść jest szybsze.", "from": "Lets the picture show through the bar’s tiles. Off keeps them opaque so stepping through inputs is faster."}
+ "inputs.bar.transparentDesc": {"text": "Pozwala prześwitywać obrazowi przez kafelki paska.", "from": "Lets the picture show through the bar’s tiles."}
 }
