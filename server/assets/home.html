@@ -252,6 +252,9 @@ html.resting #wall .layer{-webkit-animation-play-state:paused;animation-play-sta
 .app img,.app .mono{display:block;width:112px;height:112px;margin:0 auto;border-radius:14px}
 .app .mono{background:#2a2825;color:#ece7df;font-family:'Outfit',sans-serif;font-size:44px;font-weight:300;line-height:112px}
 .app .nm{font-size:21px;font-weight:600;margin-top:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* Dark monochrome icons on transparent (AirPlay on webOS 4) sit on warm white
+   so a black background never swallows them. */
+.app img.dark-ico,.chip img.dark-ico{background:#ece7df}
 
 .dev{width:470px;min-height:142px;display:-webkit-flex;display:flex;-webkit-flex-direction:column;flex-direction:column;
   -webkit-justify-content:space-between;justify-content:space-between}
@@ -1110,15 +1113,58 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
   var hiddenLabel = '<span class="hid">' + esc(t('home.hidden', 'Hidden')) + '</span>';
   var folderLabel = '<span class="fld">' + esc(t('home.folder.label', 'In More apps')) + '</span>';
 
+  var darkIconCache = {};
+  function isDarkIcon(img) {
+    try {
+      var canvas = document.createElement('canvas');
+      canvas.width = 24;
+      canvas.height = 24;
+      var ctx = canvas.getContext('2d');
+      if (!ctx) return false;
+      ctx.drawImage(img, 0, 0, 24, 24);
+      var data = ctx.getImageData(0, 0, 24, 24).data;
+      var trans = 0, vis = 0, dark = 0;
+      for (var i = 0; i < data.length; i += 4) {
+        var a = data[i + 3];
+        if (a < 32) { trans++; continue; }
+        if (a >= 64) {
+          vis++;
+          if ((data[i] + data[i + 1] + data[i + 2]) / 3 < 70) dark++;
+        }
+      }
+      return trans > 60 && vis > 0 && dark === vis;
+    } catch (e) { return false; }
+  }
+  function isAppImg(el) {
+    if (!el || el.tagName !== 'IMG') return false;
+    var p = el.parentNode;
+    if (!p) return false;
+    var c = p.className || '';
+    if (/(^| )app( |$)|(^| )chip( |$)/.test(c)) return true;
+    return !!(p.parentNode && /(^| )fold( |$)/.test(p.parentNode.className || ''));
+  }
+  document.addEventListener('load', function (e) {
+    var img = e.target;
+    if (!isAppImg(img)) return;
+    var src = img.getAttribute('src');
+    if (!src || img.naturalWidth === 0) return;
+    if (!(src in darkIconCache)) darkIconCache[src] = isDarkIcon(img);
+    if (darkIconCache[src] && img.className.indexOf('dark-ico') === -1) {
+      img.className = (img.className ? img.className + ' ' : '') + 'dark-ico';
+    }
+  }, true);
+  function appImgTag(src) {
+    return '<img' + (darkIconCache[src] ? ' class="dark-ico"' : '') + ' src="' + esc(src) + '" alt="">';
+  }
   function appIcon(a) {
-    return a.icon ? '<img src="' + esc(a.icon) + '" alt="">' :
+    return a.icon ? appImgTag(a.icon) :
       '<span class="mono">' + esc(a.lg ? 'LG' : String(a.title).charAt(0)) + '</span>';
   }
   // The first four of the folder's icons, as the tile that opens it.
   function folderIcon(inside) {
     var html = '';
     inside.slice(0, 4).forEach(function (a) {
-      html += '<i>' + (a.icon ? '<img src="' + esc(a.icon) + '" alt="">' : esc(a.lg ? 'LG' : String(a.title).charAt(0))) + '</i>';
+      html += '<i>' + (a.icon ? appImgTag(a.icon) : esc(a.lg ? 'LG' : String(a.title).charAt(0))) + '</i>';
     });
     return '<span class="fold">' + html + '</span>';
   }
@@ -4347,7 +4393,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
       var mono = '<span class="mono">' + esc(String(hit.title).charAt(0)) + '</span>';
       var chips = '';
       hit.apps.forEach(function (a, c) {
-        chips += '<span class="chip" data-c="' + c + '">' + (a.icon ? '<img src="' + esc(a.icon) + '" alt="">' : '<span class="mono">' + esc(String(a.title).charAt(0)) + '</span>') +
+        chips += '<span class="chip" data-c="' + c + '">' + (a.icon ? appImgTag(a.icon) : '<span class="mono">' + esc(String(a.title).charAt(0)) + '</span>') +
           '<span class="nm">' + esc(a.title) + '</span></span>';
       });
       html += '<div class="hit" data-r="' + i + '"><div class="poster">' + (hit.poster ? '<img src="' + esc(hit.poster) + '" alt="">' : mono) + '</div>' +
