@@ -929,7 +929,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     if (kind === 'iptv' && data.sources && data.sources.iptv && (state.arranging || (!out.length && !hasLineup))) {
       out.push({ id: ADD_TILE, add: true, name: t('home.tv.addTitle', 'Add channels') });
     } else if (kind === 'iptv' && (out.length || hasLineup) && !state.arranging) {
-      out.push({ id: GUIDE_TILE, guide: true, name: t('home.tv.guide', 'Guide') });
+      out.push({ id: GUIDE_TILE, guide: true, name: t('home.tv.guide', 'IPTV Guide') });
     }
     return out;
   }
@@ -1223,7 +1223,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
       if (c.guide) {
         return '<div class="tile ch tv add" data-c="' + i + '"><div class="glyph"><svg viewBox="0 0 48 36" width="48" height="36" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">' +
           '<path d="M2 6h10M18 6h28M2 18h22M30 18h16M2 30h6M14 30h32"/></svg></div>' +
-          '<div class="nm">' + esc(c.name) + '</div><div class="prog quiet">' + esc(t('home.tv.guideDesc', 'What is on now and later')) + '</div></div>';
+          '<div class="nm">' + esc(c.name) + '</div></div>';
       }
       if (c.add) {
         return '<div class="tile ch tv add" data-c="' + i + '"><div class="glyph"><span class="mono">+</span></div>' +
@@ -3673,7 +3673,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
   function renderGuideStrip() {
     var it = guide.list[guide.row], p = it && !guide.tabs ? guideFocus(it) : null;
     $('source').className = it ? '' : 'none';
-    $('srcKind').textContent = p && p.start <= Date.now() && Date.now() < p.end ? t('home.tv.onNow', 'On now') : t('home.tv.guide', 'Guide');
+    $('srcKind').textContent = p && p.start <= Date.now() && Date.now() < p.end ? t('home.tv.onNow', 'On now') : t('home.tv.guide', 'IPTV Guide');
     $('srcTitle').textContent = p ? p.title : it ? it.name : ' ';
     $('srcVia').textContent = it ? (p ? t('home.tv.guideVia', '{name}, {from} to {to}', { name: it.name, from: hm(new Date(p.start)), to: hm(new Date(p.end)) })
       : tvUnplayable(it) || t('home.tv.guideNone', 'No guide for these hours')) : ' ';
