@@ -103,8 +103,9 @@ jobs:
       - name: Unit tests, in a 6 GB memory cap
         run: |
           node --version
-          sudo -E systemd-run --scope --quiet --uid="$(id -u)" --gid="$(id -g)" \
-            -p MemoryMax=6G -p MemorySwapMax=0 \
+          # OOMPolicy=continue: only the suite the kernel kills ends, not run-all.
+          sudo systemd-run --scope --quiet --uid="$(id -u)" --gid="$(id -g)" \
+            -p MemoryMax=6G -p MemorySwapMax=0 -p OOMPolicy=continue \
             env "PATH=$PATH" node test/run-all.js
       - name: Memory kills, where the unit tests failed
         if: failure()
