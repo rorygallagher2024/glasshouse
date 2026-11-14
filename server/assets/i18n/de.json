@@ -905,5 +905,6 @@
  "home.bar.short": {"text": "Untere Leiste über dem Bild", "from": "Bottom bar over the picture"},
  "home.customShort": {"text": "Eigene Web-App oder Webseite", "from": "Your own web app or page"},
  "inputs.noSignal.lg": {"text": "LGs Bildschirm", "from": "LG’s screen"},
- "inputs.noSignal.lgDesc": {"text": "Bild und Hinweis mit „Kein Signal“.", "from": "Picture and advice with “No Signal”."}
+ "inputs.noSignal.lgDesc": {"text": "Bild und Hinweis mit „Kein Signal“.", "from": "Picture and advice with “No Signal”."},
+ "apps.inputBar": {"text": "Glasshouse-Eingangsleiste", "from": "Glasshouse Input bar"}
 }

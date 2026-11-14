@@ -3250,8 +3250,8 @@ async function visitInputsAndRemote(browser, base, problems) {
   const writes = [];
   try {
     await page.route('**/api/inputs', route => route.fulfill({ json: { ok: true, writable: true, noSignal, inputBar: { standing: 'tried', allowed: true, experimental: false } } }));
-    await page.route('**/api/home/catalogue', route => route.fulfill({ json: { ok: true, layout, order: { dev: ['HDMI_1', 'HDMI_2'] },
-      devices: [{ id: 'HDMI_1', name: 'Console', port: 1 }, { id: 'HDMI_2', name: 'HDMI 2', port: 2, unused: true }] } }));
+    await page.route('**/api/home/catalogue', route => route.fulfill({ json: { ok: true, layout, order: { dev: ['TV', 'HDMI_1', 'HDMI_2'] },
+      devices: [{ id: 'TV', name: 'Live TV', tuner: true }, { id: 'HDMI_1', name: 'Console', port: 1 }, { id: 'HDMI_2', name: 'HDMI 2', port: 2, unused: true }] } }));
     await page.route('**/api/home/layout', async route => {
       const patch = route.request().postDataJSON();
       writes.push(patch);
@@ -3284,8 +3284,9 @@ async function visitInputsAndRemote(browser, base, problems) {
     });
     await page.goto(base + '/?tab=inputs');
     await page.locator('#inputs-list .home-tile').first().waitFor();
-    if (await page.locator('#inputs-list .home-tile').count() !== 2) fail('the inputs are not listed');
-    if (await page.locator('#inputs-list .home-tile .inp-ico svg').count() !== 2) fail('input cards have no device icons');
+    if (await page.locator('#inputs-list .home-tile').count() !== 3) fail('the inputs are not listed');
+    if (await page.locator('#inputs-list .home-tile .inp-ico svg').count() !== 3) fail('input cards have no device icons');
+    if (await page.locator('#inputs-list .home-tile').first().locator('.inp-status').count() !== 0) fail('Live TV card showed a connection status');
     if (!await page.locator('#inputs-sort').isVisible() || !await page.locator('#home-hide-unused').isVisible()) fail('the input list options are missing');
     await page.locator('#inputs-list [data-dev="HDMI_2"]').click();
     await page.locator('#inputs-list [data-dev="HDMI_2"].idle').waitFor();

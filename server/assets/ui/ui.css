@@ -1037,6 +1037,7 @@ button.pill.flash.idle[disabled]:hover{color:var(--w60);border-color:var(--edge)
 .tab-grp[hidden]{display:none}
 .tab-grp .pv-sec{margin-bottom:10px}
 #inputspane .pv-g{margin:20px 0 10px}
+#inputs-nosignal-cards{margin-top:16px}
 #inputs-bar-choice-note,#inputs-nosignal-desc{margin:12px 0 0}
 .apps-grp-h{font-weight:500;font-size:13px;letter-spacing:.11em;text-transform:uppercase;color:var(--w80);margin:0 0 6px}
 .apps-grp-d{margin-bottom:6px}

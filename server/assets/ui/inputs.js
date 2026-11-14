@@ -62,18 +62,20 @@ function renderInputList() {
     const path = d.tuner
       ? t('ctl.liveTv', 'Live TV')
       : (d.via ? t('home.dev.through', 'HDMI {port}, through {via}', { port: d.port, via: d.via }) : t('home.dev.port', 'HDMI {port}', { port: d.port }));
-    const stateHtml = leftOut
-      ? `<span class="pill idle">${esc(t('home.leftOut', 'Left out'))}</span>`
-      : d.unused
-        ? `<span class="inp-status"><i></i>${esc(t('home.dev.unused', 'Nothing connected'))}</span>`
-        : `<span class="inp-status conn"><i></i>${esc(t('home.dev.connected', 'Connected'))}</span>`;
-    return `<div class="inp-card home-tile${!isShown || leftOut ? ' home-hidden' : ''}${d.unused ? ' inp-unused' : ' inp-conn'}">
+    const stateHtml = d.tuner
+      ? ''
+      : leftOut
+        ? `<span class="pill idle">${esc(t('home.leftOut', 'Left out'))}</span>`
+        : d.unused
+          ? `<span class="inp-status"><i></i>${esc(t('home.dev.unused', 'Nothing connected'))}</span>`
+          : `<span class="inp-status conn"><i></i>${esc(t('home.dev.connected', 'Connected'))}</span>`;
+    return `<div class="inp-card home-tile${!isShown || leftOut ? ' home-hidden' : ''}${d.unused ? ' inp-unused' : d.tuner ? '' : ' inp-conn'}">
       <div class="inp-head">
         <div class="inp-ico">${ico}</div>
         <div class="inp-txt">
           <div class="inp-name" translate="no">${esc(d.name)}</div>
           <div class="inp-port">${esc(path)}</div>
-          <div class="inp-state">${stateHtml}</div>
+          ${stateHtml ? `<div class="inp-state">${stateHtml}</div>` : ''}
         </div>
       </div>
       <div class="inp-foot">
@@ -186,7 +188,7 @@ function renderInputBar() {
   const ours = opens(input), lg = input.action === 'lg';
   setInputsCard(q('inputs-bar-lg'), 'inplg', t('inputs.bar.lg', 'LG\u2019s list'),
     t('inputs.bar.isLg', 'LG\u2019s own list of inputs, as the TV came.'), lg, !writable);
-  setInputsCard(q('inputs-bar-ours'), 'inpbar', t('apps.inputBar', 'Input bar'),
+  setInputsCard(q('inputs-bar-ours'), 'inpbar', t('apps.inputBar', 'Glasshouse Input bar'),
     t('inputs.bar.isOurs', 'Each press steps to the next input, and the TV switches a second after the last.'), ours, !writable);
   const note = q('inputs-bar-choice-note');
   note.hidden = lg || ours;

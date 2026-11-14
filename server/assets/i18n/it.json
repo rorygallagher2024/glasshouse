@@ -3119,7 +3119,7 @@
  "srv.saver.stuck": {"text": "La TV è rimasta bloccata mentre avviava un salvaschermo e non ne avvia altri finché non viene riavviata. Riavvia la TV per risolvere.", "from": "The TV is stuck starting a screen saver and refuses to start another until it is restarted. Restart the TV to clear it."},
  "srv.saver.notClosed": {"text": "il salvaschermo sulla TV non si è chiuso, quindi il cambio non è stato fatto", "from": "the screen saver on the TV did not close, so the switch was left undone"},
  "ss.choice": {"text": "Animazione", "from": "Animation"},
- "apps.inputBar": {"text": "Barra degli ingressi", "from": "Input bar"},
+ "apps.inputBar": {"text": "Barra degli ingressi Glasshouse", "from": "Glasshouse Input bar"},
  "server.experimental.inputBar": {"text": "Barra degli ingressi", "from": "Input bar"},
  "server.experimental.inputBar.short": {"text": "Offre la barra degli ingressi sotto Tasti del telecomando nella scheda Telecomando: una striscia degli ingressi HDMI sopra l’immagine, da scorrere con il tasto Ingresso del telecomando.", "from": "Offers the input bar under Remote keys on the Remote tab: a strip of the HDMI inputs over the picture, stepped through with the remote’s Input key."},
  "server.experimental.inputBar.warn": {"text": "Provata solo su webOS 4, 6 e 9. Disattivandola, i tasti che la usano tornano come impostati da LG e la sua app viene rimossa.", "from": "Tried on webOS 4, 6 and 9 only. Switching it off sets any key using it back to LG’s and removes its app."},

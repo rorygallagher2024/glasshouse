@@ -3105,7 +3105,7 @@
  "tv.update.slow": {"from": "Restart is taking longer than expected", "text": "Le redémarrage prend plus de temps que prévu"},
  "tv.update.whatsNew.more.hint": {"from": "Their notes are on GitHub, under Glasshouse’s releases.", "text": "Leurs notes sont sur GitHub, dans les versions de Glasshouse."},
  "tv.viewOnly": {"from": "View only", "text": "Lecture seule"},
- "apps.inputBar": {"text": "Barre des entrées", "from": "Input bar"},
+ "apps.inputBar": {"text": "Barre des entrées Glasshouse", "from": "Glasshouse Input bar"},
  "server.experimental.inputBar": {"text": "Barre des entrées", "from": "Input bar"},
  "server.experimental.inputBar.short": {"text": "Propose la barre des entrées sous Touches de la télécommande dans l’onglet Télécommande : un bandeau des entrées HDMI sur l’image, parcouru avec la touche Entrée de la télécommande.", "from": "Offers the input bar under Remote keys on the Remote tab: a strip of the HDMI inputs over the picture, stepped through with the remote’s Input key."},
  "server.experimental.inputBar.warn": {"text": "Essayé sur webOS 4, 6 et 9 uniquement. La désactiver remet comme sur LG toute touche qui l’utilise et supprime son application.", "from": "Tried on webOS 4, 6 and 9 only. Switching it off sets any key using it back to LG’s and removes its app."},
