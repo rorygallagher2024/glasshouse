@@ -1537,6 +1537,18 @@ function setupHomeAssistant() {
     console.log('mqtt: TV switched ' + (off ? 'off' : 'on') + ' - status ' + statusPayload());
     if (mqttClient.connected) {
       mqttClient.publish(mqttTopics.status, statusPayload(), true);
+      /*
+       * The media player's own state, at once rather than waiting for
+       * publishTelemetry's collectStats round trip, whose luna calls get
+       * slower switching off - the full telemetry still follows below.
+       */
+      if (CONFIG.mqtt && CONFIG.mqtt.universalMediaPlayer && lastPub) {
+        var quickPub = {};
+        for (var qk in lastPub) quickPub[qk] = lastPub[qk];
+        quickPub.tvOff = tvOff;
+        mqttClient.publish(mqttTopics.state('media_player'),
+          JSON.stringify(ha.mediaPlayerState(quickPub, iconServer.baseUrl(), playingChannel())), true);
+      }
       publishTelemetry();
       piccap.refreshAndPublishState();
       huesync.refreshAndPublishState();
