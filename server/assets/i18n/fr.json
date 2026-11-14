@@ -569,7 +569,7 @@
  "home.arrange.hide": {"from": "Hide or show", "text": "Masquer ou afficher"},
  "home.arrange.isHidden": {"from": "(hidden)", "text": "(masquée)"},
  "home.arrange.isInFolder": {"from": "{name} (in More apps)", "text": "{name} (dans Plus d'apps)"},
- "home.arrange.keys": {"from": "OK picks a tile up or puts it down. Held, the arrows move it or its row, and Back hides or shows it, or removes a channel. Left of a row, OK sets its order.", "text": "OK prend ou dépose une tuile. Maintenue, les flèches déplacent la tuile ou sa rangée, et Retour la masque ou l'affiche, ou retire une chaîne. À gauche d'une rangée, OK règle son ordre."},
+ "home.arrange.keys": {"text": "OK prend ou dépose une tuile. Prise, les flèches déplacent la tuile ou sa rangée ; posée, Haut ou Bas atteint cette barre. Vert place une app dans ou hors de Plus d'apps, et Rouge ou Retour masque ou retire. À gauche d'une rangée, OK règle son ordre.", "from": "OK picks up or puts down. Held, arrows move it or its row; put down, Up or Down reaches this bar. Green moves an app in or out of More apps, and Red or Back hides or removes it. Left of a row, OK sets its order."},
  "home.arrange.moving": {"from": "Moving {name}", "text": "Déplacement de {name}"},
  "home.arrange.nowCustom": {"from": "{row} are now in your order", "text": "{row} sont maintenant dans votre ordre"},
  "home.arrange.nowCustomDesc": {"from": "The row's Order, left of its first tile, puts them back in last opened order", "text": "L'Ordre de la rangée, à gauche de sa première tuile, les remet dans l'ordre de dernière ouverture"},

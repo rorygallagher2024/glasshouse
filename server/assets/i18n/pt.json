@@ -420,7 +420,7 @@
  "home.arrange.hide": {"text": "Ocultar ou mostrar", "from": "Hide or show"},
  "home.arrange.isHidden": {"text": "(oculto)", "from": "(hidden)"},
  "home.arrange.isInFolder": {"text": "{name} (em Mais aplicações)", "from": "{name} (in More apps)"},
- "home.arrange.keys": {"text": "OK pega num mosaico ou pousa-o. Enquanto está pegado, as setas movem-no a ele ou à sua fila, e Retroceder oculta-o ou mostra-o, ou remove um canal. À esquerda de uma fila, OK define a sua ordem.", "from": "OK picks a tile up or puts it down. Held, the arrows move it or its row, and Back hides or shows it, or removes a channel. Left of a row, OK sets its order."},
+ "home.arrange.keys": {"text": "OK pega ou pousa um mosaico. Pego, as setas movem-no ou à sua fila; pousado, Cima ou Baixo chega a esta barra. Verde mete ou tira uma app de Mais aplicações, e Vermelho ou Retroceder oculta ou remove. À esquerda de uma fila, OK define a ordem.", "from": "OK picks up or puts down. Held, arrows move it or its row; put down, Up or Down reaches this bar. Green moves an app in or out of More apps, and Red or Back hides or removes it. Left of a row, OK sets its order."},
  "home.arrange.moving": {"text": "A mover {name}", "from": "Moving {name}"},
  "home.arrange.nowCustom": {"text": "{row} estão agora pela sua ordem", "from": "{row} are now in your order"},
  "home.arrange.nowCustomDesc": {"text": "A Ordem da fila, à esquerda do primeiro mosaico, repõe a ordem pela última abertura", "from": "The row's Order, left of its first tile, puts them back in last opened order"},

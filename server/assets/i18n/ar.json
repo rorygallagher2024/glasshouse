@@ -423,7 +423,7 @@
  "home.arrange.hide": {"text": "إخفاء أو إظهار", "from": "Hide or show"},
  "home.arrange.isHidden": {"text": "(مخفي)", "from": "(hidden)"},
  "home.arrange.isInFolder": {"text": "{name} (في المزيد من التطبيقات)", "from": "{name} (in More apps)"},
- "home.arrange.keys": {"text": "زر OK يلتقط الأيقونة أو يثبتها. أثناء الالتقاط، الأسهم تحركها أو تحرك صفها، وزر الرجوع يخفيها أو يظهرها أو يزيل قناة. على يسار الصف، زر OK يغير طريقة الترتيب.", "from": "OK picks a tile up or puts it down. Held, the arrows move it or its row, and Back hides or shows it, or removes a channel. Left of a row, OK sets its order."},
+ "home.arrange.keys": {"text": "زر OK يلتقط الأيقونة أو يثبتها. أثناء الالتقاط، الأسهم تحركها أو تحرك صفها؛ وعند تثبيتها، يوصلك السهم للأعلى أو للأسفل إلى هذا الشريط. الأخضر ينقل التطبيق إلى «المزيد من التطبيقات» أو يخرجه منه، والأحمر أو الرجوع يخفيه أو يزيله. على يسار الصف، زر OK يغير طريقة الترتيب.", "from": "OK picks up or puts down. Held, arrows move it or its row; put down, Up or Down reaches this bar. Green moves an app in or out of More apps, and Red or Back hides or removes it. Left of a row, OK sets its order."},
  "home.arrange.moving": {"text": "جاري نقل {name}", "from": "Moving {name}"},
  "home.arrange.nowCustom": {"text": "{row} مرتبة الآن حسب اختيارك", "from": "{row} are now in your order"},
  "home.arrange.nowCustomDesc": {"text": "خيار الترتيب على يسار أول أيقونة يعيدها للترتيب حسب آخر ما تم فتحه", "from": "The row's Order, left of its first tile, puts them back in last opened order"},

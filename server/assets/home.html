@@ -305,9 +305,13 @@ html.resting #wall .layer{-webkit-animation-play-state:paused;animation-play-sta
   font-size:20px;color:#a39d93;padding:14px 22px;border-radius:6px;background:#141310;border-left:3px solid #e9ad55}
 .arranging #banner{display:-webkit-flex;display:flex}
 #banner b{color:#ece7df;font-weight:600;margin-right:8px}
-#banner .keys{-webkit-flex:1 1 auto;flex:1 1 auto;margin-left:34px}
-#banner .btn{margin-left:12px;padding:8px 18px;border-radius:5px;color:#ece7df;background:#231d12;outline:2px solid transparent}
+#banner .keys{-webkit-flex:1 1 auto;flex:1 1 auto;margin-left:34px;font-size:18px;line-height:1.35}
+#banner .btn{margin-left:12px;padding:8px 18px;border-radius:5px;color:#ece7df;background:#231d12;outline:2px solid transparent;white-space:nowrap}
 #banner .btn.focus{outline-color:#e9ad55}
+#btnHide::before,#btnFolder::before,#btnReset::before{content:'';display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:9px;vertical-align:1px}
+#btnHide::before{background:#e05252}
+#btnFolder::before{background:#46b868}
+#btnReset::before{background:#d9b343}
 
 #toast{position:absolute;z-index:1;left:112px;bottom:26px;font-size:23px;color:#ece7df;padding:14px 22px;border-radius:6px;
   background:#141310;border-left:3px solid #e9ad55;opacity:0;-webkit-transform:translateY(8px);transform:translateY(8px);
@@ -315,7 +319,7 @@ html.resting #wall .layer{-webkit-animation-play-state:paused;animation-play-sta
 #toast.show{opacity:1;-webkit-transform:none;transform:none}
 .playing #toast{z-index:6}
 #toast small{display:block;font-size:18px;color:#a39d93;margin-top:4px}
-.arranging #toast{bottom:96px}
+.arranging #toast{bottom:112px}
 
 /* Recent apps: Back's panel, in place of the one in LG's Home. The
    snapshots are the panel: each a small copy of the screen as it was left,
@@ -704,7 +708,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
 
   <div id="banner">
     <span><b data-t="home.arrange.title">Arranging</b><span id="bannerState">&mdash;</span></span>
-    <span class="keys" data-t="home.arrange.keys">OK picks a tile up or puts it down. Held, the arrows move it or its row, and Back hides or shows it, or removes a channel. Left of a row, OK sets its order.</span>
+    <span class="keys" data-t="home.arrange.keys">OK picks up or puts down. Held, arrows move it or its row; put down, Up or Down reaches this bar. Green moves an app in or out of More apps, and Red or Back hides or removes it. Left of a row, OK sets its order.</span>
     <span class="btn" id="btnHide" data-t="home.arrange.hide">Hide or show</span>
     <span class="btn" id="btnFolder" data-t="home.arrange.folder">Into or out of More apps</span>
     <span class="btn" id="btnReset" data-t="home.arrange.reset">Reset</span>
@@ -785,7 +789,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
   var lastOn = { kind: null };
   // last: the tile focused last, which the bar's Hide or show acts on. rail:
   // the search mark in the left gutter has the focus.
-  var state = { row: 0, col: {}, arranging: false, held: false, bar: -1, last: null, rail: false };
+  var state = { row: 0, col: {}, arranging: false, held: false, bar: -1, barFrom: '', last: null, rail: false };
   var BAR = ['btnHide', 'btnFolder', 'btnReset', 'btnDone'];
   var build = null;
   var okDownAt = 0, okTimer = null, okLong = false, okInRecents = false, okInFolder = false, backDown = false;
@@ -4599,6 +4603,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     if (!last) return;
     var kind = last.kind, it = byId(kind, last.id);
     if (!it) return;
+    state.held = false;
     if (kind === 'ch') {
       layout.channels = layout.channels.filter(function (id) { return id !== it.id; });
       data.order.ch = data.order.ch.filter(function (id) { return id !== it.id; });
@@ -4627,6 +4632,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     var last = state.last;
     if (!last || last.kind !== 'app') return toast(t('home.arrange.folderAppsOnly', 'Only apps go into More apps'));
     if (!byId('app', last.id)) return;
+    state.held = false;
     if (!layout.folder) layout.folder = [];
     if (inFolder('app', last.id)) leaveFolder(last.id);
     else {
@@ -4654,8 +4660,8 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
   }
 
   function pressBar(b) {
-    if (BAR[b] === 'btnHide') { state.bar = -1; toggleHidden(); }
-    else if (BAR[b] === 'btnFolder') { state.bar = -1; toggleFolder(); }
+    if (BAR[b] === 'btnHide') { state.bar = -1; state.barFrom = ''; toggleHidden(); }
+    else if (BAR[b] === 'btnFolder') { state.bar = -1; state.barFrom = ''; toggleFolder(); }
     else if (BAR[b] === 'btnReset') resetLayout();
     else setArranging(false);
   }
@@ -4664,16 +4670,20 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     if (state.bar >= 0) {
       if (k === KEY.left) state.bar = Math.max(0, state.bar - 1);
       else if (k === KEY.right) state.bar = Math.min(BAR.length - 1, state.bar + 1);
-      else if (k === KEY.up) state.bar = -1;
+      else if (k === KEY.up || (state.barFrom === 'up' && k === KEY.down)) { state.bar = -1; state.barFrom = ''; }
       else if (k === KEY.ok) return pressBar(state.bar);
       return applyFocus();
     }
     if (k === KEY.left) return state.held ? shiftTile(-1) : move(0, -1);
     if (k === KEY.right) return state.held ? shiftTile(1) : move(0, 1);
-    if (k === KEY.up) return state.held ? shiftRow(-1) : move(-1, 0);
+    if (k === KEY.up) {
+      if (state.held) return shiftRow(-1);
+      if (state.row === 0) { state.bar = 0; state.barFrom = 'up'; return applyFocus(); }
+      return move(-1, 0);
+    }
     if (k === KEY.down) {
       if (state.held) return shiftRow(1);
-      if (state.row === layout.rows.length - 1) { state.bar = 0; return applyFocus(); }
+      if (state.row === layout.rows.length - 1) { state.bar = 0; state.barFrom = 'down'; return applyFocus(); }
       return move(1, 0);
     }
     if (k === KEY.ok) return pickUp();

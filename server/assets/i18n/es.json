@@ -1799,7 +1799,7 @@
  "home.arrange.emptyRow": {"text": "Esta fila está vacía", "from": "This row is empty"},
  "home.arrange.hide": {"text": "Ocultar o mostrar", "from": "Hide or show"},
  "home.arrange.isHidden": {"text": "(oculta)", "from": "(hidden)"},
- "home.arrange.keys": {"text": "OK coge una tarjeta o la suelta. Con una cogida, las flechas la mueven a ella o a su fila, y Atrás la oculta o la muestra, o quita un canal. A la izquierda de una fila, OK cambia su orden.", "from": "OK picks a tile up or puts it down. Held, the arrows move it or its row, and Back hides or shows it, or removes a channel. Left of a row, OK sets its order."},
+ "home.arrange.keys": {"text": "OK coge o suelta una tarjeta. Cogida, las flechas mueven la tarjeta o su fila; suelta, Arriba o Abajo llega a esta barra. Verde mete o saca una app de Más apps, y Rojo o Atrás la oculta o quita. A la izquierda de una fila, OK cambia su orden.", "from": "OK picks up or puts down. Held, arrows move it or its row; put down, Up or Down reaches this bar. Green moves an app in or out of More apps, and Red or Back hides or removes it. Left of a row, OK sets its order."},
  "home.arrange.moving": {"text": "Moviendo {name}", "from": "Moving {name}"},
  "home.arrange.nowCustom": {"text": "{row}: ahora en tu orden", "from": "{row} are now in your order"},
  "home.arrange.nowCustomDesc": {"text": "La Orden de la fila, a la izquierda de su primera tarjeta, las devuelve al orden de último abierto", "from": "The row's Order, left of its first tile, puts them back in last opened order"},

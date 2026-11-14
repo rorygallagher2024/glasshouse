@@ -443,7 +443,7 @@
  "home.arrange.hide": {"text": "Ukryj lub pokaż", "from": "Hide or show"},
  "home.arrange.isHidden": {"text": "(ukryty)", "from": "(hidden)"},
  "home.arrange.isInFolder": {"text": "{name} (w Więcej aplikacji)", "from": "{name} (in More apps)"},
- "home.arrange.keys": {"text": "OK podnosi lub odkłada kafelek. Gdy jest podniesiony, strzałki przesuwają go lub jego rząd, a Wstecz go ukrywa lub pokazuje albo usuwa kanał. Po lewej stronie rzędu OK ustawia jego kolejność.", "from": "OK picks a tile up or puts it down. Held, the arrows move it or its row, and Back hides or shows it, or removes a channel. Left of a row, OK sets its order."},
+ "home.arrange.keys": {"text": "OK podnosi lub odkłada kafelek. Podniesiony przesuwa strzałkami kafelek lub rząd; odłożony pozwala przejść Górą lub Dołem do tego paska. Zielony przenosi aplikację do lub z Więcej aplikacji, a Czerwony lub Wstecz ukrywa lub usuwa. Po lewej stronie rzędu OK ustawia kolejność.", "from": "OK picks up or puts down. Held, arrows move it or its row; put down, Up or Down reaches this bar. Green moves an app in or out of More apps, and Red or Back hides or removes it. Left of a row, OK sets its order."},
  "home.arrange.moving": {"text": "Przenoszenie: {name}", "from": "Moving {name}"},
  "home.arrange.nowCustom": {"text": "{row} są teraz w Twojej kolejności", "from": "{row} are now in your order"},
  "home.arrange.nowCustomDesc": {"text": "Kolejność rzędu, po lewej od pierwszego kafelka, przywraca kolejność ostatniego otwarcia", "from": "The row's Order, left of its first tile, puts them back in last opened order"},

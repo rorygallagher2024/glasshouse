@@ -442,7 +442,7 @@
  "home.arrange.hide": {"text": "Nascondi o mostra", "from": "Hide or show"},
  "home.arrange.isHidden": {"text": "(nascosto)", "from": "(hidden)"},
  "home.arrange.isInFolder": {"text": "{name} (in Altre app)", "from": "{name} (in More apps)"},
- "home.arrange.keys": {"text": "OK prende o posa un riquadro. Mentre lo tieni, le frecce spostano il riquadro o la sua riga, e Indietro lo nasconde o lo mostra, oppure rimuove un canale. A sinistra di una riga, OK ne imposta l'ordine.", "from": "OK picks a tile up or puts it down. Held, the arrows move it or its row, and Back hides or shows it, or removes a channel. Left of a row, OK sets its order."},
+ "home.arrange.keys": {"text": "OK prende o posa un riquadro. Preso, le frecce spostano il riquadro o la sua riga; posato, Su o Giù raggiunge questa barra. Verde sposta un'app dentro o fuori da Altre app, e Rosso o Indietro nasconde o rimuove. A sinistra di una riga, OK ne imposta l'ordine.", "from": "OK picks up or puts down. Held, arrows move it or its row; put down, Up or Down reaches this bar. Green moves an app in or out of More apps, and Red or Back hides or removes it. Left of a row, OK sets its order."},
  "home.arrange.moving": {"text": "Spostamento di {name}", "from": "Moving {name}"},
  "home.arrange.nowCustom": {"text": "{row}: ora nel tuo ordine", "from": "{row} are now in your order"},
  "home.arrange.nowCustomDesc": {"text": "L'Ordine della riga, a sinistra del primo riquadro, li rimette in ordine di ultima apertura", "from": "The row's Order, left of its first tile, puts them back in last opened order"},
