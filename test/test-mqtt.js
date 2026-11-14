@@ -122,7 +122,8 @@ function testSilentBrokerReconnect(done) {
       client.client.destroy(); // captures ping timer on reconnect
       waitFor('reconnect and capture ping', function () { return connects === 2 && client.connected && ping; }, 8000, function () {
         global.setInterval = realSetInterval;
-        Date.now = function () { return realNow() + 60000; };
+        // Past 1.5x the default keepAlive (60s), so past its own give-up point.
+        Date.now = function () { return realNow() + 91000; };
         ping();
         Date.now = realNow;
         waitFor('reconnect after silence', function () { return connects === 3 && client.connected; }, 8000, function () {

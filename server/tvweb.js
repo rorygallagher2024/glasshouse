@@ -100,6 +100,7 @@ var routes = require('./lib/routes');
 var prometheus = require('./lib/prometheus');
 var stateModule = require('./lib/state');
 var mqttStateModule = require('./lib/mqtt-state');
+var reconnectStatus = require('./lib/reconnect-status');
 var topics = require('./lib/topics');
 var notifications = require('./lib/notifications');
 var lunaTransport = require('./lib/luna');
@@ -1273,6 +1274,15 @@ function setupHomeAssistant() {
     username: CONFIG.mqtt.username || null,
     password: CONFIG.mqtt.password || null,
     clientId: (CONFIG.mqtt.clientId || (devId + '_tvweb')),
+    /*
+     * A TV without an Active Standby stage (an LCD, and an OLED not running
+     * panel care) goes from Active straight to Suspend: the system sleeps
+     * within milliseconds, too soon for the "off" setTvOff publishes to
+     * leave, and the broker's will is the only word of it. The default (60s)
+     * keepalive leaves that up to a minute and a half behind.
+     */
+    keepAlive: 10,
+    // "offline" while the TV is on, a server that is gone: setTvOff makes it "asleep" as the TV switches off.
     will: {
       topic: mqttTopics.status,
       payload: 'offline',
@@ -1496,18 +1506,29 @@ function setupHomeAssistant() {
    */
   var tvOff = false;
   function statusPayload() { return tvOff ? 'off' : 'online'; }
+  var statusOnReconnect = reconnectStatus.create({
+    isOff: function () { return tvOff; },
+    publish: function () { if (mqttClient.connected) mqttClient.publish(mqttTopics.status, statusPayload(), true); }
+  });
   function setTvOff(off) {
     if (off === tvOff) return;
     tvOff = off;
+    statusOnReconnect.cancel();
     console.log('mqtt: TV switched ' + (off ? 'off' : 'on') + ' - status ' + statusPayload());
+    if (mqttClient.connected) mqttClient.publish(mqttTopics.status, statusPayload(), true);
+    /*
+     * The will follows the switch, straight after the status and ahead of the
+     * rest: a TV that goes from Active to Suspend at once is asleep within
+     * milliseconds, and each step before this one is a step it may not finish.
+     * A will is fixed when the connection is made, so this reconnects, and the
+     * telemetry and the rest go out from the reconnect.
+     */
+    mqttClient.setWill(off ? 'asleep' : 'offline');
     if (mqttClient.connected) {
-      mqttClient.publish(mqttTopics.status, statusPayload(), true);
       publishTelemetry();
       piccap.refreshAndPublishState();
       huesync.refreshAndPublishState();
     }
-    // After the publishes above: on a B8 the TV can be asleep within 5s.
-    mqttClient.setWill(off ? 'asleep' : 'offline');
   }
   liveState.state.onChange(function (ev) {
     if (ev.group === 'power' && ev.key === 'systemOn' && typeof ev.value === 'boolean') setTvOff(!ev.value);
@@ -1553,7 +1574,13 @@ function setupHomeAssistant() {
     if (!mqttClient.connected) return;
     lastPublish = Date.now();
     pusher.started();
-    mqttClient.publish(mqttTopics.status, statusPayload(), true);
+    /*
+     * Not while a status is queued after a reconnect: a TV that sleeps a moment
+     * later keeps what it wrote in its send buffer and sends it as it wakes, so
+     * an off written here ahead of the queued one reached the broker just before
+     * the on (an OLED48CX8LC, a second of off on waking).
+     */
+    if (!statusOnReconnect.pending()) mqttClient.publish(mqttTopics.status, statusPayload(), true);
     lgSettings.collect(LGS_SECTIONS, function (ls) {
     telemetry.collectStats(function(s) {
       // No collection has finished yet, as when the first after a cold boot
@@ -1704,7 +1731,7 @@ function setupHomeAssistant() {
     flushMqttErrorRepeats();
     console.log('mqtt: connected to ' + hostPort(CONFIG.mqtt.host, mqttClient.opts.port) +
                 (useTls ? ' (tls)' : ' (plaintext)'));
-    mqttClient.publish(mqttTopics.status, statusPayload(), true);
+    statusOnReconnect.connected();
     // Republish the in-memory state because broker retention is not assumed.
     stateMqtt.publishSnapshot();
     // Do not assert a guessed screen state before the TV reports one.

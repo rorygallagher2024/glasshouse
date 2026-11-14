@@ -1359,6 +1359,32 @@ off it fired as the TV resumed, 250 ms after the server saw the screen on in
 one wake and before it did in another, and took the view, which had not yet
 had a chance to beat, for hung (#1277).
 
+## Switching off without Active Standby (webOS 4.4.3, 49SK8500PLA; webOS 5.6.2, OLED48CX8LC)
+
+An LCD, and an OLED that is not running panel care, go from Active to Suspend
+at once. Glasshouse logs `Active -> Suspend` and `TV switched off` 10 to 25 ms
+apart, and the system is asleep after that: the clock since boot moved 2 s
+across a 140 s standby, and the watchdog reported `resumed after 140s
+suspended`. Home Assistant saw nothing of the "off" status published in those
+milliseconds, only the broker's will once the connection had been silent for
+its keepalive.
+
+Changing the will as the TV switches off does not finish in that time either:
+on the 49SK8500PLA, switched off at 20:09:39, the broker published the old
+will, `offline`, at 20:09:54 (keepalive 10 s). The OLED48CX8LC did the same
+twice: the reconnect with the new will was logged 3.3 s after the switch-off,
+and the will that came out 15 s later was still `offline`. After a Wake-on-LAN
+into Active Standby, which leaves seconds before it sleeps again, the change
+did take and the will came out as `asleep`.
+
+What a TV has written in its last moments before it sleeps stays in its send
+buffer and goes out as it wakes. On the OLED48CX8LC an off published at the
+reconnect just before it slept reached the broker a second before the TV's own
+power answer, which showed Power off for that second.
+
+An OLED running panel care (OLED48C31LA, webOS 11.2.0) goes Active to Active
+Standby first and stays up for 6 to 15 s before Suspend, and its "off" arrives.
+
 ## Keeping a TV awake while off (webOS 4.4.3, B8)
 
 The question was whether the B8 could stay reachable while switched off, as

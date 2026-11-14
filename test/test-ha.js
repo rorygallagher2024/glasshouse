@@ -276,6 +276,25 @@ console.log('Running test-ha.js ...');
   console.log('  ✓ the ad blocker switch turns on Ads & telemetry, not Everything');
 })();
 
+// Power reads the status topic, so the "asleep" the will sets reads off, and a
+// server that is gone ("offline") makes it unavailable. Settings and facts stay
+// available while the TV sleeps, as they always did, and controls and live
+// readings do not
+(function testPowerFromStatus() {
+  var all = ha.buildEntities({ pfx: 'test/tv', allowPower: true, isOled: true });
+  all.forEach(function (e) { ha.withAvailability(e, 'test/tv/status'); });
+  var byId = {};
+  all.forEach(function (e) { byId[e.id] = e.payload; });
+  assert.strictEqual(byId.power.state_topic, 'test/tv/status');
+  assert.ok(byId.power.value_template.indexOf('"ON" if value == "online"') !== -1, 'off and asleep both read off');
+  assert.ok(byId.power.availability_template.indexOf("value == 'offline'") !== -1, 'unavailable only for a server that is gone');
+  assert.ok(byId.oled_panel_hours.availability_template.indexOf("value == 'offline'") !== -1, 'a fact stays available asleep');
+  ['power_off', 'soc_temperature'].forEach(function (id) {
+    assert.ok(byId[id].availability_template.indexOf("['online', 'off']") !== -1, id + ' is unavailable asleep');
+  });
+  console.log('  \u2713 Power reads the status topic, and the other entities keep their availability');
+})();
+
 // Every discovery config has one form of availability: Home Assistant
 // rejects a config with an availability list and availability_topic together,
 // which left volume, mute and the volume buttons uncreated (#437)
