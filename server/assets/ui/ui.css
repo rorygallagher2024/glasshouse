@@ -1697,8 +1697,7 @@ button.tools-jump:active{background:var(--w80)}
 
 /* The Home tab */
 /* The state above, then the choice of launcher across the width beneath it. */
-#home-hero{display:flex;flex-direction:column;align-items:stretch;gap:18px;padding:8px 0 0}
-#home-choose .lbl{margin-bottom:10px}
+#home-hero{display:flex;flex-direction:column;align-items:stretch;gap:18px}
 #home-hero .pv-sub{margin:0}
 #home-hero .pv-note{margin:12px 0 0}
 #home-exp>summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:8px;color:var(--w80);font-weight:500}
@@ -1722,7 +1721,7 @@ button.tools-jump:active{background:var(--w80)}
 #home-custom.lg-home .home-gh-row{display:none}
 /* Each group's last row draws no line, as the next group's heading follows. */
 .home-custom-table .prot-row.last{border-bottom:0}
-.home-group+.home-group .pv-g{margin-top:34px}
+.home-group+.home-group .pv-g,#home-more>.pv-g{margin:34px 0 6px}
 /* Its folding sections read as rows of the list above: a row's title, the
    count and the plus at the right, a row's rule beneath. */
 #home-custom .pv-d>summary{font-family:'Manrope',sans-serif;font-weight:600;font-size:14px;letter-spacing:.02em;

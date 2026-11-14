@@ -109,7 +109,8 @@ function renderHomeCustom(autoVal) {
     renderSystemTiles(lg);
   }
   if (layout && (!lg || inPlace)) layout.hidden = true;
-  if (box) box.hidden = !(glasshouseOn || autoVal !== undefined || (layout && !layout.hidden) || (tiles && !tiles.hidden));
+  const more = q('home-more');
+  if (box) box.hidden = !(glasshouseOn || (more && !more.hidden) || autoVal !== undefined || (layout && !layout.hidden) || (tiles && !tiles.hidden));
 }
 
 function homePreviewTiles(count) {

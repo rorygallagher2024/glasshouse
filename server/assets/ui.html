@@ -1262,7 +1262,7 @@
 <section class="priv panel" id="homepane" role="tabpanel" hidden>
   <div id="home-hero">
     <div id="home-choose">
-      <div class="lbl" data-t="home.choose">Choose your launcher</div>
+      <div class="pv-sec" data-t="home.choose">Choose your launcher</div>
       <div class="hm-grid" id="home-mode-btns">
         <button type="button" id="home-mode-lg" onclick="homeChooseMode(false)">&mdash;</button>
         <button type="button" id="home-switch" onclick="homeChooseMode(true)">&mdash;</button>
@@ -1578,7 +1578,7 @@
   <div id="home-more">
 
   <!-- .home-arrange: also shown while a custom launcher is the TV's Home, whose apps and inputs it orders and hides -->
-  <div class="pv-sec adv-sec home-arrange" id="home-layout-title" data-t="home.layout">Rows and tiles</div>
+  <div class="pv-g home-arrange" id="home-layout-title" data-t="home.layout">Rows and tiles</div>
   <div class="sub home-arrange home-gh-only" data-t="home.layoutDesc">Apps and inputs come from the TV: hide the ones not wanted. Channels are only the ones added here. Holding OK on Glasshouse Home arranges the same layout on the TV.</div>
   <div class="sub home-arrange home-bar-only" data-t="home.layoutDescBar">Which of the TV&rsquo;s apps and inputs Glasshouse Bar shows, and in what order. Apps in More apps are left out of it.</div>
   <div class="sub home-arrange home-launcher-only" data-t="home.layoutDescLaunchers">Which of the TV&rsquo;s apps and inputs Minimal shows, and in what order. A launcher of your own follows this where it was written to.</div>
@@ -1588,11 +1588,11 @@
   <div class="btns home-arrange" style="max-width:240px"><button type="button" id="home-reset" onclick="homeResetLayout()" data-t="home.reset">Reset the layout</button></div>
   <div class="sub home-arrange" data-t="home.resetDesc">The rows, apps and inputs go back to their first order, with LG’s promotions hidden again. Channels stay as they are.</div>
 
-  <div class="pv-sec adv-sec" data-t="home.tv.title">Internet TV</div>
+  <div class="pv-g" data-t="home.tv.title">Internet TV</div>
   <div class="sub" data-t="home.tv.intro">Channels from your IPTV provider, in a row of their own on Glasshouse Home. Add the same M3U link or Xtream login your IPTV app uses. It is kept on the TV and never shown here again.</div>
   <div id="home-tv"></div>
 
-  <div class="pv-sec adv-sec" data-t="home.colours.title">Colours</div>
+  <div class="pv-g" data-t="home.colours.title">Colours</div>
   <div class="sub" data-t="home.colours.desc">The text on Glasshouse Home, and the accent that frames the chosen tile and marks what was last on. The quieter text is a shade of the text colour.</div>
   <div class="home-looks" id="home-looks"></div>
   <div class="home-custom">
@@ -1601,7 +1601,7 @@
     <button type="button" id="home-col-reset" onclick="homeSaveLayout({ colours: homeDefaultLook() })" data-t="home.colours.reset">Use the default colours</button>
   </div>
 
-  <div class="pv-sec adv-sec" data-t="home.bg.title">Background</div>
+  <div class="pv-g" data-t="home.bg.title">Background</div>
   <div class="sub" data-t="home.bg.intro">What is behind Glasshouse Home: nothing, pictures that change with the part of the day, or a moving background.</div>
   <div class="btns wall-choice" id="home-bg-kind"></div>
   <div id="home-bg-pictures">
