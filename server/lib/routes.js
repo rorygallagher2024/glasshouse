@@ -1471,10 +1471,9 @@ function handleIptvRoute(req, res, u, pathname) {
   send(res, 404, JSON.stringify({ ok: false, error: 'not found' }));
 }
 
-// An asset's gzipped copy, or null where it is no smaller or gzipSync is
-// missing (node 0.10). On this thread rather than zlib's worker pool: see loadUI.
+// An asset's gzipped copy, or null where it is no smaller. On this thread
+// rather than zlib's worker pool: see loadUI.
 function gzipAsset(file, buf) {
-  if (typeof zlib.gzipSync !== 'function') return null;
   try {
     var gz = zlib.gzipSync(buf);
     return gz.length < buf.length ? gz : null;
@@ -1585,7 +1584,9 @@ function handleRequest(req, res) {
     if (!file) return send(res, 404, JSON.stringify({ ok: false, error: 'not found' }));
     var ext = path.extname(file).toLowerCase();
     var mime = MIME[ext] || 'application/octet-stream';
-    var compressible = ext === '.html' || ext === '.css' || ext === '.js' || ext === '.json' || ext === '.svg';
+    // Node 0.10 has no gzipSync, and there nothing is compressed or varies.
+    var compressible = (ext === '.html' || ext === '.css' || ext === '.js' || ext === '.json' || ext === '.svg') &&
+      typeof zlib.gzipSync === 'function';
     // The strings and their translations change with each release as the pages
     // do, so a day-old copy beside a new page would show text the page no
     // longer has, or miss text it now does.
