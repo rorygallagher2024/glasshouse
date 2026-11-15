@@ -286,6 +286,9 @@ function validateSettings(j) {
   if (!(iv >= 1000 && iv <= 600000)) e.push('telemetry interval must be between 1000 and 600000 ms');
   else out.mqtt.telemetryIntervalMs = iv;
 
+  // The media_player entity, for owners with the separate integration that reads it. A form without it keeps what is saved.
+  if (typeof m.universalMediaPlayer === 'boolean') out.mqtt.universalMediaPlayer = m.universalMediaPlayer;
+
   out.mqtt.entities = {};
   var me = (m && m.entities) || {};
   for (var c = 0; c < HA_CATEGORIES.length; c++) {
@@ -1137,6 +1140,7 @@ function getSettingsPayload() {
       topicPrefix: mc.topicPrefix || 'lgtv',
       discoveryPrefix: mc.discoveryPrefix || 'homeassistant',
       telemetryIntervalMs: mc.telemetryIntervalMs || 10000,
+      universalMediaPlayer: mc.universalMediaPlayer === true,
       entities: {
         controls: !mc.entities || mc.entities.controls !== false,
         oled: !mc.entities || mc.entities.oled !== false,
@@ -1456,7 +1460,7 @@ function handleIptvRoute(req, res, u, pathname) {
       if (pathname === '/api/iptv/playlists') return iptvModule.playlistsAction(body, reply);
       if (pathname === '/api/iptv/selection') return iptvModule.setSelection(body, reply);
       if (pathname === '/api/iptv/lineup') return iptvModule.setLineup(body, reply);
-      if (pathname === '/api/iptv/lease') return reply(iptvModule.lease(body && body.on === true, body && body.full === true));
+      if (pathname === '/api/iptv/lease') return reply(iptvModule.lease(body && body.on === true, body && body.full === true, body && body.open === true));
       if (pathname === '/api/iptv/event') return reply(iptvModule.streamEvent(body));
       if (pathname === '/api/iptv/output') return reply(iptvModule.setOutput(body));
       if (pathname === '/api/iptv/timeshift') return reply(iptvModule.setTimeshift(body));
@@ -2341,9 +2345,10 @@ function handleRequest(req, res) {
     }
     return readJsonBody(req, res, function (body) {
       if (!quickAccessModule) return send(res, 503, JSON.stringify({ ok: false, error: 'quick access module unavailable' }));
-      quickAccessModule.setQuickAccess(body && body.key, body && body.id, function (r) {
-        send(res, r && r.ok ? 200 : 400, JSON.stringify(r));
-      });
+      var reply = function (r) { send(res, r && r.ok ? 200 : 400, JSON.stringify(r)); };
+      // { key, lg: true }: the key as LG has it (#1539).
+      if (body && body.lg === true) return quickAccessModule.resetQuickAccess(body.key, reply);
+      quickAccessModule.setQuickAccess(body && body.key, body && body.id, reply);
     });
   }
 

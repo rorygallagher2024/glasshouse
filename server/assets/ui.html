@@ -1507,7 +1507,7 @@
       </div>
       <div class="prot-status"><button type="button" class="pill idle" id="home-motion-wallCrossfade" onclick="homeMotion('wallCrossfade')">&mdash;</button></div>
     </div>
-    <div class="prot-row home-gh-row home-motion-row" hidden>
+    <div class="prot-row home-gh-row home-bar-row home-motion-row" hidden>
       <div class="prot-main">
         <div class="prot-title" data-t="home.motion.scroll">Smooth scrolling</div>
         <div class="prot-desc" data-t="home.motion.scrollDesc">A row glides to the chosen tile, rather than jumping to it.</div>
@@ -1915,6 +1915,17 @@
     Disabling an entity removes it cleanly from Home Assistant without leaving an orphaned state.</div>
 
   <div class="pv-table" id="cfg-ents"></div>
+  <div class="pv-table">
+    <div class="pv-row">
+      <div>
+        <div class="n" data-t="mqtt.mediaPlayer.toggle">Media player</div>
+        <div class="d" data-t="mqtt.mediaPlayer.desc">One media player entity with power, volume, sound output, playback, the TV's inputs and apps as sources and the
+          current app's icon as its cover. Home Assistant shows it only with the MQTT Media Player integration
+          (grzegorz914/homeassistant-mqtt-media-player) installed. The icons need Share app icons on.</div>
+      </div>
+      <button type="button" class="pill idle" id="cfg-mediaplayer" onclick="cfgToggleMediaPlayer()">&mdash;</button>
+    </div>
+  </div>
 
   <details class="pv-d" id="cfg-fine" style="margin-top:16px">
     <summary>

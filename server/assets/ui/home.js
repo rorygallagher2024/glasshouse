@@ -104,7 +104,10 @@ function renderHomeCustom(autoVal) {
   const inPlace = !!(st.enabled && st.supported.ok);
   const glasshouseOn = inPlace && !homeLauncherOn();
   const box = q('home-custom');
-  if (box) box.classList.toggle('lg-home', !glasshouseOn);
+  if (box) {
+    box.classList.toggle('lg-home', !glasshouseOn);
+    box.classList.toggle('for-bar', homeBarOn());
+  }
   const layout = q('disc-homescreen');
   const tiles = q('disc-system-tiles');
   if (tiles) tiles.hidden = !lg;
@@ -1231,11 +1234,15 @@ function homeMotion(key) {
   homeSaveLayout({ [key]: homeLayout[key] === false });
 }
 
-// A group shows only while it has a row to show: LG's Home leaves only Starting up.
+// A group shows only while it has a row to show: LG's Home leaves only Starting
+// up, and Glasshouse Bar, which leaves LG's Home in place, the rows it follows
+// too (home-bar-row: Smooth scrolling).
 function homeGroupsShown() {
   const lgHome = q('home-custom').classList.contains('lg-home');
+  const bar = homeBarOn();
   document.querySelectorAll('#home-custom .home-group').forEach(g => {
-    const shown = [...g.querySelectorAll('.prot-row')].filter(r => !r.hidden && !(lgHome && r.classList.contains('home-gh-row')));
+    const shown = [...g.querySelectorAll('.prot-row')].filter(r => !r.hidden &&
+      !(lgHome && r.classList.contains('home-gh-row') && !(bar && r.classList.contains('home-bar-row'))));
     g.hidden = !shown.length;
     // Hidden rows can come last, so the last shown one is marked to drop its line.
     g.querySelectorAll('.prot-row').forEach(r => r.classList.toggle('last', r === shown[shown.length - 1]));

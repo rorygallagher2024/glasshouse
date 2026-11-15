@@ -775,6 +775,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
   // Held this long, OK arranges the tiles rather than opening one.
   var LONG_PRESS_MS = 800;
   var BEAT_MS = 5000;
+  var iptvWasUp = false;
   /*
    * Under the screen saver the page is covered, not hidden: no visibilitychange
    * or relaunch says when it ends, so the heartbeat is how the page hears it,
@@ -2089,6 +2090,9 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
       (layout && layout.view === 'alternative' ? ' alternative' : '') + (layout && layout.showAppLabels === false ? ' no-app-labels' : '') +
       (player.open ? ' playing' : '') + (adder.open ? ' adding' : '') +
       (adder.open && adder.typing ? ' adtyping' : '') + (guide.open ? ' guiding' : '') + previewSizeClass();
+    // Home Assistant's media player shows IPTV while the guide or a player is up: told at once, not at the next heartbeat.
+    var iptvUp = !!(player.open || guide.open);
+    if (iptvUp !== iptvWasUp) { iptvWasUp = iptvUp; beat(); }
     applyPointer(false);
     followPreview();
   }
@@ -2723,7 +2727,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
   function lease(on) {
     clearInterval(tvStream.leaseTimer);
     tvStream.leaseTimer = null;
-    var send = function () { postJson('/api/iptv/lease', { on: on, full: on && player.open && !tvStream.paused }); };
+    var send = function () { postJson('/api/iptv/lease', { on: on, full: on && player.open && !tvStream.paused, open: on && player.open }); };
     send();
     if (on) tvStream.leaseTimer = setInterval(send, 60000);
   }
@@ -4974,6 +4978,8 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
    * finds the last launch's parameters still there.
    */
   var guideAsked = false;
+  // A channel Home Assistant asked to play: { pl, key, at }, opened once the lineup has it.
+  var playAsked = null;
   var LOADED_KEY = 'glasshouse.home.loaded';
   /*
    * Each launch replaces the last one's request, so a Home press after Guide
@@ -4990,6 +4996,22 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
       if (seen) return;
     }
     guideAsked = p.glasshouse === 'guide';
+    playAsked = p.glasshouse === 'play' && /^[0-9A-Za-z_-]{1,40}$/.test(String(p.pl || '')) && /^[a-z][0-9a-z]{1,24}$/.test(String(p.key || ''))
+      ? { pl: String(p.pl), key: String(p.key), at: Date.now() } : null;
+  }
+  function openAskedPlay() {
+    var want = playAsked;
+    if (!want || !data || !layout) return;
+    if (Date.now() - want.at > 20000) { playAsked = null; return; }
+    var found = null, items = lineupItems();
+    for (var i = 0; i < items.length; i++) if (items[i].pl === want.pl && items[i].key === want.key) { found = items[i]; break; }
+    // The lineup may still be on its way.
+    if (!found) return setTimeout(openAskedPlay, 700);
+    playAsked = null;
+    if (adder.open) closeAdder();
+    if (guide.open) closeGuide();
+    if (finder.open) { closeSearch(); state.rail = false; }
+    openPlayer(found);
   }
   function openAskedGuide() {
     if (!guideAsked || !data || !layout) return;
@@ -5832,6 +5854,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
       refreshGuide();
       refreshTvGuide();
       openAskedGuide();
+      openAskedPlay();
       // The player keeps its frozen order; its channels' names and guide follow.
       if (player.open) { renderBand(); if (player.list) renderList(); }
       if (guide.open) renderGuide();
@@ -5953,7 +5976,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     if (!data || !layout) return;
     // Whether the page has the keyboard: after a wake on webOS 11 it can be
     // in front and get no keys (#1122).
-    postJson('/api/home/beat', { focused: document.hasFocus(), visible: document.visibilityState || '', perf: takeTrace() }, function (r) {
+    postJson('/api/home/beat', { focused: document.hasFocus(), visible: document.visibilityState || '', iptv: !!(player.open || guide.open), perf: takeTrace() }, function (r) {
       if (r && r.ok) {
         beatFails = 0;
         // A custom launcher chosen in Glasshouse Home's place (lib/home-launcher).

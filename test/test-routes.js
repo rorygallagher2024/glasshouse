@@ -273,6 +273,14 @@ function createMockRes(cb) {
   assert.strictEqual('iconServer' in v1.value, false, 'absent, config.json keeps what it had');
   assert.strictEqual('iconServer' in routes.validateSettings({ mqtt: validBase.mqtt, device: validBase.device, iconServer: 'yes' }).value, false);
   console.log('  ✓ the icon server switch is saved from the MQTT form only as true or false');
+
+  // The media player switch on the same form.
+  var withPlayer = function (v) { var m = {}; for (var k in validBase.mqtt) m[k] = validBase.mqtt[k]; m.universalMediaPlayer = v; return routes.validateSettings({ mqtt: m, device: validBase.device }).value.mqtt; };
+  assert.strictEqual(withPlayer(true).universalMediaPlayer, true);
+  assert.strictEqual(withPlayer(false).universalMediaPlayer, false);
+  assert.strictEqual('universalMediaPlayer' in v1.value.mqtt, false, 'absent, config.json keeps what it had');
+  assert.strictEqual('universalMediaPlayer' in withPlayer('yes'), false);
+  console.log('  ✓ the media player switch is saved from the MQTT form only as true or false');
 })();
 
 // 4b. Settings Persistence (writeSettings) and Update Summary (updateSummary)

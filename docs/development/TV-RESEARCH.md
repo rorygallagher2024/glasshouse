@@ -301,6 +301,25 @@ Aerial's own
 and hides the QML there (#1378). Taking Aerial's mount off first, and then
 mounting, leaves its folder as it was.
 
+On a G5 (OLED65G56LS, webOS 11.2.0) with Aerial Screensaver 3.0.4's
+`screensaver-main.qml` as the screen saver, tvpower went from `Screen Saver`
+back to `Active` 1.0 to 1.4 s after the screen saver's window showed, as its
+first video (3840x2160 HEVC) started. The same QML started with `qml-runner`
+by hand, outside tvpower's screen saver state, went on playing. After
+
+    luna-send -n 1 luna://com.webos.service.screenmanager/setScreenSaverMode \
+      '{"appId":"com.webos.app.screensaver","mode":"manual"}'
+
+the screen saver stayed up with its video playing, 15 minutes when left.
+screenmanager's strings give `mode` as `auto` or `manual`, and have "full
+screen playing" and "appId(%s) is manual mode" beside them. Aerial's web page
+for these TVs sends `manual` at every start, and its source says why:
+screenmanager ends the screen saver when it sees full-screen video, except for
+an app in manual mode, and keeps the mode in memory until it restarts. Its QML
+does not send it. Whether the mode outlasts a reboot was not seen: Glasshouse
+sent it again 43 s after each of two boots, and the screen saver stayed up
+after both.
+
 ## HDMI CEC devices (G3, webOS 9.2.2)
 
 `com.webos.service.eim/getAllInputStatus` returns CEC devices in each HDMI
@@ -3696,6 +3715,15 @@ with `port: 1`, `connected` saying whether anything is plugged in, the label
 the owner gave it, and an app of its own: `com.webos.app.externalinput.av1`
 and `com.webos.app.externalinput.component`, not `com.webos.app.av1` (#1468).
 There is no `hdmiPlugIn` and no `subList` for them.
+
+## Quick Access defaults (C2, webOS 9.2.2)
+
+LG's settings screen offers no way to change Quick Access key 9, which opens
+Quick Help: `magicNum9` holds `{ "override": true, "id":
+"com.webos.app.self-diagnosis", "params": { "from": "magicNum" } }`. Once
+written empty, as Glasshouse's None does, nothing offered puts it back (#1539).
+`settingsservice/resetSystemSettings` with `{ "category": "option", "keys":
+["magicNum9"] }` does: the key read back as that same value at once.
 
 ## Holding down LG's account client (C2, webOS 9.2.2; B4, webOS 10.3.2)
 

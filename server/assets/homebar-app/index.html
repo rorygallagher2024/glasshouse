@@ -34,6 +34,7 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
 .tile.input{width:300px;padding:0 22px;text-align:left}
 .tile.focus{background:#fff;color:#111;border-color:#fff;-webkit-transform:scale(1.07);transform:scale(1.07)}
 .ico{display:block;width:112px;height:112px;margin:0 auto 14px;border-radius:20px;background:#333 center/contain no-repeat}
+img.ico{background:none;object-fit:contain}
 .ico.letter{line-height:112px;font-size:52px;font-weight:600;color:#fff;background:#3a3a3a}
 .nm{font-size:24px;padding:0 12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .no-app-labels .tile:not(.input){width:156px;height:156px;margin-top:22px;padding-top:20px}
@@ -124,6 +125,7 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
   }
 
   function close() {
+    stopEdge();
     if (closing) return;
     closing = true;
     visibleSince = 0;
@@ -194,7 +196,10 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
         '<div class="txt"><div class="nm">' + esc(e.name) + '</div>' +
         (sub ? '<div class="path">' + esc(sub) + '</div>' : '') + '</div></div></div>';
     }
-    var ico = e.icon ? '<span class="ico" style="background-image:url(\'' + esc(e.icon) + '\')"></span>'
+    // An image, decoded in the frame that draws it: a CSS background is decoded
+    // after, so a C2 (webOS 9.2.2) showed the tiles first and the icons a
+    // moment later.
+    var ico = e.icon ? '<img class="ico" src="' + esc(iconSrc(e.icon)) + '" decoding="sync" alt="">'
       : '<span class="ico letter">' + esc(e.letter) + '</span>';
     return '<div class="' + cls + '" data-i="' + i + '">' + ico + '<div class="nm">' + esc(e.name) + '</div></div>';
   }
@@ -210,14 +215,71 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
     scrollTo();
   }
   // The row slides so the tile in focus stays on screen.
+  var ROOM = 1920 - 96 * 2;
+  var shift = 0;
+  /*
+   * Glasshouse Home's Smooth scrolling (Home tab, Motion): off, the row jumps
+   * to where a key, the wheel or the pointer sends it rather than gliding.
+   */
+  function applySmooth(layout) {
+    var t = layout && layout.smoothScroll === false ? 'none' : '';
+    var row = $('row');
+    if (row.style.transition !== t) row.style.webkitTransition = row.style.transition = t;
+  }
+  function applyShift() {
+    $('row').style.webkitTransform = $('row').style.transform = 'translateX(' + (-shift) + 'px)';
+  }
   function scrollTo() {
     var el = $('row').querySelector('[data-i="' + focus + '"]');
     if (!el) return;
-    var left = el.offsetLeft, right = left + el.offsetWidth, room = 1920 - 96 * 2;
-    var shift = 0;
-    if (right > room) shift = right - room + 24;
-    $('row').style.webkitTransform = $('row').style.transform = 'translateX(' + (-shift) + 'px)';
+    var right = el.offsetLeft + el.offsetWidth;
+    shift = right > ROOM ? right - ROOM + 24 : 0;
+    applyShift();
   }
+
+  /*
+   * The Magic Remote, as on Glasshouse Home: a notch of the wheel moves the
+   * row a tile, and the pointer resting near either end of it steps it along
+   * while there is more that way (#1500, #1531). The focus stays where the
+   * pointer puts it.
+   */
+  var EDGE = 150, EDGE_STEP_MS = 220;
+  var edgeDir = 0, edgeTimer = null;
+  function slide(dir) {
+    var tiles = $('row').querySelectorAll('.tile');
+    if (!tiles.length) return false;
+    var step = tiles[1] ? tiles[1].offsetLeft - tiles[0].offsetLeft : tiles[0].offsetWidth;
+    var last = tiles[tiles.length - 1];
+    var most = Math.max(0, last.offsetLeft + last.offsetWidth - ROOM + 24);
+    var next = Math.max(0, Math.min(most, shift + dir * step));
+    if (next === shift) return false;
+    shift = next;
+    applyShift();
+    return true;
+  }
+  function stopEdge() {
+    edgeDir = 0;
+    if (edgeTimer) { clearInterval(edgeTimer); edgeTimer = null; }
+  }
+  document.addEventListener('onwheel' in document ? 'wheel' : 'mousewheel', function (ev) {
+    if (document.body.className.indexOf('on') === -1) return;
+    var d = ev.deltaY !== undefined ? ev.deltaY : -ev.wheelDelta;
+    if (ev.deltaX && Math.abs(ev.deltaX) > Math.abs(d || 0)) d = ev.deltaX;
+    if (!d) return;
+    ev.preventDefault();
+    slide(d > 0 ? 1 : -1);
+  });
+  document.addEventListener('mousemove', function (ev) {
+    if (document.body.className.indexOf('on') === -1) return stopEdge();
+    var r = $('bar').getBoundingClientRect();
+    var over = ev.clientY >= r.top && ev.clientY <= r.bottom;
+    var dir = !over ? 0 : ev.clientX < EDGE ? -1 : ev.clientX > 1920 - EDGE ? 1 : 0;
+    if (!dir) return stopEdge();
+    edgeDir = dir;
+    if (edgeTimer) return;
+    slide(edgeDir);
+    edgeTimer = setInterval(function () { if (!edgeDir || !slide(edgeDir)) stopEdge(); }, EDGE_STEP_MS);
+  });
   // Only the tile left and the tile reached change, so the rest are not styled again.
   // byPointer: the row is not slid under the pointer, which would put another
   // tile beneath it and move the focus on again.
@@ -263,8 +325,53 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
   var moved = false, waiting = 0, now = null, cat = null, labelsOff = false;
   var renderedJson = '', warmed = {}, iconScript = null, iconCallbacks = [], seq = 0;
 
+  /*
+   * The row's icons, kept beside it as data: URLs, so a Bar opened before
+   * anything has loaded (not preloaded, or after a restart) has every icon
+   * from its first frame, with no request to wait on. Fetched again each time
+   * the row is warmed, from the browser's cache, so a changed icon is kept;
+   * only the row's own are kept, ICON_CACHE_MAX at most.
+   */
+  var ICON_CACHE = 'glasshouse.homebar.icons', ICON_CACHE_MAX = 400000;
+  var iconData = {};
+  try { iconData = JSON.parse(window.localStorage.getItem(ICON_CACHE) || '{}') || {}; } catch (e) { iconData = {}; }
+  function iconSrc(url) { return iconData[url] || url; }
+  function saveIcons() {
+    try {
+      var text = JSON.stringify(iconData);
+      if (text.length <= ICON_CACHE_MAX) window.localStorage.setItem(ICON_CACHE, text);
+    } catch (e) {}
+  }
+  function keepIcon(url) {
+    if (!window.FileReader) return;
+    var x = new XMLHttpRequest();
+    x.open('GET', url, true);
+    x.responseType = 'blob';
+    x.onload = function () {
+      if (x.status !== 200 || !x.response) return;
+      var r = new FileReader();
+      r.onload = function () {
+        if (typeof r.result !== 'string' || r.result.indexOf('data:image/') !== 0 || iconData[url] === r.result) return;
+        iconData[url] = r.result;
+        saveIcons();
+      };
+      r.readAsDataURL(x.response);
+    };
+    x.send();
+  }
+
   // Keep decoded app icons in memory while hidden so opening does not paint blank boxes first.
   function warmIcons(items) {
+    var used = {};
+    items.forEach(function (e) { if (e.icon) used[e.icon] = true; });
+    var dropped = false;
+    for (var url in iconData) {
+      if (iconData.hasOwnProperty(url) && !used[url]) { delete iconData[url]; dropped = true; }
+    }
+    if (dropped) saveIcons();
+    items.forEach(function (e) {
+      if (e.icon && !warmed[e.icon + '#kept']) { warmed[e.icon + '#kept'] = true; keepIcon(e.icon); }
+    });
     items.forEach(function (e) {
       if (!e.icon || warmed[e.icon]) return;
       var img = new Image();
@@ -364,6 +471,7 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
       if (!preCat) return;
       var fresh = tilesFrom(preCat);
       if (!fresh.length) return;
+      applySmooth(preCat.layout);
       var nextLabelsOff = !!(preCat.layout && preCat.layout.showAppLabels === false);
       saveCache(fresh, onPort, nextLabelsOff);
       applyRow(fresh, onPort, nextLabelsOff);
@@ -396,6 +504,7 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
       if (!cat) { if (!list.length) close(); return; }
       var fresh = tilesFrom(cat);
       if (!fresh.length) return close();
+      applySmooth(cat.layout);
       var nextLabelsOff = !!(cat.layout && cat.layout.showAppLabels === false);
       var port = portFrom(now);
       saveCache(fresh, port, nextLabelsOff);

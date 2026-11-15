@@ -210,7 +210,14 @@ free_stuck_children() {
 
 # LG's Home back in its place, where Glasshouse Home has it. home.json is left
 # as it is, so the server takes the place again when it next starts.
+# Under test/test-tvwebctl.js, TVWEB_RELEASE is run instead: the TV's release
+# kills processes and writes beside the server, which on a CI runner is the
+# checkout (it left server/remotekeys-filter.js there).
 release_home() {
+  if [ -n "$TVWEB_RELEASE" ]; then
+    $TVWEB_RELEASE >/dev/null 2>&1
+    return 0
+  fi
   [ -x "$NODE" ] || return 0
   "$NODE" "$(dirname "$SELF")/lib/home-takeover.js" --release >/dev/null 2>&1
 }
@@ -380,8 +387,10 @@ case "$1" in
   rollback) rollback_app "$2" ;;
   # Before uninstalling: LG's Home screen layout back, and the input tiles added here off it.
   restore-home) "$NODE" "$(dirname "$SELF")/lib/homescreen.js" --restore ;;
-  # Before uninstalling: the remote's keys as LG has them.
-  restore-keys) "$NODE" "$(dirname "$SELF")/lib/remotekeys.js" --restore ;;
+  # Before uninstalling: the remote's keys, and its Quick Access keys, as LG has them.
+  restore-keys)
+    "$NODE" "$(dirname "$SELF")/lib/quickaccess.js" --restore
+    "$NODE" "$(dirname "$SELF")/lib/remotekeys.js" --restore ;;
   # LG's Home as the TV's Home again, and Glasshouse Home switched off.
   restore-glasshouse-home) "$NODE" "$(dirname "$SELF")/lib/home.js" --restore ;;
   status)

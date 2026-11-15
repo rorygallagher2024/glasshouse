@@ -380,7 +380,19 @@ The temperature is shown as sent, in the unit the weather entity uses. `city` is
 
 ## Universal Media Player Setup
 
-Home Assistant's MQTT discovery has no `media_player` platform, so Glasshouse cannot create one itself. Home Assistant's `universal` media player puts the discovered power, volume, mute, playback and input controls together in one, for a media control card on a dashboard. It takes a title only from another media player, so it shows none. Play and pause are sent as the remote's Play and Pause keys, so they work only in apps that act on those keys: the TV's own player does, and the Jellyfin app resumes with Play but ignores Pause.
+Home Assistant's own MQTT discovery has no `media_player` platform, so Glasshouse cannot create one through discovery alone. Two ways to still get one media control card:
+
+### Through a separate integration
+
+With [grzegorz914/homeassistant-mqtt-media-player](https://github.com/grzegorz914/homeassistant-mqtt-media-player) (v0.10.3 or newer) installed through HACS, turning on **Media player** under **Published TV entities** on the dashboard's MQTT tab (`universalMediaPlayer` under `mqtt` in `config.json`) publishes one real `media_player` entity: power, volume, mute, sound output, play/pause/stop/skip, the current app or input's icon as the card's cover (through the icon server, so `iconServer` needs to be on too), and a media browser of the TV's inputs and installed apps with the same icons. **Save & restart** applies it, and a change made in `config.json` needs the server restarted.
+
+Where Internet TV has a lineup, **IPTV** is one of the card's sources, and picking it opens Internet TV's guide on Glasshouse Home. A channel is picked in the media browser.
+
+While the TV is off, in Active Standby or asleep, the card shows off with only power left, at the moment **Power** reads off. Switching it on sends a Wake-on-LAN packet to the TV's MAC address, which Glasshouse gives the integration once it knows it, so the TV needs Wake-on-LAN or Wake on Wi-Fi turned on.
+
+### Through Home Assistant's own universal media player
+
+Home Assistant's `universal` media player puts the discovered power, volume, mute, playback and input controls together in one, for a media control card on a dashboard, with no other integration to install. It takes a title only from another media player, so it shows none. Play and pause are sent as the remote's Play and Pause keys, so they work only in apps that act on those keys: the TV's own player does, and the Jellyfin app resumes with Play but ignores Pause.
 
 Add the following to `configuration.yaml`. Power uses the `LG TV` switch from [Switched off, and back on](#switched-off-and-back-on). The entity IDs start with the TV's `device.id`: for one set to `lg_c9`, `select.lg_tv_input_source` is `select.lg_c9_input_source`.
 

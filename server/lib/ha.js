@@ -189,7 +189,9 @@ var HA_ENTITIES = [
   { id: 'logo_light', type: 'switch', name: 'Logo Light', cat: 'diagnostics' },
   { id: 'ad_blocker', type: 'switch', name: 'Ad Blocker', cat: 'diagnostics' },
   { id: 'tvweb_version', type: 'sensor', name: 'tvweb Version', cat: 'diagnostics' },
-  { id: 'server_update', type: 'update', name: 'Server Update', cat: 'diagnostics' }
+  { id: 'server_update', type: 'update', name: 'Server Update', cat: 'diagnostics' },
+  // Only published with a separate custom integration installed - see buildEntities.
+  { id: 'media_player', type: 'media_player', name: 'Media Player', cat: 'controls' }
 ];
 
 /*
@@ -481,6 +483,179 @@ function powerTimerPayload(topic, which, name, icon) {
     state_off: 'OFF',
     icon: icon
   };
+}
+
+/*
+ * Discovery payload for the separate mqtt_universal_media_player integration
+ * (see buildEntities). Its command and state topics are this server's own -
+ * the integration reads whichever topics and JSON keys a discovery message
+ * names, so there is no fixed topic convention to match.
+ *
+ * Each source is tagged with which doControl action selects it: an input
+ * (HDMI, Live TV) through the "input" key most entities already use, an app
+ * through "launch_app". Home Assistant sends that key's own name on the
+ * command topic when the owner picks that source, so the bridge's command
+ * handler can pass it straight to doControl without guessing which one a
+ * given id is.
+ */
+function mediaPlayerConfig(opts, topic) {
+  var iconBaseUrl = opts.iconBaseUrl;
+  /*
+   * The icon server (see iconserver.js) answers by app id, including an
+   * input's own app (names.inputAppId: "hdmi1" -> "com.webos.app.hdmi1") - an
+   * input without a matching installed app just 404s there, the same as it
+   * would for the existing Launch App select's app_icons.
+   */
+  function iconUrl(appId) {
+    return (iconBaseUrl && APP_ID_RE.test(appId)) ? iconBaseUrl + appId + '.png' : undefined;
+  }
+
+  var seenNames = {}, sources = [], browseInputs = [], browseApps = [];
+  function addSource(id, name, key, icon) {
+    if (seenNames[name]) return;
+    seenNames[name] = true;
+    var item = { id: id, name: name };
+    if (key) item.key = key;
+    sources.push(item);
+    (key ? browseApps : browseInputs).push(icon ? { id: id, name: name, image: icon } : { id: id, name: name });
+  }
+  var inputNames = inputSourceNames(opts.inputNames);
+  Object.keys(inputNames).forEach(function (id) {
+    addSource(id, inputNames[id], null, iconUrl(names.inputAppId(id)));
+  });
+  var appsById = appNames(opts.installedApps);
+  Object.keys(appsById).forEach(function (id) {
+    addSource(id, appsById[id], 'launch_app', iconUrl(id));
+  });
+  // Internet TV is not an app of the TV's: its source opens its guide on Glasshouse Home, where there is a lineup.
+  if ((opts.channels || []).length) addSource('iptv', 'IPTV', 'openInternetTv');
+
+  /*
+   * Sound Mode (Standard, Cinema, Sports...), from the same lgsettings row the
+   * native Sound Mode select already uses.
+   */
+  var soundModeRow = (opts.lgRows || []).filter(function (r) { return r.id === 'soundMode'; })[0];
+  var soundModes = soundModeRow && soundModeRow.choices
+    ? soundModeRow.choices.map(function (c) { return { id: c.value, name: c.label }; })
+    : [];
+  // Internet TV's lineup, { id: 'playlist:key', name, image }: its own folder of the media browser.
+  var channels = opts.channels || [];
+  // Picking a channel needs play_media, which then also carries the apps of the browser (tvweb.js).
+  function withPlayMedia(commands) {
+    if (channels.length) commands.play_media = { key: 'playMedia' };
+    return commands;
+  }
+
+  var config = {
+    platform: 'mqtt_universal_media_player',
+    device_class: 'tv',
+    state_topic: topic.state('media_player'),
+    command_topic: topic.command('media_player'),
+    // The one way to reach the TV once it is asleep, for the integration's own
+    // Wake-on-LAN: the command topic has nobody listening then.
+    mac: opts.mac || undefined,
+    commands: withPlayMedia({
+      power: { key: 'power' },
+      volume_set: { key: 'volume' },
+      // The step is sent back verbatim, so doControl's own volumeStep takes it with no translation.
+      volume_step: { key: 'volumeStep', up: 1, down: -1 },
+      mute: { key: 'mute' },
+      source: { key: 'input' },
+      // The TV's Sound Mode row (soundMode).
+      sound_mode: { key: 'soundMode' },
+      play: { key: 'playback', value: 'play' },
+      pause: { key: 'playback', value: 'pause' },
+      stop: { key: 'playback', value: 'stop' },
+      // Shown as the skip-forward/skip-back buttons; this remote has no
+      // track concept, so they change the channel up and down like its CH keys.
+      next: { key: 'channel', value: 'up' },
+      previous: { key: 'channel', value: 'down' }
+      // Display Panel and Screen Notification already cover the screen
+      // switch and notify the media_player integration would otherwise add.
+    }),
+    sources: sources,
+    sound_modes: soundModes,
+    // Same ids as "sources" - picking a browsed item with no play_media
+    // command falls back to selecting the source of that id.
+    browse: [
+      { name: 'Inputs', type: 'source', items: browseInputs },
+      { name: 'Apps', type: 'app', items: browseApps }
+    ].concat(channels.length ? [{ name: 'Channels', type: 'channel', items: channels }] : []),
+    icon: 'mdi:television'
+  };
+  return config;
+}
+
+/*
+ * The media_player integration reads its state as flat JSON fields, not
+ * value_templates over telemetry - see mediaPlayerConfig. Built from the same
+ * publish telemetry already computed, so this costs no extra reads.
+ */
+function mediaPlayerState(pub, iconBaseUrl, channel) {   // channel: { name, logoUrl } of Internet TV playing
+  pub = pub || {};
+  var media = pub.media || {};
+  /*
+   * telemetry's media.state is 'idle' whenever nothing is actively playing,
+   * which is most of the time an app is simply open (its own menus, a paused
+   * splash screen) - showing that as literally "idle" read as "no activity"
+   * in Home Assistant's media card for an app the owner is using. Only
+   * playing/paused/buffering carry real information here; everything else,
+   * idle included, means the TV is just on.
+   */
+  var mediaState = media.state === 'playing' || media.state === 'paused' || media.state === 'buffering'
+    ? media.state : 'on';
+  var appId = pub.app_id || '';
+  var out = {
+    power: !pub.tvOff,
+    state: pub.tvOff ? 'off' : mediaState,
+    volume: typeof pub.volume === 'number' ? pub.volume : null,
+    muted: typeof pub.muted === 'boolean' ? pub.muted : null,
+    // Internet TV plays inside Home, which would otherwise show as the source.
+    source: channel ? 'IPTV' : (pub.input_source || pub.app || null),
+    // The TV's own Sound Mode (Standard, Cinema...) - see mediaPlayerConfig.
+    // Internet TV lists its channels in the selector in place of the sound modes (the integration's sound_mode_list).
+    sound_mode: channel ? (channel.id || null) : ((pub.lgs && pub.lgs.soundMode) || null),
+    sound_mode_list: channel ? 'channels' : null,
+    // The sound mode in use, which the channel list in the selector hides.
+    sound_mode_current: (pub.lgs && pub.lgs.soundMode) || null,
+    app_name: channel ? 'IPTV' : (pub.display_title || pub.app_name || pub.app || ''),
+    app_id: appId,
+    // The Internet TV channel playing full screen, when there is one.
+    media_title: channel ? channel.name : null,
+    media_channel: channel ? channel.name : null,
+    // Always sent, null when there is none: the integration merges each state
+    // into the last, so a field left out would keep the last channel's value.
+    // false while Internet TV plays and live TV cannot be paused, null otherwise.
+    pausable: channel ? channel.pausable === true : null,
+    // Internet TV has no stop.
+    stoppable: channel ? false : null,
+    media_content_type: null,
+    media_series_title: null,
+    media_duration: null,
+    media_position: null,
+    media_position_updated_at: null,
+    media_image_url: channel && channel.logoUrl ? channel.logoUrl
+      : (iconBaseUrl && APP_ID_RE.test(appId)) ? iconBaseUrl + appId + '.png' : ''
+  };
+  if (channel) {
+    // Home Assistant's media card shows a TV show's title under the media
+    // title, and the position and length as a progress bar.
+    var prog = channel.programme;
+    if (prog) {
+      out.media_content_type = 'tvshow';
+      out.media_series_title = prog.title + ' (' + clock(prog.start) + '-' + clock(prog.end) + ')';
+      out.media_duration = Math.round((prog.end - prog.start) / 1000);
+      out.media_position = Math.max(0, Math.round((channel.at - prog.start) / 1000));
+      out.media_position_updated_at = Math.round(channel.at / 1000);
+    }
+  }
+  return out;
+}
+
+// HH:MM of a time in ms, on the TV's own clock.
+function clock(ms) {
+  var d = new Date(ms);
+  return (d.getHours() < 10 ? '0' : '') + d.getHours() + ':' + (d.getMinutes() < 10 ? '0' : '') + d.getMinutes();
 }
 
 function buildEntities(opts) {
@@ -1637,6 +1812,19 @@ function buildEntities(opts) {
     }
   });
 
+  /*
+   * A real media_player card: Home Assistant's own MQTT integration has no
+   * media_player platform, so this needs a separate custom integration
+   * (grzegorz914/homeassistant-mqtt-media-player) that takes one discovery
+   * message naming arbitrary topics and JSON keys. Off unless a TV owner
+   * installs that integration and turns it on in config.json - without it
+   * installed, Home Assistant ignores a platform it does not recognise, but
+   * there is no reason to publish an entity most owners cannot use.
+   */
+  if (opts.universalMediaPlayer) {
+    entities.push({ type: 'media_player', id: 'media_player', payload: mediaPlayerConfig(opts, topic) });
+  }
+
   entities = entities.concat(lgSettingEntities(opts.lgRows, topic));
 
   return withSafeFields(withOffStates(entities));
@@ -1673,6 +1861,20 @@ var CONTROL_TYPES = { 'switch': 1, 'select': 1, 'number': 1, 'button': 1, 'text'
  */
 function withAvailability(item, statusTopic) {
   var conf = item.payload;
+  if (item.type === 'media_player') {
+    /*
+     * The integration reads the payloads literally, with no
+     * availability_template. Off (Active Standby), asleep and offline all
+     * read as not available, so the card shows off from the status topic as
+     * soon as Power does, with only power left and Wake-on-LAN to switch it
+     * on (the integration keeps it available for that when it has the TV's
+     * MAC address).
+     */
+    conf.availability_topic = statusTopic;
+    conf.payload_available = 'online';
+    conf.payload_not_available = ['off', 'asleep', 'offline'];
+    return conf;
+  }
   var template = CONTROL_TYPES[item.type] || AWAKE_ONLY[item.id]
     ? "{{ 'online' if value in ['online', 'off'] else 'offline' }}"
     : "{{ 'offline' if value == 'offline' else 'online' }}";
@@ -1859,5 +2061,6 @@ module.exports = {
   clearRetired: clearRetired,
   buildEntities: buildEntities,
   filterWithholds: filterWithholds,
-  defaultEntityId: defaultEntityId
+  defaultEntityId: defaultEntityId,
+  mediaPlayerState: mediaPlayerState
 };

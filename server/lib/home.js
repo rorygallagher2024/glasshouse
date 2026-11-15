@@ -507,6 +507,9 @@ function defaults() {
     // Transparent tiles on the Glasshouse Input bar: off by default so stepping
     // through inputs does not repaint translucent tiles over the picture.
     inputBarTransparent: false,
+    // Stepping through the input bar only picks an input, and OK switches to
+    // it, rather than the TV switching a second after the last step (#1532).
+    inputBarSwitchOnOk: false,
     // How strongly the wallpaper is darkened behind the text and rows, in
     // percent of the view's own darkening; 0 leaves the picture as it is.
     darkening: 100,
@@ -602,6 +605,7 @@ function normalise(raw) {
   d.deviceNames = validDeviceNames(raw.deviceNames);
   d.appNames = validAppNames(raw.appNames);
   d.inputBarTransparent = raw.inputBarTransparent === true;
+  d.inputBarSwitchOnOk = raw.inputBarSwitchOnOk === true;
   // null, saved, is the view's own look; none saved keeps the default.
   if (Object.prototype.hasOwnProperty.call(raw, 'colours')) d.colours = validColours(raw.colours);
   d.tileHighlight = validHexColour(raw.tileHighlight);
@@ -800,6 +804,7 @@ function setLayout(body, cb) {
     deviceNames: body.deviceNames !== undefined ? oneNamePerPort(validDeviceNames(body.deviceNames, c.deviceNames), body.deviceNames) : c.deviceNames,
     appNames: body.appNames !== undefined ? validAppNames(body.appNames, c.appNames) : c.appNames,
     inputBarTransparent: typeof body.inputBarTransparent === 'boolean' ? body.inputBarTransparent : c.inputBarTransparent,
+    inputBarSwitchOnOk: typeof body.inputBarSwitchOnOk === 'boolean' ? body.inputBarSwitchOnOk : c.inputBarSwitchOnOk,
     // null puts the view's own colours back.
     colours: body.colours !== undefined ? body.colours : c.colours,
     tileHighlight: body.tileHighlight !== undefined ? body.tileHighlight : c.tileHighlight
@@ -916,7 +921,7 @@ function layoutOf(c) {
     excludedRecents: c.excludedRecents,
     searchHintSeen: c.searchHintSeen, picture: c.picture, livePreview: c.livePreview, search: c.search, recommended: c.recommended,
     fade: c.fade, wallDrift: c.wallDrift, wallCrossfade: c.wallCrossfade, smoothScroll: c.smoothScroll, slidePanels: c.slidePanels,
-    darkening: c.darkening, hideUnused: c.hideUnused, showMediaServers: c.showMediaServers, deviceNames: devNamesNow(c.deviceNames), appNames: c.appNames, inputBarTransparent: c.inputBarTransparent, showClock: c.showClock, rowsBottom: c.rowsBottom, view: c.view,
+    darkening: c.darkening, hideUnused: c.hideUnused, showMediaServers: c.showMediaServers, deviceNames: devNamesNow(c.deviceNames), appNames: c.appNames, inputBarTransparent: c.inputBarTransparent, inputBarSwitchOnOk: c.inputBarSwitchOnOk, showClock: c.showClock, rowsBottom: c.rowsBottom, view: c.view,
     showLastOn: c.showLastOn, showAppCount: c.showAppCount, showAppLabels: c.showAppLabels, showCec: c.showCec, showTvLogos: c.showTvLogos, showPointer: c.showPointer, weather: c.weather, weatherPlace: c.weatherPlace, previewAlways: c.previewAlways, previewInTile: c.previewInTile, previewSize: c.previewSize, previewSound: c.previewSound, wallAnim: c.wallAnim,
     animTheme: c.animTheme, animSky: c.animSky, animLight: c.animLight, animThemes: ANIM_THEMES,
     wallShuffleMinutes: c.wallShuffleMinutes, shuffleMinutes: SHUFFLE_MINUTES, colours: c.colours,
@@ -1762,6 +1767,28 @@ function openAirPlay(cb) {
     if (r && r.returnValue) return cb({ ok: true });
     launch(AIRPLAY_APP, null, cb);
   });
+}
+
+/*
+ * Plays an Internet TV channel full screen on Home: the view is launched with
+ * the channel in its parameters and opens its player on it.
+ */
+function playChannel(pl, key, cb) {
+  if (!/^[0-9A-Za-z_-]{1,40}$/.test(String(pl)) || !/^[a-z][0-9a-z]{1,24}$/.test(String(key))) {
+    return cb({ ok: false, error: msg('srv.home.unknownTile', 'that is not on Glasshouse Home') });
+  }
+  if (!readConfig().enabled) return cb({ ok: false, error: msg('srv.home.notInUse', 'Glasshouse Home is not in use') });
+  launch(LG_HOME, { glasshouse: 'play', pl: pl, key: key }, cb);
+}
+
+/*
+ * Opens Internet TV's guide on Home, for a source picked in Home Assistant's
+ * media player: the view is launched asking for its guide, as the remote's
+ * Guide key does (lib/remotekeys).
+ */
+function openInternetTv(cb) {
+  if (!readConfig().enabled) return cb({ ok: false, error: msg('srv.home.notInUse', 'Glasshouse Home is not in use') });
+  launch(LG_HOME, { glasshouse: 'guide' }, cb);
 }
 
 /*
@@ -2747,6 +2774,8 @@ function beat(body) {
   if (body && typeof body.focused === 'boolean') {
     viewFocus = { focused: body.focused, visible: String(body.visible || ''), at: lastBeatAt };
   }
+  // Whether Internet TV is in front, its guide or a player: Home Assistant's media player shows IPTV then.
+  if (iptvModule && body && typeof body.iptv === 'boolean') iptvModule.front(body.iptv && viewInFront());
   beats++;
   if (viewInFront()) watchBeat(beatGraceMs);
   return { ok: true, enabled: readConfig().enabled, standalone: isStandalone(), covered: viewCovered(), saver: powerState === 'Screen Saver',
@@ -3426,6 +3455,8 @@ function stop() {
 
 module.exports = {
   LG_HOME: LG_HOME,
+  playChannel: playChannel,
+  openInternetTv: openInternetTv,
   init: init,
   start: start,
   stop: stop,

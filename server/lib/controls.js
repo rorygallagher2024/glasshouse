@@ -31,7 +31,10 @@ var RCU_KEY_CODES = {
   stop: 128,
   fastForward: 208,
   fastforward: 208,
-  rewind: 168
+  rewind: 168,
+  // The remote's CH+ and CH-: Live TV changes channel, and so does Internet TV in Home.
+  channelUp: 402,
+  channelDown: 403
 };
 
 /*
@@ -118,6 +121,8 @@ var backupModule = null;
 var resettimeModule = null;
 /** @type {typeof import('./home')} */
 var homeModule = null;
+/** @type {typeof import('./homebar')} */
+var homeBarModule = null;
 var republishDiscoveryFn = null;
 var deviceNameChangedFn = null;
 var tvAppFn = null;
@@ -688,6 +693,11 @@ function doControl(action, value, cb) {
         });
       });
 
+    case 'channel':
+      return sendMediaKey(String(value).toLowerCase() === 'down' ? 'channelDown' : 'channelUp', function (ok) {
+        cb({ ok: ok });
+      });
+
     case 'playback':
     case 'media':
       return sendMediaKey(value, function (ok) {
@@ -1040,6 +1050,19 @@ function doControl(action, value, cb) {
     case 'rcu':
       var rcuName = String(value || '').trim().toLowerCase();
       var rcuAt = monotonicMs();
+      if (rcuName === 'home' && homeBarModule && homeBarModule.enabled()) {
+        /*
+         * With Glasshouse Bar chosen, Home opens or closes the Bar, as the
+         * remote's does: LG's Home app launched directly does not pass the key
+         * filter that gives Home to the Bar (#1537). The press needs an id of
+         * its own, as the filter's do, for the Bar to tell it from a repeat.
+         */
+        return lunaUrgent('com.webos.applicationManager/launch',
+          { id: homeBarModule.APP, params: { glasshouse: 'bar', press: Date.now() } }, function (r, raw, timing) {
+            logRcu(rcuName, rcuAt, timing, r && r.returnValue);
+            cb({ ok: !!(r && r.returnValue) });
+          });
+      }
       if (rcuName === 'home') {
         // webOS 6+ (2021+) uses com.webos.app.home as a standalone app.
         // webOS 3-5 (2016-2020) does not have com.webos.app.home (the launcher
@@ -1554,6 +1577,7 @@ function init(opts) {
   if (opts.backup) backupModule = opts.backup;
   if (opts.resettime) resettimeModule = opts.resettime;
   if (opts.home) homeModule = opts.home;
+  if (opts.homeBar) homeBarModule = opts.homeBar;
   if (opts.republishDiscovery) republishDiscoveryFn = opts.republishDiscovery;
   if (opts.deviceNameChanged) deviceNameChangedFn = opts.deviceNameChanged;
   if (opts.tvApp) tvAppFn = opts.tvApp;
