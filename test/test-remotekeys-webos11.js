@@ -233,6 +233,52 @@ step('offers Guide and the streaming buttons LG has switched on, with no filter 
   });
 });
 
+step('regional streaming buttons are offered when active and restore LG assignments', function (next) {
+  var regional = ['ivi', 'okko', 'kinopoisk', 'shop'];
+  var writesBefore = tv.mappingWrites;
+  var originals = {};
+  tv.mapping[3].ivi.isActive = true;
+  regional.slice(1).forEach(function (key) {
+    var item = {};
+    item[key] = { app_id: key + '.original', launch_param: { source: 'remote' }, isActive: true };
+    tv.mapping.push(item);
+  });
+  regional.forEach(function (key) { originals[key] = copy(entry(key)); });
+  rk.getRemoteKeys(function (r) {
+    regional.forEach(function (key) {
+      var found = r.keys.filter(function (k) { return k.key === key; })[0];
+      assert.ok(found, key + ' is offered');
+      assert.strictEqual(found.noScreenOff, true);
+    });
+    function check(i) {
+      if (i === regional.length) {
+        tv.mapping = copy(MAPPING);
+        tv.mappingWrites = writesBefore;
+        return next();
+      }
+      var key = regional[i];
+      var before = copy(tv.mapping);
+      set(key, 'open', 'youtube.leanback.v4', function () {
+        assert.deepEqual(entry(key), { app_id: 'youtube.leanback.v4', launch_param: null, isActive: true });
+        tv.mapping.forEach(function (item, index) {
+          if (!item[key]) assert.deepEqual(item, before[index], 'unrelated assignments stay intact');
+        });
+        set(key, 'nothing', '', function () {
+          assert.strictEqual(entry(key).isActive, false);
+          rk.getRemoteKeys(function (disabled) {
+            assert.strictEqual(disabled.keys.filter(function (k) { return k.key === key; })[0].action, 'nothing');
+            set(key, 'lg', '', function () {
+              assert.deepEqual(entry(key), originals[key]);
+              check(i + 1);
+            });
+          });
+        });
+      });
+    }
+    check(0);
+  });
+});
+
 step('a streaming button opens another app, and only its own entry changes', function (next) {
   set('netflix', 'open', 'youtube.leanback.v4', function () {
     assert.deepEqual(entry('netflix'), { launch_param: null, app_id: 'youtube.leanback.v4', isActive: true });

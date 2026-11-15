@@ -16,6 +16,8 @@ Sets what each number key on the remote opens when it is held: an installed app,
 
 Configures what individual remote buttons do when pressed. Each key appears as a tile showing its active assignment, grouped under **Streaming buttons**, **Color keys**, and **Other keys**. Selecting a tile opens its available choices beneath the row.
 
+On webOS 11, **Ivi**, **Okko**, **Kinopoisk** and **LG Shop** are also offered under Streaming buttons when LG enables their assignments. They can open an app or input, do nothing, or return to **As LG has it**. A listed button may be absent from the physical remote.
+
 Core keys (**Home**, **Back**, volume, mute, channel, and power) are reserved and cannot be reassigned. The microphone button can be reassigned; setting it to another action overrides both press and hold, replacing LG's voice control until returned to **As LG has it**.
 
 ## Available actions
