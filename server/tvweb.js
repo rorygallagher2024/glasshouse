@@ -748,6 +748,7 @@ remotebuttons.init({
 controls.init({
   luna: luna,
   inputBar: inputBar,
+  homeBar: homebar,
   lunaUrgent: lunaTransport.callUrgent,
   piccap: piccap,
   huesync: huesync,
