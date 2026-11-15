@@ -2372,7 +2372,8 @@ h3 .tvm-tags i{font-size:11px}
 .screenshot-card{min-width:0;border:1px solid var(--w25);padding:12px}
 .screenshot-preview{display:block;width:100%;padding:0;border:0;background:none;margin-bottom:12px}
 .screenshot-card img{display:block;width:100%;aspect-ratio:16/9;object-fit:contain;background:#000}
-.screenshot-card .sub{display:block;overflow-wrap:anywhere;margin:8px 0}
+.screenshot-meta{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin:8px 0}
+.screenshot-meta>.sub{margin:0;white-space:nowrap}
 .screenshot-card>.pill{min-width:0}
 #screenshot-viewer .modal-card{position:relative;max-width:100%;width:auto;max-height:none;padding:48px 12px 12px;overflow:visible;background:none;border:0;box-shadow:none}
 #screenshot-viewer-close{position:absolute;top:6px;right:8px;font-size:24px;letter-spacing:0;min-width:36px;padding:0;color:#fff;border-color:currentColor;outline-color:currentColor}

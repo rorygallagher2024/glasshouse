@@ -19,7 +19,7 @@ function button(ui, action, index) {
 }
 function load(ui) { return ui.context.loadScreenshots(true).then(flush); }
 function loaded(ui) {
-  ui.images.forEach(function (image) { image.complete = true; image.naturalWidth = 1920; image.onload(); });
+  ui.images.forEach(function (image) { image.complete = true; image.naturalWidth = 1920; image.naturalHeight = 1080; image.onload(); });
 }
 function createUI() {
   var ui = { listed: [{ id: 'capture_a.png', size: 1048576, modified: '2026-11-01T00:00:00Z' },
@@ -58,10 +58,11 @@ function createUI() {
     var match, pattern = /<img data-id="([^"]+)" alt="([^"]*)"/g;
     while ((match = pattern.exec(html))) {
       var image = { dataset: { id: match[1] }, alt: match[2], complete: false, naturalWidth: 0 };
+      var card = { resolution: {}, querySelector: function () { return this.resolution; } };
       ['view', 'download', 'delete'].forEach(function (action) {
         var b = element();
         b.dataset = { id: image.dataset.id, action: action }; ui.buttons.push(b);
-        if (action === 'view') { b.disabled = true; b.image = image; b.querySelector = function () { return this.image; }; image.parentElement = b; }
+        if (action === 'view') { b.disabled = true; b.image = image; b.parentElement = card; b.querySelector = function () { return this.image; }; image.parentElement = b; }
       });
       ui.images.push(image);
     }

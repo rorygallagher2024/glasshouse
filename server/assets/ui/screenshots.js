@@ -114,10 +114,12 @@ async function renderScreenshots(images) {
     return `<article class="screenshot-card">
       <button type="button" class="screenshot-preview" data-id="${esc(image.id)}" data-action="view" onclick="openScreenshotViewer(this)" disabled
         aria-label="${esc(t('tools.screenshots.viewImage', 'Enlarge {name}', { name: image.id }))}">
-        <img data-id="${esc(image.id)}" alt="${esc(t('tools.screenshots.image', 'Screenshot from {date}', { date }))}">
+        <img data-id="${esc(image.id)}" alt="${esc(t('tools.screenshots.image', 'Screenshot from {date}', { date }))}" title="${esc(image.id)}">
       </button>
-      <time datetime="${esc(image.modified)}">${esc(date)}</time>
-      <span class="sub" translate="no">${esc(image.id)}</span>
+      <div class="screenshot-meta">
+        <time datetime="${esc(image.modified)}">${esc(date)}</time>
+        <span class="sub screenshot-resolution" dir="ltr"></span>
+      </div>
       <button type="button" class="pill" data-id="${esc(image.id)}" data-action="download" onclick="downloadScreenshot(this)">${esc(t('tools.screenshots.download', 'Download'))} (${esc(fmtSize(image.size))})</button>
       <button type="button" class="pill screenshot-delete" data-id="${esc(image.id)}" data-action="delete" onclick="deleteScreenshot(this)" hidden></button>
     </article>`;
@@ -141,6 +143,7 @@ async function renderScreenshots(images) {
       }
       image.onload = () => {
         const preview = image.parentElement;
+        preview.parentElement.querySelector('.screenshot-resolution').textContent = image.naturalWidth + '×' + image.naturalHeight;
         preview.disabled = false;
         if (preview === replacement && document.activeElement === document.body) preview.focus({ preventScroll: true });
       };
