@@ -1555,6 +1555,8 @@ step('webOS 5 and 6 are offered, experimental, standalone, without restarting sa
       assert.strictEqual(st6.supported.standalone, true);
       assert.strictEqual(st6.supported.previewOptions, undefined, 'webOS 6 keeps live preview options');
       assert.strictEqual(st6.supported.restartsApps, undefined);
+      assert.strictEqual(st6.supported.lgHomeOnClose, true, 'closing the view opens LG\'s Home, so Back keeps it open');
+      assert.strictEqual(st5.supported.lgHomeOnClose, true);
       start(null, { webosVersion: '9.2.2' });
       home.status(function (st9) {
         assert.strictEqual(st9.supported.restartsApps, undefined, 'not where sam reads the files without a restart');
@@ -1568,6 +1570,7 @@ step('webOS 5 and 6 are offered, experimental, standalone, without restarting sa
             assert.strictEqual(st4.supported.standalone, true);
             assert.strictEqual(st4.supported.previewOptions, false, 'webOS 4 omits live preview options');
             assert.strictEqual(st4.supported.restartsApps, undefined);
+            assert.strictEqual(st4.supported.lgHomeOnClose, undefined, 'webOS 4 shows the input behind, so Back closes the view');
             start(null, { webosVersion: '3.9.3' });
             home.status(function (st3on) {
               assert.strictEqual(st3on.supported.ok, true, 'offered on webOS 3, untried');
@@ -1673,6 +1676,7 @@ step('on webOS 5 and 6, LG\'s Home opened by the TV is covered by Glasshouse Hom
   var homeKey = '';
   start(null, {
     webosVersion: '6.5.3',
+    lgHomeSettleMs: 20,
     allowExperimental: function () { return true; },
     installApp: function (action, cb) { tv.oldAppInstalled = true; cb({ ok: true }); },
     setHomeKey: function (id, cb) { homeKey = id; cb({ ok: true }); },
@@ -1684,12 +1688,14 @@ step('on webOS 5 and 6, LG\'s Home opened by the TV is covered by Glasshouse Hom
     tv.launched = [];
     // The app closes, and the TV opens LG's Home.
     foreground(LG_HOME);
+    wait(60, function () {
     assert.deepEqual(tv.launched, [OLD_APP], 'Glasshouse Home opened over it');
     foreground(OLD_APP);
     // The LG Home tile: LG's Home asked for, and left.
     home.open({ kind: 'lg' }, function () {
       tv.launched = [];
       foreground(LG_HOME);
+      wait(60, function () {
       assert.deepEqual(tv.launched, [], 'not covered when asked for');
       assert.strictEqual(homeKey, '', 'and the Home key is LG\'s while it is open');
       // An app opened from it: the Home key is Glasshouse Home's again, and
@@ -1697,6 +1703,7 @@ step('on webOS 5 and 6, LG\'s Home opened by the TV is covered by Glasshouse Hom
       foreground('netflix');
       assert.strictEqual(homeKey, OLD_APP);
       foreground(LG_HOME);
+      wait(60, function () {
       assert.deepEqual(tv.launched, [OLD_APP]);
       home.disable(function () {
         // webOS 4 shows LG's ribbon over the input: nothing to cover.
@@ -1715,6 +1722,102 @@ step('on webOS 5 and 6, LG\'s Home opened by the TV is covered by Glasshouse Hom
           home.disable(function () { done(); });
         });
       });
+      });
+      });
+    });
+    });
+  });
+});
+
+/*
+ * A C1 (webOS 6.5.3) brought LG's Home back over Glasshouse Home within about
+ * 0.5 s of each launch while LG's Home was still starting, and each launch in
+ * answer drew another: up to seven swaps after one app closed (#1454).
+ */
+step('on webOS 5 and 6, LG\'s Home is covered once it has stayed in front, so its own returns draw no more launches', function (done) {
+  start(null, {
+    webosVersion: '6.5.3',
+    lgHomeSettleMs: 40,
+    allowExperimental: function () { return true; },
+    installApp: function (action, cb) { tv.oldAppInstalled = true; cb({ ok: true }); },
+    setHomeKey: function (id, cb) { cb({ ok: true }); },
+    injectKey: function (code, cb) { if (cb) cb(true); }
+  });
+  home.enable(function (r) {
+    assert.ok(r.ok, r.error);
+    foreground('netflix');
+    tv.launched = [];
+    foreground(LG_HOME);
+    assert.deepEqual(tv.launched, [], 'not launched while LG\'s Home may still take the screen back');
+    wait(80, function () {
+      assert.deepEqual(tv.launched, [OLD_APP], 'launched once LG\'s Home stayed in front');
+      foreground(OLD_APP);
+      // LG's Home back, then gone again before the wait ends: nothing launched.
+      tv.launched = [];
+      foreground(LG_HOME);
+      foreground(OLD_APP);
+      wait(80, function () {
+        assert.deepEqual(tv.launched, [], 'no launch for LG\'s Home that left on its own');
+        // An app opened while LG's Home waits: left in front.
+        foreground('netflix');
+        foreground(LG_HOME);
+        foreground('com.webos.app.hdmi1');
+        wait(80, function () {
+          assert.deepEqual(tv.launched, [], 'the input opened from LG\'s Home is not covered');
+          home.disable(function () { done(); });
+        });
+      });
+    });
+  });
+});
+
+/*
+ * sam opens LG's Home about 1 s after the app in front closes, and skips it
+ * when another full-screen app is starting by then. On a C1 (webOS 6.5.3)
+ * Glasshouse Home opened on the close event was in front 0.12 s later, and LG's
+ * Home did not start in 5 of 5 (#1454).
+ */
+step('on webOS 5 and 6, Glasshouse Home opens when the app in front closes, before LG\'s Home can', function (done) {
+  var subs = [];
+  function FakeSub(uri, payload, appId, handlers) { this.uri = uri; this.handlers = handlers || {}; subs.push(this); }
+  FakeSub.prototype.start = function () { this.started = true; };
+  FakeSub.prototype.stop = function () { this.started = false; };
+  function life(id, ev) {
+    subs.filter(function (s) { return s.started && /getAppLifeEvents/.test(s.uri); })
+      .forEach(function (s) { s.handlers.message({ appId: id, event: ev }); });
+  }
+  start(null, {
+    webosVersion: '6.5.3',
+    lgHomeSettleMs: 40,
+    Subscription: FakeSub,
+    allowExperimental: function () { return true; },
+    installApp: function (action, cb) { tv.oldAppInstalled = true; cb({ ok: true }); },
+    setHomeKey: function (id, cb) { cb({ ok: true }); },
+    injectKey: function (code, cb) { if (cb) cb(true); }
+  });
+  home.enable(function (r) {
+    assert.ok(r.ok, r.error);
+    foreground('netflix');
+    tv.launched = [];
+    life('netflix', 'close');
+    assert.deepEqual(tv.launched, [OLD_APP], 'opened on the close of the app in front');
+    // An app in the background closing, and one left for another: nothing opened.
+    foreground(OLD_APP);
+    foreground('npo');
+    tv.launched = [];
+    life('netflix', 'close');
+    life('npo', 'background');
+    assert.deepEqual(tv.launched, [], 'not for an app that is not in front, nor for one sent to the background');
+    // Switched off: nothing opened.
+    power(false);
+    life('npo', 'close');
+    assert.deepEqual(tv.launched, [], 'not while the screen is off');
+    power(true);
+    home.disable(function () {
+      foreground('npo');
+      life('npo', 'close');
+      assert.deepEqual(tv.launched, [], 'not while Glasshouse Home is off');
+      done();
     });
   });
 });
