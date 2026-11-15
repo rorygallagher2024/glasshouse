@@ -3697,6 +3697,15 @@ the owner gave it, and an app of its own: `com.webos.app.externalinput.av1`
 and `com.webos.app.externalinput.component`, not `com.webos.app.av1` (#1468).
 There is no `hdmiPlugIn` and no `subList` for them.
 
+## Quick Access defaults (C2, webOS 9.2.2)
+
+LG's settings screen offers no way to change Quick Access key 9, which opens
+Quick Help: `magicNum9` holds `{ "override": true, "id":
+"com.webos.app.self-diagnosis", "params": { "from": "magicNum" } }`. Once
+written empty, as Glasshouse's None does, nothing offered puts it back (#1539).
+`settingsservice/resetSystemSettings` with `{ "category": "option", "keys":
+["magicNum9"] }` does: the key read back as that same value at once.
+
 ## Holding down LG's account client (C2, webOS 9.2.2; B4, webOS 10.3.2)
 
 Settings waits for `com.webos.service.accountmanager/getLoginUserData` before it

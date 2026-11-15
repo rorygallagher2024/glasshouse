@@ -748,6 +748,7 @@ remotebuttons.init({
 controls.init({
   luna: luna,
   inputBar: inputBar,
+  homeBar: homebar,
   lunaUrgent: lunaTransport.callUrgent,
   piccap: piccap,
   huesync: huesync,
@@ -903,6 +904,10 @@ function checkHomebrewChannelApp() {
     if (!glasshouseHome) return console.error('uninstall: Glasshouse Home is not loaded; server kept for retry');
     glasshouseHome.uninstall(function (restored) {
       if (!restored.ok) return console.error('uninstall: Home restore failed: ' + restored.error);
+      // Quick Access keys as LG had them; one LG will not take is logged, as
+      // it leaves nothing of Glasshouse's behind.
+      quickAccess.restore(function (qaOk) {
+      if (!qaOk) console.error('uninstall: a Quick Access key could not be put back');
       // The live owner stops the guard and verifies recovery before any file disappears.
       remoteKeys.restore(function (keys) {
         if (!keys) return console.error('uninstall: remote key restore failed; server kept for retry');
@@ -919,6 +924,7 @@ function checkHomebrewChannelApp() {
             'rm -f /var/lib/webosbrew/tvweb-boot.log /var/lib/webosbrew/tvweb-boot.log.old'
           ], { detached: true, stdio: 'ignore' }).unref();
         });
+      });
       });
     });
   });

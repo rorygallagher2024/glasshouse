@@ -242,7 +242,7 @@ before its first read.
 
 `test-window-state.js` checks that short gaps in window focus do not publish empty remote attributes, persistent gaps do, standby clears immediately, and reconnects republish the retained state. The server boot test checks that the three SurfaceManager subscriptions start only with MQTT enabled.
 
-The state-push suite checks `keyboard_visible` from the window list: pushed on change, the app under it kept as the control target, false in standby, and left out on a TV without the method. `test-controls.js` checks that remote keys go to the remote's device while the keyboard is up and that typing, Enter and Backspace reach the input method service in order, and that the Server tab's TV name is saved and applied without a restart, with empty putting back LG and the model; `test-mqtt-remote.js` that typed text keeps its spaces and schedules no telemetry read.
+The state-push suite checks `keyboard_visible` from the window list: pushed on change, the app under it kept as the control target, false in standby, and left out on a TV without the method. `test-controls.js` checks that with Glasshouse Bar chosen the dashboard's Home opens the Bar, with a press of its own, rather than LG's Home, and that remote keys go to the remote's device while the keyboard is up and that typing, Enter and Backspace reach the input method service in order, and that the Server tab's TV name is saved and applied without a restart, with empty putting back LG and the model; `test-mqtt-remote.js` that typed text keeps its spaces and schedules no telemetry read.
 
 `test-compat.js` checks `lib/compat.js`: each webOS version tried, untried or not offered, the report links filled in with the TV's webOS, model, firmware and Glasshouse version, and the table in docs/tested-tvs.md saying the same as the code.
 
@@ -710,5 +710,7 @@ integration. The web tab returns when an integration becomes available again.
 `test-routes.js` verifies both integrations' write permissions. Screenshots use
 synthetic data. The Hue Sync checks wait for intercepted requests to finish
 before closing each page, so pending stats replies cannot outlive the page.
+
+`test-quickaccess-restore.js` checks that what LG had on a Quick Access key is kept the first time it is changed and only then, that As LG has it puts it back, Quick Help on 9 among them, that restoring puts back every key changed, the owner's own choices included, and that a key changed before anything was kept gets LG's default.
 
 `test-remote-availability.js` checks the lightweight Remote availability route: Quick Access needs one settings read, remote keys are checked only as a fallback, and neither path collects the Apps catalogue or writes settings.

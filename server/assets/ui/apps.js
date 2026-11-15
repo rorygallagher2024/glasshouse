@@ -241,6 +241,8 @@ let qaData = null;      // the last quickAccess answer, for the picker
 let qaOpen = null;      // the key whose picker is open
 let qaCols = 0;
 let qaWritable = false;
+// The picker's value for As LG has it: no app id has a colon.
+const QA_LG = 'lg:';
 
 function renderQuickAccess(d) {
   const disc = q('disc-quickaccess');
@@ -293,8 +295,11 @@ function toggleQuickAccessKey(tile) {
   qaCols = cols;
   const i = tiles.indexOf(tile);
   const after = tiles[Math.min(tiles.length - 1, (Math.floor(i / cols) + 1) * cols - 1)];
-  const opt = (value, html) => `<button type="button" class="rk-opt${value === (k.id || '') ? ' on' : ''}"
-      data-value="${esc(value)}" aria-pressed="${value === (k.id || '')}" onclick="chooseQuickAccessKey(this)">${html}</button>`;
+  // As LG has it is the choice while Glasshouse has not changed the key; None
+  // and the rest only once it has, so an unchanged key shows one choice.
+  const isOn = value => value === QA_LG ? !k.changed : k.changed && value === (k.id || '');
+  const opt = (value, html) => `<button type="button" class="rk-opt${isOn(value) ? ' on' : ''}"
+      data-value="${esc(value)}" aria-pressed="${isOn(value)}" onclick="chooseQuickAccessKey(this)">${html}</button>`;
   const inputs = qaData.choices.filter(c => c.kind === 'input');
   const apps = qaData.choices.filter(c => c.kind === 'app');
   // A key set to something not offered here (a channel, a hidden LG app) still shows it.
@@ -306,7 +311,7 @@ function toggleQuickAccessKey(tile) {
   pick.setAttribute('aria-label', label);
   pick.innerHTML = `<div class="rk-pick-head"><span>${esc(label)}</span>
       <button type="button" class="rk-close" onclick="closeQuickAccessPicker(true)">${esc(t('apps.remoteKeys.close', 'Close'))}</button></div>
-    <div class="rk-opts">${opt('', esc(t('apps.quickAccess.reset', 'None')))}${gone}</div>
+    <div class="rk-opts">${opt(QA_LG, esc(t('apps.remoteKeys.lg', 'As LG has it')))}${opt('', esc(t('apps.quickAccess.reset', 'None')))}${gone}</div>
     ${inputs.length ? `<div class="rk-sub">${esc(t('apps.quickAccess.inputs', 'Inputs'))}</div>
     <div class="rk-opts">${inputs.map(c => opt(c.id, `<span translate="no">${esc(c.title)}</span>`)).join('')}</div>` : ''}
     ${apps.length ? `<div class="rk-sub">${esc(t('apps.quickAccess.apps', 'Apps'))}</div>
@@ -340,7 +345,7 @@ async function chooseQuickAccessKey(btn) {
     const res = await fetch(api('/api/quickaccess'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ key: Number(key), id: btn.dataset.value })
+      body: JSON.stringify(btn.dataset.value === QA_LG ? { key: Number(key), lg: true } : { key: Number(key), id: btn.dataset.value })
     });
     const r = await res.json();
     if (!r || !r.ok) error = (r && r.error) || t('common.unknownError', 'unknown error');
