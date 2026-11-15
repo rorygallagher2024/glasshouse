@@ -292,7 +292,7 @@ var CONFIG = {
     telemetryIntervalMs: 10000,
     // A real media_player card, through a separate custom integration
     // (grzegorz914/homeassistant-mqtt-media-player) most owners do not have
-    // installed - see docs/HOME-ASSISTANT.md. No dashboard switch yet.
+    // installed - see docs/HOME-ASSISTANT.md. The MQTT tab's Media player switch.
     universalMediaPlayer: false,
     entities: {
       controls: true,

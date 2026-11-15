@@ -384,7 +384,7 @@ Home Assistant's own MQTT discovery has no `media_player` platform, so Glasshous
 
 ### Through a separate integration
 
-With [grzegorz914/homeassistant-mqtt-media-player](https://github.com/grzegorz914/homeassistant-mqtt-media-player) (v0.10.3 or newer) installed through HACS, turning on `universalMediaPlayer` under `mqtt` in `config.json` (no dashboard switch yet) publishes one real `media_player` entity: power, volume, mute, sound output, play/pause/stop/skip, the current app or input's icon as the card's cover (through the icon server, so `iconServer` needs to be on too), and a media browser of the TV's inputs and installed apps with the same icons. Restart the server after changing the setting.
+With [grzegorz914/homeassistant-mqtt-media-player](https://github.com/grzegorz914/homeassistant-mqtt-media-player) (v0.10.3 or newer) installed through HACS, turning on **Media player** under **Published TV entities** on the dashboard's MQTT tab (`universalMediaPlayer` under `mqtt` in `config.json`) publishes one real `media_player` entity: power, volume, mute, sound output, play/pause/stop/skip, the current app or input's icon as the card's cover (through the icon server, so `iconServer` needs to be on too), and a media browser of the TV's inputs and installed apps with the same icons. **Save & restart** applies it, and a change made in `config.json` needs the server restarted.
 
 Where Internet TV has a lineup, **IPTV** is one of the card's sources, and picking it opens Internet TV's guide on Glasshouse Home. A channel is picked in the media browser.
 
