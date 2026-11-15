@@ -137,7 +137,7 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
     }
     if (d.appId) {
       return callService('luna://com.webos.applicationManager/launch',
-        { id: d.appId, params: d.deviceId ? { requestDevice: d.deviceId } : {} }, cb);
+        { id: d.appId, params: d.params || (d.deviceId ? { requestDevice: d.deviceId } : {}) }, cb);
     }
     var id = d.tuner ? 'com.webos.app.livetv' : 'com.webos.app.' + d.input;
     var params = !d.tuner && typeof d.uniqueId === 'number' && d.uniqueId > 0 && d.uniqueId < 15 ?
