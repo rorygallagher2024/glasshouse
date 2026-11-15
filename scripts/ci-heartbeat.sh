@@ -5,8 +5,10 @@
 # at 10 minutes and its log is lost, so nothing says which suites were running.
 # This keeps a check run on the commit, created finished ("neutral") so it never
 # shows as pending, and puts run-all's status line (RUN_ALL_STATUS, written at
-# each suite's start and finish and every 5 s) in it whenever it changes. The
-# last update stays on GitHub when the runner goes.
+# each suite's start and finish and every 5 s) in it, at most every 10 s and
+# only when it has changed. The last update stays on GitHub when the runner
+# goes. Every 10 s keeps a run to about 35 calls across its six jobs, well
+# inside the workflow token's 1,000 an hour, which the rerun workflow shares.
 #
 # Needs GH_TOKEN with checks: write, HEAD_SHA, GITHUB_REPOSITORY, RUN_ALL_STATUS.
 # Without them, as on a fork's pull request, it posts nothing and exits.
@@ -20,7 +22,7 @@ id=$(gh api "repos/$GITHUB_REPOSITORY/check-runs" \
   -q .id 2>/dev/null) || exit 0
 [ -n "$id" ] || exit 0
 last=
-while sleep 2; do
+while sleep 10; do
   line=$(cat "$RUN_ALL_STATUS" 2>/dev/null) || continue
   [ -n "$line" ] && [ "$line" != "$last" ] || continue
   last=$line
