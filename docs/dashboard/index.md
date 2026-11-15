@@ -2,6 +2,8 @@
 
 Each of these has a tab of its own in the dashboard, and a deep link to it. OLED Care appears on OLED TVs only.
 
+The web dashboard uses Outfit for large headings and numbers, with Onest for Cyrillic and other characters missing from Outfit. Manrope is used for labels and body text. All three fonts are bundled on the TV.
+
 On a wide screen the tabs are listed down the left, under the TV's name. On a phone, or wherever Preferences is set to hide the sidebar, they open from the menu button at the top of the page. In the Android app that button is in the app's bottom bar, beside its back button.
 
 The top of every tab shows what the TV is doing: its state (On, Screen off, Screen saver or Standby), what is on screen in large type, and the picture's resolution, dynamic range and picture mode under it, with the volume and any sleep timer opposite. In standby it shows the last source, faded.

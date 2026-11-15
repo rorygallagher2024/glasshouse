@@ -75,10 +75,10 @@ assets/homebar-app/assets/icon80.png assets/homebar-app/assets/icon130.png \
 assets/inputbar-app/assets/icon80.png assets/inputbar-app/assets/icon130.png \
 assets/home-app/appinfo.json assets/home-app/index.html assets/home-app/packageinfo.json \
 assets/home-app/assets/icon80.png assets/home-app/assets/icon130.png \
-assets/fonts/Outfit.ttf assets/fonts/Manrope.ttf \
+assets/fonts/Outfit.ttf assets/fonts/Onest.ttf assets/fonts/Manrope.ttf \
 assets/fonts/Outfit-Light.ttf assets/fonts/Outfit-Regular.ttf \
 assets/fonts/Manrope-Regular.ttf assets/fonts/Manrope-SemiBold.ttf \
-assets/fonts/OFL-Outfit.txt assets/fonts/OFL-Manrope.txt \
+assets/fonts/OFL-Outfit.txt assets/fonts/OFL-Onest.txt assets/fonts/OFL-Manrope.txt \
 assets/screensavers/ambient/main.qml assets/screensavers/ambient/saver.json \
 assets/screensavers/bokeh/bokeh.png assets/screensavers/bokeh/main.qml \
 assets/screensavers/bokeh/saver.json assets/screensavers/clock/main.qml \
