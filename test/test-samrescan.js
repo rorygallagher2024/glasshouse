@@ -22,14 +22,16 @@ function fakeTV(list, opts) {
              // sam's block and release: the calls made, in order, and whether
              // sam has the call at all (webOS 4 answers neither).
              samCalls: [], hasBlock: opts.hasBlock !== false, failReleases: opts.failReleases || 0,
+             // webOS 8.4.0 (a G3) and 9.2.2 (a C2): the block, and no release.
+             hasRelease: opts.hasRelease !== false,
              blockAnswerLost: !!opts.blockAnswerLost, blocked: {} };
   tv.luna = function (uri, payload, cb) {
     var r;
     if (uri === 'com.webos.applicationManager/blockSystemApp' || uri === 'com.webos.applicationManager/releaseBlockSystemApp') {
       var m = uri.split('/')[1];
       tv.samCalls.push(m + ' ' + payload.id);
-      if (!tv.hasBlock) r = { returnValue: false, errorText: 'Unknown method' };
-      else if (m === 'releaseBlockSystemApp' && tv.failReleases > 0) { tv.failReleases--; r = { returnValue: false }; }
+      if (!tv.hasBlock || (m === 'releaseBlockSystemApp' && !tv.hasRelease)) r = { returnValue: false, errorText: 'Unknown method' };
+      else if (m === 'releaseBlockSystemApp' && tv.failReleases > 0 && tv.blocked[payload.id]) { tv.failReleases--; r = { returnValue: false }; }
       else {
         tv.blocked[payload.id] = m === 'blockSystemApp';
         // A block sam made but whose answer never came back, as when the call times out.
@@ -215,15 +217,15 @@ step(function () {
   }));
 });
 
-// 7. One app: a block then a release, nothing written to configd, and the
-//    caller waits for sam to report the change.
+// 7. One app: a release to ask whether sam has one, a block then a release,
+//    nothing written to configd, and the caller waits for sam to report the change.
 step(function () {
   var tv = fakeTV([]);
   samrescan.init({ luna: tv.luna, nudgeMs: 5, pollMs: 5 });
   var asked = 0;
   samrescan.rereadApp('com.webos.app.screensaver', function (done) { asked++; done(asked >= 2); }, checked(function (ok) {
     assert.strictEqual(ok, true);
-    assert.deepEqual(tv.samCalls, ['blockSystemApp com.webos.app.screensaver', 'releaseBlockSystemApp com.webos.app.screensaver']);
+    assert.deepEqual(tv.samCalls, ['releaseBlockSystemApp com.webos.app.screensaver', 'blockSystemApp com.webos.app.screensaver', 'releaseBlockSystemApp com.webos.app.screensaver']);
     assert.strictEqual(tv.blocked['com.webos.app.screensaver'], false, 'released');
     assert.strictEqual(tv.writes.length, 0, 'the configd list is not touched');
     assert.strictEqual(asked, 2, 'asked until sam had it');
@@ -232,16 +234,35 @@ step(function () {
   }));
 });
 
-// 8. sam without the call (webOS 4): the block is refused, one release goes out
-//    quietly in case it was not, and the caller falls back.
+// 8. sam without either call (webOS 4): the release is unknown, so nothing is
+//    blocked, and the caller falls back.
 step(function () {
   var tv = fakeTV(null, { hasBlock: false });
   samrescan.init({ luna: tv.luna, nudgeMs: 5, pollMs: 5 });
   samrescan.rereadApp('com.webos.app.screensaver', null, checked(function (ok) {
     assert.strictEqual(ok, false);
-    assert.deepEqual(tv.samCalls, ['blockSystemApp com.webos.app.screensaver', 'releaseBlockSystemApp com.webos.app.screensaver']);
-    console.log('  ✓ where sam has no block call the caller falls back, after one release');
+    assert.deepEqual(tv.samCalls, ['releaseBlockSystemApp com.webos.app.screensaver']);
+    console.log('  ✓ where sam has neither call nothing is blocked, and the caller falls back');
     next();
+  }));
+});
+
+// 8a. sam with the block and no release (a G3 on webOS 8.4.0, #1493; a C2 on
+//     9.2.2): nothing is blocked, as nothing could release it, and the answer
+//     is kept for the next app.
+step(function () {
+  var tv = fakeTV(null, { hasRelease: false });
+  samrescan.init({ luna: tv.luna, nudgeMs: 5, pollMs: 5 });
+  samrescan.rereadApp('com.webos.app.home', null, checked(function (ok) {
+    assert.strictEqual(ok, false, 'the caller falls back');
+    assert.deepEqual(tv.samCalls, ['releaseBlockSystemApp com.webos.app.home']);
+    assert.strictEqual(tv.blocked['com.webos.app.home'], undefined, 'LG\'s Home is never blocked');
+    samrescan.rereadApp('com.webos.app.screensaver', null, checked(function (ok2) {
+      assert.strictEqual(ok2, false);
+      assert.strictEqual(tv.samCalls.length, 1, 'not asked again');
+      console.log('  ✓ where sam can block but not release, nothing is blocked');
+      next();
+    }));
   }));
 });
 
@@ -263,7 +284,7 @@ step(function () {
   samrescan.init({ luna: tv.luna, nudgeMs: 5, pollMs: 5 });
   samrescan.rereadApp('com.webos.app.screensaver', null, checked(function (ok) {
     assert.strictEqual(ok, true);
-    assert.strictEqual(tv.samCalls.length, 4, 'one block, three releases');
+    assert.strictEqual(tv.samCalls.length, 5, 'the release asked first, one block, three releases');
     assert.strictEqual(tv.blocked['com.webos.app.screensaver'], false, 'released in the end');
     console.log('  ✓ a refused release is tried again until the app is unblocked');
     next();
@@ -419,6 +440,7 @@ step(function () {
     }, checked(function (ok) {
       assert.strictEqual(ok, true, 'rereads all apps in order');
       assert.deepEqual(tv.samCalls, [
+        'releaseBlockSystemApp app.a',
         'blockSystemApp app.a', 'releaseBlockSystemApp app.a',
         'blockSystemApp app.b', 'releaseBlockSystemApp app.b'
       ]);

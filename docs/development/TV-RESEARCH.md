@@ -1455,6 +1455,17 @@ MAIN sink with `activation: true`). The same calls have run at every boot of an
 LG Home replacement on that C5 since 2026-10-11. A reboot between the two calls
 would leave the app blocked, so they stay together and the release is retried.
 
+Not every sam with the block has the release. A G3 (OLED77G3PUA, webOS 8.4.0,
+firmware 13.40.76) took `blockSystemApp` for `com.webos.app.home` and answered
+`releaseBlockSystemApp` with `Unknown method "releaseBlockSystemApp" for
+category "/"` (-1); LG's Home then answered a launch with -101 "not exist"
+until a reboot cleared the block, and `blockedSystemAppList` was not on disk
+(#1493). A C2 (webOS 9.2.2) answers the release the same way, though
+`/etc/palm/schemas/sam/applicationManager.blockSystemApp.schema` is there, so
+the schema does not say the release is. A release of an app that is not
+blocked changes nothing (a C5 answers `returnValue: true`), so it is asked
+first, and nothing is blocked where it is unknown.
+
 webOS 11 changes the block's parameters. On a G3 (OLED65G36LA, webOS 11.2.0,
 firmware 43.21.71) `/etc/palm/schemas/sam/applicationManager.blockSystemApp.schema`
 requires `forceBlockSystemApp` as well as `id` ("force blocking system app for
