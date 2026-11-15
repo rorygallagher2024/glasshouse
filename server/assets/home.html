@@ -789,7 +789,10 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     // in front), so the live preview and the animated background stop here as
     // well: under the screen saver the preview kept the tuner playing (#1209).
     followPreview();
-    if (on && wallVideoEl) wallVideoEl.pause();
+    if (on && wallVideoEl) {
+      if (wallChoice === 'video' && wallVideoSources.length) wallVideoNeedsRestart = true;
+      wallVideoEl.pause();
+    }
     else if (!on) updateWall();
     if (!anim) return;
     if (on) animStop();
@@ -819,6 +822,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
   var pageOpenedAt = Date.now(), STARTING_MS = 60000;
   var wallSlots = null, wallRevision = '', wallChoice = '', wallPictures = [];
   var wallVideoSources = [], wallVideoItems = [], wallVideoShuffle = false, wallVideoRevision = '', wallVideoKey = '', wallVideoIndex = -1;
+  var wallVideoNeedsRestart = false;
   var wallVideoEl = $('wallVideo');
 
   function $(id) { return document.getElementById(id); }
@@ -1771,7 +1775,10 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
   function renderPicture() {
     var p = picture;
     var s = p && p.signal;
-    var showNoSignal = lastOn.kind === 'input' && (!p || p.signalKnown !== false);
+    // The last HDMI input can still have no signal while Home itself is
+    // showing a working video wallpaper; do not put a contradictory notice
+    // over that picture.
+    var showNoSignal = lastOn.kind === 'input' && wallChoice !== 'video' && (!p || p.signalKnown !== false);
     if (!p || !(s || p.mode || showNoSignal)) { $('plate').className = 'none'; return; }
     var sig = [];
     if (s) {
@@ -5061,6 +5068,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     if (wallChoice === 'video') {
       var videoLayers = $('wall').querySelectorAll('.layer');
       if (anim.style !== 'off' || !wallAvailable || !wallVideoSources.length || document.hidden || document.documentElement.classList.contains('resting')) {
+        if (document.hidden || document.documentElement.classList.contains('resting')) wallVideoNeedsRestart = true;
         if (wallVideoEl) { wallVideoEl.style.opacity = 0; wallVideoEl.pause(); }
         if ($('wall-caption')) $('wall-caption').textContent = '';
         if (anim.style !== 'off' || !wallVideoSources.length) wallVideoKey = '';
@@ -5074,7 +5082,8 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
         playWallVideo(wallVideoIndex, slot.strength);
       } else if (wallVideoEl) {
         wallVideoEl.style.opacity = slot.strength;
-        if (wallVideoEl.paused) wallVideoEl.play();
+        if (wallVideoNeedsRestart) playWallVideo(wallVideoIndex, slot.strength);
+        else if (wallVideoEl.paused) wallVideoEl.play();
       }
       for (var v = 0; v < videoLayers.length; v++) { videoLayers[v].style.opacity = 0; videoLayers[v].style.backgroundImage = ''; }
       wallShown = null;
@@ -5114,6 +5123,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
   var wallVideoFailures = 0;
   function playWallVideo(index, strength) {
     if (!wallVideoEl || !wallVideoSources.length) return;
+    wallVideoNeedsRestart = false;
     wallVideoIndex = ((index % wallVideoSources.length) + wallVideoSources.length) % wallVideoSources.length;
     var video = wallVideoEl, item = wallVideoItems[wallVideoIndex] || { url: wallVideoSources[wallVideoIndex] }, source = item.url;
     video.style.opacity = 0;
@@ -5884,6 +5894,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
       refreshPicture();
       clearTimeout(loadRetry);
       readWallpapers(r.wallpapers);
+      renderPicture();
       updateWall();
       if (!state.arranging) render();
       if (firstLoad) { beat(); fadeIn(); }
@@ -6031,6 +6042,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
         coveredSince = r.covered && !r.saver ? (coveredSince || Date.now()) : 0;
         if (standalone && coveredSince && Date.now() - coveredSince > CLOSE_BEHIND_MS) return window.close();
         readWallpapers(r.wallpapers);
+        renderPicture();
         updateWall();
         $('fault').className = '';
         // The TV's setting can change while the view is open, so the heartbeat
