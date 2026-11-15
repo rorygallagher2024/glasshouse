@@ -126,7 +126,15 @@ sam_nudge() {
 # never left blocked by a run cut short. Mirrors lib/samrescan.js.
 # webOS 11 refuses the block without forceBlockSystemApp, which its schema
 # requires (#768); it is sent only where the schema names it.
+# Nothing is blocked where sam has no release: a G3 on webOS 8.4.0 blocked
+# LG's Home and could not release it, so it would not launch until a reboot
+# (#1493). A release of the app first, which changes nothing where it is not
+# blocked, says whether sam has one ("Unknown method" where not, or nothing).
 sam_reread_app() {
+  probe=$(luna-send -n 1 luna://com.webos.applicationManager/releaseBlockSystemApp "{\"id\":\"$1\"}" 2>/dev/null)
+  case "$probe" in
+    ''|*'Unknown method'*) return 1 ;;
+  esac
   force=
   grep -q '"forceBlockSystemApp"' /etc/palm/schemas/sam/applicationManager.blockSystemApp.schema 2>/dev/null &&
     force=',"forceBlockSystemApp":false'
