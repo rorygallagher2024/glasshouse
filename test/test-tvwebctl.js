@@ -47,6 +47,8 @@ env.TVWEB_STALE = '4';
 env.TVWEB_STARTUP = '0';
 env.TVWEB_STARTUP_STALE = '4';
 env.FAKE_MODE = MODE;
+// The watchdog's release of LG's Home, without running the TV's on this machine.
+env.TVWEB_RELEASE = 'touch ' + path.join(dir, 'released');
 
 function ctl(cmd) { return child.execSync('sh ' + CTL + ' ' + cmd, { env: env, encoding: 'utf8' }); }
 function mode(m) { fs.writeFileSync(MODE, m); }
@@ -158,7 +160,8 @@ waitFor('the server and its heartbeat', function () { return alive(serverPid()) 
                 var third = serverPid();
                 process.kill(third, 'SIGKILL');
                 waitFor('LG\'s Home given back', function () {
-                  return /3 restarts in 600s - LG's Home given back/.test(read(RESTARTS)) && serverPid() !== third && alive(serverPid());
+                  return /3 restarts in 600s - LG's Home given back/.test(read(RESTARTS)) && fs.existsSync(path.join(dir, 'released')) &&
+                    serverPid() !== third && alive(serverPid());
                 }, 20000, function () {
                 console.log('  ✓ a third restart in ten minutes gives LG\'s Home its place back, and the server still starts');
 
