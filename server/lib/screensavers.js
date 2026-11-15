@@ -163,6 +163,11 @@ var APPS_DIR = '/media/developer/apps/usr/palm/applications';
 var APP_PREFIX = 'app-';
 var APP_SAVER_FILES = ['assets/screensaver-main.qml', 'assets/screensaver.qml'];
 var MAX_APP_QML_BYTES = 512 * 1024;
+// An app's folder is the app's to fill, so the look through it for QML that
+// plays video stops after this many entries. Aerial's has 552, with its
+// node_modules, and a G5 lists those in 13 ms.
+var MAX_APP_ENTRIES_SEARCHED = 1000;
+var maxAppEntriesSearched = MAX_APP_ENTRIES_SEARCHED;
 var DEFAULT_ROOTS = [
   { dir: path.join(__dirname, '..', 'assets', 'screensavers'), builtin: true },
   { dir: USER_SAVERS_DIR, builtin: false },
@@ -748,19 +753,40 @@ function setVideoMode(playsVideo) {
   })();
 }
 
+// An app's QML files other than its main one, as paths in its folder. Not
+// node_modules, which holds a web page's or a service's libraries.
+function appQmlFiles(e) {
+  var out = [];
+  var seen = 0;
+  (function walk(rel) {
+    var entries;
+    try { entries = fs.readdirSync(path.join(e.dir, rel)); } catch (err) { return; }
+    for (var i = 0; i < entries.length && seen < maxAppEntriesSearched; i++) {
+      if (entries[i] === 'node_modules') continue;
+      var r = rel ? rel + '/' + entries[i] : entries[i];
+      var st;
+      try { st = fs.lstatSync(path.join(e.dir, r)); } catch (err2) { continue; }
+      seen++;
+      if (st.isDirectory()) walk(r);
+      else if (st.isFile() && /\.qml$/.test(r) && r !== e.main && st.size <= MAX_APP_QML_BYTES) out.push(r);
+    }
+  })('');
+  return out;
+}
+
 // Whether a screen saver's main QML, or another QML file in its folder,
 // imports QtMultimedia. An app's other files are read for this though they
-// are not staged: its QML loads them from the app's own folder.
-function saverPlaysVideo(e, mainSource) {
+// are not staged: its QML loads them from the app's own folder. `files` is
+// the folder's listing for one that is not an app's.
+function saverPlaysVideo(e, mainSource, files) {
   if (VIDEO_IMPORT.test(mainSource)) return true;
-  var files;
-  try { files = saverFiles(e.dir); } catch (err) { return false; }
-  for (var i = 0; i < files.length; i++) {
-    var rel = files[i].rel;
-    if (rel === e.main || !/\.qml$/.test(rel) || files[i].size > MAX_APP_QML_BYTES) continue;
+  var others = e.fromApp ? appQmlFiles(e) : files.map(function (f) { return f.rel; }).filter(function (rel) {
+    return rel !== e.main && /\.qml$/.test(rel);
+  });
+  for (var i = 0; i < others.length; i++) {
     try {
-      if (VIDEO_IMPORT.test(fs.readFileSync(path.join(e.dir, rel), 'utf8'))) return true;
-    } catch (err2) {}
+      if (VIDEO_IMPORT.test(fs.readFileSync(path.join(e.dir, others[i]), 'utf8'))) return true;
+    } catch (err) {}
   }
   return false;
 }
@@ -841,6 +867,7 @@ function init(opts) {
   randomConfigFile = (opts && opts.randomConfigFile) ? opts.randomConfigFile : RANDOM_CONFIG_FILE;
   wasInScreenSaver = false;
   if (opts.videoModeRetryMs !== undefined) videoModeRetryMs = opts.videoModeRetryMs;
+  maxAppEntriesSearched = opts.maxAppEntriesSearched !== undefined ? opts.maxAppEntriesSearched : MAX_APP_ENTRIES_SEARCHED;
   videoModeHeld = null;
   videoModeGeneration++;
 
@@ -1366,7 +1393,7 @@ function stageSaverFiles(e, level, choice) {
   var effEnts = effectiveFromSpecs(specs);
   var entityList = effectiveSaverEntityList(e);
   fs.writeFileSync(path.join(qmlDir, 'main.qml'), fillSaverQml(e, mainSource, level, choice, effEnts, entityList));
-  setVideoMode(saverPlaysVideo(e, mainSource));
+  setVideoMode(saverPlaysVideo(e, mainSource, files));
   fs.writeFileSync(path.join(SCREENSAVER_DIR, SCREENSAVER_LEVEL_MARKER), String(level));
   stagedEntities = mergeActiveEntities(activeSaverEntities(effEnts), entityList);
   stagedEntityLabels = mergeActiveLabels(activeSaverLabels(specs), entityList);
