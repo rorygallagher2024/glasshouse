@@ -301,6 +301,25 @@ Aerial's own
 and hides the QML there (#1378). Taking Aerial's mount off first, and then
 mounting, leaves its folder as it was.
 
+On a G5 (OLED65G56LS, webOS 11.2.0) with Aerial Screensaver 3.0.4's
+`screensaver-main.qml` as the screen saver, tvpower went from `Screen Saver`
+back to `Active` 1.0 to 1.4 s after the screen saver's window showed, as its
+first video (3840x2160 HEVC) started. The same QML started with `qml-runner`
+by hand, outside tvpower's screen saver state, went on playing. After
+
+    luna-send -n 1 luna://com.webos.service.screenmanager/setScreenSaverMode \
+      '{"appId":"com.webos.app.screensaver","mode":"manual"}'
+
+the screen saver stayed up with its video playing, 15 minutes when left.
+screenmanager's strings give `mode` as `auto` or `manual`, and have "full
+screen playing" and "appId(%s) is manual mode" beside them. Aerial's web page
+for these TVs sends `manual` at every start, and its source says why:
+screenmanager ends the screen saver when it sees full-screen video, except for
+an app in manual mode, and keeps the mode in memory until it restarts. Its QML
+does not send it. Whether the mode outlasts a reboot was not seen: Glasshouse
+sent it again 43 s after each of two boots, and the screen saver stayed up
+after both.
+
 ## HDMI CEC devices (G3, webOS 9.2.2)
 
 `com.webos.service.eim/getAllInputStatus` returns CEC devices in each HDMI
