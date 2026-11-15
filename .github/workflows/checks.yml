@@ -122,7 +122,17 @@ jobs:
           # OOMPolicy=continue: only the suite the kernel kills ends, not run-all.
           sudo systemd-run --scope --quiet --uid="$(id -u)" --gid="$(id -g)" \
             -p MemoryMax=6G -p MemorySwapMax=0 -p OOMPolicy=continue \
-            env "PATH=$PATH" "RUN_ALL_STATUS=$RUN_ALL_STATUS" node test/run-all.js
+            env "PATH=$PATH" "RUN_ALL_STATUS=$RUN_ALL_STATUS" "TEST_SKIP=tvwebctl" node test/run-all.js
+      # tvwebctl's suite drives the real watchdog, which finds what to stop by
+      # pid file and by pattern across every process it can see. The runners
+      # that stopped answering last showed it running, alone or beside the
+      # server start-up. In a process namespace of its own it sees and can
+      # stop only its own.
+      - name: tvwebctl, in a process namespace of its own
+        run: |
+          sudo unshare --pid --fork --mount-proc \
+            setpriv --reuid="$(id -u)" --regid="$(id -g)" --clear-groups \
+            env "PATH=$PATH" "HOME=$HOME" node test/test-tvwebctl.js
       - name: Memory kills, where the unit tests failed
         if: failure()
         run: sudo dmesg | grep -iE 'out of memory|oom-kill|killed process' || echo 'No memory kills.'
