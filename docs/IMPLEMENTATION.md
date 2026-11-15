@@ -2157,9 +2157,11 @@ authenticated listing and image reads remain available with controls disabled.
 
 The Tools gallery (`assets/ui/screenshots.js`) polls every three seconds only
 while its section and the browser are visible, pausing during capture or
-deletion. An unchanged list keeps its loaded previews; manual Refresh reloads
-them, including failed previews. Hiding or replacing the gallery
-aborts pending work and releases preview blob URLs; request identities discard
+deletion. An unchanged list keeps its cards; manual Refresh retries failed
+previews. Loaded PNGs keep their blob URLs across refreshes and visibility
+changes while the filename, size and modification time match. Removed or changed
+images release their URLs; the page otherwise retains them until closed.
+Hiding or replacing the gallery aborts pending work; request identities discard
 late replies. Image requests send the in-memory token in an Authorization
 header. Downloads use local blob URLs and the original filename. Valid method
 and resolution selections are remembered in browser storage.

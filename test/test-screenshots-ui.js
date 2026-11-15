@@ -103,7 +103,7 @@ function createUI() {
   return ui;
 }
 function checkGallery() {
-  var ui = createUI(), original;
+  var ui = createUI(), original, originalUrl;
   ui.listed = [ui.listed[0]];
   ui.imageReply = function () { return Promise.reject(new Error('image unavailable')); };
   return load(ui).then(function () {
@@ -117,17 +117,42 @@ function checkGallery() {
     return load(ui);
   }).then(function () {
     assert.strictEqual(ui.imageRequests, 2, 'Refresh retries an unchanged failed preview');
+    originalUrl = ui.images[0].src;
     loaded(ui); button(ui, 'view').focus();
     ui.listed.push({ id: 'capture_new.png', modified: '2026-11-01T00:02:00Z' });
     return ui.context.loadScreenshots().then(flush);
   }).then(function () {
+    assert.strictEqual(ui.imageRequests, 3, 'adding a capture only fetches the new PNG');
+    assert.strictEqual(ui.images[0].src, originalUrl, 'a retained capture keeps its blob URL');
     assert.strictEqual(ui.context.document.activeElement, ui.context.document.body);
     loaded(ui);
     assert.strictEqual(ui.context.document.activeElement, button(ui, 'view'), 'loaded replacement restores focus');
     return load(ui);
   }).then(function () {
+    assert.strictEqual(ui.imageRequests, 3, 'Refresh reuses successful previews');
     var other = ui.q('screenshots-refresh'); other.focus(); loaded(ui);
     assert.strictEqual(ui.context.document.activeElement, other, 'late image load never steals focus');
+    ui.context.document.hidden = true; ui.listeners.visibilitychange();
+    ui.context.document.hidden = false; ui.listeners.visibilitychange();
+    return flush();
+  }).then(function () {
+    assert.strictEqual(ui.imageRequests, 3, 'returning to the page reuses downloaded PNGs');
+    assert.strictEqual(ui.images[0].src, originalUrl);
+    ui.listed = [ui.listed[1]];
+    return ui.context.loadScreenshots().then(flush);
+  }).then(function () {
+    assert.deepEqual(ui.revoked, [originalUrl], 'a removed capture releases its blob URL');
+    assert.strictEqual(ui.imageRequests, 3);
+    ui.listed[0] = Object.assign({}, ui.listed[0], { size: 123 });
+    return ui.context.loadScreenshots().then(flush);
+  }).then(function () {
+    assert.strictEqual(ui.imageRequests, 4, 'changed file metadata fetches a fresh PNG');
+    assert.strictEqual(ui.revoked.length, 2, 'a changed capture releases its previous URL');
+    ui.images[0].onerror();
+    return load(ui);
+  }).then(function () {
+    assert.strictEqual(ui.imageRequests, 5, 'Refresh retries a PNG that failed to decode');
+    assert.strictEqual(ui.revoked.length, 3, 'a failed PNG releases its URL');
   });
 }
 function checkViewer() {
@@ -190,7 +215,7 @@ function checkViewer() {
     before = ui.requests.length; ui.context.document.hidden = true; ui.listeners.visibilitychange();
     assert.strictEqual(ui.q('screenshot-viewer').hidden, true);
     assert.strictEqual(ui.requests.length, before, 'hiding closes without starting requests');
-    assert.deepEqual(ui.revoked, [image.src]);
+    assert.deepEqual(ui.revoked, [], 'hiding retains the downloaded PNG');
     ui.context.document.hidden = false; preview.isConnected = false; ui.context.openScreenshotViewer(preview);
     assert.strictEqual(ui.q('screenshot-viewer').hidden, true, 'a detached preview cannot reopen');
   });

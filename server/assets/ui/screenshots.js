@@ -1,6 +1,6 @@
 let screenshotWritable = false, screenshotBusy = false;
 let screenshotTimer = null, screenshotListController = null, screenshotImageController = null;
-let screenshotVersion = '', screenshotUrls = [];
+let screenshotVersion = '', screenshotUrls = new Map();
 let screenshotDeleteId = '', screenshotDeleteUntil = 0, screenshotDeleteTimer = null;
 let screenshotViewerOpener = null;
 
@@ -12,8 +12,6 @@ function clearScreenshotGallery() {
   closeScreenshotViewer(false);
   if (screenshotImageController) screenshotImageController.abort();
   screenshotImageController = null;
-  screenshotUrls.forEach(url => URL.revokeObjectURL(url));
-  screenshotUrls = [];
   screenshotVersion = '';
   q('screenshots-gallery').innerHTML = '';
 }
@@ -103,6 +101,13 @@ async function renderScreenshots(images) {
   const focused = q('screenshots-gallery').contains(document.activeElement) ? document.activeElement : null;
   clearScreenshotGallery();
   screenshotVersion = JSON.stringify(images);
+  const versions = new Map(images.map(image => [image.id, JSON.stringify([image.size, image.modified])]));
+  screenshotUrls.forEach((cached, id) => {
+    if (cached.version !== versions.get(id)) {
+      URL.revokeObjectURL(cached.url);
+      screenshotUrls.delete(id);
+    }
+  });
   const gallery = q('screenshots-gallery');
   gallery.innerHTML = images.length ? images.map(image => {
     const date = new Date(image.modified).toLocaleString();
@@ -127,16 +132,24 @@ async function renderScreenshots(images) {
   const controller = screenshotImageController = new AbortController();
   for (const image of gallery.querySelectorAll('img')) {
     try {
-      const blob = await fetchScreenshotImage(image.dataset.id, controller.signal);
-      if (screenshotImageController !== controller || !screenshotsVisible()) return;
-      const url = URL.createObjectURL(blob);
-      screenshotUrls.push(url);
+      let cached = screenshotUrls.get(image.dataset.id);
+      if (!cached) {
+        const blob = await fetchScreenshotImage(image.dataset.id, controller.signal);
+        if (screenshotImageController !== controller || !screenshotsVisible()) return;
+        cached = { url: URL.createObjectURL(blob), version: versions.get(image.dataset.id) };
+        screenshotUrls.set(image.dataset.id, cached);
+      }
       image.onload = () => {
         const preview = image.parentElement;
         preview.disabled = false;
         if (preview === replacement && document.activeElement === document.body) preview.focus({ preventScroll: true });
       };
-      image.src = url;
+      image.onerror = () => {
+        if (screenshotUrls.get(image.dataset.id) !== cached) return;
+        screenshotUrls.delete(image.dataset.id);
+        URL.revokeObjectURL(cached.url);
+      };
+      image.src = cached.url;
     } catch (error) {
       if (error.name === 'AbortError' || screenshotImageController !== controller) return;
       image.alt = error.message;
