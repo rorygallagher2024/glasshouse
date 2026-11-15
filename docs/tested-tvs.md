@@ -1,12 +1,12 @@
 # Tested TVs
 
-Confirmed on **90 TVs across 56 series** running **webOS 2.2 through 11** (LG's webOS 26). Any other rooted webOS model should work as well.
+Confirmed on **91 TVs across 57 series** running **webOS 2.2 through 11** (LG's webOS 26). Any other rooted webOS model should work as well.
 
 * **Series & sizes:** Screen sizes and regional variants of a series run the same software, so the summary table groups them into one row per series. Years are LG's model years; many TVs have since been updated to a later webOS.
 * **Version numbers:** Versions here are what the TV reports itself, as the dashboard shows them; see [webOS version numbers](#webos-version-numbers) below for LG's marketing names (webOS 22–26).
 * **Older firmware:** webOS 2 and 3 have fewer of LG's services, so readings and controls that rely on them are automatically omitted there.
 
-=== "By series (56)"
+=== "By series (57)"
 
     | Series        | Year | Panel | webOS seen        | Reports |
     | :------------ | :--- | :---- | :---------------- | :------ |
@@ -20,6 +20,7 @@ Confirmed on **90 TVs across 56 series** running **webOS 2.2 through 11** (LG's 
     | B7            | 2017 | OLED  | 3.9               | 1       |
     | SJ80          | 2017 | LCD   | 3.9               | 1       |
     | UJ63          | 2017 | LCD   | 3.9               | 1       |
+    | UJ65          | 2017 | LCD   | 3.9               | 1       |
     | B8            | 2018 | OLED  | 4.4               | 1       |
     | C8            | 2018 | OLED  | 4.4               | 2       |
     | LK61          | 2018 | LCD   | 4.4               | 1       |
@@ -67,7 +68,7 @@ Confirmed on **90 TVs across 56 series** running **webOS 2.2 through 11** (LG's 
     | NU80          | 2026 | LCD   | 11                | 1       |
     | QNED84        | 2026 | LCD   | 11.0              | 1       |
 
-=== "All reports (90)"
+=== "All reports (91)"
 
     | Model       | webOS        | Firmware | Panel | Notes                                                          |
     | :---------- | :----------- | :------- | :---- | :------------------------------------------------------------- |
@@ -81,6 +82,7 @@ Confirmed on **90 TVs across 56 series** running **webOS 2.2 through 11** (LG's 
     | OLED65B7V-Z | 3.9.3        | 06.10.65 | OLED  | No SoC temperature or eMMC wear readings                       |
     | 55SJ800V-ZB | 3.9.3        | 06.10.65 | LCD   | Working fine                                                   |
     | 43UJ634V-ZD | 3.9.3        | 06.10.70 | LCD   | Rooted with dejavuln-autoroot; tracking and ads disabled       |
+    | 60UJ6519-ZA | 3.9.3        | 06.10.75 | LCD   | Glasshouse Home opens from Home, after LG's ribbon for about a second ([#1222](https://github.com/rorygallagher2024/glasshouse/issues/1222)) |
     | OLED65C8PUA | 4.4.0        | 05.50.15 | OLED  | No `getAdid` on this firmware                                  |
     | OLED65B8SLC | 4.4.3        | 05.50.70 | OLED  | Everything works. Misses a few metrics found on newer versions |
     | OLED65C8PJA | 4.4.3        | 05.50.70 | OLED  | Working fine; adblock and screen saver confirmed               |
@@ -182,6 +184,8 @@ Only Glasshouse Bar and the input bar are refused anywhere, and each refusal com
 
 **webOS 3: no remote key filters.** Both bars are opened by LG's remote key filters: files the TV's compositor loads that say which app a key opens, where Glasshouse points the Home or Input key at its own app. webOS 3 has none. A 60UJ6519-ZA (webOS 3.9.3) had no `KeyFilters` folder and no setting for one, and every Home press opened LG's ribbon ([details](development/TV-RESEARCH.md#no-remote-key-filters-on-webos-3-60uj6519-za-webos-393)).
 *The lead:* Glasshouse Home gets around this on webOS 3 by reading the Home press from the remote's input device and opening over LG's ribbon. The bars could do the same, with LG's own list or ribbon opening underneath; no one has tried it yet.
+
+**webOS 3: LG's ribbon before Glasshouse Home.** Glasshouse Home works on webOS 3, but because it reads the Home press alongside LG's compositor rather than before it, LG's ribbon shows for about a second first, each time Home is pressed. Taking the press first would mean holding the remote's input devices exclusively and passing every other key back through `/dev/uinput`. On a 60UJ6519 the compositor has every input device open, `/dev/uinput` is there, and the TV's Python has no `fcntl`, so it would take a small native program ([details](development/TV-RESEARCH.md#no-remote-key-filters-on-webos-3-60uj6519-za-webos-393)). It is left for a contributor with a webOS 3 TV, who can try it on their own; see [the help-wanted issue](https://github.com/rorygallagher2024/glasshouse/issues?q=is%3Aissue+label%3A%22help+wanted%22+webOS+3).
 
 **webOS 11 and later: the keys are LG's own.** The key filters became native libraries with no file to add to. On a C5 (webOS 11.2.0) Home always launched LG's Home app, and Input always opened LG's input picker, whatever the settings held ([details](development/TV-RESEARCH.md#native-key-filters-c5-webos-1120)). Glasshouse Home still works there because it takes the place of LG's Home app itself. webOS 12 and later are taken to be the same, but no one has looked.
 *The lead:* the TV logs every button press by name as it happens, and Glasshouse already acts on that log for the Netflix and AI buttons, with an app in front 0.6 to 1 second after the press. A bar opened that way would follow LG's picker or Home rather than replace it.

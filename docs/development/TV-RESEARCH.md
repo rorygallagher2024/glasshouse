@@ -3387,6 +3387,20 @@ re-wrote that input's EDID and hot-plugged it, and the app stayed in front.
 - On a B8 (webOS 4.4.3), 773 written to the remote's input device
   (`LGE RCU`, `event1`) reaches a reader of that device but opens nothing in
   the compositor; 125 written there opens LG's ribbon.
+- Read from the remote, a press opens Glasshouse Home about a second after
+  LG's ribbon, which shows each time, Glasshouse Home open or not; its tiles
+  were up 3.3 s after the ribbon (0.142.0, #1222).
+- `surface-manager` holds `/dev/input/event0` to `event8` open, and
+  `/dev/uinput` for writing. The input devices are `CHECK INPUT` (`event0`),
+  `LGE RCU` (`event1`), `Bluetooth-manager` (`event2`) and `LGE M-RCU -
+  Builtin [0]` (`event3`, also `mouse0` and `js0`, the Magic Remote's pointer).
+  `/dev/uinput` is there (`crw-------`, root). Taking Home before the ribbon
+  would need `EVIOCGRAB` on these and every other key written back through
+  uinput; the TV's Python is a stripped 2.7 with no `fcntl` module, and node
+  has no `ioctl`, so it would need a native program. Not tried.
+- `/usr/lib/qml` does not exist; `/usr/lib/qt5/qml` has `WebOSCompositor`,
+  `FavoriteChannels` (whose `SuperRibbon` names the ribbon) and LG's other QML
+  modules.
 
 ## A web app as the screen saver (OLED65C5PUA, webOS 10.3.1)
 
