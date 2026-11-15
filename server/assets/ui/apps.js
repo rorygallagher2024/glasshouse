@@ -182,7 +182,6 @@ function renderAppsPanel() {
   renderAppDns(d);
   renderQuickAccess(d);
   renderRemoteKeys(d);
-  showRemoteTab();
 
   // Render Background Services
   const svcsList = q('apps-services-list');
@@ -429,6 +428,8 @@ function renderRemoteKeys(d) {
   }
   rkData = rk;
   rkWritable = !!d.writable;
+  // Neither on a TV: the tab has nothing to show.
+  showRemoteTab();
   renderInputs();
   // Left alone while a choice is being made in it.
   if (!list || (rkOpen && list.contains(document.activeElement))) return;
