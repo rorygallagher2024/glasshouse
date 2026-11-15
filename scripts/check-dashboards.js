@@ -3673,8 +3673,11 @@ async function visitInputsAndRemote(browser, base, problems) {
   const devices = [{ id: 'TV', name: 'Live TV', tuner: true }, { id: 'HDMI_1', name: 'Console', port: 1 }, { id: 'HDMI_2', name: 'HDMI 2', port: 2, unused: true }];
   const keys = [{ key: 'input', title: 'Input', action: 'lg' }, { key: 'netflix', title: 'Netflix', action: 'open', id: 'com.tvweb.inputbar', opens: 'Input bar' }];
   let hasKeys = true;
+  let hasQuickAccess = false;
+  let appReads = 0;
   const writes = [];
   try {
+    await page.route('**/api/remote/available', route => route.fulfill({ json: { ok: true, available: hasKeys || hasQuickAccess } }));
     await page.route('**/api/inputs', route => route.fulfill({ json: { ok: true, writable: true, noSignal, inputBar: { standing: 'tried', allowed: true, experimental: false } } }));
     await page.route('**/api/home/catalogue', route => route.fulfill({ json: { ok: true, layout, order: { dev: ['TV', 'HDMI_1', 'HDMI_2'] },
       devices: devices.map(d => layout.deviceNames[d.id] ? Object.assign({}, d, { name: layout.deviceNames[d.id], defaultName: d.name }) : d) } }));
@@ -3688,11 +3691,12 @@ async function visitInputsAndRemote(browser, base, problems) {
       await route.fulfill({ json: { ok: true } });
     });
     await page.route('**/api/apps', async route => {
+      appReads++;
       // The page may close with this still on its way.
       try {
         const apps = await (await route.fetch()).json();
         apps.writable = true;
-        apps.quickAccess = null;
+        apps.quickAccess = hasQuickAccess ? { keys: [], choices: [] } : null;
         apps.remoteKeys = hasKeys ? { ok: true, supported: true, keys, choices: [] } : null;
         await route.fulfill({ json: apps });
       } catch (e) { /* closed */ }
@@ -3714,6 +3718,9 @@ async function visitInputsAndRemote(browser, base, problems) {
       }
       await route.fulfill({ json: Object.assign({ ok: true }, noSignal) });
     });
+    await page.goto(base + '/?tab=control');
+    await page.locator('#tab-btn-remote').waitFor({ state: 'visible' });
+    if (appReads) fail('opening Control fetched the Apps catalogue');
     await page.goto(base + '/?tab=inputs');
     await page.locator('#inputs-list .home-tile').first().waitFor();
     if (await page.locator('#inputs-list .home-tile').count() !== 3) fail('the inputs are not listed');
@@ -3755,6 +3762,13 @@ async function visitInputsAndRemote(browser, base, problems) {
     if (await page.evaluate(() => activeTab) !== 'remote') fail('the Remote tab button did not open Remote');
     if (!await page.locator('#remotepane #disc-remotekeys').isVisible()) fail('Remote keys are not on the Remote tab');
     if (await page.locator('#appspane #disc-remotekeys, #sspane [id*="nosignal"]').count()) fail('remote keys or No Signal remain on their old tabs');
+    hasKeys = false;
+    hasQuickAccess = true;
+    const readsBefore = appReads;
+    await page.goto(base + '/?tab=control');
+    await page.locator('#tab-btn-remote').waitFor({ state: 'visible' });
+    if (appReads !== readsBefore) fail('Quick Access visibility fetched the Apps catalogue');
+    hasQuickAccess = false;
     // A TV with no keys to set: no Remote tab, no input bar on Inputs, and no Your inputs while LG Home is active.
     hasKeys = false;
     await page.goto(base + '/?tab=inputs');
