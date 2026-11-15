@@ -1331,6 +1331,17 @@ function stageSaverFiles(e, level, choice) {
     mkdirp(path.dirname(path.join(targetDir, rel)));
     fs.writeFileSync(path.join(targetDir, rel), fs.readFileSync(path.join(e.dir, rel)));
   }
+  // The Video saver uses the same faces as Home. Stage them inside its Web
+  // app: webOS may refuse file:// font loads from outside the mounted app.
+  if (e.id === 'video' && e.runtime === 'web') {
+    var fontNames = ['Outfit-Light.ttf', 'Outfit-Regular.ttf', 'Manrope-Regular.ttf', 'Manrope-SemiBold.ttf'];
+    var sourceFonts = path.join(__dirname, '..', 'assets', 'fonts');
+    var stagedFonts = path.join(SCREENSAVER_DIR, 'web', 'fonts');
+    mkdirp(stagedFonts);
+    for (var f = 0; f < fontNames.length; f++) {
+      fs.writeFileSync(path.join(stagedFonts, fontNames[f]), fs.readFileSync(path.join(sourceFonts, fontNames[f])));
+    }
+  }
   var specs = effectiveSaverEntitySpecs(e);
   var effEnts = effectiveFromSpecs(specs);
   var entityList = effectiveSaverEntityList(e);

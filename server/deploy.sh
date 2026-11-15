@@ -95,8 +95,6 @@ assets/screensavers/starfield/main.qml assets/screensavers/starfield/saver.json 
 assets/screensavers/starfield/star.png assets/screensavers/tesseract/main.qml \
 assets/screensavers/tesseract/saver.json assets/screensavers/tesseract/tesseract.js \
 assets/screensavers/video/main.qml assets/screensavers/video/saver.json assets/screensavers/video/web/index.html \
-assets/screensavers/video/web/fonts/Outfit-Light.ttf assets/screensavers/video/web/fonts/Outfit-Regular.ttf \
-assets/screensavers/video/web/fonts/Manrope-Regular.ttf assets/screensavers/video/web/fonts/Manrope-SemiBold.ttf \
 assets/screensavers/veils/main.qml \
 assets/screensavers/veils/saver.json assets/screensavers/vitals/main.qml \
 assets/screensavers/vitals/saver.json assets/screensavers/vortex/main.qml \
