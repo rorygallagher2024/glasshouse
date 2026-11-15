@@ -3294,5 +3294,7 @@
  "home.highlight.navy": {"from": "Navy", "text": "Azul marino"},
  "home.highlight.forest": {"from": "Forest", "text": "Verde bosque"},
  "home.highlight.wine": {"from": "Wine", "text": "Burdeos"},
- "home.highlight.plum": {"from": "Plum", "text": "Ciruela"}
+ "home.highlight.plum": {"from": "Plum", "text": "Ciruela"},
+ "inputs.kind.av": {"text": "AV", "from": "AV"},
+ "inputs.kind.component": {"text": "Componentes", "from": "Component"}
 }

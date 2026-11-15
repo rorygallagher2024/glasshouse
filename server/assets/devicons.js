@@ -21,13 +21,17 @@
       '<path d="M2 12a9 9 0 0 1 9 9M2 16a5 5 0 0 1 5 5"/><circle cx="2.5" cy="20.5" r=".8" fill="currentColor"/>',
     allinputs: '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/>' +
       '<rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>',
+    // AV's three RCA jacks; Component's three in a plate.
+    av: '<circle cx="5.5" cy="12" r="3"/><circle cx="12" cy="12" r="3"/><circle cx="18.5" cy="12" r="3"/>' +
+      '<circle cx="5.5" cy="12" r=".7" fill="currentColor"/><circle cx="12" cy="12" r=".7" fill="currentColor"/><circle cx="18.5" cy="12" r=".7" fill="currentColor"/>',
+    component: '<rect x="1.5" y="7" width="21" height="10" rx="2"/><circle cx="6.5" cy="12" r="2.2"/><circle cx="12" cy="12" r="2.2"/><circle cx="17.5" cy="12" r="2.2"/>',
     plug: '<path d="M5 9h14v3l-2 3H7l-2-3z"/><path d="M8 15v3h8v-3"/>'
   };
   // Handheld is tested before console so "Switch2 Game Console" gets the handheld.
   /** @type {Array<[string, RegExp]>} */
   var KINDS = [
     ['handheld', /nintendo|switch ?\d|switch game|steam ?deck/],
-    ['console', /xbox|playstation|\bps[345]\b|console|gaming/],
+    ['console', /xbox|playstation|\bps[345]\b|\bwii\b|gamecube|console|gaming/],
     ['stream', /apple ?tv|roku|chromecast|fire ?tv|firestick|shield|google ?tv|streamer/],
     ['audio', /sonos|sound ?bar|receiver|\bavr\b|denon|yamaha|marantz|onkyo|bose/],
     ['disc', /blu-?ray|dvd/],
@@ -43,6 +47,8 @@
   }
   function kindOf(d) {
     if (d && d.tuner) return 'tv';
+    // An AV or Component input named for its device shows that device.
+    if (d && (d.kind === 'av' || d.kind === 'component')) return matchKind(d.name) || d.kind;
     if (d && d.kind && ICONS[d.kind]) return d.kind;
     return (d && (matchKind(d.name) || matchKind(d.id))) || 'plug';
   }

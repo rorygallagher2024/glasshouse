@@ -24,6 +24,7 @@ var fs = require('fs');
 var os = require('os');
 var path = require('path');
 var compat = require('../server/lib/compat');
+var names = require('../server/lib/names');
 var home = require('../server/lib/home');
 
 console.log('Running test-home.js ...');
@@ -3524,6 +3525,31 @@ step('Screen Share opens Home Hub\'s guide, where Home Hub has one (#1500, #1502
       });
     });
   });
+  });
+});
+
+step('AV and Component inputs are listed beside HDMI and open through their own apps (#1468)', function (done) {
+  start(null);
+  // As a 32LM637B (webOS 4.5) reports them.
+  tv.devices = [
+    { id: 'AV_1', label: 'Wii', port: 1, connected: true, appId: 'com.webos.app.externalinput.av1' },
+    { id: 'COMP_1', label: 'Component', port: 1, connected: false, appId: 'com.webos.app.externalinput.component' },
+    { id: 'HDMI_1', label: 'HDMI 1', port: 1, connected: true, appId: 'com.webos.app.hdmi1' }
+  ];
+  home.setLayout({ showMediaServers: false }, function () {
+    home.catalogue(function (c) {
+      var byId = {};
+      c.devices.forEach(function (d) { byId[d.id] = d; });
+      assert.deepEqual([byId.av1.name, byId.av1.kind, byId.av1.appId, !!byId.av1.unused], ['Wii', 'av', 'com.webos.app.externalinput.av1', false]);
+      assert.deepEqual([byId.comp1.kind, byId.comp1.unused], ['component', true], 'nothing plugged into Component');
+      assert.ok(byId.hdmi1, 'HDMI as before');
+      home.open({ kind: 'dev', id: 'av1' }, function (r) {
+        assert.ok(r.ok, r.error);
+        assert.deepEqual(tv.launches.pop(), { id: 'com.webos.app.externalinput.av1' });
+        assert.strictEqual(names.isInputAppId('com.webos.app.externalinput.av1'), true, 'an input, not an app, when in front');
+        done();
+      });
+    });
   });
 });
 

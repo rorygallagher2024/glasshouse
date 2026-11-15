@@ -25,6 +25,7 @@ Each tile shows its name, subtitle (such as HDMI port or source type), and an au
 * **Live TV** tuner (when broadcast or cable channels are tuned).
 * **HDMI ports & SIMPLINK (CEC) devices**, including devices connected through an AV receiver or soundbar, waking and routing them on selection.
 * **USB storage** attached to the TV, and **Media Servers** discovered over DLNA/UPnP when **Show media servers** is switched on under [Your inputs](#your-inputs).
+* **AV** and **Component**, on TVs that have those inputs, with their connection shown as for HDMI.
 * **AirPlay**, **Screen Share**, and **All Inputs** (LG's Input Hub / Home Hub), wherever the TV includes them.
 
 ### Supported TVs & background preloading

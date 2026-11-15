@@ -1222,9 +1222,28 @@ function devices(cb) {
   });
 }
 
+/*
+ * An AV or Component input, as eim names them on a 32LM637B (webOS 4.5):
+ * AV_1 and COMP_1, opened by their own apps, com.webos.app.externalinput.av1
+ * and com.webos.app.externalinput.component, with `connected` saying whether
+ * anything is plugged in (#1468). null for anything else.
+ */
+function analogInput(d) {
+  var m = d && typeof d.id === 'string' && /^(AV|COMP)_(\d)$/.exec(d.id);
+  if (!m || typeof d.appId !== 'string' || !d.appId) return null;
+  var kind = m[1] === 'AV' ? 'av' : 'component';
+  var input = (kind === 'av' ? 'av' : 'comp') + m[2];
+  var name = String(d.label || (kind === 'av' ? 'AV' : 'Component')).replace(/\s+/g, ' ').trim();
+  var out = { id: input, name: name, input: input, kind: kind, appId: d.appId, port: 0, via: null, address: null };
+  if (d.connected === false) out.unused = true;
+  return out;
+}
+
 function listDevices(devs, portsPlugged) {
   var out = [];
   devs.forEach(function (d) {
+    var analog = analogInput(d);
+    if (analog) return out.push(analog);
     var m = d && typeof d.id === 'string' && /^HDMI_(\d)$/.exec(d.id);
     if (!m) return;
     var plugged = typeof d.hdmiPlugIn === 'boolean' ? d.hdmiPlugIn

@@ -3294,5 +3294,7 @@
  "home.highlight.navy": {"from": "Navy", "text": "Тёмно-синий"},
  "home.highlight.forest": {"from": "Forest", "text": "Хвойный"},
  "home.highlight.wine": {"from": "Wine", "text": "Бордовый"},
- "home.highlight.plum": {"from": "Plum", "text": "Сливовый"}
+ "home.highlight.plum": {"from": "Plum", "text": "Сливовый"},
+ "inputs.kind.av": {"text": "AV", "from": "AV"},
+ "inputs.kind.component": {"text": "Компонентный", "from": "Component"}
 }

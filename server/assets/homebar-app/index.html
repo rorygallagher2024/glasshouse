@@ -187,6 +187,7 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
       (e.kind === 'input' && e.port && e.port === onPort ? ' now' : '');
     if (isDev) {
       var sub = e.kind === 'input' ? 'HDMI ' + e.port
+        : e.kind === 'av' ? 'AV' : e.kind === 'component' ? 'Component'
         : e.kind === 'dms' ? 'Media Server'
         : e.kind === 'usb' ? 'USB' : '';
       return '<div class="' + cls + '" data-i="' + i + '"><div class="head">' + (e.dicon || '') +

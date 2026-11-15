@@ -75,6 +75,8 @@ function renderInputList() {
     if (d.tuner) path = t('ctl.liveTv', 'Live TV');
     else if (d.kind === 'dms') path = t('inputs.kind.dms', 'Media server');
     else if (d.kind === 'usb') path = t('inputs.kind.usb', 'USB');
+    else if (d.kind === 'av') path = t('inputs.kind.av', 'AV');
+    else if (d.kind === 'component') path = t('inputs.kind.component', 'Component');
     else if (d.kind === 'airplay') path = 'AirPlay';
     else if (d.kind === 'screenshare') path = t('inputs.kind.screenshare', 'Screen Share');
     else if (d.kind === 'allinputs') path = t('inputs.kind.allinputs', 'All inputs');

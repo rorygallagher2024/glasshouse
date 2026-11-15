@@ -191,6 +191,7 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
       var cls = 'tile' + (i === focus ? ' focus' : '') + (isOn(e) ? ' now' : '');
       var sub = e.kind === 'dms' ? 'Media Server'
         : e.kind === 'usb' ? 'USB'
+        : e.kind === 'av' ? 'AV' : e.kind === 'component' ? 'Component'
         : (e.tuner || e.kind) ? ''
         : 'HDMI ' + e.port;
       html += '<div class="' + cls + '" data-i="' + i + '"' + style + '><div class="head">' + e.icon +

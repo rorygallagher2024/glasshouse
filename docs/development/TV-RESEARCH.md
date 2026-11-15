@@ -3675,6 +3675,14 @@ launch with `{ "actionType": "mobileGuide" }` opens (`onParamsCall` in its
 `main.js`, beside `iotConnectionGuide` and `iotPanel`). Launched that way, Home
 Hub stayed in front.
 
+## AV and Component inputs (32LM637B, webOS 4.5)
+
+eim's `getAllInputStatus` lists them beside HDMI as `AV_1` and `COMP_1`, each
+with `port: 1`, `connected` saying whether anything is plugged in, the label
+the owner gave it, and an app of its own: `com.webos.app.externalinput.av1`
+and `com.webos.app.externalinput.component`, not `com.webos.app.av1` (#1468).
+There is no `hdmiPlugIn` and no `subList` for them.
+
 ## Holding down LG's account client (C2, webOS 9.2.2; B4, webOS 10.3.2)
 
 Settings waits for `com.webos.service.accountmanager/getLoginUserData` before it
