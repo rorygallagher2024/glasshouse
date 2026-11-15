@@ -75,16 +75,32 @@ var defaultTimeoutSecs = Number(process.env.TEST_TIMEOUT_SECS) || 60;
 var concurrency = Number(process.env.TEST_CONCURRENCY) || Math.max(4, os.cpus().length * 2);
 var nextRun = 0;
 
-var progressTimer = setInterval(function () {
-  if (left <= 0) { clearInterval(progressTimer); return; }
+// Every suite running, with how long it has run.
+function progressLine() {
   var elapsed = Math.round((Date.now() - startedAt) / 1000);
-  // Every suite running is named, with how long it has run: a CI job whose
-  // runner stops answering keeps no log, and the lines its page streamed
-  // before then are the only word of what was running.
   var running = runs.filter(function (r) { return r.started && !r.finished; }).map(function (r) {
     return r.suite.replace(/^test-|\.js$/g, '') + (r.shard ? '#' + r.shard : '') + ' ' + Math.round((Date.now() - r.startedAt) / 1000) + 's';
   });
-  console.log('[' + elapsed + 's] ' + (runs.length - left) + '/' + runs.length + ' done; running: ' + running.join(', '));
+  return '[' + elapsed + 's] ' + (runs.length - left) + '/' + runs.length + ' done; running: ' + running.join(', ');
+}
+
+/*
+ * A CI job whose runner stops answering keeps no log, so what was running is
+ * also written to RUN_ALL_STATUS, where present, at each start and finish:
+ * the job posts it to GitHub as it changes (scripts/ci-heartbeat.sh), and the
+ * last post outlives the runner.
+ */
+var statusFile = process.env.RUN_ALL_STATUS || '';
+function writeStatus(line) {
+  if (!statusFile) return;
+  try { fs.writeFileSync(statusFile, line + '\n'); } catch (e) {}
+}
+
+var progressTimer = setInterval(function () {
+  if (left <= 0) { clearInterval(progressTimer); return; }
+  var line = progressLine();
+  console.log(line);
+  writeStatus(line);
 }, 5000);
 if (progressTimer.unref) progressTimer.unref();
 
@@ -102,6 +118,7 @@ function startRun(run) {
   run.out = { stdout: '', stderr: '', code: null };
   run.finished = false;
   run.startedAt = Date.now();
+  writeStatus(progressLine());
   proc.stdout.on('data', function (d) { run.out.stdout += d; });
   proc.stderr.on('data', function (d) { run.out.stderr += d; });
 
@@ -115,7 +132,9 @@ function startRun(run) {
     if (closeTimer) { clearTimeout(closeTimer); closeTimer = null; }
     run.out.code = code;
     run.ms = Date.now() - run.startedAt;
-    if (--left === 0) report();
+    --left;
+    writeStatus(left === 0 ? 'all ' + runs.length + ' finished in ' + Math.round((Date.now() - startedAt) / 1000) + 's' : progressLine());
+    if (left === 0) report();
     else startNext();
   }
 
