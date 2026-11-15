@@ -748,6 +748,23 @@ function setVideoMode(playsVideo) {
   })();
 }
 
+// Whether a screen saver's main QML, or another QML file in its folder,
+// imports QtMultimedia. An app's other files are read for this though they
+// are not staged: its QML loads them from the app's own folder.
+function saverPlaysVideo(e, mainSource) {
+  if (VIDEO_IMPORT.test(mainSource)) return true;
+  var files;
+  try { files = saverFiles(e.dir); } catch (err) { return false; }
+  for (var i = 0; i < files.length; i++) {
+    var rel = files[i].rel;
+    if (rel === e.main || !/\.qml$/.test(rel) || files[i].size > MAX_APP_QML_BYTES) continue;
+    try {
+      if (VIDEO_IMPORT.test(fs.readFileSync(path.join(e.dir, rel), 'utf8'))) return true;
+    } catch (err2) {}
+  }
+  return false;
+}
+
 function clearStagedScreensaver() {
   stagedEntities = null;
   stagedEntityLabels = null;
@@ -1339,20 +1356,17 @@ function stageSaverFiles(e, level, choice) {
   // An app's screen saver loads the rest from its own folder.
   var files = e.fromApp ? [] : saverFiles(e.dir);
   var mainSource = fs.readFileSync(path.join(e.dir, e.main), 'utf8');
-  var playsVideo = VIDEO_IMPORT.test(mainSource);
   for (var i = 0; i < files.length; i++) {
     var rel = files[i].rel;
     if (rel === MANIFEST || rel === e.main) continue;
-    var content = fs.readFileSync(path.join(e.dir, rel));
-    if (/\.qml$/.test(rel) && VIDEO_IMPORT.test(content.toString('utf8'))) playsVideo = true;
     mkdirp(path.dirname(path.join(qmlDir, rel)));
-    fs.writeFileSync(path.join(qmlDir, rel), content);
+    fs.writeFileSync(path.join(qmlDir, rel), fs.readFileSync(path.join(e.dir, rel)));
   }
   var specs = effectiveSaverEntitySpecs(e);
   var effEnts = effectiveFromSpecs(specs);
   var entityList = effectiveSaverEntityList(e);
   fs.writeFileSync(path.join(qmlDir, 'main.qml'), fillSaverQml(e, mainSource, level, choice, effEnts, entityList));
-  setVideoMode(playsVideo);
+  setVideoMode(saverPlaysVideo(e, mainSource));
   fs.writeFileSync(path.join(SCREENSAVER_DIR, SCREENSAVER_LEVEL_MARKER), String(level));
   stagedEntities = mergeActiveEntities(activeSaverEntities(effEnts), entityList);
   stagedEntityLabels = mergeActiveLabels(activeSaverLabels(specs), entityList);

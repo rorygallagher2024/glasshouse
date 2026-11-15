@@ -2,8 +2,10 @@
  * test/test-screensaver-video.js - On a TV whose stock screen saver is Flutter
  * (webOS 10 and later), a screen saver that plays video puts the screen saver
  * app in screenmanager's manual mode, which otherwise ends it as the video
- * starts; one that plays none, and LG's own, put it back to auto. The manual
- * mode is asked for again until screenmanager answers.
+ * starts; one that plays none, and LG's own, put it back to auto. An app's
+ * screen saver counts as playing video where another QML file of the app
+ * imports QtMultimedia, though only its main one is staged. The manual mode is
+ * asked for again until screenmanager answers.
  *
  * Strict ES5: runs on node 0.12.
  */
@@ -15,6 +17,7 @@ var waitFor = require('./wait-for').waitFor;
 
 var APP = '/usr/palm/applications/com.webos.app.screensaver';
 var STOCK_TYPE_FILE = '/var/lib/tvweb/screensaver-stock-type';
+var STAGE = '/var/lib/tvweb/screensaver';
 var BUILTIN = path.join(__dirname, '..', 'server', 'assets', 'screensavers');
 var APPS = path.join(__dirname, 'fixtures', 'saver-apps');
 var FLUTTER = '{"id":"com.webos.app.screensaver","type":"flutter","main":"main"}';
@@ -110,7 +113,7 @@ screensavers.setScreensaver('app-org-example-aerial', 'dim', function (r) {
           waitFor(function () { return modes.length === 1; }, function () {
             assert.deepEqual(modes, ['com.webos.app.screensaver auto']);
             console.log('  ✓ LG\'s own is put back to auto');
-            atStart();
+            otherFile();
           }, 'auto for LG\'s');
         });
       }, 'auto for the clock');
@@ -118,7 +121,24 @@ screensavers.setScreensaver('app-org-example-aerial', 'dim', function (r) {
   }, 'manual for the video');
 });
 
-// 4. At the server's start, before screenmanager is up: asked again until it answers.
+// 4. An app whose main QML imports no video and loads a file that does: manual,
+// with that file left in the app.
+function otherFile() {
+  modes = [];
+  pending = 'app-org-example-split';
+  screensavers.setScreensaver('app-org-example-split', 'dim', function (r) {
+    assert.strictEqual(r.ok, true, r.error);
+    waitFor(function () { return modes.length === 1; }, function () {
+      assert.deepEqual(modes, ['com.webos.app.screensaver manual']);
+      assert.ok(env.files[path.join(STAGE, 'qml', 'main.qml')].indexOf('QtMultimedia') === -1, 'its main QML imports no video');
+      assert.ok(!env.files[path.join(STAGE, 'qml', 'player', 'Player.qml')], 'the other file is not staged');
+      console.log('  ✓ an app\'s other QML files count, and are not staged');
+      atStart();
+    }, 'manual for the app\'s other file');
+  });
+}
+
+// 5. At the server's start, before screenmanager is up: asked again until it answers.
 function atStart() {
   modes = [];
   unanswered = 2;
@@ -135,7 +155,7 @@ function atStart() {
   }, 'manual once screenmanager is up');
 }
 
-// 5. Where LG's screen saver is QML, screenmanager is left alone.
+// 6. Where LG's screen saver is QML, screenmanager is left alone.
 function onQmlStock() {
   modes = [];
   env.files[STOCK_TYPE_FILE] = 'qml';
