@@ -36,7 +36,7 @@ var FEATURES = {
   inputBar: {
     title: 'Glasshouse Bar and the input bar',
     parts: ['The input bar', 'Glasshouse Bar'],
-    tried: [4, 6, 9],
+    tried: [4, 5, 6, 7, 9],
     from: 4,
     upTo: 10,
     tooOld: function () {

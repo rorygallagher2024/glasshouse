@@ -1,12 +1,12 @@
 # Tested TVs
 
-Confirmed on **80 TVs across 53 series** running **webOS 2.2 through 11** (LG's webOS 26). Any other rooted webOS model should work as well.
+Confirmed on **90 TVs across 56 series** running **webOS 2.2 through 11** (LG's webOS 26). Any other rooted webOS model should work as well.
 
 * **Series & sizes:** Screen sizes and regional variants of a series run the same software, so the summary table groups them into one row per series. Years are LG's model years; many TVs have since been updated to a later webOS.
 * **Version numbers:** Versions here are what the TV reports itself, as the dashboard shows them; see [webOS version numbers](#webos-version-numbers) below for LG's marketing names (webOS 22–26).
 * **Older firmware:** webOS 2 and 3 have fewer of LG's services, so readings and controls that rely on them are automatically omitted there.
 
-=== "By series (52)"
+=== "By series (56)"
 
     | Series        | Year | Panel | webOS seen        | Reports |
     | :------------ | :--- | :---- | :---------------- | :------ |
@@ -28,7 +28,7 @@ Confirmed on **80 TVs across 53 series** running **webOS 2.2 through 11** (LG's 
     | UM71          | 2019 | LCD   | 4.10              | 2       |
     | UM73          | 2019 | LCD   | 4.10              | 1       |
     | C9            | 2019 | OLED  | 4.9 – 4.10        | 3       |
-    | CX            | 2020 | OLED  | 5.5 – 5.6         | 4       |
+    | CX            | 2020 | OLED  | 5.5 – 5.6         | 6       |
     | GX            | 2020 | OLED  | 5.6               | 1       |
     | UN70          | 2020 | LCD   | 5.6               | 1       |
     | UN73          | 2020 | LCD   | 5.6               | 1       |
@@ -39,15 +39,18 @@ Confirmed on **80 TVs across 53 series** running **webOS 2.2 through 11** (LG's 
     | NANO85        | 2021 | LCD   | 6.5               | 1       |
     | UP80          | 2021 | LCD   | 6.5               | 1       |
     | UP81          | 2021 | LCD   | 6.5               | 1       |
+    | A2            | 2022 | OLED  | 7.3               | 1       |
     | B2            | 2022 | OLED  | 10.3              | 1       |
-    | C2            | 2022 | OLED  | 9.2, 10.3         | 3       |
+    | C2            | 2022 | OLED  | 9.2, 10.3         | 4       |
     | G2            | 2022 | OLED  | 7.4, 10.3         | 2       |
     | QNED82        | 2022, 2025 | LCD   | 7.6, 10.3         | 2       |
-    | UQ80          | 2022 | LCD   | 7.6               | 1       |
+    | UQ80          | 2022 | LCD   | 7.6               | 2       |
     | LX3           | 2022 | OLED  | —                 | 1       |
+    | SQ700S        | 2022 | LCD   | 7.0               | 1       |
     | CS            | 2022 | OLED  | 10                | 1       |
+    | B3            | 2023 | OLED  | 10                | 1       |
     | C3            | 2023 | OLED  | 8.3, 10 – 11      | 4       |
-    | G3            | 2023 | OLED  | 11                | 1       |
+    | G3            | 2023 | OLED  | 8.4, 11           | 2       |
     | UR80          | 2023 | LCD   | 10.3              | 1       |
     | QNED80        | 2022, 2023 | LCD   | 7.6, 10.3         | 2       |
     | B4            | 2024 | OLED  | 9, 10.3           | 2       |
@@ -56,15 +59,15 @@ Confirmed on **80 TVs across 53 series** running **webOS 2.2 through 11** (LG's 
     | QNED86        | 2024 | LCD   | 10.3              | 1       |
     | UT73          | 2024 | LCD   | —                 | 1       |
     | UT81          | 2024 | LCD   | 10                | 1       |
-    | C5            | 2025 | OLED  | 10 – 11.2         | 4       |
+    | C5            | 2025 | OLED  | 10 – 11.2         | 5       |
     | G5            | 2025 | OLED  | 10 – 11           | 2       |
     | UA73          | 2025 | LCD   | 10.3.1            | 1       |
-    | UA75          | 2025 | LCD   | 10.3              | 1       |
+    | UA75          | 2025 | LCD   | 10.3              | 2       |
     | C6            | 2026 | OLED  | 11.2              | 1       |
     | NU80          | 2026 | LCD   | 11                | 1       |
     | QNED84        | 2026 | LCD   | 11.0              | 1       |
 
-=== "All reports (80)"
+=== "All reports (90)"
 
     | Model       | webOS        | Firmware | Panel | Notes                                                          |
     | :---------- | :----------- | :------- | :---- | :------------------------------------------------------------- |
@@ -97,6 +100,8 @@ Confirmed on **80 TVs across 53 series** running **webOS 2.2 through 11** (LG's 
     | OLED65CXPUA | 5.6.2        | 04.64.00 | OLED  | Rooted with slopbro; dashboard, telemetry and API .ipk installs |
     | OLED55GX6LA | 5.6.2        | 04.64.00 | OLED  | MQTT bridge and screen savers confirmed                        |
     | 43UN73003LC | 5.6.2        | 04.64.00 | LCD   | Glasshouse Home opened from the Home button, and an app from it ([#931](https://github.com/rorygallagher2024/glasshouse/pull/931)) |
+    | OLED48CX8LC | 5.6.2        | 04.74.00 | OLED  | Glasshouse Bar and the input bar confirmed ([#1506](https://github.com/rorygallagher2024/glasshouse/issues/1506), [#1507](https://github.com/rorygallagher2024/glasshouse/issues/1507)) |
+    | OLED55CX3LA | 5.6.2        | 04.64.00 | OLED  | Glasshouse Bar confirmed; Back from an app shows LG's Home ([#1500](https://github.com/rorygallagher2024/glasshouse/issues/1500)) |
     | OLED55C17LB | 6.x          | —        | OLED  | HDMI 2.1 diagnostics and remote battery reporting              |
     | OLED55C1PUB | 6.x (6.3+)   | 03.53.45 | OLED  | SSH install and MQTT bridge confirmed                          |
     | OLED65C15LA | 6.5.3        | 03.53.45 | OLED  | In-app updates confirmed, 0.130.0 to 0.141.1                   |
@@ -106,15 +111,20 @@ Confirmed on **80 TVs across 53 series** running **webOS 2.2 through 11** (LG's 
     | 50NANO753PR | 6.5.3        | 03.53.45 | LCD   | Rooted with slopbro; kernel 4.4.84 has no firewall, so the web app debugger stays open to the network; telnet install confirmed |
     | 65NANO85APA | 6.5.3        | 03.53.45 | LCD   | SSH install; web and TV dashboards, telemetry, remote navigation, volume/mute and LCD backlight verified |
     | OLED55G19LA | 6.5.3        | 03.53.45 | OLED  | Advertising ID reset accepted without ID change on this firmware |
+    | 43SQ700S-WB | 7.0.0        | 03.07.00 | LCD   | Smart Monitor; Glasshouse Bar confirmed ([#1496](https://github.com/rorygallagher2024/glasshouse/issues/1496)) |
+    | OLED55A26LA | 7.3.0        | 03.30.14 | OLED  | Input bar confirmed ([#1508](https://github.com/rorygallagher2024/glasshouse/issues/1508)) |
     | OLED65G29LA | 7.4.0        | 04.40.90 | OLED  | Confirmed working                                              |
     | 55QNED826QB | 7.6.0        | 04.60.90 | LCD   | Installed over SSH; MQTT bridge confirmed                      |
     | 50QNED80UQA | 7.6.0        | 04.60.85 | LCD   | Rooted with slopbro; SSH install; telemetry disabled and ad blocker confirmed |
     | 65UQ801C0SB | 7.6.0        | 04.60.90 | LCD   | Rooted with slopbro; SSH install; Glasshouse Home confirmed    |
+    | 50UQ8050PSB | 7.6.0        | 04.60.90 | LCD   | Glasshouse Bar and the input bar confirmed ([#1503](https://github.com/rorygallagher2024/glasshouse/issues/1503), [#1504](https://github.com/rorygallagher2024/glasshouse/issues/1504)) |
     | OLED42C3PUA | 8.3.1        | 03.33.25 | OLED  | First webOS 8 report                                           |
+    | OLED77G3PUA | 8.4.0        | 13.40.76 | OLED  | Glasshouse Bar confirmed; Glasshouse Home not taken as Home ([#1493](https://github.com/rorygallagher2024/glasshouse/issues/1493)) |
     | OLED42C24LA | 9.2.2        | 23.25.55 | OLED  | Rooted with jsbro-autoroot                                     |
     | OLED55C4PUA | 9.2.0        | 23.20.35 | OLED  | Rooted with faultmanager; SSH install; no internet access      |
     | OLED55B46LA | 9.24.8       | 23.23.30 | OLED  | Installed over telnet                                          |
     | OLED55G42LW | 10           | 33.31.68 | OLED  | Rooted with slopbro, not the Homebrew Channel                  |
+    | OLED55B3PSA | 10.x         | 33.31.75 | OLED  | Rooted with SlopBro; Glasshouse Home daily for a month ([#1505](https://github.com/rorygallagher2024/glasshouse/issues/1505)) |
     | OLED55C41LA | 10.2.0       | 33.21.85 | OLED  | OLED Care, remote keys, privacy controls and screen saver confirmed |
     | 50UT81006LA | 10.2.1       | 33.22.56 | LCD   | Partial: blocking works; some settings reported not to apply   |
     | OLED55C31LA | 10.2.2       | 33.22.80 | OLED  | Installed over SSH; in-app updates confirmed                   |
@@ -132,6 +142,9 @@ Confirmed on **80 TVs across 53 series** running **webOS 2.2 through 11** (LG's 
     | OLED48C5PUA | 10.3.1       | 33.31.69 | OLED  | Rooted with slopbro; dashboard, telemetry and API .ipk installs |
     | 55UA73006LA | 10.3.1       | 33.31.61 | LCD   | Homebrew Channel; SSH install; dashboard and telemetry confirmed |
     | 55QNED82AUA | 10.3.1       | 33.31.61 | LCD   | Rooted with slopbro; SSH install; privacy switches, Glasshouse Home confirmed |
+    | 50UA7500ZUA | 10.3.1       | 33.31.61 | LCD   | Glasshouse Bar did not open ([#1501](https://github.com/rorygallagher2024/glasshouse/issues/1501)) |
+    | OLED42C26LB | 10.3.1       | 33.31.68 | OLED  | Glasshouse Bar confirmed ([#1510](https://github.com/rorygallagher2024/glasshouse/issues/1510)) |
+    | OLED65C51LA | 10.3.1       | 33.31.68 | OLED  | Glasshouse Bar confirmed; AirPlay tile cannot be hidden in it ([#1502](https://github.com/rorygallagher2024/glasshouse/issues/1502)) |
     | 86UR8000AUA | 10.3.2       | 33.31.75 | LCD   | Working; no firewall in its kernel, so the web app debugger stays open to the network |
     | OLED65B2PUA | 10.3.2       | 33.31.75 | OLED  | Rooted with Homebrew Channel; SSH install; Glasshouse Home and HDMI confirmed working after reboot |
     | OLED77B46LA | 10.3.2       | 33.31.75 | OLED  | Rooted with WTFBro; SSH install; Glasshouse Home and eARC audio confirmed |
@@ -159,7 +172,7 @@ Glasshouse Home and the launchers in its place, and the overlay bars the remote 
 | Feature | Reported working | Offered, with a warning | Not offered |
 | :------ | :--------------- | :---------------------- | :---------- |
 | Glasshouse Home, Minimal and custom launchers | 4, 5, 6, 7, 9, 10, 11 | 3 and earlier, 8, 12 and later | None |
-| Glasshouse Bar and the input bar | 4, 6, 9 | 5, 7, 8, 10 | 3 and earlier, 11 and later |
+| Glasshouse Bar and the input bar | 4, 5, 6, 7, 9 | 8, 10 | 3 and earlier, 11 and later |
 
 On webOS 2 and 3, Glasshouse Home runs as an app beside LG's Home, and reads the Home press from the remote itself. Tile hiding, and custom screen savers on webOS 12 and later, can leave a TV needing a restart when they go wrong, so they stay [experimental](experimental.md) with their own switches.
 
