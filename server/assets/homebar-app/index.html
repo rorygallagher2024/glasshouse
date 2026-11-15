@@ -34,6 +34,7 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
 .tile.input{width:300px;padding:0 22px;text-align:left}
 .tile.focus{background:#fff;color:#111;border-color:#fff;-webkit-transform:scale(1.07);transform:scale(1.07)}
 .ico{display:block;width:112px;height:112px;margin:0 auto 14px;border-radius:20px;background:#333 center/contain no-repeat}
+img.ico{background:none;object-fit:contain}
 .ico.letter{line-height:112px;font-size:52px;font-weight:600;color:#fff;background:#3a3a3a}
 .nm{font-size:24px;padding:0 12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .no-app-labels .tile:not(.input){width:156px;height:156px;margin-top:22px;padding-top:20px}
@@ -195,7 +196,10 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
         '<div class="txt"><div class="nm">' + esc(e.name) + '</div>' +
         (sub ? '<div class="path">' + esc(sub) + '</div>' : '') + '</div></div></div>';
     }
-    var ico = e.icon ? '<span class="ico" style="background-image:url(\'' + esc(e.icon) + '\')"></span>'
+    // An image, decoded in the frame that draws it: a CSS background is decoded
+    // after, so a C2 (webOS 9.2.2) showed the tiles first and the icons a
+    // moment later.
+    var ico = e.icon ? '<img class="ico" src="' + esc(e.icon) + '" decoding="sync" alt="">'
       : '<span class="ico letter">' + esc(e.letter) + '</span>';
     return '<div class="' + cls + '" data-i="' + i + '">' + ico + '<div class="nm">' + esc(e.name) + '</div></div>';
   }
@@ -436,6 +440,26 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
    * with its first frame, then updates the active input or any changed tiles
    * without tearing down unchanged icon elements.
    */
+  /*
+   * The row's icons ready, or ICON_WAIT_MS gone, whichever first. A preloaded
+   * Bar has them already; one opened before its icons came would show the
+   * tiles without them, and then each icon appearing.
+   */
+  var ICON_WAIT_MS = 250;
+  function whenIconsReady(cb) {
+    var imgs = $('row').querySelectorAll('img.ico'), waiting = 0, done = false;
+    function finish() { if (!done) { done = true; cb(); } }
+    function one() { if (--waiting <= 0) finish(); }
+    for (var i = 0; i < imgs.length; i++) {
+      if (imgs[i].complete) continue;
+      waiting++;
+      imgs[i].addEventListener('load', one);
+      imgs[i].addEventListener('error', one);
+    }
+    if (!waiting) return finish();
+    setTimeout(finish, ICON_WAIT_MS);
+  }
+
   function start() {
     // Opened again while it fades out: it stays.
     clearTimeout(closeTimer);
@@ -446,7 +470,7 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
     var mySeq = ++seq;
     if (!renderedJson) hydrateFromCache();
     else syncFocus();
-    if (list.length) openWindow();
+    if (list.length) whenIconsReady(function () { if (mySeq === seq && !closing) openWindow(); });
     now = null;
     cat = null;
     waiting = 3;
@@ -460,7 +484,7 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
       var port = portFrom(now);
       saveCache(fresh, port, nextLabelsOff);
       applyRow(fresh, port, nextLabelsOff);
-      if (document.body.className !== 'on') openWindow();
+      if (document.body.className !== 'on') whenIconsReady(function () { if (mySeq === seq && !closing && document.body.className !== 'on') openWindow(); });
     }
     ensureDevIcons(readyFor);
     getJson(BASE + '/api/home/now', function (j) {

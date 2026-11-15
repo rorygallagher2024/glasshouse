@@ -544,6 +544,61 @@ async function visitHomeBarScroll(browser, base, problems) {
   }
 }
 
+// Opened before its icons have come, the Bar waits for them rather than
+// showing the tiles first and each icon a moment later, and its icons are
+// images decoded in the frame that draws them.
+async function visitHomeBarIconsReady(browser, base, problems) {
+  const fail = what => problems.push('Glasshouse Bar icons: ' + what);
+  const page = await browser.newPage({ viewport: { width: 1920, height: 1080 } });
+  page.on('pageerror', e => fail(e.message));
+  const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==', 'base64');
+  await page.addInitScript(() => {
+    window.PalmSystem = { launchParams: '{}' };
+    window.PalmServiceBridge = function () {};
+    window.PalmServiceBridge.prototype.call = function () {
+      if (this.onservicecallback) this.onservicecallback(JSON.stringify({ returnValue: true }));
+    };
+    window.close = function () {};
+    try { localStorage.setItem('glasshouse.homebar', JSON.stringify({ list: [
+      { kind: 'app', id: 'a1', name: 'One', icon: 'http://localhost:8080/api/home/icon?id=a1', letter: 'O' },
+      { kind: 'app', id: 'a2', name: 'Two', icon: 'http://localhost:8080/api/home/icon?id=a2', letter: 'T' }
+    ], onPort: null, labelsOff: false })); } catch (e) {}
+    // Whether every icon had loaded when the window was shown.
+    document.addEventListener('DOMContentLoaded', () => {
+      const note = () => {
+        if (document.body.className.indexOf('on') !== -1 && window.__iconsAtOpen === undefined) {
+          window.__iconsAtOpen = Array.from(document.querySelectorAll('#row .ico')).map(i => i.tagName === 'IMG' && i.complete);
+        }
+      };
+      note();
+      new MutationObserver(note).observe(document.body, { attributes: true, attributeFilter: ['class'] });
+    });
+  });
+  await page.route('http://localhost:8080/**', async route => {
+    const url = new URL(route.request().url());
+    if (url.pathname === '/assets/devicons.js') return route.continue({ url: base + '/assets/devicons.js' });
+    if (url.pathname === '/api/home/icon') {
+      await new Promise(r => setTimeout(r, 150));
+      return route.fulfill({ status: 200, contentType: 'image/png', body: png });
+    }
+    if (url.pathname === '/api/home/now') return route.fulfill({ json: {} });
+    if (url.pathname === '/api/home/catalogue') return route.fulfill({ json: { ok: true, layout: {}, order: { app: ['a1', 'a2'], dev: [] },
+      apps: [{ id: 'a1', title: 'One', icon: '/api/home/icon?id=a1' }, { id: 'a2', title: 'Two', icon: '/api/home/icon?id=a2' }], devices: [] } });
+    return route.fulfill({ json: {} });
+  });
+  try {
+    await page.goto(base + '/assets/homebar-app/index.html');
+    await page.waitForFunction(() => window.__iconsAtOpen !== undefined, null, { timeout: 5000 });
+    const at = await page.evaluate(() => window.__iconsAtOpen);
+    if (!at.length) fail('no icons in the row when it opened');
+    else if (at.some(c => !c)) fail('shown before its icons had loaded: ' + JSON.stringify(at));
+    const kind = await page.evaluate(() => { const i = document.querySelector('#row .ico'); return i ? i.tagName + ' ' + i.getAttribute('decoding') : 'none'; });
+    if (kind !== 'IMG sync') fail('the icons are ' + kind + ', not images decoded in the frame that draws them');
+  } finally {
+    await page.close();
+  }
+}
+
 async function visitHomeBarTiles(browser, base, problems) {
   const fail = what => problems.push('Glasshouse Bar tiles: ' + what);
   const devices = [
@@ -4245,7 +4300,7 @@ function groups(web, tv) {
     { job: 'tabs', tabs: web.map(t => ({ path: '/?tab=' + t, label: 'web ' + t })), visits: [visitHomeAnimations, visitHuesyncSettings, visitInputsAndRemote, visitAdblockCards, visitSaverEntitySlots] },
     { job: 'tabs', tabs: tv.map(t => ({ path: '/assets/dashboard.html?tab=' + t, label: 'TV ' + t })),
       visits: [visitTvDashboard, visitTvAudio, visitTvPictureWrites, visitPictureUnavailable, visitTvNonOled, visitTvHuesync] },
-    { job: 'home', tabs: [], visits: [visitHomePicture, visitHomePreview, visitHomePreviewOptions, visitHomePreviewWebos4, visitHomePreviewSize, visitHomePreviewSizeDetails, visitInputBarBehindHome, visitHomeBarPrewarm, visitHomeBarTiles, visitHomeBarScroll, visitHomeUpDown, visitHomePointerOff, visitHomeOrder, visitHomeAvailability, visitHomeSearch, visitHomeWeather, visitHomeWeatherSetting] },
+    { job: 'home', tabs: [], visits: [visitHomePicture, visitHomePreview, visitHomePreviewOptions, visitHomePreviewWebos4, visitHomePreviewSize, visitHomePreviewSizeDetails, visitInputBarBehindHome, visitHomeBarPrewarm, visitHomeBarIconsReady, visitHomeBarTiles, visitHomeBarScroll, visitHomeUpDown, visitHomePointerOff, visitHomeOrder, visitHomeAvailability, visitHomeSearch, visitHomeWeather, visitHomeWeatherSetting] },
     { job: 'home', tabs: [], visits: [visitHomeArrangement, visitHomeVisibility, visitHomeColours, visitHomeInputsEditor, visitHomeEditor,
       visitHomeRecentsHidden, visitHomeUploads, visitHomeShuffle, visitHomeLauncher, visitHomeReadiness, visitAudioOverride, visitHomeRecents, visitHomeGuide,
       visitHomeFadeAndInputs] },
