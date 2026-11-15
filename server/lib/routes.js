@@ -2347,6 +2347,21 @@ function handleRequest(req, res) {
     });
   }
 
+  if (pathname === '/api/remote/available' && req.method === 'GET') {
+    var remoteAvailable = function (available) {
+      send(res, 200, JSON.stringify({ ok: true, available: available }));
+    };
+    var checkRemoteKeys = function () {
+      if (!remoteKeysModule) return remoteAvailable(false);
+      remoteKeysModule.isSupported(remoteAvailable);
+    };
+    if (!quickAccessModule) return checkRemoteKeys();
+    return quickAccessModule.isSupported(function (supported) {
+      if (supported) return remoteAvailable(true);
+      checkRemoteKeys();
+    });
+  }
+
   // What the remote's keys do, on its own for the Home tab's Guide button choice.
   if (pathname === '/api/remotekeys' && req.method === 'GET') {
     if (!remoteKeysModule) return send(res, 200, JSON.stringify({ ok: true, supported: false }));

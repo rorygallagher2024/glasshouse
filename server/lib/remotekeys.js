@@ -1466,6 +1466,11 @@ function listApps(cb) {
   });
 }
 
+function isSupported(cb) {
+  if (!lunaFn) return cb(false);
+  offeredKeys(function (keys) { cb(!!(keys && keys.length)); });
+}
+
 /*
  * The keys this TV has and what each does. cb({ ok, supported, keys, choices,
  * inChain }). A key's action is 'lg', 'nothing' or 'open' with the id and its
@@ -1775,6 +1780,7 @@ module.exports = {
   dropInputBar: dropInputBar,
   availabilityChanged: availabilityChanged,
   getRemoteKeys: getRemoteKeys,
+  isSupported: isSupported,
   setRemoteKey: setRemoteKey,
   setHome: setHome,
   setStarting: setStarting,

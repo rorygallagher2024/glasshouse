@@ -685,7 +685,7 @@ create no Home Assistant diagnostic entities or diagnostic MQTT publications.
 
 The saver entity slots check gives Home Assistant: Ambient's first slot an entity and expects its Label row at once, with the field still focused, then confirms a label with Tab while typing in the next field and expects that field to keep its focus and text.
 
-The Inputs and Remote dashboard check covers the inputs and their switches, the
+The Inputs and Remote dashboard check covers Remote appearing from Control without fetching the Apps catalogue, including a TV with only Quick Access, the inputs and their switches, the
 Input key's choice of LG's list or the input bar, the No Signal switch, remote
 keys on the Remote tab and not the Apps tab, and no Remote tab on a TV with no
 keys to set.
@@ -710,3 +710,5 @@ integration. The web tab returns when an integration becomes available again.
 `test-routes.js` verifies both integrations' write permissions. Screenshots use
 synthetic data. The Hue Sync checks wait for intercepted requests to finish
 before closing each page, so pending stats replies cannot outlive the page.
+
+`test-remote-availability.js` checks the lightweight Remote availability route: Quick Access needs one settings read, remote keys are checked only as a fallback, and neither path collects the Apps catalogue or writes settings.

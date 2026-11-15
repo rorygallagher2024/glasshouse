@@ -1,6 +1,6 @@
 # Remote
 
-The **Remote** tab, `/?tab=remote`, sets what the remote's keys do: the number keys held down, under **Quick Access**, and the other buttons, under **Remote keys**. It is left out on a TV with neither.
+The **Remote** tab, `/?tab=remote`, sets what the remote's keys do: the number keys held down, under **Quick Access**, and the other buttons, under **Remote keys**. It appears when the dashboard opens, and is left out on a TV with neither.
 
 # Quick Access
 

@@ -142,6 +142,7 @@ if (tabsNav) {
 loadGame();
 checkPictureTab();
 loadHomeAvailable();
+loadRemoteAvailable();
 
 // The menu bar names the tab on show, in the page's language: the strings are
 // put in at DOMContentLoaded, after the first showTab.

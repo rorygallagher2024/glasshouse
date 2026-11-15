@@ -182,6 +182,7 @@ function renderAppsPanel() {
   renderAppDns(d);
   renderQuickAccess(d);
   renderRemoteKeys(d);
+  showRemoteTab();
 
   // Render Background Services
   const svcsList = q('apps-services-list');
@@ -406,11 +407,23 @@ function rkDoes(k, kindOf) {
 }
 
 // The Remote tab: there where the TV has Quick Access or remote keys to set.
+let remoteAvailable = null;
+async function loadRemoteAvailable() {
+  try {
+    const r = await fetch(api('/api/remote/available'), { cache: 'no-store' });
+    if (!r.ok) return;
+    const d = await r.json();
+    if (!d.ok || typeof d.available !== 'boolean') return;
+    remoteAvailable = d.available;
+    showRemoteTab();
+  } catch (e) { console.error('loadRemoteAvailable failed:', e); }
+}
+
 function showRemoteTab() {
-  const has = !!(appsData && (appsData.quickAccess || appsData.remoteKeys));
+  const has = appsData ? !!(appsData.quickAccess || appsData.remoteKeys) : remoteAvailable;
   const btn = q('tab-btn-remote');
   if (btn) btn.hidden = !has;
-  if (!has && activeTab === 'remote') showTab('control');
+  if (has === false && activeTab === 'remote') showTab('control');
 }
 
 function renderRemoteKeys(d) {
@@ -428,8 +441,6 @@ function renderRemoteKeys(d) {
   }
   rkData = rk;
   rkWritable = !!d.writable;
-  // Neither on a TV: the tab has nothing to show.
-  showRemoteTab();
   renderInputs();
   // Left alone while a choice is being made in it.
   if (!list || (rkOpen && list.contains(document.activeElement))) return;
