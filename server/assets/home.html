@@ -5104,7 +5104,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
         // Back from the screen saver, its player can still have the decoder: a
         // play refused or a picture that never comes is tried again here, at
         // the heartbeat, rather than leaving Home black.
-        if (wallVideoNeedsRestart || (!wallVideoPlaying && Date.now() - wallVideoLoadedAt > WALL_VIDEO_START_MS)) playWallVideo(wallVideoIndex, slot.strength);
+        if (wallVideoNeedsRestart || (!wallVideoPlaying && Date.now() - wallVideoLoadedAt > WALL_VIDEO_START_MS)) restartWallVideo(slot.strength);
         else if (wallVideoEl.paused) {
           var resumed = wallVideoEl.play();
           if (resumed && typeof resumed.catch === 'function') resumed.catch(function () {});
@@ -5162,7 +5162,9 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     if ($('wall-caption')) $('wall-caption').textContent = '';
     if (wallVideoEl.getAttribute('src') === null) return;
     wallVideoNeedsRestart = true;
-    wallVideoEl.oncanplay = wallVideoEl.onplaying = wallVideoEl.onerror = wallVideoEl.onended = wallVideoEl.ontimeupdate = null;
+    wallVideoLeftAt = wallVideoEl.currentTime || 0;
+    wallVideoLeftWhen = Date.now();
+    wallVideoEl.oncanplay = wallVideoEl.onplaying = wallVideoEl.onerror = wallVideoEl.onended = wallVideoEl.ontimeupdate = wallVideoEl.onloadedmetadata = null;
     wallVideoPlaying = false;
     try { wallVideoEl.pause(); } catch (e) {}
     wallVideoEl.removeAttribute('src');
@@ -5200,7 +5202,22 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
   }
   // Room for a 4K stream over the network to reach its first frame.
   var WALL_VIDEO_START_MS = 20000;
-  function playWallVideo(index, strength) {
+  /*
+   * Back after a moment (a preview while moving along the rows), the same
+   * video goes on from where it was; after longer (the screen saver), the
+   * next one plays, so coming back is not always the same scene from its start.
+   */
+  var wallVideoLeftAt = 0, wallVideoLeftWhen = 0;
+  var WALL_VIDEO_RESUME_MS = 60000;
+  function restartWallVideo(strength) {
+    var brief = wallVideoLeftWhen && Date.now() - wallVideoLeftWhen < WALL_VIDEO_RESUME_MS;
+    var at = brief ? wallVideoLeftAt : 0;
+    wallVideoLeftWhen = 0;
+    if (brief) playWallVideo(wallVideoIndex, strength, at);
+    else playWallVideo(nextWallVideoIndex(), strength);
+  }
+
+  function playWallVideo(index, strength, startAt) {
     if (!wallVideoEl || !wallVideoSources.length) return;
     wallVideoNeedsRestart = false;
     wallVideoIndex = ((index % wallVideoSources.length) + wallVideoSources.length) % wallVideoSources.length;
@@ -5232,6 +5249,9 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
       wallVideoFailures = 0;
       wallVideoNeedsRestart = true;
     };
+    video.onloadedmetadata = startAt > 0 ? function () {
+      try { if (startAt < (video.duration || 0) - 1) video.currentTime = startAt; } catch (e) {}
+    } : null;
     video.pause();
     video.src = source;
     video.load();
