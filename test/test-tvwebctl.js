@@ -50,7 +50,15 @@ env.FAKE_MODE = MODE;
 // The watchdog's release of LG's Home, without running the TV's on this machine.
 env.TVWEB_RELEASE = 'touch ' + path.join(dir, 'released');
 
-function ctl(cmd) { return child.execSync('sh ' + CTL + ' ' + cmd, { env: env, encoding: 'utf8' }); }
+// A tvwebctl that does not return would hang the test with nothing said.
+function ctl(cmd) {
+  try {
+    return child.execSync('sh ' + CTL + ' ' + cmd, { env: env, encoding: 'utf8', timeout: 30000 });
+  } catch (e) {
+    if (cmd === 'stop' || !e.signal) throw e;
+    finish(1, 'tvwebctl ' + cmd + ' had not returned after 30s');
+  }
+}
 function mode(m) { fs.writeFileSync(MODE, m); }
 function read(f) { try { return fs.readFileSync(f, 'utf8'); } catch (e) { return ''; } }
 function serverPid() { return parseInt(read(PIDFILE), 10) || 0; }
@@ -172,11 +180,14 @@ waitFor('the server and its heartbeat', function () { return alive(serverPid()) 
                 waitFor('the extra watchdog', function () { return watchdogs() === 2; }, 5000, function () {
                   ctl('restart');
                   waitFor('the extra watchdog to be cleared', function () { return !alive(extra.pid); }, 5000, function () {
-                    if (watchdogs() !== 1) return finish(1, 'a restart left ' + watchdogs() + ' watchdogs');
+                  // start-stop-daemon -b returns before the new watchdog exists,
+                  // so the count is 0 for a moment after the restart
+                  waitFor('one watchdog after the restart', function () { return watchdogs() === 1; }, 5000, function () {
                     ctl('start');
                     if (watchdogs() !== 1) return finish(1, 'a start beside a watchdog left ' + watchdogs());
                     console.log('  ✓ a restart clears an extra watchdog, and a start adds none');
                     finish(0);
+                  });
                   });
                 });
                 });
