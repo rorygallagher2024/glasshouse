@@ -65,7 +65,11 @@ function serverPid() { return parseInt(read(PIDFILE), 10) || 0; }
 // A killed server is reparented to pid 1, and where that is not an init that
 // reaps orphans (some containers) it stays a zombie, which kill(pid, 0) still
 // finds.
+// 0 is never a server: the pid file is missing for a moment in a restart, and
+// kill(0) signals this test's own process group, so alive(0) was true and the
+// SIGKILL meant for the server killed the test (CI, node 0.12).
 function alive(pid) {
+  if (!(pid > 1)) return false;
   try { process.kill(pid, 0); } catch (e) { return false; }
   return !/^\d+ \(.*\) Z/.test(read('/proc/' + pid + '/stat'));
 }
@@ -156,6 +160,7 @@ waitFor('the server and its heartbeat', function () { return alive(serverPid()) 
             // 4. A dead server's leftover copy is cleared before a new one starts
             var leftover = child.spawn(process.execPath, [APP], { env: env, detached: true, stdio: 'ignore' });
             leftover.unref();
+            if (!alive(second)) return finish(1, 'no server to kill, the pid file read ' + second);
             process.kill(second, 'SIGKILL');
             waitFor('the restart after the server died', function () {
               return /process gone/.test(read(RESTARTS)) && serverPid() !== second && alive(serverPid());
@@ -166,6 +171,7 @@ waitFor('the server and its heartbeat', function () { return alive(serverPid()) 
                 // 4b. A third restart inside ten minutes gives LG's Home its
                 // place back, as Glasshouse Home's page would wait on black
                 var third = serverPid();
+                if (!alive(third)) return finish(1, 'no server to kill, the pid file read ' + third);
                 process.kill(third, 'SIGKILL');
                 waitFor('LG\'s Home given back', function () {
                   return /3 restarts in 600s - LG's Home given back/.test(read(RESTARTS)) && fs.existsSync(path.join(dir, 'released')) &&
