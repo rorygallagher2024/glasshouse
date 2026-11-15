@@ -898,7 +898,10 @@ the file and leaves `glasshouse.remoteKeys` as an empty map.
 
 Only keys this TV's own filter files name are offered, found by searching them
 for the symbol (`WebOS.Key_webOS_Disneyplus` is in a C5's `appLaunch.js` and
-not a CX's). The compositor's enum knows more names than a given remote sends,
+not a CX's), with the four colour keys offered together when any one of them
+is named, since webOS 4's filters only match `WebOS.Key_webOS_Yellow` and
+`WebOS.Key_webOS_Blue` and pass Red and Green straight to the foreground app.
+The compositor's enum knows more names than a given remote sends,
 and a case on an unknown symbol would never match. Home and Back are not
 offered, since the dashboard's own Home screen changes rely on them; volume,
 mute, channel and power are handled by the microcontroller before any filter
@@ -1008,7 +1011,7 @@ on from it.
 
 ## The input bar
 
-The [input bar](dashboard/apps.md#input-bar) is a web app of its own,
+The [input bar](dashboard/inputs.md#glasshouse-input-bar) is a web app of its own,
 `com.tvweb.inputbar` (`assets/inputbar-app/`), whose `appinfo.json` asks for
 an overlay window (`"defaultWindowType": "overlay"`, `"transparent": true`)
 with no splash (`"noSplashOnLaunch": true`, `"spinnerOnLaunch": false`). The
@@ -1062,18 +1065,49 @@ working: `getent hosts ad.lgsmartad.com` returns `0.0.0.0`.
 
 Other tools edit `/etc/hosts` too: AmazOff points
 `cloudfront.xp-assets.aiv-cdn.net` at its local nginx. The table carries their
-lines over each time it is written. Switched off, the table comes down unless
-the file underneath lacks some of them: on a C4 on webOS 10.3.1 that file is on
-the read-only squashfs rootfs, so the table goes back up blocking nothing, and
-stays until the next reboot. A line is the blocker's own if it is a comment, a
-localhost line, a sinkhole (`0.0.0.0` or `::`) or names a host the table
-decides on, and anyone else's otherwise. The last rule is for the Homebrew
-Channel's update block, which points LG's update servers at `127.0.0.1` and
-`::1` and must not outlive update blocking being switched off. At boot,
+lines over each time it is written, other blockers' sinkholes included: Life's
+Good Without Spying and LG App Update Blocker write nothing else, and the table
+the Homebrew Channel's update block mounts would otherwise switch them off
+(#1370). They sit under a `# Kept from /etc/hosts` header, which tells them
+apart from the table's own sinkholes when it is written again. Switched off,
+the table comes down unless the file underneath lacks some of them: on a C4 on
+webOS 10.3.1 that file is on the read-only squashfs rootfs, so the table goes
+back up blocking nothing, and stays until the next reboot. A line is the
+blocker's own if it is a comment, a localhost line, one of its sinkholes above
+that header, or a non-sinkhole line naming a host the table decides on, and
+anyone else's otherwise. The last rule is for the Homebrew Channel's update
+block, which points LG's update servers at `127.0.0.1` and `::1` and must not
+outlive update blocking being switched off. At boot,
 `50-tvweb` takes them from that boot's `/etc/hosts` before mounting and drops
 the previous boot's, so a tool that is no longer started leaves nothing behind.
 The table is written in place rather than replaced, since app jails such as
 Amazon's bind-mount it as their own `tmp/hosts` while it is mounted.
+
+Other app jails hold ordinary copies of `/etc/hosts`. `lib/apphosts.js`
+replaces existing copies with the current TV table after boot-time mounting,
+clock sync, country, tier, custom-list and update-block changes. It watches
+the jail root, each jail and its `etc` directory for new copies and resets;
+events are coalesced for 25 ms, with a 30 s fallback for missed or unavailable
+watches. It includes service jails that are not in the installed-app list.
+An `etc` or jail reset always reopens the affected watches: Linux can reuse a
+directory's inode while the watch attached before deletion no longer receives
+events. Directory identity alone cannot establish that a watch is still live.
+Writes use an exclusively created temporary file, handle short writes, set the
+original mode independently of the server's umask, and rename the completed
+file atomically. Failed writes close the descriptor and remove the temporary
+copy. Identical files are not rewritten.
+Symlinks are not followed, and a mount point that cannot be renamed is left
+to its owner. No read-only bind mount is added: LG must be able to copy the
+file during launch. With the main table removed, marked jail copies receive
+the TV's ordinary file and watching stops. Failed restorations keep the 30 s
+recheck active until cleanup succeeds, including at startup with blocking off.
+Unreadable jail, `etc` or hosts metadata keeps cleanup pending; a missing path
+has no copy to restore. An unreadable, missing or incomplete TV hosts file
+also starts the 30 s recheck, even if the first sync has not opened any watches.
+Repair follows filesystem events,
+so a lookup before repair can still escape; the fallback can take 30 s.
+This does not flush app DNS caches or intercept clients that send DNS queries
+without consulting hosts.
 
 The ads tier's domains are ad, tracking and diagnostics hosts that nothing on
 the TV needs. The platform tier's are **service infrastructure rather than
@@ -1081,19 +1115,26 @@ advertising**, which is why they are a separate tier:
 
 | Domain | What it actually serves |
 | :--- | :--- |
-| `ngfts.lge.com`, `aic-ngfts.lge.com` | Content and firmware delivery CDN |
+| `ngfts.lge.com`, `aic-ngfts.lge.com`, `eic-ngfts.lge.com` | Content and firmware delivery CDN; the European host also serves Home search posters |
 | `cdplauncher.lgtvcommon.com`, `lgchhomeapp.lgtvcommon.com` | The Home launcher's recommendations and usage reports; needed by the Content Store after a factory reset |
 | `lgtviot.com`, `api.lgtviot.com`, `push.lgtviot.com`, `sports.lgtviot.com`, `buddy.lgtviot.com` (bare, with LG's regional prefixes and the TV's country) | The ThinQ cloud, API, push, sports and buddy services; blocking them can prevent ThinQ control and notifications |
+| `eic-ocp.lgtviot.com` | Reported regional service alias; `ocpservice` names `ocp.lgtviot.com`, but the traffic's purpose has not been established |
 | `lgeapi.com` (bare, with LG's regional prefixes and the TV's country) | LG account/API service family; sign-in or store services may depend on it |
 | `connect-client.lgthinq.com`, `common.lgthinq.com` (bare and with `aic-`/`eic-`/`kic-`) | ThinQ Connect and common cloud services; the prefix uses a hyphen rather than a separate DNS label |
-| `ueiwsp.com` | Universal Electronics' identification of devices connected over HDMI-CEC |
+| `ueiwsp.com`, `www.ueiwsp.com` | Universal Electronics' device identification; the `www` name is reported alongside LAN discovery |
 | `avsxappcaptiveportal.com` | Amazon's Alexa checking the TV is online: `libAVSCommon` asks it for `/generate_204` on a timer while Alexa runs, and with it blocked Alexa reads the TV as offline |
-| `mtalk.google.com` | [Google Firebase Cloud Messaging](https://firebase.google.com/docs/cloud-messaging/network-configuration), used for push messages; apps using this endpoint may lose push notifications |
+| `mtalk.google.com`, `device-provisioning.googleapis.com` | Endpoints listed for [Google Firebase Cloud Messaging](https://firebase.google.com/docs/cloud-messaging/network-configuration); apps using them may lose push notifications |
 | `lgtvsdp.com` (and `us.`/`gb.`/`eu.`) | Service platform behind the Content Store on webOS 4 |
+| `app.lgwebostv.com`, `lgrecommends.lgappstv.com` (bare and with the TV's country) | Content Store interface and app recommendations; blocking them prevents the store from opening |
 | `nextlgsdp.com` (bare, with LG's regional prefixes and the TV's country, plus `us.`/`gb.`/`de.`/`eu.`) | The same on webOS 9 |
 | `ibs.nextlgsdp.com`, `ibsstat.nextlgsdp.com` (bare, with LG's regional prefixes and the TV's country) | The SDX `ibis_secure` and `ibis_stat_secure` services; blocked only in Everything, after the clock is valid |
 | `tv.wiselg.com` (bare, with LG's regional prefixes and the TV's country) | The same on webOS 11, where it also carries the diagnostics report upload (`rdx/10.0.0/`) and app usage statistics (`ibs`), so neither can be blocked on its own there |
 | `ngfts.tv.wiselg.com` | The content CDN on webOS 11 |
+| `eic-gfts.tv.wiselg.com` | Reported service alias on a C4; exact function unverified, blocked after clock sync like the other `tv.wiselg.com` names |
+| `dev-ruc-ngfts.tv.wiselg.com` | Present in C5 firmware strings on webOS 10.3.1; no traffic captured, blocked only in Everything after clock sync |
+| Home's `homeprv`, `nudge`, `rdl`, `recommend`, `service` and `wiseconfig` under `lgtvcommon.com` | Home recommendations and configuration; bare and `aic`/`eic`/`kic` variants, plus exact documented RUC names |
+| ThinQ's `iotservice`, `service` and `op-lss` under `lgthinq.com`; OCP and `commonpush` under `lgtviot.com` | IoT, account, push and pairing services; Everything includes the dotted and hyphenated service regions and exact additional aliases |
+| `eic.lgchhomeapp.lgtvcommon.com`, `app-lgwebos.pluto.tv`, `sp.pluto.tv`, `tags.tiqcdn.com`, `lg-channelplus-eu-beacons.xumo.com`, `lg-channelplus-eu-mds.xumo.com`, `bss.lgechannel.com`, `lgechannel.com` | LG Channels and its Pluto/Xumo dependencies; blocking may affect related Pluto features |
 
 `com.webos.appInstallService` names the one its own set installs from:
 `http://GB.lgtvsdp.com` on a B8, `http://GB.nextlgsdp.com` on a C2,
@@ -1107,6 +1148,28 @@ is learned, the existing fallback countries are used. ThinQ Connect uses
 `de.ibs.nextlgsdp.com` and `eic-connect-client.lgthinq.com`; it is still an exact
 hosts list, not wildcard DNS blocking. Sources and the limits of the evidence
 are in [TV research](development/TV-RESEARCH.md#regional-service-coverage).
+
+The Content Store's `app.lgwebostv.com` and `lgrecommends.lgappstv.com` families
+use only the bare host and the TV's country, with the same fallback countries
+before it is learned. Their documented variants are country names, so no
+`aic`, `eic`, `kic` or `eu` prefixes are generated for them. They belong only
+to Everything and do not wait for clock sync.
+
+Additional coverage comes from Life's Good Without Spying's categorized lists:
+SmartAd's `ad.lgsmartad.com`, regional `ads`, `videoads` and `cdpbeacon2` under
+`lgtvcommon.com`, the Alphonso ad-inserter and overlay configuration, `lgads.tv`,
+and APM reporting are on Ads & telemetry. Home, account, ThinQ and LG Channels
+dependencies stay on Everything. Existing country/region generation is used
+instead of importing every country's names. Classification and unobserved
+variants are [documented as upstream evidence](development/TV-RESEARCH.md#additional-categorized-domain-coverage).
+
+The clock gate also covers the documented SDP macro-regions `af`, `as`, `la`,
+`me`, `na` and `eu7`, and WiseLG's `ruc` host. A saved country gets its `country7`
+SDP variant only where documented: `au`, `br`, `cn`, `hk`, `id`, `il`, `jp`, `kr`,
+`my`, `sg`, `tw`, `us`, `vn` and `za`. Before a country is known, the supported
+members of the existing country fallback list are used. No `de7` or `gb7` is
+invented. The separate TV software update block still owns its six update-server
+names; these additions do not change that switch.
 
 On webOS 11 the service platform is `tv.wiselg.com`. On an OLED77C5PUA (11.2.0)
 sdx's server list (`/mnt/lg/cmn_data/sdp/sdx/server_addr_version.conf`) names
@@ -1644,7 +1707,7 @@ feature off, or `tvwebctl restore-home` before uninstalling, deletes the webOS
 ## Glasshouse Home
 
 `lib/home.js` runs a home screen of Glasshouse's own in place of LG's, opt-in
-from the dashboard's Home tab (webOS 4, 5, 6, 7, 9, 10 and 11; webOS 3, standalone as on webOS 4, webOS 8, and webOS 12 and later with `allowExperimentalHome`). The view is `assets/home.html`,
+from the dashboard's Home tab on every webOS version, standalone on webOS 2 to 6 and laid over LG's Home from webOS 7. `lib/compat.js` says where it has been reported working; elsewhere the dashboard warns and links to a report. The view is `assets/home.html`,
 opened by a small web app whose files are `assets/home-app/index.html` and its
 icons.
 
@@ -1880,7 +1943,7 @@ server's 10-second limit; launches allow 20 seconds for sequential detail reads.
 
 `lib/home-launcher.js` puts another page in the view's place; everything that
 gets the view in front of the TV is unchanged. The app in LG's Home's place
-(or `com.tvweb.home` on webOS 3 to 6, refreshed on server start once it is not in front) opens
+(or `com.tvweb.home` on webOS 2 to 6, refreshed on server start once it is not in front) opens
 `/assets/home.html` as before, and while a launcher is chosen
 and Glasshouse Home is on, the server answers that with a redirect to
 `/home/launcher/`. The heartbeat's reply carries `launcher`, a revision that

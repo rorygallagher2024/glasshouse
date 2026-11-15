@@ -92,6 +92,18 @@ var RANDOM = {
 var RANDOM_CONFIG_FILE = '/var/lib/tvweb/screensaver-random.json';
 var randomConfigFile = RANDOM_CONFIG_FILE;
 var wasInScreenSaver = false;
+/*
+ * LG's own screen saver ends itself when the Magic Remote's pointer appears,
+ * by asking tvpower to turnOnScreen; tvpower ends it on a key by itself, and
+ * on a C2 (webOS 9.2.2) on a click, but not on the pointer moving, nor on a
+ * click on a C3 (webOS 11.2.0, #1364). So while one of these screen savers
+ * shows, the remote's input devices are watched and the pointer ends it.
+ */
+var BTN_LEFT = 272;
+var POINTER_END_GAP_MS = 2000;
+/** @type {function(boolean): void} */
+var watchPointerFn = function () {};
+var lastPointerEnd = 0;
 
 /*
  * Screen savers are folders: one per saver, holding a saver.json, its QML and
@@ -519,9 +531,17 @@ function setSaverEntities(saverId, newEntities, cb) {
   var stored = readStoredEntities();
   stored[saverId] = stored[saverId] || {};
 
+  // A slot the screen saver declares, whatever its default: Ambient's are blank,
+  // for the owner to fill in (#1446). One it does not declare is refused, rather
+  // than answered as saved.
+  for (var named in newEntities) {
+    if (Object.prototype.hasOwnProperty.call(newEntities, named) && !Object.prototype.hasOwnProperty.call(saver.entities, named)) {
+      return cb({ ok: false, error: saverId + ' has no entity slot named ' + named });
+    }
+  }
+
   for (var k in newEntities) {
     if (!Object.prototype.hasOwnProperty.call(newEntities, k)) continue;
-    if (!saver.entities[k]) continue;
     var val = newEntities[k];
     if (val === null) {
       delete stored[saverId][k];
@@ -758,6 +778,8 @@ function init(opts) {
   keyBackVal = opts.KEY_BACK;
   if (opts.inputKey) inputKeyFn = opts.inputKey;
   watchKeysFn = opts.watchKeys || function () {};
+  watchPointerFn = opts.watchPointer || function () {};
+  lastPointerEnd = 0;
   mediaStateFn = opts.mediaState || function (cb) { cb(null); };
   launchedDirectly = false;
   launchGeneration++;
@@ -984,7 +1006,20 @@ function onPowerChange(rawState) {
       advanceRandomSaver();
     }
   }
+  if (isSS !== wasInScreenSaver) watchPointerFn(isSS && stagedScreensaver() !== 'stock');
   wasInScreenSaver = isSS;
+}
+
+// The pointer moved or clicked: one of these screen savers showing ends.
+function pointerUsed() {
+  if (!lunaFn) return;
+  if (launchedDirectly) return keyPressed();
+  if (!wasInScreenSaver || stagedScreensaver() === 'stock') return;
+  var now = Date.now();
+  if (now - lastPointerEnd < POINTER_END_GAP_MS) return;
+  lastPointerEnd = now;
+  console.log('screensaver: the pointer ends the screen saver');
+  lunaFn('com.webos.service.tvpower/power/turnOnScreen', {}, function () {});
 }
 
 function detectExternal() {
@@ -1709,7 +1744,8 @@ function closeLaunched(cb) {
   });
 }
 
-function keyPressed() {
+function keyPressed(code) {
+  if (code === BTN_LEFT && !launchedDirectly) return pointerUsed();
   if (!launchedDirectly || !lunaFn) return;
   console.log('screensaver: a remote key closes the screen saver');
   closeLaunched(function () {});
@@ -1946,6 +1982,7 @@ module.exports = {
   screensaverEntityLabel: screensaverEntityLabel,
   launchedShowing: launchedShowing,
   keyPressed: keyPressed,
+  pointerUsed: pointerUsed,
   adoptLaunched: adoptLaunched,
   trigger: trigger
 };

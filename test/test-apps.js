@@ -30,6 +30,9 @@ function test(name, fn) { tests.push([name, fn]); }
 test('isProtected strictly protects core TV system services', function () {
   var protectedIds = [
     'com.tvweb.dashboard',
+    'com.tvweb.home',
+    'com.tvweb.homebar',
+    'com.tvweb.inputbar',
     'com.webos.app.browser',
     'org.webosbrew.hbchannel',
     'com.webos.app.livetv',
@@ -116,7 +119,7 @@ test('hideTile rejects protected apps and invalid IDs', function () {
 test('uninstallApp strictly rejects protected applications', function () {
   init({ config: { allowControl: true } });
 
-  ['com.tvweb.dashboard', 'com.tvweb.home'].forEach(function (id) {
+  ['com.tvweb.dashboard', 'com.tvweb.home', 'com.tvweb.homebar', 'com.tvweb.inputbar'].forEach(function (id) {
   apps.uninstallApp(id, function (res) {
     assert.strictEqual(res.ok, false);
     assert.ok(res.error.indexOf('Protected') !== -1);

@@ -181,7 +181,10 @@ function phase(name, chaos, next, mqttDisabled, missingModule) {
         }
         var beat = path.join(root, 'var/run/tvweb.beat');
         waitFor('the heartbeat', function () { return fs.existsSync(beat); }, 5000, function () {
-          waitFor('telemetry at the broker', function () { return mqttDisabled ? out.indexOf('mqtt: disabled') !== -1 : broker.last(/^boot\/telemetry$/); }, 20000, function () {
+          // Nothing is published until a stats read finishes. With every
+          // call to a misbehaving TV cut off or retried, the first took over
+          // 40 s on CI's node 0.12 runner.
+          waitFor('telemetry at the broker', function () { return mqttDisabled ? out.indexOf('mqtt: disabled') !== -1 : broker.last(/^boot\/telemetry$/); }, chaos ? 90000 : 20000, function () {
             waitFor('discovery at the broker', function () { return mqttDisabled || broker.last(/^homeassistant\/.*\/config$/); }, 20000, function () {
 
             /*

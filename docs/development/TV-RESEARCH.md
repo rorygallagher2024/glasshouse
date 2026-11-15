@@ -981,6 +981,20 @@ Measured on 22 October 2026 on an LCD 65UQ801C0SB, firmware 04.60.90.
   in front about 6 s later, against 2 to 3 s on a G3; the screen is black
   meanwhile.
 
+## The screen saver and the Magic Remote's pointer (webOS 9.2, C2)
+
+Checked on an OLED42C24LA, webOS 9.2.2, with the screen saver started by tvpower over an app (#1364):
+
+- LG's own screen saver (`com.webos.app.screensaver`, QML) ends when the pointer moves. Its `UIController` handles every key, including the `webOS.Key_webOS_CursorShow` the pointer appearing sends, by calling `com.webos.service.tvpower/power/turnOnScreen` through `WebOSServices`' `Service`; it has no `MouseArea`.
+- A screen saver mounted in its place with no key handler is not ended by the pointer moving. tvpower ends it on a remote key and, on this TV, on a click; on a C3 with webOS 11.2.0 a click did not end it either.
+- The pointer device (`ClickableMouse`, `/dev/input/event8` here) sends `EV_REL` movement and `BTN_LEFT` (272), which an evdev reader such as `remotebuttons.py` sees whatever is in front.
+
+## Methods and keys a TV does not have (webOS 6, A1; webOS 9.2, C2)
+
+- An OLED55A16LA (webOS 6, firmware 03.53.45) answers `com.webos.service.audio/tv/getAudioInputProperty` with an unknown-method refusal; audiod logs `LS_NO_METH ... Couldn't find method` for each call (#1418).
+- Its `com.webos.service.tv.systemproperty/getSystemProperties` has neither `panelUsageTime` nor `lastCompensationTimestamp` ("Not found any keys"), and a C2 (webOS 9.2.2) answers `{"errorCode":"ERROR_06","returnValue":false,"errorText":"Invalid argument"}` for the same keys. Both give the panel hours from `com.webos.service.panelcontroller/getPanelUsageTime`.
+- On webOS 5 and 6, a child aborted with libuv's `uv_close: Assertion '!uv__is_closing(handle)'` before running luna-send while another handle was closing; the A1 logged 314 of these over three days on 0.139 to 0.141 and none in the four days after 0.142.0, which starts each child from a timer (#1215).
+
 ## Glasshouse Home on webOS 6.4.0 (OLED55C14LB, firmware 03.41.00)
 
 Reported on PR #910 on 27 October 2026.
@@ -1345,6 +1359,32 @@ off it fired as the TV resumed, 250 ms after the server saw the screen on in
 one wake and before it did in another, and took the view, which had not yet
 had a chance to beat, for hung (#1277).
 
+## Switching off without Active Standby (webOS 4.4.3, 49SK8500PLA; webOS 5.6.2, OLED48CX8LC)
+
+An LCD, and an OLED that is not running panel care, go from Active to Suspend
+at once. Glasshouse logs `Active -> Suspend` and `TV switched off` 10 to 25 ms
+apart, and the system is asleep after that: the clock since boot moved 2 s
+across a 140 s standby, and the watchdog reported `resumed after 140s
+suspended`. Home Assistant saw nothing of the "off" status published in those
+milliseconds, only the broker's will once the connection had been silent for
+its keepalive.
+
+Changing the will as the TV switches off does not finish in that time either:
+on the 49SK8500PLA, switched off at 20:09:39, the broker published the old
+will, `offline`, at 20:09:54 (keepalive 10 s). The OLED48CX8LC did the same
+twice: the reconnect with the new will was logged 3.3 s after the switch-off,
+and the will that came out 15 s later was still `offline`. After a Wake-on-LAN
+into Active Standby, which leaves seconds before it sleeps again, the change
+did take and the will came out as `asleep`.
+
+What a TV has written in its last moments before it sleeps stays in its send
+buffer and goes out as it wakes. On the OLED48CX8LC an off published at the
+reconnect just before it slept reached the broker a second before the TV's own
+power answer, which showed Power off for that second.
+
+An OLED running panel care (OLED48C31LA, webOS 11.2.0) goes Active to Active
+Standby first and stays up for 6 to 15 s before Suspend, and its "off" arrives.
+
 ## Keeping a TV awake while off (webOS 4.4.3, B8)
 
 The question was whether the B8 could stay reachable while switched off, as
@@ -1414,6 +1454,17 @@ saver, standby and wake cycles left the picture intact (YouTube reached the
 MAIN sink with `activation: true`). The same calls have run at every boot of an
 LG Home replacement on that C5 since 2026-10-11. A reboot between the two calls
 would leave the app blocked, so they stay together and the release is retried.
+
+Not every sam with the block has the release. A G3 (OLED77G3PUA, webOS 8.4.0,
+firmware 13.40.76) took `blockSystemApp` for `com.webos.app.home` and answered
+`releaseBlockSystemApp` with `Unknown method "releaseBlockSystemApp" for
+category "/"` (-1); LG's Home then answered a launch with -101 "not exist"
+until a reboot cleared the block, and `blockedSystemAppList` was not on disk
+(#1493). A C2 (webOS 9.2.2) answers the release the same way, though
+`/etc/palm/schemas/sam/applicationManager.blockSystemApp.schema` is there, so
+the schema does not say the release is. A release of an app that is not
+blocked changes nothing (a C5 answers `returnValue: true`), so it is asked
+first, and nothing is blocked where it is unknown.
 
 webOS 11 changes the block's parameters. On a G3 (OLED65G36LA, webOS 11.2.0,
 firmware 43.21.71) `/etc/palm/schemas/sam/applicationManager.blockSystemApp.schema`
@@ -1690,6 +1741,14 @@ app in front. Remote Keys puts its own filter first.
   On a CX (webOS 5.5), the microphone button set to an app through the filter
   opened it on a press and on a hold alike, and set back to LG's own it started
   voice control again (#1034).
+- **Red and Green pass straight through on webOS 4.** On a B8 (webOS 4.4.3),
+  `/usr/lib/qt5/qml/KeyFilters/` matches `WebOS.Key_webOS_Yellow`
+  (`appLaunch.js`, a 5 s hold calling `global.launchAGP`) and
+  `WebOS.Key_webOS_Blue` (`systemUi.js`, `magnifier.blueReleased()`), while
+  `WebOS.Key_webOS_Red` and `WebOS.Key_webOS_Green` have no filter case and
+  reach the foreground app directly, though `libwebosglobalplugin.so` and
+  `/usr/share/X11/xkb/keycodes/lg` (`IR_KEY_RED`..`IR_KEY_BLUE`, 406–409)
+  define all four.
 - **Filters get the compositor's timers.** `StarfishKeyFilter.qml` hands every
   filter `genericTimer` (`set(ms, callback)`, `cancel`, `isRunning`), as LG's
   `appLaunch.js` uses it. On a change to the key it cancels every
@@ -1849,7 +1908,10 @@ manager launched only HDMI 4 in nine minutes of the same file, and set back to
   and nothing opened; `getAppInfo` on a blocked app returns `returnValue:
   false`, a second block `errorCode` 1 "already blocked: <id>", and a release
   of an app not blocked `returnValue: true`. The adapter launched the view up
-  to 13 s after a press.
+  to 13 s after a press. A C3 (webOS 11.2.0) refused the block outright,
+  `errorCode` 1 "exist in listLaunchPoint: amazon.alexa.view": the view has a
+  launch point there (`hidden: false`), and sam will not block an app that
+  has one (#1498).
 - **Toasts can be refused, not closed.** `notification/closeToast` with a
   toast's id returned true and the toast stayed its 5 s. After
   `notification/disable` (`exceptions` optional), `createToast` was answered
@@ -1876,6 +1938,18 @@ and `com.miniclip.eightballpool` (8 Ball Pool). Both have `type: "stub"`,
 14 September and 6 October, their `appinfo.json` the minute they arrived. The
 notification list showed "Some apps are available for update" the same
 minute. Neither name is on Glasshouse's ad-blocking list.
+
+## LG's placeholder for YouTube (UM7290, webOS 4.10.2)
+
+A 55UM7290PTD has `/mnt/otncabi/usr/palm/applications/youtube.leanback.v4`:
+an `appinfo.json` with `type: "stub"`, version 0.0.1 and vendor `LG Electronics,
+Inc.`, the placeholder for the store's YouTube. The installer's check for an
+id that is already part of the TV system found it, so YouTube Foxtended
+(`youtube.leanback.v4`, a Homebrew Channel app that replaces YouTube on these
+TVs) was refused with "already part of the TV system". Installing it with
+`com.webos.appInstallService/dev/install` works, and puts the real app under
+`/media/developer/apps`, next to the placeholder. The installer now skips an
+id whose folder holds only a stub.
 
 ## Home screen (webOS 10 and 11)
 
@@ -2008,6 +2082,24 @@ A 55SJ800V-ZB (webOS 3.9.3) answered the same way, with nothing, for
 (#1137), so a TV that old never says "Service does not exist" for a renamed one.
 
 ## LG's device scans (webOS 9.2.2, C2; #244)
+
+On 13 November 2026, an OLED65C43LA owner (webOS 10.3.1, firmware 33.31.61)
+reported periodic scans despite **Network device scans** being off, separately
+from Auto device detection and Privacy's Everything tier. This is an unresolved
+enforcement report, not a verified capture identifying the scanner. The switch
+in stats reflects the saved disabled-services list, not the process or stub's
+current state. `services.isStubbed()` checks for a mount at the executable's
+path without checking its contents; enforcement retries after 30 s and every
+five minutes. The report alone cannot distinguish a missing or ineffective
+stub from another scanning process.
+
+The owner's later Pi-hole log recorded 253 PTR queries at 11:40:17–18 CET on
+13 November. The TV's boot-hook log started at 11:40:14, the server listened at
+11:40:24 and its clock gate closed at 11:40:25. A later read-only check found
+the scanner executable byte-for-byte equal to Glasshouse's stub. That snapshot
+does not identify the process responsible for the earlier sweep. A
+`de.nextlgsdp.com` query at 11:41:17 was after the gate closed; its originating
+process and resolver path remain unidentified.
 
 `iconnectivity` (UEI QuickSet) reverse-looks-up every address on the TV's
 /24. On a C2 with `other.ueiEnable` off, opening the Home Hub's page for
@@ -2294,6 +2386,14 @@ The webOS 9 entries above describe the home app's CRIU checkpoint. On a CX:
 ## Widevine DRM and ESN with SAM takeover (webOS 5.6.2, CX)
 
 - Restarting `sam.service` (`killall -9 LunaExecutable` and `systemctl kill -s 9 sam.service`) or bind-mounting over `/usr/palm/applications/com.webos.app.home` breaks Widevine DRM and ESN initialization: Widevine and ESN show as "Unknown" in TV Information, and DRM streaming playback fails. Running Glasshouse Home as a standalone app (`com.tvweb.home`) directed by `remotekeys-filter.js` leaves `com.webos.app.home` and sam untouched, keeping Widevine DRM and ESN functional.
+
+## Widevine DRM and ESN with the bind mount (webOS 10.3.2, B4)
+
+Reported on an OLED77B46LA, webOS 10.3.2 (33.31.75), Glasshouse 0.146.2, with Glasshouse Home on (#1421).
+
+- With `/var/lib/tvweb/home-takeover` bind-mounted over `/usr/palm/applications/com.webos.app.home`, `com.webos.service.sm/crypto/checkSeStore` with `{"id":["esn","widevine"]}` reported both keys with `isOk: true`, and TV Information showed an ESN and a Widevine ID rather than "UNKNOWN", which it shows for a key that call does not return.
+- With the same mount on 0.143.1, Netflix, Prime Video and the Apple TV app played (#1315).
+- sam took the change through `blockSystemApp` and `releaseBlockSystemApp`, never a restart. Where the CX above (webOS 5.6.2) lost both keys with the mount, this TV kept them.
 
 ## IPTV after Active Standby (webOS 5.6.2, CX)
 
@@ -2735,6 +2835,33 @@ name.
   `lgtviot.com`; `ad`, `info` under `lgsmartad.com`.
 - No `lggalleryplus.com` in either.
 
+## Stale hosts copies across clock sync (C4, webOS 10.3.1)
+
+On 12 November 2026, an OLED65C43LA running Glasshouse 0.143.1 with Everything
+enabled held a correct 9,799-byte `/etc/hosts`. `getent hosts` answered `::`
+for `de.nextlgsdp.com`, `eic.tv.wiselg.com` and `ngfts.tv.wiselg.com`.
+Chromecast's running jail held an 8,104-byte ordinary copy, byte-for-byte the
+pre-clock table, missing all 33 clock-delayed names. Its copy was dated six
+seconds before the server reported the clock already valid and skipped the
+grace period. A separate Python process chrooted into that jail resolved
+`de.nextlgsdp.com` to public IPv4 addresses; the main hosts file blocked it.
+This proves a resolver bypass through the stale copy, not which app caused
+each earlier Pi-hole entry or that an HTTPS upload succeeded.
+
+The running `lg.thinqai.adapter` and voice performer's jails held LG's
+234-byte file with no blocker entries. YouTube's copy matched the current
+table. Reboots can repeat the ordering: copying before the blocker starts
+or the clock gate closes leaves a running app behind. Synchronization must
+cover existing copies after each table change and the jailer's later resets,
+including jails for background services.
+
+Read-only owner checks of build `681736d5` on 13 November found all ten listed
+jail hosts files equal to the TV's table, including Chromecast, ThinQ, voice,
+YouTube and Netflix. `getent hosts` returned `::` for `www.ueiwsp.com`,
+`de.lgeapi.com`, `de.nextlgsdp.com` and `eic.tv.wiselg.com`. These establish the
+copies and the queried resolver's state at that time; they do not establish
+that every running client consults them or prevent requests before startup.
+
 ## Regional service coverage
 
 An owner's Pi-hole log reports `de.ibs.nextlgsdp.com`, `de.lgeapi.com`,
@@ -2757,7 +2884,114 @@ siblings are coverage derived from those patterns, not observed traffic on
 every region's TVs. They remain in Everything because account, store and
 ThinQ features may depend on them. New names under `nextlgsdp.com` keep the
 existing wait for a valid clock. `lgtvonline.lge.com` remains the connectivity
-check described below; `wpad.fritz.box` is outside the LG cloud service list.
+check described below.
+
+### Additional hostnames reported on the C4
+
+On 13 November 2026 the same owner reported these names after updating main
+and restarting the TV. DNS activity alone does not identify a request's
+payload or prove that a connection succeeded. Post-startup checks of the
+synchronization are described above; the earlier DNS activity does not identify
+an individual app's resolver behavior.
+
+| Names reviewed | Coverage and evidence |
+| :--- | :--- |
+| `de.nextlgsdp.com`, `de.lgeapi.com`, `eic.tv.wiselg.com` | Already in Everything. SDP and WiseLG names wait for the clock; stale jail copies can omit them after that wait ends. |
+| `eic-ngfts.lge.com` | Added to Everything alongside `aic-ngfts.lge.com`; Home search's poster URLs above use this European host. |
+| `www.ueiwsp.com` | Added to Everything alongside the bare domain; also observed alongside the device scans above. Blocking this cloud host does not stop the LAN PTR sweep. |
+| `eic-ocp.lgtviot.com` | Added as an exact reported alias. A read-only string search on the C4 found `ocp.lgtviot.com` in `/usr/sbin/ocpservice`; this does not establish the regional endpoint's payload. |
+| `eic-gfts.tv.wiselg.com` | Added as an exact reported alias, with the WiseLG clock gate. Its function has not been independently established. |
+| `device-provisioning.googleapis.com` | Added to Everything: Google's FCM network documentation lists it alongside `mtalk.google.com`. The lookup does not identify which TV component used it. |
+| `clients1.google.com` | Left out: Google lists certificate-revocation checks and app approval among its uses. No request path was captured on this TV. |
+| `clients2.google.com` | Left out: Google documents both crash/WebRTC update logs and extension downloads here. No request path was captured on this TV. |
+| `www.googleapis.com` | A later reported lookup; left out because Google documents shared APIs and connectivity probes here. The hostname alone does not establish telemetry. |
+| `clients3.google.com`, `clients4.google.com` | Left out: shared Google services, including clock synchronization and crash reporting, rather than a dedicated LG tracking endpoint. |
+| `tools.google.com` | Left out: Google documents update configuration for Omaha here. Its use on this TV is unverified. |
+| `www.gstatic.com` | Left out: Google documents shared sign-in assets and connectivity probes here. |
+| `clients3` | Left out: a bare label is a different query from `clients3.google.com`; its origin is unknown. |
+
+[Google's FCM network requirements](https://firebase.google.com/docs/cloud-messaging/network-configuration)
+identify the provisioning endpoint. Its
+[Android Enterprise requirements](https://support.google.com/work/android/answer/10513641?hl=en)
+describe the shared `clients` hosts, and the
+[Chrome endpoint reference](https://support.google.com/chrome/a/answer/6334001?hl=en)
+describes Omaha, static assets and connectivity checks. The
+[Chrome proxy endpoint list](https://support.google.com/chrome/a/answer/14113552?hl=en)
+also documents shared API, extension-download and logging uses. These describe Google's
+platforms, not captured webOS request paths. Earlier reported
+`connectivitycheck.gstatic.com` and `www.google.com` remain outside the list as
+connectivity/shared service hosts. The earlier `lgtvonline.lge.com` exclusion
+still applies. Owners can add exact names to a custom
+list, with the risk of breaking services that share them; Everything is not a
+firewall or a wildcard DNS policy.
+
+### Content Store interface and recommendations
+
+On 13 November 2026 the C4 owner also reported `de.app.lgwebostv.com`.
+[Life's Good Without Spying's Content Store list](https://github.com/lewisdoesstuff/lifesgoodwithoutspying/blob/0057ce44d5b4494ad85cf5975d599c58d5f25871/app/init/blocklist.d/32-lgrecommends.txt)
+identifies `app.lgwebostv.com` as the store interface and
+`lgrecommends.lgappstv.com` as app recommendations. It lists both bare hosts
+and 71 country variants of each, and reports store errors 202 or -102 when
+blocked. This is that project's evidence; the C4 lookup does not establish
+its request path or payload, and the other variants were not captured on it.
+
+Both families are blocked only in Everything, using the bare host and saved
+TV country, or the existing fallback countries before it is known. No LG
+region prefixes are inferred for these families. They do not carry the known
+SDP clock endpoints, so they are blocked before clock sync too. The store's
+request-log family, `elastic.lgwebostv.com`, remains in Ads & telemetry.
+
+### WiseLG names beyond the reported alias
+
+The existing list generates `tv.wiselg.com`, LG's dotted regional names
+(`aic.`, `eic.`, `kic.`, `eu.`) and the TV's country, and blocks
+`ngfts.tv.wiselg.com`. The owner's `eic-gfts.tv.wiselg.com` is a separate
+hyphenated name; neither the bare host nor `eic.tv.wiselg.com` covers it.
+The firmware search above also found `dev-ruc-ngfts.tv.wiselg.com` on a C5
+running webOS 10.3.1. It is now an exact Everything entry, with the same clock
+gate. Its presence in firmware does not establish use on the owner's C4.
+Other guessed `gfts` or `ngfts` regional and development combinations are not
+added without a firmware name or traffic report. No exhaustive inventory of
+all WiseLG subdomains has been established.
+
+### Additional categorized domain coverage
+
+[Life's Good Without Spying's domain lists at `0057ce44`](https://github.com/lewisdoesstuff/lifesgoodwithoutspying/tree/0057ce44d5b4494ad85cf5975d599c58d5f25871/app/init/blocklist.d)
+identify additional SmartAd, ACR, APM, Home, ThinQ, SDP and LG Channels endpoints.
+This is upstream classification and reported resolution testing, not a capture
+establishing the payloads or users of every name on a Glasshouse test TV. The
+upstream [MIT notice](../licenses/lifesgoodwithoutspying-MIT.txt) is retained.
+
+Glasshouse adds SmartAd's country family, regional ad/video-ad and second beacon
+families, the legacy `lgad.cjpowercast.com`, Alphonso's `ad-inserter` and
+`config-overlay-ads`, `lgads.tv`, `tracking.lgtvsdp.com` and dedicated APM names
+to Ads & telemetry. Home configuration/recommendations, additional ThinQ
+services, OCP and common push remain Everything-only because they can carry
+features as well as reporting. LG Channels' exact LG, Pluto and Xumo names
+also belong only to Everything, including the shared analytics name
+`tags.tiqcdn.com`; this can affect related Pluto features.
+
+Country and regional families use bounded prefix generation rather than the
+upstream list's full country enumeration. Home uses the bare names and
+`aic`/`eic`/`kic`; additional RUC and development aliases are exact entries.
+Generated siblings are inferred coverage, not traffic observed on every region.
+The classification does not import generic shared Google or streaming domains.
+Firmware-update names remain under the existing separate update-block switch.
+
+The SDP list documents `af`, `as`, `la`, `me`, `na` and `eu7` macro-region names
+and these `country7` names: `au`, `br`, `cn`, `hk`, `id`, `il`, `jp`, `kr`, `my`,
+`sg`, `tw`, `us`, `vn` and `za`. Glasshouse includes only the saved country's
+documented variant, or applicable fallback countries before it is known.
+It does not infer a variant for every country: no `de7` or `gb7` is listed.
+Those names and the exact `ruc.tv.wiselg.com` also remain reachable until the
+existing clock gate closes. Unlike the upstream project's fixed 60-second
+SDP delay, this gate requires valid time.
+
+The C4 owner subsequently reported testing the expanded coverage with no
+functional problems observed so far. Domains and the LAN-wide scan still
+appeared in Pi-hole during boot; no further queries were observed after
+Glasshouse was fully started during that test. This does not identify the
+requesting processes or establish the behavior of other TVs and webOS versions.
 
 ## Report and store log hosts (C4, webOS 10.3.1)
 
@@ -3153,6 +3387,20 @@ re-wrote that input's EDID and hot-plugged it, and the app stayed in front.
 - On a B8 (webOS 4.4.3), 773 written to the remote's input device
   (`LGE RCU`, `event1`) reaches a reader of that device but opens nothing in
   the compositor; 125 written there opens LG's ribbon.
+- Read from the remote, a press opens Glasshouse Home about a second after
+  LG's ribbon, which shows each time, Glasshouse Home open or not; its tiles
+  were up 3.3 s after the ribbon (0.142.0, #1222).
+- `surface-manager` holds `/dev/input/event0` to `event8` open, and
+  `/dev/uinput` for writing. The input devices are `CHECK INPUT` (`event0`),
+  `LGE RCU` (`event1`), `Bluetooth-manager` (`event2`) and `LGE M-RCU -
+  Builtin [0]` (`event3`, also `mouse0` and `js0`, the Magic Remote's pointer).
+  `/dev/uinput` is there (`crw-------`, root). Taking Home before the ribbon
+  would need `EVIOCGRAB` on these and every other key written back through
+  uinput; the TV's Python is a stripped 2.7 with no `fcntl` module, and node
+  has no `ioctl`, so it would need a native program. Not tried.
+- `/usr/lib/qml` does not exist; `/usr/lib/qt5/qml` has `WebOSCompositor`,
+  `FavoriteChannels` (whose `SuperRibbon` names the ribbon) and LG's other QML
+  modules.
 
 ## A web app as the screen saver (OLED65C5PUA, webOS 10.3.1)
 
@@ -3235,7 +3483,13 @@ HDMI 3 in front.
   `document.hidden` true. A later launch reaches it as a relaunch
   (`APP_RELAUNCH`), and the window was shown 0.35 s after it. WebAppMgr waits
   for a new frame first (`Not PageFrameSwapped; Pending Show()`): a page with
-  nothing new to draw was shown 2.1 s later.
+  nothing new to draw was shown 2.1 s later. On a B8 (webOS 4.4.3), a normal
+  `launch` arriving 50–250 ms into a `"preload": "full"` start—or a preload
+  arriving 40–100 ms into a normal cold launch—leaves the app hidden with
+  `PalmSystem.launchParams` set to `{"preload":"full"}`; once running in front,
+  a `"preload": "full"` launch emits no `webOSRelaunch`. On the same B8, a single
+  relaunch with `params` dispatches duplicate `webOSRelaunch` events 1–19 ms
+  apart, each carrying `ev.detail` populated from `params`.
 - Launching a card window already on screen, as Glasshouse Home is, redraws
   it, which shows as a flash on each press.
 - In the compositor's key filters, `global.isForegroundApp(id)` is true for
@@ -3374,3 +3628,83 @@ services and Promotions & tips among them, restarted it, which killed all three
 until the TV was unplugged. On a C2 (webOS 9.2.2) they are in
 `ls-hubd.service`, the Luna hub. `systemd-run --scope` (systemd 250 on the C2)
 moves a command into a transient scope of its own.
+
+## The No Signal screen (B8, webOS 4.4.3; C2, webOS 9.2.2)
+
+An input with nothing coming in shows a screen drawn by the input app,
+`com.webos.app.inputcommon`, a native QML app, in `Screensaver.qml`: under
+`qml/UserInterfaceLayer/Containers/BgViewLayer/` on the C2 and
+`qml/TvComponent/ScreenSaver/` on the B8. The same file draws the other
+messages an input shows there, keyed by `currentKey` (`"noSignal"` for No
+Signal). The animated picture above the heading is an `AnimatedImage`
+(`screensaver12frame.gif`) with
+`visible: element.isDynamic && (headerText.text || bodyText.text)`, and the line
+of advice under the heading a `ScreensaverSubText` with
+`visible: text.length > 0`; both lines are the same on the two TVs. A copy
+bind-mounted over the file takes effect once the input app is restarted
+(`killall com.webos.app.inputcommon`): it starts again at the next input
+launch. With an input in front, the B8 keeps the input and draws it again after
+a moment; the C2 closes the input and opens Home.
+
+A TV boots onto its last input, and the input app is started early in the boot
+(5 s in on the C2, 7 s on the B8), before the Homebrew Channel's start-up runs.
+`com.webos.service.eim/getAllInputStatus` lists each input with `activate`:
+false for an empty HDMI port on both TVs, and on the C2 for a port with a device
+connected (`connected: true`, a field the B8 does not have) that sends nothing.
+
+## The Homebrew Channel's update block and other hosts layers (OLED77B46LA, webOS 10.3.2)
+
+With its "Block system updates" flag set, the Homebrew Channel's start-up binds
+`/tmp/hosts` over `/etc/hosts`, with the comment
+`# This file is dynamically regenerated on boot by webosbrew startup script`
+and loopback entries for LG's update hosts. `/proc/self/mountinfo` lists it as
+root `/hosts` on a `tmpfs`. Life's Good Without Spying 0.11.3 then binds a file
+of its own, `/var/lib/webosbrew/lifesgoodwithoutspying.hosts` on ext4, built
+from a copy of `/etc/hosts`, so it carries the same comment and update entries.
+The comment alone does not say whose layer is on top; the mount table's root
+and filesystem do (#1369).
+
+## AirPlay's app without a tile (C2, webOS 9.2.2)
+
+LG's AirPlay app, `airplay`, has `"visible": false` in its appinfo, and on the C2
+no launch point at all, as on a B4 with webOS 10.3.2 (#1435); on a B8 with
+webOS 4.4.3 its tile is a bookmark that `airplay-adaptor` adds, and its
+`AirPlay_Icon-115x115.png` (8-bit gray+alpha) draws pure black (`0`) on a
+transparent background with `iconColor` and `bgColor` empty on its launch
+point. Home Hub opens
+it with `airplay.service/showAirplayPage`, which is in the public group. On the
+C2 that call and a plain `applicationManager/launch` of `airplay` open the same
+page: the Wi-Fi network, the TV's AirPlay name, How to Use AirPlay, and AirPlay
+and Apple Home, which holds its settings.
+
+## Screen Share without a phone (C2, webOS 9.2.2)
+
+`com.webos.app.miracast` ("Screen Share", a web app, `visible: false`) is
+LG's Miracast receiver. Launched on its own it came to the front and closed
+itself within 3 s, as owners saw from Glasshouse's tiles on a CX (webOS 5.6.2,
+#1500) and a C5 (webOS 10.3.1, #1502): its script closes the window when no
+connection comes. LG's Home Hub (`com.webos.app.homeconnect`) does not launch
+it either; its Screen Share entry is its own mobile guide panel, which a
+launch with `{ "actionType": "mobileGuide" }` opens (`onParamsCall` in its
+`main.js`, beside `iotConnectionGuide` and `iotPanel`). Launched that way, Home
+Hub stayed in front.
+
+## AV and Component inputs (32LM637B, webOS 4.5)
+
+eim's `getAllInputStatus` lists them beside HDMI as `AV_1` and `COMP_1`, each
+with `port: 1`, `connected` saying whether anything is plugged in, the label
+the owner gave it, and an app of its own: `com.webos.app.externalinput.av1`
+and `com.webos.app.externalinput.component`, not `com.webos.app.av1` (#1468).
+There is no `hdmiPlugIn` and no `subList` for them.
+
+## Holding down LG's account client (C2, webOS 9.2.2; B4, webOS 10.3.2)
+
+Settings waits for `com.webos.service.accountmanager/getLoginUserData` before it
+shows; with LG's servers blocked and an account signed in, that took 6.8 to
+over 30 s on a B4 with webOS 10.3.2 (#1456). There `/usr/bin/run-service`
+refuses to start any service named in
+`/var/preferences/servicemanager/blocked-services.json` (`{"blockedServices":
+[...]}`, holding `com.webos.service.signlanguageavatar` from LG), so a call to
+one that is not running fails at once. The C2 has neither file. On the C2 the
+hub starts `/usr/sbin/accountmanager` on demand, and with a program that exits
+at once mounted over it, the same call was still waiting after 90 s.

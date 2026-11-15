@@ -182,6 +182,7 @@ function renderAppsPanel() {
   renderAppDns(d);
   renderQuickAccess(d);
   renderRemoteKeys(d);
+  showRemoteTab();
 
   // Render Background Services
   const svcsList = q('apps-services-list');
@@ -373,7 +374,7 @@ window.addEventListener('resize', () => {
 // inputs and the apps.
 const RK_GROUPS = [
   { id: 'streaming', title: () => t('apps.remoteKeys.streaming', 'Streaming buttons'),
-    keys: ['netflix', 'amazon', 'disneyplus', 'rakutentv', 'lgchannels', 'hulu', 'iplayer', 'freeviewplay', 'slingtv', 'globoplay', 'shahid'] },
+    keys: ['netflix', 'amazon', 'disneyplus', 'rakutentv', 'lgchannels', 'ivi', 'okko', 'kinopoisk', 'shop', 'hulu', 'iplayer', 'freeviewplay', 'slingtv', 'globoplay', 'shahid'] },
   { id: 'assistant', title: () => t('apps.remoteKeys.assistant', 'Voice assistant buttons'), keys: ['voice', 'alexa', 'googleassistant'] },
   { id: 'colour', title: () => t('apps.remoteKeys.colour', 'Color keys'), keys: ['red', 'green', 'yellow', 'blue'] },
   // Anything else, including keys a later server offers.
@@ -382,7 +383,7 @@ const RK_GROUPS = [
 // The colour keys' own colours, the one place colour is the key's name.
 const RK_COLOURS = { red: 'var(--red)', green: 'var(--green)', yellow: '#f2c230', blue: 'var(--blue)' };
 // The volume controls' own glyphs; the rest share the play/pause one.
-const RK_MEDIA_GLYPHS = { 'media:volumeUp': '🔊', 'media:volumeDown': '🔉', 'media:mute': '🔇' };
+const RK_MEDIA_GLYPHS = { 'media:ok': '◉', 'media:volumeUp': '🔊', 'media:volumeDown': '🔉', 'media:mute': '🔇' };
 let rkData = null;     // the last remoteKeys answer, for the picker
 let rkOpen = null;     // the key whose picker is open
 let rkCols = 0;        // the columns its grid had when it opened
@@ -405,63 +406,24 @@ function rkDoes(k, kindOf) {
   return `${icon}<span translate="no">${esc(k.opens)}</span>`;
 }
 
-/*
- * The inputs the input bar shows, once a key opens it: Glasshouse Home's
- * Inputs row, which the bar follows, here too so it can be arranged with
- * Glasshouse Home switched off. Each change is saved to that same layout.
- */
-const INPUT_BAR = 'com.tvweb.inputbar';
-let rkBarSaving = false;
-
-async function renderInputBarInputs(rk, writable) {
-  const box = q('apps-rk-bar');
-  if (!box) return;
-  const used = rk.keys.some(k => k.action === 'open' && k.id === INPUT_BAR);
-  box.hidden = !used;
-  if (!used || rkBarSaving) return;
-  let cat;
-  try { cat = await homeGet('/api/home/catalogue'); } catch (e) { box.hidden = true; return; }
-  const layout = cat.layout || {};
-  const hidden = (layout.hidden && layout.hidden.dev) || [];
-  const byId = {};
-  (cat.devices || []).forEach(d => { byId[d.id] = d; });
-  const order = (cat.order && cat.order.dev) || (cat.devices || []).map(d => d.id);
-  const pill = (on, label, attrs) => `<button type="button" class="pill ${on ? 'good' : 'idle'}" ${writable ? '' : 'disabled'} ${attrs}>${esc(label)}</button>`;
-  const rows = order.filter(id => byId[id] && !byId[id].tuner).map(id => {
-    const d = byId[id], shown = hidden.indexOf(id) === -1;
-    return `<div class="prot-row"><div class="prot-main">
-        <div class="prot-title" translate="no">${esc(d.name)}</div>
-        <div class="prot-desc">${esc(t('home.dev.port', 'HDMI {port}', { port: d.port }))}${d.unused ? ' · ' + esc(t('home.dev.unused', 'Nothing connected')) : ''}</div></div>
-      <div class="prot-status">${pill(shown, shown ? t('home.shown', 'Shown') : t('home.hidden', 'Hidden'),
-        `data-dev="${esc(id)}" onclick="inputBarToggleInput(this)"`)}</div></div>`;
-  });
-  const unusedOff = layout.hideUnused === true;
-  rows.push(`<div class="prot-row"><div class="prot-main">
-      <div class="prot-title">${esc(t('apps.inputBar.hideUnused', 'Hide inputs with nothing connected'))}</div></div>
-    <div class="prot-status">${pill(unusedOff, unusedOff ? t('common.on', 'On') : t('common.off', 'Off'),
-      `onclick="inputBarToggleUnused(${unusedOff ? 'false' : 'true'})"`)}</div></div>`);
-  q('apps-rk-bar-list').innerHTML = rows.join('');
+// The Remote tab: there where the TV has Quick Access or remote keys to set.
+let remoteAvailable = null;
+async function loadRemoteAvailable() {
+  try {
+    const r = await fetch(api('/api/remote/available'), { cache: 'no-store' });
+    if (!r.ok) return;
+    const d = await r.json();
+    if (!d.ok || typeof d.available !== 'boolean') return;
+    remoteAvailable = d.available;
+    showRemoteTab();
+  } catch (e) { console.error('loadRemoteAvailable failed:', e); }
 }
 
-async function inputBarSave(patch) {
-  rkBarSaving = true;
-  try { await homePost('/api/home/layout', patch); } catch (e) { showErr(e.message); }
-  rkBarSaving = false;
-  if (rkData) renderInputBarInputs(rkData, rkWritable);
-}
-
-async function inputBarToggleInput(btn) {
-  btn.disabled = true;
-  let cat;
-  try { cat = await homeGet('/api/home/catalogue'); } catch (e) { return showErr(e.message); }
-  const id = btn.dataset.dev;
-  const hidden = ((cat.layout && cat.layout.hidden && cat.layout.hidden.dev) || []).filter(x => x !== id);
-  if (btn.classList.contains('good')) hidden.push(id);
-  inputBarSave({ hidden: { dev: hidden } });
-}
-
-function inputBarToggleUnused(on) {
-  inputBarSave({ hideUnused: on });
+function showRemoteTab() {
+  const has = appsData ? !!(appsData.quickAccess || appsData.remoteKeys) : remoteAvailable;
+  const btn = q('tab-btn-remote');
+  if (btn) btn.hidden = !has;
+  if (has === false && activeTab === 'remote') showTab('control');
 }
 
 function renderRemoteKeys(d) {
@@ -479,7 +441,7 @@ function renderRemoteKeys(d) {
   }
   rkData = rk;
   rkWritable = !!d.writable;
-  renderInputBarInputs(rk, rkWritable);
+  renderInputs();
   // Left alone while a choice is being made in it.
   if (!list || (rkOpen && list.contains(document.activeElement))) return;
   const kinds = {};
@@ -566,7 +528,7 @@ function toggleRemoteKey(tile) {
     ${k.replacesVoice ? `<div class="pv-note">${esc(t('apps.remoteKeys.replacesVoice', 'Set to anything else, this button no longer starts voice control. As LG has it brings it back.'))}</div>` : ''}
     ${k.turnsOffVoice ? `<div class="pv-note">${esc(t('apps.remoteKeys.turnsOffVoice', 'Setting this key switches off LG\'s voice assistant, so voice search, the AI assistant and the microphone stop working until it is As LG has it again.'))}</div>` : ''}
     <div class="rk-opts">${opt('lg', esc(t('apps.remoteKeys.lg', 'As LG has it')))}${k.noNothing ? '' : opt('nothing', `<span aria-hidden="true">⦸</span> ${esc(t('apps.remoteKeys.nothing', 'Nothing'))}`)}${switchers}${gone}</div>
-    ${media.length ? `<div class="rk-sub">${esc(t('apps.remoteKeys.media', 'Media'))}</div>
+    ${media.length ? `<div class="rk-sub">${esc(t('apps.remoteKeys.buttons', 'Buttons'))}</div>
     <div class="rk-opts">${media.map(c => opt(c.id, esc(c.title))).join('')}</div>` : ''}
     ${inputs.length ? `<div class="rk-sub">${esc(t('apps.remoteKeys.inputs', 'Inputs'))}</div>
     <div class="rk-opts">${inputs.map(c => opt(c.id, `<span translate="no">${esc(c.title)}</span>`)).join('')}</div>` : ''}

@@ -1627,9 +1627,12 @@ function buildEntities(opts) {
   entities.push({
     type: 'binary_sensor', id: 'power',
     payload: {
+      // The status topic, not telemetry's tvOff: it says off the moment the TV
+      // switches off, ahead of the telemetry, and asleep once the will has
+      // set it. "offline", a server that is gone, makes Power unavailable.
       name: 'Power',
-      state_topic: topic.telemetry,
-      value_template: '{{ "OFF" if value_json.tvOff else "ON" }}',
+      state_topic: topic.status,
+      value_template: '{{ "ON" if value == "online" else "OFF" }}',
       device_class: 'power'
     }
   });

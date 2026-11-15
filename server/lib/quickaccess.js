@@ -85,6 +85,11 @@ function listApps(cb) {
   });
 }
 
+function isSupported(cb) {
+  if (!lunaFn) return cb(false);
+  readKeys(function (settings) { cb(!!settings); });
+}
+
 /*
  * The nine keys and what each can be set to. cb({ ok, supported, keys,
  * choices }). A key's title is the app's or input's, with a live TV channel's
@@ -172,6 +177,7 @@ function writeKey(n, id, cb) {
 
 module.exports = {
   init: init,
+  isSupported: isSupported,
   getQuickAccess: getQuickAccess,
   setQuickAccess: setQuickAccess,
   KEYS: KEYS

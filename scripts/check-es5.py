@@ -244,7 +244,7 @@ else:
     targets += [assets / 'i18n.js', assets / 'qr.js', assets / 'dashboard.html', assets / 'setup.html',
                 assets / 'setup-phone.html', assets / 'home.html', assets / 'home-app' / 'index.html',
                 assets / 'home-kit.js', assets / 'home-web.html', assets / 'home-minimal.html',
-                assets / 'devicons.js', assets / 'inputbar-app' / 'index.html',
+                assets / 'devicons.js', assets / 'inputbar-app' / 'index.html', assets / 'homebar-app' / 'index.html',
                 root / 'docs' / 'development' / 'example-launcher.html']
 
 sys.exit(1 if sum(check(t) for t in targets) else 0)

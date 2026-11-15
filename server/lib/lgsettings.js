@@ -561,6 +561,53 @@ function rowById(id) {
   return null;
 }
 
+// The current picture as LG reports it, without the dashboard's defaults or
+// conversions: each Picture key the TV returned, and the per-app ones
+// (aspect ratio, Just Scan, TruMotion) for the app or input on screen.
+function exportPicture(cb) {
+  luna('com.webos.service.settings/getSystemSettings', { category: 'picture' }, function (r) {
+    if (!r || r.returnValue !== true || !r.settings || typeof r.settings !== 'object' || Array.isArray(r.settings)) {
+      return cb({ ok: false, error: msg('srv.lgs.pictureExportFailed', 'The current picture settings could not be exported.') });
+    }
+    var settings = {};
+    function keep(key, value) { if (value !== null && value !== undefined) settings[key] = value; }
+    var perApp = [];
+    ROWS.forEach(function (row) {
+      if (row.section !== 'picture') return;
+      if (row.perApp) perApp.push(row);
+      else if (row.category === 'picture') keep(row.key, r.settings[row.key]);
+    });
+    var dimension = {};
+    ['input', 'pictureMode', 'dynamicRange'].forEach(function (key) {
+      var value = r.dimension && r.dimension[key];
+      dimension[key] = typeof value === 'string' ? value : null;
+    });
+    function done(appId) {
+      dimension.app = appId || null;
+      cb({ format: 'glasshouse-picture-settings', version: 1, created: new Date().toISOString(),
+        dimension: dimension, settings: settings });
+    }
+    luna('com.webos.applicationManager/getForegroundAppInfo', {}, function (f) {
+      var appId = f && typeof f.appId === 'string' && f.appId ? f.appId : null;
+      if (!appId) return done(null);
+      // One read per category, naming the keys, as LG's Settings app asks; a
+      // key the TV lacks is left out rather than failing the export.
+      var categories = [];
+      perApp.forEach(function (row) { if (categories.indexOf(row.category) === -1) categories.push(row.category); });
+      (function next(i) {
+        if (i >= categories.length) return done(appId);
+        var own = perApp.filter(function (row) { return row.category === categories[i]; });
+        luna('com.webos.service.settings/getSystemSettings',
+          { category: categories[i], app_id: appId, keys: own.map(function (row) { return row.key; }) }, function (res) {
+            var got = (res && res.settings) || {};
+            own.forEach(function (row) { keep(row.key, got[row.key]); });
+            next(i + 1);
+          });
+      })(0);
+    });
+  });
+}
+
 // desc: what the TV's settings service describes for the key, if it was asked.
 function rowValue(r, v, desc) {
   var out = { id: r.id, section: r.section, type: r.type || 'switch', title: r.title, desc: r.desc };
@@ -865,6 +912,7 @@ function valueToStore(r, value, desc) {
 module.exports = {
   init: init,
   collect: collect,
+  exportPicture: exportPicture,
   set: set,
   reapply: reapply,
   ROWS: ROWS

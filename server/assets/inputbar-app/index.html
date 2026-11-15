@@ -17,11 +17,17 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
 /* Opening is at once: only closing fades. */
 .on #shade,.on #bar{-webkit-transition:none;transition:none}
 #tiles{display:inline-block;white-space:nowrap;font-size:0}
-/* The input in focus light and ringed, the rest dimmed. */
-.tile{display:inline-block;vertical-align:top;position:relative;width:360px;height:112px;margin:0 12px;padding:0 22px;border-radius:22px;text-align:left;
-  background:#222;color:#fff;opacity:.75;box-shadow:0 0 0 2px rgba(255,255,255,.14),0 10px 30px rgba(0,0,0,.45);
+/*
+ * Opaque by default, so stepping through inputs is drawn by the compositor
+ * alone without repainting translucent tiles or shadows over the picture.
+ */
+.tile{display:inline-block;vertical-align:top;position:relative;width:336px;height:112px;margin:0 12px;padding:0 22px;border-radius:22px;text-align:left;
+  background:#1e1e1e;color:#c8c8c8;border:2px solid #2e2e2e;
+  -webkit-transition:-webkit-transform .1s ease-out;transition:transform .1s ease-out}
+.tile.focus{background:#fff;color:#111;border-color:#fff;-webkit-transform:scale(1.06);transform:scale(1.06)}
+.transparent .tile{background:#222;color:#fff;border:0;opacity:.75;box-shadow:0 0 0 2px rgba(255,255,255,.14),0 10px 30px rgba(0,0,0,.45);
   -webkit-transition:opacity .12s,-webkit-transform .12s,box-shadow .12s;transition:opacity .12s,transform .12s,box-shadow .12s}
-.tile.focus{opacity:1;background:#fff;color:#111;-webkit-transform:scale(1.06);transform:scale(1.06);box-shadow:0 0 0 5px #fff,0 14px 40px rgba(0,0,0,.6)}
+.transparent .tile.focus{opacity:1;background:#fff;color:#111;box-shadow:0 0 0 5px #fff,0 14px 40px rgba(0,0,0,.6)}
 .tile .head{display:-webkit-flex;display:flex;-webkit-align-items:center;align-items:center;height:100%}
 .dico{-webkit-flex:0 0 auto;flex:0 0 auto;width:52px;height:52px;margin-right:18px}
 .dico svg{display:block;width:100%;height:100%}
@@ -31,6 +37,10 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
 .focus .path{color:#555}
 /* The input on screen now. */
 .tile.now:after{content:"";position:absolute;left:50%;bottom:-26px;width:12px;height:12px;margin-left:-6px;border-radius:50%;background:#30de61}
+.tworow #shade{height:560px}
+.tworow #bar{bottom:54px}
+.tworow .tile{margin-top:16px;margin-bottom:16px}
+.tworow .tile.now:after{bottom:-20px}
 </style>
 </head>
 <body>
@@ -54,7 +64,7 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
   // Filled in with the dashboard's port when the app is installed.
   var PORT = 8080;                // tvweb:port
   var BASE = 'http://localhost:' + PORT;
-  var KEY = { left: 37, right: 39, ok: 13, back: 461, backspace: 8 };
+  var KEY = { left: 37, up: 38, right: 39, down: 40, ok: 13, back: 461, backspace: 8 };
   var IDLE_MS = 6000;
   // On the input already on screen there is nothing to switch to, so the bar
   // goes sooner.
@@ -62,11 +72,26 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
   // A press landing on another input switches to it this long after, as
   // LG's input bar does, unless another press moves on first.
   var SWITCH_MS = 1000;
-  var list = [], focus = 0, onPort = null, onDevs = null, idle = null, switchTimer = null, closing = false;
+  var list = [], focus = 0, onPort = null, onDevs = null, underHome = false, isTransparent = false, idle = null, switchTimer = null, closing = false;
 
   function $(id) { return document.getElementById(id); }
+  function bodyClass(on) {
+    var cls = [];
+    if (on) cls.push('on');
+    if (isTransparent) cls.push('transparent');
+    if (list.length >= 6) cls.push('tworow');
+    return cls.join(' ');
+  }
+  // The input last watched; under a Home screen it is not on screen, so
+  // choosing it still switches to it.
+  function isLast(e) {
+    if (!e) return false;
+    if (e.tuner) return onPort === 'tuner';
+    if (!e.port) return false;
+    return e.port === onPort && (!onDevs || onDevs.indexOf(e.id) !== -1);
+  }
   function isOn(e) {
-    return !!e && e.port === onPort && (!onDevs || onDevs.indexOf(e.id) !== -1);
+    return !underHome && isLast(e);
   }
   function isSoleOn(e) {
     return isOn(e) && (!onDevs || onDevs.length <= 1);
@@ -90,24 +115,41 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
    * from here rather than through the server, whose POSTs refuse this page's
    * origin (file://, sent as "null").
    */
-  function launchInput(d, cb) {
-    var params = typeof d.uniqueId === 'number' && d.uniqueId > 0 && d.uniqueId < 15 ?
-      { id: 'uniqueId', value: String(d.uniqueId) } : {};
+  function callService(uri, payload, cb) {
     try {
       var bridge = new window.PalmServiceBridge();
-      bridge.onservicecallback = function () { cb(); };
-      bridge.call('luna://com.webos.applicationManager/launch',
-        JSON.stringify({ id: 'com.webos.app.' + d.input, params: params }));
+      bridge.onservicecallback = function (raw) {
+        var res = null;
+        try { res = JSON.parse(raw); } catch (e) {}
+        cb(res);
+      };
+      bridge.call(uri, JSON.stringify(payload));
     } catch (e) {
-      cb();
+      cb(null);
     }
+  }
+  function launchInput(d, cb) {
+    if (d.kind === 'airplay') {
+      return callService('luna://airplay.service/showAirplayPage', {}, function (r) {
+        if (r && r.returnValue) return cb();
+        callService('luna://com.webos.applicationManager/launch', { id: 'airplay', params: {} }, cb);
+      });
+    }
+    if (d.appId) {
+      return callService('luna://com.webos.applicationManager/launch',
+        { id: d.appId, params: d.params || (d.deviceId ? { requestDevice: d.deviceId } : {}) }, cb);
+    }
+    var id = d.tuner ? 'com.webos.app.livetv' : 'com.webos.app.' + d.input;
+    var params = !d.tuner && typeof d.uniqueId === 'number' && d.uniqueId > 0 && d.uniqueId < 15 ?
+      { id: 'uniqueId', value: String(d.uniqueId) } : {};
+    callService('luna://com.webos.applicationManager/launch', { id: id, params: params }, cb);
   }
 
   function close() {
     if (closing) return;
     closing = true;
     clearTimeout(switchTimer);
-    document.body.className = '';
+    document.body.className = bodyClass(false);
     setTimeout(function () { window.close(); }, 160);
   }
   function stillThere() {
@@ -125,7 +167,7 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
     var order = (cat.order && cat.order.dev) || (cat.devices || []).map(function (d) { return d.id; });
     order.forEach(function (id) {
       var d = byId[id];
-      if (!d || d.tuner || hidden.indexOf(id) !== -1) return;
+      if (!d || hidden.indexOf(id) !== -1) return;
       if (d.unused && layout.hideUnused === true) return;
       out.push(d);
     });
@@ -135,15 +177,26 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
   // A tile as drawn: kept with the input, so the last bar can be drawn again
   // at once on the next open, before the server has answered.
   function entry(d) {
-    return { id: d.id, name: d.name, port: d.port, input: d.input, uniqueId: d.uniqueId,
+    return { id: d.id, name: d.name, tuner: !!d.tuner, port: d.port, input: d.input, uniqueId: d.uniqueId,
+             kind: d.kind || null, appId: d.appId || null, deviceId: d.deviceId || null,
              icon: window.glasshouseDevIcon(d) };
   }
   function render() {
+    var twoRow = list.length >= 6;
+    var cols = twoRow ? Math.ceil(list.length / 2) : list.length;
+    var style = cols > 5 ? ' style="width:' + (Math.floor(1824 / cols) - 24) + 'px"' : '';
     var html = '';
     list.forEach(function (e, i) {
+      if (twoRow && i === cols) html += '<br>';
       var cls = 'tile' + (i === focus ? ' focus' : '') + (isOn(e) ? ' now' : '');
-      html += '<div class="' + cls + '" data-i="' + i + '"><div class="head">' + e.icon +
-        '<div class="txt"><div class="nm">' + esc(e.name) + '</div><div class="path">HDMI ' + esc(e.port) + '</div></div></div></div>';
+      var sub = e.kind === 'dms' ? 'Media Server'
+        : e.kind === 'usb' ? 'USB'
+        : e.kind === 'av' ? 'AV' : e.kind === 'component' ? 'Component'
+        : (e.tuner || e.kind) ? ''
+        : 'HDMI ' + e.port;
+      html += '<div class="' + cls + '" data-i="' + i + '"' + style + '><div class="head">' + e.icon +
+        '<div class="txt"><div class="nm">' + esc(e.name) + '</div>' +
+        (sub ? '<div class="path">' + esc(sub) + '</div>' : '') + '</div></div></div>';
     });
     $('tiles').innerHTML = html;
   }
@@ -154,7 +207,7 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
     clearTimeout(switchTimer);
     focus = (i + list.length) % list.length;
     moved = true;
-    var tiles = $('tiles').children;
+    var tiles = $('tiles').querySelectorAll('.tile');
     for (var k = 0; k < tiles.length; k++) {
       tiles[k].className = 'tile' + (k === focus ? ' focus' : '') + (isOn(list[k]) ? ' now' : '');
     }
@@ -175,7 +228,13 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
     var k = e.keyCode;
     if (k === KEY.right) setFocus(focus + 1, true);
     else if (k === KEY.left) setFocus(focus - 1, true);
-    else if (k === KEY.ok) choose();
+    else if (k === KEY.down && list.length >= 6) {
+      var colsD = Math.ceil(list.length / 2);
+      setFocus(focus < colsD ? Math.min(focus + colsD, list.length - 1) : focus - colsD, true);
+    } else if (k === KEY.up && list.length >= 6) {
+      var colsU = Math.ceil(list.length / 2);
+      setFocus(focus >= colsU ? focus - colsU : Math.min(focus + colsU, list.length - 1), true);
+    } else if (k === KEY.ok) choose();
     else if (k === KEY.back || k === KEY.backspace) close();
     else return;
     e.preventDefault();
@@ -191,11 +250,11 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
   var moved = false, waiting = 0, now = null, cat = null;
   function focusOn() {
     focus = 0;
-    for (var i = 0; i < list.length; i++) if (isOn(list[i])) { focus = i; break; }
+    for (var i = 0; i < list.length; i++) if (isLast(list[i])) { focus = i; break; }
   }
   function show() {
     render();
-    document.body.className = 'on';
+    document.body.className = bodyClass(true);
     stillThere();
   }
 
@@ -206,16 +265,20 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
     if (!cat || !window.glasshouseDevIcon) { if (!list.length) close(); return; }
     var fresh = inputsFrom(cat).map(entry);
     if (!fresh.length) return close();
-    var port = now && now.kind === 'input' ? now.port : null;
+    var port = now && now.kind === 'input' ? now.port : (now && now.kind === 'channel' ? 'tuner' : null);
     var devs = now && now.kind === 'input' && Array.isArray(now.devices) ? now.devices : null;
-    var same = JSON.stringify(fresh) === JSON.stringify(list) && port === onPort && JSON.stringify(devs) === JSON.stringify(onDevs);
-    try { window.localStorage.setItem(CACHE, JSON.stringify({ list: fresh, onPort: port, onDevs: devs })); } catch (e) {}
-    if (same && document.body.className === 'on') return;
+    var under = !!now && now.behindHome === true;
+    var trans = !!(cat.layout && cat.layout.inputBarTransparent);
+    var same = JSON.stringify(fresh) === JSON.stringify(list) && port === onPort && JSON.stringify(devs) === JSON.stringify(onDevs) && under === underHome && trans === isTransparent;
+    try { window.localStorage.setItem(CACHE, JSON.stringify({ list: fresh, onPort: port, onDevs: devs, underHome: under, transparent: trans })); } catch (e) {}
+    if (same && /\bon\b/.test(document.body.className)) return;
     // Moved already: the focus stays on the same input where it is still there.
     var keepId = moved && list[focus] ? list[focus].id : null;
     list = fresh;
     onPort = port;
     onDevs = devs;
+    underHome = under;
+    isTransparent = trans;
     focusOn();
     if (keepId) for (var i = 0; i < list.length; i++) if (list[i].id === keepId) focus = i;
     show();
@@ -236,6 +299,8 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
         list = kept.list;
         onPort = kept.onPort;
         onDevs = Array.isArray(kept.onDevs) ? kept.onDevs : null;
+        underHome = kept.underHome === true;
+        isTransparent = kept.transparent === true;
         focusOn();
         show();
       }

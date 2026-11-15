@@ -4,6 +4,8 @@ window.GLASSHOUSE_SEARCH_ALIASES = {
   metrics: ['telemetry', 'stats', 'statistics', 'status', 'monitoring', 'monitor', 'cpu', 'processor', 'memory', 'ram', 'temperature', 'temp', 'heat', 'storage', 'disk', 'drive', 'flash', 'health', 'wear', 'uptime', 'watch time', 'battery', 'signal', 'hardware', 'system info', 'firmware'],
   apps: ['application', 'applications', 'installed apps', 'programs', 'software', 'launch', 'launcher', 'store', 'catalog', 'homebrew apps', 'sideload', 'ipk', 'uninstall'],
   home: ['homebrew', 'homebrew channel', 'home screen', 'home dashboard', 'launcher', 'takeover', 'wallpaper', 'wallpapers', 'background', 'recent', 'favourites', 'favorites', 'home auto launch'],
+  inputs: ['input', 'hdmi', 'hdmi inputs', 'sources', 'source', 'input bar', 'input switcher', 'no signal', 'no signal screen', 'hide inputs'],
+  remote: ['remote control', 'remote keys', 'buttons', 'key mapping', 'remap', 'quick access', 'number keys', 'shortcuts', 'streaming buttons', 'magic remote'],
   ambient: ['ambient light', 'ambient lighting', 'ambilight', 'backlighting', 'piccap', 'hyperion', 'hyperhdr', 'hue', 'hue sync'],
   audio: ['sound output', 'speakers', 'soundbar', 'receiver', 'amp', 'amplifier', 'arc', 'earc', 'hdmi arc', 'dts', 'dolby', 'dolby digital', 'atmos', 'truehd', 'pass-through', 'passthrough', 'bitstream', 'pcm', 'audio formats', 'audio capabilities', 'balance'],
   privacy: ['telemetry', 'logs', 'log', 'tracking', 'activity', 'data', 'privacy policy', 'permissions', 'security', 'personal data'],

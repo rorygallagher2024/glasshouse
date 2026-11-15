@@ -268,9 +268,15 @@ function renderSsEntities(saverId, entities, haConfigured, locked) {
 
   if (haConfigured && ssHaEntities === null) ensureHaEntities();
 
-  // Do not rebuild inputs while the user is typing in or picking from them.
+  // Do not rebuild inputs while the user is typing in or picking from them,
+  // except after a save: a slot given its first entity gains its Label row
+  // then (#1446), and focus, with what is being typed, is put back after.
   const active = document.activeElement;
-  if (active && container.contains(active)) return;
+  const inside = !!(active && container.contains(active));
+  if (inside && !ssForceEntityRender) return;
+  ssForceEntityRender = false;
+  const keep = inside && active.id ? { id: active.id, value: active.value,
+    start: active.selectionStart, end: active.selectionEnd } : null;
 
   const key = (locked ? '1' : '0') + '|' + (haConfigured ? '1' : '0') + '|' +
     (ssHaEntities ? ssHaEntities.length : -1) + '|' + saverId + '|' +
@@ -313,6 +319,15 @@ function renderSsEntities(saverId, entities, haConfigured, locked) {
       </div>`;
   });
   container.innerHTML = html;
+  const back = keep && q(keep.id);
+  if (back) {
+    // A field tabbed to before the save came back keeps what was typed in it.
+    if (typeof keep.value === 'string' && back.value !== keep.value) back.value = keep.value;
+    back.focus();
+    if (typeof keep.start === 'number') {
+      try { back.setSelectionRange(keep.start, keep.end); } catch (e) { /* not a text field */ }
+    }
+  }
 }
 
 function ssHaCloseAll() {
@@ -563,6 +578,7 @@ async function saveSsEntityPatch(saverId, slot, val) {
   patch[slot] = val;
   await sendCommand('screensaverEntities', { saver: saverId, entities: patch });
   ssEntitiesKey_ = '';
+  ssForceEntityRender = true;
   loadScreensavers();
 }
 

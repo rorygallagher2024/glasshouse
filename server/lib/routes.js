@@ -22,6 +22,7 @@ var ha = require('./ha');
 var fetchLib = require('./fetch');
 var devtools = require('./devtools');
 var names = require('./names');
+var nosignal = require('./nosignal');
 
 var HA_CATEGORIES = ha.HA_CATEGORIES;
 var HA_ENTITIES = ha.HA_ENTITIES;
@@ -93,6 +94,8 @@ var clockModule = null;
 var homePictureModule = null;
 /** @type {typeof import('./home-launcher')} */
 var homeLauncherModule = null;
+/** @type {typeof import('./homebar') | null} */
+var homebarModule = null;
 /** @type {typeof import('./iptv')} */
 var iptvModule = null;
 /** @type {typeof import('./screensavers')} */
@@ -221,7 +224,7 @@ function setupPending() {
  * those decide who may reach this server at all, and a UI that can widen its
  * own exposure defeats the point of setting them. The one exception is host,
  * from the TV itself during setup - see setNetworkAccess. Experimental feature
- * toggles (allowTileHiding, allowExperimentalScreensavers, allowExperimentalInputBar), allowNetworkDebugger and
+ * toggles (allowTileHiding, allowExperimentalScreensavers), allowNetworkDebugger and
  * prometheus.enabled are writable from the Server tab, and iconServer from the
  * MQTT tab: its port answers nothing but the icons the dashboard serves.
  */
@@ -1211,6 +1214,7 @@ function handleHomeRoute(req, res, u, pathname) {
       return homeModule.status(function (st) {
         st.writable = !!config.allowControl || fromTV(req);
         st.launchers = homeLauncherModule ? homeLauncherModule.status() : null;
+        st.bar = homebarModule ? homebarModule.status() : null;
         st.launcherUpload = sideloadVia(req) !== null;
         // What the Home pane draws its colour previews' clock as.
         st.clockHour12 = clockHour12();
@@ -1254,6 +1258,8 @@ function handleHomeRoute(req, res, u, pathname) {
     if (pathname === '/api/home/channels') {
       return homeModule.channelList(function (list) { reply({ ok: true, channels: list, tuner: !!list }); });
     }
+    // A custom launcher's own saved values (Glasshouse.storage).
+    if (pathname === '/api/home/store' && homeLauncherModule) return homeLauncherModule.store(reply);
     if (pathname === '/api/home/guide') return homeModule.guide(function (g) { reply({ ok: true, guide: g }); });
     if (pathname === '/api/home/now') return homeModule.now(reply);
     if (pathname === '/api/home/weather') return homeModule.weather(reply);
@@ -1320,11 +1326,22 @@ function handleHomeRoute(req, res, u, pathname) {
         reply(beatBody);
       });
     }
+    // A launcher's values, up to its store's cap in one go rather than the usual 8 KB.
+    if (pathname === '/api/home/store' && homeLauncherModule) {
+      return readJsonBody(req, res, function (body) { homeLauncherModule.setStore(body, reply); }, homeLauncherModule.MAX_STORE + 1024);
+    }
     return readJsonBody(req, res, function (body) {
       if (pathname === '/api/home/layout') return homeModule.setLayout(body, reply);
       if (pathname === '/api/home/start-layout') return homeModule.setHideLgHomeAtStart(body, reply);
       if (pathname === '/api/home/wallpapers') return homeModule.setWallpapers(body, reply);
-      if (pathname === '/api/home/enable') return homeModule.enable(reply);
+      // Glasshouse Bar leaves LG's Home its place, so it is switched off first.
+      if (pathname === '/api/home/enable') {
+        if (!homebarModule || !homebarModule.enabled()) return homeModule.enable(reply);
+        return homebarModule.disable(function (r) { if (!r.ok) return reply(r); homeModule.enable(reply); });
+      }
+      if (pathname === '/api/home/bar' && homebarModule) {
+        return body && body.on ? homebarModule.enable(reply) : homebarModule.disable(reply);
+      }
       if (pathname === '/api/home/disable') return homeModule.disable(reply);
       if (pathname === '/api/home/open') return homeModule.open(body, reply);
       if (pathname === '/api/home/launcher' && homeLauncherModule) {
@@ -1648,8 +1665,20 @@ function handleRequest(req, res) {
     return send(res, 405, JSON.stringify({ ok: false, error: 'method not allowed' }));
   }
 
+  // The Inputs tab: the No Signal screen and where the input bar stands.
+  if (pathname === '/api/inputs') {
+    return send(res, 200, JSON.stringify({
+      ok: true,
+      writable: !!config.allowControl,
+      noSignal: nosignal.status(),
+      inputBar: inputBarModule ? inputBarModule.summary() : null
+    }));
+  }
+
   if (pathname === '/api/screensaver') {
-    return send(res, 200, JSON.stringify(screensaversModule.screensaverList()));
+    var ssList = screensaversModule.screensaverList();
+    ssList.noSignal = nosignal.status();
+    return send(res, 200, JSON.stringify(ssList));
   }
 
   /* Everything the staged screen saver declared, in one answer. The saver is
@@ -2068,6 +2097,13 @@ function handleRequest(req, res) {
    * input, picture mode and dynamic range they belong to. Read fresh enough to
    * follow a change made with the remote while the tab is open.
    */
+  if (pathname === '/api/picture/export') {
+    if (req.method !== 'GET') return send(res, 405, JSON.stringify({ ok: false, error: 'GET required' }));
+    return lgSettingsModule.exportPicture(function (r) {
+      send(res, r.ok === false ? 503 : 200, JSON.stringify(r));
+    });
+  }
+
   if (pathname === '/api/picture') {
     return lgSettingsModule.collect('picture', function (r) {
       // available false where the TV offers none: both dashboards then leave the tab out.
@@ -2308,6 +2344,21 @@ function handleRequest(req, res) {
       quickAccessModule.setQuickAccess(body && body.key, body && body.id, function (r) {
         send(res, r && r.ok ? 200 : 400, JSON.stringify(r));
       });
+    });
+  }
+
+  if (pathname === '/api/remote/available' && req.method === 'GET') {
+    var remoteAvailable = function (available) {
+      send(res, 200, JSON.stringify({ ok: true, available: available }));
+    };
+    var checkRemoteKeys = function () {
+      if (!remoteKeysModule) return remoteAvailable(false);
+      remoteKeysModule.isSupported(remoteAvailable);
+    };
+    if (!quickAccessModule) return checkRemoteKeys();
+    return quickAccessModule.isSupported(function (supported) {
+      if (supported) return remoteAvailable(true);
+      checkRemoteKeys();
     });
   }
 
@@ -2563,6 +2614,7 @@ function init(opts) {
   if (opts.clock) clockModule = opts.clock;
   if (opts.homePicture) homePictureModule = opts.homePicture;
   if (opts.homeLauncher) homeLauncherModule = opts.homeLauncher;
+  if (opts.homebar) homebarModule = opts.homebar;
   if (opts.iptv) iptvModule = opts.iptv;
   if (opts.screensavers) screensaversModule = opts.screensavers;
   if (opts.haEntity) haEntityModule = opts.haEntity;

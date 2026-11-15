@@ -91,9 +91,38 @@ jobs:
       matrix:
         node: ['0.10', '0.12', '8.12', '16', '20', '24']
     name: Unit tests (Node ${{ matrix.node }})
+    # checks: write for the heartbeat below.
+    permissions:
+      contents: read
+      checks: write
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
         with:
           node-version: ${{ matrix.node }}
-      - run: node --version && node test/run-all.js
+      # In a memory cap of their own. Now and then a unit-test job's runner
+      # stops answering altogether, and its log is lost; a test that used up
+      # the machine's memory would do that. Over the cap the kernel kills a
+      # suite instead, and run-all names it.
+      # The heartbeat posts which suites are running to a check run of its
+      # own, which a runner that stops answering cannot take with it.
+      - name: Unit tests, in a 6 GB memory cap
+        env:
+          GH_TOKEN: ${{ github.token }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          RUN_ALL_STATUS: ${{ runner.temp }}/run-all-status
+        run: |
+          node --version
+          scripts/ci-heartbeat.sh "Node ${{ matrix.node }}" &
+          heartbeat=$!
+          # The heartbeat may have stopped already (a fork's PR has no token to
+          # post with): a failed kill must not fail the step, whose status is
+          # run-all's.
+          trap 'kill $heartbeat 2>/dev/null || true' EXIT
+          # OOMPolicy=continue: only the suite the kernel kills ends, not run-all.
+          sudo systemd-run --scope --quiet --uid="$(id -u)" --gid="$(id -g)" \
+            -p MemoryMax=6G -p MemorySwapMax=0 -p OOMPolicy=continue \
+            env "PATH=$PATH" "RUN_ALL_STATUS=$RUN_ALL_STATUS" node test/run-all.js
+      - name: Memory kills, where the unit tests failed
+        if: failure()
+        run: sudo dmesg | grep -iE 'out of memory|oom-kill|killed process' || echo 'No memory kills.'

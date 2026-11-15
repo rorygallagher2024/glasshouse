@@ -93,8 +93,9 @@ test('handleParsedEvent calls onButton for each color and debounces rapid duplic
 });
 
 test('every key press reaches onAnyKey, through both local events and the worker stream', function () {
-  var keys = [], home = [], colours = [];
+  var keys = [], home = [], colours = [], pointer = 0;
   remotebuttons.init({
+    onPointer: function () { pointer++; },
     onAnyKey: function (code) { keys.push(code); },
     onHomeKey: function (down) { home.push(down); },
     onButton: function (colour) { colours.push(colour); }
@@ -124,8 +125,10 @@ test('every key press reaches onAnyKey, through both local events and the worker
     remotebuttons.start();
     worker.stdout.emit('data', 'home 1\nhome 0\nred 398\ngre');
     worker.stdout.emit('data', 'en 399\nyellow 400\nblue 401\nkey 10');
-    worker.stdout.emit('data', '3\n');
+    worker.stdout.emit('data', '3\npointer\npoint');
+    worker.stdout.emit('data', 'er\n');
     assert.deepEqual(keys, [773, 398, 399, 400, 401, 103]);
+    assert.strictEqual(pointer, 2, 'pointer reports reach onPointer');
     assert.deepEqual(home, [true, false], 'Home hold/release handling is preserved');
     assert.deepEqual(colours, ['red', 'green', 'yellow', 'blue'], 'MQTT colour handling is preserved');
   } finally {

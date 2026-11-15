@@ -42,8 +42,10 @@ nav:
       - dashboard/index.md
       - Control: dashboard/control.md
       - Metrics: dashboard/metrics.md
-      - Apps: dashboard/apps.md
       - Home: dashboard/home.md
+      - Inputs: dashboard/inputs.md
+      - Remote: dashboard/remote.md
+      - Apps: dashboard/apps.md
       - Ambient Light: dashboard/ambient-light.md
       - Privacy: dashboard/privacy.md
       - OLED Care: dashboard/oled-care.md

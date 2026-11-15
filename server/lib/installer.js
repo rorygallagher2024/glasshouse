@@ -596,10 +596,24 @@ function selfUpdating(name) {
   return false;
 }
 
+// LG ships a placeholder for a store app that is not installed (YouTube,
+// youtube.leanback.v4, is one on webOS 4): an appinfo.json of "type": "stub"
+// and version 0.0.1. It is not an app on the TV, so it does not block the real
+// one, such as YouTube Foxtended, from being installed over it.
+function isStub(dir) {
+  try {
+    var info = JSON.parse(fs.readFileSync(path.join(dir, 'appinfo.json'), 'utf8'));
+    return !!info && info.type === 'stub';
+  } catch (e) {
+    return false;
+  }
+}
+
 function systemHas(id) {
   var bases = (appsMod && appsMod.APP_BASES) || [];
   for (var i = 0; i < bases.length; i++) {
-    if (fs.existsSync(path.join(bases[i], id))) return true;
+    var dir = path.join(bases[i], id);
+    if (fs.existsSync(dir) && !isStub(dir)) return true;
   }
   return false;
 }

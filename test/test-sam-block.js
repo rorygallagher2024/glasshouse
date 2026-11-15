@@ -27,16 +27,18 @@ console.log = function (s) { logs.push(String(s)); };
 // there, when the schema has it; the release takes only an id.
 function tv(schema, needsForce) {
   calls = [];
-  var type = 'flutter';
+  var type = 'flutter', blocked = false;
   samrescan.init({ blockSchema: schema, pollMs: 1, luna: function (uri, payload, cb) {
     calls.push([uri.split('/').pop(), payload]);
     if (/blockSystemApp$/.test(uri) && !/release/.test(uri)) {
       if (needsForce && payload.forceBlockSystemApp !== false) {
         return cb({ errorCode: 2, returnValue: false, errorText: 'invalid parameters' });
       }
+      blocked = true;
       return cb({ returnValue: true });
     }
-    if (/releaseBlockSystemApp$/.test(uri)) { type = 'qml'; return cb({ returnValue: true }); }
+    // sam rereads the app on the release of a block, not on the release asked first.
+    if (/releaseBlockSystemApp$/.test(uri)) { if (blocked) type = 'qml'; blocked = false; return cb({ returnValue: true }); }
     cb({ returnValue: false });
   } });
   return function (done) { done(type === 'qml'); };
@@ -45,14 +47,15 @@ function tv(schema, needsForce) {
 var check = tv(webos11, true);
 samrescan.rereadApp('com.webos.app.screensaver', check, function (ok) {
   assert.strictEqual(ok, true);
-  assert.deepEqual(calls[0], ['blockSystemApp', { id: 'com.webos.app.screensaver', forceBlockSystemApp: false }]);
-  assert.deepEqual(calls[1], ['releaseBlockSystemApp', { id: 'com.webos.app.screensaver' }], 'the release takes the id alone');
+  assert.deepEqual(calls[0], ['releaseBlockSystemApp', { id: 'com.webos.app.screensaver' }], 'whether sam has the release, asked first');
+  assert.deepEqual(calls[1], ['blockSystemApp', { id: 'com.webos.app.screensaver', forceBlockSystemApp: false }]);
+  assert.deepEqual(calls[2], ['releaseBlockSystemApp', { id: 'com.webos.app.screensaver' }], 'the release takes the id alone');
   realLog('  ✓ where the schema names forceBlockSystemApp, the block sends it as false and the release does not');
 
   check = tv(webos10, false);
   samrescan.rereadApp('com.webos.app.screensaver', check, function (ok2) {
     assert.strictEqual(ok2, true);
-    assert.deepEqual(calls[0], ['blockSystemApp', { id: 'com.webos.app.screensaver' }]);
+    assert.deepEqual(calls[1], ['blockSystemApp', { id: 'com.webos.app.screensaver' }]);
     realLog('  ✓ where it does not, the block is the id alone, as on webOS 10');
 
     // A webOS 11 TV whose schema could not be read: refused, and the

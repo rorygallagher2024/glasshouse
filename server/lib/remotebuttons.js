@@ -60,6 +60,8 @@ var onButtonFn = null;
 var onHomeKeyFn = null;
 // Every key going down, for closing a screen saver tvpower does not know of.
 var onAnyKeyFn = null;
+// The Magic Remote's pointer moving, at most once a second (the Python worker only).
+var onPointerFn = null;
 // Who wants the worker running: MQTT for the coloured buttons, Glasshouse Home
 // for the Home button, the screen saver while one it launched shows. It runs
 // while any do.
@@ -287,6 +289,10 @@ function start() {
           if (onAnyKeyFn) onAnyKeyFn(parseInt(parts[1], 10));
           continue;
         }
+        if (parts[0] === 'pointer') {
+          if (onPointerFn) onPointerFn();
+          continue;
+        }
         var color = parts[0];
         var code = parseInt(parts[1], 10);
         if (BUTTON_CODES[code]) {
@@ -324,6 +330,7 @@ function init(opts) {
   onButtonFn = opts.onButton;
   onHomeKeyFn = opts.onHomeKey || null;
   onAnyKeyFn = opts.onAnyKey || null;
+  onPointerFn = opts.onPointer || null;
 }
 
 // Starts the worker for the first owner to want it, stops it after the last.

@@ -15,7 +15,7 @@ function tv(options) {
   options = options || {};
   var state = {
     requested: false, launched: 0, closed: 0, running: !!options.running,
-    closeOK: true, closeReply: null, runningReply: null, watches: [],
+    closeOK: true, closeReply: null, runningReply: null, watches: [], pointerWatches: [], screenOns: 0,
     power: 'Active', foreground: 'com.webos.app.home', media: { state: 'idle', fullScreen: false }
   };
   state.luna = function (uri, params, cb) {
@@ -24,6 +24,7 @@ function tv(options) {
     }
     if (/getForegroundAppInfo$/.test(uri)) return cb({ returnValue: true, appId: state.foreground });
     if (/getAppInfo$/.test(uri)) return cb({ returnValue: true, appInfo: { id: params.id } });
+    if (/turnOnScreen$/.test(uri)) { state.screenOns++; return cb({ returnValue: true }); }
     if (/turnOnScreenSaver$/.test(uri)) {
       state.requested = true;
       return cb(options.invalidState ? { returnValue: false, errorText: 'Invalid State change Request' } : { returnValue: true });
@@ -45,6 +46,7 @@ function tv(options) {
     screensavers.init({ luna: state.luna, config: {}, injectKey: function (k, cb) { cb(true); }, KEY_BACK: 412,
       inputKey: require('../server/lib/names').shortAppId,
       watchKeys: function (on) { state.watches.push(on); },
+      watchPointer: function (on) { state.pointerWatches.push(on); },
       mediaState: function (cb, fresh) {
         assert.strictEqual(fresh, true, 'playback is read afresh before a fallback');
         if (state.onMedia) state.onMedia();
@@ -160,6 +162,36 @@ test('a saver started by tvpower is left to tvpower', function (done) {
     assert.strictEqual(screensavers.launchedShowing(), false);
     done();
   });
+});
+
+// #1364: tvpower ends these screen savers on a key, but not on the pointer
+// moving, nor on a click on webOS 11; LG's own ends itself on the pointer.
+test('the pointer ends a Glasshouse screen saver tvpower started, and not LG\'s own', function (done) {
+  var MARKER = '/usr/palm/applications/com.webos.app.screensaver/.tvweb-screensaver';
+  env.files[MARKER] = 'starfield';
+  var state = tv();
+  screensavers.onPowerChange('Screen Saver');
+  assert.deepEqual(state.pointerWatches, [true], 'the pointer is watched while it shows');
+  screensavers.pointerUsed();
+  assert.strictEqual(state.screenOns, 1, 'moving the pointer ends it');
+  screensavers.pointerUsed();
+  screensavers.keyPressed(272);
+  assert.strictEqual(state.screenOns, 1, 'the stream of movement asks once');
+  screensavers.onPowerChange('Active');
+  assert.deepEqual(state.pointerWatches, [true, false], 'and no longer once it has ended');
+  screensavers.pointerUsed();
+  assert.strictEqual(state.screenOns, 1, 'with none showing, the pointer does nothing');
+
+  env.files[MARKER] = 'stock';
+  state = tv();
+  screensavers.onPowerChange('Screen Saver');
+  assert.deepEqual(state.pointerWatches, [false], "LG's own is not watched: it ends itself");
+  screensavers.pointerUsed();
+  screensavers.keyPressed(272);
+  assert.strictEqual(state.screenOns, 0);
+  screensavers.onPowerChange('Active');
+  delete env.files[MARKER];
+  done();
 });
 
 [false, true].forEach(function (invalidState) {
