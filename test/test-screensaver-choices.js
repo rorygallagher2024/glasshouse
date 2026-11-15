@@ -98,7 +98,17 @@ process.nextTick(checked(function () {
       assert.strictEqual(r2.ok, true, r2.error);
       assert.ok(env.files[path.join(STAGE, 'qml', 'main.qml')].indexOf('"vis=one"') !== -1);
       console.log('  ✓ an option it does not have is its default');
+      // On the TV a file cannot be written into web/ before the folder is made.
+      var fs = require('fs'), made = {}, mkdir = fs.mkdirSync, write = fs.writeFileSync;
+      fs.mkdirSync = function (dir) { made[dir] = true; return mkdir.apply(fs, arguments); };
+      fs.writeFileSync = function (file) {
+        var dir = path.dirname(String(file));
+        if (dir.indexOf(path.join(STAGE, 'web')) === 0 && !made[dir]) throw new Error('ENOENT: no such file or directory, open \'' + file + '\'');
+        return write.apply(fs, arguments);
+      };
       screensavers.setScreensaver('video', 'dim', checked(function (r3) {
+        fs.mkdirSync = mkdir;
+        fs.writeFileSync = write;
         assert.strictEqual(r3.ok, true, r3.error);
         // webOS 10 runs the Video saver as a web page, beside the script that orders its playlist.
         var videoPage = env.files[path.join(STAGE, 'web', 'index.html')];

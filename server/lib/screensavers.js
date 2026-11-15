@@ -1335,6 +1335,7 @@ function stageSaverFiles(e, level, choice) {
   // them inside its Web app: webOS may refuse file:// loads from outside the
   // mounted app.
   if (e.id === 'video' && e.runtime === 'web') {
+    mkdirp(path.join(SCREENSAVER_DIR, 'web'));
     fs.writeFileSync(path.join(SCREENSAVER_DIR, 'web', 'video-order.js'), fs.readFileSync(path.join(__dirname, '..', 'assets', 'video-order.js')));
     var fontNames = ['Outfit-Light.ttf', 'Outfit-Regular.ttf', 'Manrope-Regular.ttf', 'Manrope-SemiBold.ttf'];
     var sourceFonts = path.join(__dirname, '..', 'assets', 'fonts');
