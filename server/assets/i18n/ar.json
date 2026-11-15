@@ -238,7 +238,6 @@
  "apps.remoteKeys.inputs": {"text": "المداخل", "from": "Inputs"},
  "apps.remoteKeys.keyLabel": {"text": "زر {key}", "from": "{key} key"},
  "apps.remoteKeys.lg": {"text": "وضع LG الافتراضي", "from": "As LG has it"},
- "apps.remoteKeys.media": {"text": "أزرار الوسائط", "from": "Media"},
  "apps.remoteKeys.nothing": {"text": "لا شيء", "from": "Nothing"},
  "apps.remoteKeys.opens": {"text": "يفتح {app}", "from": "Opens {app}"},
  "apps.remoteKeys.other": {"text": "أزرار أخرى", "from": "Other keys"},
@@ -3296,5 +3295,7 @@
  "home.highlight.wine": {"from": "Wine", "text": "عنابي"},
  "home.highlight.plum": {"from": "Plum", "text": "برقوقي"},
  "inputs.kind.av": {"text": "AV", "from": "AV"},
- "inputs.kind.component": {"text": "مكوّن", "from": "Component"}
+ "inputs.kind.component": {"text": "مكوّن", "from": "Component"},
+ "srv.remoteKeys.ok": {"text": "موافق", "from": "OK"},
+ "apps.remoteKeys.buttons": {"text": "الأزرار", "from": "Buttons"}
 }

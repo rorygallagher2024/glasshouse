@@ -148,7 +148,7 @@ step(function (next) {
     assert.ok(r.keys.every(function (k) { return k.action === 'lg' && k.id === ''; }));
     assert.strictEqual(r.inChain, false);
     assert.deepEqual(r.choices.map(function (c) { return c.id; }),
-      ['action:screenOff', 'action:powerOff', 'media:play', 'media:pause', 'media:stop', 'media:rewind', 'media:fastForward',
+      ['action:screenOff', 'action:powerOff', 'media:ok', 'media:play', 'media:pause', 'media:stop', 'media:rewind', 'media:fastForward',
        'media:volumeUp', 'media:volumeDown', 'media:mute',
        'com.webos.app.hdmi1', 'com.webos.app.hdmi2', 'com.webos.app.livetv',
        'com.webos.app.home', 'netflix', 'youtube.leanback.v4']);
@@ -268,6 +268,13 @@ step(function (next) {
         f.handle(1004, true, false);
         f.handle(1004, true, true);
         assert.deepEqual(keyCodes(f).slice(2), [115, 115, 113]);
+        // OK is KEY_ENTER, once per press and not while held, for a remote
+        // whose own OK is the scroll wheel's press (#1513).
+        f.tell({ keys: { red: 'media:ok' } });
+        f.handle(1004, true, false);
+        f.handle(1004, true, true);
+        f.handle(1004, false, false);
+        assert.deepEqual(keyCodes(f).slice(5), [28]);
         rk.getRemoteKeys(guard(function (r) {
           var red = r.keys.filter(function (k) { return k.key === 'red'; })[0];
           assert.strictEqual(red.action, 'open');
@@ -275,7 +282,7 @@ step(function (next) {
           rk.setRemoteKey('red', 'lg', '', guard(function () {
             rk.setRemoteKey('amazon', 'lg', '', guard(function () {
               assert.deepEqual(tv.keys.keys, { netflix: 'youtube.leanback.v4', movies: 'netflix', guide: '' });
-              console.log('  ✓ a key set to a media control sends its key code once per press, or while held for volume; an unknown control is refused');
+              console.log('  ✓ a key set to OK or a media control sends its key code once per press, or while held for volume; an unknown control is refused');
               next();
             }));
           }));

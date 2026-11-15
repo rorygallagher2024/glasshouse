@@ -232,7 +232,6 @@
  "apps.remoteKeys.inputs": {"text": "Bemenetek", "from": "Inputs"},
  "apps.remoteKeys.keyLabel": {"text": "{key} gomb", "from": "{key} key"},
  "apps.remoteKeys.lg": {"text": "Ahogy az LG beállította", "from": "As LG has it"},
- "apps.remoteKeys.media": {"text": "Média", "from": "Media"},
  "apps.remoteKeys.nothing": {"text": "Semmi", "from": "Nothing"},
  "apps.remoteKeys.opens": {"text": "Megnyitja: {app}", "from": "Opens {app}"},
  "apps.remoteKeys.other": {"text": "Egyéb gombok", "from": "Other keys"},
@@ -3310,5 +3309,7 @@
  "home.highlight.wine": {"from": "Wine", "text": "Bordó"},
  "home.highlight.plum": {"from": "Plum", "text": "Szilva"},
  "inputs.kind.av": {"text": "AV", "from": "AV"},
- "inputs.kind.component": {"text": "Komponens", "from": "Component"}
+ "inputs.kind.component": {"text": "Komponens", "from": "Component"},
+ "srv.remoteKeys.ok": {"text": "OK", "from": "OK"},
+ "apps.remoteKeys.buttons": {"text": "Gombok", "from": "Buttons"}
 }
