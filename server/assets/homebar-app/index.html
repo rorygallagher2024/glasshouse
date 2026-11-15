@@ -213,6 +213,15 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
   // The row slides so the tile in focus stays on screen.
   var ROOM = 1920 - 96 * 2;
   var shift = 0;
+  /*
+   * Glasshouse Home's Smooth scrolling (Home tab, Motion): off, the row jumps
+   * to where a key, the wheel or the pointer sends it rather than gliding.
+   */
+  function applySmooth(layout) {
+    var t = layout && layout.smoothScroll === false ? 'none' : '';
+    var row = $('row');
+    if (row.style.transition !== t) row.style.webkitTransition = row.style.transition = t;
+  }
   function applyShift() {
     $('row').style.webkitTransform = $('row').style.transform = 'translateX(' + (-shift) + 'px)';
   }
@@ -413,6 +422,7 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
       if (!preCat) return;
       var fresh = tilesFrom(preCat);
       if (!fresh.length) return;
+      applySmooth(preCat.layout);
       var nextLabelsOff = !!(preCat.layout && preCat.layout.showAppLabels === false);
       saveCache(fresh, onPort, nextLabelsOff);
       applyRow(fresh, onPort, nextLabelsOff);
@@ -445,6 +455,7 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
       if (!cat) { if (!list.length) close(); return; }
       var fresh = tilesFrom(cat);
       if (!fresh.length) return close();
+      applySmooth(cat.layout);
       var nextLabelsOff = !!(cat.layout && cat.layout.showAppLabels === false);
       var port = portFrom(now);
       saveCache(fresh, port, nextLabelsOff);

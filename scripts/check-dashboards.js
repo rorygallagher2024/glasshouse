@@ -497,11 +497,12 @@ async function visitHomeBarScroll(browser, base, problems) {
     window.close = function () {};
   });
   const apps = Array.from({ length: 16 }, (_, i) => ({ id: 'app' + i, title: 'App ' + i }));
+  let layout = {};
   await page.route('http://localhost:8080/**', route => {
     const url = new URL(route.request().url());
     if (url.pathname === '/assets/devicons.js') return route.continue({ url: base + '/assets/devicons.js' });
     if (url.pathname === '/api/home/now') return route.fulfill({ json: {} });
-    if (url.pathname === '/api/home/catalogue') return route.fulfill({ json: { ok: true, layout: {}, order: { app: apps.map(a => a.id), dev: [] }, apps, devices: [] } });
+    if (url.pathname === '/api/home/catalogue') return route.fulfill({ json: { ok: true, layout, order: { app: apps.map(a => a.id), dev: [] }, apps, devices: [] } });
     return route.fulfill({ json: {} });
   });
   const shift = () => page.evaluate(() => {
@@ -532,6 +533,12 @@ async function visitHomeBarScroll(browser, base, problems) {
     const stopped = await shift();
     await page.waitForTimeout(500);
     if (await shift() !== stopped) fail('the row kept moving after the pointer left the end');
+    // Smooth scrolling switched off on the Home tab: the row jumps rather than glides.
+    if (await page.evaluate(() => document.getElementById('row').style.transition) === 'none') fail('the row does not glide with Smooth scrolling on');
+    layout = { smoothScroll: false };
+    await page.goto(base + '/assets/homebar-app/index.html');
+    await page.waitForFunction(() => document.querySelectorAll('#row .tile').length === 16 && document.body.className.indexOf('on') !== -1);
+    if (await page.evaluate(() => document.getElementById('row').style.transition) !== 'none') fail('the row still glides with Smooth scrolling off');
   } finally {
     await page.close();
   }
