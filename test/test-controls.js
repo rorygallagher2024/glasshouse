@@ -664,6 +664,9 @@ console.log('Running test-controls.js ...');
   console.log('  ✓ remote keys and Home use the urgent luna path and log their timing');
 
   // With Glasshouse Bar chosen, Home opens the Bar, with a press of its own (#1537).
+  // Its timing is logged as Home's is; node 0.10 has no console.debug.
+  var debugBefore = console.debug;
+  console.debug = function () {};
   var barOn = true;
   urgent.length = 0;
   controls.init({ homeBar: { APP: 'com.tvweb.homebar', enabled: function () { return barOn; } } });
@@ -676,6 +679,7 @@ console.log('Running test-controls.js ...');
   urgent.length = 0;
   controls.doControl('rcu', 'home', function () {});
   assert.deepEqual(urgent, ['com.webos.applicationManager/launch {"id":"com.webos.app.home"}'], 'LG\'s Home with the Bar not chosen');
+  console.debug = debugBefore;
   console.log('  ✓ with Glasshouse Bar chosen, Home opens the Bar rather than LG\'s Home');
 })();
 
