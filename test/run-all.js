@@ -73,7 +73,19 @@ var left = runs.length;
 var startedAt = Date.now();
 var defaultTimeoutSecs = Number(process.env.TEST_TIMEOUT_SECS) || 60;
 var concurrency = Number(process.env.TEST_CONCURRENCY) || Math.max(4, os.cpus().length * 2);
-var nextRun = 0;
+/*
+ * Suites that never run at the same time. Now and then a CI runner stops
+ * answering altogether; the heartbeat of one that did (on Node 20) last showed
+ * server-boot and tvwebctl running together and nothing else, as did the live
+ * log of an earlier one, and in 60 jobs the freezes came only where the two
+ * overlapped (docs/development/testing.md). Kept apart, to see whether the
+ * freezes stop.
+ */
+var APART = { 'test-server-boot.js': 'test-tvwebctl.js', 'test-tvwebctl.js': 'test-server-boot.js' };
+function heldApart(run) {
+  var other = APART[run.suite];
+  return !!other && runs.some(function (r) { return r.suite === other && r.started && !r.finished; });
+}
 
 // Every suite running, with how long it has run.
 function progressLine() {
@@ -104,9 +116,19 @@ var progressTimer = setInterval(function () {
 }, 5000);
 if (progressTimer.unref) progressTimer.unref();
 
+// Starts the next suite in order that is not held apart, if any.
 function startNext() {
-  if (nextRun >= runs.length) return;
-  startRun(runs[nextRun++]);
+  for (var i = 0; i < runs.length; i++) {
+    if (!runs[i].started && !heldApart(runs[i])) { startRun(runs[i]); return true; }
+  }
+  return false;
+}
+
+// As many as are allowed at once: a suite held apart leaves its turn to the
+// next, and takes it back when the one it waits for finishes.
+function fillSlots() {
+  var running = runs.filter(function (r) { return r.started && !r.finished; }).length;
+  while (running < concurrency && startNext()) running++;
 }
 
 function startRun(run) {
@@ -135,7 +157,7 @@ function startRun(run) {
     --left;
     writeStatus(left === 0 ? 'all ' + runs.length + ' finished in ' + Math.round((Date.now() - startedAt) / 1000) + 's' : progressLine());
     if (left === 0) report();
-    else startNext();
+    else fillSlots();
   }
 
   proc.on('exit', function (code, sig) {
@@ -201,4 +223,4 @@ function report() {
 }
 
 console.log('Running ' + suites.length + ' test suite(s), ' + concurrency + ' at a time...\n');
-for (var startAt = 0; startAt < concurrency; startAt++) startNext();
+fillSlots();
