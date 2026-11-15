@@ -3311,5 +3311,7 @@
  "home.wall.uploadedN": {"text": "Загружено: {n} из {total}.", "from": "{n} of {total} uploaded."},
  "home.wall.uploadingOf": {"text": "Загрузка: {n} из {total}…", "from": "Uploading {n} of {total}…"},
  "srv.home.wallPicture": {"text": "неизвестная фоновая картинка", "from": "unknown wallpaper picture"},
- "srv.home.wallShuffleFull": {"text": "В коллекции может быть до {max} картинок. Удалите одну, чтобы добавить другую.", "from": "The collection holds {max} pictures. Remove one to add another."}
+ "srv.home.wallShuffleFull": {"text": "В коллекции может быть до {max} картинок. Удалите одну, чтобы добавить другую.", "from": "The collection holds {max} pictures. Remove one to add another."},
+ "inputs.bar.switchOnOk": {"text": "Переключать только по OK", "from": "Switch only on OK"},
+ "inputs.bar.switchOnOkDesc": {"text": "Перемещение по панели только выбирает вход, а OK переключает на него. Если выключено, телевизор переключается через секунду после последнего нажатия.", "from": "Moving along the bar only picks an input, and OK switches to it. Off, the TV switches a second after the last press."}
 }

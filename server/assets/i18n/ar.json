@@ -3297,5 +3297,7 @@
  "inputs.kind.av": {"text": "AV", "from": "AV"},
  "inputs.kind.component": {"text": "مكوّن", "from": "Component"},
  "srv.remoteKeys.ok": {"text": "موافق", "from": "OK"},
- "apps.remoteKeys.buttons": {"text": "الأزرار", "from": "Buttons"}
+ "apps.remoteKeys.buttons": {"text": "الأزرار", "from": "Buttons"},
+ "inputs.bar.switchOnOk": {"text": "التبديل فقط عند الضغط على موافق", "from": "Switch only on OK"},
+ "inputs.bar.switchOnOkDesc": {"text": "التنقل في الشريط يختار مدخلًا فقط، وزر موافق يبدّل إليه. عند الإيقاف، يبدّل التلفزيون بعد ثانية من آخر ضغطة.", "from": "Moving along the bar only picks an input, and OK switches to it. Off, the TV switches a second after the last press."}
 }

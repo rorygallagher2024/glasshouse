@@ -3553,6 +3553,22 @@ step('AV and Component inputs are listed beside HDMI and open through their own 
   });
 });
 
+step('the input bar\'s Switch only on OK is off until switched on, and kept (#1532)', function (done) {
+  start(null);
+  assert.strictEqual(home.layout().inputBarSwitchOnOk, false);
+  (function () {
+    home.setLayout({ inputBarSwitchOnOk: true }, function (r) {
+      assert.ok(r.ok, r.error);
+      assert.strictEqual(r.layout.inputBarSwitchOnOk, true);
+      home.setLayout({ inputBarSwitchOnOk: 'yes' }, function (r2) {
+        assert.strictEqual(r2.layout.inputBarSwitchOnOk, true, 'only a true or false changes it');
+        assert.strictEqual(JSON.parse(fs.readFileSync(path.join(dir, 'home.json'), 'utf8')).inputBarSwitchOnOk, true, 'saved');
+        done();
+      });
+    });
+  })();
+});
+
 step('custom appNames rename apps in the catalogue and last opened, and clear back to default', function (done) {
   start({ enabled: true });
   foreground('netflix');
