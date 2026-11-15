@@ -64,6 +64,10 @@ var SWITCH_TIMEOUT_MS = 150000;
 var CLOSE_LOOKS = 16;
 // After a switch, before the new one is asked for in place of one closed for it.
 var SHOW_AGAIN_MS = 3000;
+// screenmanager may not be up yet when the server starts at boot.
+var VIDEO_MODE_TRIES = 6;
+var videoModeRetryMs = 10000;
+var VIDEO_IMPORT = /^\s*import\s+QtMultimedia\b/m;
 // How long tvpower may sit at "Screen Saver Ready" before it counts as stuck.
 var STUCK_CHECK_MS = 3000;
 var SWITCHING_ERROR = msg('srv.saver.switching', 'The TV is still switching screen savers. Try again in a minute.');
@@ -711,6 +715,39 @@ var watchKeysFn = function () {};
 /** @type {function(function(?{state: string, fullScreen: boolean}): void, boolean=): void} */
 var mediaStateFn = function (cb) { cb(null); };
 
+/*
+ * Where LG's screen saver is Flutter (webOS 10 and later), screenmanager ends
+ * the screen saver when it sees full-screen video, on a G5 (webOS 11.2)
+ * within a second of the video starting, unless the app is in its "manual"
+ * mode. An Aerial screen saver's QML plays video and does not ask for it, as
+ * its own web page for these TVs does, at every start: its source has
+ * screenmanager keep the mode in memory until it restarts. So it is sent at
+ * every staging, which includes the server's start.
+ */
+var videoModeHeld = null;
+var videoModeGeneration = 0;
+function setVideoMode(playsVideo) {
+  var mine = ++videoModeGeneration;
+  if (!lunaFn || !slowSwitch()) return;
+  var mode = playsVideo ? 'manual' : 'auto';
+  var tries = 0;
+  (function send() {
+    lunaFn('com.webos.service.screenmanager/setScreenSaverMode', { appId: SCREENSAVER_APP_ID, mode: mode }, function (r) {
+      if (mine !== videoModeGeneration) return;
+      if (r && r.returnValue) {
+        if (playsVideo && videoModeHeld !== mode) console.log('screensaver: plays video, so screenmanager is told not to end it for that');
+        videoModeHeld = mode;
+        return;
+      }
+      // "auto" is what screenmanager starts with, so only "manual" is worth trying again.
+      if (!playsVideo) return;
+      if (++tries < VIDEO_MODE_TRIES) return setTimeout(send, videoModeRetryMs);
+      console.log('screensaver: screenmanager did not take the manual mode (' + ((r && r.errorText) || 'no answer') +
+                  '), so it may end this screen saver when its video starts');
+    });
+  })();
+}
+
 function clearStagedScreensaver() {
   stagedEntities = null;
   stagedEntityLabels = null;
@@ -786,6 +823,9 @@ function init(opts) {
   closeCallbacks = [];
   randomConfigFile = (opts && opts.randomConfigFile) ? opts.randomConfigFile : RANDOM_CONFIG_FILE;
   wasInScreenSaver = false;
+  if (opts.videoModeRetryMs !== undefined) videoModeRetryMs = opts.videoModeRetryMs;
+  videoModeHeld = null;
+  videoModeGeneration++;
 
   // Auto-heal: If the screensaver is currently stock (no active bind-mount on SCREENSAVER_APP_DIR),
   // but an orphaned marker remains in SCREENSAVER_DIR, remove it so the boot hook does not
@@ -1298,16 +1338,21 @@ function stageSaverFiles(e, level, choice) {
   mkdirp(qmlDir);
   // An app's screen saver loads the rest from its own folder.
   var files = e.fromApp ? [] : saverFiles(e.dir);
+  var mainSource = fs.readFileSync(path.join(e.dir, e.main), 'utf8');
+  var playsVideo = VIDEO_IMPORT.test(mainSource);
   for (var i = 0; i < files.length; i++) {
     var rel = files[i].rel;
     if (rel === MANIFEST || rel === e.main) continue;
+    var content = fs.readFileSync(path.join(e.dir, rel));
+    if (/\.qml$/.test(rel) && VIDEO_IMPORT.test(content.toString('utf8'))) playsVideo = true;
     mkdirp(path.dirname(path.join(qmlDir, rel)));
-    fs.writeFileSync(path.join(qmlDir, rel), fs.readFileSync(path.join(e.dir, rel)));
+    fs.writeFileSync(path.join(qmlDir, rel), content);
   }
   var specs = effectiveSaverEntitySpecs(e);
   var effEnts = effectiveFromSpecs(specs);
   var entityList = effectiveSaverEntityList(e);
-  fs.writeFileSync(path.join(qmlDir, 'main.qml'), fillSaverQml(e, fs.readFileSync(path.join(e.dir, e.main), 'utf8'), level, choice, effEnts, entityList));
+  fs.writeFileSync(path.join(qmlDir, 'main.qml'), fillSaverQml(e, mainSource, level, choice, effEnts, entityList));
+  setVideoMode(playsVideo);
   fs.writeFileSync(path.join(SCREENSAVER_DIR, SCREENSAVER_LEVEL_MARKER), String(level));
   stagedEntities = mergeActiveEntities(activeSaverEntities(effEnts), entityList);
   stagedEntityLabels = mergeActiveLabels(activeSaverLabels(specs), entityList);
@@ -1560,6 +1605,7 @@ function swapScreensaver(saver, mode, level, choice, cb) {
   unmountScreensaver(function () {
     if (mode === 'stock') {
       clearStagedScreensaver();
+      setVideoMode(false);
       return settleScreensaverApp(function (notTaken) {
         cb({ ok: !notTaken && screensaverMode() === 'stock', current: screensaverMode(), level: screensaverLevel(), brightness: screensaverBrightness(),
              switching: switching(), error: notTaken ? STOCK_LATER_ERROR : undefined });
@@ -1581,6 +1627,7 @@ function swapScreensaver(saver, mode, level, choice, cb) {
           // sam still runs LG's: put LG's files back under it, so they agree.
           return unmountScreensaver(function () {
             clearStagedScreensaver();
+            setVideoMode(false);
             cb({ ok: false, current: screensaverMode(), level: screensaverLevel(), brightness: screensaverBrightness(), switching: switching(), error: NOT_TAKEN_ERROR });
           });
         }
