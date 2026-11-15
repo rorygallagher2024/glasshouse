@@ -5181,7 +5181,23 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     setTimeout(function () { if (!previewHoldsVideo()) updateWall(); }, 0);
   }
 
-  var wallVideoFailures = 0, wallVideoOrder = [], wallVideoOrderAt = 0, wallVideoLoadedAt = 0, wallVideoPlaying = false;
+  var wallVideoFailures = 0, wallVideoOrder = [], wallVideoOrderAt = 0, wallVideoLoadedAt = 0, wallVideoPlaying = false, wallVideoOffScreen = 0;
+
+  /*
+   * The server's word on whether the wallpaper reaches the screen (lib/home
+   * checkWallVideoOutput). Loaded while the screen saver was closing, it plays
+   * on with no picture and says nothing: two heartbeats of that, and it is
+   * loaded again.
+   */
+  function noteWallVideoOutput(onScreen) {
+    if (onScreen !== false || !wallVideoPlaying || previewHoldsVideo() || document.documentElement.classList.contains('resting')) {
+      wallVideoOffScreen = 0;
+      return;
+    }
+    if (++wallVideoOffScreen < 2) return;
+    wallVideoOffScreen = 0;
+    wallVideoNeedsRestart = true;
+  }
   // Room for a 4K stream over the network to reach its first frame.
   var WALL_VIDEO_START_MS = 20000;
   function playWallVideo(index, strength) {
@@ -6114,6 +6130,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
         if (standalone && coveredSince && Date.now() - coveredSince > CLOSE_BEHIND_MS) return window.close();
         readWallpapers(r.wallpapers);
         renderPicture();
+        noteWallVideoOutput(r.wallVideoOnScreen);
         updateWall();
         $('fault').className = '';
         // The TV's setting can change while the view is open, so the heartbeat

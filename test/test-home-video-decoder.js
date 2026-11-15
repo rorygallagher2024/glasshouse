@@ -86,4 +86,27 @@ assert.strictEqual(ctx.wall.getAttribute('src'), 'http://media.example/coast.mov
 assert.strictEqual(ctx.walls, 1);
 console.log('  ✓ only a video wallpaper hands over');
 
+// Playing with nothing on the screen's video output, as after the screen saver: loaded again on the second heartbeat.
+var noteStart = src.indexOf('  function noteWallVideoOutput(onScreen) {');
+var noteEnd = src.indexOf('\n  }\n', noteStart);
+assert.ok(noteStart !== -1, 'noteWallVideoOutput is in home.html');
+var out = { preview: fakeVideo(), wallVideoPlaying: true, wallVideoOffScreen: 0, wallVideoNeedsRestart: false,
+  document: { documentElement: { classList: { contains: function () { return false; } } } } };
+vm.createContext(out);
+vm.runInContext('function $() { return preview; }' + src.slice(start, src.indexOf('  function unloadWallVideo')) +
+  src.slice(noteStart, noteEnd + '\n  }\n'.length), out);
+vm.runInContext('noteWallVideoOutput(false)', out);
+assert.strictEqual(out.wallVideoNeedsRestart, false, 'one heartbeat off the screen can be a clip starting');
+vm.runInContext('noteWallVideoOutput(true); noteWallVideoOutput(false)', out);
+assert.strictEqual(out.wallVideoNeedsRestart, false, 'on the screen in between starts the count again');
+vm.runInContext('noteWallVideoOutput(false)', out);
+assert.strictEqual(out.wallVideoNeedsRestart, true, 'two in a row: loaded again');
+out.wallVideoNeedsRestart = false;
+vm.runInContext('noteWallVideoOutput(null); noteWallVideoOutput(null)', out);
+assert.strictEqual(out.wallVideoNeedsRestart, false, 'unknown is left alone');
+out.preview.setAttribute('src', 'http://iptv.example/one.m3u8');
+vm.runInContext('noteWallVideoOutput(false); noteWallVideoOutput(false)', out);
+assert.strictEqual(out.wallVideoNeedsRestart, false, 'not while a preview has the decoder');
+console.log('  ✓ a wallpaper playing off the screen is loaded again');
+
 console.log('ALL test-home-video-decoder.js assertions passed!\n');

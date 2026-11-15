@@ -2752,6 +2752,24 @@ function viewCovered(saverActive) {
   return isStandalone() && !!foreground && foreground !== HOME_APP;
 }
 
+/*
+ * Whether Home's video wallpaper reaches the screen. Reloaded as the screen
+ * saver closed, its <video> went on playing with nothing on the main video
+ * output (G3, webOS 10.3: videooutput listed no Home client until it was
+ * loaded again). null where unknown or not wanted.
+ */
+var wallVideoOnScreen = null;
+function checkWallVideoOutput() {
+  if (!lunaFn || !videoBackgroundActive()) { wallVideoOnScreen = null; return; }
+  lunaFn('com.webos.service.videooutput/getStatus', {}, function (r) {
+    var sinks = r && Array.isArray(r.video) ? r.video : null;
+    wallVideoOnScreen = sinks ? sinks.some(function (v) {
+      return !!v && v.sink === 'MAIN' && v.connected === true && v.connectedSource === 'VDEC' &&
+        (v.appId === HOME_APP || v.appId === LG_HOME);
+    }) : null;
+  });
+}
+
 function beat(body) {
   lastBeatAt = nowMs();
   if (body && body.perf && typeof body.perf === 'object') console.log('home: frames ' + JSON.stringify(body.perf));
@@ -2761,7 +2779,10 @@ function beat(body) {
   beats++;
   if (viewInFront()) watchBeat(beatGraceMs);
   var saver = powerState === 'Screen Saver' || !!(screensaversModule && screensaversModule.launchedShowing());
-  return { ok: true, enabled: readConfig().enabled, standalone: isStandalone(), covered: viewCovered(saver), saver: saver,
+  // As last seen: the reply does not wait for videooutput.
+  var onScreen = wallVideoOnScreen;
+  checkWallVideoOutput();
+  return { ok: true, wallVideoOnScreen: onScreen, enabled: readConfig().enabled, standalone: isStandalone(), covered: viewCovered(saver), saver: saver,
            build: buildId, wallpapers: wallpapers.status(),
            layoutVersion: layoutVersion(), sleeps: sleeps, trace: fs.existsSync(traceFile()),
            // So a push shows within a heartbeat rather than at the next poll.
