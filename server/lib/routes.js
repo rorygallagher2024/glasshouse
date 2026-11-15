@@ -2341,9 +2341,10 @@ function handleRequest(req, res) {
     }
     return readJsonBody(req, res, function (body) {
       if (!quickAccessModule) return send(res, 503, JSON.stringify({ ok: false, error: 'quick access module unavailable' }));
-      quickAccessModule.setQuickAccess(body && body.key, body && body.id, function (r) {
-        send(res, r && r.ok ? 200 : 400, JSON.stringify(r));
-      });
+      var reply = function (r) { send(res, r && r.ok ? 200 : 400, JSON.stringify(r)); };
+      // { key, lg: true }: the key as LG has it (#1539).
+      if (body && body.lg === true) return quickAccessModule.resetQuickAccess(body.key, reply);
+      quickAccessModule.setQuickAccess(body && body.key, body && body.id, reply);
     });
   }
 
