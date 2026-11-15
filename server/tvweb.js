@@ -2057,6 +2057,7 @@ function startGlasshouseHome() {
   var weather = require('./lib/weather');
   weather.init({ getJson: fetchLib.getJson });
   glasshouseHome.init({
+    screensavers: screensavers,
     weather: weather,
     iptv: iptv,
     luna: luna,

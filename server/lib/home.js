@@ -37,6 +37,7 @@ var recent = require('./home-recent');
 var recentApps = require('./home-recent-apps');
 var search = require('./home-search');
 var recommended = require('./home-recommended');
+var screensaversModule = null;
 
 // The separate app earlier builds installed: removed, and its settings undone.
 var HOME_APP = 'com.tvweb.home';
@@ -2742,8 +2743,12 @@ function behindAnother(cb) {
  * its drifting wallpaper kept the web app manager at 34% under the screen
  * saver, which got 2% and stuttered.
  */
-function viewCovered() {
+function viewCovered(saverActive) {
   if (powerState === 'Screen Saver') return true;
+  // The dashboard's manual start fallback launches the saver app directly.
+  // On those TVs tvpower remains Active, so its state alone misses the cover.
+  if (saverActive === undefined && screensaversModule) saverActive = screensaversModule.launchedShowing();
+  if (saverActive) return true;
   return isStandalone() && !!foreground && foreground !== HOME_APP;
 }
 
@@ -2755,7 +2760,8 @@ function beat(body) {
   }
   beats++;
   if (viewInFront()) watchBeat(beatGraceMs);
-  return { ok: true, enabled: readConfig().enabled, standalone: isStandalone(), covered: viewCovered(), saver: powerState === 'Screen Saver',
+  var saver = powerState === 'Screen Saver' || !!(screensaversModule && screensaversModule.launchedShowing());
+  return { ok: true, enabled: readConfig().enabled, standalone: isStandalone(), covered: viewCovered(saver), saver: saver,
            build: buildId, wallpapers: wallpapers.status(),
            layoutVersion: layoutVersion(), sleeps: sleeps, trace: fs.existsSync(traceFile()),
            // So a push shows within a heartbeat rather than at the next poll.
@@ -3182,6 +3188,7 @@ function startLayoutAvailable() { return /^9\./.test(String(webosVersion || ''))
 
 function init(opts) {
   opts = opts || {};
+  screensaversModule = opts.screensavers || null;
   lunaFn = opts.luna || null;
   liveState = opts.liveState || null;
   historyModule = opts.history || null;
