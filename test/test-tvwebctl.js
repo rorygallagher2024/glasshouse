@@ -172,11 +172,14 @@ waitFor('the server and its heartbeat', function () { return alive(serverPid()) 
                 waitFor('the extra watchdog', function () { return watchdogs() === 2; }, 5000, function () {
                   ctl('restart');
                   waitFor('the extra watchdog to be cleared', function () { return !alive(extra.pid); }, 5000, function () {
-                    if (watchdogs() !== 1) return finish(1, 'a restart left ' + watchdogs() + ' watchdogs');
+                  // start-stop-daemon -b returns before the new watchdog exists,
+                  // so the count is 0 for a moment after the restart
+                  waitFor('one watchdog after the restart', function () { return watchdogs() === 1; }, 5000, function () {
                     ctl('start');
                     if (watchdogs() !== 1) return finish(1, 'a start beside a watchdog left ' + watchdogs());
                     console.log('  ✓ a restart clears an extra watchdog, and a start adds none');
                     finish(0);
+                  });
                   });
                 });
                 });
