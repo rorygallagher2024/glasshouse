@@ -127,12 +127,14 @@ jobs:
       # pid file and by pattern across every process it can see. The runners
       # that stopped answering last showed it running, alone or beside the
       # server start-up. In a process namespace of its own it sees and can
-      # stop only its own.
+      # stop only its own. bash is its process 1, kept there by the command
+      # after node, as it reaps the orphans the test's killed servers leave,
+      # which node would leave as zombies that still look alive.
       - name: tvwebctl, in a process namespace of its own
         run: |
           sudo unshare --pid --fork --mount-proc \
             setpriv --reuid="$(id -u)" --regid="$(id -g)" --clear-groups \
-            env "PATH=$PATH" "HOME=$HOME" node test/test-tvwebctl.js
+            env "PATH=$PATH" "HOME=$HOME" bash -c 'node test/test-tvwebctl.js; exit $?'
       - name: Memory kills, where the unit tests failed
         if: failure()
         run: sudo dmesg | grep -iE 'out of memory|oom-kill|killed process' || echo 'No memory kills.'
