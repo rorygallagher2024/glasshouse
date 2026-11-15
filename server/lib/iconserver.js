@@ -12,6 +12,7 @@ var url = require('url');
 var listenDualStack = require('./util').listenDualStack;
 var localAddress4 = require('./util').localAddress4;
 var hostPort = require('./util').hostPort;
+var toBuffer = require('./util').toBuffer;
 
 // A leading dot is refused as well, so '.' and '..' never reach a path join.
 var APP_ID_RE = /^[A-Za-z0-9_-][A-Za-z0-9._-]{0,127}$/;
@@ -91,7 +92,7 @@ function sendLogo(req, res, file) {
     if (!t) return notFound(res);
     var svg = '<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="512" height="512" viewBox="0 0 100 100">' +
       '<image x="0" y="0" width="100" height="100" preserveAspectRatio="xMidYMid meet" xlink:href="data:' + t + ';base64,' + buf.toString('base64') + '"/></svg>';
-    var body = new Buffer(svg, 'utf8');
+    var body = toBuffer(svg, 'utf8');
     var headers = { 'Content-Type': 'image/svg+xml', 'Content-Length': body.length, 'Cache-Control': 'public, max-age=3600' };
     res.writeHead(200, headers);
     res.end(req.method === 'HEAD' ? undefined : body);
