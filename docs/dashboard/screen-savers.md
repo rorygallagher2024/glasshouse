@@ -25,7 +25,7 @@ A firmware update restores the LG default.
 
 ### Video
 
-Plays the muted video playlist configured under **Home → Background → Video**. Aerial `entries.json` playlists include their timed points of interest as captions. The same list is shared with Glasshouse Home; the screen saver is unavailable until at least one usable video is saved. The playlist repeats in order or random order as configured there, and the clock, date, weather and captions are shown, placed and styled as set there.
+Plays the muted video playlist configured under **Home → Background → Video**. Aerial `entries.json` playlists include their timed points of interest as captions. The same list is shared with Glasshouse Home; the screen saver is unavailable until at least one usable video is saved. The playlist repeats in order or random order as configured there, and its captions are placed and styled as set there. With Video chosen, this tab sets the rest of what shows over it: the clock, date, weather and captions can each be switched off, the clock and weather placed in any corner, made one of four sizes and set in Outfit or Manrope, the date, weather and captions set in either, and all of it given one text colour. **Use the default look** puts these back as Glasshouse Home has them. Weather from Open-Meteo is credited in the corner, as on Home.
 
 ### Clock
 

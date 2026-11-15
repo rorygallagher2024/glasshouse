@@ -1185,6 +1185,8 @@ function screensaverList() {
       // Optional value color selection for savers declaring "color" in uses.
       color: hasColor ? screensaverColor(e) : undefined,
       colors: hasColor ? screensaverColorOptions() : undefined,
+      // The Video saver's clock, weather and captions, kept with Home's playlist.
+      videoStyle: e.id === 'video' ? homeWallpapers.videoSources().style : undefined,
       // Home Assistant entities declared by the saver, with effective overrides.
       entities: e.entities ? Object.keys(e.entities).map(function (k) {
         var lbl = k.replace(/_/g, ' ').replace(/\b\w/g, function (c) { return c.toUpperCase(); });

@@ -976,6 +976,21 @@
     <select class="pill-sel ss-sel" id="ss-color" aria-labelledby="ss-color-lbl ss-color" onchange="pickSsColor(this.value)"></select>
   </div>
 
+  <!-- The Video saver's details over the video, kept with Home's playlist -->
+  <div class="ss-level-row" id="ss-video-row" hidden>
+    <div class="ss-level-lbl" data-t="ss.video.shown">Shown over the video</div>
+    <div class="ss-pool-box ss-video-box" id="ss-video-show"></div>
+    <div class="ss-level-lbl ss-video-lbl" id="ss-video-info-lbl" data-t="ss.video.info">Clock and weather</div>
+    <select class="pill-sel ss-sel" id="ss-video-info-position" aria-labelledby="ss-video-info-lbl ss-video-info-position" onchange="ssVideoStyle('infoPosition', this.value)"></select>
+    <select class="pill-sel ss-sel" id="ss-video-info-size" aria-labelledby="ss-video-info-lbl ss-video-info-size" onchange="ssVideoStyle('infoSize', Number(this.value))"></select>
+    <select class="pill-sel ss-sel" id="ss-video-clock-font" aria-labelledby="ss-video-info-lbl ss-video-clock-font" onchange="ssVideoStyle('clockFont', this.value)"></select>
+    <div class="ss-level-lbl ss-video-lbl" id="ss-video-text-lbl" data-t="ss.video.text">Date, weather and captions</div>
+    <select class="pill-sel ss-sel" id="ss-video-text-font" aria-labelledby="ss-video-text-lbl ss-video-text-font" onchange="ssVideoStyle('textFont', this.value)"></select>
+    <label class="ss-video-colour"><input type="color" id="ss-video-text-color" onchange="ssVideoStyle('textColor', this.value)"> <span data-t="ss.video.colour">Text colour</span></label>
+    <div class="ss-pool-actions ss-video-actions"><button type="button" class="ss-pool-btn" id="ss-video-reset" onclick="ssVideoReset()" data-t="ss.video.reset">Use the default look</button></div>
+    <div class="pv-sub" data-t="ss.video.where">The videos, their order and the captions are set on the Home tab, under Background.</div>
+  </div>
+
   <div class="ss-level-row" id="ss-entities-row" hidden>
     <div class="ss-level-lbl" data-t="ss.entities">Home Assistant Entities</div>
     <div id="ss-entities-list"></div>
@@ -1648,39 +1663,17 @@
       </div>
       <div class="prot-status"><button type="button" class="pill idle" id="home-video-shuffle" onclick="homeVideoShuffle()">&mdash;</button></div>
     </div>
-    <div class="sub" style="margin-top:18px" data-t="home.video.overlayHelp">What shows over the video. The clock, date and weather are on the Video screen saver; captions are on it and on Glasshouse Home.</div>
-    <div class="prot-row">
-      <div class="prot-main"><div class="prot-title" data-t="home.video.clock">Clock</div></div>
-      <div class="prot-status"><button type="button" class="pill idle" id="home-video-show-clock" onclick="homeVideoShow('showClock')">&mdash;</button></div>
-    </div>
-    <div class="prot-row">
-      <div class="prot-main"><div class="prot-title" data-t="home.video.date">Date</div></div>
-      <div class="prot-status"><button type="button" class="pill idle" id="home-video-show-date" onclick="homeVideoShow('showDate')">&mdash;</button></div>
-    </div>
-    <div class="prot-row">
-      <div class="prot-main"><div class="prot-title" data-t="home.video.weather">Weather</div></div>
-      <div class="prot-status"><button type="button" class="pill idle" id="home-video-show-weather" onclick="homeVideoShow('showWeather')">&mdash;</button></div>
-    </div>
     <div class="prot-row">
       <div class="prot-main">
         <div class="prot-title" data-t="home.video.captions">Captions</div>
-        <div class="prot-desc" data-t="home.video.captionsDesc">The scene’s name, and what is in view as the video plays.</div>
+        <div class="prot-desc" data-t="home.video.captionsDesc">The scene’s name, and what is in view as the video plays: on Glasshouse Home, in its text colour, and on the Video screen saver, where its clock and weather are set.</div>
       </div>
       <div class="prot-status"><button type="button" class="pill idle" id="home-video-show-captions" onclick="homeVideoShow('showCaptions')">&mdash;</button></div>
-    </div>
-    <div class="set"><div class="lbl" data-t="home.video.infoPosition">Clock and weather</div>
-      <div class="btns wall-choice" id="home-video-info-position"></div>
-      <div class="btns wall-choice" id="home-video-info-size"></div>
-      <div class="btns wall-choice" id="home-video-clock-font"></div>
     </div>
     <div class="set"><div class="lbl" data-t="home.video.captionPosition">Captions</div>
       <div class="btns wall-choice" id="home-video-caption-position"></div>
       <div class="btns wall-choice" id="home-video-caption-size"></div>
-      <div class="btns wall-choice" id="home-video-text-font"></div>
-    </div>
-    <div class="home-custom">
-      <label><input type="color" id="home-video-text-color" onchange="homeVideoStyleSet({ textColor: this.value })"> <span data-t="home.video.textColor">Text colour</span></label>
-      <button type="button" id="home-video-style-reset" onclick="homeVideoStyleReset()" data-t="home.video.styleReset">Use the default look</button>
+      <div class="btns wall-choice" id="home-video-caption-font"></div>
     </div>
   </div>
   <div class="set home-dark"><div class="lbl"><span data-t="home.darkening">Darkening</span> &middot; <span id="home-dark-lbl" class="num">&mdash;</span></div>

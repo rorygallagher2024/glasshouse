@@ -64,7 +64,7 @@ var VIDEO_HEX = /^#[0-9a-f]{6}$/i;
 
 function defaultVideoStyle() {
   return { showClock: true, showDate: true, showWeather: true, showCaptions: true,
-    infoPosition: 'top-right', captionPosition: 'top-left', clockFont: 'Outfit', textFont: 'Manrope',
+    infoPosition: 'top-right', captionPosition: 'top-left', clockFont: 'Outfit', textFont: 'Manrope', captionFont: 'Manrope',
     textColor: '#ece7df', infoSize: 100, captionSize: 32 };
 }
 
@@ -79,6 +79,7 @@ function readVideoStyle(value, base) {
   if (VIDEO_POSITIONS.indexOf(value.captionPosition) !== -1) out.captionPosition = value.captionPosition;
   if (VIDEO_FONTS.indexOf(value.clockFont) !== -1) out.clockFont = value.clockFont;
   if (VIDEO_FONTS.indexOf(value.textFont) !== -1) out.textFont = value.textFont;
+  if (VIDEO_FONTS.indexOf(value.captionFont) !== -1) out.captionFont = value.captionFont;
   if (typeof value.textColor === 'string' && VIDEO_HEX.test(value.textColor)) out.textColor = value.textColor;
   if (typeof value.infoSize === 'number' && isFinite(value.infoSize)) out.infoSize = Math.max(48, Math.min(144, Math.round(value.infoSize)));
   if (typeof value.captionSize === 'number' && isFinite(value.captionSize)) out.captionSize = Math.max(18, Math.min(56, Math.round(value.captionSize)));

@@ -1178,13 +1178,22 @@ const HOME_ANIMS = ['waves', 'particles', 'aquarium', 'aurora', 'glow', 'stars',
 const homeBgLast = { scene: 'waves', set: 'landscape' };
 let homeBgSelectedKind = null;
 // The Video wallpaper's and screen saver's own look, as lib/home-wallpapers keeps it.
+// The Screen savers tab sets the rest of it (ui/screensavers.js).
 const HOME_VIDEO_STYLE = { showClock: true, showDate: true, showWeather: true, showCaptions: true,
-  infoPosition: 'top-right', captionPosition: 'top-left', clockFont: 'Outfit', textFont: 'Manrope',
+  infoPosition: 'top-right', captionPosition: 'top-left', clockFont: 'Outfit', textFont: 'Manrope', captionFont: 'Manrope',
   textColor: '#ece7df', infoSize: 100, captionSize: 32 };
-const HOME_VIDEO_SHOW = [['showClock', 'home-video-show-clock'], ['showDate', 'home-video-show-date'],
-  ['showWeather', 'home-video-show-weather'], ['showCaptions', 'home-video-show-captions']];
 // Sizes in Home's 1920-wide pixels; 100 and 32 are Home's own clock and caption.
 const HOME_VIDEO_SIZES = { infoSize: [72, 86, 100, 128], captionSize: [24, 32, 40, 48] };
+
+// The four corners, sizes and faces, as both tabs offer them.
+function homeVideoChoices() {
+  return {
+    corners: [['top-left', t('home.video.topLeft', 'Top left')], ['top-right', t('home.video.topRight', 'Top right')],
+      ['bottom-left', t('home.video.bottomLeft', 'Bottom left')], ['bottom-right', t('home.video.bottomRight', 'Bottom right')]],
+    sizes: [t('home.video.small', 'Small'), t('home.video.medium', 'Medium'), t('home.video.large', 'Large'), t('home.video.extraLarge', 'Extra large')],
+    fonts: [['Outfit', 'Outfit'], ['Manrope', 'Manrope']]
+  };
+}
 
 function homeVideoStyle() {
   return Object.assign({}, HOME_VIDEO_STYLE, (homeStatus && homeStatus.wallpapers && homeStatus.wallpapers.videoStyle) || {});
@@ -1223,10 +1232,6 @@ function homeVideoStyleSet(patch) {
   homeVideoOptions({ videoStyle: patch });
 }
 
-function homeVideoStyleReset() {
-  homeVideoOptions({ videoStyle: HOME_VIDEO_STYLE });
-}
-
 function renderHomeVideo(busy) {
   const walls = homeStatus.wallpapers || {}, style = homeVideoStyle();
   const videoUrls = q('home-video-urls');
@@ -1241,26 +1246,16 @@ function renderHomeVideo(busy) {
     el.disabled = busy;
   };
   pill(q('home-video-shuffle'), !!walls.videoShuffle);
-  HOME_VIDEO_SHOW.forEach(([key, id]) => pill(q(id), style[key] !== false));
-  const corners = [['top-left', t('home.video.topLeft', 'Top left')], ['top-right', t('home.video.topRight', 'Top right')],
-    ['bottom-left', t('home.video.bottomLeft', 'Bottom left')], ['bottom-right', t('home.video.bottomRight', 'Bottom right')]];
-  const sizeNames = [t('home.video.small', 'Small'), t('home.video.medium', 'Medium'), t('home.video.large', 'Large'), t('home.video.extraLarge', 'Extra large')];
-  const fonts = [['Outfit', 'Outfit'], ['Manrope', 'Manrope']];
+  pill(q('home-video-show-captions'), style.showCaptions !== false);
+  const { corners, sizes, fonts } = homeVideoChoices();
   const choices = (id, key, options) => {
     q(id).innerHTML = options.map(([value, label]) =>
       `<button type="button" class="${style[key] === value ? 'on' : ''}" ${busy ? 'disabled' : ''} aria-pressed="${style[key] === value}"
         onclick="homeVideoStyleSet(${esc(JSON.stringify({ [key]: value }))})">${esc(label)}</button>`).join('');
   };
-  choices('home-video-info-position', 'infoPosition', corners);
-  choices('home-video-info-size', 'infoSize', HOME_VIDEO_SIZES.infoSize.map((size, i) => [size, sizeNames[i]]));
-  choices('home-video-clock-font', 'clockFont', fonts);
   choices('home-video-caption-position', 'captionPosition', corners);
-  choices('home-video-caption-size', 'captionSize', HOME_VIDEO_SIZES.captionSize.map((size, i) => [size, sizeNames[i]]));
-  choices('home-video-text-font', 'textFont', fonts);
-  const colour = q('home-video-text-color');
-  if (document.activeElement !== colour) colour.value = style.textColor;
-  colour.disabled = busy;
-  q('home-video-style-reset').disabled = busy;
+  choices('home-video-caption-size', 'captionSize', HOME_VIDEO_SIZES.captionSize.map((size, i) => [size, sizes[i]]));
+  choices('home-video-caption-font', 'captionFont', fonts);
 }
 
 function homeBgKind() {

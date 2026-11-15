@@ -11,7 +11,7 @@ fs.mkdirSync(dir);
 wallpapers.init(dir);
 
 var defaultStyle = { showClock: true, showDate: true, showWeather: true, showCaptions: true,
-  infoPosition: 'top-right', captionPosition: 'top-left', clockFont: 'Outfit', textFont: 'Manrope',
+  infoPosition: 'top-right', captionPosition: 'top-left', clockFont: 'Outfit', textFont: 'Manrope', captionFont: 'Manrope',
   textColor: '#ece7df', infoSize: 100, captionSize: 32 };
 var style = { showClock: false, showWeather: true, infoPosition: 'bottom-right', captionPosition: 'bottom-left',
   clockFont: 'Manrope', textFont: 'Outfit', textColor: '#ffcc88', infoSize: 118, captionSize: 40 };

@@ -5047,9 +5047,9 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     el.style.top = bottom ? '' : '4%';
     el.style.bottom = bottom ? '4%' : '';
     el.style.textAlign = right ? 'right' : 'left';
-    el.style.fontFamily = style.textFont === 'Outfit' ? 'Outfit,sans-serif' : 'Manrope,sans-serif';
+    el.style.fontFamily = style.captionFont === 'Outfit' ? 'Outfit,sans-serif' : 'Manrope,sans-serif';
+    // In Home's text colour, from its Colours, as the rest of Home is.
     el.style.fontSize = (Number(style.captionSize) || 32) + 'px';
-    el.style.color = /^#[0-9a-f]{6}$/i.test(style.textColor || '') ? style.textColor : '#ece7df';
     el.style.display = style.showCaptions === false ? 'none' : '';
   }
 
@@ -5101,8 +5101,14 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
         playWallVideo(nextWallVideoIndex(), slot.strength);
       } else if (wallVideoEl) {
         wallVideoEl.style.opacity = slot.strength;
-        if (wallVideoNeedsRestart) playWallVideo(wallVideoIndex, slot.strength);
-        else if (wallVideoEl.paused) wallVideoEl.play();
+        // Back from the screen saver, its player can still have the decoder: a
+        // play refused or a picture that never comes is tried again here, at
+        // the heartbeat, rather than leaving Home black.
+        if (wallVideoNeedsRestart || (!wallVideoPlaying && Date.now() - wallVideoLoadedAt > WALL_VIDEO_START_MS)) playWallVideo(wallVideoIndex, slot.strength);
+        else if (wallVideoEl.paused) {
+          var resumed = wallVideoEl.play();
+          if (resumed && typeof resumed.catch === 'function') resumed.catch(function () {});
+        }
       }
       for (var v = 0; v < videoLayers.length; v++) { videoLayers[v].style.opacity = 0; videoLayers[v].style.backgroundImage = ''; }
       wallShown = null;
@@ -5156,7 +5162,8 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     if ($('wall-caption')) $('wall-caption').textContent = '';
     if (wallVideoEl.getAttribute('src') === null) return;
     wallVideoNeedsRestart = true;
-    wallVideoEl.oncanplay = wallVideoEl.onerror = wallVideoEl.onended = wallVideoEl.ontimeupdate = null;
+    wallVideoEl.oncanplay = wallVideoEl.onplaying = wallVideoEl.onerror = wallVideoEl.onended = wallVideoEl.ontimeupdate = null;
+    wallVideoPlaying = false;
     try { wallVideoEl.pause(); } catch (e) {}
     wallVideoEl.removeAttribute('src');
     try { wallVideoEl.load(); } catch (e) {}
@@ -5174,7 +5181,9 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     setTimeout(function () { if (!previewHoldsVideo()) updateWall(); }, 0);
   }
 
-  var wallVideoFailures = 0, wallVideoOrder = [], wallVideoOrderAt = 0;
+  var wallVideoFailures = 0, wallVideoOrder = [], wallVideoOrderAt = 0, wallVideoLoadedAt = 0, wallVideoPlaying = false;
+  // Room for a 4K stream over the network to reach its first frame.
+  var WALL_VIDEO_START_MS = 20000;
   function playWallVideo(index, strength) {
     if (!wallVideoEl || !wallVideoSources.length) return;
     wallVideoNeedsRestart = false;
@@ -5182,6 +5191,9 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     var video = wallVideoEl, item = wallVideoItems[wallVideoIndex] || { url: wallVideoSources[wallVideoIndex] }, source = item.url;
     video.style.opacity = 0;
     video.muted = true;
+    wallVideoLoadedAt = Date.now();
+    wallVideoPlaying = false;
+    video.onplaying = function () { wallVideoPlaying = true; };
     video.oncanplay = function () {
       wallVideoFailures = 0;
       video.style.opacity = strength;
@@ -5199,7 +5211,10 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     };
     video.onerror = function () {
       video.style.opacity = 0;
-      if (++wallVideoFailures < wallVideoSources.length) playWallVideo(nextWallVideoIndex(), strength);
+      if (++wallVideoFailures < wallVideoSources.length) return playWallVideo(nextWallVideoIndex(), strength);
+      // Every one failed in a row: the next heartbeat tries again.
+      wallVideoFailures = 0;
+      wallVideoNeedsRestart = true;
     };
     video.pause();
     video.src = source;

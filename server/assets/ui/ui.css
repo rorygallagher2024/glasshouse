@@ -2036,6 +2036,11 @@ button.home-look:active{background:none}
 .home-video-urls{display:block;width:100%;min-height:120px;margin-top:10px;padding:12px 14px;border:1px solid var(--edge);border-radius:6px;
   background:transparent;color:var(--w100);font:13px/1.6 ui-monospace,SFMono-Regular,Menlo,monospace;resize:vertical}
 #home-bg-video .set .wall-choice+.wall-choice{margin-top:8px}
+.ss-video-box{max-height:none}
+.ss-video-lbl{margin-top:20px}
+.ss-video-colour{display:flex;align-items:center;gap:10px;margin-top:14px;color:var(--w80);font-size:13px}
+.ss-video-colour input[type=color]{width:40px;height:28px;padding:0;border:1px solid var(--edge);border-radius:6px;background:none}
+.ss-video-actions{margin:14px 0 8px}
 
 /* Cross-panel search: opened from the sidebar or keyboard, so it does not
    occupy space in the dashboard itself. */
