@@ -234,7 +234,10 @@ before its first read.
 
 `test-luna-absent.js` checks that a failed call to an LG service missing from the TV's service files makes later calls to it fail at once, for 10 minutes, while listed services and homebrew ones keep being called, and that a renamed service the TV lists only by its legacy name moves to that name after no answer under the newer one, rather than being skipped. `test-luna-missing-method.js` checks that a method the service answers "Unknown method" for is answered with that refusal, without a call, for 10 minutes, each caller getting its own copy, that the service's other methods and other refusals are still asked, and that it is asked again after the 10 minutes.
 
-`test-luna-slow.js` checks that the tuner's channel list, 4.6 MB and 3.6 s on a satellite TV, is given a longer wait and a larger reply limit and is asked for without `-f`, while other calls keep their 2 s wait and `-f`.
+`test-luna-slow.js` checks that the tuner's channel list, 4.6 MB and 3.6 s on a
+satellite TV, is given a longer wait and a larger reply limit and is asked for
+without `-f`. A simulated 2.83 s 4K capture returns its result with a 15 s limit
+under both service names, while ordinary calls keep their 2 s wait and `-f`.
 
 `test-weather.js` checks Open-Meteo's weather codes against the badge's conditions by day and night, place searches kept to usable results at four decimals, an unknown language asked in English, and °F asked for only for a place in a country that uses it. `test-home.js` checks that the internet weather is asked for only with a place chosen and the screen on, not again within 30 minutes, kept across a restart and through a failed request, that Home Assistant's pushes are not shown while it is chosen, and that a Weather switch saved off before the choice stays off.
 

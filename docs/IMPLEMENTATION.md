@@ -2126,7 +2126,9 @@ to 960x540 when they are omitted. Both capture producers write
 `/tmp/capture_<timestamp>.png`, using a UTC ISO timestamp with milliseconds
 and colons and dots replaced by hyphens.
 Files are lost on restart. A failed capture removes its partial output;
-success requires a non-empty regular file. Dashboard captures are serialized.
+success requires a non-empty regular file. Dashboard captures are serialized
+and allow 15 seconds for the result, since 4K PNG encoding can exceed the
+usual two-second Luna wait.
 
 The existing Luna service map falls back to `com.webos.service.tv.capture`
 only for a missing newer service, remembering the legacy name even when its

@@ -230,7 +230,12 @@ var MAX_REPLY = 4 * 1024 * 1024;
  * read. It is asked for without -f, whose indenting made the B8's 146
  * channels 385 KB rather than 226 KB.
  */
-var SLOW_CALLS = { 'com.webos.service.apiadapter/tv/getChannelList': true };
+var SLOW_CALLS = {
+  'com.webos.service.apiadapter/tv/getChannelList': true,
+  // A 4K PNG took 2.83 s, beyond the usual 2 s wait.
+  'com.webos.service.capture/executeOneShot': true,
+  'com.webos.service.tv.capture/executeOneShot': true
+};
 var WAIT_MS = 2000;
 var SLOW_WAIT_MS = 15000;
 var SLOW_MAX_REPLY = 32 * 1024 * 1024;

@@ -258,7 +258,8 @@ in the TV app.
 
 The screenshot capture module writes PNGs only under `/tmp/capture_*.png`,
 removes partial output after failed captures, and changes no persistent TV
-settings. Captures disappear when the TV restarts.
+settings. Captures disappear when the TV restarts. Capture calls allow 15 seconds
+for PNG encoding to finish.
 
 The screenshot API lists and reads these temporary images behind dashboard
 authentication. Taking a capture, deleting a selected image or clearing all

@@ -1,5 +1,5 @@
 /**
- * test/test-luna-slow.js - A satellite channel list fits within luna-send's limits
+ * test/test-luna-slow.js - Slow channel lists and captures fit within luna-send's limits
  */
 
 var assert = require('assert');
@@ -8,7 +8,10 @@ var child = require('child_process');
 var runs = [];
 child.execFile = function (file, args, opts, cb) {
   runs.push({ args: args, opts: opts });
-  process.nextTick(function () { cb(null, '{"returnValue":true}'); });
+  // A measured 4K PNG took 2.83 s; luna-send exits without a reply at its limit.
+  var capture = /\/executeOneShot$/.test(args[args.length - 2]);
+  var reply = capture && wait(args) < 2830 ? '' : '{"returnValue":true}';
+  process.nextTick(function () { cb(null, reply); });
 };
 
 var luna = require('../server/lib/luna');
@@ -33,5 +36,15 @@ luna.call('com.webos.service.apiadapter/tv/getChannelList', {}, function () {
     assert.strictEqual(wait(runs[1].args), 2000, 'other calls wait longer too');
     assert.notStrictEqual(runs[1].args.indexOf('-f'), -1, 'other calls lose -f');
     console.log('  ✓ other calls keep their wait');
+
+    ['com.webos.service.capture/executeOneShot', 'com.webos.service.tv.capture/executeOneShot'].forEach(function (uri) {
+      luna.call(uri, { method: 'DISPLAY', format: 'PNG', width: 3840, height: 2160 }, function (result) {
+        var captureRun = runs.filter(function (r) { return r.args[r.args.length - 2] === 'luna://' + uri; })[0];
+        assert.deepEqual(result, { returnValue: true }, 'the 4K capture reply was lost');
+        assert.strictEqual(wait(captureRun.args), 15000, 'capture calls use the existing slow-call wait');
+        assert.ok(captureRun.opts.timeout > wait(captureRun.args), 'node kills the capture call before its wait is over');
+        console.log('  ✓ ' + uri + ' waits for the 4K capture result');
+      });
+    });
   });
 });
