@@ -35,12 +35,14 @@ body{font-family:'Manrope',sans-serif;color:#ece7df;-webkit-font-smoothing:antia
   -webkit-animation:drift 180s steps(360) infinite alternate;animation:drift 180s steps(360) infinite alternate}
 #wall video{position:absolute;left:0;top:0;width:100%;height:100%;object-fit:cover;opacity:0;
   -webkit-transition:opacity 2.4s ease;transition:opacity 2.4s ease}
-#wall-caption{position:absolute;left:4%;top:4%;z-index:4;width:34%;text-align:left;color:#ece7df;
+/* The caption sits above the scrim, after it in the page, with no z-index of its
+   own: Home's panels drawn later (search, the guide, adding channels) cover it. */
+#wall-caption{position:absolute;left:4%;top:4%;width:34%;text-align:left;color:#ece7df;
   font-family:'Manrope',sans-serif;font-size:1.65vw;line-height:1.35;white-space:normal;overflow-wrap:break-word;
   text-shadow:0 2px 8px #000,0 0 18px #000;pointer-events:none}
 /* At rest while covered: the wallpaper is not drawn or animated under the screen
    saver or another app. */
-html.resting #wall{visibility:hidden}
+html.resting #wall,html.resting #wall-caption{visibility:hidden}
 html.resting #wall .layer{-webkit-animation-play-state:paused;animation-play-state:paused}
 @-webkit-keyframes drift{from{-webkit-transform:scale(1) translate(0,0)}to{-webkit-transform:scale(1.04) translate(-1.2%,-.8%)}}
 @keyframes drift{from{transform:scale(1) translate(0,0)}to{transform:scale(1.04) translate(-1.2%,-.8%)}}
@@ -486,7 +488,7 @@ html.resting #wall .layer{-webkit-animation-play-state:paused;animation-play-sta
    stream is not opened twice. The band and the channel list are drawn over
    it and go when not in use: nothing still stays on the panel. */
 .playing #now{z-index:4}
-.playing #rows,.playing #rail,.playing #wall,.playing #scrim,
+.playing #rows,.playing #rail,.playing #wall,.playing #wall-caption,.playing #scrim,
 .playing #when,.playing #source,.playing #plate,.playing #weather,.playing #wxCredit{visibility:hidden}
 #preview.full{position:absolute;left:0;top:0;width:1920px;height:1080px;margin:0;box-shadow:none;
   -webkit-transform-origin:0 0;transform-origin:0 0}
@@ -643,8 +645,9 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
 </head>
 <body>
 <div id="stage" class="no-search no-clock">
-  <div id="wall"><canvas id="anim" width="0" height="0"></canvas><div class="layer"></div><div class="layer"></div><video id="wallVideo" muted playsinline></video><div id="wall-caption"></div></div>
+  <div id="wall"><canvas id="anim" width="0" height="0"></canvas><div class="layer"></div><div class="layer"></div><video id="wallVideo" muted playsinline></video></div>
   <div id="scrim"></div>
+  <div id="wall-caption"></div>
 
   <section id="now">
     <div id="when">
