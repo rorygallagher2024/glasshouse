@@ -212,6 +212,13 @@ its own, `lib/iptv-worker.js` with its readers in `lib/iptv-parse.js`:
   seven days ahead, 2,500 a channel, descriptions cut at 240 characters.
   The tuner is read one request at a time with a pause between, as Enigma2
   becomes unresponsive under many rapid requests.
+  A tuner whose stream port asks for a login (`streamLogin`) is played through
+  `/api/iptv/relay`, for the TV's own Home only: a `<video>` cannot send a
+  login and drops one written into its URL. The server asks the tuner with
+  Basic auth and pipes the transport stream through unread. Only the tuner's
+  own host name is asked, an answer other than 200 is a 502 (`login` for a
+  401 or 403), a silent tuner is dropped after 20 s, and the recording that
+  lets Home pause is not used for such a channel.
 - **Schedule.** A playlist is read daily between 03:00 and 05:00, the guide
   every six hours (an Xtream login's `xmltv.php` once the lineup goes beyond
   the row's favourites, and its short EPG for the favourites every 30

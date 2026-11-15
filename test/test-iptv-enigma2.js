@@ -11,6 +11,7 @@ var fs = require('fs');
 var os = require('os');
 var path = require('path');
 var http = require('http');
+var urlLib = require('url');
 var toBuffer = require('../server/lib/util').toBuffer;
 
 console.log('Running test-iptv-enigma2.js ...');
@@ -42,6 +43,21 @@ function decodeRef(u) {
   return m ? decodeURIComponent(m[1]) : '';
 }
 
+// The tuner's stream port: a transport stream behind the same login, and what it was asked for.
+var streamHits = [];
+var TS_BYTES = toBuffer(new Array(188 * 40 + 1).join('G'), 'utf8');
+var streamer = http.createServer(function (req, res) {
+  var auth = /^Basic (.+)$/.exec(req.headers.authorization || '');
+  streamHits.push({ path: req.url, auth: !!auth });
+  if (!auth || toBuffer(auth[1], 'base64').toString('utf8') !== USER + ':' + PASS) {
+    res.writeHead(401, { 'WWW-Authenticate': 'Basic realm="streaming"' });
+    return res.end();
+  }
+  res.writeHead(200, { 'Content-Type': 'video/MP2T' });
+  res.end(TS_BYTES);
+});
+var streamBase = '';
+
 var receiver = http.createServer(function (req, res) {
   var base = 'http://127.0.0.1:' + receiver.address().port;
   var u = req.url;
@@ -66,11 +82,11 @@ var receiver = http.createServer(function (req, res) {
     res.writeHead(200, { 'Content-Type': 'audio/x-mpegurl' });
     if (ref === POLSKIE) {
       return res.end('#EXTM3U \n' +
-        '#EXTVLCOPT:http-reconnect=true\n#EXTINF:-1 tvg-chno="4408" tvg-logo="' + base + '/picon/tvp hd.png" tvg-id="' + TVP_HD + '",TVP HD\n#EXTVLCOPT:program=4408\nhttp://127.0.0.1:8001/' + TVP_HD + '\n' +
-        '#EXTINF:-1 tvg-id="1:64:1:0:0:0:0:0:0:0:",--- News ---\nhttp://127.0.0.1:8001/1:64:1:0:0:0:0:0:0:0:\n' +
-        '#EXTINF:-1 tvg-id="' + TVN + '" tvg-logo="' + base + '/picon/tvn.png",TVN\nhttp://127.0.0.1:8001/' + TVN + '\n');
+        '#EXTVLCOPT:http-reconnect=true\n#EXTINF:-1 tvg-chno="4408" tvg-logo="' + base + '/picon/tvp hd.png" tvg-id="' + TVP_HD + '",TVP HD\n#EXTVLCOPT:program=4408\n' + streamBase + '/' + TVP_HD + '\n' +
+        '#EXTINF:-1 tvg-id="1:64:1:0:0:0:0:0:0:0:",--- News ---\n' + streamBase + '/1:64:1:0:0:0:0:0:0:0:\n' +
+        '#EXTINF:-1 tvg-id="' + TVN + '" tvg-logo="' + base + '/picon/tvn.png",TVN\n' + streamBase + '/' + TVN + '\n');
     }
-    return res.end('#EXTM3U \n#EXTINF:-1 tvg-id="' + SPORT_ONE + '" tvg-logo="' + base + '/picon/sport one.png",Sport One\nhttp://127.0.0.1:8001/' + SPORT_ONE + '\n');
+    return res.end('#EXTM3U \n#EXTINF:-1 tvg-id="' + SPORT_ONE + '" tvg-logo="' + base + '/picon/sport one.png",Sport One\n' + streamBase + '/' + SPORT_ONE + '\n');
   }
   if (/^\/picon\//.test(u)) {
     if (decodeURIComponent(u) !== '/picon/tvp hd.png') { res.writeHead(404); return res.end(); }
@@ -156,6 +172,8 @@ function rmTree(p) {
 function finish() {
   iptv.stop();
   receiver.close();
+  streamer.close();
+  try { relayServer.close(); } catch (e) {}
   rmTree(stateDir);
   console.log('ALL test-iptv-enigma2.js assertions passed!\n');
   process.exit(0);
@@ -221,7 +239,7 @@ step('a channel numbered in its bouquet, with the receiver\'s stream URL and a p
         var item = iptv.rowItems()[0];
         var logoId = /id=([0-9a-f]+)/.exec(item.logo)[1];
         assert.ok(iptv.logoPath(pl, logoId), 'the picon was fetched with the login and kept');
-        assert.equal(iptv.streamUrl(pl, c.key).url, 'http://127.0.0.1:8001/' + TVP_HD);
+        assert.equal(iptv.streamUrl(pl, c.key).url, streamBase + '/' + TVP_HD);
         done();
       });
     });
@@ -261,7 +279,7 @@ step('a channel the receiver has no guide for does not break the others', functi
 function playOnce(cb) {
   var zaps = hits.zap.length;
   iptv.playUrl(pl, tvp.key, false, function (stream) {
-    assert.equal(stream.url, 'http://127.0.0.1:8001/' + TVP_HD);
+    assert.equal(stream.url, streamBase + '/' + TVP_HD);
     cb(hits.zap.length - zaps);
   });
 }
@@ -303,6 +321,59 @@ step('a free tuner is used as it is, and a recording or another stream is never 
   });
 });
 
+var relayServer = http.createServer(function (req, res) {
+  var q = urlLib.parse(req.url, true).query;
+  iptv.relay(String(q.pl || ''), String(q.key || ''), req, res);
+});
+function viaRelay(cb) {
+  var path = '/api/iptv/relay?pl=' + encodeURIComponent(pl) + '&key=' + encodeURIComponent(tvp.key);
+  http.get({ host: '127.0.0.1', port: relayServer.address().port, path: path, agent: false }, function (res) {
+    var chunks = [];
+    res.on('data', function (c) { chunks.push(c); });
+    res.on('end', function () { cb(res.statusCode, Buffer.concat(chunks)); });
+  });
+}
+
+step('a stream is not relayed unless the owner says the tuner\'s stream port wants a login', function (done) {
+  relayServer.listen(0, '127.0.0.1', function () {
+    viaRelay(function (status) {
+      assert.equal(status, 404);
+      assert.equal(streamHits.length, 0, 'the tuner was not asked');
+      iptv.playlistsAction({ action: 'edit', id: pl, streamLogin: true }, function (r) {
+        assert.equal(r.ok, true);
+        wait(function () { var p = playlistOf(pl); return idle() && p.ready && p.streamLogin === true; }, function () { done(); });
+      });
+    });
+  });
+});
+
+step('with it on, Home is given the relay and the tuner is asked with the login', function (done) {
+  iptv.playUrl(pl, tvp.key, true, function (stream) {
+    assert.ok(/^\/api\/iptv\/relay\?pl=/.test(stream.url), 'the relay, not the tuner\'s address');
+    assert.equal(stream.format, 'ts');
+    assert.ok(stream.url.indexOf('127.0.0.1') === -1 && stream.url.indexOf(PASS) === -1);
+    viaRelay(function (status, body) {
+      assert.equal(status, 200);
+      assert.equal(body.length, TS_BYTES.length);
+      assert.deepEqual(streamHits[streamHits.length - 1], { path: '/' + TVP_HD, auth: true });
+      done();
+    });
+  });
+});
+
+step('a refused login on the stream port is a 502, and the password is not stuck to it', function (done) {
+  iptv.playlistsAction({ action: 'edit', id: pl, pass: 'wrong' }, function (r) {
+    assert.equal(r.ok, true);
+    viaRelay(function (status) {
+      assert.equal(status, 502);
+      iptv.playlistsAction({ action: 'edit', id: pl, pass: PASS }, function (r2) {
+        assert.equal(r2.ok, true);
+        wait(function () { var p = playlistOf(pl); return idle() && p.ready && !p.loginRefused; }, function () { done(); });
+      });
+    });
+  });
+});
+
 step('an edit keeps the login that was set, and noLogin clears it', function (done) {
   iptv.playlistsAction({ action: 'edit', id: pl, label: 'Living room' }, function (r) {
     assert.equal(r.ok, true);
@@ -330,12 +401,15 @@ step('an address and a login are checked when added', function (done) {
   });
 });
 
+streamer.listen(0, '127.0.0.1', function () {
+  streamBase = 'http://127.0.0.1:' + streamer.address().port;
 receiver.listen(0, '127.0.0.1', function () {
   address = '127.0.0.1:' + receiver.address().port;
   iptv.init({ stateDir: stateDir, clients: function () { return [CURL]; }, version: 'test', catchupMs: 0,
     onChange: function () { changes++; } });
   iptv.start();
   run(0);
+});
 });
 
 setTimeout(function () { console.error('test-iptv-enigma2.js timed out'); process.exit(1); }, 120000).unref();

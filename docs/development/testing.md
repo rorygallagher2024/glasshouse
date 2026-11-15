@@ -538,7 +538,9 @@ first request, bouquets read as groups with markers left out, a bare
 matched by service reference and cut at a week, a channel with no guide not
 breaking the others, an edit keeping or clearing the login, no address, user
 name or password in any reply, and the tuner's own takeover: a tuner showing
-live TV moved only when none is free and never one that records or streams.
+live TV moved only when none is free and never one that records or streams,
+and the relay for a tuner whose stream port wants the login (not offered
+before it is on, the login sent, a refused one a 502).
 
 `test-iptv.js` runs the server module with real worker processes and curl
 against a local provider: a playlist read and published 0600 in a 0700

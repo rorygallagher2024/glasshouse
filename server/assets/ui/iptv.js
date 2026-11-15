@@ -151,6 +151,7 @@ function homeTvFormHtml() {
   const p = editing ? homeTv.playlists.find(x => x.id === f.id) : null;
   if (f.takeOver === undefined) f.takeOver = !!(p && p.takeOver);
   if (f.noLogin === undefined) f.noLogin = false;
+  if (f.streamLogin === undefined) f.streamLogin = !!(p && p.streamLogin);
   const keep = editing ? t('home.tv.keepBlank', 'Leave blank to keep the one saved') : '';
   const field = (id, label, type, ph) => `<label class="home-tv-field"><span>${esc(label)}</span>
     <input id="${id}" type="${type}" autocomplete="off" spellcheck="false" placeholder="${esc(ph || '')}"></label>`;
@@ -163,8 +164,10 @@ function homeTvFormHtml() {
         field('home-tv-pass', t('home.tv.pass', 'Password'), 'password', keep) +
         homeTvSwitchHtml('takeOver', t('home.tv.takeOverTitle', 'When every tuner is busy, switch a tuner to the requested channel'),
           t('home.tv.takeOverDesc', 'Moves the tuner showing live TV. A tuner that is recording or streaming for someone else is never touched.')) +
+        homeTvSwitchHtml('streamLogin', t('home.tv.streamLoginTitle', 'The tuner asks for a login to play a channel'),
+          t('home.tv.streamLoginDesc', 'Sends the same login when a channel plays, through the TV, for a tuner that asks for one on its stream port. Needs a user name above.')) +
         (editing ? homeTvSwitchHtml('noLogin', t('home.tv.noLogin', 'The tuner needs no login any more'), t('home.tv.noLoginDesc', 'Remove the saved login.')) : '') +
-        `<div class="sub">${esc(t('home.tv.tunerNote', 'Reads the bouquets, channels, logos and a week of guide from the tuner’s web interface (OpenWebif). The picture streams straight from the tuner, so a tuner that asks for a login on its stream port can’t be played yet.'))}</div>`
+        `<div class="sub">${esc(t('home.tv.tunerNote', 'Reads the bouquets, channels, logos and a week of guide from the tuner’s web interface (OpenWebif). The picture streams straight from the tuner.'))}</div>`
       : f.kind === 'xtream'
       ? field('home-tv-server', t('home.tv.server', 'Server'), 'url', keep || 'http://example.host:8080') +
         field('home-tv-user', t('home.tv.user', 'User name'), 'text', keep) +
@@ -207,7 +210,7 @@ async function homeTvSave() {
   const body = { action: f.id ? 'edit' : 'add', id: f.id || undefined, kind: f.kind, label: val('home-tv-label') };
   if (f.kind === 'xtream' || f.kind === 'enigma2') { body.server = val('home-tv-server'); body.user = val('home-tv-user'); body.pass = val('home-tv-pass'); }
   else body.url = val('home-tv-url');
-  if (f.kind === 'enigma2') { body.takeOver = !!f.takeOver; if (f.noLogin) body.noLogin = true; }
+  if (f.kind === 'enigma2') { body.takeOver = !!f.takeOver; if (f.streamLogin) body.streamLogin = true; if (f.noLogin) body.noLogin = true; }
   else {
     const guide = val('home-tv-guide');
     if (guide || !f.id) body.guide = guide;

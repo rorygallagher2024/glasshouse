@@ -39,6 +39,9 @@ var crypto = require('crypto');
 var lineupLib = require('./iptv-lineup');
 var memory = require('./iptv-memory');
 var timeshift = require('./iptv-timeshift');
+var http = require('http');
+var urlLib = require('url');
+var toBuffer = require('./util').toBuffer;
 var spawn = require('child_process').spawn;
 var execFile = require('child_process').execFile;
 
@@ -1083,6 +1086,7 @@ function publicPlaylist(p) {
   var out = {
     id: p.id, label: p.label, kind: p.kind,
     takeOver: p.kind === 'enigma2' && p.takeOver === true,
+    streamLogin: p.kind === 'enigma2' && p.streamLogin === true,
     host: hostOf(p.kind === 'm3u' ? p.url : p.server),
     hasGuideLink: !!p.guide,
     channels: meta ? meta.channels : null,
@@ -1165,6 +1169,10 @@ function playlistsAction(body, cb) {
       if (body.noLogin === true) { next.user = ''; next.pass = ''; }
       // Whether a channel may take over the tuner showing live TV when none is free (enigma2Free).
       if (body.takeOver === true || (body.takeOver === undefined && p && p.takeOver === true)) next.takeOver = true;
+      // Whether the tuner's stream port asks for the same login (relayStream).
+      if (body.streamLogin === true || (body.streamLogin === undefined && p && p.streamLogin === true)) next.streamLogin = true;
+      if (body.noLogin === true) delete next.streamLogin;
+      if (next.streamLogin && !next.user) return cb({ ok: false, error: 'login' });
       if (next.pass && !next.user) return cb({ ok: false, error: 'login' });
       if (!label) next.label = hostOf(next.server);
     } else {
@@ -1561,6 +1569,48 @@ function enigma2Free(p, streamUrlText, cb) {
 }
 
 /*
+ * A tuner's stream passed on to Home with the owner's login, for a tuner
+ * whose stream port asks for one: a <video> cannot send a login, and one in
+ * its URL is dropped by the browser. Only the tuner's own host is asked, so
+ * the login cannot go elsewhere through a channel's address, and nothing is
+ * kept or parsed: the transport stream is piped through as it arrives.
+ */
+var RELAY_CONNECT_MS = 10000;
+var RELAY_IDLE_MS = 20000;
+function relayStream(id, key, req, res) {
+  function refuse(code, why) {
+    if (res.headersSent) return res.end();
+    res.writeHead(code, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
+    res.end(JSON.stringify({ ok: false, error: why }));
+  }
+  var p = playlist(id), s = streamUrl(id, key);
+  if (!p || p.kind !== 'enigma2' || p.streamLogin !== true || !p.user || !s) return refuse(404, 'no-stream');
+  var target = urlLib.parse(s.url), tuner = urlLib.parse(p.server || '');
+  if (!target.hostname || target.protocol !== 'http:' || target.hostname.toLowerCase() !== String(tuner.hostname || '').toLowerCase()) return refuse(403, 'forbidden');
+  var upstream = http.request({
+    host: target.hostname, port: target.port || 80, path: target.path, method: 'GET', agent: false,
+    headers: { Authorization: 'Basic ' + toBuffer(p.user + ':' + (p.pass || ''), 'utf8').toString('base64'), 'User-Agent': 'Glasshouse/' + version, Connection: 'close' }
+  }, function (up) {
+    if (up.statusCode !== 200) {
+      up.resume();
+      console.log('iptv: relay for ' + id + ' answered ' + up.statusCode);
+      return refuse(502, up.statusCode === 401 || up.statusCode === 403 ? 'login' : 'http');
+    }
+    up.socket.setTimeout(RELAY_IDLE_MS, function () { upstream.abort(); });
+    res.writeHead(200, { 'Content-Type': 'video/MP2T', 'Cache-Control': 'no-store' });
+    up.on('end', function () { res.end(); });
+    up.on('error', function () { res.end(); });
+    up.pipe(res, { end: false });
+  });
+  upstream.setTimeout(RELAY_CONNECT_MS, function () { upstream.abort(); });
+  upstream.on('error', function () { refuse(502, 'network'); });
+  function closed() { upstream.abort(); }
+  req.on('close', closed);
+  res.on('close', closed);
+  upstream.end();
+}
+
+/*
  * The URL Home plays a channel from: the provider's, or, for a channel played
  * full screen while live TV may pause, the recording's on the TV
  * (lib/iptv-timeshift). MPEG-TS only: an HLS channel's player fetches its
@@ -1580,6 +1630,13 @@ function playUrl(id, key, full, cb) {
 function deliverStream(id, key, full, s, cb) {
   var at = id + ':' + key;
   timeshift.release(at);
+  // The tuner's stream port wants a login the player cannot send: Home plays it through the TV's relay.
+  var owner = playlist(id);
+  if (owner && owner.kind === 'enigma2' && owner.streamLogin === true) {
+    s.url = '/api/iptv/relay?pl=' + encodeURIComponent(id) + '&key=' + encodeURIComponent(key);
+    s.format = 'ts';
+    return cb(s);
+  }
   var local = timeshift.current(at);
   if (local) { s.url = local; s.timeshift = true; return cb(s); }
   if (!full || config.timeshift !== true || s.format !== 'ts') return cb(s);
@@ -1762,6 +1819,7 @@ module.exports = {
   logoPath: logoPath,
   streamUrl: streamUrl,
   playUrl: playUrl,
+  relay: relayStream,
   timeshiftStats: timeshiftStats,
   setTimeshift: setTimeshift,
   timeshiftStatus: timeshiftStatus,
