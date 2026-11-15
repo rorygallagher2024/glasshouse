@@ -40,7 +40,7 @@ function screenshotControls() {
     const label = all ? t('tools.screenshots.clearAll', 'Clear all') : t('tools.screenshots.delete', 'Delete');
     button.hidden = !screenshotWritable;
     button.disabled = screenshotBusy || (all && !deletes.length);
-    button.className = 'pill screenshot-delete ' + (armed ? 'warn' : 'bad');
+    button.className = 'pill screenshot-delete ' + (armed ? 'warn' : 'bad') + (screenshotBusy && (!all || deletes.length) ? ' screenshot-pending' : '');
     button.textContent = armed ? t('tools.screenshots.pressAgain', 'Press again') : label;
     button.setAttribute('aria-label', all
       ? (armed ? t('tools.screenshots.confirmClear', 'Press again to delete all screenshots') : label)
@@ -99,17 +99,25 @@ async function fetchScreenshotImage(id, signal) {
 
 async function renderScreenshots(images) {
   const focused = q('screenshots-gallery').contains(document.activeElement) ? document.activeElement : null;
-  clearScreenshotGallery();
-  screenshotVersion = JSON.stringify(images);
+  const gallery = q('screenshots-gallery');
   const versions = new Map(images.map(image => [image.id, JSON.stringify([image.size, image.modified])]));
+  const previous = JSON.parse(screenshotVersion || '[]');
+  const reuseCards = images.length > 0 &&
+    JSON.stringify(previous.filter(image => versions.has(image.id))) === JSON.stringify(images);
+  if (reuseCards) {
+    if (screenshotImageController) screenshotImageController.abort();
+    gallery.querySelectorAll('.screenshot-card').forEach(card => {
+      if (!versions.has(card.querySelector('img').dataset.id)) card.remove();
+    });
+  } else clearScreenshotGallery();
+  screenshotVersion = JSON.stringify(images);
   screenshotUrls.forEach((cached, id) => {
     if (cached.version !== versions.get(id)) {
       URL.revokeObjectURL(cached.url);
       screenshotUrls.delete(id);
     }
   });
-  const gallery = q('screenshots-gallery');
-  gallery.innerHTML = images.length ? images.map(image => {
+  if (!reuseCards) gallery.innerHTML = images.length ? images.map(image => {
     const date = new Date(image.modified).toLocaleString();
     return `<article class="screenshot-card">
       <button type="button" class="screenshot-preview" data-id="${esc(image.id)}" data-action="view" onclick="openScreenshotViewer(this)" disabled
@@ -129,7 +137,7 @@ async function renderScreenshots(images) {
   if (focused) {
     replacement = Array.from(gallery.querySelectorAll('button')).find(button =>
       button.dataset.id === focused.dataset.id && button.dataset.action === focused.dataset.action);
-    if (replacement && !replacement.hidden && !replacement.disabled) replacement.focus({ preventScroll: true });
+    if (replacement && document.activeElement !== replacement && !replacement.hidden && !replacement.disabled) replacement.focus({ preventScroll: true });
   }
   const controller = screenshotImageController = new AbortController();
   for (const image of gallery.querySelectorAll('img')) {
@@ -141,6 +149,9 @@ async function renderScreenshots(images) {
         cached = { url: URL.createObjectURL(blob), version: versions.get(image.dataset.id) };
         screenshotUrls.set(image.dataset.id, cached);
       }
+      if (image.src === cached.url) continue;
+      const date = new Date(images.find(item => item.id === image.dataset.id).modified).toLocaleString();
+      image.alt = t('tools.screenshots.image', 'Screenshot from {date}', { date });
       image.onload = () => {
         const preview = image.parentElement;
         preview.parentElement.querySelector('.screenshot-resolution').textContent = image.naturalWidth + '×' + image.naturalHeight;

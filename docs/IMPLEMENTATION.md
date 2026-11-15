@@ -2167,8 +2167,9 @@ authenticated listing and image reads remain available with controls disabled.
 
 The Tools gallery (`assets/ui/screenshots.js`) polls every three seconds only
 while its section and the browser are visible, pausing during capture or
-deletion. An unchanged list keeps its cards; manual Refresh retries failed
-previews. Loaded PNGs keep their blob URLs across refreshes and visibility
+deletion. Unchanged lists and removals keep the surviving cards and decoded
+images, including on manual Refresh, which retries failed previews.
+Loaded PNGs keep their blob URLs across refreshes and visibility
 changes while the filename, size and modification time match. Removed or changed
 images release their URLs; the page otherwise retains them until closed.
 Hiding or replacing the gallery aborts pending work; request identities discard
@@ -2186,8 +2187,8 @@ Gallery deletion and Clear all require two presses within five seconds,
 with one confirmation at a time. Hiding the gallery, losing write access or
 removing the target from the list clears it. Clear all is disabled when the
 gallery is empty. Capture and deletion share one busy state to prevent
-overlapping writes. Changed lists preserve focus on a
-surviving card's button; unchanged lists leave the cards in place.
+overlapping writes. Delete buttons stay disabled during a write without
+temporarily dimming. Changed lists preserve focus on a surviving card's button.
 
 After capture verifies the saved file, it sends **Screenshot saved.** through
 the existing Screen notification action and its bus identity. The capture

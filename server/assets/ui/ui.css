@@ -2370,6 +2370,8 @@ h3 .tvm-tags i{font-size:11px}
 #disc-screenshots>summary{border-top:0;border-bottom:1px solid var(--w25);padding:0 0 12px;margin-bottom:26px}
 .screenshot-storage{display:flex;flex-wrap:wrap;align-items:center;gap:10px}
 #screenshots-storage{margin:0;white-space:nowrap}
+#screenshots-message{min-height:1.4em}
+.screenshot-delete.screenshot-pending:disabled{opacity:1;color:var(--red);border-color:var(--red)}
 .screenshot-gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,280px),1fr));gap:16px;margin:16px 0 28px}
 .screenshot-card{min-width:0;border:1px solid var(--w25);padding:12px}
 .screenshot-preview{display:block;width:100%;padding:0;border:0;background:none;margin-bottom:12px}

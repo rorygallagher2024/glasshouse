@@ -46,6 +46,7 @@ function createUI() {
   var gallery = ui.q('screenshots-gallery');
   gallery.contains = function (target) { return ui.buttons.indexOf(target) !== -1; };
   gallery.querySelectorAll = function (selector) {
+    if (selector === '.screenshot-card') return ui.images.map(function (image) { return image.parentElement.parentElement; });
     return selector === 'img' ? ui.images : selector === 'button' ? ui.buttons
       : ui.buttons.filter(function (b) { return b.dataset.action === 'delete'; });
   };
@@ -58,7 +59,21 @@ function createUI() {
     var match, pattern = /<img data-id="([^"]+)" alt="([^"]*)"/g;
     while ((match = pattern.exec(html))) {
       var image = { dataset: { id: match[1] }, alt: match[2], complete: false, naturalWidth: 0 };
-      var card = { resolution: {}, querySelector: function () { return this.resolution; } };
+      Object.defineProperty(image, 'src', {
+        get: function () { return this.source; },
+        set: function (value) { this.source = value; this.sourceAssignments = (this.sourceAssignments || 0) + 1; }
+      });
+      var card = { image: image, resolution: {}, querySelector: function (selector) { return selector === 'img' ? this.image : this.resolution; },
+        remove: function () {
+          var removed = this.image;
+          ui.images = ui.images.filter(function (item) { return item !== removed; });
+          ui.buttons = ui.buttons.filter(function (button) {
+            if (button.dataset.id !== removed.dataset.id) return true;
+            button.isConnected = false;
+            if (document.activeElement === button) document.activeElement = document.body;
+            return false;
+          });
+        } };
       ['view', 'download', 'delete'].forEach(function (action) {
         var b = element();
         b.dataset = { id: image.dataset.id, action: action }; ui.buttons.push(b);
@@ -104,7 +119,7 @@ function createUI() {
   return ui;
 }
 function checkGallery() {
-  var ui = createUI(), original, originalUrl;
+  var ui = createUI(), original, originalUrl, originalImage;
   ui.listed = [ui.listed[0]];
   ui.imageReply = function () { return Promise.reject(new Error('image unavailable')); };
   return load(ui).then(function () {
@@ -123,6 +138,7 @@ function checkGallery() {
     return load(ui);
   }).then(function () {
     assert.strictEqual(ui.imageRequests, 2, 'Refresh retries an unchanged failed preview');
+    assert.strictEqual(ui.images[0].alt, 'Screenshot from ' + new Date(ui.listed[0].modified).toLocaleString(), 'retry restores the image description');
     originalUrl = ui.images[0].src;
     loaded(ui); button(ui, 'view').focus();
     ui.listed.push({ id: 'capture_new.png', size: 2097152, modified: '2026-11-01T00:02:00Z' });
@@ -133,9 +149,13 @@ function checkGallery() {
     assert.strictEqual(ui.context.document.activeElement, ui.context.document.body);
     loaded(ui);
     assert.strictEqual(ui.context.document.activeElement, button(ui, 'view'), 'loaded replacement restores focus');
+    original = button(ui, 'view'); originalImage = ui.images[0];
     return load(ui);
   }).then(function () {
     assert.strictEqual(ui.imageRequests, 3, 'Refresh reuses successful previews');
+    assert.strictEqual(button(ui, 'view'), original, 'Refresh keeps the loaded preview element');
+    assert.strictEqual(ui.images[0], originalImage, 'Refresh keeps the decoded image');
+    assert.strictEqual(originalImage.sourceAssignments, 1, 'Refresh does not reassign a cached URL');
     var other = ui.q('screenshots-refresh'); other.focus(); loaded(ui);
     assert.strictEqual(ui.context.document.activeElement, other, 'late image load never steals focus');
     ui.context.document.hidden = true; ui.listeners.visibilitychange();
@@ -227,10 +247,11 @@ function checkViewer() {
   });
 }
 function checkDeletion() {
-  var ui = createUI(), images = ui.listed, deleting, count;
+  var ui = createUI(), images = ui.listed, deleting, count, survivingPreview, survivingImage;
   function press(index) { return ui.context.deleteScreenshot(button(ui, 'delete', index)); }
   function clear() { return ui.context.deleteScreenshot(ui.q('screenshots-clear')); }
   return load(ui).then(function () {
+    loaded(ui); survivingPreview = button(ui, 'view', 1); survivingImage = ui.images[1];
     press(); assert.strictEqual(button(ui, 'delete').textContent, 'Press again');
     assert.strictEqual(ui.writes.length, 0, 'first press never writes');
     ui.tick(4999); deleting = press();
@@ -240,12 +261,18 @@ function checkDeletion() {
     press(); press(1); clear(); ui.context.takeScreenshot();
     assert.strictEqual(ui.writes.length, 1, 'pending delete blocks other writes');
     assert.strictEqual(button(ui, 'delete').disabled, true);
+    assert.strictEqual(button(ui, 'delete', 1).disabled, true, 'other deletions remain guarded');
+    survivingPreview.focus();
     ui.listed = [images[1]]; ui.pending.shift().resolve(reply(true, { ok: true }));
     return deleting.then(flush);
   }).then(function () {
     assert.strictEqual(ui.q('screenshots-message').textContent, 'Screenshot deleted.');
     assert.strictEqual(ui.q('screenshots-storage').textContent, '512 KB / 32 MB');
     assert.strictEqual(button(ui, 'delete').dataset.id, images[1].id, 'success refreshes the real gallery');
+    assert.strictEqual(button(ui, 'view'), survivingPreview, 'deletion keeps the surviving preview');
+    assert.strictEqual(ui.images[0], survivingImage, 'deletion keeps the decoded image');
+    assert.strictEqual(survivingImage.sourceAssignments, 1, 'deletion does not reassign the surviving image URL');
+    assert.strictEqual(ui.context.document.activeElement, survivingPreview, 'deletion preserves focus on a surviving card');
     ui.listed = images; return load(ui);
   }).then(function () {
     press(); ui.tick(5000); assert.strictEqual(button(ui, 'delete').textContent, 'Delete');
