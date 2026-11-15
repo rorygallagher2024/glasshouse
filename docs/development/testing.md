@@ -234,10 +234,7 @@ before its first read.
 
 `test-luna-absent.js` checks that a failed call to an LG service missing from the TV's service files makes later calls to it fail at once, for 10 minutes, while listed services and homebrew ones keep being called, and that a renamed service the TV lists only by its legacy name moves to that name after no answer under the newer one, rather than being skipped. `test-luna-missing-method.js` checks that a method the service answers "Unknown method" for is answered with that refusal, without a call, for 10 minutes, each caller getting its own copy, that the service's other methods and other refusals are still asked, and that it is asked again after the 10 minutes.
 
-`test-luna-slow.js` checks that the tuner's channel list, 4.6 MB and 3.6 s on a
-satellite TV, is given a longer wait and a larger reply limit and is asked for
-without `-f`. A simulated 2.83 s 4K capture returns its result with a 15 s limit
-under both service names, while ordinary calls keep their 2 s wait and `-f`.
+`test-luna-slow.js` checks that the tuner's channel list, 4.6 MB and 3.6 s on a satellite TV, is given a longer wait and a larger reply limit and is asked for without `-f`. A simulated 2.83 s 4K capture returns its result with a 15 s limit under both service names, while ordinary calls keep their 2 s wait and `-f`.
 
 `test-weather.js` checks Open-Meteo's weather codes against the badge's conditions by day and night, place searches kept to usable results at four decimals, an unknown language asked in English, and °F asked for only for a place in a country that uses it. `test-home.js` checks that the internet weather is asked for only with a place chosen and the screen on, not again within 30 minutes, kept across a restart and through a failed request, that Home Assistant's pushes are not shown while it is chosen, and that a Weather switch saved off before the choice stays off.
 
@@ -712,42 +709,14 @@ integration. The web tab returns when an integration becomes available again.
 synthetic data. The Hue Sync checks wait for intercepted requests to finish
 before closing each page, so pending stats replies cannot outlive the page.
 
-`test-screenshots.js` checks all capture methods and sizes, the 1080p default,
-invalid options, timestamp-only filenames, overlap refusal, malformed replies,
-missing or empty output, and partial-file cleanup. `test-luna-webos3.js` checks capture
-service fallback and remembers the legacy name even after a capture error.
+`test-screenshots.js` checks all capture methods and sizes, the 1080p default, invalid options, timestamp-only filenames, overlap refusal, malformed replies, missing or empty output, and partial-file cleanup. `test-luna-webos3.js` checks capture service fallback and remembers the legacy name even after a capture error.
 
-Capture notification checks use the Screen notification action and verify its
-source and bus identity, a verified image before the notice, successful replies
-despite refused, delayed or throwing notices, and no success notice after a
-failed capture.
+Capture notification checks use the Screen notification action and verify its source and bus identity, a verified image before the notice, successful replies despite refused, delayed or throwing notices, and no success notice after a failed capture.
 
-`test-remotekeys.js` checks screenshot mappings for every method and size,
-persisted assignments, one capture per press, saved-path and error notices,
-timestamp-only filenames, and legacy-service fallback including overlapping replies.
-The webOS 11 suite rejects screenshot assignments.
-`test-remotekeys-ui.js` checks that screenshot tiles use the translated choice
-title in both visible text and the accessible label, without changing the API response.
+`test-remotekeys.js` checks screenshot mappings for every method and size, persisted assignments, one capture per press, saved-path and error notices, timestamp-only filenames, and legacy-service fallback including overlapping replies. The webOS 11 suite rejects screenshot assignments. `test-remotekeys-ui.js` checks that screenshot tiles use the translated choice title in both visible text and the accessible label, without changing the API response.
 
-`test-screenshots-api.js` exercises the HTTP routes with header authentication,
-listing order, private PNG reads, capture defaults and selected sizes, invalid
-options, capture error responses, individual deletion, clearing all and read-only
-access. It checks the JSON and Origin guards, unauthenticated network requests, traversal,
-symlinks, directories and empty files. Replacing a pathname after opening still
-serves the original bytes; disconnecting before streaming closes the descriptor.
-Clear-all checks cover partial failure, retry, an empty gallery and preservation
-of unrelated files, symlinks and directories. The server boot test confirms
-that the screenshot module is wired into the running process.
+`test-screenshots-api.js` exercises the HTTP routes with header authentication, listing order, private PNG reads, capture defaults and selected sizes, invalid options, capture error responses, individual deletion, clearing all and read-only access. It checks the JSON and Origin guards, unauthenticated network requests, traversal, symlinks, directories and empty files. Replacing a pathname after opening still serves the original bytes; disconnecting before streaming closes the descriptor. Clear-all checks cover partial failure, retry, an empty gallery and preservation of unrelated files, symlinks and directories. The server boot test confirms that the screenshot module is wired into the running process.
 
-`test-screenshots-ui.js` runs the complete gallery script with one DOM fixture
-and a controlled clock. It checks header-authenticated downloads with the
-original PNG filename, URL cleanup, invalid image replies, failed-preview
-retries, unchanged polling and keyboard focus after previews load.
-Viewer checks cover loaded-URL reuse, close/outside/Escape behavior, focus,
-polling pause/resume, late replies and closing before URL cleanup.
+`test-screenshots-ui.js` runs the complete gallery script with one DOM fixture and a controlled clock. It checks header-authenticated downloads with the original PNG filename, URL cleanup, invalid image replies, failed-preview retries, unchanged polling and keyboard focus after previews load. Viewer checks cover loaded-URL reuse, close/outside/Escape behavior, focus, polling pause/resume, late replies and closing before URL cleanup.
 
-Deletion checks cover two-press confirmation, five-second expiry, switching
-targets, cancellation on hide, read-only state or disappearance, feedback,
-refreshed lists and serialized writes. Clear all shares that confirmation,
-survives polling, needs fresh confirmation after failure and is disabled when
-empty. These VM checks do not verify browser layout or completed downloads.
+Deletion checks cover two-press confirmation, five-second expiry, switching targets, cancellation on hide, read-only state or disappearance, feedback, refreshed lists and serialized writes. Clear all shares that confirmation, survives polling, needs fresh confirmation after failure and is disabled when empty. These VM checks do not verify browser layout or completed downloads.

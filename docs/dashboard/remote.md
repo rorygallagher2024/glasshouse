@@ -29,17 +29,8 @@ Core keys (**Home**, **Back**, volume, mute, channel, and power) are reserved an
 * **Media controls:** Sends **Play**, **Pause**, **Stop**, **Rewind**, **Fast forward**, **Volume up**, **Volume down**, or **Mute** to on-screen media. Volume commands repeat while held and control connected HDMI ARC soundbars.
 * **Home & Guide:** Opens Glasshouse Home (or LG's Home if disabled), or opens Glasshouse Home's [IPTV guide](home.md#internet-tv).
 * **Home Assistant:** Silences TV handling while keeping the key labelled for Home Assistant automations. When MQTT is enabled, Home Assistant receives [Remote Button](../HOME-ASSISTANT-REMOTE-BUTTONS.md) events for streaming buttons, color keys, Google Assistant, and the microphone regardless of what they are set to on the TV.
+* **Screenshots:** Choose the capture mode and resolution. Saves one PNG per press for viewing or downloading in [Tools](tools.md#screenshots). Capture works without the server; images disappear on reboot. **Video only** can return `REFUSED_PERMISSION_DENIED` when no video is playing. Unavailable on webOS 11.
 * **Nothing:** Disables the key completely on the TV.
-
-**Screenshots** has two button groups: full screen, video only or graphics only,
-and 3840×2160, 1920×1080 or 960×540. Choosing either assigns it straight away,
-keeping the other value for an existing screenshot mapping. Both groups are
-unselected otherwise: choosing a method uses 1920×1080, and choosing a size uses
-full screen. A press saves one PNG under `/tmp/capture_` and shows its
-path or the capture error afterward; holding the key does not repeat. Capture
-support depends on the TV and content. With no video playing, **Video only**
-can return `REFUSED_PERMISSION_DENIED`. Captures work while the server is stopped
-and disappear when the TV restarts. These choices are unavailable on webOS 11.
 
 ## Remote models and regional buttons
 
