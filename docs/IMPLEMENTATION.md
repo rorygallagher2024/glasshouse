@@ -54,6 +54,13 @@ once at start (about 170 KB). It goes out with `Cache-Control: no-cache` and an
 ETag hashed from the page, so a browser keeps it and asks each time, and an
 unchanged page comes back as a 304 with no body. The ETag comes from the content
 rather than the version: a deploy of uncommitted changes keeps the version.
+Text assets under `/assets/` (HTML, CSS, JavaScript, JSON and SVG) are cached
+in memory when first read, and go out gzipped to a browser elsewhere on the
+network that accepts it: a translation file of 450 to 540 KB is 120 to 135 KB.
+The compressed copy is made when a request from the network first asks for it
+and then kept beside the file. The TV's own pages get them as they are: over
+loopback fewer bytes save nothing, and `gzipSync` holds the server's thread,
+126 to 161 ms for a translation file on a B8 (webOS 4.4.3, node 0.12.2).
 
 ### What it costs the TV
 
