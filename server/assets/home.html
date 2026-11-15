@@ -748,6 +748,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
 
 <script src="/assets/i18n.js"></script>
 <script src="/assets/devicons.js"></script>
+<script src="/assets/video-order.js"></script>
 <script>
 /*
  * Glasshouse Home's view. Everything comes from /api/home/*: the layout shared
@@ -789,11 +790,8 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     // in front), so the live preview and the animated background stop here as
     // well: under the screen saver the preview kept the tuner playing (#1209).
     followPreview();
-    if (on && wallVideoEl) {
-      if (wallChoice === 'video' && wallVideoSources.length) wallVideoNeedsRestart = true;
-      wallVideoEl.pause();
-    }
-    else if (!on) updateWall();
+    if (on) unloadWallVideo();
+    else updateWall();
     if (!anim) return;
     if (on) animStop();
     else animRun();
@@ -821,7 +819,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
   // takes about a minute (a B8, webOS 4.4.3): the logo stays until then.
   var pageOpenedAt = Date.now(), STARTING_MS = 60000;
   var wallSlots = null, wallRevision = '', wallChoice = '', wallPictures = [];
-  var wallVideoSources = [], wallVideoItems = [], wallVideoShuffle = false, wallVideoRevision = '', wallVideoKey = '', wallVideoIndex = -1;
+  var wallVideoSources = [], wallVideoItems = [], wallVideoShuffle = false, wallVideoStyle = null, wallVideoRevision = '', wallVideoKey = '', wallVideoIndex = -1;
   var wallVideoNeedsRestart = false;
   var wallVideoEl = $('wallVideo');
 
@@ -2290,6 +2288,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     // Hiding the element keeps the input, tuner or stream; emptied and loaded, it lets it go.
     if (v.getAttribute('src') !== null) v.removeAttribute('src');
     try { v.load(); } catch (e) {}
+    wallVideoResume();
   }
 
   function stopPreview() {
@@ -2436,6 +2435,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     s.setAttribute('type', target.port ? 'service/webos-external' :
                    oldBroadcast() ? 'service/webos-broadcast' : 'service/webos-broadcast-preview');
     s.setAttribute('src', target.port ? 'ext://hdmi:' + target.port : 'tv://' + target.item.id);
+    wallVideoYield();
     v.appendChild(s);
     v.onplaying = function () {
       if (!current() || tilePreview.playing) return;
@@ -2830,6 +2830,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
       if (tvStream.pastCache) extra.push('gh=' + Date.now());
       if (tvStream.timeshift && tvStream.seekTo !== null) extra.push(tvStream.seekTo > 0 ? 'behind=' + tvStream.seekTo : 'live=1');
       tvStream.seekTo = null;
+      wallVideoYield();
       v.src = extra.length ? r.url + (r.url.indexOf('?') === -1 ? '?' : '&') + extra.join('&') : r.url;
       v.load();
       var played = v.play();
@@ -5032,7 +5033,24 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     wallVideoSources = w && w.videoUrls || [];
     wallVideoItems = w && w.videoItems || wallVideoSources.map(function (source) { return { url: source, title: '', pointsOfInterest: [] }; });
     wallVideoShuffle = !!(w && w.videoShuffle);
+    wallVideoStyle = w && w.videoStyle || {};
+    applyWallVideoCaptionStyle();
     wallVideoRevision = w && w.videoRevision || '';
+  }
+
+  function applyWallVideoCaptionStyle() {
+    var el = $('wall-caption'), style = wallVideoStyle || {};
+    if (!el) return;
+    var pos = style.captionPosition || 'top-left', right = pos.indexOf('right') !== -1, bottom = pos.indexOf('bottom') === 0;
+    el.style.left = right ? '' : '4%';
+    el.style.right = right ? '4%' : '';
+    el.style.top = bottom ? '' : '4%';
+    el.style.bottom = bottom ? '4%' : '';
+    el.style.textAlign = right ? 'right' : 'left';
+    el.style.fontFamily = style.textFont === 'Outfit' ? 'Outfit,sans-serif' : 'Manrope,sans-serif';
+    el.style.fontSize = (Number(style.captionSize) || 32) + 'px';
+    el.style.color = /^#[0-9a-f]{6}$/i.test(style.textColor || '') ? style.textColor : '#ece7df';
+    el.style.display = style.showCaptions === false ? 'none' : '';
   }
 
   /*
@@ -5067,10 +5085,9 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     var slot = wallSlot(), shuffled = wallChoice === 'shuffle';
     if (wallChoice === 'video') {
       var videoLayers = $('wall').querySelectorAll('.layer');
-      if (anim.style !== 'off' || !wallAvailable || !wallVideoSources.length || document.hidden || document.documentElement.classList.contains('resting')) {
-        if (document.hidden || document.documentElement.classList.contains('resting')) wallVideoNeedsRestart = true;
-        if (wallVideoEl) { wallVideoEl.style.opacity = 0; wallVideoEl.pause(); }
-        if ($('wall-caption')) $('wall-caption').textContent = '';
+      if (anim.style !== 'off' || !wallAvailable || !wallVideoSources.length || document.hidden ||
+          document.documentElement.classList.contains('resting') || previewHoldsVideo()) {
+        unloadWallVideo();
         if (anim.style !== 'off' || !wallVideoSources.length) wallVideoKey = '';
         for (var blankVideo = 0; blankVideo < videoLayers.length; blankVideo++) { videoLayers[blankVideo].style.opacity = 0; videoLayers[blankVideo].style.backgroundImage = ''; }
         return;
@@ -5078,8 +5095,10 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
       var videoKey = wallVideoRevision;
       if (videoKey !== wallVideoKey) {
         wallVideoKey = videoKey;
-        wallVideoIndex = wallVideoShuffle ? Math.floor(Math.random() * wallVideoSources.length) : 0;
-        playWallVideo(wallVideoIndex, slot.strength);
+        wallVideoIndex = -1;
+        wallVideoOrder = [];
+        wallVideoOrderAt = 0;
+        playWallVideo(nextWallVideoIndex(), slot.strength);
       } else if (wallVideoEl) {
         wallVideoEl.style.opacity = slot.strength;
         if (wallVideoNeedsRestart) playWallVideo(wallVideoIndex, slot.strength);
@@ -5089,8 +5108,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
       wallShown = null;
       return;
     }
-    if (wallVideoEl) { wallVideoEl.style.opacity = 0; wallVideoEl.pause(); }
-    if ($('wall-caption')) $('wall-caption').textContent = '';
+    unloadWallVideo();
     wallVideoKey = '';
     var picture = shuffled && anim.style === 'off' && wallAvailable ? shufflePick() : null;
     if (anim.style !== 'off' || !wallAvailable || (shuffled ? !picture : wallSlots && !wallSlots[slot.key])) {
@@ -5120,7 +5138,43 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     img.src = src;
   }
 
-  var wallVideoFailures = 0;
+  /*
+   * The wallpaper video and the preview's <video> (an Internet TV channel, a
+   * channel or an input) cannot both have the TV's video decoder: with a 4K
+   * HEVC wallpaper playing, an Internet TV stream never started. Paused, the
+   * wallpaper keeps the decoder; emptied and loaded, it lets it go, and plays
+   * again from the same video once the preview's is released.
+   */
+  function previewHoldsVideo() {
+    var v = $('pvVideo');
+    return !!v && (v.getAttribute('src') !== null || !!v.firstChild);
+  }
+
+  function unloadWallVideo() {
+    if (!wallVideoEl) return;
+    wallVideoEl.style.opacity = 0;
+    if ($('wall-caption')) $('wall-caption').textContent = '';
+    if (wallVideoEl.getAttribute('src') === null) return;
+    wallVideoNeedsRestart = true;
+    wallVideoEl.oncanplay = wallVideoEl.onerror = wallVideoEl.onended = wallVideoEl.ontimeupdate = null;
+    try { wallVideoEl.pause(); } catch (e) {}
+    wallVideoEl.removeAttribute('src');
+    try { wallVideoEl.load(); } catch (e) {}
+  }
+
+  // Before the preview's <video> takes a stream or an input.
+  function wallVideoYield() {
+    if (wallChoice === 'video') unloadWallVideo();
+  }
+
+  // After it lets one go: a stream changing channel takes the next in the same
+  // turn, so the wallpaper comes back only if nothing has by the next one.
+  function wallVideoResume() {
+    if (wallChoice !== 'video') return;
+    setTimeout(function () { if (!previewHoldsVideo()) updateWall(); }, 0);
+  }
+
+  var wallVideoFailures = 0, wallVideoOrder = [], wallVideoOrderAt = 0;
   function playWallVideo(index, strength) {
     if (!wallVideoEl || !wallVideoSources.length) return;
     wallVideoNeedsRestart = false;
@@ -5155,9 +5209,11 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
   function nextWallVideoIndex() {
     if (wallVideoSources.length < 2) return 0;
     if (!wallVideoShuffle) return (wallVideoIndex + 1) % wallVideoSources.length;
-    var next = Math.floor(Math.random() * (wallVideoSources.length - 1));
-    if (next >= wallVideoIndex) next++;
-    return next;
+    if (!wallVideoOrder.length || wallVideoOrderAt >= wallVideoOrder.length) {
+      wallVideoOrder = window.TVWebVideoOrder.shuffled(wallVideoSources.length, Math.random, wallVideoIndex);
+      wallVideoOrderAt = 0;
+    }
+    return wallVideoOrder[wallVideoOrderAt++];
   }
 
   // ---------------------------------------------------------------- animated background

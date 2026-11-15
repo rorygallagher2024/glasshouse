@@ -1177,6 +1177,91 @@ function homeAnim(style) {
 const HOME_ANIMS = ['waves', 'particles', 'aquarium', 'aurora', 'glow', 'stars', 'ripples'];
 const homeBgLast = { scene: 'waves', set: 'landscape' };
 let homeBgSelectedKind = null;
+// The Video wallpaper's and screen saver's own look, as lib/home-wallpapers keeps it.
+const HOME_VIDEO_STYLE = { showClock: true, showDate: true, showWeather: true, showCaptions: true,
+  infoPosition: 'top-right', captionPosition: 'top-left', clockFont: 'Outfit', textFont: 'Manrope',
+  textColor: '#ece7df', infoSize: 100, captionSize: 32 };
+const HOME_VIDEO_SHOW = [['showClock', 'home-video-show-clock'], ['showDate', 'home-video-show-date'],
+  ['showWeather', 'home-video-show-weather'], ['showCaptions', 'home-video-show-captions']];
+// Sizes in Home's 1920-wide pixels; 100 and 32 are Home's own clock and caption.
+const HOME_VIDEO_SIZES = { infoSize: [72, 86, 100, 128], captionSize: [24, 32, 40, 48] };
+
+function homeVideoStyle() {
+  return Object.assign({}, HOME_VIDEO_STYLE, (homeStatus && homeStatus.wallpapers && homeStatus.wallpapers.videoStyle) || {});
+}
+
+function homeVideoCount() {
+  const count = q('home-video-urls').value.split(/\r?\n/).filter(value => value.trim()).length;
+  const max = (homeStatus && homeStatus.wallpapers && homeStatus.wallpapers.maxVideoSources) || 50;
+  q('home-video-count').textContent = t('home.video.sourceCount', '{count} links, up to {max} videos', { count, max });
+}
+
+// Shuffle and the look save as they are changed; the links wait for Save, as reading a playlist takes a moment.
+async function homeVideoOptions(patch) {
+  if (!homeWritable() || homeWallUploading) return;
+  homeWallUploading = 'video-options';
+  renderHomeBg();
+  try {
+    const r = await homePost('/api/home/wallpapers', patch);
+    if (r.wallpapers) homeStatus.wallpapers = r.wallpapers;
+  } catch (e) { showErr(e.message); }
+  finally {
+    homeWallUploading = false;
+    renderHomeBg();
+  }
+}
+
+function homeVideoShuffle() {
+  homeVideoOptions({ videoShuffle: !(homeStatus.wallpapers || {}).videoShuffle });
+}
+
+function homeVideoShow(key) {
+  homeVideoOptions({ videoStyle: { [key]: homeVideoStyle()[key] === false } });
+}
+
+function homeVideoStyleSet(patch) {
+  homeVideoOptions({ videoStyle: patch });
+}
+
+function homeVideoStyleReset() {
+  homeVideoOptions({ videoStyle: HOME_VIDEO_STYLE });
+}
+
+function renderHomeVideo(busy) {
+  const walls = homeStatus.wallpapers || {}, style = homeVideoStyle();
+  const videoUrls = q('home-video-urls');
+  if (!videoUrls) return;
+  if (document.activeElement !== videoUrls) videoUrls.value = (walls.videoInputs || walls.videoUrls || []).join('\n');
+  homeVideoCount();
+  videoUrls.disabled = busy;
+  q('home-video-save').disabled = busy;
+  q('home-video-save').textContent = homeWallUploading === 'video' ? t('home.video.saving', 'Reading the playlist…') : t('home.video.save', 'Save videos');
+  const pill = (el, on) => {
+    updateToggle(el, { cls: on ? 'good' : 'idle', label: on ? t('common.on', 'On') : t('common.off', 'Off') });
+    el.disabled = busy;
+  };
+  pill(q('home-video-shuffle'), !!walls.videoShuffle);
+  HOME_VIDEO_SHOW.forEach(([key, id]) => pill(q(id), style[key] !== false));
+  const corners = [['top-left', t('home.video.topLeft', 'Top left')], ['top-right', t('home.video.topRight', 'Top right')],
+    ['bottom-left', t('home.video.bottomLeft', 'Bottom left')], ['bottom-right', t('home.video.bottomRight', 'Bottom right')]];
+  const sizeNames = [t('home.video.small', 'Small'), t('home.video.medium', 'Medium'), t('home.video.large', 'Large'), t('home.video.extraLarge', 'Extra large')];
+  const fonts = [['Outfit', 'Outfit'], ['Manrope', 'Manrope']];
+  const choices = (id, key, options) => {
+    q(id).innerHTML = options.map(([value, label]) =>
+      `<button type="button" class="${style[key] === value ? 'on' : ''}" ${busy ? 'disabled' : ''} aria-pressed="${style[key] === value}"
+        onclick="homeVideoStyleSet(${esc(JSON.stringify({ [key]: value }))})">${esc(label)}</button>`).join('');
+  };
+  choices('home-video-info-position', 'infoPosition', corners);
+  choices('home-video-info-size', 'infoSize', HOME_VIDEO_SIZES.infoSize.map((size, i) => [size, sizeNames[i]]));
+  choices('home-video-clock-font', 'clockFont', fonts);
+  choices('home-video-caption-position', 'captionPosition', corners);
+  choices('home-video-caption-size', 'captionSize', HOME_VIDEO_SIZES.captionSize.map((size, i) => [size, sizeNames[i]]));
+  choices('home-video-text-font', 'textFont', fonts);
+  const colour = q('home-video-text-color');
+  if (document.activeElement !== colour) colour.value = style.textColor;
+  colour.disabled = busy;
+  q('home-video-style-reset').disabled = busy;
+}
 
 function homeBgKind() {
   if (homeBgSelectedKind) return homeBgSelectedKind;
@@ -1200,9 +1285,7 @@ function renderHomeBg() {
   q('home-bg-pictures').hidden = kind !== 'pictures';
   q('home-bg-animated').hidden = kind !== 'animated';
   q('home-bg-video').hidden = kind !== 'video';
-  const videoUrls = q('home-video-urls'), videoShuffle = q('home-video-shuffle');
-  if (videoUrls && document.activeElement !== videoUrls) videoUrls.value = ((homeStatus.wallpapers || {}).videoInputs || (homeStatus.wallpapers || {}).videoUrls || []).join('\n');
-  if (videoShuffle && document.activeElement !== videoShuffle) videoShuffle.checked = !!((homeStatus.wallpapers || {}).videoShuffle);
+  renderHomeVideo(busy);
   const dark = document.querySelector('#homepane .home-dark') || document.querySelector('.home-dark');
   if (dark) dark.hidden = kind === 'none';
   const names = { waves: t('home.anim.waves', 'Light waves'), particles: t('home.anim.particles', 'Particles'),
@@ -1236,13 +1319,14 @@ async function homeVideoSave() {
   if (!homeWritable() || homeWallUploading) return;
   const note = q('home-video-note');
   const urls = q('home-video-urls').value.split(/\r?\n/).map(value => value.trim()).filter(Boolean);
-  const shuffle = q('home-video-shuffle').checked;
   note.textContent = '';
   homeWallUploading = 'video';
   renderHomeBg();
   try {
     if (homeLayout && homeLayout.wallAnim && homeLayout.wallAnim !== 'off') await homeSaveLayout({ wallAnim: 'off' });
-    await homePost('/api/home/wallpapers', { videoUrls: urls, videoShuffle: shuffle });
+    const r = await homePost('/api/home/wallpapers', { videoUrls: urls, videoShuffle: !!(homeStatus.wallpapers || {}).videoShuffle });
+    const n = ((r.wallpapers || {}).videoUrls || []).length;
+    note.textContent = n ? t('home.video.saved', '{count} videos ready.', { count: n }) : '';
   } catch (e) { note.textContent = e.message; }
   finally {
     homeWallUploading = false;

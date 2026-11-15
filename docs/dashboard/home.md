@@ -326,7 +326,11 @@ Its colours: **Time of day**, the default, follows the four times of day, and th
 
 ### Video
 
-Enter one direct HTTP or HTTPS video URL per line, or an Aerial `entries.json` playlist URL. The TV loads playlist entries and streams up to 50 videos without downloading them, muted on Home and in the **Video** screen saver. For Aerial entries, `pointsOfInterest` captions are shown at their listed times. **Play videos in a random order** shuffles the playlist; otherwise videos play in order and repeat. Home's existing darkening setting applies over the video. URLs with embedded user names or passwords are refused.
+Enter one direct HTTP or HTTPS video URL per line, or an Aerial `entries.json` playlist URL. The TV loads playlist entries and streams up to 50 videos without downloading them, muted on Home and in the **Video** screen saver. For Aerial entries, `pointsOfInterest` captions are shown at their listed times. Links are read again only when **Save videos** is pressed; the other settings below save as they are changed. **Random order** plays every video once, in a new order each time round, before any plays again; otherwise they play in order and repeat. Home's existing darkening setting applies over the video. URLs with embedded user names or passwords are refused.
+
+Below them, what shows over the video: the clock, date and weather (on the Video screen saver) and captions (on it and on Glasshouse Home) can each be switched off, placed in any corner, made one of four sizes and set in Outfit or Manrope, with one text colour for all of them. **Use the default look** puts back Home's own.
+
+While an Internet TV channel, a TV channel or an input plays in a tile or full screen, the video wallpaper stops and gives the TV's video decoder to it, and starts again when it ends.
 
 ### Darkening
 

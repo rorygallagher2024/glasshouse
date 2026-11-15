@@ -3493,9 +3493,17 @@ module.exports = {
     // The shuffled collection: one picture, or every one.
     if (body && typeof body.removePicture === 'string') return wallpapers.removePictures(cb, body.removePicture);
     if (body && body.removePictures === true) return wallpapers.removePictures(cb);
-    if (body && Array.isArray(body.videoUrls)) return wallpapers.setVideoSources(body.videoUrls, body.videoShuffle, cb);
+    // The Video screen saver is staged with the playlist and its details filled in.
+    var restaged = function (result) {
+      if (result && result.ok && screensaversModule) screensaversModule.restageScreensaver();
+      cb(result);
+    };
+    if (body && Array.isArray(body.videoUrls)) return wallpapers.setVideoSources(body.videoUrls, body.videoShuffle, restaged, body.videoStyle);
+    if (body && (typeof body.videoShuffle === 'boolean' || (body.videoStyle && typeof body.videoStyle === 'object'))) {
+      return wallpapers.setVideoOptions({ shuffle: body.videoShuffle, style: body.videoStyle }, restaged);
+    }
     if (body && typeof body.choose === 'string') return wallpapers.choose(body.choose, cb);
-    cb({ ok: false, error: 'removeUploads, remove, removePicture, removePictures, videoUrls or choose expected' });
+    cb({ ok: false, error: 'removeUploads, remove, removePicture, removePictures, videoUrls, videoShuffle, videoStyle or choose expected' });
   },
   normalise: normalise,
   hideApps: hideApps,

@@ -100,9 +100,11 @@ process.nextTick(checked(function () {
       console.log('  ✓ an option it does not have is its default');
       screensavers.setScreensaver('video', 'dim', checked(function (r3) {
         assert.strictEqual(r3.ok, true, r3.error);
-        var videoQml = env.files[path.join(STAGE, 'qml', 'main.qml')];
-        assert.ok(videoQml.indexOf('https://media.example/aerial.mov') !== -1, 'playlist URL is filled into the screen saver');
-        assert.ok(videoQml.indexOf('pointsOfInterest') !== -1, 'playlist metadata is filled into QML');
+        // webOS 10 runs the Video saver as a web page, beside the script that orders its playlist.
+        var videoPage = env.files[path.join(STAGE, 'web', 'index.html')];
+        assert.ok(videoPage.indexOf('https://media.example/aerial.mov') !== -1, 'playlist URL is filled into the screen saver');
+        assert.ok(videoPage.indexOf('pointsOfInterest') !== -1, 'playlist metadata is filled into the page');
+        assert.ok(String(env.files[path.join(STAGE, 'web', 'video-order.js')]).indexOf('shuffled') !== -1, 'the playlist order script is staged beside it');
         console.log('  ✓ the Video screen saver receives the configured playlist');
         done();
       }));

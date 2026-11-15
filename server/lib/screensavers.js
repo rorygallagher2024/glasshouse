@@ -1331,9 +1331,11 @@ function stageSaverFiles(e, level, choice) {
     mkdirp(path.dirname(path.join(targetDir, rel)));
     fs.writeFileSync(path.join(targetDir, rel), fs.readFileSync(path.join(e.dir, rel)));
   }
-  // The Video saver uses the same faces as Home. Stage them inside its Web
-  // app: webOS may refuse file:// font loads from outside the mounted app.
+  // The Video saver uses the same faces and playlist order as Home. Stage
+  // them inside its Web app: webOS may refuse file:// loads from outside the
+  // mounted app.
   if (e.id === 'video' && e.runtime === 'web') {
+    fs.writeFileSync(path.join(SCREENSAVER_DIR, 'web', 'video-order.js'), fs.readFileSync(path.join(__dirname, '..', 'assets', 'video-order.js')));
     var fontNames = ['Outfit-Light.ttf', 'Outfit-Regular.ttf', 'Manrope-Regular.ttf', 'Manrope-SemiBold.ttf'];
     var sourceFonts = path.join(__dirname, '..', 'assets', 'fonts');
     var stagedFonts = path.join(SCREENSAVER_DIR, 'web', 'fonts');

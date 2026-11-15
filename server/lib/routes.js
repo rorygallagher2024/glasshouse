@@ -1552,8 +1552,8 @@ function handleRequest(req, res) {
     // do, so a day-old copy beside a new page would show text the page no
     // longer has, or miss text it now does.
     // So is the script a custom launcher is given: a launcher written for a
-    // newer one calls what an older copy lacks.
-    var fresh = ext === '.html' || ext === '.json' || /(^|\/)(i18n|home-kit)\.js$/.test(file);
+    // newer one calls what an older copy lacks, and the playlist order Home calls.
+    var fresh = ext === '.html' || ext === '.json' || /(^|\/)(i18n|home-kit|video-order)\.js$/.test(file);
     var cacheHdr = fresh ? 'no-cache' : 'public, max-age=86400';
     var respondWithBuf = function (buf) {
       var etag = '"' + (displayVersionStr || '1') + '-' + buf.length.toString(16) + '"';

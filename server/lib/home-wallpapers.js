@@ -57,6 +57,39 @@ var videoUrls = [];
 var videoItems = [];
 var videoInputs = [];
 var videoShuffle = false;
+var videoStyle = null;
+var VIDEO_POSITIONS = ['top-left', 'top-right', 'bottom-left', 'bottom-right'];
+var VIDEO_FONTS = ['Outfit', 'Manrope'];
+var VIDEO_HEX = /^#[0-9a-f]{6}$/i;
+
+function defaultVideoStyle() {
+  return { showClock: true, showDate: true, showWeather: true, showCaptions: true,
+    infoPosition: 'top-right', captionPosition: 'top-left', clockFont: 'Outfit', textFont: 'Manrope',
+    textColor: '#ece7df', infoSize: 100, captionSize: 32 };
+}
+
+// Each valid value in value over base (the defaults unless given); anything else keeps base's.
+function readVideoStyle(value, base) {
+  var out = base || defaultVideoStyle();
+  if (!value || typeof value !== 'object') return out;
+  ['showClock', 'showDate', 'showWeather', 'showCaptions'].forEach(function (key) {
+    if (typeof value[key] === 'boolean') out[key] = value[key];
+  });
+  if (VIDEO_POSITIONS.indexOf(value.infoPosition) !== -1) out.infoPosition = value.infoPosition;
+  if (VIDEO_POSITIONS.indexOf(value.captionPosition) !== -1) out.captionPosition = value.captionPosition;
+  if (VIDEO_FONTS.indexOf(value.clockFont) !== -1) out.clockFont = value.clockFont;
+  if (VIDEO_FONTS.indexOf(value.textFont) !== -1) out.textFont = value.textFont;
+  if (typeof value.textColor === 'string' && VIDEO_HEX.test(value.textColor)) out.textColor = value.textColor;
+  if (typeof value.infoSize === 'number' && isFinite(value.infoSize)) out.infoSize = Math.max(48, Math.min(144, Math.round(value.infoSize)));
+  if (typeof value.captionSize === 'number' && isFinite(value.captionSize)) out.captionSize = Math.max(18, Math.min(56, Math.round(value.captionSize)));
+  return out;
+}
+
+function copyVideoStyle() {
+  var out = {};
+  Object.keys(videoStyle || defaultVideoStyle()).forEach(function (key) { out[key] = (videoStyle || defaultVideoStyle())[key]; });
+  return out;
+}
 
 function init(stateDir) {
   uploadsDir = path.join(stateDir, 'home-wallpaper-uploads');
@@ -68,6 +101,7 @@ function init(stateDir) {
   videoItems = [];
   videoInputs = [];
   videoShuffle = false;
+  videoStyle = defaultVideoStyle();
   var saved = util.readJson(choiceFile, null);
   if (saved && CHOICES.indexOf(saved.choice) !== -1) {
     choice = saved.choice;
@@ -75,6 +109,7 @@ function init(stateDir) {
     videoItems = readVideoItems(saved.videoItems, videoUrls);
     videoInputs = readVideoUrls(saved.videoInputs || videoUrls);
     videoShuffle = saved.videoShuffle === true;
+    videoStyle = readVideoStyle(saved.videoStyle);
     if (choice === 'video' && !videoUrls.length) choice = 'black';
   }
   else migrate();
@@ -170,7 +205,7 @@ function migrate() {
 }
 
 function saveChoice() {
-  try { fs.writeFileSync(choiceFile, JSON.stringify({ choice: choice, videoUrls: videoUrls, videoItems: videoItems, videoInputs: videoInputs, videoShuffle: videoShuffle }) + '\n'); }
+  try { fs.writeFileSync(choiceFile, JSON.stringify({ choice: choice, videoUrls: videoUrls, videoItems: videoItems, videoInputs: videoInputs, videoShuffle: videoShuffle, videoStyle: videoStyle }) + '\n'); }
   catch (e) { console.error('home: could not save the wallpaper choice: ' + e.message); }
 }
 
@@ -207,14 +242,14 @@ function status() {
   return { available: choice === 'video' ? videoUrls.length > 0 : choice === 'shuffle' ? pictures.length > 0 : SLOTS.some(function (key) { return slots[key]; }),
     choice: choice, choices: CHOICES, fetching: fetching,
     uploading: uploading || !!fetching, slots: slots, pictures: pictures, maxPictures: MAX_SHUFFLE,
-    videoUrls: videoUrls.slice(), videoItems: videoItems.slice(), videoInputs: videoInputs.slice(), videoShuffle: videoShuffle, maxVideoSources: MAX_VIDEO_SOURCES,
+    videoUrls: videoUrls.slice(), videoItems: videoItems.slice(), videoInputs: videoInputs.slice(), videoShuffle: videoShuffle, videoStyle: copyVideoStyle(), maxVideoSources: MAX_VIDEO_SOURCES,
     videoRevision: JSON.stringify([videoItems, videoShuffle]),
     revision: revision.join('.') };
 }
 
-function videoSources() { return { urls: videoUrls.slice(), items: videoItems.slice(), shuffle: videoShuffle }; }
+function videoSources() { return { urls: videoUrls.slice(), items: videoItems.slice(), shuffle: videoShuffle, style: copyVideoStyle() }; }
 
-function setVideoSources(values, shuffle, cb) {
+function setVideoSources(values, shuffle, cb, style) {
   cb = cb || function () {};
   if (!Array.isArray(values) || values.length > MAX_VIDEO_SOURCES) {
     return cb({ ok: false, error: msg('srv.home.videoCount', 'Add up to {max} video URLs.', { max: String(MAX_VIDEO_SOURCES) }) });
@@ -235,6 +270,7 @@ function setVideoSources(values, shuffle, cb) {
     videoUrls = videoItems.map(function (item) { return item.url; });
     videoInputs = values.map(function (value) { return String(value).trim(); }).filter(Boolean);
     videoShuffle = shuffle === true;
+    if (style && typeof style === 'object') videoStyle = readVideoStyle(style);
     if (videoUrls.length) choice = 'video';
     else if (choice === 'video') choice = 'black';
     saveChoice();
@@ -252,6 +288,16 @@ function setVideoSources(values, shuffle, cb) {
       readFeed(feedIndex + 1, items.concat(found).slice(0, MAX_VIDEO_SOURCES));
     });
   })(0, next.map(function (source) { return { url: source, title: '', pointsOfInterest: [] }; }));
+}
+
+// The playlist's order and on-screen details, changed without reading the playlist again.
+function setVideoOptions(options, cb) {
+  cb = cb || function () {};
+  if (!options || typeof options !== 'object') return cb({ ok: false, error: 'videoShuffle or videoStyle expected' });
+  if (typeof options.shuffle === 'boolean') videoShuffle = options.shuffle;
+  if (options.style && typeof options.style === 'object') videoStyle = readVideoStyle(options.style, copyVideoStyle());
+  saveChoice();
+  cb({ ok: true, wallpapers: status() });
 }
 
 function setFile(name, key) { return path.join(setsDir, name, key + '.jpg'); }
@@ -501,5 +547,5 @@ function removeSet(name) {
 }
 
 module.exports = { init: init, status: status, image: image, upload: upload, removeUploads: removeUploads,
-  removePictures: removePictures, choose: choose, setVideoSources: setVideoSources, videoSources: videoSources,
+  removePictures: removePictures, choose: choose, setVideoSources: setVideoSources, setVideoOptions: setVideoOptions, videoSources: videoSources,
   parseVideoEntries: parseVideoEntries, receiveJpeg: receiveJpeg, SETS: SETS, MAX_SHUFFLE: MAX_SHUFFLE, MAX_VIDEO_SOURCES: MAX_VIDEO_SOURCES };
