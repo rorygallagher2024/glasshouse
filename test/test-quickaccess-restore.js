@@ -14,7 +14,9 @@ var qa = require('../server/lib/quickaccess');
 
 console.log('Running test-quickaccess-restore.js ...');
 
-var dir = fs.mkdtempSync(path.join(os.tmpdir(), 'quickaccess-restore-'));
+// fs.mkdtempSync is newer than node 0.12.
+var dir = path.join(os.tmpdir(), 'quickaccess-restore-' + process.pid);
+fs.mkdirSync(dir);
 var LG_FILE = path.join(dir, 'quickaccess-lg.json');
 // LG's defaults, as resetSystemSettings gives them on a C2 (webOS 9.2.2).
 var QUICK_HELP = { override: true, id: 'com.webos.app.self-diagnosis', params: { from: 'magicNum' } };

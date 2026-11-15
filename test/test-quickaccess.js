@@ -11,7 +11,9 @@ var fs = require('fs');
 var os = require('os');
 var path = require('path');
 // LG's kept values go here, not beside the server in the checkout.
-var QA_DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'quickaccess-'));
+// fs.mkdtempSync is newer than node 0.12.
+var QA_DIR = path.join(os.tmpdir(), 'quickaccess-' + process.pid);
+fs.mkdirSync(QA_DIR);
 
 console.log('Running test-quickaccess.js ...');
 
