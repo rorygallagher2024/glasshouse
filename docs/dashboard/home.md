@@ -15,6 +15,8 @@ Preview cards at the top of the **Home** tab switch between five launcher option
 | **[Custom](#custom-launcher)** | Replaces LG's Home with an uploaded `.ipk`/`.zip`/`.html` app or a full-screen web URL (such as Home Assistant). | Same as Glasshouse Home |
 
 > [!NOTE]
+> On webOS 2 and 3, which have no remote key filters, Glasshouse Home reads the Home press from the remote itself and opens straight after, so LG's ribbon shows for about a second first, each time Home is pressed, even with Glasshouse Home already open (a 60UJ6519, webOS 3.9.3). Taking the press before LG's ribbon sees it would need a native program on the TV; see [why](../tested-tvs.md#why-some-versions-are-not-offered).
+>
 > On webOS 4 (tried on a B8), LG's launcher is an in-compositor ribbon and Glasshouse Home runs as a standalone app (`com.tvweb.home`) launched by the remote key filter, so **Back** dismisses it. On webOS 5 and 6 (tried on a CX, C1 and B1), running standalone avoids app-manager restarts that break DRM/audio on takeover mounts, though switching the launcher itself or holding Home for LG's Home restarts the app manager and closes open apps. On webOS 7, 9, 10 and 11, Glasshouse Home is bind-mounted over LG's Home without modifying the root filesystem.
 
 ![Glasshouse Home on an OLED55G36LA (webOS 9.2): clock and the Apps, Inputs and Channels rows over an uploaded afternoon wallpaper](../screenshots/home.jpg)
