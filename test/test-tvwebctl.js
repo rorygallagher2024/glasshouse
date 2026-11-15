@@ -50,7 +50,15 @@ env.FAKE_MODE = MODE;
 // The watchdog's release of LG's Home, without running the TV's on this machine.
 env.TVWEB_RELEASE = 'touch ' + path.join(dir, 'released');
 
-function ctl(cmd) { return child.execSync('sh ' + CTL + ' ' + cmd, { env: env, encoding: 'utf8' }); }
+// A tvwebctl that does not return would hang the test with nothing said.
+function ctl(cmd) {
+  try {
+    return child.execSync('sh ' + CTL + ' ' + cmd, { env: env, encoding: 'utf8', timeout: 30000 });
+  } catch (e) {
+    if (cmd === 'stop' || !e.signal) throw e;
+    finish(1, 'tvwebctl ' + cmd + ' had not returned after 30s');
+  }
+}
 function mode(m) { fs.writeFileSync(MODE, m); }
 function read(f) { try { return fs.readFileSync(f, 'utf8'); } catch (e) { return ''; } }
 function serverPid() { return parseInt(read(PIDFILE), 10) || 0; }
