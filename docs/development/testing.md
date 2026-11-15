@@ -711,4 +711,6 @@ integration. The web tab returns when an integration becomes available again.
 synthetic data. The Hue Sync checks wait for intercepted requests to finish
 before closing each page, so pending stats replies cannot outlive the page.
 
+`test-quickaccess-restore.js` checks that what LG had on a Quick Access key is kept the first time it is changed and only then, that As LG has it puts it back, Quick Help on 9 among them, that restoring puts back every key changed, the owner's own choices included, and that a key changed before anything was kept gets LG's default.
+
 `test-remote-availability.js` checks the lightweight Remote availability route: Quick Access needs one settings read, remote keys are checked only as a fallback, and neither path collects the Apps catalogue or writes settings.

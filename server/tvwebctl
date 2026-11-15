@@ -387,8 +387,10 @@ case "$1" in
   rollback) rollback_app "$2" ;;
   # Before uninstalling: LG's Home screen layout back, and the input tiles added here off it.
   restore-home) "$NODE" "$(dirname "$SELF")/lib/homescreen.js" --restore ;;
-  # Before uninstalling: the remote's keys as LG has them.
-  restore-keys) "$NODE" "$(dirname "$SELF")/lib/remotekeys.js" --restore ;;
+  # Before uninstalling: the remote's keys, and its Quick Access keys, as LG has them.
+  restore-keys)
+    "$NODE" "$(dirname "$SELF")/lib/quickaccess.js" --restore
+    "$NODE" "$(dirname "$SELF")/lib/remotekeys.js" --restore ;;
   # LG's Home as the TV's Home again, and Glasshouse Home switched off.
   restore-glasshouse-home) "$NODE" "$(dirname "$SELF")/lib/home.js" --restore ;;
   status)
