@@ -903,6 +903,20 @@ step('Last opened records nothing while Glasshouse Home is off', function (done)
  * The order is what the TV needs: sam switched while the old instance runs
  * can neither close it nor start the new one, and the screen stays black.
  */
+step('a starting notice the TV will not take leaves the switch on and off standing (#1498)', function (done) {
+  start(null, { setStarting: function (text, cb) { cb({ ok: false }); } });
+  home.enable(function (r) {
+    assert.ok(r.ok, r.error);
+    assert.ok(taken(), 'Glasshouse Home has LG\'s Home\'s place');
+    assert.strictEqual(home.enabled(), true);
+    home.disable(function (r2) {
+      assert.ok(r2.ok, r2.error);
+      assert.strictEqual(home.enabled(), false);
+      done();
+    });
+  });
+});
+
 step('switching on reads the new files into sam before stopping LG\'s Home, and switching off the reverse', function (done) {
   start(null);
   home.enable(function (r) {

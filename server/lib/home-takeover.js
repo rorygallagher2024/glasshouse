@@ -468,7 +468,8 @@ if (require.main === module && process.argv[2] === '--release') {
   init({ luna: lunaTransport.call, samrescan: rescan, stageDir: path.join(releaseStateDir, 'home-takeover') });
   remoteKeys.setStarting('', function (keys) {
     function finish(r) {
-      if (!keys || !keys.ok) r = { ok: false, error: 'the Home key\'s starting notice could not be cleared' };
+      // Only a notice left on the Home key; LG's Home is back all the same (#1498).
+      if (!keys || !keys.ok) console.log('home: the Home key\'s starting notice could not be cleared');
       console.log(r.ok ? 'home: LG\'s Home is in its place' : 'home: ' + r.error);
       process.exit(r.ok ? 0 : 1);
     }
