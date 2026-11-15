@@ -1442,6 +1442,19 @@ function handleIptvRoute(req, res, u, pathname) {
   send(res, 404, JSON.stringify({ ok: false, error: 'not found' }));
 }
 
+// An asset's gzipped copy, or null where it is no smaller or gzipSync is
+// missing (node 0.10). On this thread rather than zlib's worker pool: see loadUI.
+function gzipAsset(file, buf) {
+  if (typeof zlib.gzipSync !== 'function') return null;
+  try {
+    var gz = zlib.gzipSync(buf);
+    return gz.length < buf.length ? gz : null;
+  } catch (e) {
+    console.warn('assets: could not gzip ' + file + ': ' + e.message + '; serving uncompressed');
+    return null;
+  }
+}
+
 function acceptsGzip(acceptEncoding) {
   if (!acceptEncoding) return false;
   var encodings = String(acceptEncoding).split(',');
@@ -1554,12 +1567,21 @@ function handleRequest(req, res) {
     var respondWithEntry = function (entry) {
       var etag = '"' + (displayVersionStr || '1') + '-' + entry.raw.length.toString(16) + '"';
       var assetHeaders = { 'ETag': etag, 'Cache-Control': cacheHdr };
-      if (entry.gz) assetHeaders['Vary'] = 'Accept-Encoding';
+      if (compressible) assetHeaders['Vary'] = 'Accept-Encoding';
       if (req.headers && req.headers['if-none-match'] === etag) {
         res.writeHead(304, assetHeaders);
         return res.end();
       }
-      var useGz = !!entry.gz && acceptsGzip(req.headers && req.headers['accept-encoding']);
+      /*
+       * Only for a browser elsewhere on the network. The TV's own pages come
+       * over loopback, where fewer bytes save nothing, and gzipSync holds this
+       * thread: 126 to 161 ms for a translation file and 78 ms for home.html on
+       * a B8 (webOS 4.4.3, node 0.12.2), once each after a start. So it is done
+       * when a request from the network first asks for it, not as a file is read.
+       */
+      var wantGz = compressible && !fromTV(req) && acceptsGzip(req.headers && req.headers['accept-encoding']);
+      if (wantGz && entry.gz === undefined) entry.gz = gzipAsset(file, entry.raw);
+      var useGz = wantGz && !!entry.gz;
       var outBuf = useGz ? entry.gz : entry.raw;
       assetHeaders['Content-Type'] = mime;
       assetHeaders['Content-Length'] = outBuf.length;
@@ -1572,17 +1594,9 @@ function handleRequest(req, res) {
     }
     return fs.readFile(file, function (e, buf) {
       if (e) return send(res, 500, JSON.stringify({ ok: false, error: 'read failed' }));
-      var gz = null;
-      // On this thread rather than zlib's worker pool: see loadUI.
-      if (compressible && typeof zlib.gzipSync === 'function') {
-        try {
-          var candidate = zlib.gzipSync(buf);
-          if (candidate.length < buf.length) gz = candidate;
-        } catch (ze) {
-          console.warn('assets: could not gzip ' + file + ': ' + ze.message + '; serving uncompressed');
-        }
-      }
-      var entry = { raw: buf, gz: gz };
+      // gz: undefined until a request from the network wants it, then the
+      // compressed copy, or null where gzip saves nothing.
+      var entry = { raw: buf, gz: undefined };
       ASSET_CACHE[file] = entry;
       respondWithEntry(entry);
     });
