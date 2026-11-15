@@ -3463,7 +3463,7 @@ step('media servers, USB drives, AirPlay, Screen Share and All Inputs appear in 
       assert.strictEqual(byId0['dms:rincon-ms'], undefined, 'media servers are hidden by default');
       assert.strictEqual(byId0['usb:usb1'].kind, 'usb');
       assert.strictEqual(byId0['airplay'].kind, 'airplay');
-      assert.strictEqual(byId0['screenshare'].appId, 'com.webos.app.miracast');
+      assert.strictEqual(byId0['screenshare'], undefined, 'no Screen Share without Home Hub\'s guide: LG\'s Miracast app closes on its own');
       assert.strictEqual(byId0['allinputs'].appId, 'com.webos.app.inputmgr');
       home.setLayout({ showMediaServers: true }, function (lr2) {
         assert.ok(lr2.ok);
@@ -3490,6 +3490,40 @@ step('media servers, USB drives, AirPlay, Screen Share and All Inputs appear in 
         });
       });
     });
+  });
+});
+
+step('Screen Share opens Home Hub\'s guide, where Home Hub has one (#1500, #1502)', function (done) {
+  var hubMain = path.join(dir, 'homeconnect-main.js');
+  start(null, { homeHubMain: hubMain });
+  // After start(), which empties the test's folder.
+  fs.writeFileSync(hubMain, 'case"mobileGuide":this.panelIndex=1');
+  tv.extraInputApps = {
+    'com.webos.app.miracast': { id: 'com.webos.app.miracast', title: 'Screen Share' },
+    'com.webos.app.homeconnect': { id: 'com.webos.app.homeconnect', title: 'Home Hub' }
+  };
+  // Saved, the layout has the lists read again, now with Home Hub.
+  home.setLayout({ showMediaServers: false }, function () {
+  home.catalogue(function (c) {
+    var byId = {};
+    c.devices.forEach(function (d) { byId[d.id] = d; });
+    assert.strictEqual(byId['screenshare'].appId, 'com.webos.app.homeconnect');
+    assert.strictEqual(byId['allinputs'].appId, 'com.webos.app.homeconnect');
+    home.open({ kind: 'dev', id: 'screenshare' }, function (r) {
+      assert.ok(r.ok, r.error);
+      assert.deepEqual(tv.launches.pop(), { id: 'com.webos.app.homeconnect', params: { actionType: 'mobileGuide' } });
+      start(null, { homeHubMain: hubMain });
+      fs.writeFileSync(hubMain, 'no guide here');
+      tv.extraInputApps = { 'com.webos.app.homeconnect': { id: 'com.webos.app.homeconnect', title: 'Home Hub' } };
+      home.setLayout({ showMediaServers: false }, function () {
+        home.catalogue(function (c2) {
+          assert.ok(c2.devices.every(function (d) { return d.id !== 'screenshare'; }), 'not offered where Home Hub has no guide');
+          fs.unlinkSync(hubMain);
+          done();
+        });
+      });
+    });
+  });
   });
 });
 

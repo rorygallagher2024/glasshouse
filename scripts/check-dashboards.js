@@ -478,6 +478,73 @@ async function visitHomeBarPrewarm(browser, base, problems) {
   }
 }
 
+// AirPlay is an app and an input under one id: hidden as an app, it stays out
+// of the Bar, and where only the input has it, it is drawn as an input with its
+// icon (#1500, #1502). Screen Share opens with its launch parameters.
+async function visitHomeBarTiles(browser, base, problems) {
+  const fail = what => problems.push('Glasshouse Bar tiles: ' + what);
+  const devices = [
+    { id: 'hdmi1', name: 'HDMI 1', input: 'hdmi1', port: 1 },
+    { id: 'airplay', name: 'AirPlay', input: 'airplay', kind: 'airplay', appId: 'airplay' },
+    { id: 'screenshare', name: 'Screen Share', input: 'screenshare', kind: 'screenshare', appId: 'com.webos.app.homeconnect', params: { actionType: 'mobileGuide' } }
+  ];
+  const load = async (catalogue) => {
+    const page = await browser.newPage({ viewport: { width: 1920, height: 1080 } });
+    page.on('pageerror', e => fail(e.message));
+    await page.addInitScript(() => {
+      window.PalmSystem = { launchParams: '{}' };
+      window.__calls = [];
+      window.PalmServiceBridge = function () {};
+      window.PalmServiceBridge.prototype.call = function (uri, body) {
+        window.__calls.push({ uri, body: JSON.parse(body) });
+        if (this.onservicecallback) this.onservicecallback(JSON.stringify({ returnValue: true }));
+      };
+      window.close = function () {};
+    });
+    await page.route('http://localhost:8080/**', route => {
+      const url = new URL(route.request().url());
+      if (url.pathname === '/assets/devicons.js') return route.continue({ url: base + '/assets/devicons.js' });
+      if (url.pathname === '/api/home/now') return route.fulfill({ json: { kind: 'input', port: 1 } });
+      if (url.pathname === '/api/home/catalogue') return route.fulfill({ json: catalogue });
+      return route.fulfill({ json: {} });
+    });
+    await page.goto(base + '/assets/homebar-app/index.html');
+    await page.waitForFunction(() => document.querySelectorAll('#row .tile').length > 0 && document.querySelector('#row .tile.input svg'));
+    return page;
+  };
+  const tiles = page => page.evaluate(() => Array.from(document.querySelectorAll('#row .tile')).map(el => ({
+    name: el.querySelector('.nm').textContent, input: el.classList.contains('input'), svg: !!el.querySelector('svg') })));
+
+  let page = await load({ ok: true, layout: { hidden: { app: ['airplay'] } },
+    order: { app: ['app1', 'airplay'], dev: devices.map(d => d.id) },
+    apps: [{ id: 'app1', title: 'Test App' }, { id: 'airplay', title: 'AirPlay', icon: '/api/home/icon?id=airplay' }], devices });
+  try {
+    const t = await tiles(page);
+    if (t.some(x => x.name === 'AirPlay')) fail('AirPlay hidden as an app still shows: ' + JSON.stringify(t));
+    const i = t.findIndex(x => x.name === 'Screen Share');
+    if (i === -1) return fail('no Screen Share tile: ' + JSON.stringify(t));
+    await page.evaluate(n => {
+      const el = document.querySelectorAll('#row .tile')[n];
+      el.dispatchEvent(new MouseEvent('mouseover', { bubbles: true }));
+      el.click();
+    }, i);
+    await page.waitForFunction(() => window.__calls.some(c => /launch$/.test(c.uri)));
+    const launch = await page.evaluate(() => window.__calls.filter(c => /launch$/.test(c.uri)).pop().body);
+    if (launch.id !== 'com.webos.app.homeconnect' || !launch.params || launch.params.actionType !== 'mobileGuide') fail('Screen Share launched ' + JSON.stringify(launch));
+  } finally {
+    await page.close();
+  }
+
+  page = await load({ ok: true, layout: {}, order: { app: ['app1'], dev: devices.map(d => d.id) },
+    apps: [{ id: 'app1', title: 'Test App' }], devices });
+  try {
+    const air = (await tiles(page)).filter(x => x.name === 'AirPlay');
+    if (air.length !== 1 || !air[0].input || !air[0].svg) fail('AirPlay as an input only: ' + JSON.stringify(air));
+  } finally {
+    await page.close();
+  }
+}
+
 async function visitHomeWeather(browser, base, problems) {
   const page = await browser.newPage();
   page.on('pageerror', e => problems.push('Home weather: ' + e.message));
@@ -4101,7 +4168,7 @@ function groups(web, tv) {
     { job: 'tabs', tabs: web.map(t => ({ path: '/?tab=' + t, label: 'web ' + t })), visits: [visitHomeAnimations, visitHuesyncSettings, visitInputsAndRemote, visitAdblockCards, visitSaverEntitySlots] },
     { job: 'tabs', tabs: tv.map(t => ({ path: '/assets/dashboard.html?tab=' + t, label: 'TV ' + t })),
       visits: [visitTvDashboard, visitTvAudio, visitTvPictureWrites, visitPictureUnavailable, visitTvNonOled, visitTvHuesync] },
-    { job: 'home', tabs: [], visits: [visitHomePicture, visitHomePreview, visitHomePreviewOptions, visitHomePreviewWebos4, visitHomePreviewSize, visitHomePreviewSizeDetails, visitInputBarBehindHome, visitHomeBarPrewarm, visitHomeUpDown, visitHomePointerOff, visitHomeOrder, visitHomeAvailability, visitHomeSearch, visitHomeWeather, visitHomeWeatherSetting] },
+    { job: 'home', tabs: [], visits: [visitHomePicture, visitHomePreview, visitHomePreviewOptions, visitHomePreviewWebos4, visitHomePreviewSize, visitHomePreviewSizeDetails, visitInputBarBehindHome, visitHomeBarPrewarm, visitHomeBarTiles, visitHomeUpDown, visitHomePointerOff, visitHomeOrder, visitHomeAvailability, visitHomeSearch, visitHomeWeather, visitHomeWeatherSetting] },
     { job: 'home', tabs: [], visits: [visitHomeArrangement, visitHomeVisibility, visitHomeColours, visitHomeInputsEditor, visitHomeEditor,
       visitHomeRecentsHidden, visitHomeUploads, visitHomeShuffle, visitHomeLauncher, visitHomeReadiness, visitAudioOverride, visitHomeRecents, visitHomeGuide,
       visitHomeFadeAndInputs] },

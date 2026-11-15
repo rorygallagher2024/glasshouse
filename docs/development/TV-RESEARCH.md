@@ -3651,6 +3651,18 @@ C2 that call and a plain `applicationManager/launch` of `airplay` open the same
 page: the Wi-Fi network, the TV's AirPlay name, How to Use AirPlay, and AirPlay
 and Apple Home, which holds its settings.
 
+## Screen Share without a phone (C2, webOS 9.2.2)
+
+`com.webos.app.miracast` ("Screen Share", a web app, `visible: false`) is
+LG's Miracast receiver. Launched on its own it came to the front and closed
+itself within 3 s, as owners saw from Glasshouse's tiles on a CX (webOS 5.6.2,
+#1500) and a C5 (webOS 10.3.1, #1502): its script closes the window when no
+connection comes. LG's Home Hub (`com.webos.app.homeconnect`) does not launch
+it either; its Screen Share entry is its own mobile guide panel, which a
+launch with `{ "actionType": "mobileGuide" }` opens (`onParamsCall` in its
+`main.js`, beside `iotConnectionGuide` and `iotPanel`). Launched that way, Home
+Hub stayed in front.
+
 ## Holding down LG's account client (C2, webOS 9.2.2; B4, webOS 10.3.2)
 
 Settings waits for `com.webos.service.accountmanager/getLoginUserData` before it
