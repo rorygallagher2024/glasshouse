@@ -683,9 +683,11 @@ function scanSavers() {
     });
     list = list.concat(found);
   }
-  catalogCache = { list: [STOCK].concat(list), byId: byId };
+  catalogCache = { list: [STOCK].concat(list), byId: byId, hasVideos: hasHomeVideos() };
   return catalogCache;
 }
+
+function hasHomeVideos() { return homeWallpapers.videoSources().urls.length > 0; }
 
 function savers() { return catalogCache || scanSavers(); }
 
@@ -694,8 +696,9 @@ function savers() { return catalogCache || scanSavers(); }
 function catalog() { return scanSavers().list; }
 
 function saverById(id) {
-  // A built-in saver can become available when Home's playlist is saved.
-  var byId = scanSavers().byId;
+  // The Video saver is available, or not, with Home's playlist.
+  var cached = savers();
+  var byId = (cached.hasVideos === hasHomeVideos() ? cached : scanSavers()).byId;
   return Object.prototype.hasOwnProperty.call(byId, id) ? byId[id] : null;
 }
 
@@ -1251,7 +1254,9 @@ function screensaverList() {
 
 function stageScreensaverAppinfo(e) {
   var stock = fs.readFileSync(path.join(SCREENSAVER_APP_DIR, 'appinfo.json'), 'utf8');
-  rememberStockType(stock);
+  // With a saver mounted, the app's manifest is the staged copy, not LG's,
+  // whose type must not be overwritten with ours.
+  if (!stagedCopyMounted()) rememberStockType(stock);
   var out = stock;
   try {
     var info = JSON.parse(stock);
@@ -1330,6 +1335,9 @@ function stageSaverFiles(e, level, choice) {
   for (var i = 0; i < files.length; i++) {
     var rel = files[i].rel;
     if (rel === MANIFEST || rel === e.main) continue;
+    // A Web saver is staged at the app's root, beside its manifest and marker:
+    // only its web folder goes there.
+    if (e.runtime === 'web' && rel.indexOf('web/') !== 0) continue;
     mkdirp(path.dirname(path.join(targetDir, rel)));
     fs.writeFileSync(path.join(targetDir, rel), fs.readFileSync(path.join(e.dir, rel)));
   }
@@ -1672,22 +1680,29 @@ function swapScreensaver(saver, mode, level, choice, cb) {
 /*
  * An installed app's screen saver in use whose app has gone, or no longer has
  * it: LG's back, as the staged copy may need files that went with the app.
+ * The same for the Video saver once Home's playlist is emptied, whose staged
+ * page would go on playing the old one (in random mode, the next saver).
  */
-function appSaverGone() {
+function appSaverGone(playlistChanged) {
   var m = readTrimmed(path.join(SCREENSAVER_APP_DIR, SCREENSAVER_MARKER));
-  if (!m || m.indexOf(APP_PREFIX) !== 0 || saverById(m)) return;
-  console.log('screensaver: "' + m + '" is no longer installed; putting LG\'s back');
+  var e = m ? saverById(m) : null;
+  // Only on a change saved from Home: at start, the playlist may not be read yet.
+  var emptied = !!(playlistChanged && e && e.problem && e.uses.indexOf('videos') !== -1);
+  if (emptied && isRandomEnabled()) return advanceRandomSaver();
+  if (!emptied && (!m || m.indexOf(APP_PREFIX) !== 0 || e)) return;
+  console.log('screensaver: "' + m + '" ' + (emptied ? 'has no videos' : 'is no longer installed') + '; putting LG\'s back');
   setScreensaver('stock', 'dim', function (r) {
     if (!r.ok) console.error('screensaver: could not put LG\'s back: ' + (r.error || 'unknown error'));
   });
 }
 
 // At start, when the clock's format changes, and after an app is removed.
-function restageScreensaver() {
+// playlistChanged: Home's video playlist was just saved.
+function restageScreensaver(playlistChanged) {
   // Read again, as an app with a screen saver may have been removed.
   scanSavers();
   var mode = screensaverMode();
-  if (mode === 'stock') { stagedEntities = null; stagedEntityLabels = null; return appSaverGone(); }
+  if (mode === 'stock') { stagedEntities = null; stagedEntityLabels = null; return appSaverGone(playlistChanged === true); }
   var stagedId = stagedScreensaver();
   var saver = saverById(stagedId);
   if (!saver || saver.problem) {

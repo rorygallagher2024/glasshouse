@@ -321,10 +321,17 @@ console.log('Running test-screensavers.js ...');
               var next2 = screensavers.pickNextRandomSaver('starfield');
               assert.strictEqual(next2.id, 'clock');
 
-              // advanceRandomSaver stages the selected saver
+              // advanceRandomSaver stages the selected saver, and leaves the
+              // record of LG's stock type alone: the manifest it reads is our mounted copy.
+              var stockType = '/var/lib/tvweb/screensaver-stock-type';
+              env.files[stockType] = 'flutter';
+              env.files['/proc/self/mountinfo'] = '1 2 0:1 /var/lib/tvweb/screensaver ' + SCREENSAVER_APP_DIR + ' rw\n';
               screensavers.advanceRandomSaver();
+              env.files['/proc/self/mountinfo'] = null;
               var staged = screensavers.stagedScreensaver();
               assert.ok(staged === 'clock' || staged === 'starfield');
+              assert.strictEqual(env.files[stockType], 'flutter', 'the stock type is not overwritten from the mounted manifest');
+              env.files[stockType] = null;
 
               // onPowerChange: transition from Screen Saver to Active advances random saver
               var curStaged = screensavers.stagedScreensaver();

@@ -1259,11 +1259,12 @@ function renderHomeVideo(busy) {
 }
 
 function homeBgKind() {
-  if (homeBgSelectedKind) return homeBgSelectedKind;
   const anim = (homeLayout && homeLayout.wallAnim) || 'off';
-  if (anim !== 'off') return 'animated';
   const choice = (homeStatus && homeStatus.wallpapers && homeStatus.wallpapers.choice) || 'own';
-  return choice === 'black' ? 'none' : choice === 'video' ? 'video' : 'pictures';
+  const saved = anim !== 'off' ? 'animated' : choice === 'black' ? 'none' : choice === 'video' ? 'video' : 'pictures';
+  // A kind picked here that the TV has not taken yet (Video before its first Save) shows until it does.
+  if (homeBgSelectedKind === saved) homeBgSelectedKind = null;
+  return homeBgSelectedKind || saved;
 }
 
 function renderHomeBg() {
@@ -1302,7 +1303,8 @@ async function homeBgChoose(kind) {
   if (kind === 'video') {
     const walls = homeStatus.wallpapers || {};
     q('home-video-urls').value = (walls.videoInputs || walls.videoUrls || []).join('\n');
-    q('home-video-shuffle').checked = !!walls.videoShuffle;
+    // With videos saved, they play now; without, the section waits for its first Save.
+    if ((walls.videoUrls || []).length && choice !== 'video') return homeWallSet('video');
     renderHomeBg();
     return;
   }

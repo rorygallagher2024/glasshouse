@@ -3516,7 +3516,7 @@ module.exports = {
     if (body && body.removePictures === true) return wallpapers.removePictures(cb);
     // The Video screen saver is staged with the playlist and its details filled in.
     var restaged = function (result) {
-      if (result && result.ok && screensaversModule) screensaversModule.restageScreensaver();
+      if (result && result.ok && screensaversModule) screensaversModule.restageScreensaver(true);
       cb(result);
     };
     if (body && Array.isArray(body.videoUrls)) return wallpapers.setVideoSources(body.videoUrls, body.videoShuffle, restaged, body.videoStyle);

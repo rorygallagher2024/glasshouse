@@ -116,7 +116,23 @@ process.nextTick(checked(function () {
         assert.ok(videoPage.indexOf('pointsOfInterest') !== -1, 'playlist metadata is filled into the page');
         assert.ok(String(env.files[path.join(STAGE, 'web', 'video-order.js')]).indexOf('shuffled') !== -1, 'the playlist order script is staged beside it');
         console.log('  ✓ the Video screen saver receives the configured playlist');
-        done();
+        // Home's playlist emptied: LG's screen saver comes back rather than the old playlist.
+        var marker = path.join('/usr/palm/applications/com.webos.app.screensaver', '.tvweb-screensaver');
+        assert.strictEqual(String(env.files[marker]).trim(), 'video');
+        wallpapers.setVideoSources([], false, function () {});
+        // At start, before Home has read its playlist, it stays.
+        screensavers.restageScreensaver();
+        assert.strictEqual(String(env.files[marker]).trim(), 'video', 'a restage at start leaves the Video saver');
+        screensavers.restageScreensaver(true);
+        var tries = 0;
+        (function wait() {
+          if (String(env.files[marker] || '').trim() !== 'video') {
+            console.log('  ✓ emptying the playlist puts LG\'s screen saver back');
+            return done();
+          }
+          if (++tries > 200) throw new Error('the Video saver stayed staged with no videos');
+          setImmediate(wait);
+        })();
       }));
     }), 'nonsense');
   }), 'two');

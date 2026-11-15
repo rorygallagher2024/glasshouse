@@ -5042,15 +5042,41 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     var el = $('wall-caption'), style = wallVideoStyle || {};
     if (!el) return;
     var pos = style.captionPosition || 'top-left', right = pos.indexOf('right') !== -1, bottom = pos.indexOf('bottom') === 0;
-    el.style.left = right ? '' : '4%';
-    el.style.right = right ? '4%' : '';
-    el.style.top = bottom ? '' : '4%';
-    el.style.bottom = bottom ? '4%' : '';
+    // 'auto', not '': an empty value falls back to the stylesheet's left and top.
+    el.style.left = right ? 'auto' : '4%';
+    el.style.right = right ? '4%' : 'auto';
+    el.style.top = bottom ? 'auto' : '4%';
+    el.style.bottom = bottom ? '4%' : 'auto';
     el.style.textAlign = right ? 'right' : 'left';
     el.style.fontFamily = style.captionFont === 'Outfit' ? 'Outfit,sans-serif' : 'Manrope,sans-serif';
     // In Home's text colour, from its Colours, as the rest of Home is.
     el.style.fontSize = (Number(style.captionSize) || 32) + 'px';
     el.style.display = style.showCaptions === false ? 'none' : '';
+    clearWallCaption();
+  }
+
+  // Moved clear of Home's clock, weather and tiles where its corner has them,
+  // which vary with Home's layout, so they are measured.
+  function clearWallCaption() {
+    var el = $('wall-caption'), style = wallVideoStyle || {};
+    if (!el || !el.textContent) return;
+    var bottom = (style.captionPosition || '').indexOf('bottom') === 0;
+    el.style.top = bottom ? 'auto' : '4%';
+    el.style.bottom = bottom ? '4%' : 'auto';
+    var box = el.getBoundingClientRect(), height = window.innerHeight, gap = 24, edge = null;
+    if (!box.width) return;
+    var marks = bottom ? document.querySelectorAll('#rows .tile') : [$('when'), $('weather'), $('source'), $('plate'), $('preview')];
+    for (var i = 0; i < marks.length; i++) {
+      // An empty #source keeps its place, hidden.
+      var r = marks[i] && window.getComputedStyle(marks[i]).visibility !== 'hidden' && marks[i].getBoundingClientRect();
+      if (!r || !r.width || !r.height || r.bottom <= 0 || r.top >= height) continue;
+      if (r.right <= box.left || r.left >= box.right) continue;
+      if (bottom) edge = edge === null ? r.top : Math.min(edge, r.top);
+      else edge = edge === null ? r.bottom : Math.max(edge, r.bottom);
+    }
+    if (edge === null) return;
+    if (bottom && edge < box.bottom + gap) el.style.bottom = Math.round(height - edge + gap) + 'px';
+    if (!bottom && edge > box.top - gap) el.style.top = Math.round(edge + gap) + 'px';
   }
 
   /*
@@ -5100,7 +5126,10 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
         wallVideoOrderAt = 0;
         playWallVideo(nextWallVideoIndex(), slot.strength);
       } else if (wallVideoEl) {
-        wallVideoEl.style.opacity = slot.strength;
+        // The strength follows the time of day, but not into a clip still
+        // loading or fading out at its end.
+        var fadingOut = wallVideoEl.duration && wallVideoEl.duration - (wallVideoEl.currentTime || 0) < WALL_VIDEO_FADE_S;
+        if (wallVideoPlaying && !fadingOut) wallVideoEl.style.opacity = slot.strength;
         // Back from the screen saver, its player can still have the decoder: a
         // play refused or a picture that never comes is tried again here, at
         // the heartbeat, rather than leaving Home black.
@@ -5242,7 +5271,10 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
         if (Number(points[p].at) > time) break;
         caption = points[p].text || caption;
       }
-      $('wall-caption').textContent = caption;
+      if ($('wall-caption').textContent !== caption) {
+        $('wall-caption').textContent = caption;
+        clearWallCaption();
+      }
       // Faded out over its last moments, so the next one loading is a dip to black rather than a cut.
       if (wallVideoPlaying && video.duration && video.duration - time < WALL_VIDEO_FADE_S) video.style.opacity = 0;
     };
@@ -6205,7 +6237,15 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     // Start screensaver in the dashboard can launch the saver app directly,
     // without a tvpower "Screen Saver" state or a covered heartbeat. Its video
     // player can stop Home's decoder anyway, so reload the wallpaper on return.
-    if (wallChoice === 'video' && wallVideoSources.length) wallVideoNeedsRestart = true;
+    if (wallChoice === 'video' && wallVideoSources.length) {
+      // Not unloaded on the way out (a relaunch over Home, a quick trip): the
+      // reload carries on with the same clip from where it was.
+      if (!wallVideoLeftWhen && wallVideoEl && wallVideoEl.getAttribute('src')) {
+        wallVideoLeftAt = wallVideoEl.currentTime || 0;
+        wallVideoLeftWhen = Date.now();
+      }
+      wallVideoNeedsRestart = true;
+    }
     updateWall();
     // Back from an app, Home is as it was left: the same tile in focus and
     // every row where it was scrolled, brought to rest where it was headed.
@@ -6257,7 +6297,8 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
   // Home pressed with the view already open reaches it as a relaunch.
   document.addEventListener('webOSRelaunch', function () { guideLaunch(); returned(); });
   document.addEventListener('visibilitychange', function () {
-    if (document.hidden) { animStop(); darken(); }
+    // Hidden behind an app, which may need the decoder the wallpaper holds.
+    if (document.hidden) { animStop(); darken(); unloadWallVideo(); }
     else { returned(); animRun(); }
   });
   window.addEventListener('pagehide', function () { if (player.open) closePlayer(); stopPreview(); });
