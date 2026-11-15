@@ -544,58 +544,56 @@ async function visitHomeBarScroll(browser, base, problems) {
   }
 }
 
-// Opened before its icons have come, the Bar waits for them rather than
-// showing the tiles first and each icon a moment later, and its icons are
-// images decoded in the frame that draws them.
+// The Bar's icons are images decoded in the frame that draws them, and it
+// keeps them beside its cached row, so opened with nothing loaded (the icon
+// server not answering) it still draws every one at once.
 async function visitHomeBarIconsReady(browser, base, problems) {
   const fail = what => problems.push('Glasshouse Bar icons: ' + what);
-  const page = await browser.newPage({ viewport: { width: 1920, height: 1080 } });
-  page.on('pageerror', e => fail(e.message));
+  const context = await browser.newContext({ viewport: { width: 1920, height: 1080 } });
   const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==', 'base64');
-  await page.addInitScript(() => {
+  let iconsUp = true;
+  await context.addInitScript(() => {
     window.PalmSystem = { launchParams: '{}' };
     window.PalmServiceBridge = function () {};
     window.PalmServiceBridge.prototype.call = function () {
       if (this.onservicecallback) this.onservicecallback(JSON.stringify({ returnValue: true }));
     };
     window.close = function () {};
-    try { localStorage.setItem('glasshouse.homebar', JSON.stringify({ list: [
-      { kind: 'app', id: 'a1', name: 'One', icon: 'http://localhost:8080/api/home/icon?id=a1', letter: 'O' },
-      { kind: 'app', id: 'a2', name: 'Two', icon: 'http://localhost:8080/api/home/icon?id=a2', letter: 'T' }
-    ], onPort: null, labelsOff: false })); } catch (e) {}
-    // Whether every icon had loaded when the window was shown.
-    document.addEventListener('DOMContentLoaded', () => {
-      const note = () => {
-        if (document.body.className.indexOf('on') !== -1 && window.__iconsAtOpen === undefined) {
-          window.__iconsAtOpen = Array.from(document.querySelectorAll('#row .ico')).map(i => i.tagName === 'IMG' && i.complete);
-        }
-      };
-      note();
-      new MutationObserver(note).observe(document.body, { attributes: true, attributeFilter: ['class'] });
-    });
   });
-  await page.route('http://localhost:8080/**', async route => {
+  await context.route('http://localhost:8080/**', route => {
     const url = new URL(route.request().url());
     if (url.pathname === '/assets/devicons.js') return route.continue({ url: base + '/assets/devicons.js' });
     if (url.pathname === '/api/home/icon') {
-      await new Promise(r => setTimeout(r, 150));
-      return route.fulfill({ status: 200, contentType: 'image/png', body: png });
+      return iconsUp ? route.fulfill({ status: 200, contentType: 'image/png', body: png, headers: { 'Access-Control-Allow-Origin': '*' } })
+        : route.fulfill({ status: 503, body: '' });
     }
     if (url.pathname === '/api/home/now') return route.fulfill({ json: {} });
     if (url.pathname === '/api/home/catalogue') return route.fulfill({ json: { ok: true, layout: {}, order: { app: ['a1', 'a2'], dev: [] },
       apps: [{ id: 'a1', title: 'One', icon: '/api/home/icon?id=a1' }, { id: 'a2', title: 'Two', icon: '/api/home/icon?id=a2' }], devices: [] } });
     return route.fulfill({ json: {} });
   });
+  const page = await context.newPage();
+  page.on('pageerror', e => fail(e.message));
   try {
     await page.goto(base + '/assets/homebar-app/index.html');
-    await page.waitForFunction(() => window.__iconsAtOpen !== undefined, null, { timeout: 5000 });
-    const at = await page.evaluate(() => window.__iconsAtOpen);
-    if (!at.length) fail('no icons in the row when it opened');
-    else if (at.some(c => !c)) fail('shown before its icons had loaded: ' + JSON.stringify(at));
+    await page.waitForFunction(() => document.querySelectorAll('#row .ico').length === 2);
     const kind = await page.evaluate(() => { const i = document.querySelector('#row .ico'); return i ? i.tagName + ' ' + i.getAttribute('decoding') : 'none'; });
     if (kind !== 'IMG sync') fail('the icons are ' + kind + ', not images decoded in the frame that draws them');
+    const kept = await page.waitForFunction(() => {
+      try { return Object.keys(JSON.parse(localStorage.getItem('glasshouse.homebar.icons') || '{}')).length === 2; } catch (e) { return false; }
+    }, null, { timeout: 5000 }).then(() => true, () => false);
+    if (!kept) fail('the icons were not kept beside the row');
+    // Opened again with the icon server down: every icon from what was kept.
+    iconsUp = false;
+    await page.reload();
+    await page.waitForFunction(() => document.querySelectorAll('#row img.ico').length === 2);
+    const drawn = await page.waitForFunction(() => Array.from(document.querySelectorAll('#row img.ico')).every(i => i.complete && i.naturalWidth > 0),
+      null, { timeout: 3000 }).then(() => true, () => false);
+    if (!drawn) fail('opened with the icon server down, the kept icons were not drawn');
+    const fromKept = await page.evaluate(() => Array.from(document.querySelectorAll('#row img.ico')).every(i => i.src.indexOf('data:image/') === 0));
+    if (!fromKept) fail('the icons did not come from what was kept');
   } finally {
-    await page.close();
+    await context.close();
   }
 }
 
