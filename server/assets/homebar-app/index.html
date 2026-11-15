@@ -124,6 +124,7 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
   }
 
   function close() {
+    stopEdge();
     if (closing) return;
     closing = true;
     visibleSince = 0;
@@ -210,14 +211,71 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
     scrollTo();
   }
   // The row slides so the tile in focus stays on screen.
+  var ROOM = 1920 - 96 * 2;
+  var shift = 0;
+  /*
+   * Glasshouse Home's Smooth scrolling (Home tab, Motion): off, the row jumps
+   * to where a key, the wheel or the pointer sends it rather than gliding.
+   */
+  function applySmooth(layout) {
+    var t = layout && layout.smoothScroll === false ? 'none' : '';
+    var row = $('row');
+    if (row.style.transition !== t) row.style.webkitTransition = row.style.transition = t;
+  }
+  function applyShift() {
+    $('row').style.webkitTransform = $('row').style.transform = 'translateX(' + (-shift) + 'px)';
+  }
   function scrollTo() {
     var el = $('row').querySelector('[data-i="' + focus + '"]');
     if (!el) return;
-    var left = el.offsetLeft, right = left + el.offsetWidth, room = 1920 - 96 * 2;
-    var shift = 0;
-    if (right > room) shift = right - room + 24;
-    $('row').style.webkitTransform = $('row').style.transform = 'translateX(' + (-shift) + 'px)';
+    var right = el.offsetLeft + el.offsetWidth;
+    shift = right > ROOM ? right - ROOM + 24 : 0;
+    applyShift();
   }
+
+  /*
+   * The Magic Remote, as on Glasshouse Home: a notch of the wheel moves the
+   * row a tile, and the pointer resting near either end of it steps it along
+   * while there is more that way (#1500, #1531). The focus stays where the
+   * pointer puts it.
+   */
+  var EDGE = 150, EDGE_STEP_MS = 220;
+  var edgeDir = 0, edgeTimer = null;
+  function slide(dir) {
+    var tiles = $('row').querySelectorAll('.tile');
+    if (!tiles.length) return false;
+    var step = tiles[1] ? tiles[1].offsetLeft - tiles[0].offsetLeft : tiles[0].offsetWidth;
+    var last = tiles[tiles.length - 1];
+    var most = Math.max(0, last.offsetLeft + last.offsetWidth - ROOM + 24);
+    var next = Math.max(0, Math.min(most, shift + dir * step));
+    if (next === shift) return false;
+    shift = next;
+    applyShift();
+    return true;
+  }
+  function stopEdge() {
+    edgeDir = 0;
+    if (edgeTimer) { clearInterval(edgeTimer); edgeTimer = null; }
+  }
+  document.addEventListener('onwheel' in document ? 'wheel' : 'mousewheel', function (ev) {
+    if (document.body.className.indexOf('on') === -1) return;
+    var d = ev.deltaY !== undefined ? ev.deltaY : -ev.wheelDelta;
+    if (ev.deltaX && Math.abs(ev.deltaX) > Math.abs(d || 0)) d = ev.deltaX;
+    if (!d) return;
+    ev.preventDefault();
+    slide(d > 0 ? 1 : -1);
+  });
+  document.addEventListener('mousemove', function (ev) {
+    if (document.body.className.indexOf('on') === -1) return stopEdge();
+    var r = $('bar').getBoundingClientRect();
+    var over = ev.clientY >= r.top && ev.clientY <= r.bottom;
+    var dir = !over ? 0 : ev.clientX < EDGE ? -1 : ev.clientX > 1920 - EDGE ? 1 : 0;
+    if (!dir) return stopEdge();
+    edgeDir = dir;
+    if (edgeTimer) return;
+    slide(edgeDir);
+    edgeTimer = setInterval(function () { if (!edgeDir || !slide(edgeDir)) stopEdge(); }, EDGE_STEP_MS);
+  });
   // Only the tile left and the tile reached change, so the rest are not styled again.
   // byPointer: the row is not slid under the pointer, which would put another
   // tile beneath it and move the focus on again.
@@ -364,6 +422,7 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
       if (!preCat) return;
       var fresh = tilesFrom(preCat);
       if (!fresh.length) return;
+      applySmooth(preCat.layout);
       var nextLabelsOff = !!(preCat.layout && preCat.layout.showAppLabels === false);
       saveCache(fresh, onPort, nextLabelsOff);
       applyRow(fresh, onPort, nextLabelsOff);
@@ -396,6 +455,7 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
       if (!cat) { if (!list.length) close(); return; }
       var fresh = tilesFrom(cat);
       if (!fresh.length) return close();
+      applySmooth(cat.layout);
       var nextLabelsOff = !!(cat.layout && cat.layout.showAppLabels === false);
       var port = portFrom(now);
       saveCache(fresh, port, nextLabelsOff);
