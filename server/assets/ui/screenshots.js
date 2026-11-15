@@ -176,6 +176,8 @@ async function loadScreenshots(clearMessage = false) {
     if (!screenshotWritable || (screenshotDeleteId === '*' ? !images.length : !images.some(image => image.id === screenshotDeleteId))) clearScreenshotDelete();
     screenshotControls();
     q('screenshots-summary').textContent = t('tools.screenshots.count', '{n} saved', { n: images.length });
+    const total = images.reduce((sum, image) => sum + image.size, 0);
+    q('screenshots-storage').textContent = (fmtSize(total) || t('apps.install.kb', '{n} KB', { n: 0 })) + ' / ' + fmtSize(result.maxBytes);
     if (clearMessage || JSON.stringify(images) !== screenshotVersion) renderScreenshots(images);
   } catch (error) {
     if (screenshotListController === controller && error.name !== 'AbortError') q('screenshots-message').textContent = error.message;

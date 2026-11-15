@@ -3334,7 +3334,7 @@
  "tools.screenshots.deleteFailed": {"text": "Nem sikerült törölni a képernyőképet", "from": "Could not delete screenshot"},
  "tools.screenshots.deleteImage": {"text": "{name} törlése", "from": "Delete {name}"},
  "tools.screenshots.deleted": {"text": "Képernyőkép törölve.", "from": "Screenshot deleted."},
- "tools.screenshots.desc": {"text": "Készítsen képernyőképet, vagy töltse le a távirányítóval készített képeket. A képek a TV újraindításakor eltűnnek.", "from": "Take a screenshot or download images taken with the remote. Images disappear when the TV restarts."},
+ "tools.screenshots.desc": {"text": "A legrégebbi képek automatikusan törlődnek a memória felszabadításához. A TV újraindításakor a képek szintén eltűnnek.", "from": "Oldest images are removed automatically to free memory. Images also disappear when the TV restarts."},
  "tools.screenshots.display": {"text": "Teljes képernyő", "from": "Full screen"},
  "tools.screenshots.download": {"text": "Letöltés", "from": "Download"},
  "tools.screenshots.empty": {"text": "Még nincsenek képernyőképek. Készítsen egyet itt, vagy nyomja meg a távirányító képernyőképhez rendelt gombját.", "from": "No screenshots yet. Take one here or press a remote key assigned to screenshots."},

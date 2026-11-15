@@ -3320,7 +3320,7 @@
  "tools.screenshots.deleteFailed": {"text": "Не удалось удалить снимок экрана", "from": "Could not delete screenshot"},
  "tools.screenshots.deleteImage": {"text": "Удалить {name}", "from": "Delete {name}"},
  "tools.screenshots.deleted": {"text": "Снимок экрана удалён.", "from": "Screenshot deleted."},
- "tools.screenshots.desc": {"text": "Сделайте снимок экрана или скачайте изображения, снятые с помощью пульта. Изображения исчезают при перезагрузке телевизора.", "from": "Take a screenshot or download images taken with the remote. Images disappear when the TV restarts."},
+ "tools.screenshots.desc": {"text": "Самые старые изображения автоматически удаляются для освобождения памяти. Изображения также исчезают при перезагрузке телевизора.", "from": "Oldest images are removed automatically to free memory. Images also disappear when the TV restarts."},
  "tools.screenshots.display": {"text": "Весь экран", "from": "Full screen"},
  "tools.screenshots.download": {"text": "Скачать", "from": "Download"},
  "tools.screenshots.empty": {"text": "Снимков экрана пока нет. Сделайте снимок здесь или нажмите кнопку пульта, назначенную для снимков экрана.", "from": "No screenshots yet. Take one here or press a remote key assigned to screenshots."},

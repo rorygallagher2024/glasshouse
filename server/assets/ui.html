@@ -2228,7 +2228,7 @@
 <section class="panel" id="toolspane" role="tabpanel" hidden>
   <details class="pv-d" id="disc-screenshots">
     <summary><span data-t="tools.screenshots.title">Screenshots</span> <span class="cur" id="screenshots-summary">&mdash;</span></summary>
-    <div class="pv-sub" data-t="tools.screenshots.desc">Take a screenshot or download images taken with the remote. Images disappear when the TV restarts.</div>
+    <div class="pv-sub" data-t="tools.screenshots.desc">Oldest images are removed automatically to free memory. Images also disappear when the TV restarts.</div>
     <div class="tools-toolbar">
       <div class="tools-toolbar-grp">
         <label for="screenshots-method" class="tools-toolbar-lbl" data-t="tools.screenshots.method">Capture</label>
@@ -2248,7 +2248,10 @@
       </div>
       <button type="button" class="pill" id="screenshots-take" onclick="takeScreenshot()" disabled data-t="tools.screenshots.take">Take screenshot</button>
       <button type="button" class="pill" id="screenshots-refresh" onclick="loadScreenshots(true)" data-t="tools.screenshots.refresh">Refresh</button>
-      <button type="button" class="pill bad" id="screenshots-clear" data-id="*" onclick="deleteScreenshot(this)" disabled hidden>&mdash;</button>
+      <div class="screenshot-storage">
+        <button type="button" class="pill bad" id="screenshots-clear" data-id="*" onclick="deleteScreenshot(this)" disabled hidden>&mdash;</button>
+        <span class="sub" id="screenshots-storage" dir="ltr">&mdash;</span>
+      </div>
     </div>
     <div class="pv-note" id="screenshots-readonly" hidden data-t="tools.screenshots.readonly">Controls must be enabled to take or delete screenshots.</div>
     <div class="sub" id="screenshots-message" role="status" aria-live="polite"></div>

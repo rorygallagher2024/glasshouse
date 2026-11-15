@@ -28,7 +28,7 @@ process.on('exit', function () {
   fs.rmdirSync(directory);
 });
 var calls = [], mode = '';
-screenshots.init({ directory: directory, luna: function (uri, payload, cb) {
+screenshots.init({ directory: directory, maxMiB: 64, luna: function (uri, payload, cb) {
   calls.push({ uri: uri, payload: payload });
   fs.writeFileSync(payload.path, mode === 'failure' ? 'partial' : png);
   cb(mode === 'failure' ? { returnValue: false, errorText: 'No video is playing' } : { returnValue: true });
@@ -62,6 +62,7 @@ step(function list(next) {
     assert.strictEqual(res.statusCode, 200);
     assert.strictEqual(result.ok, true);
     assert.strictEqual(result.writable, true);
+    assert.strictEqual(result.maxBytes, 64 * 1024 * 1024);
     assert.deepEqual(result.screenshots, [
       { id: manualId, size: png.length, modified: new Date(2000).toISOString() },
       { id: remoteId, size: png.length, modified: new Date(1000).toISOString() }

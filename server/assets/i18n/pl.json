@@ -3320,7 +3320,7 @@
  "tools.screenshots.deleteFailed": {"text": "Nie udało się usunąć zrzutu ekranu", "from": "Could not delete screenshot"},
  "tools.screenshots.deleteImage": {"text": "Usuń {name}", "from": "Delete {name}"},
  "tools.screenshots.deleted": {"text": "Usunięto zrzut ekranu.", "from": "Screenshot deleted."},
- "tools.screenshots.desc": {"text": "Zrób zrzut ekranu lub pobierz obrazy wykonane pilotem. Obrazy znikają po ponownym uruchomieniu telewizora.", "from": "Take a screenshot or download images taken with the remote. Images disappear when the TV restarts."},
+ "tools.screenshots.desc": {"text": "Najstarsze obrazy są automatycznie usuwane, aby zwolnić pamięć. Obrazy znikają też po ponownym uruchomieniu telewizora.", "from": "Oldest images are removed automatically to free memory. Images also disappear when the TV restarts."},
  "tools.screenshots.display": {"text": "Cały ekran", "from": "Full screen"},
  "tools.screenshots.download": {"text": "Pobierz", "from": "Download"},
  "tools.screenshots.empty": {"text": "Nie ma jeszcze zrzutów ekranu. Zrób go tutaj lub naciśnij przycisk pilota przypisany do zrzutów ekranu.", "from": "No screenshots yet. Take one here or press a remote key assigned to screenshots."},

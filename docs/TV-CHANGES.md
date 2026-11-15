@@ -261,6 +261,13 @@ removes partial output after failed captures, and changes no persistent TV
 settings. Captures disappear when the TV restarts. Capture calls allow 15 seconds
 for PNG encoding to finish.
 
+While the server runs, cleanup targets `screenshots.maxMiB` in `config.json`
+(32 MiB by default), deleting the oldest matching regular files first.
+It keeps the newest capture and files modified within 15 seconds, and uses the
+same checked deletion as the API.
+Cleanup runs at startup, after captures and every 20 seconds; errors are logged
+and retried later. Remote captures can accumulate while the server is stopped.
+
 The screenshot API lists and reads these temporary images behind dashboard
 authentication. Taking a capture, deleting a selected image or clearing all
 images requires controls enabled and the existing JSON and Origin guards. Read access remains

@@ -3320,7 +3320,7 @@
  "tools.screenshots.deleteFailed": {"text": "تعذّر حذف لقطة الشاشة", "from": "Could not delete screenshot"},
  "tools.screenshots.deleteImage": {"text": "حذف {name}", "from": "Delete {name}"},
  "tools.screenshots.deleted": {"text": "حُذفت لقطة الشاشة.", "from": "Screenshot deleted."},
- "tools.screenshots.desc": {"text": "التقط صورة للشاشة أو نزّل الصور الملتقطة بالريموت. تختفي الصور عند إعادة تشغيل التلفاز.", "from": "Take a screenshot or download images taken with the remote. Images disappear when the TV restarts."},
+ "tools.screenshots.desc": {"text": "تُحذف الصور الأقدم تلقائيًا لتوفير الذاكرة. تختفي الصور أيضًا عند إعادة تشغيل التلفاز.", "from": "Oldest images are removed automatically to free memory. Images also disappear when the TV restarts."},
  "tools.screenshots.display": {"text": "الشاشة كاملة", "from": "Full screen"},
  "tools.screenshots.download": {"text": "تنزيل", "from": "Download"},
  "tools.screenshots.empty": {"text": "لا توجد لقطات شاشة بعد. التقط واحدة هنا أو اضغط زر الريموت المخصّص للقطات الشاشة.", "from": "No screenshots yet. Take one here or press a remote key assigned to screenshots."},

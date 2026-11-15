@@ -23,7 +23,7 @@ function loaded(ui) {
 }
 function createUI() {
   var ui = { listed: [{ id: 'capture_a.png', size: 1048576, modified: '2026-11-01T00:00:00Z' },
-    { id: 'capture_b.png', size: 524288, modified: '2026-11-01T00:01:00Z' }], writable: true,
+    { id: 'capture_b.png', size: 524288, modified: '2026-11-01T00:01:00Z' }], writable: true, maxBytes: 32 * 1024 * 1024,
     images: [], buttons: [], requests: [], writes: [], pending: [], timers: [], links: [], created: [], revoked: [],
     listeners: {}, renders: 0, imageRequests: 0, aborted: 0 };
   var nodes = {}, now = 1000;
@@ -76,7 +76,7 @@ function createUI() {
     });
   };
   ui.imageReply = function () { return Promise.resolve(reply(true, png)); };
-  ui.listReply = function () { return Promise.resolve(reply(true, { ok: true, writable: ui.writable, screenshots: ui.listed })); };
+  ui.listReply = function () { return Promise.resolve(reply(true, { ok: true, writable: ui.writable, screenshots: ui.listed, maxBytes: ui.maxBytes })); };
   ui.context = vm.createContext({
     document: document, activeTab: 'tools', q: ui.q, token: '', Date: ClockDate,
     t: function (key, english, vars) { return english.replace(/\{(\w+)\}/g, function (_, name) { return vars[name]; }); },
@@ -109,11 +109,16 @@ function checkGallery() {
   ui.imageReply = function () { return Promise.reject(new Error('image unavailable')); };
   return load(ui).then(function () {
     assert.strictEqual(ui.images[0].alt, 'image unavailable');
+    assert.strictEqual(ui.q('screenshots-storage').textContent, '1 MB / 32 MB');
     original = button(ui, 'view');
     return ui.context.loadScreenshots().then(flush);
   }).then(function () {
     assert.strictEqual(button(ui, 'view'), original, 'unchanged polling preserves the card');
     assert.strictEqual(ui.imageRequests, 1);
+    ui.maxBytes = 64 * 1024 * 1024;
+    return ui.context.loadScreenshots().then(flush);
+  }).then(function () {
+    assert.strictEqual(ui.q('screenshots-storage').textContent, '1 MB / 64 MB', 'unchanged polling updates the configured target');
     ui.imageReply = function () { return Promise.resolve(reply(true, png)); };
     return load(ui);
   }).then(function () {
@@ -239,6 +244,7 @@ function checkDeletion() {
     return deleting.then(flush);
   }).then(function () {
     assert.strictEqual(ui.q('screenshots-message').textContent, 'Screenshot deleted.');
+    assert.strictEqual(ui.q('screenshots-storage').textContent, '512 KB / 32 MB');
     assert.strictEqual(button(ui, 'delete').dataset.id, images[1].id, 'success refreshes the real gallery');
     ui.listed = images; return load(ui);
   }).then(function () {
@@ -301,6 +307,7 @@ function checkDeletion() {
   }).then(function () {
     assert.strictEqual(ui.q('screenshots-message').textContent, 'Screenshots cleared.');
     assert.strictEqual(ui.q('screenshots-clear').disabled, true);
+    assert.strictEqual(ui.q('screenshots-storage').textContent, '0 KB / 32 MB');
     count = ui.writes.length; clear(); assert.strictEqual(ui.writes.length, count, 'empty gallery cannot be cleared');
   });
 }

@@ -2130,6 +2130,16 @@ success requires a non-empty regular file. Dashboard captures are serialized
 and allow 15 seconds for the result, since 4K PNG encoding can exceed the
 usual two-second Luna wait.
 
+Cleanup targets `screenshots.maxMiB` in `config.json` (32 MiB by default).
+The value must be a positive finite number; missing or invalid values use the
+default. Changes take effect after a server restart. Cleanup deletes the oldest
+through the same file checks as manual deletion. It runs after capture
+completion, at startup and on the existing 20-second heartbeat. Active dashboard
+captures, overlapping cleanup and files modified within 15 seconds are skipped.
+The newest capture is kept even if it alone exceeds the budget. Failures are
+logged and retried on later passes; they do not fail a saved capture. Cleanup
+pauses while the server is stopped.
+
 The existing Luna service map falls back to `com.webos.service.tv.capture`
 only for a missing newer service, remembering the legacy name even when its
 capture fails, for example with no video playing.
@@ -2140,9 +2150,9 @@ key-down, so screenshots work without the server. It remembers the legacy
 service after a missing-service reply and shows a saved-path or error
 toast after capture. webOS 11's native mappings do not offer screenshots.
 
-`GET /api/screenshots` returns `ok`, `writable` and `screenshots` entries with
-`id`, `size` and `modified`, newest first. Only non-empty regular
-`/tmp/capture_*.png` files are included. `GET` or `HEAD` on
+`GET /api/screenshots` returns `ok`, `writable`, `maxBytes` (the effective budget
+in bytes), and `screenshots` entries with `id`, `size` and `modified`, newest
+first. Only non-empty regular `/tmp/capture_*.png` files are included. `GET` or `HEAD` on
 `/api/screenshots/image?id=<basename>` serves a private, uncached PNG using an
 opened descriptor, so replacing its path cannot redirect the read. Traversal,
 symlinks, directories and empty files are refused; disconnected clients release

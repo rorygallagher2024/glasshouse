@@ -3334,7 +3334,7 @@
  "tools.screenshots.deleteFailed": {"text": "Impossibile eliminare la cattura", "from": "Could not delete screenshot"},
  "tools.screenshots.deleteImage": {"text": "Elimina {name}", "from": "Delete {name}"},
  "tools.screenshots.deleted": {"text": "Cattura eliminata.", "from": "Screenshot deleted."},
- "tools.screenshots.desc": {"text": "Cattura lo schermo o scarica le immagini acquisite con il telecomando. Le immagini scompaiono al riavvio della TV.", "from": "Take a screenshot or download images taken with the remote. Images disappear when the TV restarts."},
+ "tools.screenshots.desc": {"text": "Le immagini più vecchie vengono eliminate automaticamente per liberare memoria. Tutte le immagini scompaiono al riavvio della TV.", "from": "Oldest images are removed automatically to free memory. Images also disappear when the TV restarts."},
  "tools.screenshots.display": {"text": "Schermo intero", "from": "Full screen"},
  "tools.screenshots.download": {"text": "Scarica", "from": "Download"},
  "tools.screenshots.empty": {"text": "Nessuna cattura. Acquisiscine una qui o premi un tasto del telecomando assegnato alle catture dello schermo.", "from": "No screenshots yet. Take one here or press a remote key assigned to screenshots."},

@@ -6,11 +6,13 @@ The **Tools** tab, `/?tab=tools`, manages screenshots and provides live system l
 
 Open **Screenshots** to view captures from the remote and dashboard, newest first. **Take screenshot** offers full screen, video only or graphics only at 3840×2160, 1920×1080 or 960×540. Full screen at 1920×1080 is the default; the browser remembers the selection. Capture support depends on the TV and content. With no video playing, **Video only** can return `REFUSED_PERMISSION_DENIED`. A saved capture shows a notice on the TV; errors appear below the controls.
 
-Each card shows the capture time and resolution; hover over the image for its filename. Select a loaded preview to enlarge it. Close with **×**, outside the image or Escape; keyboard focus returns to the preview. **Download** shows the file size and saves the original PNG and filename. Images disappear when the TV restarts.
+Each card shows the capture time and resolution; hover over the image for its filename. Select a loaded preview to enlarge it. Close with **×**, outside the image or Escape; keyboard focus returns to the preview. **Download** shows the file size and saves the original PNG and filename.
+
+While the server runs, old captures are removed oldest first to target 32 MiB of saved images. The total size and target appear beside **Clear all**. Set `"screenshots": { "maxMiB": 64 }` in `/var/lib/tvweb/config.json` and restart the server to change the target. The value must be positive; missing or invalid values use 32 MiB. The newest capture and recently modified files are kept. Images also disappear when the TV restarts.
 
 The gallery refreshes every three seconds while open and visible, pausing during captures, deletion and viewing. **Refresh** reloads the list and retries failed previews. Already loaded images are reused when refreshing or returning to the gallery. Viewing, downloading and refreshing work with controls disabled.
 
-**Delete** asks for a second press on the same image within five seconds. **Clear all** uses the same confirmation to delete every saved screenshot. Choosing another deletion, closing Screenshots, leaving Tools or hiding the browser cancels the confirmation. Taking or deleting images requires controls enabled. A failed deletion shows the error and refreshes the remaining images.
+**Delete** asks for a second press on the same image within five seconds. **Clear all** uses the same confirmation to delete every saved screenshot. Choosing another deletion, closing Screenshots, leaving Tools or hiding the browser cancels the confirmation. Taking screenshots and manual deletion require controls enabled. A failed deletion shows the error and refreshes the remaining images.
 
 ## System logs
 

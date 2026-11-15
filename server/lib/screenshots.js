@@ -4,15 +4,24 @@ var path = require('path');
 var constants = require('constants');
 var msg = require('./say').msg;
 var FILE_RE = /^capture_[A-Za-z0-9][A-Za-z0-9_.-]*\.png$/;
+var DEFAULT_MAX_BYTES = 32 * 1024 * 1024;
+var maxBytes = DEFAULT_MAX_BYTES;
+// Remote captures bypass busy; allow the capture call's 15 s wait for writes.
+var WRITE_GRACE_MS = 15000;
 var directory = '/tmp';
 var lunaFn = null;
 var notifyFn = null;
 var busy = false;
+var cleaning = false;
+var nowFn = Date.now;
 
 function init(opts) {
+  var bytes = typeof opts.maxMiB === 'number' ? opts.maxMiB * 1024 * 1024 : 0;
+  maxBytes = isFinite(bytes) && bytes > 0 ? bytes : DEFAULT_MAX_BYTES;
   directory = opts.directory || '/tmp';
   lunaFn = opts.luna;
   notifyFn = opts.notify || null;
+  nowFn = opts.now || Date.now;
   busy = false;
 }
 
@@ -39,7 +48,7 @@ function list(cb) {
     images.sort(function (a, b) {
       return a.modified === b.modified ? (a.id < b.id ? 1 : -1) : (a.modified < b.modified ? 1 : -1);
     });
-    cb({ ok: true, screenshots: images });
+    cb({ ok: true, screenshots: images, maxBytes: maxBytes });
   });
 }
 
@@ -82,6 +91,34 @@ function clear(cb) {
   });
 }
 
+function cleanup(cb) {
+  cb = cb || function () {};
+  if (busy || cleaning) return cb({ ok: true });
+  cleaning = true;
+  function finish(result) {
+    cleaning = false;
+    if (!result.ok) console.warn('screenshots: cleanup failed: ' + result.error);
+    cb(result);
+  }
+  list(function (result) {
+    if (!result.ok) return finish(result);
+    var total = result.screenshots.reduce(function (sum, image) { return sum + image.size; }, 0);
+    var cutoff = nowFn() - WRITE_GRACE_MS;
+    function next() {
+      // Keep the newest capture, even if it alone exceeds the budget.
+      if (busy || total <= maxBytes || result.screenshots.length < 2) return finish({ ok: true });
+      var image = result.screenshots.pop();
+      if (new Date(image.modified).getTime() > cutoff) return finish({ ok: true });
+      remove(image.id, function (removed) {
+        if (!removed.ok) return finish(removed);
+        total -= image.size;
+        next();
+      });
+    }
+    next();
+  });
+}
+
 function capture(method, cb, resolution) {
   if (resolution === undefined) resolution = '1920x1080';
   if (['DISPLAY', 'VIDEO', 'GRAPHIC'].indexOf(method) === -1) return cb({ ok: false, error: 'DISPLAY, VIDEO or GRAPHIC expected' });
@@ -95,14 +132,16 @@ function capture(method, cb, resolution) {
   busy = true;
   function finish(result) {
     busy = false;
-    if (result.ok && notifyFn) {
-      try {
-        notifyFn(msg('srv.screenshots.saved', 'Screenshot saved.'), function (notice) {
-          if (!notice || !notice.ok) console.warn('screenshots: could not show saved notification');
-        });
-      } catch (e) { console.warn('screenshots: could not show saved notification: ' + e.message); }
-    }
-    cb(result);
+    cleanup(function () {
+      if (result.ok && notifyFn) {
+        try {
+          notifyFn(msg('srv.screenshots.saved', 'Screenshot saved.'), function (notice) {
+            if (!notice || !notice.ok) console.warn('screenshots: could not show saved notification');
+          });
+        } catch (e) { console.warn('screenshots: could not show saved notification: ' + e.message); }
+      }
+      cb(result);
+    });
   }
   function failed(error) {
     // A failed capture can leave partial output; remove only this request's file.
@@ -125,4 +164,4 @@ function capture(method, cb, resolution) {
   } catch (e) { failed(e.message); }
 }
 
-module.exports = { init: init, capture: capture, list: list, openImage: openImage, remove: remove, clear: clear };
+module.exports = { init: init, capture: capture, list: list, openImage: openImage, remove: remove, clear: clear, cleanup: cleanup };
