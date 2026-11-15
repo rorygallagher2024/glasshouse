@@ -187,10 +187,10 @@ files and 5 MB.
 | `name`, `description` | yes | A string, or a map by language with `en`. The dashboard shows the viewer's language, else English. |
 | `main` | no | The QML file to start, in the folder; `main.qml` if left out. |
 | `choices` | no | `{"default": "a", "options": [{"id": "a", "name": "A", "value": "x=1"}]}`: options the dashboard offers as a dropdown, the picked one's `value` (letters, digits and `. = & - _`) put in for `__TVWEB_CHOICE__`. An option's `group` puts it under a heading. `label` names the dropdown, `Animation` otherwise. Clock's is an example: `"true"` or `"false"` for a `bool`. Needs `choice` in `uses`. |
-| `entities` | no | `{"daylight": "sensor.outdoor_daylight"}`: fixed Home Assistant entity slots (`sensor_1`, etc.) whose defaults can be overridden (with optional custom `label`) on the **Screensaver** tab. A blank id (`""`) leaves the slot for the owner to fill in; until then its placeholder is put in as an empty string. Each filled one is put in for `__TVWEB_HA_<name>__` as this server's local entity URL, carrying the dashboard's token. Up to 12. Needs `ha` in `uses`. |
+| `entities` | no | `{"daylight": "sensor.outdoor_daylight"}`: fixed Home Assistant entity slots (`sensor_1`, etc.) whose defaults can be overridden (with optional custom `label`) on the **Screensaver** tab. A blank id (`""`) leaves the slot for the owner to fill in; until then its placeholder is put in as an empty string. Each filled one is put in for `__TVWEB_HA_<name>__` as this server's local entity URL, carrying the dashboard's token. Up to 24. Needs `ha` or `ha-all` in `uses`. |
 | `entityList` | no | `{"min": 2, "max": 100}`: an ordered, user-managed list of Home Assistant entities (1 to 100 items, with optional per-item `label`) configured on the **Screensaver** tab and injected into `__TVWEB_HA_LIST__` as a JSON array of `{ entity, label, url }`. Needs `ha-list` in `uses`. Starting the saver is refused when fewer than `min` entities are configured. |
 | `author`, `license`, `homepage` | no | Shown under an added one. Glasshouse's own are MIT. |
-| `uses` | no | What Glasshouse fills in: `level` puts `1` above 65% brightness and `0` at or below it for `__TVWEB_LEVEL__`, with a black layer over the screen saver for the steps between and below; `choice` puts the picked option's value for `__TVWEB_CHOICE__`; `stats` puts the TV's stats address, with the dashboard's token, for `__TVWEB_URL__`. Only what is listed is filled in. Only Glasshouse's own are given `stats`. `ha` fills in one address per slot in `entities`; `ha-list` fills in the configured array for `entityList`; `color` replaces `__TVWEB_COLOR__` with a brightness-adjusted hex for the owner's selected colour preset (`White` by default). |
+| `uses` | no | What Glasshouse fills in: `level` puts `1` above 65% brightness and `0` at or below it for `__TVWEB_LEVEL__`, with a black layer over the screen saver for the steps between and below; `choice` puts the picked option's value for `__TVWEB_CHOICE__`; `stats` puts the TV's stats address, with the dashboard's token, for `__TVWEB_URL__`. Only what is listed is filled in. Only Glasshouse's own are given `stats`. `ha` fills in one address per slot in `entities`; `ha-list` fills in the configured array for `entityList`; `ha-all` puts one address for `/api/homeassistant`, which answers with every entity in `entities` in one request, for a saver with more readings than requests it wants to make; `color` replaces `__TVWEB_COLOR__` with a brightness-adjusted hex for the owner's selected colour preset (`White` by default). |
 | `requires` | no | `{"webos": 5}`: the oldest webOS it runs on. |
 | `panels` | no | `["oled"]` or `["lcd"]`, for one made for one kind of panel. |
 | `order` | no | Its place among Glasshouse's own. Added ones follow, by name. |
@@ -228,6 +228,30 @@ slot, which users can override (along with an optional display `label`) on the
 and `homeAssistant.token` configured via the **HA & MQTT** tab
 (**Home Assistant API**) or `config.json`; without them the address answers 503
 and the screen saver draws whatever it can without it.
+
+A saver with many readings can declare `ha-all` in `uses` instead, and read
+them all in one request from the single address put in for `__TVWEB_HA_ALL__`,
+this server's `/api/homeassistant` with the same token:
+
+```json
+{
+  "ok": true,
+  "entities": {
+    "daylight": { "id": "sensor.outdoor_daylight", "state": "9.11",
+                  "attributes": { "today_hms": "9:06:36" },
+                  "updated": "2026-11-12T20:00:00+00:00", "label": "Daylight" }
+  },
+  "errors": { "rain": "no entity sensor.rain_today (404)" }
+}
+```
+
+Each entity is under its short name from `entities`; `label` is there only
+where the owner set one on the **Screensaver** tab, and `errors` only where a
+read failed, under the same short names. The server reads the declared
+entities together, so the answer comes as soon as the slowest does, and serves
+only the screen saver on the TV's own entities, never one the request names.
+Without Home Assistant configured it answers `{ "ok": false, "configured":
+false, "entities": {} }`.
 
 What the `state` means is the screen saver's business, not the server's: `9.11`
 hours is `9h 07m` only because the saver says so.

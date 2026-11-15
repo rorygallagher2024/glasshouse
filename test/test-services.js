@@ -28,9 +28,9 @@ console.log('Running test-services.js ...');
     assert.strictEqual(!ids[item.id], true, 'item id must be unique: ' + item.id);
     ids[item.id] = true;
 
-    // A systemd unit, an upstart job, or the program a stub is mounted over
-    var hasTarget = !!(item.unit || item.upstart || item.stub);
-    assert.strictEqual(hasTarget, true, 'service ' + item.id + ' must declare unit, upstart or stub');
+    // A systemd unit, an upstart job, the program a stub is mounted over, or a name for LG's block list
+    var hasTarget = !!(item.unit || item.upstart || item.stub || item.blocked);
+    assert.strictEqual(hasTarget, true, 'service ' + item.id + ' must declare unit, upstart, stub or blocked');
   }
 
   assert.strictEqual('mycar' in ids, true);

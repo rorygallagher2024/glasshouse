@@ -39,6 +39,15 @@ var MAX_FILES = 5000;
 var MAX_DIRECTORY = 4 * 1024 * 1024;
 var MAX_ADDRESS = 2000;
 var MAX_TITLE = 80;
+/*
+ * What a launcher saves through Glasshouse.storage, kept on disk because the
+ * TV clears the page's own: a launcher on a G5 (webOS 11.2) found its
+ * localStorage and IndexedDB for http://localhost:8080 empty after every
+ * power-on (#1427). Kept apart from its files, so an upload of a new version
+ * keeps it, and removed with the launcher.
+ */
+var MAX_STORE = 256 * 1024;
+var MAX_KEY = 200;
 // The owner's own launcher, uploaded or a web address.
 var OWN = 'own';
 // Launchers that come with Glasshouse, served from its assets and never removed.
@@ -85,6 +94,7 @@ function init(opts) {
 
 function metaFile() { return path.join(dir, 'launcher.json'); }
 function appDir(id) { return path.join(dir, 'apps', id); }
+function storeFile(id) { return path.join(dir, 'state', id + '.json'); }
 
 /*
  * { chosen: id or null, rev, launchers: { id: { kind, title, ... } } }. The
@@ -229,6 +239,7 @@ function remove(id, cb) {
   if (!next.launchers[id] || BUILTIN[id]) return cb({ ok: true, launchers: status() });
   try {
     rmTree(appDir(id));
+    try { fs.unlinkSync(storeFile(id)); } catch (e) { /* it saved nothing */ }
     delete next.launchers[id];
     if (next.chosen === id) next.chosen = null;
     next.rev = (next.rev || 0) + 1;
@@ -236,6 +247,45 @@ function remove(id, cb) {
   } catch (e) { return cb(fail(e.message)); }
   console.log('home: custom launcher ' + id + ' removed');
   cb({ ok: true, launchers: status() });
+}
+
+/* ------------------------------------------------------------ storage */
+
+// The launcher in Home's place asks: it is the chosen one, whose page is up.
+function readStore(id) {
+  var v = util.readJson(storeFile(id), null);
+  return v && typeof v === 'object' && !Array.isArray(v) ? v : {};
+}
+
+function store(cb) {
+  var id = readMeta().chosen;
+  if (!id) return cb(fail(msg('srv.home.launcher.noneChosen', 'No launcher is in Home\'s place.')));
+  cb({ ok: true, launcher: id, values: readStore(id) });
+}
+
+/*
+ * { key, value }: value null or left out removes the key. The whole store, as
+ * JSON, is held to MAX_STORE.
+ */
+function setStore(body, cb) {
+  var id = readMeta().chosen;
+  if (!id) return cb(fail(msg('srv.home.launcher.noneChosen', 'No launcher is in Home\'s place.')));
+  var key = body && body.key;
+  if (typeof key !== 'string' || !key || key.length > MAX_KEY) {
+    return cb(fail(msg('srv.home.launcher.storeKey', 'Give a key of 1 to 200 characters.')));
+  }
+  var values = readStore(id);
+  if (body.value === null || body.value === undefined) delete values[key];
+  else values[key] = body.value;
+  var text = JSON.stringify(values);
+  if (text.length > MAX_STORE) {
+    return cb(fail(msg('srv.home.launcher.storeFull', 'A launcher can keep up to 256 KB.')));
+  }
+  try {
+    util.mkdirp(path.join(dir, 'state'));
+    util.writeJsonAtomic(storeFile(id), values, 384);
+  } catch (e) { return cb(fail(e.message)); }
+  cb({ ok: true, launcher: id });
 }
 
 /* ------------------------------------------------------------ reading */
@@ -644,5 +694,8 @@ module.exports = {
   install: install,
   resolve: resolve,
   withKit: withKit,
-  MAX_UPLOAD: MAX_UPLOAD
+  store: store,
+  setStore: setStore,
+  MAX_UPLOAD: MAX_UPLOAD,
+  MAX_STORE: MAX_STORE
 };

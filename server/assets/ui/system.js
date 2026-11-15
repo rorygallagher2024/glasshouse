@@ -25,8 +25,9 @@ function renderHdmiPort(i, diag, colSpace) {
   const jackSvg = renderHdmiJackSvg();
 
   if (!s && !i.deviceSeen) {
-    const emptyState = t('metrics.hdmi.empty', 'Empty');
-    const unconnected = t('metrics.hdmi.unconnected', 'Unconnected');
+    // A cable in the port with nothing on its other end, where the TV can tell.
+    const emptyState = i.cableOnly ? t('metrics.hdmi.cableOnly', 'Cable only') : t('metrics.hdmi.empty', 'Empty');
+    const unconnected = i.cableOnly ? t('metrics.hdmi.noDevice', 'Nothing on the other end') : t('metrics.hdmi.unconnected', 'Unconnected');
     return `<div class="port empty">` +
            `<div class="ptop">` +
              `<span class="pn num">${i.port}</span>` +

@@ -22,14 +22,16 @@ function fakeTV(list, opts) {
              // sam's block and release: the calls made, in order, and whether
              // sam has the call at all (webOS 4 answers neither).
              samCalls: [], hasBlock: opts.hasBlock !== false, failReleases: opts.failReleases || 0,
+             // webOS 8.4.0 (a G3) and 9.2.2 (a C2): the block, and no release.
+             hasRelease: opts.hasRelease !== false,
              blockAnswerLost: !!opts.blockAnswerLost, blocked: {} };
   tv.luna = function (uri, payload, cb) {
     var r;
     if (uri === 'com.webos.applicationManager/blockSystemApp' || uri === 'com.webos.applicationManager/releaseBlockSystemApp') {
       var m = uri.split('/')[1];
       tv.samCalls.push(m + ' ' + payload.id);
-      if (!tv.hasBlock) r = { returnValue: false, errorText: 'Unknown method' };
-      else if (m === 'releaseBlockSystemApp' && tv.failReleases > 0) { tv.failReleases--; r = { returnValue: false }; }
+      if (!tv.hasBlock || (m === 'releaseBlockSystemApp' && !tv.hasRelease)) r = { returnValue: false, errorText: 'Unknown method' };
+      else if (m === 'releaseBlockSystemApp' && tv.failReleases > 0 && tv.blocked[payload.id]) { tv.failReleases--; r = { returnValue: false }; }
       else {
         tv.blocked[payload.id] = m === 'blockSystemApp';
         // A block sam made but whose answer never came back, as when the call times out.
@@ -215,15 +217,15 @@ step(function () {
   }));
 });
 
-// 7. One app: a block then a release, nothing written to configd, and the
-//    caller waits for sam to report the change.
+// 7. One app: a release to ask whether sam has one, a block then a release,
+//    nothing written to configd, and the caller waits for sam to report the change.
 step(function () {
   var tv = fakeTV([]);
   samrescan.init({ luna: tv.luna, nudgeMs: 5, pollMs: 5 });
   var asked = 0;
   samrescan.rereadApp('com.webos.app.screensaver', function (done) { asked++; done(asked >= 2); }, checked(function (ok) {
     assert.strictEqual(ok, true);
-    assert.deepEqual(tv.samCalls, ['blockSystemApp com.webos.app.screensaver', 'releaseBlockSystemApp com.webos.app.screensaver']);
+    assert.deepEqual(tv.samCalls, ['releaseBlockSystemApp com.webos.app.screensaver', 'blockSystemApp com.webos.app.screensaver', 'releaseBlockSystemApp com.webos.app.screensaver']);
     assert.strictEqual(tv.blocked['com.webos.app.screensaver'], false, 'released');
     assert.strictEqual(tv.writes.length, 0, 'the configd list is not touched');
     assert.strictEqual(asked, 2, 'asked until sam had it');
@@ -232,16 +234,35 @@ step(function () {
   }));
 });
 
-// 8. sam without the call (webOS 4): the block is refused, one release goes out
-//    quietly in case it was not, and the caller falls back.
+// 8. sam without either call (webOS 4): the release is unknown, so nothing is
+//    blocked, and the caller falls back.
 step(function () {
   var tv = fakeTV(null, { hasBlock: false });
   samrescan.init({ luna: tv.luna, nudgeMs: 5, pollMs: 5 });
   samrescan.rereadApp('com.webos.app.screensaver', null, checked(function (ok) {
     assert.strictEqual(ok, false);
-    assert.deepEqual(tv.samCalls, ['blockSystemApp com.webos.app.screensaver', 'releaseBlockSystemApp com.webos.app.screensaver']);
-    console.log('  ✓ where sam has no block call the caller falls back, after one release');
+    assert.deepEqual(tv.samCalls, ['releaseBlockSystemApp com.webos.app.screensaver']);
+    console.log('  ✓ where sam has neither call nothing is blocked, and the caller falls back');
     next();
+  }));
+});
+
+// 8a. sam with the block and no release (a G3 on webOS 8.4.0, #1493; a C2 on
+//     9.2.2): nothing is blocked, as nothing could release it, and the answer
+//     is kept for the next app.
+step(function () {
+  var tv = fakeTV(null, { hasRelease: false });
+  samrescan.init({ luna: tv.luna, nudgeMs: 5, pollMs: 5 });
+  samrescan.rereadApp('com.webos.app.home', null, checked(function (ok) {
+    assert.strictEqual(ok, false, 'the caller falls back');
+    assert.deepEqual(tv.samCalls, ['releaseBlockSystemApp com.webos.app.home']);
+    assert.strictEqual(tv.blocked['com.webos.app.home'], undefined, 'LG\'s Home is never blocked');
+    samrescan.rereadApp('com.webos.app.screensaver', null, checked(function (ok2) {
+      assert.strictEqual(ok2, false);
+      assert.strictEqual(tv.samCalls.length, 1, 'not asked again');
+      console.log('  ✓ where sam can block but not release, nothing is blocked');
+      next();
+    }));
   }));
 });
 
@@ -263,7 +284,7 @@ step(function () {
   samrescan.init({ luna: tv.luna, nudgeMs: 5, pollMs: 5 });
   samrescan.rereadApp('com.webos.app.screensaver', null, checked(function (ok) {
     assert.strictEqual(ok, true);
-    assert.strictEqual(tv.samCalls.length, 4, 'one block, three releases');
+    assert.strictEqual(tv.samCalls.length, 5, 'the release asked first, one block, three releases');
     assert.strictEqual(tv.blocked['com.webos.app.screensaver'], false, 'released in the end');
     console.log('  ✓ a refused release is tried again until the app is unblocked');
     next();
@@ -282,8 +303,42 @@ step(function () {
   }));
 });
 
-// 11. webOS 5 has neither the nudge nor the block and release: sam is
-//     restarted, the app in front opened again afterwards.
+// 11. An HDMI input without an active video signal (e.g. asleep device with PHY Lock[0]) is not reopened after sam restarts for tile hiding.
+step(function () {
+  var hdmiDir = path.join(os.tmpdir(), 'samrescan-hdmi-' + process.pid);
+  fs.mkdirSync(hdmiDir);
+  fs.mkdirSync(path.join(hdmiDir, 'port2'));
+  // port 2 corresponds to HDMI 2 in HDMI_BASE_MAP
+  fs.writeFileSync(path.join(hdmiDir, 'port2', 'status'), '[PHY Info]=> PHY Lock[0]\nis5Vconnected[1]\n');
+
+  var tv = fakeTV(null);
+  var launches = [];
+  tv.luna = (function (inner) {
+    return function (uri, payload, cb) {
+      if (uri === 'com.webos.applicationManager/getForegroundAppInfo') return cb({ returnValue: true, appId: 'com.webos.app.hdmi2' });
+      if (uri === 'com.webos.applicationManager/launch') { launches.push(payload.id); return cb({ returnValue: true }); }
+      inner(uri, payload, cb);
+    };
+  })(tv.luna);
+  samrescan.init({ luna: tv.luna, nudgeMs: 5, pollMs: 5, portStatusDir: hdmiDir,
+                   exec: function (file, args, opts, cb) { process.nextTick(function () { cb(null); }); } });
+
+  assert.strictEqual(samrescan.hasHdmiSignal('com.webos.app.hdmi2'), false, 'PHY Lock 0 is not active');
+  assert.strictEqual(samrescan.hasHdmiSignal('netflix'), true, 'non-HDMI is always ok');
+  assert.strictEqual(samrescan.hasHdmiSignal('com.webos.app.hdmi1'), true, 'missing status file is ok');
+
+  // With active PHY Lock[1], it counts as a signal.
+  fs.writeFileSync(path.join(hdmiDir, 'port2', 'status'), '[PHY Info]=> PHY Lock[1]\nis5Vconnected[1]\n');
+  assert.strictEqual(samrescan.hasHdmiSignal('com.webos.app.hdmi2'), true, 'PHY Lock 1 is active');
+  fs.unlinkSync(path.join(hdmiDir, 'port2', 'status'));
+  fs.rmdirSync(path.join(hdmiDir, 'port2'));
+  fs.rmdirSync(hdmiDir);
+  console.log('  \u2713 an HDMI input counts as having a signal only with PHY Lock[1]');
+  next();
+});
+
+// 11b. Neither the nudge nor the block and release (webOS 7 for Glasshouse Home,
+//      #1412): sam is restarted, the app in front opened again afterwards.
 step(function () {
   var tv = fakeTV(null, { hasBlock: false });
   var commands = [];
@@ -311,7 +366,7 @@ step(function () {
   }));
 });
 
-// 12. sam never comes back, or Home was in front: nothing is launched, and the
+// 11c. sam never comes back, or Home was in front: nothing is launched, and the
 //     caller is told the restart did not take.
 step(function () {
   var tv = fakeTV(null);
@@ -333,50 +388,7 @@ step(function () {
   }));
 });
 
-// 13. An HDMI input without an active video signal (e.g. asleep device with PHY Lock[0]) is not launched again after sam restarts.
-step(function () {
-  var hdmiDir = path.join(os.tmpdir(), 'samrescan-hdmi-' + process.pid);
-  fs.mkdirSync(hdmiDir);
-  fs.mkdirSync(path.join(hdmiDir, 'port2'));
-  // port 2 corresponds to HDMI 2 in HDMI_BASE_MAP
-  fs.writeFileSync(path.join(hdmiDir, 'port2', 'status'), '[PHY Info]=> PHY Lock[0]\nis5Vconnected[1]\n');
-
-  var tv = fakeTV(null);
-  var launches = [];
-  tv.luna = (function (inner) {
-    return function (uri, payload, cb) {
-      if (uri === 'com.webos.applicationManager/getForegroundAppInfo') return cb({ returnValue: true, appId: 'com.webos.app.hdmi2' });
-      if (uri === 'com.webos.applicationManager/launch') { launches.push(payload.id); return cb({ returnValue: true }); }
-      inner(uri, payload, cb);
-    };
-  })(tv.luna);
-  samrescan.init({ luna: tv.luna, nudgeMs: 5, pollMs: 5, portStatusDir: hdmiDir,
-                   exec: function (file, args, opts, cb) { process.nextTick(function () { cb(null); }); } });
-
-  assert.strictEqual(samrescan.hasHdmiSignal('com.webos.app.hdmi2'), false, 'PHY Lock 0 is not active');
-  assert.strictEqual(samrescan.hasHdmiSignal('netflix'), true, 'non-HDMI is always ok');
-  assert.strictEqual(samrescan.hasHdmiSignal('com.webos.app.hdmi1'), true, 'missing status file is ok');
-
-  samrescan.restart(function (done) { done(true); }, checked(function (ok) {
-    assert.strictEqual(ok, true);
-    assert.deepEqual(launches, [], 'inactive HDMI 2 was not launched');
-
-    // With active PHY Lock[1], it is launched
-    fs.writeFileSync(path.join(hdmiDir, 'port2', 'status'), '[PHY Info]=> PHY Lock[1]\nis5Vconnected[1]\n');
-    assert.strictEqual(samrescan.hasHdmiSignal('com.webos.app.hdmi2'), true, 'PHY Lock 1 is active');
-    samrescan.restart(function (done) { done(true); }, checked(function (ok2) {
-      assert.strictEqual(ok2, true);
-      assert.deepEqual(launches, ['com.webos.app.hdmi2'], 'active HDMI 2 was launched');
-      fs.unlinkSync(path.join(hdmiDir, 'port2', 'status'));
-      fs.rmdirSync(path.join(hdmiDir, 'port2'));
-      fs.rmdirSync(hdmiDir);
-      console.log('  \u2713 an inactive HDMI input is not launched again after sam restarts');
-      next();
-    }));
-  }));
-});
-
-// 14. Realtek /proc/lgtv-driver/hdmi_status matches hwport rather than HDMI_BASE_MAP.
+// 12. Realtek /proc/lgtv-driver/hdmi_status matches hwport rather than HDMI_BASE_MAP.
 step(function () {
   var missingHdmi20 = path.join(os.tmpdir(), 'samrescan-no-hdmi20-' + process.pid);
   var rtkDir = path.join(os.tmpdir(), 'samrescan-rtk-' + process.pid);
@@ -400,6 +412,53 @@ step(function () {
   fs.rmdirSync(rtkDir);
   console.log('  \u2713 Realtek hdmi_status follows hwport and phy_lock_status');
   next();
+});
+
+// 13. canRereadApp and rereadApps handle multiple apps sequentially via blockSystemApp.
+step(function () {
+  var schemaDir = path.join(os.tmpdir(), 'samrescan-rereadapps-' + process.pid);
+  fs.mkdirSync(schemaDir);
+  var schema = path.join(schemaDir, 'app.block.schema');
+  var missing = path.join(schemaDir, 'missing.schema');
+  fs.writeFileSync(schema, '{"properties":{"id":{},"forceBlockSystemApp":{}}}');
+
+  var tv = fakeTV(null);
+  samrescan.init({ luna: tv.luna, nudgeMs: 5, pollMs: 5, blockSchema: missing });
+  assert.strictEqual(samrescan.canRereadApp(), false, 'missing schema means cannot rereadApp');
+
+  samrescan.init({ luna: tv.luna, nudgeMs: 5, pollMs: 5, blockSchema: schema });
+  assert.strictEqual(samrescan.canRereadApp(), true, 'present schema means canRereadApp');
+
+  samrescan.rereadApps([], null, checked(function (emptyOk) {
+    assert.strictEqual(emptyOk, false, 'empty list returns false');
+    var checkedIds = [];
+    samrescan.rereadApps(['app.a', 'app.b'], function (id) {
+      return function (done) {
+        checkedIds.push(id);
+        done(tv.blocked[id] === false);
+      };
+    }, checked(function (ok) {
+      assert.strictEqual(ok, true, 'rereads all apps in order');
+      assert.deepEqual(tv.samCalls, [
+        'releaseBlockSystemApp app.a',
+        'blockSystemApp app.a', 'releaseBlockSystemApp app.a',
+        'blockSystemApp app.b', 'releaseBlockSystemApp app.b'
+      ]);
+      assert.deepEqual(checkedIds, ['app.a', 'app.b']);
+
+      // Stops on first failure without touching later apps.
+      var tvFail = fakeTV(null, { hasBlock: false });
+      samrescan.init({ luna: tvFail.luna, nudgeMs: 5, pollMs: 5, blockSchema: schema });
+      samrescan.rereadApps(['app.a', 'app.b'], null, checked(function (okFail) {
+        assert.strictEqual(okFail, false, 'stops on refusal');
+        assert.ok(tvFail.samCalls.every(function (c) { return c.indexOf('app.b') === -1; }), 'never tries second app after first fails');
+        fs.unlinkSync(schema);
+        fs.rmdirSync(schemaDir);
+        console.log('  \u2713 canRereadApp and rereadApps reread apps sequentially and stop on refusal');
+        next();
+      }));
+    }));
+  }));
 });
 
 next();

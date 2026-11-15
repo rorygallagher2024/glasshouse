@@ -58,15 +58,26 @@ fi
 # webOS 11 they are tv.wiselg.com (privacy.js isSdpName).
 if [ -f /var/lib/tvweb/adblock_enabled ] && [ -f /var/lib/tvweb/adblock_hosts ]; then
   sed -i '/nextlgsdp\.com/d; /tv\.wiselg\.com/d' /var/lib/tvweb/adblock_hosts 2>/dev/null || true
-  # Other tools' lines (AmazOff, whose boot hook runs before this one) are
-  # taken from this boot's /etc/hosts, and the last boot's are dropped. The
-  # table's own lines are comments, localhost and sinkholes, and the Homebrew
-  # Channel's update block points the update servers at 127.0.0.1: privacy.js
+  # Other tools' lines (AmazOff, whose boot hook runs before this one, and
+  # other blockers' sinkholes, #1370) are taken from this boot's /etc/hosts,
+  # and the last boot's are dropped. The table's own lines are comments,
+  # localhost and its sinkholes, up to KEPT; the Homebrew Channel's update
+  # block points the update servers at 127.0.0.1. privacy.js
   # foreignHostsLines tells them apart the same way.
   OWN='^[[:space:]]*(#|$)|^[[:space:]]*(0\.0\.0\.0|::)[[:space:]]|localhost|ip6-'
+  SINK='^[[:space:]]*(0\.0\.0\.0|::)[[:space:]]'
   UPDATES='[[:space:]](snu|snu-dev|su|su-dev|su-ssl|nsu)\.lge\.com([[:space:]]|$)'
-  { grep -E "$OWN" /var/lib/tvweb/adblock_hosts; grep -v -E "$OWN|$UPDATES" /etc/hosts; } \
-    > /var/lib/tvweb/adblock_hosts.new 2>/dev/null \
+  KEPT='# Kept from /etc/hosts, where other tools put them'
+  if grep -q -F 'LG Ad & Telemetry Blackhole' /etc/hosts 2>/dev/null; then
+    # This table, mounted already: other tools' sinkholes are under KEPT.
+    OTHERS=$(awk -v h="$KEPT" 'f; $0 == h { f = 1 }' /etc/hosts | grep -E "$SINK"; grep -v -E "$OWN|$UPDATES" /etc/hosts)
+  else
+    OTHERS=$(grep -E "$SINK" /etc/hosts; grep -v -E "$OWN|$UPDATES" /etc/hosts)
+  fi
+  {
+    awk -v h="$KEPT" '$0 == h { exit } { print }' /var/lib/tvweb/adblock_hosts | grep -E "$OWN"
+    if [ -n "$OTHERS" ]; then printf '%s\n%s\n' "$KEPT" "$OTHERS"; fi
+  } > /var/lib/tvweb/adblock_hosts.new 2>/dev/null \
     && cat /var/lib/tvweb/adblock_hosts.new > /var/lib/tvweb/adblock_hosts
   rm -f /var/lib/tvweb/adblock_hosts.new
   mount --bind /var/lib/tvweb/adblock_hosts /etc/hosts 2>/dev/null || true
@@ -115,7 +126,15 @@ sam_nudge() {
 # never left blocked by a run cut short. Mirrors lib/samrescan.js.
 # webOS 11 refuses the block without forceBlockSystemApp, which its schema
 # requires (#768); it is sent only where the schema names it.
+# Nothing is blocked where sam has no release: a G3 on webOS 8.4.0 blocked
+# LG's Home and could not release it, so it would not launch until a reboot
+# (#1493). A release of the app first, which changes nothing where it is not
+# blocked, says whether sam has one ("Unknown method" where not, or nothing).
 sam_reread_app() {
+  probe=$(luna-send -n 1 luna://com.webos.applicationManager/releaseBlockSystemApp "{\"id\":\"$1\"}" 2>/dev/null)
+  case "$probe" in
+    ''|*'Unknown method'*) return 1 ;;
+  esac
   force=
   grep -q '"forceBlockSystemApp"' /etc/palm/schemas/sam/applicationManager.blockSystemApp.schema 2>/dev/null &&
     force=',"forceBlockSystemApp":false'
@@ -130,15 +149,12 @@ sam_reread_app() {
   return 1
 }
 
-# The last way to make sam scan, for webOS 5 and 6: a restart, with the command
-# lib/apps.js and lib/samrescan.js restart it with. The start limit of sam and
-# every unit that requires it is cleared first, so a run of restarts does not
-# leave the input manager failed and the TV with no inputs, and LunaExecutable
-# is killed since it ignores SIGTERM. Mirrors lib/samrescan.js.
-sam_units() {
-  systemctl list-dependencies --reverse --plain --no-legend sam.service 2>/dev/null |
-    sed -n 's/^[^A-Za-z0-9]*\([A-Za-z0-9@._-]*\.service\)$/\1/p'
-}
+# sam is restarted only for hidden tiles on webOS 3 to 6, which have neither
+# profile.blockedAppList nor blockSystemApp, so a restart is the one way their
+# sam reads a mounted manifest again: once per cold boot, as before. Glasshouse
+# Home never restarts it, nor does anything on webOS 7 and later, where a
+# restart broke DRM/ESN and audio EDID or hung app launches until a power cut
+# (#366, #1315).
 # LG's HDMI input service subscribes to sam's foreground app only when it
 # starts, so after sam is restarted it sees no app in front and refuses every
 # EDID update for the input on screen: a source stays on the basic EDID (an
@@ -153,29 +169,49 @@ hdmi_inputs_resubscribe() {
   done
   systemctl restart --no-block extinput-integration.service >/dev/null 2>&1 || true
 }
-sam_restart() {
-  if command -v systemctl >/dev/null 2>&1; then
-    systemctl reset-failed sam.service >/dev/null 2>&1 || true
-    sam_units | while read -r u; do systemctl reset-failed "$u" >/dev/null 2>&1 || true; done
-    killall -9 LunaExecutable >/dev/null 2>&1 || true
-    systemctl kill -s 9 sam.service >/dev/null 2>&1 || systemctl restart --no-block sam >/dev/null 2>&1 || true
-    # A unit that requires sam and hit its own restart limit is started again.
-    sam_units | while read -r u; do
-      systemctl is-failed --quiet "$u" || continue
-      systemctl reset-failed "$u"
-      systemctl start --no-block "$u"
+has_hdmi_signal() {
+  app="$1"
+  hdmi_num=$(echo "$app" | sed -n 's/.*hdmi\([1-4]\).*/\1/p')
+  [ -z "$hdmi_num" ] && return 0
+  case "$hdmi_num" in
+    1) port=3 ;;
+    2) port=2 ;;
+    3) port=1 ;;
+    4) port=0 ;;
+    *) return 0 ;;
+  esac
+  status_file="/proc/lg/hdmi20/port$port/status"
+  if [ ! -f "$status_file" ] && [ -d /proc/lgtv-driver/hdmi_status ]; then
+    status_file=""
+    for f in /proc/lgtv-driver/hdmi_status/hdmi.p[0-3]; do
+      [ -f "$f" ] || continue
+      if grep -q "^[[:space:]]*hwport:[[:space:]]*${hdmi_num}[[:space:]]*$" "$f"; then
+        status_file="$f"
+        break
+      fi
     done
-    hdmi_inputs_resubscribe
-  elif command -v initctl >/dev/null 2>&1; then
-    initctl restart sam >/dev/null 2>&1 || pkill -9 -x sam >/dev/null 2>&1 || true
-    # Upstart does not restart dependent jobs, so eim is restarted here.
-    initctl restart eim >/dev/null 2>&1 || true
-  else
-    pkill -9 -x sam >/dev/null 2>&1 || true
+    if [ -z "$status_file" ]; then
+      fallback="/proc/lgtv-driver/hdmi_status/hdmi.p$((hdmi_num - 1))"
+      if [ -f "$fallback" ] && ! grep -q "^[[:space:]]*hwport:" "$fallback"; then
+        status_file="$fallback"
+      fi
+    fi
   fi
-  sleep 2
+  [ -n "$status_file" ] && [ -f "$status_file" ] || return 0
+  if grep -q '^[[:space:]]*phy_lock_status:' "$status_file"; then
+    grep -q '^[[:space:]]*phy_lock_status:[[:space:]]*1[[:space:]]*$' "$status_file" && return 0
+    return 1
+  fi
+  if grep -qi 'PHY Lock' "$status_file"; then
+    grep -qi 'PHY Lock\[1\]' "$status_file" && return 0
+    return 1
+  fi
+  if grep -qi 'connected:' "$status_file"; then
+    grep -qi 'connected:[[:space:]]*on' "$status_file" && return 0
+    return 1
+  fi
+  return 0
 }
-
 # Whether sam's getAppInfo for app $1 matches pattern $2 within 20s: at boot sam
 # can still be on its own first scan, and takes the nudge after it.
 sam_reports() {
@@ -185,6 +221,34 @@ sam_reports() {
   done
   return 1
 }
+
+# Apps the owner switched off in the preload manager (lib/preload.js), sent
+# again as soon as it answers, before the server starts. On a B4 (webOS 10.3.2)
+# each switch-on had every app's preloading enabled again, and at a cold boot
+# it loaded Netflix 59 s in and the browser 61 s in, ahead of the server's own
+# resend at about 58 s, one app at a time (#1374). In the background, all at
+# once, never holding up the start.
+preload_off() {
+  [ -f /var/lib/tvweb/preload.json ] || return 0
+  off=$(tr -d '\n' < /var/lib/tvweb/preload.json |
+    sed -n 's/.*"off"[[:space:]]*:[[:space:]]*\[\([^]]*\)\].*/\1/p' | tr ',' '\n' |
+    sed 's/[[:space:]"]//g' | grep -E '^[A-Za-z0-9._-]+$')
+  [ -n "$off" ] || return 0
+  for _ in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30; do
+    luna-send -n 1 -w 5000 luna://com.webos.service.preloadmanager/getPreloadPolicy '{}' 2>/dev/null |
+      grep -q '"returnValue": *true' && break
+    sleep 1
+  done
+  # -w: on a C2 (webOS 9.2.2) setPreloadPolicy never answers, and luna-send
+  # waits for an answer forever without it.
+  for app in $off; do
+    luna-send -n 1 -w 5000 luna://com.webos.service.preloadmanager/setPreloadPolicy \
+      "{\"application\":{\"id\":\"$app\",\"isEnabled\":false}}" >/dev/null 2>&1 &
+  done
+  wait
+  echo "$(date): preloading switched off again for: $(echo "$off" | tr '\n' ' ')"
+}
+preload_off &
 
 webos_major=$(sed -n 's/.*webOS[^0-9]*\([0-9][0-9]*\)\..*/\1/p' /etc/issue 2>/dev/null | head -n 1)
 # A G5 (webOS 10.3.1) has no /etc/issue; "Rockhopper release 10.3.1-3006" is
@@ -198,26 +262,21 @@ webos_major=$(sed -n 's/.*webOS[^0-9]*\([0-9][0-9]*\)\..*/\1/p' /etc/issue 2>/de
 # webOS 9, so anything opening Home before now showed black; once sam
 # reads the mounted manifest it is stopped, and the TV opens Glasshouse Home's
 # page as Home from then on. Where sam does not take it, LG's files go back
-# under it, its own layout too, and it restarts on that. The server does the
-# same at its start, for a hook that did not run.
+# under it, and its own layout too. The server does the same at its start,
+# for a hook that did not run.
 # On webOS 10 and later LG's Home is a Flutter app run as
-# "flutter-client -i com.webos.app.home"; webOS 12 and later, where it is
-# untried, only with allowExperimentalHome in config.json. sam ignores the
-# nudge there (above), so the app is reread with a block and release first.
-# On webOS 5 (a CX on 5.5.0-19) and webOS 6 (a C1 on 6.5.3) there is neither
-# the configd list nor the block and release, so sam is restarted, as
-# lib/samrescan.js does for the switch.
+# "flutter-client -i com.webos.app.home". sam ignores the nudge there (above),
+# so the app is reread with a block and release first. Laid over LG's Home on
+# webOS 7 and later, as lib/home.js offers it there (lib/compat).
 homeapp=/usr/palm/applications/com.webos.app.home
 homestage=/var/lib/tvweb/home-takeover
 home_os=0
-[ "$webos_major" = "7" ] && home_os=1
-[ "$webos_major" = "9" ] && home_os=1
-[ "$webos_major" = "10" ] && home_os=1
-[ "$webos_major" = "11" ] && home_os=1
-if [ "${webos_major:-0}" -ge 12 ] 2>/dev/null; then
-  grep -q '"allowExperimentalHome"[[:space:]]*:[[:space:]]*true' /var/lib/tvweb/config.json 2>/dev/null && home_os=1
-fi
-if [ "$home_os" -eq 0 ] && grep -q " $homeapp " /proc/mounts 2>/dev/null; then
+[ "${webos_major:-0}" -ge 7 ] 2>/dev/null && home_os=1
+# Only Glasshouse Home's own staged copy, told by device and inode as
+# lib/home-takeover.js does: another launcher, such as CleanYourTV, may be
+# mounted here by a hook that ran before this one.
+if [ "$home_os" -eq 0 ] && grep -q " $homeapp " /proc/mounts 2>/dev/null && [ -d "$homestage" ] &&
+  [ "$(stat -c %d:%i "$homeapp")" = "$(stat -c %d:%i "$homestage")" ]; then
   umount "$homeapp" 2>/dev/null || true
 fi
 # A block and release cut short leaves Home blocked across boots, as for the
@@ -274,7 +333,7 @@ home_open_at_boot() {
     return 0
   fi
   target_home=com.webos.app.home
-  case "$webos_major" in 3|4|5|6) target_home=com.tvweb.home ;; esac
+  case "$webos_major" in 2|3|4|5|6) target_home=com.tvweb.home ;; esac
   luna-send -n 1 luna://com.webos.applicationManager/launch "{\"id\":\"$target_home\"}" 2>/dev/null |
     grep -q '"returnValue": *true' || return 0
   # The server watches for the view from its start and opens LG's Home if it
@@ -282,86 +341,13 @@ home_open_at_boot() {
   : > /tmp/glasshouse-home-opened-at-boot
   echo "$(date): Glasshouse Home opened over $boot_app"
 }
-has_hdmi_signal() {
-  app="$1"
-  hdmi_num=$(echo "$app" | sed -n 's/.*hdmi\([1-4]\).*/\1/p')
-  [ -z "$hdmi_num" ] && return 0
-  case "$hdmi_num" in
-    1) port=3 ;;
-    2) port=2 ;;
-    3) port=1 ;;
-    4) port=0 ;;
-    *) return 0 ;;
-  esac
-  status_file="/proc/lg/hdmi20/port$port/status"
-  if [ ! -f "$status_file" ] && [ -d /proc/lgtv-driver/hdmi_status ]; then
-    status_file=""
-    for f in /proc/lgtv-driver/hdmi_status/hdmi.p[0-3]; do
-      [ -f "$f" ] || continue
-      if grep -q "^[[:space:]]*hwport:[[:space:]]*${hdmi_num}[[:space:]]*$" "$f"; then
-        status_file="$f"
-        break
-      fi
-    done
-    if [ -z "$status_file" ]; then
-      fallback="/proc/lgtv-driver/hdmi_status/hdmi.p$((hdmi_num - 1))"
-      if [ -f "$fallback" ] && ! grep -q "^[[:space:]]*hwport:" "$fallback"; then
-        status_file="$fallback"
-      fi
-    fi
-  fi
-  [ -n "$status_file" ] && [ -f "$status_file" ] || return 0
-  if grep -q '^[[:space:]]*phy_lock_status:' "$status_file"; then
-    grep -q '^[[:space:]]*phy_lock_status:[[:space:]]*1[[:space:]]*$' "$status_file" && return 0
-    return 1
-  fi
-  if grep -qi 'PHY Lock' "$status_file"; then
-    grep -qi 'PHY Lock\[1\]' "$status_file" && return 0
-    return 1
-  fi
-  if grep -qi 'connected:' "$status_file"; then
-    grep -qi 'connected:[[:space:]]*on' "$status_file" && return 0
-    return 1
-  fi
-  return 0
-}
-# On webOS 5 and 6 the restart that makes sam read Glasshouse Home has the TV's
-# last-input handler launch Home a few seconds later (a 55NANO756PR on 6.5.3,
-# at 43 s, #1231). LG's own Home stays hidden when launched that way; Glasshouse
-# Home is a page and opens over the input the TV started on. Where the system
-# log names that launch, and Home is in front, that input is opened again. The
-# owner's own Home press is a launch by another caller, and left alone.
-input_back_after_restart() {
-  [ -e /tmp/glasshouse-home-opened-at-boot ] && return 0
-  boot_app=$(sed -n "s/.*BootSequencer) '\([^']*\)' is foreground.*/\1/p" /var/log/bootd.log 2>/dev/null | head -n 1)
-  case "$boot_app" in
-    com.webos.app.livetv|com.webos.app.hdmi[0-9]|com.webos.app.av[0-9]|com.webos.app.comp[0-9]) ;;
-    *) return 0 ;;
-  esac
-  has_hdmi_signal "$boot_app" || return 0
-  for _ in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15; do
-    if grep -q '"app_id":"com.webos.app.home","caller_app_id":"last_input_handler"' /var/log/messages 2>/dev/null; then
-      sleep 2
-      has_hdmi_signal "$boot_app" || return 0
-      front=$(luna-send -n 1 luna://com.webos.applicationManager/getForegroundAppInfo '{}' 2>/dev/null |
-        sed -n 's/.*"appId": *"\([^"]*\)".*/\1/p')
-      [ "$front" = com.webos.app.home ] || return 0
-      luna-send -n 1 luna://com.webos.applicationManager/launch "{\"id\":\"$boot_app\"}" >/dev/null 2>&1 || true
-      echo "$(date): $boot_app opened again over the Home the restart's last-input launch opened"
-      return 0
-    fi
-    sleep 1
-  done
-}
 home_on=0
 grep -q '"enabled"[[:space:]]*:[[:space:]]*true' /var/lib/tvweb/home.json 2>/dev/null && home_on=1
 if [ "$home_os" -eq 1 ] && [ -f "$homestage/appinfo.json" ] &&
    grep -q '"enabled"[[:space:]]*:[[:space:]]*true' /var/lib/tvweb/home.json 2>/dev/null; then
   mount --bind "$homestage" "$homeapp" 2>/dev/null || true
-  if [ "$webos_major" = "9" ] || [ "$webos_major" = "7" ]; then
+  if [ "$webos_major" = "9" ] || [ "$webos_major" = "8" ] || [ "$webos_major" = "7" ]; then
     home_reread() { sam_nudge; }
-  elif [ "$webos_major" = "5" ] || [ "$webos_major" = "6" ]; then
-    home_reread() { sam_restart; }
   else
     home_reread() { sam_reread_app com.webos.app.home; }
   fi
@@ -369,8 +355,6 @@ if [ "$home_os" -eq 1 ] && [ -f "$homestage/appinfo.json" ] &&
     for pid in $(lg_home_pids); do kill "$pid" 2>/dev/null; done
     echo "$(date): Glasshouse Home is in LG's Home's place"
     home_open_at_boot
-    # In the background: it waits up to 15 s, which must not hold up the start.
-    case "$webos_major" in 5|6) input_back_after_restart & ;; esac
   else
     umount "$homeapp" 2>/dev/null
     home_reread
@@ -378,7 +362,7 @@ if [ "$home_os" -eq 1 ] && [ -f "$homestage/appinfo.json" ] &&
     for pid in $(lg_home_pids); do kill "$pid" 2>/dev/null; done
     echo "$(date): sam did not take Glasshouse Home - LG's Home kept"
   fi
-elif { [ "$webos_major" = "3" ] || [ "$webos_major" = "4" ] || [ "$webos_major" = "5" ] || [ "$webos_major" = "6" ]; } && grep -q '"enabled"[[:space:]]*:[[:space:]]*true' /var/lib/tvweb/home.json 2>/dev/null; then
+elif { [ "$webos_major" = "2" ] || [ "$webos_major" = "3" ] || [ "$webos_major" = "4" ] || [ "$webos_major" = "5" ] || [ "$webos_major" = "6" ]; } && grep -q '"enabled"[[:space:]]*:[[:space:]]*true' /var/lib/tvweb/home.json 2>/dev/null; then
   home_open_at_boot
 fi
 
@@ -422,6 +406,16 @@ if [ -f /var/lib/tvweb/screensaver/.tvweb-screensaver ]; then
   if [ "$held" -eq 1 ]; then
     echo "$(date): custom screen saver held back (stock $stock_type, ours ${staged_type:-unknown})"
   else
+    # Aerial's own boot hook runs first and bind-mounts its assets folder over
+    # the app in a shared peer group, so a mount on top of it also lands over
+    # Aerial's assets folder, and Glasshouse then finds no saver there (#1378).
+    # Whatever is mounted there comes off first, as when one is chosen.
+    umount -l "$ssapp/qml/main.qml" 2>/dev/null
+    tries=0
+    while [ "$tries" -lt 8 ] && cut -d' ' -f5 /proc/self/mountinfo 2>/dev/null | grep -qxF "$ssapp"; do
+      umount "$ssapp" 2>/dev/null || umount -l "$ssapp" 2>/dev/null || break
+      tries=$((tries + 1))
+    done
     mount --bind /var/lib/tvweb/screensaver "$ssapp" 2>/dev/null || true
     # --no-block: stopping sam waits on every app in its cgroup, which is most
     # of a minute, and no hook may hold up boot for that.
@@ -478,36 +472,67 @@ elif [ "$tile_hiding_allowed" -eq 1 ] && [ ! -f /var/lib/tvweb/.from-homebrew-ch
       done
     fi
   done < /var/lib/tvweb/hidden_apps
-  if [ "$mounted" -eq 1 ] && sam_nudge && sam_reports "$first_hidden" '"visible": *false'; then
-    echo "$(date): sam read the hidden tiles, without a restart"
-  elif [ "$mounted" -eq 1 ]; then
-    # Capture the active foreground app before restarting SAM so we can restore it
-    fg_app=$(luna-send -n 1 -f luna://com.webos.applicationManager/getForegroundAppInfo '{}' 2>/dev/null | sed -n 's/.*"appId": *"\([^"]*\)".*/\1/p')
-
-    if command -v systemctl >/dev/null 2>&1; then
-      killall -9 LunaExecutable >/dev/null 2>&1 || true
-      systemctl kill -s 9 sam.service >/dev/null 2>&1 || systemctl restart --no-block sam >/dev/null 2>&1 || true
-    elif command -v initctl >/dev/null 2>&1; then
-      initctl restart sam >/dev/null 2>&1 || pkill -9 -x sam >/dev/null 2>&1 || true
+  if [ "$mounted" -eq 1 ]; then
+    reread_tiles=0
+    if [ -f /etc/palm/schemas/sam/applicationManager.blockSystemApp.schema ]; then
+      reread_tiles=1
+      while read -r app; do
+        [ -z "$app" ] && continue
+        [ -f "/var/lib/tvweb/appinfo-overrides/$app.json" ] || continue
+        sam_reread_app "$app" || { reread_tiles=0; break; }
+      done < /var/lib/tvweb/hidden_apps
+      if [ "$reread_tiles" -eq 1 ] && sam_reports "$first_hidden" '"visible": *false'; then
+        echo "$(date): sam read the hidden tiles app by app, without a restart"
+      else
+        reread_tiles=0
+      fi
+    elif sam_nudge && sam_reports "$first_hidden" '"visible": *false'; then
+      reread_tiles=1
+      echo "$(date): sam read the hidden tiles, without a restart"
     else
-      pkill -9 -x sam >/dev/null 2>&1 || true
+      case "$webos_major" in
+        3|4|5|6)
+          # Capture the active foreground app before restarting SAM so we can restore it
+          fg_app=$(luna-send -n 1 -f luna://com.webos.applicationManager/getForegroundAppInfo '{}' 2>/dev/null | sed -n 's/.*"appId": *"\([^"]*\)".*/\1/p')
+
+          if command -v systemctl >/dev/null 2>&1; then
+            killall -9 LunaExecutable >/dev/null 2>&1 || true
+            systemctl kill -s 9 sam.service >/dev/null 2>&1 || systemctl restart --no-block sam >/dev/null 2>&1 || true
+          elif command -v initctl >/dev/null 2>&1; then
+            initctl restart sam >/dev/null 2>&1 || pkill -9 -x sam >/dev/null 2>&1 || true
+          else
+            pkill -9 -x sam >/dev/null 2>&1 || true
+          fi
+
+          # Wait for SAM to become responsive (support BusyBox usleep with fallback)
+          for _ in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15; do
+            usleep 200000 2>/dev/null || sleep 1
+            if luna-send -n 1 -f luna://com.webos.applicationManager/getForegroundAppInfo '{}' >/dev/null 2>&1; then
+              break
+            fi
+          done
+          command -v systemctl >/dev/null 2>&1 && hdmi_inputs_resubscribe
+
+          # If the user was on an HDMI port or any non-home app, immediately restore it
+          # so they are never stranded on the Home screen
+          if [ -n "$fg_app" ] && [ "$fg_app" != "com.webos.app.home" ]; then
+            if has_hdmi_signal "$fg_app"; then
+              luna-send -n 1 -f luna://com.webos.applicationManager/launch "{\"id\":\"$fg_app\"}" >/dev/null 2>&1 || true
+            fi
+          fi
+          reread_tiles=1
+          echo "$(date): sam restarted to read the hidden tiles (webOS $webos_major has no other way)"
+          ;;
+      esac
     fi
-
-    # Wait for SAM to become responsive (support BusyBox usleep with fallback)
-    for _ in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15; do
-      usleep 200000 2>/dev/null || sleep 1
-      if luna-send -n 1 -f luna://com.webos.applicationManager/getForegroundAppInfo '{}' >/dev/null 2>&1; then
-        break
-      fi
-    done
-    command -v systemctl >/dev/null 2>&1 && hdmi_inputs_resubscribe
-
-    # If the user was on an HDMI port or any non-home app, immediately restore it
-    # so they are never stranded on the Home screen
-    if [ -n "$fg_app" ] && [ "$fg_app" != "com.webos.app.home" ]; then
-      if has_hdmi_signal "$fg_app"; then
-        luna-send -n 1 -f luna://com.webos.applicationManager/launch "{\"id\":\"$fg_app\"}" >/dev/null 2>&1 || true
-      fi
+    if [ "$reread_tiles" -ne 1 ]; then
+      echo "$(date): sam could not reread hidden tiles without a restart; leaving stock tiles in place"
+      while read -r app; do
+        [ -z "$app" ] && continue
+        for base in /media/system/apps/usr/palm/applications /usr/palm/applications /mnt/otncabi/usr/palm/applications /mnt/otycabi/usr/palm/applications; do
+          umount -l "$base/$app/appinfo.json" 2>/dev/null || true
+        done
+      done < /var/lib/tvweb/hidden_apps
     fi
   fi
 fi

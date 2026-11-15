@@ -93,6 +93,7 @@ var LIVE_TV = 'com.webos.app.livetv';
 var HOME_APP = 'com.webos.app.home';
 // Glasshouse's input bar, an overlay app (assets/inputbar-app/).
 var INPUT_BAR = 'com.tvweb.inputbar';
+var HOME_BAR = 'com.tvweb.homebar';
 var INPUT_BAR_DIR = '/media/developer/apps/usr/palm/applications/' + INPUT_BAR;
 // The separate app earlier Glasshouse Home builds installed, now removed; a key
 // still set to it opened nothing, and is moved to HOME_APP at start.
@@ -112,16 +113,19 @@ var APP_PREFIX = 'com.webos.app.';
  * are the codes controls.js sends for one step, which a receiver on HDMI ARC
  * follows too; they repeat while the key is held, as the remote's own do.
  * Mute is KEY_MUTE, a toggle like the remote's. Each worked on a C3 (webOS
- * 10.2.2). A play/pause toggle, asking acb what was playing first, did
+ * 10.2.2). OK is KEY_ENTER, which opened the tile in focus in Glasshouse Bar
+ * on a C2 (webOS 9.2.2): for a remote whose OK is the scroll wheel's press
+ * (#1513). A play/pause toggle, asking acb what was playing first, did
  * nothing there, so none is offered. webOS 11's native filters launch apps
  * only, so they are not offered there.
  */
 var MEDIA_PREFIX = 'media:';
 var MEDIA_CODES = {
+  ok: 28,
   play: 207, pause: 119, stop: 128, rewind: 168, fastForward: 208,
   volumeUp: 115, volumeDown: 114, mute: 113
 };
-var MEDIA_ACTIONS = ['play', 'pause', 'stop', 'rewind', 'fastForward', 'volumeUp', 'volumeDown', 'mute'];
+var MEDIA_ACTIONS = ['ok', 'play', 'pause', 'stop', 'rewind', 'fastForward', 'volumeUp', 'volumeDown', 'mute'];
 var MEDIA_REPEATS = { volumeUp: true, volumeDown: true };
 /*
  * Screen off, as the dashboard's: tvpower's turnOffScreen blanks the panel and
@@ -178,6 +182,14 @@ var NATIVE_SERVICE_KEYS = { ai: 'voiceconductor' };
  * for 5 s, and closeToast does not shorten it. Answered from the log too.
  */
 var NATIVE_BLOCK_KEYS = { alexa: 'amazon.alexa.view' };
+/*
+ * Apps sam would not block, from this start: a C3 (11.2.0) answers the block
+ * of amazon.alexa.view, which has a launch point there, with errorCode 1
+ * "exist in listLaunchPoint: amazon.alexa.view" (#1498). Its button cannot be
+ * changed there, so it is not offered, and the refusal does not fail the rest
+ * of a write, which carries the Home key's starting notice.
+ */
+var refusedBlocks = {};
 var MESSAGES_LOG = '/var/log/messages';
 var OTHER_CATEGORY = 'other';
 var MAPPING_KEY = 'mapping_info';
@@ -208,6 +220,11 @@ var KEYS = [
   { key: 'slingtv', symbol: 'WebOS.Key_webOS_SlingTV', title: 'Sling TV', regions: ['us'] },
   { key: 'globoplay', symbol: 'WebOS.Key_webOS_Globoplay', title: 'Globoplay', regions: ['br'] },
   { key: 'shahid', symbol: 'WebOS.Key_webOS_Shahid', title: 'Shahid', regions: ['ae'] },
+  // Verified in a C3's webOS 11 mapping_info; older Qt key symbols are unverified.
+  { key: 'ivi', title: 'Ivi', nativeMapping: true },
+  { key: 'okko', title: 'Okko', nativeMapping: true },
+  { key: 'kinopoisk', title: 'Kinopoisk', nativeMapping: true },
+  { key: 'shop', title: 'LG Shop', nativeMapping: true },
   // The voice assistants' own buttons on recent Magic Remotes: LG's filters
   // launch Alexa or the Google Assistant on a press, as for a streaming
   // button. The microphone button (Key_webOS_Voice) drives voice control; set
@@ -232,10 +249,10 @@ var KEYS = [
   { key: 'search', symbol: 'Qt.Key_Search', title: 'Search' },
   { key: 'info', symbol: 'WebOS.Key_webOS_Info', title: 'Info' },
   { key: 'help', symbol: 'Qt.Key_Help', title: 'Help' },
-  { key: 'red', symbol: 'WebOS.Key_webOS_Red', title: 'Red' },
-  { key: 'green', symbol: 'WebOS.Key_webOS_Green', title: 'Green' },
-  { key: 'yellow', symbol: 'WebOS.Key_webOS_Yellow', title: 'Yellow' },
-  { key: 'blue', symbol: 'WebOS.Key_webOS_Blue', title: 'Blue' }
+  { key: 'red', symbol: 'WebOS.Key_webOS_Red', title: 'Red', color: true },
+  { key: 'green', symbol: 'WebOS.Key_webOS_Green', title: 'Green', color: true },
+  { key: 'yellow', symbol: 'WebOS.Key_webOS_Yellow', title: 'Yellow', color: true },
+  { key: 'blue', symbol: 'WebOS.Key_webOS_Blue', title: 'Blue', color: true }
 ];
 
 var lunaFn = null;
@@ -266,6 +283,7 @@ var reapplyDelayMs = 1000;
 function init(opts) {
   opts = opts || {};
   lunaFn = opts.luna || null;
+  refusedBlocks = {};
   keySetFn = typeof opts.onInputBarKey === 'function' ? opts.onInputBarKey : null;
   barAppFn = typeof opts.inputBarApp === 'function' ? opts.inputBarApp : null;
   barAllowedFn = typeof opts.inputBarAllowed === 'function' ? opts.inputBarAllowed : function () { return false; };
@@ -308,7 +326,10 @@ function keyByName(name) {
 
 /*
  * The keys this TV's filters name. The compositor's enum may know more, but
- * a key its filters never match on is not one its remotes send.
+ * a key its filters never match on is not one its remotes send. The four
+ * colour keys are offered together when any one of them is named: webOS 4's
+ * filters only have cases for Yellow and Blue, passing Red and Green straight
+ * to the app in front.
  */
 function keysOnTv() {
   if (tvKeys) return tvKeys;
@@ -320,7 +341,10 @@ function keysOnTv() {
   } catch (e) {
     return null;
   }
-  tvKeys = KEYS.filter(function (k) { return !k.nativeOnly && src.indexOf(k.symbol) !== -1; });
+  var hasColor = KEYS.some(function (k) { return k.color && src.indexOf(k.symbol) !== -1; });
+  tvKeys = KEYS.filter(function (k) {
+    return !k.nativeOnly && !k.nativeMapping && ((k.color && hasColor) || src.indexOf(k.symbol) !== -1);
+  });
   return tvKeys;
 }
 
@@ -378,7 +402,7 @@ function writeMap(map, home, starting) {
  */
 function filterSource() {
   var lines = [
-    '/* Written by Glasshouse: the remote keys set on its Apps tab, read from the',
+    '/* Written by Glasshouse: the remote keys set on its Remote tab, read from the',
     ' * configd value ' + MAP_KEY + '. First in ' + CONFIG_KEY + ',',
     ' * so a key set there never reaches LG\'s filters. */',
     'var glasshouseKeyIds = {};',
@@ -393,13 +417,14 @@ function filterSource() {
     'var glasshousePowerState = "Active";',
     'var glasshouseScreenOffArmed = false;',
     'var glasshousePowerOffArmed = {};',
+    'var glasshouseBarPress = 0;',
     '',
     '// Key code by name; a name this firmware lacks is left out.',
     'function glasshouseKeyCodes() {',
     '    var codes = {};'
   ];
   KEYS.forEach(function (k) {
-    if (k.nativeOnly) return;
+    if (k.nativeOnly || k.nativeMapping) return;
     lines.push('    try { codes[' + JSON.stringify(k.key) + '] = ' + k.symbol + '; } catch (e) {}');
   });
   lines.push(
@@ -555,9 +580,12 @@ function filterSource() {
     '            if (!autoRepeat) global.sendKeyToFocusWindow(Qt.Key_Right, pressed, 106);',
     '        } else if (pressed && !autoRepeat && id) {',
     '            console.info("glasshouse keyfilter: key", key, "opens", id);',
-    // Home opened as the Home key opens it, so Glasshouse Home opens as Home.
+    // Home opened as the Home key opens it, so Glasshouse Home opens as Home;
+    // Glasshouse Bar carries a per-press sequence number so duplicate relaunches
+    // can be dropped without swallowing rapid open/close toggles.
     '            applicationManager.launch(id, id === ' + JSON.stringify(HOME_APP),
-    '                ? JSON.stringify({ "activateType": "home", "launchType": "homeKey" }) : "{}");',
+    '                ? JSON.stringify({ "activateType": "home", "launchType": "homeKey" })',
+    '                : (id === ' + JSON.stringify(HOME_BAR) + ' ? JSON.stringify({ "glasshouse": "bar", "press": ++glasshouseBarPress }) : "{}"));',
     '        }',
     '        return KeyPolicy.Accepted;',
     '    } catch (e) {',
@@ -835,7 +863,11 @@ function nativeKeys(tv, lg) {
     if (NATIVE_ACTIONS[k.key]) return !!(tv.actions && tv.actions[NATIVE_ACTIONS[k.key]]);
     if (NATIVE_SETTINGS[k.key]) return !!(tv.settings && tv.settings[NATIVE_SETTINGS[k.key]]);
     if (NATIVE_SERVICE_KEYS[k.key]) return !!(servicesModule && servicesModule.available(NATIVE_SERVICE_KEYS[k.key]));
-    if (NATIVE_BLOCK_KEYS[k.key]) return !!((tv.apps && tv.apps[NATIVE_BLOCK_KEYS[k.key]]) || lg.blocks[NATIVE_BLOCK_KEYS[k.key]]);
+    if (NATIVE_BLOCK_KEYS[k.key]) {
+      var appId = NATIVE_BLOCK_KEYS[k.key];
+      if (refusedBlocks[appId] && !lg.blocks[appId]) return false;
+      return !!((tv.apps && tv.apps[appId]) || lg.blocks[appId]);
+    }
     if (k.nativeOnly) return false;
     var entry = lg.mapping[k.key] || mappingEntry(tv.list, k.key);
     return !!(entry && typeof entry === 'object' && entry.isActive !== false);
@@ -1014,14 +1046,15 @@ function switchServices(map, lg, cb) {
 /*
  * Blocks each app a set key needs kept from opening, and releases each one
  * Glasshouse blocked that no set key needs now. A block already in place is
- * answered "already blocked", which is as good. cb(ok, switched).
+ * answered "already blocked", which is as good; one sam will not make
+ * (refusedBlocks) is left, and not asked again. cb(ok, switched).
  */
 function switchBlocks(map, lg, cb) {
   var todo = [];
   Object.keys(NATIVE_BLOCK_KEYS).forEach(function (key) {
     var id = NATIVE_BLOCK_KEYS[key];
     var wanted = Object.prototype.hasOwnProperty.call(map, key);
-    if (wanted) todo.push({ id: id, block: true, was: !!lg.blocks[id] });
+    if (wanted && !refusedBlocks[id]) todo.push({ id: id, block: true, was: !!lg.blocks[id] });
     else if (lg.blocks[id]) todo.push({ id: id, block: false, was: true });
   });
   if (!todo.length) return cb(true, false);
@@ -1034,7 +1067,13 @@ function switchBlocks(map, lg, cb) {
     var params = job.block ? { id: job.id, forceBlockSystemApp: false } : { id: job.id };
     // sam answers a second block "already blocked: <id>" (a C5, 11.2.0).
     lunaFn(uri, params, function (r, raw) {
-      var done = !!(r && r.returnValue) || /already\s*blocked/i.test(String((r && r.errorText) || raw || ''));
+      var answer = String((r && r.errorText) || raw || '');
+      var done = !!(r && r.returnValue) || /already\s*blocked/i.test(answer);
+      if (!done && job.block && /exist in listLaunchPoint/i.test(answer)) {
+        refusedBlocks[job.id] = true;
+        console.log('remotekeys: the TV will not block ' + job.id + ' (it has a launch point), so its button stays as LG has it');
+        return next(i + 1);
+      }
       if (done) {
         if (job.block) lg.blocks[job.id] = true;
         else delete lg.blocks[job.id];
@@ -1359,6 +1398,7 @@ function switcherChoices(cb) {
 // The media controls a key can send, where the JavaScript filter runs.
 function mediaChoices() {
   var titles = {
+    ok: msg('srv.remoteKeys.ok', 'OK'),
     play: msg('srv.remoteKeys.play', 'Play'),
     pause: msg('srv.remoteKeys.pause', 'Pause'),
     stop: msg('srv.remoteKeys.stop', 'Stop'),
@@ -1435,6 +1475,11 @@ function listApps(cb) {
   });
 }
 
+function isSupported(cb) {
+  if (!lunaFn) return cb(false);
+  offeredKeys(function (keys) { cb(!!(keys && keys.length)); });
+}
+
 /*
  * The keys this TV has and what each does. cb({ ok, supported, keys, choices,
  * inChain }). A key's action is 'lg', 'nothing' or 'open' with the id and its
@@ -1461,6 +1506,8 @@ function describeKeys(keys, inChain, cb, native) {
       var inputs = inputChoices();
       var media = native ? screenOffChoice() : actionChoices().concat(mediaChoices());
       var cc = country();
+      titles[HOME_ASSISTANT] = msg('srv.remoteKeys.homeAssistant', 'Home Assistant');
+      titles[HOME_GUIDE] = msg('srv.remoteKeys.homeGuide', 'Glasshouse Home\'s guide');
       switchers.concat(inputs, actionChoices(), mediaChoices(), homeChoices(false), barChoices(false)).forEach(function (c) { titles[c.id] = c.title; });
       var out = keys.map(function (k) {
         var set = Object.prototype.hasOwnProperty.call(map, k.key);
@@ -1742,6 +1789,7 @@ module.exports = {
   dropInputBar: dropInputBar,
   availabilityChanged: availabilityChanged,
   getRemoteKeys: getRemoteKeys,
+  isSupported: isSupported,
   setRemoteKey: setRemoteKey,
   setHome: setHome,
   setStarting: setStarting,

@@ -5,6 +5,7 @@ var list = say.list;
 var fs = require('fs');
 var readTrimmed = require('./util').readTrimmed;
 var execFile = require('child_process').execFile;
+var execFn = execFile;
 
 var ADBLOCK_HOSTS_FILE = '/var/lib/tvweb/adblock_hosts';
 // The repository's old name, kept: TVs' hosts files already carry this line,
@@ -14,7 +15,10 @@ var ADBLOCK_LEGACY_MARKER = '# LG Ad & Telemetry Blackhole (lg-webos-mqtt)';
 var ADBLOCK_FLAG_FILE = '/var/lib/tvweb/adblock_enabled';
 
 var ADBLOCK_ADS = [
+  'ad.lgappstv.com',
   'ad.lgsmartad.com',
+  'info.lgsmartad.net',
+  'lgad.cjpowercast.com',
   'ibis.lgappstv.com',
   'ibs.lgappstv.com',
   'lgsmartad.com',
@@ -27,6 +31,9 @@ var ADBLOCK_ADS = [
   // Alphonso is LG Ad Solutions' screen recognition (ACR) service. The TV asks
   // prov-lg for its setup and eulacheck for consent before anything else.
   'alphonso.tv',
+  'lgads.tv',
+  'ad-inserter.alphonso.tv',
+  'config-overlay-ads.alphonso.tv',
   'prov-lg.alphonso.tv',
   'prov.alphonso.tv',
   'eulacheck.alphonso.tv',
@@ -44,6 +51,12 @@ var ADBLOCK_ADS = [
   // Seen on port 4433 from a factory-reset TV, while its setup still showed
   // the agreements unanswered (docs/ACR.md). Numbered siblings are not known.
   'eu-acr86.alphonso.tv',
+  // Additional ad and APM endpoints in Life's Good Without Spying's lists;
+  // their classification is upstream evidence, not a traffic capture here.
+  'ruc.cdpbeacon.lgtvcommon.com',
+  'eic-rum.elsa.lgecloudapm.com',
+  'lgecloudapm.com',
+  'tracking.lgtvsdp.com',
   // LG's remote diagnostics (/usr/sbin/remotediag on an OLED77C5PUA, webOS
   // 11.2.0): the servers it sends screen captures and logs to once LG support
   // starts a session. Nothing else names them.
@@ -72,13 +85,17 @@ var ADBLOCK_ADS = [
  * apart from the catalog.
  */
 var ADBLOCK_REGIONAL = [
+  'ad.lgsmartad.com',
   'info.lgsmartad.com',
+  'ads.lgtvcommon.com',
+  'videoads.lgtvcommon.com',
   'rdx2.lgtvsdp.com',
   'rdx2.nextlgsdp.com',
   'elastic.lgwebostv.com',
   'ibs.lgappstv.com',
   'ibsstat.lgappstv.com',
   'cdpbeacon.lgtvcommon.com',
+  'cdpbeacon2.lgtvcommon.com',
   'cdpsvc.lgtvcommon.com',
   'wau.lgtvcommon.com',
   // adlogservice, a Python script LG updates over the air and runs through
@@ -92,9 +109,13 @@ var ADBLOCK_REGION_PREFIXES = ['aic', 'eic', 'kic', 'eu'];
 var ADBLOCK_FALLBACK_COUNTRIES = ['us', 'gb', 'au', 'br', 'ca', 'de', 'fr'];
 var COUNTRY_FILE = '/var/lib/tvweb/country';
 
-function regionPrefixes() {
+function countryPrefixes() {
   var country = (readTrimmed(COUNTRY_FILE) || '').toLowerCase();
-  return ADBLOCK_REGION_PREFIXES.concat(/^[a-z]{2}$/.test(country) ? [country] : ADBLOCK_FALLBACK_COUNTRIES);
+  return /^[a-z]{2}$/.test(country) ? [country] : ADBLOCK_FALLBACK_COUNTRIES;
+}
+
+function regionPrefixes() {
+  return ADBLOCK_REGION_PREFIXES.concat(countryPrefixes());
 }
 
 /**
@@ -126,20 +147,58 @@ var ADBLOCK_PLATFORM = [
   'eu.lgtvsdp.com',
   'ngfts.lge.com',
   'aic-ngfts.lge.com',
+  'eic-ngfts.lge.com',
   // From Huttunen's blocklist (docs/IMPLEMENTATION.md), not a capture of ours.
   // lgtviot.com is the ThinQ cloud, so the ThinQ app loses the TV on this tier.
-  'cdplauncher.lgtvcommon.com',
   'lgchhomeapp.lgtvcommon.com',
   'lgtviot.com',
+  // These also carry Home, account and pairing features, so they belong only
+  // to Everything even where an upstream list groups them with tracking.
+  'config.lgtvsdp.com',
+  'thetake.com',
+  'pnv.lgtvcommon.com',
+  'wiseresource.lgtvcommon.com',
+  'qcardservice.lgtvcommon.com',
+  'ruc.homeprv.lgtvcommon.com',
+  'ruc.nudge.lgtvcommon.com',
+  'ruc.recommend.lgtvcommon.com',
+  'ruc.service.lgtvcommon.com',
+  'ruc.wiseconfig.lgtvcommon.com',
+  'ruc.api.lgtviot.com',
+  'ruc.commonpush.lgtviot.com',
+  'ruc.push.lgtviot.com',
+  'ruc.sports.lgtviot.com',
+  'qt2-kic.lgtviot.com',
+  'ruc-op-lss.lgthinq.com',
+  'it-service.lgthinq.com',
+  'lgthinq.com',
+  'lss.lgthinq.com',
+  'noti.lgthinq.com',
+  'prd-api.lgthinq.com',
+  // LG Channels depends on Pluto/Xumo as well as LG's own hosts.
+  'eic.lgchhomeapp.lgtvcommon.com',
+  'app-lgwebos.pluto.tv',
+  'sp.pluto.tv',
+  'tags.tiqcdn.com',
+  'lg-channelplus-eu-beacons.xumo.com',
+  'lg-channelplus-eu-mds.xumo.com',
+  'bss.lgechannel.com',
+  'lgechannel.com',
   'ueiwsp.com',
+  'www.ueiwsp.com',
   // Amazon's Alexa SDK (libAVSCommon) fetches /generate_204 from it on a timer
   // to tell whether the TV is online, while Alexa runs; blocked, Alexa reads
   // the TV as offline.
   'avsxappcaptiveportal.com',
   // Google push messaging is a service endpoint, not an ad or telemetry host.
   'mtalk.google.com',
+  'device-provisioning.googleapis.com',
   // The content CDN on webOS 11, from sdx's server list (OLED77C5PUA, 11.2.0).
-  'ngfts.tv.wiselg.com'
+  'ngfts.tv.wiselg.com',
+  // Regional alias reported on a C4 running webOS 10.3.1.
+  'eic-gfts.tv.wiselg.com',
+  // Present in C5 firmware strings (webOS 10.3.1); no traffic captured.
+  'dev-ruc-ngfts.tv.wiselg.com'
 ];
 
 // These carry ThinQ and account services, so regional coverage belongs only
@@ -147,22 +206,42 @@ var ADBLOCK_PLATFORM = [
 var ADBLOCK_PLATFORM_REGIONAL = [
   'lgtviot.com',
   'api.lgtviot.com',
+  'ocp.lgtviot.com',
+  'commonpush.lgtviot.com',
   'push.lgtviot.com',
   'sports.lgtviot.com',
   'buddy.lgtviot.com',
   'lgeapi.com'
 ];
-var ADBLOCK_THINQ_REGIONAL = ['connect-client.lgthinq.com', 'common.lgthinq.com'];
-// ThinQ uses a hyphen before the service name, rather than a DNS label.
-var ADBLOCK_THINQ_PREFIXES = ['aic', 'eic', 'kic'];
+// Blocking the Content Store's interface and recommendations breaks the store.
+// Their documented variants use country prefixes (TV-RESEARCH.md).
+var ADBLOCK_STORE_HOSTS = ['app.lgwebostv.com', 'lgrecommends.lgappstv.com'];
+var ADBLOCK_HOME_HOSTS = ['cdplauncher.lgtvcommon.com', 'homeprv.lgtvcommon.com',
+  'nudge.lgtvcommon.com', 'rdl.lgtvcommon.com', 'recommend.lgtvcommon.com',
+  'service.lgtvcommon.com', 'wiseconfig.lgtvcommon.com'];
+var ADBLOCK_THINQ_REGIONAL = ['connect-client.lgthinq.com', 'common.lgthinq.com',
+  'iotservice.lgthinq.com', 'service.lgthinq.com', 'op-lss.lgthinq.com'];
+// Home uses dotted service regions; ThinQ and OCP also use hyphenated ones.
+var ADBLOCK_SERVICE_PREFIXES = ['aic', 'eic', 'kic'];
 
 var ADBLOCK_SDP = [
   'nextlgsdp.com',
   'us.nextlgsdp.com',
   'gb.nextlgsdp.com',
   'de.nextlgsdp.com',
-  'eu.nextlgsdp.com'
+  'eu.nextlgsdp.com',
+  // Documented macro-regions and WiseLG's RUC host share the clock gate.
+  'af.nextlgsdp.com',
+  'as.nextlgsdp.com',
+  'la.nextlgsdp.com',
+  'me.nextlgsdp.com',
+  'na.nextlgsdp.com',
+  'eu7.nextlgsdp.com',
+  'ruc.tv.wiselg.com'
 ];
+// Only these country7 names are documented upstream; do not invent de7 or gb7.
+var ADBLOCK_SDP_VARIANT_COUNTRIES = ['au', 'br', 'cn', 'hk', 'id', 'il', 'jp',
+  'kr', 'my', 'sg', 'tw', 'us', 'vn', 'za'];
 /*
  * webOS 11 moved the service platform to tv.wiselg.com: on an OLED77C5PUA
  * (11.2.0) sdx's server list names <country>.tv.wiselg.com (US) for sign-in,
@@ -176,7 +255,10 @@ var ADBLOCK_SDP_REGIONAL = ['tv.wiselg.com', 'nextlgsdp.com',
                             'ibs.nextlgsdp.com', 'ibsstat.nextlgsdp.com'];
 
 function adBlockSdp() {
-  return ADBLOCK_SDP.concat(withPrefixes(ADBLOCK_SDP_REGIONAL));
+  var variants = countryPrefixes().filter(function (country) {
+    return ADBLOCK_SDP_VARIANT_COUNTRIES.indexOf(country) !== -1;
+  }).map(function (country) { return country + '7.nextlgsdp.com'; });
+  return ADBLOCK_SDP.concat(withPrefixes(ADBLOCK_SDP_REGIONAL), variants);
 }
 var SDP_POLL_INTERVAL_MS = 3000;
 var SDP_SLOW_POLL_INTERVAL_MS = 30000;
@@ -195,6 +277,7 @@ var sdpCapTimer = null;
  * update blocking off, silently, so its hosts go into this table too.
  */
 var HBC_BLOCK_UPDATES_FLAG = '/var/luna/preferences/webosbrew_block_updates';
+var MOUNTINFO = '/proc/self/mountinfo';
 // The four names the Homebrew Channel's startup.sh blocks, plus /usr/sbin/update's
 // dev endpoint (snu-dev) and download CDN (nsu, docs/development/TV-RESEARCH.md).
 var HBC_UPDATE_HOSTS = ['snu.lge.com', 'su.lge.com', 'su-ssl.lge.com',
@@ -383,7 +466,7 @@ function wouldStart(service, psText) {
 }
 
 var psArgs = function (cb) {
-  execFile('/bin/ps', ['-eo', 'args'], { timeout: 4000 }, function (err, stdout) {
+  execFn('/bin/ps', ['-eo', 'args'], { timeout: 4000 }, function (err, stdout) {
     cb(String(stdout || ''));
   });
 };
@@ -410,6 +493,8 @@ var lastAdBlockCheck = 0;
 var cachedPrivacy = null;
 /** @type {typeof import('./lgsettings')} */
 var lgSettingsModule = null;
+/** @type {typeof import('./apphosts')} */
+var appHostsModule = null;
 var lastPrivacyCheck = 0;
 var consentGroups = null;
 var consentMapFound = false;
@@ -417,6 +502,64 @@ var consentMapFound = false;
 function clearCache() {
   cachedPrivacy = null;
   cachedAdBlockActive = null;
+}
+
+function syncAppHosts() {
+  if (appHostsModule) appHostsModule.sync();
+  syncAirplayKeyCheck();
+}
+
+/*
+ * AirPlay's first pairing after each power-on has the daemon ask
+ * com.webos.service.mfi to check the TV's MFi key with LG, through sdx's
+ * sdp_airplay service on <country>.nextlgsdp.com. With that blocked,
+ * downloadKey answers -5 and the daemon waits 10 s, longer than the iPhone,
+ * which says "Unable to Connect" (a B4, webOS 10.3.2, #1434). The daemon
+ * skips the check while /tmp/mfi_key_requested exists, and a power-on deletes
+ * that file but not a directory with something in it. So while this table
+ * blocks the TV's country's time server, the directory is kept, with a folder of
+ * Glasshouse's in it; once it does not, that folder goes, and the directory
+ * if empty, and LG's check runs again. The key itself is still read from
+ * the TV's secure store.
+ */
+var AIRPLAY_KEY_FLAG = '/tmp/mfi_key_requested';
+var AIRPLAY_KEY_MINE = 'glasshouse';
+var airplayFlagError = '';
+// The file calls it makes, for a test to give it a filesystem of its own.
+var airplayFs = fs;
+
+// The host sdx gives sdp_airplay is the TV's country's: AE.nextlgsdp.com on a
+// B4 set to the UAE. Ads & telemetry blocks rdx2.nextlgsdp.com but not it.
+function blocksSdp() {
+  if (!isTableMounted()) return false;
+  var hosts = [];
+  countryPrefixes().forEach(function (cc) { hosts.push(cc + '.nextlgsdp.com', cc + '.tv.wiselg.com'); });
+  return adBlockList(flagMode()).some(function (n) { return hosts.indexOf(n) !== -1; });
+}
+
+function syncAirplayKeyCheck() {
+  var mine = AIRPLAY_KEY_FLAG + '/' + AIRPLAY_KEY_MINE;
+  try {
+    if (blocksSdp()) {
+      var st = null;
+      try { st = airplayFs.lstatSync(AIRPLAY_KEY_FLAG); } catch (e) {}
+      // The daemon's own marker: a file, which a power-on deletes.
+      if (st && !st.isDirectory()) airplayFs.unlinkSync(AIRPLAY_KEY_FLAG);
+      if (!st || !st.isDirectory()) airplayFs.mkdirSync(AIRPLAY_KEY_FLAG);
+      if (!airplayFs.existsSync(mine)) {
+        airplayFs.mkdirSync(mine);
+        console.log('adblock: AirPlay skips LG\'s MFi key check while the time servers are blocked');
+      }
+    } else if (airplayFs.existsSync(mine)) {
+      airplayFs.rmdirSync(mine);
+      try { airplayFs.rmdirSync(AIRPLAY_KEY_FLAG); } catch (e) { /* the daemon's or another tool's, still in use */ }
+      console.log('adblock: AirPlay checks its MFi key with LG again');
+    }
+    airplayFlagError = '';
+  } catch (e) {
+    if (airplayFlagError !== e.message) console.error('adblock: could not set AirPlay\'s key check: ' + e.message);
+    airplayFlagError = e.message;
+  }
 }
 
 function storeHost() {
@@ -433,7 +576,10 @@ function isSdpGracePeriodActive() {
 
 function adBlockPlatformBase() {
   return ADBLOCK_PLATFORM.concat(withPrefixes(ADBLOCK_PLATFORM_REGIONAL),
-    withPrefixes(ADBLOCK_THINQ_REGIONAL, ADBLOCK_THINQ_PREFIXES, '-'));
+    withPrefixes(ADBLOCK_STORE_HOSTS, countryPrefixes()),
+    withPrefixes(ADBLOCK_HOME_HOSTS, ADBLOCK_SERVICE_PREFIXES),
+    withPrefixes(['ocp.lgtviot.com'], ADBLOCK_SERVICE_PREFIXES, '-'),
+    withPrefixes(ADBLOCK_THINQ_REGIONAL, ADBLOCK_SERVICE_PREFIXES, '-'));
 }
 
 function adBlockPlatform() {
@@ -713,23 +859,38 @@ function sinkhole(lines, host) {
   lines.push('::\t' + host);
 }
 
+// Heads the lines this table carries over from other tools; 50-tvweb.sh writes it too.
+var KEPT_HEADER = '# Kept from /etc/hosts, where other tools put them';
+
 /*
  * Lines other tools put in /etc/hosts, such as AmazOff's redirect of Amazon's
- * player to a local nginx. Rewriting the table, or mounting it, would
- * otherwise drop them. A line is this table's own if it is a comment, a
- * localhost line, a sinkhole (0.0.0.0 or ::) or names a host the table decides
- * on: the Homebrew Channel points the update servers at 127.0.0.1 and ::1
- * (a C4 on webOS 10.3.1), and those must not outlive update blocking being
- * switched off. 50-tvweb.sh carries the rest over at boot the same way.
+ * player to a local nginx, and other blockers' sinkholes (Life's Good Without
+ * Spying and LG App Update Blocker write nothing else, #1370). Rewriting the
+ * table, or mounting it, would otherwise drop them. In this table's own file,
+ * its sinkholes are its own until KEPT_HEADER and another tool's after it; in
+ * another tool's file every sinkhole is that tool's. A line is never kept if
+ * it is a comment, a localhost line, or a non-sinkhole naming a host the
+ * table decides on: the Homebrew Channel points the update servers at
+ * 127.0.0.1 and ::1 (a C4 on webOS 10.3.1), and those must not outlive update
+ * blocking being switched off. 50-tvweb.sh carries them over at boot the same
+ * way.
  */
 function foreignHostsLines(text) {
   var managed = adBlockAds().concat(adBlockPlatformBase(), adBlockSdp(), HBC_UPDATE_HOSTS);
   var kept = [];
-  var lines = String(text || '').split('\n');
+  text = String(text || '');
+  var ours = text.indexOf(ADBLOCK_MARKER) !== -1 || text.indexOf(ADBLOCK_LEGACY_MARKER) !== -1;
+  var othersSinkholes = !ours;
+  var lines = text.split('\n');
   for (var i = 0; i < lines.length; i++) {
     var line = lines[i].trim();
+    if (line === KEPT_HEADER) othersSinkholes = true;
     if (!line || line.charAt(0) === '#') continue;
-    if (/^(0\.0\.0\.0|::)\s/.test(line) || /localhost|ip6-/.test(line) || isLocalLookupLine(line)) continue;
+    if (/^(0\.0\.0\.0|::)\s/.test(line)) {
+      if (othersSinkholes && kept.indexOf(line) === -1) kept.push(line);
+      continue;
+    }
+    if (/localhost|ip6-/.test(line) || isLocalLookupLine(line)) continue;
     var names = line.split(/\s+/).slice(1);
     if (names.some(function (n) { return managed.indexOf(n.toLowerCase()) !== -1; })) continue;
     if (kept.indexOf(line) === -1) kept.push(line);
@@ -762,8 +923,10 @@ function adBlockHostsTable(mode, foreign) {
     lines.push('', '# TV software updates, blocked by the flag the Homebrew Channel also uses');
     for (var u = 0; u < HBC_UPDATE_HOSTS.length; u++) sinkhole(lines, HBC_UPDATE_HOSTS[u]);
   }
+  // Kept even where the tier blocks the same name: the tool's line must
+  // outlive the tier being switched off.
   if (foreign && foreign.length) {
-    lines.push('', '# Kept from /etc/hosts, where other tools put them');
+    lines.push('', KEPT_HEADER);
     lines.push.apply(lines, foreign);
   }
   lines.push('');
@@ -792,10 +955,11 @@ function finalizeSdpBlock(logMsg) {
   if (!sdpGraceActive) return;
   sdpGraceActive = false;
   if (logMsg) console.log(logMsg);
-  if (waitsForSdp(flagMode()) && isTableMounted()) {
+  if (waitsForSdp(flagMode())) {
     try {
       writeHostsTable(flagMode());
       clearCache();
+      if (isTableMounted()) syncAppHosts();
     } catch (e) {}
   }
 }
@@ -888,6 +1052,29 @@ function scheduleSdpBlock() {
 }
 
 /*
+ * Whether the mount on top of /etc/hosts is the Homebrew Channel's update
+ * block: its start-up binds /tmp/hosts there, which the mount table lists as
+ * /hosts on a tmpfs (webOS 10.3.2, Homebrew Channel 0.7.3). Another tool's
+ * layer is a file of its own, and where the table cannot be read nothing is
+ * taken for the Homebrew Channel's.
+ */
+function hbcLayerOnTop() {
+  var info;
+  try { info = fs.readFileSync(MOUNTINFO, 'utf8'); } catch (e) { return false; }
+  var layers = [], parents = {};
+  info.split('\n').forEach(function (line) {
+    var sides = line.split(' - ');
+    var parts = sides[0].split(' ');
+    if (sides.length < 2 || parts[4] !== '/etc/hosts') return;
+    layers.push({ id: parts[0], root: parts[3], fstype: sides[1].split(' ')[0] });
+    parents[parts[1]] = true;
+  });
+  // The top one is the one no other is mounted on.
+  var top = layers.filter(function (l) { return !parents[l.id]; })[0];
+  return !!top && top.fstype === 'tmpfs' && top.root === '/hosts';
+}
+
+/*
  * One table carries both the ad block and the update block, so it stays
  * mounted while either is on. The Homebrew Channel mounts its own update block
  * at boot, under this one; with updates unblocked and nothing of ours to
@@ -896,7 +1083,7 @@ function scheduleSdpBlock() {
 function applyHostsTable(cb) {
   var mode = flagMode();
   var mounted = isTableMounted();
-  var done = function () { clearCache(); cb(null); };
+  var done = function () { clearCache(); syncAppHosts(); cb(null); };
   if (tableWanted(mode)) {
     try {
       writeHostsTable(mode);
@@ -906,8 +1093,8 @@ function applyHostsTable(cb) {
     if (waitsForSdp(mode)) scheduleSdpBlock();
     else clearSdpTimer();
     if (mounted) return done();
-    return execFile('/bin/mount', ['--bind', ADBLOCK_HOSTS_FILE, '/etc/hosts'], { timeout: 3000 },
-      function (err) { clearCache(); cb(err ? 'could not mount the hosts table' : null); });
+    return execFn('/bin/mount', ['--bind', ADBLOCK_HOSTS_FILE, '/etc/hosts'], { timeout: 3000 },
+      function (err) { if (!err) return done(); clearCache(); cb('could not mount the hosts table'); });
   }
   clearSdpTimer();
   // Other tools' lines went into the table while it was up, and the
@@ -919,13 +1106,24 @@ function applyHostsTable(cb) {
     var below = currentForeignHostsLines();
     var lost = foreign.filter(function (line) { return below.indexOf(line) === -1; });
     if (!lost.length) return done();
-    execFile('/bin/mount', ['--bind', ADBLOCK_HOSTS_FILE, '/etc/hosts'], { timeout: 3000 },
-      function (err) { clearCache(); cb(err ? 'could not mount the hosts table' : null); });
+    execFn('/bin/mount', ['--bind', ADBLOCK_HOSTS_FILE, '/etc/hosts'], { timeout: 3000 },
+      function (err) { if (!err) return done(); clearCache(); cb('could not mount the hosts table'); });
   };
   var liftHbc = function () {
     var hosts = readTrimmed('/etc/hosts') || '';
     if (hosts.indexOf('webosbrew startup script') === -1) return settle();
-    execFile('/bin/umount', ['/etc/hosts'], { timeout: 3000 }, function () { settle(); });
+    if (hbcLayerOnTop()) return execFn('/bin/umount', ['/etc/hosts'], { timeout: 3000 }, function () { settle(); });
+    // Another tool's layer, made from a copy of the Homebrew Channel's, comment
+    // and update block included (Life's Good Without Spying, #1369). It is left
+    // where it is, with this table over it blocking nothing but that tool's own
+    // lines, so the update block in its copy no longer applies.
+    try {
+      writeHostsTable('off');
+    } catch (e) {
+      return cb('could not write the hosts table: ' + e.message);
+    }
+    execFn('/bin/mount', ['--bind', ADBLOCK_HOSTS_FILE, '/etc/hosts'], { timeout: 3000 },
+      function (err) { if (!err) return done(); clearCache(); cb('could not mount the hosts table'); });
   };
   if (!mounted) return liftHbc();
   if (foreign.length) {
@@ -935,7 +1133,7 @@ function applyHostsTable(cb) {
       return cb('could not write the hosts table: ' + e.message);
     }
   }
-  execFile('/bin/umount', ['/etc/hosts'], { timeout: 3000 }, function () { clearCache(); liftHbc(); });
+  execFn('/bin/umount', ['/etc/hosts'], { timeout: 3000 }, function () { clearCache(); liftHbc(); });
 }
 
 function setAdBlock(mode, cb) {
@@ -982,11 +1180,14 @@ function checkBootAdBlock(cliMode) {
     var need = tableWanted(mode);
     if (need) writeHostsTable(mode);
     if (need && !isTableMounted()) {
-      execFile('/bin/mount', ['--bind', ADBLOCK_HOSTS_FILE, '/etc/hosts'], { timeout: 3000 }, function (err) {
+      execFn('/bin/mount', ['--bind', ADBLOCK_HOSTS_FILE, '/etc/hosts'], { timeout: 3000 }, function (err) {
         clearCache();
-        if (!err) console.log('adblock: restored /etc/hosts bind-mount from previous boot');
+        if (!err) {
+          syncAppHosts();
+          console.log('adblock: restored /etc/hosts bind-mount from previous boot');
+        }
       });
-    }
+    } else syncAppHosts();
     if (waitsForSdp(mode)) scheduleSdpBlock();
   } catch (e) {}
 }
@@ -1537,6 +1738,9 @@ function init(opts) {
   opts = opts || {};
   if (opts.lgSettings) lgSettingsModule = opts.lgSettings;
   if (opts.services) servicesModule = opts.services;
+  if (opts.appHosts !== undefined) appHostsModule = opts.appHosts;
+  if (opts.airplayFs) airplayFs = opts.airplayFs;
+  execFn = opts.exec || execFile;
   if (opts.luna) luna = opts.luna;
   if (opts.lunaCached) lunaCached = opts.lunaCached;
   if (opts.config) config = opts.config;
@@ -1551,7 +1755,7 @@ function learnCountry() {
     if (!/^[a-z]{2}$/.test(cc) || cc === (readTrimmed(COUNTRY_FILE) || '').toLowerCase()) return;
     try {
       fs.writeFileSync(COUNTRY_FILE, cc, 'utf8');
-      if (isTableMounted()) writeHostsTable(flagMode());
+      if (isTableMounted()) { writeHostsTable(flagMode()); syncAppHosts(); }
     } catch (e) {}
   });
 }
@@ -1590,6 +1794,7 @@ module.exports = {
   ADBLOCK_PLATFORM: ADBLOCK_PLATFORM,
   adBlockHostsTable: adBlockHostsTable,
   foreignHostsLines: foreignHostsLines,
+  hbcLayerOnTop: hbcLayerOnTop,
   CONSENT_LABELS: CONSENT_LABELS,
   CONSENT_LOCKED: CONSENT_LOCKED,
   CONSENT_GROUPS: CONSENT_GROUPS,

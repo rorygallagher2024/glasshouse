@@ -190,8 +190,32 @@ server.listen(0, '127.0.0.1', function () {
                               assert.strictEqual(haEntity.status().latencyMs, null, 'switched off, no response time is shown');
                               console.log('  \u2713 status() carries the response time and the last read for the Connection box');
 
-                              server.close();
-                              console.log('ALL test-haentity.js assertions passed!');
+                              // readMany: every id read together, each failure under its own id.
+                              haEntity.update({ enabled: true });
+                              var beforeMany = hits;
+                              haEntity.readMany(['sensor.outdoor_temperature', 'sensor.missing', 'sensor.explosive'], function (many) {
+                                assert.strictEqual(many.ok, true);
+                                assert.strictEqual(hits - beforeMany, 3, 'one request per id');
+                                assert.deepEqual(Object.keys(many.entities), ['sensor.outdoor_temperature']);
+                                assert.strictEqual(many.entities['sensor.outdoor_temperature'].state, '8.5');
+                                assert.strictEqual(many.entities['sensor.outdoor_temperature'].attributes.unit_of_measurement, '\u00b0C');
+                                assert.strictEqual(many.entities['sensor.outdoor_temperature'].updated, '2026-11-09T20:00:00+00:00');
+                                assert.ok(/404/.test(many.errors['sensor.missing']), many.errors['sensor.missing']);
+                                assert.ok(/did not answer JSON/.test(many.errors['sensor.explosive']), many.errors['sensor.explosive']);
+                                haEntity.readMany([], function (none) {
+                                  assert.deepEqual(none, { ok: true, entities: {}, errors: {} }, 'nothing asked, nothing read');
+                                  var beforeOff = hits;
+                                  haEntity.update({ enabled: false });
+                                  haEntity.readMany(['sensor.outdoor_temperature'], function (off) {
+                                    assert.deepEqual(off.entities, {});
+                                    assert.ok(/not configured/.test(off.errors['sensor.outdoor_temperature']));
+                                    assert.strictEqual(hits, beforeOff, 'switched off, Home Assistant is not asked');
+                                    console.log('  \u2713 readMany reads every id together and reports each failure under its id');
+                                    server.close();
+                                    console.log('ALL test-haentity.js assertions passed!');
+                                  });
+                                });
+                              });
                             });
                           });
                         });

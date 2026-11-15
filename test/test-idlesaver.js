@@ -31,11 +31,11 @@ function advance(ms) {
   due.forEach(function (t) { t.fn(); });
 }
 
-var calls, foreground, powerState, setReply, media, pendingMedia, deferMedia, pendingPolicy;
+var calls, foreground, powerState, setReply, media, pendingMedia, deferMedia, pendingPolicy, video;
 function reset() {
   timers = []; marker = ''; deferMedia = false;
   calls = []; foreground = 'com.webos.app.home'; powerState = 'Screen Saver';
-  setReply = { returnValue: true }; media = { state: 'idle', fullScreen: false };
+  setReply = { returnValue: true }; media = { state: 'idle', fullScreen: false }; video = [];
 }
 function luna(uri, params, cb) {
   calls.push({ uri: uri, params: params });
@@ -45,6 +45,7 @@ function luna(uri, params, cb) {
     return cb(setReply);
   }
   if (/getPowerState$/.test(uri)) return cb({ returnValue: true, state: powerState });
+  if (/videooutput\/getStatus$/.test(uri)) return cb(video === null ? null : { returnValue: true, video: video });
   cb({ returnValue: true });
 }
 function policies() {
@@ -139,6 +140,38 @@ media = null;
 advance(10000);
 refusal(saver);
 assert.strictEqual(calls.length, 0);
+
+// An app's non-preview video on the main screen while the media service reads
+// idle, as for a player it does not list: left alone. Paused (reported),
+// Home/broadcast/inset tile previews, an input's picture, or no answer from
+// videooutput: lifted as before.
+var appVideo = { sink: 'MAIN', connected: true, connectedSource: 'VDEC', appId: 'org.jellyfin.webos' };
+[
+  appVideo,
+  { sink: 'MAIN', connected: true, connectedSource: 'VDEC', appId: 'org.jellyfin.webos',
+    displayOutput: { x: 0, y: 277, width: 3840, height: 1606 } }
+].forEach(function (v) {
+  saver = start();
+  video = [{ sink: 'SUB', connected: false }, v];
+  refusal(saver);
+  assert.strictEqual(policies().length, 0);
+  assert.strictEqual(requests(), 0);
+});
+[
+  { media: { state: 'paused', fullScreen: true }, video: [appVideo] },
+  { media: { state: 'idle', fullScreen: false }, video: [{ sink: 'MAIN', connected: true, connectedSource: 'VDEC', appId: 'com.webos.app.home' }] },
+  { media: { state: 'idle', fullScreen: false }, video: [{ sink: 'MAIN', connected: true, connectedSource: 'VDEC', contentType: 'dtv', appId: 'org.webos.preview' }] },
+  { media: { state: 'idle', fullScreen: false }, video: [{ sink: 'MAIN', connected: true, connectedSource: 'VDEC', appId: 'youtube.leanback.v4', displayOutput: { x: 480, y: 270, width: 854, height: 480 } }] },
+  { media: { state: 'idle', fullScreen: false }, video: [{ sink: 'MAIN', connected: true, connectedSource: 'HDMI' }] },
+  { media: { state: 'idle', fullScreen: false }, video: null }
+].forEach(function (c) {
+  saver = start();
+  media = c.media;
+  video = c.video;
+  refusal(saver);
+  assert.strictEqual(policies().length, 1);
+  assert.strictEqual(requests(), 1);
+});
 
 // No setEplAppInfo on this TV: asked once, then never again.
 saver = start();

@@ -9,6 +9,7 @@ var execFile = require('child_process').execFile;
 var msg = require('./say').msg;
 var timers = require('./timers');
 var saverPowerOff = require('./saverpoweroff');
+var nosignal = require('./nosignal');
 var clock = require('./clock');
 var names = require('./names');
 var typing = require('./typing');
@@ -30,7 +31,10 @@ var RCU_KEY_CODES = {
   stop: 128,
   fastForward: 208,
   fastforward: 208,
-  rewind: 168
+  rewind: 168,
+  // The remote's CH+ and CH-: Live TV changes channel, and so does Internet TV in Home.
+  channelUp: 402,
+  channelDown: 403
 };
 
 /*
@@ -117,6 +121,8 @@ var backupModule = null;
 var resettimeModule = null;
 /** @type {typeof import('./home')} */
 var homeModule = null;
+/** @type {typeof import('./homebar')} */
+var homeBarModule = null;
 var republishDiscoveryFn = null;
 var deviceNameChangedFn = null;
 var tvAppFn = null;
@@ -130,6 +136,7 @@ var toastSourceId = null;
 var toastIconDir = path.join(__dirname, '..', 'toast-icons');
 var tileHidingOffMsg = null;
 var writeSettingsFn = null;
+var pointerChangedFn = function () {};
 // Whether LG's on-screen keyboard is up, from the live window list.
 var keyboardVisibleFn = function () { return false; };
 
@@ -686,6 +693,11 @@ function doControl(action, value, cb) {
         });
       });
 
+    case 'channel':
+      return sendMediaKey(String(value).toLowerCase() === 'down' ? 'channelDown' : 'channelUp', function (ok) {
+        cb({ ok: ok });
+      });
+
     case 'playback':
     case 'media':
       return sendMediaKey(value, function (ok) {
@@ -1038,6 +1050,19 @@ function doControl(action, value, cb) {
     case 'rcu':
       var rcuName = String(value || '').trim().toLowerCase();
       var rcuAt = monotonicMs();
+      if (rcuName === 'home' && homeBarModule && homeBarModule.enabled()) {
+        /*
+         * With Glasshouse Bar chosen, Home opens or closes the Bar, as the
+         * remote's does: LG's Home app launched directly does not pass the key
+         * filter that gives Home to the Bar (#1537). The press needs an id of
+         * its own, as the filter's do, for the Bar to tell it from a repeat.
+         */
+        return lunaUrgent('com.webos.applicationManager/launch',
+          { id: homeBarModule.APP, params: { glasshouse: 'bar', press: Date.now() } }, function (r, raw, timing) {
+            logRcu(rcuName, rcuAt, timing, r && r.returnValue);
+            cb({ ok: !!(r && r.returnValue) });
+          });
+      }
       if (rcuName === 'home') {
         // webOS 6+ (2021+) uses com.webos.app.home as a standalone app.
         // webOS 3-5 (2016-2020) does not have com.webos.app.home (the launcher
@@ -1319,6 +1344,10 @@ function doControl(action, value, cb) {
         cb(getUpdateSummary());
       });
 
+    // LG's No Signal screen: as LG made it, plain "No Signal", or disconnected cable icon.
+    case 'plainNoSignal':
+      return nosignal.set(value, cb);
+
     // Poweroff after: minutes of screen saver before standby, 0 or blank for off.
     case 'screensaverPowerOff':
       var offMin = saverPowerOff.parseMinutes(value);
@@ -1335,14 +1364,36 @@ function doControl(action, value, cb) {
         cb({ ok: true, minutes: offMin });
       });
 
-    // The input bar where it is experimental; off sets its keys back to LG's.
-    case 'setInputBarAllowed':
-      if (!inputBar) return cb({ ok: false, error: 'input bar unavailable' });
-      var allowBar = (value === true || value === 'on' || value === 'true');
-      return inputBar.setAllowed(allowBar, function (err) {
+    case 'setPointerEnabled':
+      var pointerOn = value === true || value === 'on' || value === 'true';
+      if (!writeSettingsFn) return cb({ ok: false, error: 'no writeSettings handler configured' });
+      return writeSettingsFn({ pointer: { enabled: pointerOn } }, function (err) {
         if (err) return cb({ ok: false, error: 'could not save setting: ' + err.message });
+        config.pointer = config.pointer || {};
+        config.pointer.enabled = pointerOn;
+        pointerChangedFn();
         cb(getUpdateSummary());
       });
+
+    case 'setPointerSettings':
+      var pointerSettings = value && typeof value === 'object' ? value : {};
+      var transport = pointerSettings.transport === 'http' ? 'http' : 'websocket';
+      var rate = Number(pointerSettings.updatesPerSecond);
+      if ([60, 120, 240].indexOf(rate) === -1) return cb({ ok: false, error: 'pointer update rate must be 60, 120 or 240' });
+      if (!writeSettingsFn) return cb({ ok: false, error: 'no writeSettings handler configured' });
+      return writeSettingsFn({ pointer: { transport: transport, updatesPerSecond: rate } }, function (err) {
+        if (err) return cb({ ok: false, error: 'could not save setting: ' + err.message });
+        config.pointer = config.pointer || {};
+        config.pointer.transport = transport;
+        config.pointer.updatesPerSecond = rate;
+        pointerChangedFn();
+        cb(getUpdateSummary());
+      });
+
+    // Once the input bar's experimental switch. It is offered wherever it can
+    // work now (lib/compat), so an older backup that sets it changes nothing.
+    case 'setInputBarAllowed':
+      return cb(getUpdateSummary());
 
     case 'setWebos10ScreensaversAllowed':
       var allowSs = (value === true || value === 'on' || value === 'true');
@@ -1508,6 +1559,7 @@ function init(opts) {
   if (opts.clearLunaCache) clearLunaCache = opts.clearLunaCache;
   if (opts.config) config = opts.config;
   if (opts.writeSettings) writeSettingsFn = opts.writeSettings;
+  if (opts.pointerChanged) pointerChangedFn = opts.pointerChanged;
   if (opts.telemetry) telemetry = opts.telemetry;
   if (opts.oled) oled = opts.oled;
   if (opts.privacy) privacy = opts.privacy;
@@ -1525,6 +1577,7 @@ function init(opts) {
   if (opts.backup) backupModule = opts.backup;
   if (opts.resettime) resettimeModule = opts.resettime;
   if (opts.home) homeModule = opts.home;
+  if (opts.homeBar) homeBarModule = opts.homeBar;
   if (opts.republishDiscovery) republishDiscoveryFn = opts.republishDiscovery;
   if (opts.deviceNameChanged) deviceNameChangedFn = opts.deviceNameChanged;
   if (opts.tvApp) tvAppFn = opts.tvApp;

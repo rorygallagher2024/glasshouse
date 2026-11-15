@@ -33,9 +33,10 @@ body{font-family:'Manrope',sans-serif;color:#ece7df;-webkit-font-smoothing:antia
 #wall .layer{position:absolute;left:-3%;top:-3%;right:-3%;bottom:-3%;background-position:center;background-size:cover;
   background-repeat:no-repeat;opacity:0;-webkit-transition:opacity 2.4s ease;transition:opacity 2.4s ease;
   -webkit-animation:drift 180s steps(360) infinite alternate;animation:drift 180s steps(360) infinite alternate}
-/* At rest while covered: the wallpaper is not drawn or animated under the screen
-   saver or another app. */
-html.resting #wall{visibility:hidden}
+/* At rest while covered: the wallpaper is not animated under the screen saver or
+   another app. It stays shown, still, so that it is there the moment Home is
+   uncovered rather than coming in over a black screen a beat later; paused, it
+   is not drawn again. */
 html.resting #wall .layer{-webkit-animation-play-state:paused;animation-play-state:paused}
 @-webkit-keyframes drift{from{-webkit-transform:scale(1) translate(0,0)}to{-webkit-transform:scale(1.04) translate(-1.2%,-.8%)}}
 @keyframes drift{from{transform:scale(1) translate(0,0)}to{transform:scale(1.04) translate(-1.2%,-.8%)}}
@@ -111,12 +112,33 @@ html.resting #wall .layer{-webkit-animation-play-state:paused;animation-play-sta
 #now.previewing #plate{display:none}
 /* With Preview in the tile, the preview fills the tile it shows: the tile's
    own text over a shade on the picture's left, nothing below it. */
-#rows #preview,#now #preview.intile{position:absolute;left:0;top:0;width:100%;height:100%;margin:0;box-shadow:none;border-radius:inherit;overflow:hidden;z-index:0}
-#rows #preview:after,#preview.intile:after{border:0;background:-webkit-linear-gradient(left,rgba(10,9,8,.82),rgba(10,9,8,.35) 70%,rgba(10,9,8,.15));
+#now #preview.intile{position:absolute;left:0;top:0;width:100%;height:100%;margin:0;box-shadow:none;border-radius:inherit;overflow:hidden;z-index:0}
+#preview.intile:after{border:0;background:-webkit-linear-gradient(left,rgba(10,9,8,.82),rgba(10,9,8,.35) 70%,rgba(10,9,8,.15));
   background:linear-gradient(90deg,rgba(10,9,8,.82),rgba(10,9,8,.35) 70%,rgba(10,9,8,.15))}
-#rows #preview video,#preview.intile video{object-fit:cover}
-#rows #preview.info #pvInfo,#rows #preview.blank,#preview.intile #pvInfo,#preview.intile.blank{display:none}
-.tile.tv.live{background:transparent}
+#preview.intile video{object-fit:cover}
+#preview.intile #pvInfo,#preview.intile.blank{display:none}
+/* Medium and Large (#1210): the preview keeps the small one's top and right
+   edges and grows down and left, and the rows start the same 34px below the
+   picture as below the strip. With the clock, the weather, Last watched and
+   the picture details beside it, the strip (1696px across) has not the room:
+   on a C2 the source had 28px and the details were cut off. So under it go
+   what it shows, on the left, in place of Last watched, and the details on
+   the right, and the rows start lower to make room. */
+.pv-medium #now #preview:not(.full){width:512px;height:288px;-webkit-align-self:flex-start;align-self:flex-start;margin-top:62px}
+.pv-large #now #preview:not(.full){width:640px;height:360px;-webkit-align-self:flex-start;align-self:flex-start;margin-top:62px}
+.pv-medium #preview:not(.full) #pvNote{line-height:288px}
+.pv-large #preview:not(.full) #pvNote{line-height:360px}
+.pv-medium #pvInfo,.pv-large #pvInfo{right:0;bottom:auto;top:100%;width:58%;margin:12px 0 0;padding:0}
+#pvName{display:none;position:absolute;left:0;top:100%;width:40%;margin-top:12px}
+.pv-medium #preview.on:not(.full) #pvName,.pv-large #preview.on:not(.full) #pvName{display:block}
+#pvNameTitle{font-family:'Outfit',sans-serif;font-size:27px;line-height:1.1;font-weight:400;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#pvNameVia{margin-top:5px;font-size:19px;color:#a39d93;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pv-medium #now.previewing #source,.pv-large #now.previewing #source{visibility:hidden}
+.pv-medium #now #preview.info:not(.full),.pv-large #now #preview.info:not(.full){margin-left:56px}
+.alternative.pv-medium #now #preview.info:not(.full),.alternative.pv-large #now #preview.info:not(.full){margin-left:auto}
+.pv-medium #rows{top:454px}
+.pv-large #rows{top:526px}
+#rows .tile.live{background:transparent}
 .tile.live>div{position:relative;z-index:1}
 .row .tile.live{opacity:1}
 
@@ -181,8 +203,8 @@ html.resting #wall .layer{-webkit-animation-play-state:paused;animation-play-sta
 .alternative #clock{font-variant-numeric:tabular-nums;-webkit-font-feature-settings:"tnum";font-feature-settings:"tnum"}
 .alternative:not(.arranging) .row > h2{display:none}
 .alternative .row{margin-bottom:10px}
-.alternative .tile{border-radius:18px;margin-right:12px;background:rgba(20,15,29,.45)}
-.alternative .tile.focus{background:rgba(34,25,48,.86)}
+.alternative .tile{border-radius:18px;margin-right:12px;background:rgba(12,11,10,.45)}
+.alternative .tile.focus{background:rgba(20,19,16,.86)}
 .alternative .app{width:160px;padding:12px}
 .alternative .app img,.alternative .app .mono{width:100px;height:100px;border-radius:16px}
 .alternative .app .mono{line-height:100px}
@@ -190,7 +212,7 @@ html.resting #wall .layer{-webkit-animation-play-state:paused;animation-play-sta
 .alternative .app .fold{width:100px;height:100px;padding:9px}
 .alternative .app .fold i,.alternative .app .fold i img{width:37px;height:37px}
 .alternative .app .fold i{line-height:37px;font-size:18px}
-.alternative .dev{width:420px;height:108px}
+.alternative .dev{width:420px;min-height:128px}
 .alternative .dev .nm{font-size:26px}
 .alternative .dev .path,.alternative .dev .st{font-size:17px}
 .row{-webkit-flex:0 0 auto;flex:0 0 auto}
@@ -231,8 +253,14 @@ html.resting #wall .layer{-webkit-animation-play-state:paused;animation-play-sta
 .app img,.app .mono{display:block;width:112px;height:112px;margin:0 auto;border-radius:14px}
 .app .mono{background:#2a2825;color:#ece7df;font-family:'Outfit',sans-serif;font-size:44px;font-weight:300;line-height:112px}
 .app .nm{font-size:21px;font-weight:600;margin-top:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.no-app-labels .app{width:140px}
+.no-app-labels.alternative .app{width:124px}
+.no-app-labels .app .nm{display:none}
+/* Dark monochrome icons on transparent (AirPlay on webOS 4) sit on warm white
+   so a black background never swallows them. */
+.app img.dark-ico,.chip img.dark-ico{background:#ece7df}
 
-.dev{width:470px;height:124px;display:-webkit-flex;display:flex;-webkit-flex-direction:column;flex-direction:column;
+.dev{width:470px;min-height:142px;display:-webkit-flex;display:flex;-webkit-flex-direction:column;flex-direction:column;
   -webkit-justify-content:space-between;justify-content:space-between}
 .dev .dhead{display:-webkit-flex;display:flex;-webkit-align-items:center;align-items:center;min-width:0}
 .dev .dtx{-webkit-flex:1 1 auto;flex:1 1 auto;min-width:0}
@@ -241,7 +269,7 @@ html.resting #wall .layer{-webkit-animation-play-state:paused;animation-play-sta
 .alternative .dev .dico{width:46px;height:46px;margin-right:14px}
 .dev .nm{font-family:'Outfit',sans-serif;font-size:30px;font-weight:400;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .dev .path{font-size:20px;color:#a39d93;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.dev .st{font-size:19px;color:#6b665e;display:-webkit-flex;display:flex;-webkit-justify-content:space-between;justify-content:space-between}
+.dev .st{margin-top:12px;font-size:19px;color:#6b665e;display:-webkit-flex;display:flex;-webkit-justify-content:space-between;justify-content:space-between}
 .dev .st em{font-style:normal}
 .dev.last .st em{color:#e9ad55}
 .row .dev.unused{opacity:.3}
@@ -284,9 +312,13 @@ html.resting #wall .layer{-webkit-animation-play-state:paused;animation-play-sta
   font-size:20px;color:#a39d93;padding:14px 22px;border-radius:6px;background:#141310;border-left:3px solid #e9ad55}
 .arranging #banner{display:-webkit-flex;display:flex}
 #banner b{color:#ece7df;font-weight:600;margin-right:8px}
-#banner .keys{-webkit-flex:1 1 auto;flex:1 1 auto;margin-left:34px}
-#banner .btn{margin-left:12px;padding:8px 18px;border-radius:5px;color:#ece7df;background:#231d12;outline:2px solid transparent}
+#banner .keys{-webkit-flex:1 1 auto;flex:1 1 auto;margin-left:34px;font-size:18px;line-height:1.35}
+#banner .btn{margin-left:12px;padding:8px 18px;border-radius:5px;color:#ece7df;background:#231d12;outline:2px solid transparent;white-space:nowrap}
 #banner .btn.focus{outline-color:#e9ad55}
+#btnHide::before,#btnFolder::before,#btnReset::before{content:'';display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:9px;vertical-align:1px}
+#btnHide::before{background:#e05252}
+#btnFolder::before{background:#46b868}
+#btnReset::before{background:#d9b343}
 
 #toast{position:absolute;z-index:1;left:112px;bottom:26px;font-size:23px;color:#ece7df;padding:14px 22px;border-radius:6px;
   background:#141310;border-left:3px solid #e9ad55;opacity:0;-webkit-transform:translateY(8px);transform:translateY(8px);
@@ -294,7 +326,7 @@ html.resting #wall .layer{-webkit-animation-play-state:paused;animation-play-sta
 #toast.show{opacity:1;-webkit-transform:none;transform:none}
 .playing #toast{z-index:6}
 #toast small{display:block;font-size:18px;color:#a39d93;margin-top:4px}
-.arranging #toast{bottom:96px}
+.arranging #toast{bottom:112px}
 
 /* Recent apps: Back's panel, in place of the one in LG's Home. The
    snapshots are the panel: each a small copy of the screen as it was left,
@@ -627,6 +659,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
       <div id="plStrip"></div>
     </div>
     <div id="preview"><video id="pvVideo" muted></video>
+      <div id="pvName"><div id="pvNameTitle"></div><div id="pvNameVia"></div></div>
       <div id="pvInfo"><div id="pvTop"><div id="pvMode"></div><div id="pvLight"></div></div><div id="pvSig"></div></div>
       <div id="pvNote" data-t="home.preview.noPicture">No picture</div></div>
     <div id="weather" class="none">
@@ -682,7 +715,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
 
   <div id="banner">
     <span><b data-t="home.arrange.title">Arranging</b><span id="bannerState">&mdash;</span></span>
-    <span class="keys" data-t="home.arrange.keys">OK picks a tile up or puts it down. Held, the arrows move it or its row, and Back hides or shows it, or removes a channel. Left of a row, OK sets its order.</span>
+    <span class="keys" data-t="home.arrange.keys">OK picks up or puts down. Held, arrows move it or its row; put down, Up or Down reaches this bar. Green moves an app in or out of More apps, and Red or Back hides or removes it. Left of a row, OK sets its order.</span>
     <span class="btn" id="btnHide" data-t="home.arrange.hide">Hide or show</span>
     <span class="btn" id="btnFolder" data-t="home.arrange.folder">Into or out of More apps</span>
     <span class="btn" id="btnReset" data-t="home.arrange.reset">Reset</span>
@@ -742,6 +775,15 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
   // Held this long, OK arranges the tiles rather than opening one.
   var LONG_PRESS_MS = 800;
   var BEAT_MS = 5000;
+  var iptvWasUp = false;
+  /*
+   * Under the screen saver the page is covered, not hidden: no visibilitychange
+   * or relaunch says when it ends, so the heartbeat is how the page hears it,
+   * and comes this often meanwhile. At BEAT_MS the background stayed hidden up
+   * to 5 s after the screen saver ended (a C4, webOS 10.3).
+   */
+  var SAVER_BEAT_MS = 1000;
+  var beatTimer = null;
   var CLOSE_BEHIND_MS = 120000;
   var coveredSince = 0;
   function rest(on) {
@@ -763,7 +805,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
   var lastOn = { kind: null };
   // last: the tile focused last, which the bar's Hide or show acts on. rail:
   // the search mark in the left gutter has the focus.
-  var state = { row: 0, col: {}, arranging: false, held: false, bar: -1, last: null, rail: false };
+  var state = { row: 0, col: {}, arranging: false, held: false, bar: -1, barFrom: '', last: null, rail: false };
   var BAR = ['btnHide', 'btnFolder', 'btnReset', 'btnDone'];
   var build = null;
   var okDownAt = 0, okTimer = null, okLong = false, okInRecents = false, okInFolder = false, backDown = false;
@@ -860,7 +902,9 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
 
   function byId(kind, id) {
     if (kind === 'app') {
-      if (id === LG_HOME_TILE) return { id: LG_HOME_TILE, title: t('home.lgHome', 'LG Home'), lg: true };
+      if (id === LG_HOME_TILE) {
+        return { id: LG_HOME_TILE, title: (layout && layout.appNames && layout.appNames[id]) || t('home.lgHome', 'LG Home'), lg: true };
+      }
       return find(data.apps, id);
     }
     if (kind === 'rec') return find(data.recommended, id);
@@ -900,7 +944,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     if (kind === 'iptv' && data.sources && data.sources.iptv && (state.arranging || (!out.length && !hasLineup))) {
       out.push({ id: ADD_TILE, add: true, name: t('home.tv.addTitle', 'Add channels') });
     } else if (kind === 'iptv' && (out.length || hasLineup) && !state.arranging) {
-      out.push({ id: GUIDE_TILE, guide: true, name: t('home.tv.guide', 'Guide') });
+      out.push({ id: GUIDE_TILE, guide: true, name: t('home.tv.guide', 'IPTV Guide') });
     }
     return out;
   }
@@ -990,7 +1034,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     }
     if (kind === 'dev') {
       var ports = [];
-      items('dev').forEach(function (d) { if (!d.unused && !d.tuner && ports.indexOf(d.port) === -1) ports.push(d.port); });
+      items('dev').forEach(function (d) { if (!d.unused && !d.tuner && d.port && ports.indexOf(d.port) === -1) ports.push(d.port); });
       return ports.length === 1 ? t('home.row.inputsNoteOne', 'Devices on HDMI {port}', { port: ports[0] })
         : t('home.row.inputsNote', 'Devices on {n} HDMI inputs', { n: ports.length });
     }
@@ -1084,21 +1128,71 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
   var hiddenLabel = '<span class="hid">' + esc(t('home.hidden', 'Hidden')) + '</span>';
   var folderLabel = '<span class="fld">' + esc(t('home.folder.label', 'In More apps')) + '</span>';
 
+  var darkIconCache = {};
+  function isDarkIcon(img) {
+    try {
+      var canvas = document.createElement('canvas');
+      canvas.width = 24;
+      canvas.height = 24;
+      var ctx = canvas.getContext('2d');
+      if (!ctx) return false;
+      ctx.drawImage(img, 0, 0, 24, 24);
+      var data = ctx.getImageData(0, 0, 24, 24).data;
+      var trans = 0, vis = 0, dark = 0;
+      for (var i = 0; i < data.length; i += 4) {
+        var a = data[i + 3];
+        if (a < 32) { trans++; continue; }
+        if (a >= 64) {
+          vis++;
+          if ((data[i] + data[i + 1] + data[i + 2]) / 3 < 70) dark++;
+        }
+      }
+      return trans > 60 && vis > 0 && dark === vis;
+    } catch (e) { return false; }
+  }
+  function isAppImg(el) {
+    if (!el || el.tagName !== 'IMG') return false;
+    var p = el.parentNode;
+    if (!p) return false;
+    var c = p.className || '';
+    if (/(^| )app( |$)|(^| )chip( |$)/.test(c)) return true;
+    return !!(p.parentNode && /(^| )fold( |$)/.test(p.parentNode.className || ''));
+  }
+  document.addEventListener('load', function (e) {
+    var img = e.target;
+    if (!isAppImg(img)) return;
+    var src = img.getAttribute('src');
+    if (!src || img.naturalWidth === 0) return;
+    if (!(src in darkIconCache)) darkIconCache[src] = isDarkIcon(img);
+    if (darkIconCache[src] && img.className.indexOf('dark-ico') === -1) {
+      img.className = (img.className ? img.className + ' ' : '') + 'dark-ico';
+    }
+  }, true);
+  function appImgTag(src) {
+    return '<img' + (darkIconCache[src] ? ' class="dark-ico"' : '') + ' src="' + esc(src) + '" alt="">';
+  }
   function appIcon(a) {
-    return a.icon ? '<img src="' + esc(a.icon) + '" alt="">' :
+    return a.icon ? appImgTag(a.icon) :
       '<span class="mono">' + esc(a.lg ? 'LG' : String(a.title).charAt(0)) + '</span>';
   }
   // The first four of the folder's icons, as the tile that opens it.
   function folderIcon(inside) {
     var html = '';
     inside.slice(0, 4).forEach(function (a) {
-      html += '<i>' + (a.icon ? '<img src="' + esc(a.icon) + '" alt="">' : esc(a.lg ? 'LG' : String(a.title).charAt(0))) + '</i>';
+      html += '<i>' + (a.icon ? appImgTag(a.icon) : esc(a.lg ? 'LG' : String(a.title).charAt(0))) + '</i>';
     });
     return '<span class="fold">' + html + '</span>';
   }
 
   // Input tile icons, shared with the input bar (devicons.js).
   var devIcon = window.glasshouseDevIcon;
+
+  function devTileHtml(d, i, cls, path, status, cec) {
+    return '<div class="' + cls + '" data-c="' + i + '"><div class="dhead">' + devIcon(d) + '<div class="dtx"><div class="nm">' + esc(d.name) + '</div>' +
+      '<div class="path">' + esc(path) + '</div></div></div>' +
+      '<div class="st"><em>' + esc(status) + '</em><span>' + (cec ? esc(cec) : '') + '</span></div>' +
+      hiddenLabel + '</div>';
+  }
 
   var TILE = {
     app: function (a, i) {
@@ -1111,15 +1205,26 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     },
     dev: function (d, i) {
       if (d.tuner) return tunerTileHtml(d, i);
-      var last = layout.showLastOn !== false && lastOn.kind === 'input' && lastOn.port === d.port &&
+      var last = layout.showLastOn !== false && lastOn.kind === 'input' && d.port && lastOn.port === d.port &&
         (!lastOn.devices || lastOn.devices.indexOf(d.id) !== -1);
+      // AV and Component are inputs as HDMI is, with a connection of their own.
+      var analog = d.kind === 'av' || d.kind === 'component';
+      var isExtra = !!d.kind && !analog;
       var cls = 'tile dev' + (last ? ' last' : '') + (d.unused ? ' unused' : '') + (hidden('dev', d.id) ? ' hidden' : '');
-      var path = d.unused ? '' : d.via ? t('home.dev.through', 'HDMI {port}, through {via}', { port: d.port, via: d.via })
-                       : t('home.dev.port', 'HDMI {port}', { port: d.port });
-      return '<div class="' + cls + '" data-c="' + i + '"><div class="dhead">' + devIcon(d) + '<div class="dtx"><div class="nm">' + esc(d.name) + '</div>' +
-        '<div class="path">' + esc(path) + '</div></div></div>' +
-        '<div class="st"><em>' + esc(last ? t('home.dev.last', 'Last watched') : d.unused ? t('home.dev.unused', 'Nothing connected') : t('home.dev.connected', 'Connected')) + '</em>' +
-        '<span>' + (d.address && layout.showCec !== false ? esc(t('home.dev.cec', 'CEC {address}', { address: d.address })) : '') + '</span></div>' + hiddenLabel + '</div>';
+      var path = d.unused ? ''
+        : d.kind === 'av' ? t('inputs.kind.av', 'AV')
+        : d.kind === 'component' ? t('inputs.kind.component', 'Component')
+        : d.kind === 'dms' ? (d.address || 'Media Server')
+        : d.kind === 'usb' ? 'USB'
+        : isExtra ? ''
+        : d.via ? t('home.dev.through', 'HDMI {port}, through {via}', { port: d.port, via: d.via })
+        : t('home.dev.port', 'HDMI {port}', { port: d.port });
+      var status = isExtra && d.kind !== 'dms' && d.kind !== 'usb' ? ''
+        : last ? t('home.dev.last', 'Last watched')
+        : d.unused ? t('home.dev.unused', 'Nothing connected')
+        : t('home.dev.connected', 'Connected');
+      var cec = !isExtra && d.address && layout.showCec !== false ? t('home.dev.cec', 'CEC {address}', { address: d.address }) : '';
+      return devTileHtml(d, i, cls, path, status, cec);
     },
     ch: function (c, i) {
       var cls = 'tile ch' + (hidden('ch', c.id) ? ' hidden' : '');
@@ -1137,7 +1242,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
       if (c.guide) {
         return '<div class="tile ch tv add" data-c="' + i + '"><div class="glyph"><svg viewBox="0 0 48 36" width="48" height="36" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">' +
           '<path d="M2 6h10M18 6h28M2 18h22M30 18h16M2 30h6M14 30h32"/></svg></div>' +
-          '<div class="nm">' + esc(c.name) + '</div><div class="prog quiet">' + esc(t('home.tv.guideDesc', 'What is on now and later')) + '</div></div>';
+          '<div class="nm">' + esc(c.name) + '</div></div>';
       }
       if (c.add) {
         return '<div class="tile ch tv add" data-c="' + i + '"><div class="glyph"><span class="mono">+</span></div>' +
@@ -1171,10 +1276,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     var last = layout.showLastOn !== false && lastOn.kind === 'channel';
     var cls = 'tile dev tuner' + (last ? ' last' : '') + (hidden('dev', d.id) ? ' hidden' : '');
     var path = d.channel ? d.channel.number + ' ' + d.channel.name : '';
-    return '<div class="' + cls + '" data-c="' + i + '"><div><div class="nm">' + esc(d.name) + '</div>' +
-      '<div class="path">' + esc(path) + '</div></div>' +
-      '<div class="st"><em>' + esc(last ? t('home.dev.last', 'Last watched') : t('ctl.liveTv', 'Live TV')) + '</em><span></span></div>' +
-      hiddenLabel + '</div>';
+    return devTileHtml(d, i, cls, path, last ? t('home.dev.last', 'Last watched') : t('ctl.liveTv', 'Live TV'), '');
   }
 
   // noScroll: focus only, as the pointer does, leaving each row where it is.
@@ -1249,12 +1351,12 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     box.className = y > firstRowTop(box) ? 'scrolled' : '';
     clearInterval(rowsScroll.timer);
     rowsScroll.timer = null;
-    if (instant) { box.scrollTop = y; return; }
+    if (instant) { box.scrollTop = y; if (liveTile) placeTilePreview(liveTile); return; }
     var from = box.scrollTop, start = Date.now();
     rowsScroll.timer = setInterval(function () {
       var k = Math.min(1, (Date.now() - start) / 200);
       box.scrollTop = from + (y - from) * (1 - Math.pow(1 - k, 3));
-      if (tvPreviewTile) placeTvPreview(tvPreviewTile);
+      if (liveTile) placeTilePreview(liveTile);
       if (k >= 1) { clearInterval(rowsScroll.timer); rowsScroll.timer = null; }
     }, 16);
   }
@@ -1325,6 +1427,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     // past where it is headed; never past its ends.
     var x = -Math.round(Math.max(0, Math.min(tr.max, tr.x)) * 10) / 10;
     track.style.webkitTransform = track.style.transform = 'translateX(' + x + 'px)';
+    if (liveTile && rowEl.contains(liveTile)) placeTilePreview(liveTile);
   }
 
   // Rows just rebuilt put back where they were, within their new length; one
@@ -1400,7 +1503,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
       if (busy) nextFrame(tick);
       else animating = false;
     }
-    if (tvPreviewTile) placeTvPreview(tvPreviewTile);
+    if (liveTile) placeTilePreview(liveTile);
     if (busy) return;
     settle();
     // The minute's refresh, held back while a row moved (renderWhenStill).
@@ -1512,6 +1615,35 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     if (glide) kick();
   }
 
+  /*
+   * The pointer switched off on the Home tab (#1212): the Magic Remote's
+   * cursor is hidden while the view is in front, moving the remote focuses
+   * nothing, and a click is the OK it would be with the arrows, so the tile
+   * in focus opens rather than the one under the cursor. A click within
+   * OK_CLICK_MS of an OK key is that same press. The wheel still scrolls.
+   * PalmSystem.setCursor hid it on a C8 (webOS 4.4.3).
+   */
+  var OK_CLICK_MS = 400;
+  var lastOkKeyAt = 0;
+  var cursorHidden = false;
+  function pointerOff() { return !!layout && layout.showPointer === false; }
+  function applyPointer(again) {
+    var off = pointerOff();
+    if (off === cursorHidden && !(off && again)) return;
+    cursorHidden = off;
+    try {
+      if (window.PalmSystem && PalmSystem.setCursor) PalmSystem.setCursor(off ? 'blank' : 'default', 0, 0);
+    } catch (e) {}
+    if (off) stopPointing();
+  }
+  function clickAsOk() {
+    if (Date.now() - lastOkKeyAt < OK_CLICK_MS) return;
+    var press = { keyCode: KEY.ok, preventDefault: function () {}, stopPropagation: function () {} };
+    onKeyDown(press);
+    onKeyUp(press);
+  }
+  function noteOkKey(e) { if (e.keyCode === KEY.ok) lastOkKeyAt = Date.now(); }
+
   // The keys, or the pointer going away, end the pointer's scrolling; a
   // gliding row slows to a stop.
   function stopPointing() {
@@ -1593,6 +1725,9 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
       via = t('home.now.app', 'App on this TV');
     }
     $('source').className = title ? '' : 'none';
+    // A Medium or Large preview names what it shows under itself (#1210).
+    $('pvNameTitle').textContent = pv ? title : '';
+    $('pvNameVia').textContent = pv ? via : '';
     $('srcKind').textContent = kind || ' ';
     $('srcTitle').textContent = title || ' ';
     $('srcVia').textContent = via || ' ';
@@ -1871,8 +2006,45 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     });
   }
 
+  /*
+   * Up and down go to the tile above or below on screen (#1213), not to the
+   * tile last focused in that row, which may be across the screen: the one
+   * the focused tile overlaps most, the left one where two overlap it within
+   * OVERLAP_TIE_PX (a wide input tile under two narrower ones), else the one
+   * whose middle is nearest. Each row is placed where it is headed, as in
+   * inView, not where its glide has it this frame.
+   */
+  var OVERLAP_TIE_PX = 8;
+  function tileSpans(key) {
+    var m = measure(key), tr = trackOf(key), out = [];
+    if (!m) return out;
+    var shift = Math.max(0, Math.min(tr.max, tr.target)), tiles = m.track.querySelectorAll('.tile[data-c]');
+    for (var i = 0; i < tiles.length; i++) {
+      var left = tiles[i].offsetLeft - shift;
+      out.push({ c: +tiles[i].getAttribute('data-c'), left: left, right: left + tiles[i].offsetWidth });
+    }
+    return out;
+  }
+  function columnUnder(fromKey, fromCol, toKey) {
+    var from = null, spans = tileSpans(fromKey);
+    for (var i = 0; i < spans.length; i++) if (spans[i].c === fromCol) from = spans[i];
+    if (!from) return -1;
+    var best = -1, bestOver = 0, near = -1, nearD = Infinity, mid = (from.left + from.right) / 2;
+    var to = tileSpans(toKey);
+    for (var j = 0; j < to.length; j++) {
+      var over = Math.min(to[j].right, from.right) - Math.max(to[j].left, from.left);
+      // Tiles come left to right, so a near tie keeps the left one.
+      if (over > 0 && over > bestOver + (best < 0 ? 0 : OVERLAP_TIE_PX)) { best = to[j].c; bestOver = over; }
+      var d = Math.abs((to[j].left + to[j].right) / 2 - mid);
+      if (d < nearD) { nearD = d; near = to[j].c; }
+    }
+    var c = best >= 0 ? best : near;
+    return c >= 0 && c < items(toKey).length ? c : -1;
+  }
+
   function move(dr, dc) {
     var onSort = colOf(rowKey()) === -1;
+    var fromKey = rowKey(), fromCol = colOf(fromKey), fromRow = state.row;
     // Left of any row's first tile is the search rail, outside arranging;
     // right goes back to the tile it came from.
     if (state.rail) {
@@ -1893,7 +2065,11 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     // view, not pulled back to the tile focused before.
     var kind = rowKey(), span = state.arranging ? null : inView(kind), c = colOf(kind);
     var outside = span && c >= 0 && (c < span[0] || c > span[1]);
-    if (outside && dr) state.col[kind] = c < span[0] ? span[0] : span[1];
+    var under = dr && !onSort && !state.arranging && state.row !== fromRow && fromCol >= 0 ? columnUnder(fromKey, fromCol, kind) : -1;
+    if (under >= 0) {
+      state.col[kind] = under;
+      outside = false;
+    } else if (outside && dr) state.col[kind] = c < span[0] ? span[0] : span[1];
     if (dc) {
       if (outside) state.col[kind] = dc > 0 ? span[0] : span[1];
       else state.col[kind] = Math.max(state.arranging ? -1 : 0, Math.min(items(kind).length - 1, c + dc));
@@ -1901,12 +2077,23 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     applyFocus();
   }
 
+  // Medium or Large beside the clock; in the tile, the tile sets its size.
+  function previewSizeClass() {
+    if (!layout || layout.livePreview !== true || layout.previewInTile === true) return '';
+    return layout.previewSize === 'medium' ? ' pv-medium' : layout.previewSize === 'large' ? ' pv-large' : '';
+  }
+
   function stageClass() {
     $('stage').className = (state.arranging ? 'arranging' : '') + (recents.open ? ' recents' : '') +
       (finder.open ? ' finding' : '') + (finder.typing ? ' typing' : '') + (searchOn() ? '' : ' no-search') + (folder.open ? ' folder' : '') +
       (!layout || layout.showClock === false ? ' no-clock' : '') + (layout && layout.rowsBottom === true ? ' rows-bottom' : '') +
-      (layout && layout.view === 'alternative' ? ' alternative' : '') + (player.open ? ' playing' : '') + (adder.open ? ' adding' : '') +
-      (adder.open && adder.typing ? ' adtyping' : '') + (guide.open ? ' guiding' : '');
+      (layout && layout.view === 'alternative' ? ' alternative' : '') + (layout && layout.showAppLabels === false ? ' no-app-labels' : '') +
+      (player.open ? ' playing' : '') + (adder.open ? ' adding' : '') +
+      (adder.open && adder.typing ? ' adtyping' : '') + (guide.open ? ' guiding' : '') + previewSizeClass();
+    // Home Assistant's media player shows IPTV while the guide or a player is up: told at once, not at the next heartbeat.
+    var iptvUp = !!(player.open || guide.open);
+    if (iptvUp !== iptvWasUp) { iptvWasUp = iptvUp; beat(); }
+    applyPointer(false);
     followPreview();
   }
 
@@ -1996,9 +2183,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
 
   // ---- Preview in the tile
 
-  // Where the preview sits beside the clock, to go back to from a tile.
-  var previewHome = { parent: null, next: null };
-  var tvPreviewTile = null;
+  var liveTile = null;
 
   function inTile() { return !!layout && layout.previewInTile === true && !guide.open; }
 
@@ -2007,45 +2192,32 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     return document.querySelector('.row[data-key="' + target.row + '"] .tile[data-c="' + target.col + '"]');
   }
 
-  // Back beside the clock: before the rows are rebuilt, and as it stops.
+  // Clear in-tile placement when leaving the tile, rebuilding rows, or stopping.
   function parkPreview() {
+    if (!liveTile) return;
+    liveTile.className = liveTile.className.replace(/ live\b/g, '');
+    liveTile = null;
     var pv = $('preview');
-    if (tvPreviewTile) {
-      tvPreviewTile.className = tvPreviewTile.className.replace(/ live\b/g, '');
-      tvPreviewTile = null;
-      pv.className = pv.className.replace(/ intile\b/g, '');
-      pv.style.left = pv.style.top = pv.style.width = pv.style.height = pv.style.borderRadius = pv.style.clip = '';
-    }
-    if (!previewHome.parent) return;
-    var tile = pv.parentNode;
-    if (tile === previewHome.parent) return;
-    if (tile && tile.className) tile.className = tile.className.replace(/ live\b/g, '');
-    previewHome.parent.insertBefore(pv, previewHome.next);
+    pv.className = pv.className.replace(/ intile\b/g, '');
+    pv.style.left = pv.style.top = pv.style.width = pv.style.height = pv.style.borderRadius = pv.style.clip = '';
   }
 
-  // Into the tile it shows, with Preview in the tile; beside the clock otherwise.
+  // Over the tile it shows, with Preview in the tile; beside the clock otherwise.
   function placePreview() {
     var pv = $('preview');
-    if (!previewHome.parent) { previewHome.parent = pv.parentNode; previewHome.next = pv.nextSibling; }
     var tile = inTile() && pv.className ? previewTile(tilePreview.target) : null;
     if (!tile) return parkPreview();
-    if (tilePreview.target.tv) {
-      if (tile !== tvPreviewTile) {
-        parkPreview();
-        tvPreviewTile = tile;
-        tile.className += ' live';
-      }
-      return placeTvPreview(tile);
+    if (tile !== liveTile) {
+      parkPreview();
+      liveTile = tile;
+      tile.className += ' live';
     }
-    if (pv.parentNode === tile) return;
-    parkPreview();
-    tile.appendChild(pv);
-    tile.className += ' live';
+    placeTilePreview(tile);
   }
 
-  // An IPTV video stays attached: moving it between parents loses its native
-  // player on webOS 9.2.2, even while paused is false and readyState is 4.
-  function placeTvPreview(tile) {
+  // Keep <video> attached in #now and track the tile's box: moving it between
+  // DOM parents or into a transformed track drops its native player on webOS.
+  function placeTilePreview(tile) {
     var pv = $('preview'), rect = tile.getBoundingClientRect(), strip = $('now').getBoundingClientRect(), scale = strip.width / 1920;
     var wrap = tile.parentNode.parentNode.getBoundingClientRect(), rows = $('rows').getBoundingClientRect();
     if (pv.className.indexOf(' intile') === -1) pv.className += ' intile';
@@ -2157,6 +2329,10 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
         if (tries > 1) {
           return setTimeout(function () { if (gen === tilePreview.gen) loadPreviewInfo(target, gen, tries - 1); }, PREVIEW_CHANNEL_POLL_MS);
         }
+        if (oldBroadcast() && tilePreview.playing) {
+          tilePreview.info = r;
+          return renderPreviewInfo();
+        }
         return blankPreview();
       }
       tilePreview.info = r;
@@ -2164,23 +2340,35 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     });
   }
 
+  /*
+   * The preview's state, then its place: "on", "info" and "blank" replace the
+   * classes, "intile" among them, which placePreview puts back over the tile.
+   * Set alone, the in-tile size and position stayed while the preview was
+   * laid out beside the clock again, below and right of the tile, with "No
+   * picture" overflowing it (#1436).
+   */
+  function setPreviewState(cls) {
+    $('preview').className = cls;
+    placePreview();
+  }
+
   function renderPreviewInfo() {
     if (tilePreview.target && tilePreview.target.tv) return renderTvPreviewInfo();
     if (tilePreview.blank || !$('preview').className) return;
     var p = tilePreview.info;
-    if (!layout || layout.picture !== true || !p) { $('preview').className = 'on'; return; }
+    if (!layout || layout.picture !== true || !p) return setPreviewState('on');
     var sig = p.signal ? signalParts(p.signal) : [];
     $('pvMode').textContent = p.mode ? p.mode.display : '';
     $('pvLight').innerHTML = lightHtml(p);
     $('pvSig').innerHTML = spans(sig);
-    $('preview').className = 'on' + (p.mode || sig.length ? ' info' : '');
+    setPreviewState('on' + (p.mode || sig.length ? ' info' : ''));
   }
 
   function blankPreview() {
     if (tilePreview.target && tilePreview.target.tv) stopTvStream();
     else releaseVideo();
     tilePreview.blank = true;
-    $('preview').className = 'on blank';
+    setPreviewState('on blank');
     renderNow();
   }
 
@@ -2212,8 +2400,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     $('pvMode').textContent = t('home.tv.stream', 'Internet stream');
     $('pvLight').innerHTML = '';
     $('pvSig').innerHTML = spans(fmt);
-    $('preview').className = 'on' + (!guide.open && layout.picture === true && fmt.length ? ' info' : '');
-    placePreview();
+    setPreviewState('on' + (!guide.open && layout.picture === true && fmt.length ? ' info' : ''));
   }
   function startTvPreview(target) {
     var gen = tilePreview.gen;
@@ -2226,13 +2413,25 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     tilePreview.timer = setTimeout(function () { if (gen === tilePreview.gen && !tilePreview.playing) blankPreview(); }, TV_PREVIEW_START_MS);
   }
 
+  /*
+   * webOS 4's browser has no service/webos-broadcast-preview, and plain
+   * service/webos-broadcast plays the channel in 1.5 to 2 s there (a C8,
+   * 4.4.3, #1208), at the cost of making it the TV's last channel. Nor has
+   * webOS 4 the videooutput service a channel's signal is read from, so a
+   * channel playing there is not blanked as off air for want of one.
+   */
+  function oldBroadcast() {
+    return !!(data && data.supported && parseInt(data.supported.webos, 10) <= 4);
+  }
+
   function startPreview(target) {
     if (target.tv) return startTvPreview(target);
     var gen = tilePreview.gen, v = $('pvVideo'), s = document.createElement('source');
     var current = function () { return gen === tilePreview.gen; };
     v.muted = previewMuted();
     v.defaultMuted = v.muted;
-    s.setAttribute('type', target.port ? 'service/webos-external' : 'service/webos-broadcast-preview');
+    s.setAttribute('type', target.port ? 'service/webos-external' :
+                   oldBroadcast() ? 'service/webos-broadcast' : 'service/webos-broadcast-preview');
     s.setAttribute('src', target.port ? 'ext://hdmi:' + target.port : 'tv://' + target.item.id);
     v.appendChild(s);
     v.onplaying = function () {
@@ -2528,7 +2727,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
   function lease(on) {
     clearInterval(tvStream.leaseTimer);
     tvStream.leaseTimer = null;
-    var send = function () { postJson('/api/iptv/lease', { on: on, full: on && player.open && !tvStream.paused }); };
+    var send = function () { postJson('/api/iptv/lease', { on: on, full: on && player.open && !tvStream.paused, open: on && player.open }); };
     send();
     if (on) tvStream.leaseTimer = setInterval(send, 60000);
   }
@@ -3497,7 +3696,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
   function renderGuideStrip() {
     var it = guide.list[guide.row], p = it && !guide.tabs ? guideFocus(it) : null;
     $('source').className = it ? '' : 'none';
-    $('srcKind').textContent = p && p.start <= Date.now() && Date.now() < p.end ? t('home.tv.onNow', 'On now') : t('home.tv.guide', 'Guide');
+    $('srcKind').textContent = p && p.start <= Date.now() && Date.now() < p.end ? t('home.tv.onNow', 'On now') : t('home.tv.guide', 'IPTV Guide');
     $('srcTitle').textContent = p ? p.title : it ? it.name : ' ';
     $('srcVia').textContent = it ? (p ? t('home.tv.guideVia', '{name}, {from} to {to}', { name: it.name, from: hm(new Date(p.start)), to: hm(new Date(p.end)) })
       : tvUnplayable(it) || t('home.tv.guideNone', 'No guide for these hours')) : ' ';
@@ -3940,10 +4139,12 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     // Decoded off the page's thread: decoded on it, the screenshots of five
     // apps held the page 300 to 350 ms as Recent apps opened on a C2 (9.2.2).
     recents.apps.forEach(function (a, i) {
-      var mono = '<span class="mono">' + esc(String(a.title).charAt(0)) + '</span>';
+      var app = find(data.apps, a.id);
+      var title = (app && app.title) || (layout && layout.appNames && layout.appNames[a.id]) || a.title;
+      var mono = '<span class="mono">' + esc(String(title).charAt(0)) + '</span>';
       var shot = a.image ? '<img src="/api/home/recents/image?id=' + encodeURIComponent(a.id) + '&v=' + encodeURIComponent(a.imageVersion || recents.stamp) + '" alt="" decoding="async">' : mono;
       html += '<div class="tile rc" data-c="' + i + '"><div class="shot">' + shot + '</div>' +
-        '<div class="nm">' + esc(a.title) + '</div><span class="x">' + esc(t('home.recents.close', 'Close')) + '</span></div>';
+        '<div class="nm">' + esc(title) + '</div><span class="x">' + esc(t('home.recents.close', 'Close')) + '</span></div>';
     });
     $('recentsTrack').innerHTML = html || '<div class="empty"><b>' + esc(t('home.recents.none', 'Nothing is open')) + '</b>' +
       esc(t('home.recents.noneDesc', 'Apps stay here while they are open.')) + '</div>';
@@ -4219,7 +4420,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
       var mono = '<span class="mono">' + esc(String(hit.title).charAt(0)) + '</span>';
       var chips = '';
       hit.apps.forEach(function (a, c) {
-        chips += '<span class="chip" data-c="' + c + '">' + (a.icon ? '<img src="' + esc(a.icon) + '" alt="">' : '<span class="mono">' + esc(String(a.title).charAt(0)) + '</span>') +
+        chips += '<span class="chip" data-c="' + c + '">' + (a.icon ? appImgTag(a.icon) : '<span class="mono">' + esc(String(a.title).charAt(0)) + '</span>') +
           '<span class="nm">' + esc(a.title) + '</span></span>';
       });
       html += '<div class="hit" data-r="' + i + '"><div class="poster">' + (hit.poster ? '<img src="' + esc(hit.poster) + '" alt="">' : mono) + '</div>' +
@@ -4475,6 +4676,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     if (!last) return;
     var kind = last.kind, it = byId(kind, last.id);
     if (!it) return;
+    state.held = false;
     if (kind === 'ch') {
       layout.channels = layout.channels.filter(function (id) { return id !== it.id; });
       data.order.ch = data.order.ch.filter(function (id) { return id !== it.id; });
@@ -4503,6 +4705,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     var last = state.last;
     if (!last || last.kind !== 'app') return toast(t('home.arrange.folderAppsOnly', 'Only apps go into More apps'));
     if (!byId('app', last.id)) return;
+    state.held = false;
     if (!layout.folder) layout.folder = [];
     if (inFolder('app', last.id)) leaveFolder(last.id);
     else {
@@ -4530,8 +4733,8 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
   }
 
   function pressBar(b) {
-    if (BAR[b] === 'btnHide') { state.bar = -1; toggleHidden(); }
-    else if (BAR[b] === 'btnFolder') { state.bar = -1; toggleFolder(); }
+    if (BAR[b] === 'btnHide') { state.bar = -1; state.barFrom = ''; toggleHidden(); }
+    else if (BAR[b] === 'btnFolder') { state.bar = -1; state.barFrom = ''; toggleFolder(); }
     else if (BAR[b] === 'btnReset') resetLayout();
     else setArranging(false);
   }
@@ -4540,16 +4743,20 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     if (state.bar >= 0) {
       if (k === KEY.left) state.bar = Math.max(0, state.bar - 1);
       else if (k === KEY.right) state.bar = Math.min(BAR.length - 1, state.bar + 1);
-      else if (k === KEY.up) state.bar = -1;
+      else if (k === KEY.up || (state.barFrom === 'up' && k === KEY.down)) { state.bar = -1; state.barFrom = ''; }
       else if (k === KEY.ok) return pressBar(state.bar);
       return applyFocus();
     }
     if (k === KEY.left) return state.held ? shiftTile(-1) : move(0, -1);
     if (k === KEY.right) return state.held ? shiftTile(1) : move(0, 1);
-    if (k === KEY.up) return state.held ? shiftRow(-1) : move(-1, 0);
+    if (k === KEY.up) {
+      if (state.held) return shiftRow(-1);
+      if (state.row === 0) { state.bar = 0; state.barFrom = 'up'; return applyFocus(); }
+      return move(-1, 0);
+    }
     if (k === KEY.down) {
       if (state.held) return shiftRow(1);
-      if (state.row === layout.rows.length - 1) { state.bar = 0; return applyFocus(); }
+      if (state.row === layout.rows.length - 1) { state.bar = 0; state.barFrom = 'down'; return applyFocus(); }
       return move(1, 0);
     }
     if (k === KEY.ok) return pickUp();
@@ -4666,6 +4873,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     return null;
   }
   function onPointer(e) {
+    if (pointerOff()) return;
     pointerX = e.clientX;
     pointerY = e.clientY;
     pointing = true;
@@ -4718,6 +4926,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
   }
   function onClick(e) {
     if (!data || !layout || layoutBusy) return;
+    if (pointerOff()) return clickAsOk();
     if (player.open) return playerClick(e.target);
     if (guide.open) return guideClick(e.target);
     if (adder.open) return adderClick(e.target);
@@ -4769,6 +4978,8 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
    * finds the last launch's parameters still there.
    */
   var guideAsked = false;
+  // A channel Home Assistant asked to play: { pl, key, at }, opened once the lineup has it.
+  var playAsked = null;
   var LOADED_KEY = 'glasshouse.home.loaded';
   /*
    * Each launch replaces the last one's request, so a Home press after Guide
@@ -4785,6 +4996,22 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
       if (seen) return;
     }
     guideAsked = p.glasshouse === 'guide';
+    playAsked = p.glasshouse === 'play' && /^[0-9A-Za-z_-]{1,40}$/.test(String(p.pl || '')) && /^[a-z][0-9a-z]{1,24}$/.test(String(p.key || ''))
+      ? { pl: String(p.pl), key: String(p.key), at: Date.now() } : null;
+  }
+  function openAskedPlay() {
+    var want = playAsked;
+    if (!want || !data || !layout) return;
+    if (Date.now() - want.at > 20000) { playAsked = null; return; }
+    var found = null, items = lineupItems();
+    for (var i = 0; i < items.length; i++) if (items[i].pl === want.pl && items[i].key === want.key) { found = items[i]; break; }
+    // The lineup may still be on its way.
+    if (!found) return setTimeout(openAskedPlay, 700);
+    playAsked = null;
+    if (adder.open) closeAdder();
+    if (guide.open) closeGuide();
+    if (finder.open) { closeSearch(); state.rail = false; }
+    openPlayer(found);
   }
   function openAskedGuide() {
     if (!guideAsked || !data || !layout) return;
@@ -5514,13 +5741,20 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
    * accent.
    */
   var LOOK = $('look').textContent, lookShown = '';
+  function hexRgb(hex) {
+    var n = parseInt(hex.slice(1), 16);
+    return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+  }
   function shade(hex, f) {
-    var n = parseInt(hex.slice(1), 16), out = '#';
-    [n >> 16, (n >> 8) & 255, n & 255].forEach(function (v) {
+    var out = '#';
+    hexRgb(hex).forEach(function (v) {
       var x = Math.round(v * f);
       out += (x < 16 ? '0' : '') + x.toString(16);
     });
     return out;
+  }
+  function rgbaStr(rgb, f, a) {
+    return 'rgba(' + Math.round(rgb[0] * f) + ',' + Math.round(rgb[1] * f) + ',' + Math.round(rgb[2] * f) + ',' + a + ')';
   }
   function applyMotion(l) {
     smoothScroll = l.smoothScroll !== false;
@@ -5537,19 +5771,33 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     $('scrim').style.opacity = String(n / 100 * (anim.style === 'off' ? 1 : ANIM_SCRIM));
   }
 
-  function applyColours(c) {
-    var key = c ? c.text + c.accent : '';
+  function applyColours(c, highlight) {
+    var key = (c ? c.text + c.accent : '') + '|' + (highlight || '');
     if (key === lookShown) return;
     lookShown = key;
     // Rebuilt at the next render, so the tiles take the colours at once
     // rather than fading their frames to them.
     renderedRows = '';
-    if (!c) { $('look').textContent = LOOK; return; }
-    var swap = { '#ece7df': c.text, '#a39d93': shade(c.text, 0.69), '#6b665e': shade(c.text, 0.45),
-                 '#e9ad55': c.accent, '#231d12': shade(c.accent, 0.15) };
-    // Replace once: a chosen accent may itself be one of the original colours.
-    $('look').textContent = LOOK.replace(/outline-color:#ece7df\b|#(?:ece7df|a39d93|6b665e|e9ad55|231d12)\b/g,
-      function (m) { return m === 'outline-color:#ece7df' ? 'outline-color:' + c.accent : swap[m]; });
+    if (!c && !highlight) { $('look').textContent = LOOK; return; }
+    var css = LOOK;
+    if (c) {
+      var swap = { '#ece7df': c.text, '#a39d93': shade(c.text, 0.69), '#6b665e': shade(c.text, 0.45),
+                   '#e9ad55': c.accent, '#231d12': shade(c.accent, 0.15) };
+      // Replace once: a chosen accent may itself be one of the original colours.
+      css = css.replace(/outline-color:#ece7df\b|#(?:ece7df|a39d93|6b665e|e9ad55|231d12)\b/g,
+        function (m) { return m === 'outline-color:#ece7df' ? 'outline-color:' + c.accent : swap[m]; });
+    }
+    if (highlight) {
+      var hRgb = hexRgb(highlight);
+      var focusRgba = rgbaStr(hRgb, 1, '.86');
+      var tileRgba = rgbaStr(hRgb, 0.6, '.45');
+      css = css.replace(/rgba\(20,19,16,\.86\)|rgba\(12,11,10,\.45\)|#24211b\b/g, function (m) {
+        if (m === 'rgba(12,11,10,.45)') return tileRgba;
+        if (m === '#24211b') return highlight;
+        return focusRgba;
+      });
+    }
+    $('look').textContent = css;
   }
 
   // ---------------------------------------------------------------- data
@@ -5582,7 +5830,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
       if (!searchOn()) { closeSearch(); state.rail = false; }
       setFadeOn(layout.fade === true);
       applyMotion(layout);
-      applyColours(layout.colours);
+      applyColours(layout.colours, layout.tileHighlight);
       applyDarkening(layout.darkening);
       stageClass();
       renderNow();
@@ -5606,6 +5854,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
       refreshGuide();
       refreshTvGuide();
       openAskedGuide();
+      openAskedPlay();
       // The player keeps its frozen order; its channels' names and guide follow.
       if (player.open) { renderBand(); if (player.list) renderList(); }
       if (guide.open) renderGuide();
@@ -5715,12 +5964,19 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     return out;
   }
 
+  // Each beat schedules the next, sooner while the screen saver covers the page.
+  function scheduleBeat(ms) {
+    clearTimeout(beatTimer);
+    beatTimer = setTimeout(beat, ms);
+  }
+
   function beat() {
+    scheduleBeat(BEAT_MS);
     // With no usable catalogue, let the server's ten-second watchdog recover Home.
     if (!data || !layout) return;
     // Whether the page has the keyboard: after a wake on webOS 11 it can be
     // in front and get no keys (#1122).
-    postJson('/api/home/beat', { focused: document.hasFocus(), visible: document.visibilityState || '', perf: takeTrace() }, function (r) {
+    postJson('/api/home/beat', { focused: document.hasFocus(), visible: document.visibilityState || '', iptv: !!(player.open || guide.open), perf: takeTrace() }, function (r) {
       if (r && r.ok) {
         beatFails = 0;
         // A custom launcher chosen in Glasshouse Home's place (lib/home-launcher).
@@ -5731,6 +5987,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
         // webOS 4: switched off, the standalone view closes itself, as Back does.
         if (r.enabled === false && standalone) return window.close();
         rest(!!r.covered);
+        if (r.saver) scheduleBeat(SAVER_BEAT_MS);
         renderWeather(r.weather || null);
         // webOS 4: two minutes behind another app, not the screen saver, the
         // view closes itself to give its memory back; Home opens it afresh.
@@ -5771,6 +6028,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
 
   function returned() {
     tilePreview.opened = null;
+    applyPointer(true);
     var dark = faded;
     if (!dark) fadeIn();
     initialEscape = false;
@@ -5806,6 +6064,8 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
   }
 
   window.addEventListener('resize', fit);
+  document.addEventListener('keydown', noteOkKey, true);
+  document.addEventListener('keyup', noteOkKey, true);
   document.addEventListener('keydown', onKeyDown, true);
   document.addEventListener('keyup', onKeyUp, true);
   document.addEventListener('mousemove', onPointer);
@@ -5825,6 +6085,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
   // webOS says when the pointer hides, after a few still seconds or a key.
   document.addEventListener('cursorStateChange', function (e) {
     if (!(e.detail && e.detail.visibility)) stopPointing();
+    else applyPointer(true);
   });
   document.addEventListener('mouseout', function (e) { if (!e.relatedTarget) stopPointing(); });
   document.addEventListener('click', onClick);
@@ -5847,7 +6108,6 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
   guideLaunch(true);
   load();
   refreshWeather();
-  setInterval(beat, BEAT_MS);
   setInterval(function () {
     renderNow(); updateWall(); if (!document.hidden) refreshPicture();
     if (guide.open) {

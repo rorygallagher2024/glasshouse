@@ -28,6 +28,20 @@ jobs:
           tag="${GITHUB_REF_NAME#v}"
           [ "$code" = "$tag" ] || { echo "tag v$tag, but server/tvweb.js says $code"; exit 1; }
 
+      - name: release notes have a summary above ## Details
+        if: github.event.release.prerelease != true
+        env:
+          RELEASE_BODY: ${{ github.event.release.body }}
+        run: |
+          node -e "
+            var updater = require('./server/lib/updater');
+            var summary = updater.releaseSummary(process.env.RELEASE_BODY || '');
+            if (!summary) {
+              console.error('release notes must open with a plain summary above a \"## Details\" heading (server/lib/updater.js)');
+              process.exit(1);
+            }
+          "
+
       # LG's packager: the store's checks reject packages without the control
       # fields it writes. Pinned, so a new release of it cannot change a build.
       - name: install ares-package

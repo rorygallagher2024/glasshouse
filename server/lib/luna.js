@@ -64,6 +64,12 @@ function readListedServices() {
   });
 }
 
+function hasService(service) {
+  if (!SERVICE_DIRS_APPLY) return true;
+  if (!listedServices) readListedServices();
+  return listedCount === 0 || !!listedServices[service];
+}
+
 function isUnlistedLgService(service) {
   if (!/^com\.(webos|palm|lge)\./.test(service)) return false;
   if (!SERVICE_DIRS_APPLY) return false;
@@ -79,6 +85,22 @@ function noteFailure(uri, parsed) {
   if (!isUnlistedLgService(service)) return;
   if (!(service in absentUntil)) console.log('luna: ' + service + ' is not on this TV; calls to it are skipped');
   absentUntil[service] = monotonicMs() + ABSENT_MS;
+}
+
+/*
+ * A method the service does not have: luna-service answers "Unknown method
+ * \"x\" for category \"/y\"". An A1 (webOS 6, #1418) was asked for
+ * getAudioInputProperty every few seconds and refused each time. It is answered
+ * with that refusal, without a call, for 10 minutes, then asked once more in
+ * case its service was still registering its methods.
+ */
+var missingMethod = {};
+
+function noteMissingMethod(uri, parsed, raw) {
+  var text = parsed ? parsed.errorText : raw;
+  if (!/Unknown method/i.test(String(text || ''))) return;
+  if (!(uri in missingMethod)) console.log('luna: ' + uri + ' is not on this TV; asked again every 10 minutes');
+  missingMethod[uri] = { until: monotonicMs() + ABSENT_MS, reply: parsed ? JSON.stringify(parsed) : null, raw: String(raw || '') };
 }
 
 /*
@@ -258,6 +280,7 @@ function runNow(job) {
     }
     handleServiceResult(rawUri, parsed);
     noteFailure(rawUri, parsed);
+    noteMissingMethod(rawUri, parsed, stdout);
 
     // When the child that answered started and ended, on the monotonic clock.
     if (job.cb) job.cb(parsed, String(stdout || ''), { startedAt: startedAt, endedAt: endedAt });
@@ -272,6 +295,13 @@ function queueCall(uri, payload, cb, appId, urgent) {
     var now = monotonicMs();
     return process.nextTick(function () {
       if (cb) cb(reply, JSON.stringify(reply), { startedAt: now, endedAt: now });
+    });
+  }
+  var missing = missingMethod[uri];
+  if (missing && missing.until > monotonicMs()) {
+    var at = monotonicMs();
+    return process.nextTick(function () {
+      if (cb) cb(missing.reply ? JSON.parse(missing.reply) : null, missing.raw, { startedAt: at, endedAt: at });
     });
   }
   var args = appId ? ['-a', appId] : [];
@@ -449,6 +479,7 @@ function createCache(callFn) {
 
 module.exports = {
   setDebug: setDebug,
+  hasService: hasService,
   call: call,
   callUrgent: callUrgent,
   Subscription: Subscription,

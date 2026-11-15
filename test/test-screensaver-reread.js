@@ -93,7 +93,7 @@ process.nextTick(function () {
   screensavers.setScreensaver('clock', 'dim', function (r) {
     assert.strictEqual(r.ok, true, r.error);
     assert.ok(mounted, 'ours is mounted over the app');
-    assert.deepEqual(samCalls, ['block com.webos.app.screensaver', 'release com.webos.app.screensaver']);
+    assert.deepEqual(samCalls, ['release com.webos.app.screensaver', 'block com.webos.app.screensaver', 'release com.webos.app.screensaver']);
     assert.strictEqual(samType, 'qml', 'sam reread the manifest');
     assert.strictEqual(configWrites, 0, 'configd was not nudged');
     assert.strictEqual(restarts.length, 0, 'sam was not restarted');
@@ -106,6 +106,7 @@ process.nextTick(function () {
     screensavers.setScreensaver('stock', 'dim', function (s) {
       assert.strictEqual(s.ok, true, s.error);
       assert.ok(!mounted);
+      // sam was found to have the release on the first switch, so it is not asked again.
       assert.deepEqual(samCalls, ['block com.webos.app.screensaver', 'release com.webos.app.screensaver']);
       assert.strictEqual(samType, 'flutter');
       assert.strictEqual(configWrites, 0);

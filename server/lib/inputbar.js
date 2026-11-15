@@ -13,15 +13,16 @@
  * seen through applicationManager/running. A preloaded app has no window,
  * takes no keys and leaves the input in front as it was.
  *
- * Offered where it has been tried (webOS 4, 6 and 9, a B8 with 4.4.3, a C1
- * with 6.5.3 and a C2 with 9.2.2), and elsewhere
- * from webOS 5, 7, 8 and 10 once allowExperimentalInputBar is set, from the Server
- * tab. webOS 11's remote keys are LG's own and cannot hand it the further
- * presses (lib/remotekeys.js), so it is not offered there.
+ * Offered on webOS 4 to 10, where surface-manager loads JS key filters
+ * (lib/remotekeys.js): with no warning where it has been tried, and with one,
+ * and links to report how it went, elsewhere (lib/compat). webOS 11's remote
+ * keys are LG's own and cannot hand it the further presses, so it is not
+ * offered there or before webOS 4.
  *
  * Strict ES5: runs on node 0.12.
  */
 var luna = require('./luna');
+var compat = require('./compat');
 
 var APP = 'com.tvweb.inputbar';
 // After a close. Short: a press 1.5 s after a close found it not yet loaded
@@ -33,17 +34,12 @@ var AFTER_SWITCH_ON_MS = 5000;
 // preloading until the server starts again.
 var MAX_FAILURES = 5;
 
-// webOS versions (major) the bar has been tried on.
-var TRIED = [4, 6, 9];
-
 var lunaFn = null;
 var wantedFn = function () { return false; };
 var onFn = function () { return true; };
-var configObj = null;
+// The TV, for lib/compat's report links.
+var tvInfoFn = null;
 var webosVersion = null;
-var writeSettingsFn = null;
-// Sets the keys that open the bar back to LG's, and removes its app (cb(ok)).
-var dropFn = null;
 var sub = null;
 var running = null;     // whether the app is running, once the TV has said
 var timer = null;
@@ -87,51 +83,32 @@ function runningChanged(r) {
 function init(opts) {
   opts = opts || {};
   lunaFn = opts.luna;
-  if (opts.config) configObj = opts.config;
   if ('webosVersion' in opts) webosVersion = opts.webosVersion;
-  if (typeof opts.writeSettings === 'function') writeSettingsFn = opts.writeSettings;
   if (typeof opts.wanted === 'function') wantedFn = opts.wanted;
   if (typeof opts.on === 'function') onFn = opts.on;
-  if (typeof opts.drop === 'function') dropFn = opts.drop;
+  if (typeof opts.tvInfo === 'function') tvInfoFn = opts.tvInfo;
 }
 
-// 'tried', 'experimental' or 'unsupported' on this TV's webOS.
+// 'tried', 'untried' or 'unsupported' on this TV's webOS (lib/compat).
 function standing() {
-  var major = parseInt(webosVersion, 10);
-  if (isNaN(major)) return 'experimental';
-  if (major < 4 || major >= 11) return 'unsupported';
-  return TRIED.indexOf(major) !== -1 ? 'tried' : 'experimental';
+  return compat.standing('inputBar', webosVersion);
 }
 
-// Whether this TV is offered the input bar.
+// Whether this TV is offered the input bar: wherever it can work.
 function allowed() {
-  var s = standing();
-  return s === 'tried' || (s === 'experimental' && !!configObj && configObj.allowExperimentalInputBar === true);
+  return standing() !== 'unsupported';
 }
 
-// For the Server tab: where the switch is offered, and whether it is on.
+// For the dashboards: its standing, the reason where it is not offered, and
+// the links to report how it went where it is untried.
 function summary() {
-  return { standing: standing(), allowed: allowed(), experimental: !!configObj && configObj.allowExperimentalInputBar === true };
+  var tv = tvInfoFn ? tvInfoFn() : {};
+  tv.webos = webosVersion;
+  var c = compat.info('inputBar', tv, 'The input bar');
+  c.allowed = c.standing !== 'unsupported';
+  return c;
 }
 
-/*
- * The experimental switch. Switched off where the bar is experimental, any key
- * set to it goes back to LG's and its app is removed, so the TV is left as it
- * was before. cb(error).
- */
-function setAllowed(on, cb) {
-  if (!writeSettingsFn) return cb(new Error('no writeSettings handler configured'));
-  writeSettingsFn({ allowExperimentalInputBar: on ? true : undefined }, function (err) {
-    if (err) return cb(err);
-    if (configObj) {
-      if (on) configObj.allowExperimentalInputBar = true;
-      else delete configObj.allowExperimentalInputBar;
-    }
-    if (on) { poke(); return cb(null); }
-    if (allowed() || !dropFn) return cb(null);
-    dropFn(function () { cb(null); });
-  });
-}
 
 function start() {
   if (sub || !lunaFn) return;
@@ -149,4 +126,4 @@ function poke() {
 module.exports = { init: init, start: start, poke: poke, allowed: allowed, standing: standing, summary: summary,
   // What the running-apps subscription hands over, for the tests.
   runningChanged: runningChanged,
-  setAllowed: setAllowed, APP: APP, TRIED: TRIED };
+  APP: APP };

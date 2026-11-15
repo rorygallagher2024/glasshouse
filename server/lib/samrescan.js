@@ -82,6 +82,7 @@ function init(opts) {
   lunaFn = opts.luna || null;
   execFn = opts.exec || execFile;
   supported = null;
+  releaseKnown = null;
   forceParam = null;
   if (opts.blockSchema) blockSchema = opts.blockSchema;
   if (opts.samBin) samBin = opts.samBin;
@@ -257,14 +258,41 @@ function release(appId, tries, cb, quiet) {
 }
 
 /*
+ * Whether sam has releaseBlockSystemApp, asked once with a release of the app
+ * about to be blocked, which changes nothing where it is not blocked. Some
+ * TVs have the block and not the release: a G3 on webOS 8.4.0 blocked LG's
+ * Home and could not release it, so Home would not launch until a reboot
+ * (#1493), and a C2 on webOS 9.2.2 answers the release the same way, "Unknown
+ * method". cb(true) only on an answer that is not that; no answer is not
+ * kept, and nothing is blocked on it.
+ */
+var releaseKnown = null;
+function hasRelease(appId, cb) {
+  if (releaseKnown !== null) return cb(releaseKnown);
+  lunaFn('com.webos.applicationManager/releaseBlockSystemApp', { id: appId }, function (r) {
+    if (!r) return cb(false);
+    releaseKnown = !/Unknown method/i.test(String(r.errorText || ''));
+    if (!releaseKnown) console.log('samrescan: sam has no releaseBlockSystemApp, so no app is blocked to have it reread');
+    cb(releaseKnown);
+  });
+}
+
+/*
  * Makes sam reread one system app's appinfo.json with a block and a release,
  * then waits as refresh() does. cb(false) where sam has no such call (the
- * block is refused and nothing is released), where the release failed, or
- * where sam did not report the change in time, so the caller tries the nudge
- * or restarts sam.
+ * block is refused and nothing is released), where it could block and not
+ * release (hasRelease), where the release failed, or where sam did not
+ * report the change in time, so the caller tries the nudge or restarts sam.
  */
 function rereadApp(appId, check, cb) {
   if (!lunaFn) return cb(false);
+  hasRelease(appId, function (canRelease) {
+    if (!canRelease) return cb(false);
+    blockThenRelease(appId, check, cb);
+  });
+}
+
+function blockThenRelease(appId, check, cb) {
   samCall('blockSystemApp', appId, function (blocked) {
     if (!blocked) {
       // An answer that timed out may still have been a block sam made, so it
@@ -330,17 +358,33 @@ function hasHdmiSignal(appId) {
   return true;
 }
 
+function canRereadApp() {
+  return fs.existsSync(blockSchema);
+}
+
+function rereadApps(ids, makeCheck, cb) {
+  if (!Array.isArray(ids) || !ids.length) return cb(false);
+  var i = 0;
+  (function next() {
+    if (i >= ids.length) return cb(true);
+    var id = ids[i++];
+    var check = makeCheck ? makeCheck(id) : null;
+    rereadApp(id, check, function (ok) {
+      if (!ok) return cb(false);
+      next();
+    });
+  })();
+}
+
 /*
  * Restarts sam, and cb(true) once check(done) says sam has read the apps
- * again. The last way to make sam scan: webOS 5 and 6 have neither the
- * configd nudge nor the block and release (a CX on 5.5.0-19, a C1 on
- * 6.5.3), so Glasshouse Home, whose appinfo.json is mounted over LG's,
- * switches it on and off with this. The command is the one
- * lib/apps.js restarts sam with for tile hiding: the start limit cleared
- * first, LunaExecutable killed since it ignores SIGTERM, and the unit killed
- * so that systemd starts it again at once; initctl on Upstart TVs. A
+ * again. Only for Glasshouse Home on webOS 7 where sam took neither the nudge
+ * nor a block and release (#1412): an A2 (webOS 7.3.0) had Home only through
+ * this until 0.145.0 stopped it. The start limit of sam and the units that
+ * require it is cleared first, LunaExecutable is killed since it ignores
+ * SIGTERM, and the unit is killed so systemd starts it again at once. A
  * foreground app that is neither Home nor the screen saver is opened again
- * afterwards, so the owner is not left on the last input.
+ * afterwards, where it is an HDMI input only with a signal.
  */
 function restart(check, cb) {
   if (!check) return cb(false);
@@ -413,7 +457,9 @@ module.exports = {
   init: init,
   refresh: refresh,
   canNudge: canNudge,
+  canRereadApp: canRereadApp,
   rereadApp: rereadApp,
+  rereadApps: rereadApps,
   restart: restart,
   hasHdmiSignal: hasHdmiSignal,
   RESUBSCRIBE_HDMI_INPUTS: RESUBSCRIBE_HDMI_INPUTS,

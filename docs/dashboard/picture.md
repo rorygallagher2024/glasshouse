@@ -23,6 +23,10 @@ the tab shows within a few seconds.
 A change marks the mode as adjusted, as LG's menu does, so LG's own **Reset**
 puts it back.
 
+## Export current settings
+
+On the web dashboard, **Export JSON** downloads the picture settings for what is on screen now, as the TV reports them, including aspect ratio, Just Scan and TruMotion for that app or input. Nothing on the TV changes. The file is for keeping or comparing; it cannot be loaded back.
+
 ## What each TV shows
 
 Which settings appear, the choices each offers and each slider's range come

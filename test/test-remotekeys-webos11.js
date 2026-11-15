@@ -105,6 +105,8 @@ function luna(uri, params, cb) {
   } else if (uri === 'com.webos.applicationManager/blockSystemApp') {
     assert.strictEqual(params.forceBlockSystemApp, false);
     tv.blockCalls++;
+    // As a C3 on 11.2.0 answers a block of an app with a launch point (#1498).
+    if (tv.refuseBlock) { r.returnValue = false; r.errorCode = 1; r.errorText = 'exist in listLaunchPoint: ' + params.id; return cb(r); }
     // As a C5 on 11.2.0 answers a second block.
     if (tv.blocked[params.id]) { r.returnValue = false; r.errorCode = 1; r.errorText = 'already blocked: ' + params.id; }
     tv.blocked[params.id] = true;
@@ -228,6 +230,52 @@ step('offers Guide and the streaming buttons LG has switched on, with no filter 
     // Hulu is only on remotes sold in the US.
     assert.ok(r.keys.filter(function (k) { return k.key === 'hulu'; })[0].elsewhere);
     next();
+  });
+});
+
+step('regional streaming buttons are offered when active and restore LG assignments', function (next) {
+  var regional = ['ivi', 'okko', 'kinopoisk', 'shop'];
+  var writesBefore = tv.mappingWrites;
+  var originals = {};
+  tv.mapping[3].ivi.isActive = true;
+  regional.slice(1).forEach(function (key) {
+    var item = {};
+    item[key] = { app_id: key + '.original', launch_param: { source: 'remote' }, isActive: true };
+    tv.mapping.push(item);
+  });
+  regional.forEach(function (key) { originals[key] = copy(entry(key)); });
+  rk.getRemoteKeys(function (r) {
+    regional.forEach(function (key) {
+      var found = r.keys.filter(function (k) { return k.key === key; })[0];
+      assert.ok(found, key + ' is offered');
+      assert.strictEqual(found.noScreenOff, true);
+    });
+    function check(i) {
+      if (i === regional.length) {
+        tv.mapping = copy(MAPPING);
+        tv.mappingWrites = writesBefore;
+        return next();
+      }
+      var key = regional[i];
+      var before = copy(tv.mapping);
+      set(key, 'open', 'youtube.leanback.v4', function () {
+        assert.deepEqual(entry(key), { app_id: 'youtube.leanback.v4', launch_param: null, isActive: true });
+        tv.mapping.forEach(function (item, index) {
+          if (!item[key]) assert.deepEqual(item, before[index], 'unrelated assignments stay intact');
+        });
+        set(key, 'nothing', '', function () {
+          assert.strictEqual(entry(key).isActive, false);
+          rk.getRemoteKeys(function (disabled) {
+            assert.strictEqual(disabled.keys.filter(function (k) { return k.key === key; })[0].action, 'nothing');
+            set(key, 'lg', '', function () {
+              assert.deepEqual(entry(key), originals[key]);
+              check(i + 1);
+            });
+          });
+        });
+      });
+    }
+    check(0);
   });
 });
 
@@ -617,6 +665,26 @@ step('the JavaScript filter leaves out the keys only webOS 11 offers', function 
   var src = rk.filterSource();
   ['homehub', 'ai', 'multikey', 'multikeyhold'].forEach(function (k) { assert.strictEqual(src.indexOf('"' + k + '"'), -1); });
   next();
+});
+
+step('where the TV will not block Alexa\'s app, the write stands, the starting notice is set, and the button is no longer offered (#1498)', function (next) {
+  freshTv();
+  tv.refuseBlock = true;
+  set('alexa', 'nothing', '', function () {
+    assert.ok(!tv.blocked['amazon.alexa.view']);
+    var calls = tv.blockCalls;
+    rk.setStarting('Glasshouse Home is starting.', function (s) {
+      assert.ok(s && s.ok, 'the starting notice goes through');
+      assert.strictEqual(tv.blockCalls, calls, 'the refused block is not asked again');
+      rk.getRemoteKeys(function (r) {
+        assert.ok(r.keys.every(function (k) { return k.key !== 'alexa'; }), 'Alexa is not offered');
+        rk.setStarting('', function () {
+          rk.init(initOpts);
+          next();
+        });
+      });
+    });
+  });
 });
 
 step('restore puts back every key LG had, and deletes Glasshouse\'s files', function (next) {

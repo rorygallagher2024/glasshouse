@@ -365,12 +365,55 @@ test('Minimal comes with Glasshouse: chosen, it is served with the kit, and it c
   });
 });
 
+// #1427: the TV clears the launcher page's own storage at power-on, so
+// Glasshouse keeps what it saves.
+test('the chosen launcher keeps values through Glasshouse.storage\'s routes, past a new upload of it', function (done) {
+  function put(body, cb) {
+    request('POST', '/api/home/store', buf(JSON.stringify(body)), 'application/json', function (code, text) { cb(code, JSON.parse(text)); });
+  }
+  function read(cb) { get('/api/home/store', function (code, text) { cb(code, JSON.parse(text)); }); }
+  post({ choose: 'own' }, function (c0) {
+    assert.strictEqual(c0, 200);
+    put({ key: 'order', value: ['hdmi1', 'netflix'] }, function (c1, r1) {
+      assert.strictEqual(c1, 200, JSON.stringify(r1));
+      put({ key: 'weather', value: { city: 'Belfast' } }, function () {
+        read(function (c2, r2) {
+          assert.strictEqual(c2, 200);
+          assert.strictEqual(r2.launcher, 'own');
+          assert.deepEqual(r2.values, { order: ['hdmi1', 'netflix'], weather: { city: 'Belfast' } });
+          put({ key: 'weather', value: null }, function () {
+            put({ key: '', value: 1 }, function (c3, r3) {
+              assert.strictEqual(c3, 400, 'a key is needed');
+              assert.ok(r3.error);
+              var big = new Array(launcher.MAX_STORE + 1).join('x');
+              put({ key: 'big', value: big }, function (c4, r4) {
+                assert.strictEqual(c4, 400, 'held to the cap');
+                assert.ok(/256 KB/.test(r4.error), r4.error);
+                // A new version of the launcher keeps what it saved.
+                upload('My launcher.html', buf('<!doctype html><html><head><title>x2</title></head><body>v2</body></html>'), function (c5) {
+                  assert.strictEqual(c5, 200);
+                  read(function (c6, r6) {
+                    assert.deepEqual(r6.values, { order: ['hdmi1', 'netflix'] }, 'removed and refused values not kept; the rest past the upload');
+                    assert.ok(fs.existsSync(path.join(dir, 'home-launcher', 'state', 'own.json')));
+                    done();
+                  });
+                });
+              });
+            });
+          });
+        });
+      });
+    });
+  });
+});
+
 test('removing the chosen one gives Glasshouse Home its place', function (done) {
   post({ remove: 'own' }, function (code, r) {
     assert.strictEqual(code, 200);
     assert.strictEqual(r.launchers.chosen, null);
     assert.deepEqual(r.launchers.launchers.map(function (x) { return x.id; }), ['minimal'], 'Minimal stays');
     assert.ok(!fs.existsSync(path.join(dir, 'home-launcher', 'apps', 'own')));
+    assert.ok(!fs.existsSync(path.join(dir, 'home-launcher', 'state', 'own.json')), 'what it saved goes with it');
     get('/home/launcher/', function (c2) {
       assert.strictEqual(c2, 404);
       done();

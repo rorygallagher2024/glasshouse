@@ -23,9 +23,9 @@ var filtersDir = path.join(dir, 'KeyFilters');
 fs.mkdirSync(dir);
 fs.mkdirSync(stateDir);
 fs.mkdirSync(filtersDir);
-// A CX's filters name Netflix, Prime Video, the Movies button, Guide and the
-// color keys; no Disney+ key.
-fs.writeFileSync(path.join(filtersDir, 'systemUi.js'), 'case Qt.Key_Super_L: case WebOS.Key_webOS_Red:');
+// A TV's filters name Netflix, Prime Video, the Movies button, Guide and two
+// colour keys (as webOS 4 names only Yellow and Blue); no Disney+ key.
+fs.writeFileSync(path.join(filtersDir, 'systemUi.js'), 'case Qt.Key_Super_L: case WebOS.Key_webOS_Yellow: case WebOS.Key_webOS_Blue:');
 fs.writeFileSync(path.join(filtersDir, 'appLaunch.js'), 'case WebOS.Key_webOS_Netflix: case WebOS.Key_webOS_Amazon: case WebOS.Key_webOS_USP: case WebOS.Key_webOS_TVGuide:');
 fs.writeFileSync(path.join(filtersDir, 'notes.txt'), 'WebOS.Key_webOS_Disneyplus');
 
@@ -144,11 +144,11 @@ function guard(fn) {
 step(function (next) {
   rk.getRemoteKeys(guard(function (r) {
     assert.strictEqual(r.supported, true);
-    assert.deepEqual(r.keys.map(function (k) { return k.key; }), ['netflix', 'amazon', 'movies', 'guide', 'red']);
+    assert.deepEqual(r.keys.map(function (k) { return k.key; }), ['netflix', 'amazon', 'movies', 'guide', 'red', 'green', 'yellow', 'blue']);
     assert.ok(r.keys.every(function (k) { return k.action === 'lg' && k.id === ''; }));
     assert.strictEqual(r.inChain, false);
     assert.deepEqual(r.choices.map(function (c) { return c.id; }),
-      ['action:screenOff', 'action:powerOff', 'media:play', 'media:pause', 'media:stop', 'media:rewind', 'media:fastForward',
+      ['action:screenOff', 'action:powerOff', 'media:ok', 'media:play', 'media:pause', 'media:stop', 'media:rewind', 'media:fastForward',
        'media:volumeUp', 'media:volumeDown', 'media:mute',
        'com.webos.app.hdmi1', 'com.webos.app.hdmi2', 'com.webos.app.livetv',
        'com.webos.app.home', 'netflix', 'youtube.leanback.v4']);
@@ -228,7 +228,7 @@ step(function (next) {
 
 step(function (next) {
   rk.getRemoteKeys(guard(function (r) {
-    assert.deepEqual(r.keys.map(function (k) { return k.action + ':' + k.opens; }), ['open:YouTube', 'lg:', 'open:Netflix', 'nothing:', 'lg:']);
+    assert.deepEqual(r.keys.map(function (k) { return k.action + ':' + k.opens; }), ['open:YouTube', 'lg:', 'open:Netflix', 'nothing:', 'lg:', 'lg:', 'lg:', 'lg:']);
     assert.strictEqual(r.inChain, true);
     rk.setRemoteKey('disneyplus', 'open', 'netflix', guard(function (s1) {
       assert.strictEqual(s1.ok, false);
@@ -268,6 +268,13 @@ step(function (next) {
         f.handle(1004, true, false);
         f.handle(1004, true, true);
         assert.deepEqual(keyCodes(f).slice(2), [115, 115, 113]);
+        // OK is KEY_ENTER, once per press and not while held, for a remote
+        // whose own OK is the scroll wheel's press (#1513).
+        f.tell({ keys: { red: 'media:ok' } });
+        f.handle(1004, true, false);
+        f.handle(1004, true, true);
+        f.handle(1004, false, false);
+        assert.deepEqual(keyCodes(f).slice(5), [28]);
         rk.getRemoteKeys(guard(function (r) {
           var red = r.keys.filter(function (k) { return k.key === 'red'; })[0];
           assert.strictEqual(red.action, 'open');
@@ -275,7 +282,7 @@ step(function (next) {
           rk.setRemoteKey('red', 'lg', '', guard(function () {
             rk.setRemoteKey('amazon', 'lg', '', guard(function () {
               assert.deepEqual(tv.keys.keys, { netflix: 'youtube.leanback.v4', movies: 'netflix', guide: '' });
-              console.log('  ✓ a key set to a media control sends its key code once per press, or while held for volume; an unknown control is refused');
+              console.log('  ✓ a key set to OK or a media control sends its key code once per press, or while held for volume; an unknown control is refused');
               next();
             }));
           }));
@@ -385,7 +392,7 @@ step(function (next) {
     rk.getRemoteKeys(guard(function (on) {
       assert.ok(on.choices.some(function (c) { return c.id === 'action:homeAssistant' && c.kind === 'ha'; }));
       var offered = on.keys.filter(function (k) { return k.homeAssistant; }).map(function (k) { return k.key; });
-      assert.deepEqual(offered, ['netflix', 'amazon', 'movies', 'red'], 'the keys Home Assistant receives, not Guide');
+      assert.deepEqual(offered, ['netflix', 'amazon', 'movies', 'red', 'green', 'yellow', 'blue'], 'the keys Home Assistant receives, not Guide');
       rk.setRemoteKey('guide', 'open', 'action:homeAssistant', guard(function (refused) {
         assert.strictEqual(refused.ok, false);
         assert.ok(/does not receive/.test(refused.error));
@@ -440,15 +447,19 @@ step(function (next) {
             assert.ok(!('guide' in tv.keys.keys), 'left to LG while unavailable');
             assert.strictEqual(JSON.parse(fs.readFileSync(MAP, 'utf8')).keys.guide, 'action:homeGuide', 'still saved');
             assert.strictEqual(loadFilter().handle(1003, true, false), 'next');
-            on = true;
-            rk.availabilityChanged();
-            setTimeout(function () {
-              assert.strictEqual(tv.keys.keys.guide, 'action:homeGuide', 'back once available');
-          rk.setRemoteKey('guide', 'lg', '', guard(function () {
-            console.log('  ✓ with Glasshouse Home on and a playlist, Guide can open its Internet TV guide instead of LG\'s, and is LG\'s again while it cannot');
-            next();
-          }));
-            }, 50);
+            rk.getRemoteKeys(guard(function (whileOff) {
+              var g = whileOff.keys.filter(function (k) { return k.key === 'guide'; })[0];
+              assert.strictEqual(g.opens, 'Glasshouse Home\'s guide', 'saved guide keeps its label while unavailable');
+              on = true;
+              rk.availabilityChanged();
+              setTimeout(function () {
+                assert.strictEqual(tv.keys.keys.guide, 'action:homeGuide', 'back once available');
+                rk.setRemoteKey('guide', 'lg', '', guard(function () {
+                  console.log('  ✓ with Glasshouse Home on and a playlist, Guide can open its Internet TV guide instead of LG\'s, and is LG\'s again while it cannot');
+                  next();
+                }));
+              }, 50);
+            }));
           }, 50);
         }));
       }));
@@ -549,6 +560,7 @@ step(function (next) {
   rk.setRemoteKey('netflix', 'open', 'com.webos.app.home', guard(function (s) {
     assert.ok(s.ok, s.error);
     assert.ok(rk.filterSource().indexOf('"activateType": "home", "launchType": "homeKey"') !== -1, 'opened as the Home key opens it');
+    assert.ok(rk.filterSource().indexOf('"glasshouse": "bar", "press": ++glasshouseBarPress') !== -1, 'homebar launch carries a per-press sequence number');
     rk.setRemoteKey('netflix', 'lg', '', guard(function () {
       console.log('  ✓ a key can be set to Home, which the filter opens as the Home key does');
       rk.restore(guard(function () { next(); }));

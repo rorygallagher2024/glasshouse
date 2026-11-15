@@ -2,6 +2,7 @@
 var msg = require('./say').msg;
 var fs = require('fs');
 var readTrimmed = require('./util').readTrimmed;
+var monotonicMs = require('./util').monotonicMs;
 var names = require('./names');
 
 var SERVICE_MENU_APP = 'com.webos.app.factorywin';
@@ -14,6 +15,13 @@ var config = {};
 var isOled = null;   // null = not yet determined
 var cachedOled = null;
 var lastOledCheck = 0;
+/*
+ * The panel hours from the system properties service. An A1 (webOS 6) answers
+ * "Not found any keys" and a C2 (webOS 9.2) "Invalid argument" for both keys
+ * (#1418), and both read them from the panel controller instead.
+ */
+var SYSPROP_PANEL_SKIP_MS = 10 * 60 * 1000;
+var syspropPanelSkipUntil = 0;
 var oledProtVia = null;
 
 function clearCache() {
@@ -350,34 +358,42 @@ function refreshOledStats(picSettings, pState, cb) {
 
   if (!luna) return cb(null);
 
+  // Refused, the hours come from the panel controller: skip asking for them
+  // here for a while, as with a missing method (lib/luna).
+  if (syspropPanelSkipUntil > monotonicMs()) return withSysprop(null);
   luna('com.webos.service.tv.systemproperty/getSystemProperties',
     { keys: ['panelUsageTime', 'lastCompensationTimestamp'] },
     function (sysRes) {
-      var usageUnits = (sysRes && sysRes.panelUsageTime) ? parseInt(sysRes.panelUsageTime, 10) : null;
-      var lastCompUnits = (sysRes && sysRes.lastCompensationTimestamp) ? parseInt(sysRes.lastCompensationTimestamp, 10) : null;
-
-      function queryDisplayStatus(uUnits, cUnits) {
-        luna('com.webos.service.tv.display/getClearPanelNoiseStatus', {}, function (dispRes) {
-          // Read here, at the cache interval, so a scrape or the OLED Care tab
-          // never waits on the service.
-          readOledProtections(function (live) {
-            finishOledStats(uUnits, cUnits, dispRes, live);
-          });
-        });
-      }
-
-      if (usageUnits !== null) {
-        queryDisplayStatus(usageUnits, lastCompUnits);
-      } else {
-        luna('com.webos.service.panelcontroller/getPanelUsageTime', { subscribe: false }, function (pcRes) {
-          if (pcRes && pcRes.panelUsageTime) {
-            usageUnits = parseInt(pcRes.panelUsageTime, 10);
-          }
-          queryDisplayStatus(usageUnits, lastCompUnits);
-        });
-      }
+      if (sysRes && sysRes.returnValue === false) syspropPanelSkipUntil = monotonicMs() + SYSPROP_PANEL_SKIP_MS;
+      withSysprop(sysRes);
     }
   );
+
+  function withSysprop(sysRes) {
+    var usageUnits = (sysRes && sysRes.panelUsageTime) ? parseInt(sysRes.panelUsageTime, 10) : null;
+    var lastCompUnits = (sysRes && sysRes.lastCompensationTimestamp) ? parseInt(sysRes.lastCompensationTimestamp, 10) : null;
+
+    function queryDisplayStatus(uUnits, cUnits) {
+      luna('com.webos.service.tv.display/getClearPanelNoiseStatus', {}, function (dispRes) {
+        // Read here, at the cache interval, so a scrape or the OLED Care tab
+        // never waits on the service.
+        readOledProtections(function (live) {
+          finishOledStats(uUnits, cUnits, dispRes, live);
+        });
+      });
+    }
+
+    if (usageUnits !== null) {
+      queryDisplayStatus(usageUnits, lastCompUnits);
+    } else {
+      luna('com.webos.service.panelcontroller/getPanelUsageTime', { subscribe: false }, function (pcRes) {
+        if (pcRes && pcRes.panelUsageTime) {
+          usageUnits = parseInt(pcRes.panelUsageTime, 10);
+        }
+        queryDisplayStatus(usageUnits, lastCompUnits);
+      });
+    }
+  }
 }
 
 function readPanelControllerInfo(cb) {

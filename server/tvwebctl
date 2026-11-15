@@ -210,7 +210,14 @@ free_stuck_children() {
 
 # LG's Home back in its place, where Glasshouse Home has it. home.json is left
 # as it is, so the server takes the place again when it next starts.
+# Under test/test-tvwebctl.js, TVWEB_RELEASE is run instead: the TV's release
+# kills processes and writes beside the server, which on a CI runner is the
+# checkout (it left server/remotekeys-filter.js there).
 release_home() {
+  if [ -n "$TVWEB_RELEASE" ]; then
+    $TVWEB_RELEASE >/dev/null 2>&1
+    return 0
+  fi
   [ -x "$NODE" ] || return 0
   "$NODE" "$(dirname "$SELF")/lib/home-takeover.js" --release >/dev/null 2>&1
 }
@@ -349,6 +356,26 @@ rollback_app() {
   "$SELF" status
 }
 
+# The server and its watchdog in a systemd scope of their own. Started from
+# the Homebrew Channel's start-up, they were in the cgroup of whichever LG
+# service ran it, with its SSH and telnet: webapp-mgr.service on a 50NANO756PR
+# (webOS 6), ls-hubd.service on a C2 (webOS 9.2.2). Restarting that service
+# killed them all, and on the webOS 6 TV a settings change did (#1355). Only on
+# a TV (not under test/test-tvwebctl.js), and where systemd-run is missing or
+# refuses, they start where they are, as before.
+case "$1" in
+  start|restart|update|rollback)
+    if [ -z "$TVWEB_SCOPED" ] && [ -d /usr/palm/applications ] && command -v systemd-run >/dev/null 2>&1 &&
+       ! grep -q 'tvweb' /proc/self/cgroup 2>/dev/null; then
+      # Tried first with a command that does nothing, so the action itself runs
+      # once, in the scope or, where none can be made, here.
+      if systemd-run --scope --unit="tvweb-probe-$$" /bin/true >/dev/null 2>&1; then
+        TVWEB_SCOPED=1 exec systemd-run --scope --unit="tvweb-$$" "$SELF" "$@"
+      fi
+      echo "systemd-run did not start it in a scope of its own; starting it here"
+    fi ;;
+esac
+
 case "$1" in
   start)   start_app; start_watch ;;
   # Glasshouse Home's page is only a wait for the server, so a server stopped
@@ -360,8 +387,10 @@ case "$1" in
   rollback) rollback_app "$2" ;;
   # Before uninstalling: LG's Home screen layout back, and the input tiles added here off it.
   restore-home) "$NODE" "$(dirname "$SELF")/lib/homescreen.js" --restore ;;
-  # Before uninstalling: the remote's keys as LG has them.
-  restore-keys) "$NODE" "$(dirname "$SELF")/lib/remotekeys.js" --restore ;;
+  # Before uninstalling: the remote's keys, and its Quick Access keys, as LG has them.
+  restore-keys)
+    "$NODE" "$(dirname "$SELF")/lib/quickaccess.js" --restore
+    "$NODE" "$(dirname "$SELF")/lib/remotekeys.js" --restore ;;
   # LG's Home as the TV's Home again, and Glasshouse Home switched off.
   restore-glasshouse-home) "$NODE" "$(dirname "$SELF")/lib/home.js" --restore ;;
   status)

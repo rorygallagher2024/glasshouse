@@ -404,6 +404,49 @@ console.log('Running test-telemetry.js ...');
   });
 })();
 
+// 6c. A port has a device by eim's hdmiPlugIn or CEC, never by connected
+// alone, which is the cable on webOS 9 and true on every port on webOS 10.
+// Run last: it sets eim's answer, which the other HDMI steps read too.
+function testHdmiDeviceSeen(done) {
+  var eim = 'com.webos.service.eim/getAllInputStatus';
+  function read(devices, cb) {
+    telemetry.clearCache();
+    mockEnv.luna[eim] = { returnValue: true, devices: devices };
+    telemetry.hdmiInputs(function (r) {
+      cb(r.inputs.map(function (i) { return i.deviceSeen ? 'device' : i.cableOnly ? 'cable' : 'empty'; }));
+    });
+  }
+  // A B4 (webOS 10.3.2): a soundbar on 3 and an Xbox on 4, 1 and 2 with no cable.
+  read([
+    { id: 'HDMI_1', port: 1, hdmiPlugIn: false, connected: true, subCount: 0, lastUniqueId: 255 },
+    { id: 'HDMI_2', port: 2, hdmiPlugIn: false, connected: true, subCount: 0, lastUniqueId: 255 },
+    { id: 'HDMI_3', port: 3, hdmiPlugIn: true, connected: true, subCount: 2 },
+    { id: 'HDMI_4', port: 4, hdmiPlugIn: true, connected: true, subCount: 1 }
+  ], function (b4) {
+    assert.deepEqual(b4, ['empty', 'empty', 'device', 'device'], 'connected on every port says nothing');
+    // A C2 (webOS 9.2): a PC switched off on 1, a cable with nothing on it in 2.
+    read([
+      { id: 'HDMI_1', port: 1, hdmiPlugIn: true, connected: true, subCount: 0, lastUniqueId: -1 },
+      { id: 'HDMI_2', port: 2, hdmiPlugIn: false, connected: true, subCount: 0, lastUniqueId: 255 },
+      { id: 'HDMI_3', port: 3, hdmiPlugIn: false, connected: false, subCount: 0, lastUniqueId: -1 },
+      { id: 'HDMI_4', port: 4, hdmiPlugIn: false, connected: false, subCount: 0, lastUniqueId: -1 }
+    ], function (c2) {
+      assert.deepEqual(c2, ['device', 'cable', 'empty', 'empty'], 'connected without hdmiPlugIn is a cable only');
+      // A B8 (webOS 4.4.3) gives neither: CEC alone says, here an Apple TV on 2.
+      read([
+        { id: 'HDMI_1', port: 1, subCount: 0, lastUniqueId: 255 },
+        { id: 'HDMI_2', port: 2, subCount: 1, lastUniqueId: 4 },
+        { id: 'HDMI_3', port: 3, subCount: 0, lastUniqueId: 255 },
+        { id: 'HDMI_4', port: 4, subCount: 0, lastUniqueId: 255 }
+      ], function (b8) {
+        assert.deepEqual(b8, ['empty', 'device', 'empty', 'empty'], 'without either, CEC says');
+        console.log('  \u2713 a port has a device by hdmiPlugIn or CEC, and a cable alone shows where the TV tells them apart');
+        done();
+      });
+    });
+  });
+}
+
 (function testHdmiEarcPort() {
   telemetry.clearCache();
   var arcEdidUri = 'com.webos.service.arccontroller/getARCEDIDInfo';
@@ -947,8 +990,10 @@ function audioOutputs() {
           assert.strictEqual(seen[j], cases[j][3], cases[j][0]);
         }
         console.log('  ✓ the audio output is named from the volume service, and from the scenario without it');
-        console.log('ALL test-telemetry.js assertions passed!\n');
-        mockEnv.restore();
+        testHdmiDeviceSeen(function () {
+          console.log('ALL test-telemetry.js assertions passed!\n');
+          mockEnv.restore();
+        });
       });
     }
     mockEnv.luna['com.webos.audio/getSoundOut'] = cases[i][1];

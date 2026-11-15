@@ -223,7 +223,7 @@ function homeTvRemoveFromRow(id) {
  * What the remote's Guide button opens. webOS gives it to LG's own guide of
  * the aerial and satellite channels before any page sees it, so Glasshouse
  * Home's guide is a choice made in the remote's key filter (lib/remotekeys),
- * the same one the Apps tab sets for every key.
+ * the same one the Remote tab sets for every key.
  */
 function homeGuideKeyHtml() {
   const g = homeGuideKey;
@@ -233,7 +233,7 @@ function homeGuideKeyHtml() {
   return `<div class="prot-table"><div class="prot-row">
     <div class="prot-main"><div class="prot-title"><label for="home-guide-key">${esc(t('home.tv.guideKey', 'The remote’s Guide button'))}</label></div>
       <div class="prot-desc">${esc(now === 'other'
-        ? t('home.tv.guideKeyOther', 'Set on the Apps tab to open {name}.', { name: g.key.opens || t('apps.remoteKeys.doesNothing', 'Does nothing') })
+        ? t('home.tv.guideKeyOther', 'Set on the Remote tab to open {name}.', { name: g.key.opens || t('apps.remoteKeys.doesNothing', 'Does nothing') })
         : t('home.tv.guideKeyDesc', 'LG’s guide lists the aerial and satellite channels; Glasshouse Home’s lists the Internet TV channels added here. Info on the Internet TV row opens Glasshouse Home’s guide either way.'))}</div></div>
     <div class="prot-status"><select id="home-guide-key" class="pill-sel" ${homeWritable() ? '' : 'disabled'} onchange="homeSetGuideKey(this.value)">
       ${opt('lg', t('home.tv.guideKeyLg', 'LG’s TV guide'))}${opt('home', t('home.tv.guideKeyHome', 'Glasshouse Home’s guide'))}${now === 'other' ? opt('other', g.key.opens || t('home.tv.guideKeyOtherShort', 'Something else')) : ''}

@@ -132,7 +132,7 @@ This project is intended to give a rooted webOS TV a useful local control surfac
 
     Install apps from the Homebrew Channel catalog, uninstall apps, disable unnecessary background system services to free up RAM and CPU cycles, stop LG keeping apps loaded in the background that are never used, and hide non-removable built-in LG system apps from LG's Home.
 
--   **[Remapping the remote's buttons](dashboard/apps.md#remote-keys)**
+-   **[Remapping the remote's buttons](dashboard/remote.md#remote-keys)**
 
     ---
 

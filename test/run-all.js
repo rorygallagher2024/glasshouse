@@ -8,6 +8,10 @@
  *
  * Usage:  node test/run-all.js [word ...]
  *
+ * TEST_SKIP leaves out the suites whose file name contains one of its
+ * comma-separated words: CI runs test-tvwebctl.js on its own, in a process
+ * namespace (.github/workflows/checks.yml).
+ *
  * With words, only the suites whose file name contains one of them run, as
  * `node test/run-all.js home luna` while working on those. --times lists the
  * slowest suites after the results.
@@ -22,9 +26,11 @@ var testDir = __dirname;
 var args = process.argv.slice(2);
 var showTimes = args.indexOf('--times') !== -1;
 var words = args.filter(function (a) { return a !== '--times'; });
+var skipped = String(process.env.TEST_SKIP || '').split(',').filter(Boolean);
 var suites = fs.readdirSync(testDir)
   .filter(function (f) { return /^test-.*\.js$/.test(f); })
   .filter(function (f) { return !words.length || words.some(function (w) { return f.indexOf(w) !== -1; }); })
+  .filter(function (f) { return !skipped.some(function (w) { return f.indexOf(w) !== -1; }); })
   .sort();
 
 if (suites.length === 0) {
@@ -73,23 +79,47 @@ var left = runs.length;
 var startedAt = Date.now();
 var defaultTimeoutSecs = Number(process.env.TEST_TIMEOUT_SECS) || 60;
 var concurrency = Number(process.env.TEST_CONCURRENCY) || Math.max(4, os.cpus().length * 2);
-var nextRun = 0;
+// Every suite running, with how long it has run.
+function progressLine() {
+  var elapsed = Math.round((Date.now() - startedAt) / 1000);
+  var running = runs.filter(function (r) { return r.started && !r.finished; }).map(function (r) {
+    return r.suite.replace(/^test-|\.js$/g, '') + (r.shard ? '#' + r.shard : '') + ' ' + Math.round((Date.now() - r.startedAt) / 1000) + 's';
+  });
+  return '[' + elapsed + 's] ' + (runs.length - left) + '/' + runs.length + ' done; running: ' + running.join(', ');
+}
+
+/*
+ * A CI job whose runner stops answering keeps no log, so what was running is
+ * also written to RUN_ALL_STATUS, where present, at each start and finish:
+ * the job posts it to GitHub as it changes (scripts/ci-heartbeat.sh), and the
+ * last post outlives the runner.
+ */
+var statusFile = process.env.RUN_ALL_STATUS || '';
+function writeStatus(line) {
+  if (!statusFile) return;
+  try { fs.writeFileSync(statusFile, line + '\n'); } catch (e) {}
+}
 
 var progressTimer = setInterval(function () {
   if (left <= 0) { clearInterval(progressTimer); return; }
-  var elapsed = Math.round((Date.now() - startedAt) / 1000);
-  var running = runs.filter(function (r) { return r.started && !r.finished; }).map(function (r) { return r.suite; });
-  if (running.length <= 4) {
-    console.log('[' + elapsed + 's] ' + (runs.length - left) + '/' + runs.length + ' done; running: ' + running.join(', '));
-  } else {
-    console.log('[' + elapsed + 's] ' + (runs.length - left) + '/' + runs.length + ' done (' + running.length + ' running)');
-  }
-}, 10000);
+  var line = progressLine();
+  console.log(line);
+  writeStatus(line);
+}, 5000);
 if (progressTimer.unref) progressTimer.unref();
 
+// Starts the next suite in order, if any.
 function startNext() {
-  if (nextRun >= runs.length) return;
-  startRun(runs[nextRun++]);
+  for (var i = 0; i < runs.length; i++) {
+    if (!runs[i].started) { startRun(runs[i]); return true; }
+  }
+  return false;
+}
+
+// As many as are allowed at once.
+function fillSlots() {
+  var running = runs.filter(function (r) { return r.started && !r.finished; }).length;
+  while (running < concurrency && startNext()) running++;
 }
 
 function startRun(run) {
@@ -101,6 +131,7 @@ function startRun(run) {
   run.out = { stdout: '', stderr: '', code: null };
   run.finished = false;
   run.startedAt = Date.now();
+  writeStatus(progressLine());
   proc.stdout.on('data', function (d) { run.out.stdout += d; });
   proc.stderr.on('data', function (d) { run.out.stderr += d; });
 
@@ -114,20 +145,27 @@ function startRun(run) {
     if (closeTimer) { clearTimeout(closeTimer); closeTimer = null; }
     run.out.code = code;
     run.ms = Date.now() - run.startedAt;
-    if (--left === 0) report();
-    else startNext();
+    --left;
+    writeStatus(left === 0 ? 'all ' + runs.length + ' finished in ' + Math.round((Date.now() - startedAt) / 1000) + 's' : progressLine());
+    if (left === 0) report();
+    else fillSlots();
   }
 
   proc.on('exit', function (code, sig) {
     var exitCode = (code !== null) ? code : (sig ? 128 : 1);
+    // SIGKILL from outside: in CI, the memory cap on the unit tests.
+    if (sig) run.out.signal = sig;
     closeTimer = setTimeout(function () {
       try { proc.kill('SIGKILL'); } catch (e) {}
       finish(exitCode);
     }, 500);
   });
 
-  proc.on('close', function (code) {
-    finish(code !== null ? code : 0);
+  // A suite ended by a signal has no exit code: it failed, as killed by the
+  // memory cap in CI, though 'close' can come before 'exit' says so.
+  proc.on('close', function (code, sig) {
+    if (sig) run.out.signal = sig;
+    finish(code !== null ? code : (sig ? 128 : 0));
   });
 
   var suiteTimeoutMs = (run.suite.indexOf('boot') !== -1 ? Math.max(90, defaultTimeoutSecs) : defaultTimeoutSecs) * 1000;
@@ -150,7 +188,8 @@ function report() {
     process.stdout.write(run.out.stdout);
     if (run.out.stderr) process.stderr.write(run.out.stderr);
     if (run.out.code !== 0) {
-      console.error('FAIL: ' + run.suite + (run.shard ? ' (shard ' + run.shard + ')' : '') + ' exited with code ' + run.out.code);
+      console.error('FAIL: ' + run.suite + (run.shard ? ' (shard ' + run.shard + ')' : '') +
+        (run.out.signal ? ' was killed by ' + run.out.signal : ' exited with code ' + run.out.code));
       failed[run.suite] = true;
     }
   });
@@ -175,4 +214,4 @@ function report() {
 }
 
 console.log('Running ' + suites.length + ' test suite(s), ' + concurrency + ' at a time...\n');
-for (var startAt = 0; startAt < concurrency; startAt++) startNext();
+fillSlots();

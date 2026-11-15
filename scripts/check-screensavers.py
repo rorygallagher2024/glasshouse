@@ -107,7 +107,7 @@ def check(path):
 SAVERS = pathlib.Path('server/assets/screensavers')
 EXAMPLES = pathlib.Path('server/screensavers')
 # "ha" has one placeholder per entity the saver declares, so it has none here.
-USES = {'level': '__TVWEB_LEVEL__', 'stats': '__TVWEB_URL__', 'choice': '__TVWEB_CHOICE__', 'ha': '', 'ha-list': '__TVWEB_HA_LIST__', 'color': '__TVWEB_COLOR__'}
+USES = {'level': '__TVWEB_LEVEL__', 'stats': '__TVWEB_URL__', 'choice': '__TVWEB_CHOICE__', 'ha': '', 'ha-list': '__TVWEB_HA_LIST__', 'ha-all': '__TVWEB_HA_ALL__', 'color': '__TVWEB_COLOR__'}
 
 def check_folder(d, own):
     """Problems with one saver folder's saver.json, and its main QML file."""
@@ -136,8 +136,8 @@ def check_folder(d, own):
         bad.append('saver.json: only Glasshouse\'s own screen savers are given stats')
     entities = m.get('entities')
     if entities is not None:
-        if not isinstance(entities, dict) or not entities or len(entities) > 12:
-            bad.append('saver.json: entities maps short names to Home Assistant entity ids, up to 12 of them')
+        if not isinstance(entities, dict) or not entities or len(entities) > 24:
+            bad.append('saver.json: entities maps short names to Home Assistant entity ids, up to 24 of them')
         else:
             for name, eid in entities.items():
                 if not re.match(r'^[a-z][a-z0-9_]{0,31}$', str(name)):
@@ -145,8 +145,9 @@ def check_folder(d, own):
                 # Blank leaves the slot for the owner to fill in on the Screensaver tab.
                 if not isinstance(eid, str) or (eid != '' and not re.match(r'^[a-z0-9_]+\.[a-z0-9_]+$', eid)):
                     bad.append('saver.json: entity "%s" is not a Home Assistant entity id, such as sensor.outdoor_temperature, or blank' % name)
-    if ('ha' in m.get('uses', [])) != bool(entities):
-        bad.append('saver.json: entities and "ha" in uses go together')
+    uses_list = m.get('uses', [])
+    if ('ha' in uses_list or 'ha-all' in uses_list) != bool(entities):
+        bad.append('saver.json: entities and "ha" or "ha-all" in uses go together')
     entity_list = m.get('entityList')
     if entity_list is not None:
         if not isinstance(entity_list, dict):
