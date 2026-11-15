@@ -2580,6 +2580,7 @@ module.exports = {
   netBytes: netBytes,
   getVideoSignal: getVideoSignal,
   readRemoteInfo: readRemoteInfo,
+  remoteInfo: remoteInfo,
   parseRemoteInfo: parseRemoteInfo,
   getActiveHdmiDiagnostics: getActiveHdmiDiagnostics,
   getHdmiSignal: getHdmiSignal,

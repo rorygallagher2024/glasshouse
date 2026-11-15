@@ -55,6 +55,11 @@ var SORTS = ['custom', 'recent'];
 var SHOW_KEYS = ['showClock', 'showLastOn', 'showAppCount', 'showAppLabels', 'showCec', 'showTvLogos', 'showPointer'];
 // Where the weather badge's weather comes from: nowhere, Home Assistant's pushes, or Open-Meteo.
 var WEATHER_SOURCES = ['off', 'ha', 'internet'];
+// The Magic Remote's battery beside the date: never, only once it is low, or always.
+var REMOTE_BATTERY = ['off', 'low', 'always'];
+// At or under this, the badge shows in 'low' and is drawn as low. LG's
+// three-step remotes report LOW as 10 (lib/remotebattery's deviceLevelFrom).
+var REMOTE_BATTERY_LOW = 20;
 // The live preview beside the clock: 356x200, 512x288 or 640x360 on the 1920x1080 view.
 var PREVIEW_SIZES = ['small', 'medium', 'large'];
 // Each kind of motion on the view, on unless switched off: the wallpaper's
@@ -283,6 +288,8 @@ var pictureDetailsFn = function () {};
  */
 // The TV, for the compatibility table and its report links: { webos, model, firmware, glasshouse }.
 var tvInfoFn = function () { return { webos: webosVersion }; };
+// The remote's battery level, 0 to 100, or null while it is not known.
+var remoteBatteryFn = function () { return null; };
 var setHomeKeyFn = function (id, cb) { cb({ ok: true, none: true }); };
 // Whether the remote's keys can be read (lib/remotebuttons), for webOS 3's Home button.
 var readsHomeKeyFn = function () { return false; };
@@ -466,6 +473,9 @@ function defaults() {
     previewInTile: false,
     // Its size beside the clock, one of PREVIEW_SIZES.
     previewSize: 'small',
+    // The remote's battery beside the date, one of REMOTE_BATTERY: shown once
+    // it is low unless chosen otherwise.
+    remoteBattery: 'low',
     // The live preview's sound: muted unless switched on, as Home is often
     // passed through on the way to something else.
     previewSound: false,
@@ -585,6 +595,7 @@ function normalise(raw) {
   d.previewAlways = raw.previewAlways === true;
   d.previewInTile = raw.previewInTile === true;
   d.previewSize = PREVIEW_SIZES.indexOf(raw.previewSize) !== -1 ? raw.previewSize : 'small';
+  d.remoteBattery = REMOTE_BATTERY.indexOf(raw.remoteBattery) !== -1 ? raw.remoteBattery : 'low';
   d.previewSound = raw.previewSound === true;
   d.wallAnim = WALL_ANIMS.indexOf(raw.wallAnim) !== -1 ? raw.wallAnim : 'off';
   d.animTheme = raw.animTheme === 'custom' || ANIM_THEMES.some(function (th) { return th.id === raw.animTheme; }) ? raw.animTheme : 'auto';
@@ -785,6 +796,7 @@ function setLayout(body, cb) {
     previewAlways: typeof body.previewAlways === 'boolean' ? body.previewAlways : c.previewAlways,
     previewInTile: typeof body.previewInTile === 'boolean' ? body.previewInTile : c.previewInTile,
     previewSize: body.previewSize !== undefined ? body.previewSize : c.previewSize,
+    remoteBattery: body.remoteBattery !== undefined ? body.remoteBattery : c.remoteBattery,
     previewSound: typeof body.previewSound === 'boolean' ? body.previewSound : c.previewSound,
     wallAnim: body.wallAnim !== undefined ? body.wallAnim : c.wallAnim,
     animTheme: body.animTheme !== undefined ? body.animTheme : c.animTheme,
@@ -923,6 +935,7 @@ function layoutOf(c) {
     fade: c.fade, wallDrift: c.wallDrift, wallCrossfade: c.wallCrossfade, smoothScroll: c.smoothScroll, slidePanels: c.slidePanels,
     darkening: c.darkening, hideUnused: c.hideUnused, showMediaServers: c.showMediaServers, deviceNames: devNamesNow(c.deviceNames), appNames: c.appNames, inputBarTransparent: c.inputBarTransparent, inputBarSwitchOnOk: c.inputBarSwitchOnOk, showClock: c.showClock, rowsBottom: c.rowsBottom, view: c.view,
     showLastOn: c.showLastOn, showAppCount: c.showAppCount, showAppLabels: c.showAppLabels, showCec: c.showCec, showTvLogos: c.showTvLogos, showPointer: c.showPointer, weather: c.weather, weatherPlace: c.weatherPlace, previewAlways: c.previewAlways, previewInTile: c.previewInTile, previewSize: c.previewSize, previewSound: c.previewSound, wallAnim: c.wallAnim,
+    remoteBattery: c.remoteBattery,
     animTheme: c.animTheme, animSky: c.animSky, animLight: c.animLight, animThemes: ANIM_THEMES,
     wallShuffleMinutes: c.wallShuffleMinutes, shuffleMinutes: SHUFFLE_MINUTES, colours: c.colours,
     tileHighlight: c.tileHighlight,
@@ -2782,7 +2795,22 @@ function beat(body) {
            build: buildId, wallpapers: wallpapers.status(),
            layoutVersion: layoutVersion(), sleeps: sleeps, trace: fs.existsSync(traceFile()),
            // So a push shows within a heartbeat rather than at the next poll.
-           weather: currentWeather() };
+           weather: currentWeather(), remoteBattery: remoteBatteryBadge() };
+}
+
+/*
+ * The remote's battery as the view's badge shows it, or null to hide it:
+ * switched off, not yet read, or above the low mark in 'low'. The level is
+ * what lib/remotebattery last read, so this reads no Bluetooth of its own.
+ */
+function remoteBatteryBadge() {
+  var choice = readConfig().remoteBattery;
+  if (choice === 'off') return null;
+  var level = remoteBatteryFn();
+  if (typeof level !== 'number' || !isFinite(level) || level < 0 || level > 100) return null;
+  var low = level <= REMOTE_BATTERY_LOW;
+  if (choice === 'low' && !low) return null;
+  return { level: Math.round(level), low: low };
 }
 
 function foregroundChanged(id) {
@@ -3255,6 +3283,7 @@ function init(opts) {
   systemctlPath = opts.systemctl !== undefined ? opts.systemctl
     : SYSTEMCTLS.filter(function (p) { return fs.existsSync(p); })[0] || '';
   if (typeof opts.tvInfo === 'function') tvInfoFn = opts.tvInfo;
+  remoteBatteryFn = typeof opts.remoteBattery === 'function' ? opts.remoteBattery : function () { return null; };
   homeKeysFn = opts.homeKeys || function () {};
   handOverFn = opts.handOverTileHiding || function () {};
   pictureDetailsFn = opts.pictureDetails || function () {};

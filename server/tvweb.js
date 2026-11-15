@@ -2195,6 +2195,11 @@ function startGlasshouseHome() {
   weather.init({ getJson: fetchLib.getJson });
   glasshouseHome.init({
     weather: weather,
+    // The level the dashboard shows: the remote's own over Bluetooth, else the pairing file's.
+    remoteBattery: function () {
+      var remote = telemetry.remoteInfo();
+      return remote && typeof remote.battery === 'number' ? remote.battery : null;
+    },
     iptv: iptv,
     luna: luna,
     Subscription: lunaTransport.Subscription,

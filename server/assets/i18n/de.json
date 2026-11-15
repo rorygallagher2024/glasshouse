@@ -616,6 +616,8 @@
  "common.pm": {"text": "PM", "from": "PM"},
  "ctl.liveTv": {"text": "Live-TV", "from": "Live TV"},
  "home.plate.sdr": {"text": "SDR", "from": "SDR"},
+ "home.remoteBattery.aria": {"text": "Fernbedienungsakku {level} %", "from": "Remote battery {level}%"},
+ "home.remoteBattery.level": {"text": "{level} %", "from": "{level}%"},
  "home.plate.sizeInterlaced": {"text": "{width} × {height}i bei {hz} Hz", "from": "{width} × {height}i at {hz} Hz"},
  "home.plate.technicolor": {"text": "Technicolor HDR", "from": "Technicolor HDR"},
  "home.preview.live": {"text": "Live-Vorschau", "from": "Live preview"},

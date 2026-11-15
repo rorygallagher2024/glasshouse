@@ -373,6 +373,30 @@ step('a layout saved from a dashboard changes the version the view\'s heartbeat 
   });
 });
 
+step('the heartbeat brings the remote\'s battery as the layout\'s choice shows it', function (done) {
+  var level = 55;
+  start(null, { remoteBattery: function () { return level; } });
+  assert.strictEqual(home.normalise({}).remoteBattery, 'low', 'shown once low unless chosen otherwise');
+  assert.strictEqual(home.normalise({ remoteBattery: 'sometimes' }).remoteBattery, 'low', 'and only one of the choices offered');
+  assert.strictEqual(home.beat().remoteBattery, null, 'above the low mark, When low hides it');
+  level = 20;
+  assert.deepEqual(home.beat().remoteBattery, { level: 20, low: true }, 'at the mark it shows, drawn as low');
+  level = null;
+  assert.strictEqual(home.beat().remoteBattery, null, 'and not before a level is read');
+  home.setLayout({ remoteBattery: 'always' }, function (r) {
+    assert.ok(r.ok, r.error);
+    assert.strictEqual(r.layout.remoteBattery, 'always');
+    level = 87.4;
+    assert.deepEqual(home.beat().remoteBattery, { level: 87, low: false }, 'Always shows it at any level');
+    home.setLayout({ remoteBattery: 'off' }, function (r2) {
+      assert.ok(r2.ok, r2.error);
+      level = 5;
+      assert.strictEqual(home.beat().remoteBattery, null, 'and Off never does');
+      done();
+    });
+  });
+});
+
 step('the heartbeat asks the view to measure its frames only while the trace file is there, and logs what it sends', function (done) {
   start(null);
   var flag = path.join(dir, 'home-trace');
