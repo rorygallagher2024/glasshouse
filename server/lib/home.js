@@ -1932,8 +1932,9 @@ function switchTo(on, cb) {
     }
     (want ? takeover.take : takeover.release)(function (r) {
       if (!r.ok || (want && !readConfig().enabled)) return finish(r);
-      startingNotice(want && readConfig().enabled, function (k) {
-        if (!k || !k.ok) r = { ok: false, error: 'the TV did not take the Home key\'s starting notice' };
+      // The notice only says Glasshouse Home is on its way, so one the TV would
+      // not take is logged (startingNotice) and the switch stands (#1498).
+      startingNotice(want && readConfig().enabled, function () {
         finish(r);
       });
     });

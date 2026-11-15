@@ -105,6 +105,8 @@ function luna(uri, params, cb) {
   } else if (uri === 'com.webos.applicationManager/blockSystemApp') {
     assert.strictEqual(params.forceBlockSystemApp, false);
     tv.blockCalls++;
+    // As a C3 on 11.2.0 answers a block of an app with a launch point (#1498).
+    if (tv.refuseBlock) { r.returnValue = false; r.errorCode = 1; r.errorText = 'exist in listLaunchPoint: ' + params.id; return cb(r); }
     // As a C5 on 11.2.0 answers a second block.
     if (tv.blocked[params.id]) { r.returnValue = false; r.errorCode = 1; r.errorText = 'already blocked: ' + params.id; }
     tv.blocked[params.id] = true;
@@ -617,6 +619,26 @@ step('the JavaScript filter leaves out the keys only webOS 11 offers', function 
   var src = rk.filterSource();
   ['homehub', 'ai', 'multikey', 'multikeyhold'].forEach(function (k) { assert.strictEqual(src.indexOf('"' + k + '"'), -1); });
   next();
+});
+
+step('where the TV will not block Alexa\'s app, the write stands, the starting notice is set, and the button is no longer offered (#1498)', function (next) {
+  freshTv();
+  tv.refuseBlock = true;
+  set('alexa', 'nothing', '', function () {
+    assert.ok(!tv.blocked['amazon.alexa.view']);
+    var calls = tv.blockCalls;
+    rk.setStarting('Glasshouse Home is starting.', function (s) {
+      assert.ok(s && s.ok, 'the starting notice goes through');
+      assert.strictEqual(tv.blockCalls, calls, 'the refused block is not asked again');
+      rk.getRemoteKeys(function (r) {
+        assert.ok(r.keys.every(function (k) { return k.key !== 'alexa'; }), 'Alexa is not offered');
+        rk.setStarting('', function () {
+          rk.init(initOpts);
+          next();
+        });
+      });
+    });
+  });
 });
 
 step('restore puts back every key LG had, and deletes Glasshouse\'s files', function (next) {

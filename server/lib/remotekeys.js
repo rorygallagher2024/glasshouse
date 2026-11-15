@@ -179,6 +179,14 @@ var NATIVE_SERVICE_KEYS = { ai: 'voiceconductor' };
  * for 5 s, and closeToast does not shorten it. Answered from the log too.
  */
 var NATIVE_BLOCK_KEYS = { alexa: 'amazon.alexa.view' };
+/*
+ * Apps sam would not block, from this start: a C3 (11.2.0) answers the block
+ * of amazon.alexa.view, which has a launch point there, with errorCode 1
+ * "exist in listLaunchPoint: amazon.alexa.view" (#1498). Its button cannot be
+ * changed there, so it is not offered, and the refusal does not fail the rest
+ * of a write, which carries the Home key's starting notice.
+ */
+var refusedBlocks = {};
 var MESSAGES_LOG = '/var/log/messages';
 var OTHER_CATEGORY = 'other';
 var MAPPING_KEY = 'mapping_info';
@@ -267,6 +275,7 @@ var reapplyDelayMs = 1000;
 function init(opts) {
   opts = opts || {};
   lunaFn = opts.luna || null;
+  refusedBlocks = {};
   keySetFn = typeof opts.onInputBarKey === 'function' ? opts.onInputBarKey : null;
   barAppFn = typeof opts.inputBarApp === 'function' ? opts.inputBarApp : null;
   barAllowedFn = typeof opts.inputBarAllowed === 'function' ? opts.inputBarAllowed : function () { return false; };
@@ -846,7 +855,11 @@ function nativeKeys(tv, lg) {
     if (NATIVE_ACTIONS[k.key]) return !!(tv.actions && tv.actions[NATIVE_ACTIONS[k.key]]);
     if (NATIVE_SETTINGS[k.key]) return !!(tv.settings && tv.settings[NATIVE_SETTINGS[k.key]]);
     if (NATIVE_SERVICE_KEYS[k.key]) return !!(servicesModule && servicesModule.available(NATIVE_SERVICE_KEYS[k.key]));
-    if (NATIVE_BLOCK_KEYS[k.key]) return !!((tv.apps && tv.apps[NATIVE_BLOCK_KEYS[k.key]]) || lg.blocks[NATIVE_BLOCK_KEYS[k.key]]);
+    if (NATIVE_BLOCK_KEYS[k.key]) {
+      var appId = NATIVE_BLOCK_KEYS[k.key];
+      if (refusedBlocks[appId] && !lg.blocks[appId]) return false;
+      return !!((tv.apps && tv.apps[appId]) || lg.blocks[appId]);
+    }
     if (k.nativeOnly) return false;
     var entry = lg.mapping[k.key] || mappingEntry(tv.list, k.key);
     return !!(entry && typeof entry === 'object' && entry.isActive !== false);
@@ -1025,14 +1038,15 @@ function switchServices(map, lg, cb) {
 /*
  * Blocks each app a set key needs kept from opening, and releases each one
  * Glasshouse blocked that no set key needs now. A block already in place is
- * answered "already blocked", which is as good. cb(ok, switched).
+ * answered "already blocked", which is as good; one sam will not make
+ * (refusedBlocks) is left, and not asked again. cb(ok, switched).
  */
 function switchBlocks(map, lg, cb) {
   var todo = [];
   Object.keys(NATIVE_BLOCK_KEYS).forEach(function (key) {
     var id = NATIVE_BLOCK_KEYS[key];
     var wanted = Object.prototype.hasOwnProperty.call(map, key);
-    if (wanted) todo.push({ id: id, block: true, was: !!lg.blocks[id] });
+    if (wanted && !refusedBlocks[id]) todo.push({ id: id, block: true, was: !!lg.blocks[id] });
     else if (lg.blocks[id]) todo.push({ id: id, block: false, was: true });
   });
   if (!todo.length) return cb(true, false);
@@ -1045,7 +1059,13 @@ function switchBlocks(map, lg, cb) {
     var params = job.block ? { id: job.id, forceBlockSystemApp: false } : { id: job.id };
     // sam answers a second block "already blocked: <id>" (a C5, 11.2.0).
     lunaFn(uri, params, function (r, raw) {
-      var done = !!(r && r.returnValue) || /already\s*blocked/i.test(String((r && r.errorText) || raw || ''));
+      var answer = String((r && r.errorText) || raw || '');
+      var done = !!(r && r.returnValue) || /already\s*blocked/i.test(answer);
+      if (!done && job.block && /exist in listLaunchPoint/i.test(answer)) {
+        refusedBlocks[job.id] = true;
+        console.log('remotekeys: the TV will not block ' + job.id + ' (it has a launch point), so its button stays as LG has it');
+        return next(i + 1);
+      }
       if (done) {
         if (job.block) lg.blocks[job.id] = true;
         else delete lg.blocks[job.id];

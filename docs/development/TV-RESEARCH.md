@@ -1897,7 +1897,10 @@ manager launched only HDMI 4 in nine minutes of the same file, and set back to
   and nothing opened; `getAppInfo` on a blocked app returns `returnValue:
   false`, a second block `errorCode` 1 "already blocked: <id>", and a release
   of an app not blocked `returnValue: true`. The adapter launched the view up
-  to 13 s after a press.
+  to 13 s after a press. A C3 (webOS 11.2.0) refused the block outright,
+  `errorCode` 1 "exist in listLaunchPoint: amazon.alexa.view": the view has a
+  launch point there (`hidden: false`), and sam will not block an app that
+  has one (#1498).
 - **Toasts can be refused, not closed.** `notification/closeToast` with a
   toast's id returned true and the toast stayed its 5 s. After
   `notification/disable` (`exceptions` optional), `createToast` was answered
