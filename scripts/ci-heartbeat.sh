@@ -24,7 +24,14 @@ id=$(gh api "repos/$GITHUB_REPOSITORY/check-runs" \
 last=
 while sleep 10; do
   line=$(cat "$RUN_ALL_STATUS" 2>/dev/null) || continue
-  [ -n "$line" ] && [ "$line" != "$last" ] || continue
+  [ -n "$line" ] || continue
+  # The machine as well: processes, load and memory, so the last post before
+  # a runner stops says whether it was busy.
+  procs=$(find /proc -maxdepth 1 -name '[0-9]*' 2>/dev/null | wc -l)
+  load=$(cut -d' ' -f1 /proc/loadavg)
+  avail=$(awk '/MemAvailable/ {print int($2/1024)}' /proc/meminfo)
+  line="$line | procs $procs, load $load, ${avail} MB free"
+  [ "$line" != "$last" ] || continue
   last=$line
   # The title shows on the PR's checks list; the summary keeps the whole line.
   title=$(printf '%s' "$line" | cut -c1-70)
