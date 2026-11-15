@@ -118,7 +118,7 @@ async function renderScreenshots(images) {
       </button>
       <time datetime="${esc(image.modified)}">${esc(date)}</time>
       <span class="sub" translate="no">${esc(image.id)}</span>
-      <button type="button" class="pill" data-id="${esc(image.id)}" data-action="download" onclick="downloadScreenshot(this)">${esc(t('tools.screenshots.download', 'Download'))}</button>
+      <button type="button" class="pill" data-id="${esc(image.id)}" data-action="download" onclick="downloadScreenshot(this)">${esc(t('tools.screenshots.download', 'Download'))} (${esc(fmtSize(image.size))})</button>
       <button type="button" class="pill screenshot-delete" data-id="${esc(image.id)}" data-action="delete" onclick="deleteScreenshot(this)" hidden></button>
     </article>`;
   }).join('') : `<p class="sub">${esc(t('tools.screenshots.empty', 'No screenshots yet. Take one here or press a remote key assigned to screenshots.'))}</p>`;

@@ -22,8 +22,8 @@ function loaded(ui) {
   ui.images.forEach(function (image) { image.complete = true; image.naturalWidth = 1920; image.onload(); });
 }
 function createUI() {
-  var ui = { listed: [{ id: 'capture_a.png', modified: '2026-11-01T00:00:00Z' },
-    { id: 'capture_b.png', modified: '2026-11-01T00:01:00Z' }], writable: true,
+  var ui = { listed: [{ id: 'capture_a.png', size: 1048576, modified: '2026-11-01T00:00:00Z' },
+    { id: 'capture_b.png', size: 524288, modified: '2026-11-01T00:01:00Z' }], writable: true,
     images: [], buttons: [], requests: [], writes: [], pending: [], timers: [], links: [], created: [], revoked: [],
     listeners: {}, renders: 0, imageRequests: 0, aborted: 0 };
   var nodes = {}, now = 1000;
@@ -119,7 +119,7 @@ function checkGallery() {
     assert.strictEqual(ui.imageRequests, 2, 'Refresh retries an unchanged failed preview');
     originalUrl = ui.images[0].src;
     loaded(ui); button(ui, 'view').focus();
-    ui.listed.push({ id: 'capture_new.png', modified: '2026-11-01T00:02:00Z' });
+    ui.listed.push({ id: 'capture_new.png', size: 2097152, modified: '2026-11-01T00:02:00Z' });
     return ui.context.loadScreenshots().then(flush);
   }).then(function () {
     assert.strictEqual(ui.imageRequests, 3, 'adding a capture only fetches the new PNG');
