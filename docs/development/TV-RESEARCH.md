@@ -1925,6 +1925,18 @@ and `com.miniclip.eightballpool` (8 Ball Pool). Both have `type: "stub"`,
 notification list showed "Some apps are available for update" the same
 minute. Neither name is on Glasshouse's ad-blocking list.
 
+## LG's placeholder for YouTube (UM7290, webOS 4.10.2)
+
+A 55UM7290PTD has `/mnt/otncabi/usr/palm/applications/youtube.leanback.v4`:
+an `appinfo.json` with `type: "stub"`, version 0.0.1 and vendor `LG Electronics,
+Inc.`, the placeholder for the store's YouTube. The installer's check for an
+id that is already part of the TV system found it, so YouTube Foxtended
+(`youtube.leanback.v4`, a Homebrew Channel app that replaces YouTube on these
+TVs) was refused with "already part of the TV system". Installing it with
+`com.webos.appInstallService/dev/install` works, and puts the real app under
+`/media/developer/apps`, next to the placeholder. The installer now skips an
+id whose folder holds only a stub.
+
 ## Home screen (webOS 10 and 11)
 
 From layout dumps in #612 (a C2 on 10.3.1, a B4 on 10.3.2, a C4 on 11.2.0)
