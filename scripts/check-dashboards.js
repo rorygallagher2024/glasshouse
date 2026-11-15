@@ -280,6 +280,49 @@ async function visitHomePicture(browser, base, problems) {
 // The weather badge: Home Assistant's last push or Open-Meteo's, brought by the heartbeat.
 // The input bar over a Home screen: the input last watched is under it, not
 // on screen, so OK on it switches to it rather than closing the bar.
+// Stepping with the arrows switches a second after the last step, or, with
+// Switch only on OK, not until OK (#1532).
+async function visitInputBarSwitchOnOk(browser, base, problems) {
+  for (const onOk of [false, true]) {
+    const name = 'Input bar, ' + (onOk ? 'switch only on OK' : 'switch after a step') + ': ';
+    const page = await browser.newPage({ viewport: { width: 1920, height: 1080 } });
+    page.on('pageerror', e => problems.push(name + e.message));
+    await page.clock.install();
+    await page.addInitScript(() => {
+      window.launches = [];
+      window.PalmServiceBridge = function () {};
+      window.PalmServiceBridge.prototype.call = function (uri, body) { window.launches.push(JSON.parse(body).id); };
+      window.close = function () { window.closed = true; };
+    });
+    await page.route('http://localhost:8080/**', route => {
+      const url = new URL(route.request().url());
+      if (url.pathname === '/assets/devicons.js') return route.continue({ url: base + '/assets/devicons.js' });
+      if (url.pathname === '/api/home/now') return route.fulfill({ json: { kind: 'input', port: 2, devices: ['hdmi2'], behindHome: false } });
+      if (url.pathname === '/api/home/catalogue') return route.fulfill({ json: { ok: true, layout: onOk ? { inputBarSwitchOnOk: true } : {}, order: { dev: ['hdmi1', 'hdmi2'] },
+        devices: [{ id: 'hdmi1', name: 'HDMI 1', input: 'hdmi1', port: 1 }, { id: 'hdmi2', name: 'Mac', input: 'hdmi2', port: 2 }] } });
+      return route.fulfill({ json: {} });
+    });
+    try {
+      await page.goto(base + '/assets/inputbar-app/index.html');
+      await page.waitForSelector('.tile.focus');
+      await page.clock.runFor(500);
+      await page.keyboard.press('ArrowLeft');
+      await page.clock.runFor(1500);
+      const afterStep = await page.evaluate(() => window.launches.slice());
+      if (!onOk && afterStep.indexOf('com.webos.app.hdmi1') === -1) problems.push(name + 'did not switch a second after the step');
+      if (onOk && afterStep.length) problems.push(name + 'switched without OK: ' + afterStep.join(', '));
+      if (onOk) {
+        await page.keyboard.press('Enter');
+        await page.clock.runFor(100);
+        const afterOk = await page.evaluate(() => window.launches.slice());
+        if (afterOk.indexOf('com.webos.app.hdmi1') === -1) problems.push(name + 'OK did not switch');
+      }
+    } finally {
+      await page.close();
+    }
+  }
+}
+
 async function visitInputBarBehindHome(browser, base, problems) {
   for (const behindHome of [true, false]) {
     const page = await browser.newPage({ viewport: { width: 1920, height: 1080 } });
@@ -4298,7 +4341,7 @@ function groups(web, tv) {
     { job: 'tabs', tabs: web.map(t => ({ path: '/?tab=' + t, label: 'web ' + t })), visits: [visitHomeAnimations, visitHuesyncSettings, visitInputsAndRemote, visitAdblockCards, visitSaverEntitySlots] },
     { job: 'tabs', tabs: tv.map(t => ({ path: '/assets/dashboard.html?tab=' + t, label: 'TV ' + t })),
       visits: [visitTvDashboard, visitTvAudio, visitTvPictureWrites, visitPictureUnavailable, visitTvNonOled, visitTvHuesync] },
-    { job: 'home', tabs: [], visits: [visitHomePicture, visitHomePreview, visitHomePreviewOptions, visitHomePreviewWebos4, visitHomePreviewSize, visitHomePreviewSizeDetails, visitInputBarBehindHome, visitHomeBarPrewarm, visitHomeBarIconsReady, visitHomeBarTiles, visitHomeBarScroll, visitHomeUpDown, visitHomePointerOff, visitHomeOrder, visitHomeAvailability, visitHomeSearch, visitHomeWeather, visitHomeWeatherSetting] },
+    { job: 'home', tabs: [], visits: [visitHomePicture, visitHomePreview, visitHomePreviewOptions, visitHomePreviewWebos4, visitHomePreviewSize, visitHomePreviewSizeDetails, visitInputBarBehindHome, visitInputBarSwitchOnOk, visitHomeBarPrewarm, visitHomeBarIconsReady, visitHomeBarTiles, visitHomeBarScroll, visitHomeUpDown, visitHomePointerOff, visitHomeOrder, visitHomeAvailability, visitHomeSearch, visitHomeWeather, visitHomeWeatherSetting] },
     { job: 'home', tabs: [], visits: [visitHomeArrangement, visitHomeVisibility, visitHomeColours, visitHomeInputsEditor, visitHomeEditor,
       visitHomeRecentsHidden, visitHomeUploads, visitHomeShuffle, visitHomeLauncher, visitHomeReadiness, visitAudioOverride, visitHomeRecents, visitHomeGuide,
       visitHomeFadeAndInputs] },

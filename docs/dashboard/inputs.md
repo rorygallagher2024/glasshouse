@@ -9,6 +9,7 @@ The **Inputs** tab (`/?tab=inputs`) controls how the remote's **Input** key beha
 ### Choosing the input bar
 
 * **When you press Input on the remote:** Preview cards choose between **LG's list** and **Glasshouse Input bar**. This is the same setting as the **Input** key under [Remote keys](remote.md#remote-keys), where you can also assign the bar to any other remote key.
+* **Switch only on OK:** Off by default, so the TV switches a second after your last press. Switched on, moving along the bar only picks an input, and **OK** switches to it.
 * **Transparent tiles:** Off by default so the bar's tiles stay opaque and stepping through inputs does not repaint translucent tiles or shadows over the picture. Switch it on if you prefer the picture to show subtly through the bar.
 
 ### How it works

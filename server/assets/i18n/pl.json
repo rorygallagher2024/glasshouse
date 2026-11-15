@@ -3297,5 +3297,7 @@
  "inputs.kind.av": {"text": "AV", "from": "AV"},
  "inputs.kind.component": {"text": "Component", "from": "Component"},
  "srv.remoteKeys.ok": {"text": "OK", "from": "OK"},
- "apps.remoteKeys.buttons": {"text": "Przyciski", "from": "Buttons"}
+ "apps.remoteKeys.buttons": {"text": "Przyciski", "from": "Buttons"},
+ "inputs.bar.switchOnOk": {"text": "Przełączaj tylko przyciskiem OK", "from": "Switch only on OK"},
+ "inputs.bar.switchOnOkDesc": {"text": "Przesuwanie po pasku tylko wybiera wejście, a OK na nie przełącza. Wyłączone: telewizor przełącza sekundę po ostatnim naciśnięciu.", "from": "Moving along the bar only picks an input, and OK switches to it. Off, the TV switches a second after the last press."}
 }

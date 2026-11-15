@@ -3297,5 +3297,7 @@
  "inputs.kind.av": {"text": "AV", "from": "AV"},
  "inputs.kind.component": {"text": "Компонентный", "from": "Component"},
  "srv.remoteKeys.ok": {"text": "OK", "from": "OK"},
- "apps.remoteKeys.buttons": {"text": "Кнопки", "from": "Buttons"}
+ "apps.remoteKeys.buttons": {"text": "Кнопки", "from": "Buttons"},
+ "inputs.bar.switchOnOk": {"text": "Переключать только по OK", "from": "Switch only on OK"},
+ "inputs.bar.switchOnOkDesc": {"text": "Перемещение по панели только выбирает вход, а OK переключает на него. Если выключено, телевизор переключается через секунду после последнего нажатия.", "from": "Moving along the bar only picks an input, and OK switches to it. Off, the TV switches a second after the last press."}
 }
