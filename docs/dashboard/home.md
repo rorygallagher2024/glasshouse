@@ -43,7 +43,7 @@ Preview cards at the top of the **Home** tab switch between five launcher option
 
     ---
 
-    Displays the TV tuner, HDMI ports with device icons, HDMI-CEC devices behind receivers, and discovered Media Servers, USB storage, AirPlay, Screen Share, and All Inputs tiles. Configured on the [Inputs tab](inputs.md#your-inputs). See [Inputs and connected devices](#inputs-and-connected-devices).
+    Displays the TV tuner, HDMI ports with device icons, AV and Component inputs where the TV has them, HDMI-CEC devices behind receivers, and discovered Media Servers, USB storage, AirPlay, Screen Share, and All Inputs tiles. Configured on the [Inputs tab](inputs.md#your-inputs). See [Inputs and connected devices](#inputs-and-connected-devices).
 
 -   **Channels**
 

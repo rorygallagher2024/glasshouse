@@ -3308,5 +3308,7 @@
  "home.highlight.navy": {"from": "Navy", "text": "Tengerkék"},
  "home.highlight.forest": {"from": "Forest", "text": "Erdőzöld"},
  "home.highlight.wine": {"from": "Wine", "text": "Bordó"},
- "home.highlight.plum": {"from": "Plum", "text": "Szilva"}
+ "home.highlight.plum": {"from": "Plum", "text": "Szilva"},
+ "inputs.kind.av": {"text": "AV", "from": "AV"},
+ "inputs.kind.component": {"text": "Komponens", "from": "Component"}
 }

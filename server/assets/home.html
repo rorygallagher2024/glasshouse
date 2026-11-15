@@ -1197,9 +1197,13 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
       if (d.tuner) return tunerTileHtml(d, i);
       var last = layout.showLastOn !== false && lastOn.kind === 'input' && d.port && lastOn.port === d.port &&
         (!lastOn.devices || lastOn.devices.indexOf(d.id) !== -1);
-      var isExtra = !!d.kind;
+      // AV and Component are inputs as HDMI is, with a connection of their own.
+      var analog = d.kind === 'av' || d.kind === 'component';
+      var isExtra = !!d.kind && !analog;
       var cls = 'tile dev' + (last ? ' last' : '') + (d.unused ? ' unused' : '') + (hidden('dev', d.id) ? ' hidden' : '');
       var path = d.unused ? ''
+        : d.kind === 'av' ? t('inputs.kind.av', 'AV')
+        : d.kind === 'component' ? t('inputs.kind.component', 'Component')
         : d.kind === 'dms' ? (d.address || 'Media Server')
         : d.kind === 'usb' ? 'USB'
         : isExtra ? ''

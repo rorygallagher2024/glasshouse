@@ -3294,5 +3294,7 @@
  "home.highlight.navy": {"from": "Navy", "text": "كحلي"},
  "home.highlight.forest": {"from": "Forest", "text": "أخضر غامق"},
  "home.highlight.wine": {"from": "Wine", "text": "عنابي"},
- "home.highlight.plum": {"from": "Plum", "text": "برقوقي"}
+ "home.highlight.plum": {"from": "Plum", "text": "برقوقي"},
+ "inputs.kind.av": {"text": "AV", "from": "AV"},
+ "inputs.kind.component": {"text": "مكوّن", "from": "Component"}
 }
