@@ -238,7 +238,6 @@
  "apps.remoteKeys.inputs": {"text": "Ingressi", "from": "Inputs"},
  "apps.remoteKeys.keyLabel": {"text": "Tasto {key}", "from": "{key} key"},
  "apps.remoteKeys.lg": {"text": "Come da LG", "from": "As LG has it"},
- "apps.remoteKeys.media": {"text": "Media", "from": "Media"},
  "apps.remoteKeys.nothing": {"text": "Niente", "from": "Nothing"},
  "apps.remoteKeys.opens": {"text": "Apre {app}", "from": "Opens {app}"},
  "apps.remoteKeys.other": {"text": "Altri tasti", "from": "Other keys"},
@@ -3310,5 +3309,7 @@
  "home.highlight.wine": {"from": "Wine", "text": "Bordeaux"},
  "home.highlight.plum": {"from": "Plum", "text": "Prugna"},
  "inputs.kind.av": {"text": "AV", "from": "AV"},
- "inputs.kind.component": {"text": "Component", "from": "Component"}
+ "inputs.kind.component": {"text": "Component", "from": "Component"},
+ "srv.remoteKeys.ok": {"text": "OK", "from": "OK"},
+ "apps.remoteKeys.buttons": {"text": "Tasti", "from": "Buttons"}
 }

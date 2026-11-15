@@ -232,7 +232,6 @@
  "apps.remoteKeys.inputs": {"text": "Входы", "from": "Inputs"},
  "apps.remoteKeys.keyLabel": {"text": "Кнопка {key}", "from": "{key} key"},
  "apps.remoteKeys.lg": {"text": "Как задано в LG", "from": "As LG has it"},
- "apps.remoteKeys.media": {"text": "Медиа", "from": "Media"},
  "apps.remoteKeys.nothing": {"text": "Ничего", "from": "Nothing"},
  "apps.remoteKeys.opens": {"text": "Открывает: {app}", "from": "Opens {app}"},
  "apps.remoteKeys.other": {"text": "Прочие кнопки", "from": "Other keys"},
@@ -3296,5 +3295,7 @@
  "home.highlight.wine": {"from": "Wine", "text": "Бордовый"},
  "home.highlight.plum": {"from": "Plum", "text": "Сливовый"},
  "inputs.kind.av": {"text": "AV", "from": "AV"},
- "inputs.kind.component": {"text": "Компонентный", "from": "Component"}
+ "inputs.kind.component": {"text": "Компонентный", "from": "Component"},
+ "srv.remoteKeys.ok": {"text": "OK", "from": "OK"},
+ "apps.remoteKeys.buttons": {"text": "Кнопки", "from": "Buttons"}
 }

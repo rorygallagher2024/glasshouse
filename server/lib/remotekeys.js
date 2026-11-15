@@ -113,16 +113,19 @@ var APP_PREFIX = 'com.webos.app.';
  * are the codes controls.js sends for one step, which a receiver on HDMI ARC
  * follows too; they repeat while the key is held, as the remote's own do.
  * Mute is KEY_MUTE, a toggle like the remote's. Each worked on a C3 (webOS
- * 10.2.2). A play/pause toggle, asking acb what was playing first, did
+ * 10.2.2). OK is KEY_ENTER, which opened the tile in focus in Glasshouse Bar
+ * on a C2 (webOS 9.2.2): for a remote whose OK is the scroll wheel's press
+ * (#1513). A play/pause toggle, asking acb what was playing first, did
  * nothing there, so none is offered. webOS 11's native filters launch apps
  * only, so they are not offered there.
  */
 var MEDIA_PREFIX = 'media:';
 var MEDIA_CODES = {
+  ok: 28,
   play: 207, pause: 119, stop: 128, rewind: 168, fastForward: 208,
   volumeUp: 115, volumeDown: 114, mute: 113
 };
-var MEDIA_ACTIONS = ['play', 'pause', 'stop', 'rewind', 'fastForward', 'volumeUp', 'volumeDown', 'mute'];
+var MEDIA_ACTIONS = ['ok', 'play', 'pause', 'stop', 'rewind', 'fastForward', 'volumeUp', 'volumeDown', 'mute'];
 var MEDIA_REPEATS = { volumeUp: true, volumeDown: true };
 /*
  * Screen off, as the dashboard's: tvpower's turnOffScreen blanks the panel and
@@ -1390,6 +1393,7 @@ function switcherChoices(cb) {
 // The media controls a key can send, where the JavaScript filter runs.
 function mediaChoices() {
   var titles = {
+    ok: msg('srv.remoteKeys.ok', 'OK'),
     play: msg('srv.remoteKeys.play', 'Play'),
     pause: msg('srv.remoteKeys.pause', 'Pause'),
     stop: msg('srv.remoteKeys.stop', 'Stop'),

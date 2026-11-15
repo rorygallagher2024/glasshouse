@@ -249,7 +249,6 @@
  "apps.remoteKeys.inputs": {"text": "Entradas", "from": "Inputs"},
  "apps.remoteKeys.keyLabel": {"text": "Botão {key}", "from": "{key} key"},
  "apps.remoteKeys.lg": {"text": "Como a LG deixou", "from": "As LG has it"},
- "apps.remoteKeys.media": {"text": "Mídia", "from": "Media"},
  "apps.remoteKeys.nothing": {"text": "Nada", "from": "Nothing"},
  "apps.remoteKeys.opens": {"text": "Abre {app}", "from": "Opens {app}"},
  "apps.remoteKeys.other": {"text": "Outros botões", "from": "Other keys"},
@@ -3296,5 +3295,7 @@
  "home.highlight.wine": {"from": "Wine", "text": "Vinho"},
  "home.highlight.plum": {"from": "Plum", "text": "Ameixa"},
  "inputs.kind.av": {"text": "AV", "from": "AV"},
- "inputs.kind.component": {"text": "Componente", "from": "Component"}
+ "inputs.kind.component": {"text": "Componente", "from": "Component"},
+ "srv.remoteKeys.ok": {"text": "OK", "from": "OK"},
+ "apps.remoteKeys.buttons": {"text": "Botões", "from": "Buttons"}
 }
