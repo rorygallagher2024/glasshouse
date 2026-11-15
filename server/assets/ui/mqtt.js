@@ -275,6 +275,21 @@ function cfgToggleIcons() {
   renderCfgIcons();
 }
 
+// The media_player entity (lib/ha.js mediaPlayerConfig): part of the form too.
+let cfgMediaPlayer = false;
+
+function renderCfgMediaPlayer() {
+  updateToggle('cfg-mediaplayer', {
+    cls: cfgMediaPlayer ? 'good' : 'idle',
+    label: cfgMediaPlayer ? t('mqtt.cat.enabled', 'Enabled') : t('mqtt.cat.disabled', 'Disabled')
+  });
+}
+
+function cfgToggleMediaPlayer() {
+  cfgMediaPlayer = !cfgMediaPlayer;
+  renderCfgMediaPlayer();
+}
+
 function cfgToggleCat(catId) {
   cfgEntities[catId] = !(cfgEntities[catId] !== false);
   renderEntitiesUI();
@@ -318,6 +333,8 @@ async function loadSettings(keepMsg) {
     cfgSyncEnabled();
     cfgIcons = !!j.iconServer;
     renderCfgIcons();
+    cfgMediaPlayer = !!m.universalMediaPlayer;
+    renderCfgMediaPlayer();
     q('cfg-tls').classList.toggle('on', m.tls);
     q('cfg-verify').classList.toggle('on', m.tlsRejectUnauthorized);
     cfgSyncTls();
@@ -398,6 +415,7 @@ async function saveSettings() {
       topicPrefix: q('cfg-prefix').value,
       discoveryPrefix: q('cfg-disc').value,
       telemetryIntervalMs: q('cfg-interval').value || 10000,
+      universalMediaPlayer: cfgMediaPlayer,
       entities: {
         controls: cfgEntities.controls !== false,
         oled: cfgEntities.oled !== false,

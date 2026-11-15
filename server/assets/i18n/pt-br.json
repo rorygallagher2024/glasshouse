@@ -902,6 +902,8 @@
  "mqtt.icons": {"text": "Ícones de apps", "from": "App icons"},
  "mqtt.icons.desc": {"text": "Permite que um inicializador ou painel em outro dispositivo mostre os apps desta TV com os próprios ícones. Launch App no Home Assistant passa a listar o endereço de cada ícone. Qualquer pessoa na rede pode buscar os ícones e, assim, saber quais apps estão instalados.", "from": "Lets a launcher or dashboard on another device show this TV's apps with their own icons. Launch App in Home Assistant then lists each icon's address. Anyone on the network can fetch the icons, and so tell which apps are installed."},
  "mqtt.icons.toggle": {"text": "Compartilhar ícones de apps", "from": "Share app icons"},
+ "mqtt.mediaPlayer.toggle": {"text": "Reprodutor de mídia", "from": "Media player"},
+ "mqtt.mediaPlayer.desc": {"text": "Uma entidade de reprodutor de mídia com energia, volume, saída de som, reprodução, as entradas e apps da TV como fontes e o ícone do app atual como capa. O Home Assistant só a mostra com a integração MQTT Media Player (grzegorz914/homeassistant-mqtt-media-player) instalada. Os ícones precisam de Compartilhar ícones de apps ativado.", "from": "One media player entity with power, volume, sound output, playback, the TV's inputs and apps as sources and the current app's icon as its cover. Home Assistant shows it only with the MQTT Media Player integration (grzegorz914/homeassistant-mqtt-media-player) installed. The icons need Share app icons on."},
  "mqtt.interval": {"text": "Intervalo da telemetria", "from": "Telemetry interval"},
  "mqtt.interval.hint": {"text": "Milissegundos entre publicações.", "from": "Milliseconds between publishes."},
  "mqtt.net.latency": {"text": "{ms} ms", "from": "{ms} ms"},
