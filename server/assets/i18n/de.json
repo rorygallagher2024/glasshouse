@@ -1002,6 +1002,10 @@
  "home.tv.streamPortNote": {"text": "Nur nötig, wenn der Kanal von einem anderen Port als der Adresse des Tuners kommen soll, etwa einem Transcoding-Profil auf Port 8002.", "from": "Only needed when the channel is to come from a different port than the tuner’s own address, such as a transcoding profile on 8002."},
  "home.tv.streamPortPh": {"text": "Leer: der des Tuners, meist 8001", "from": "Empty: the tuner’s own, usually 8001"},
  "home.tv.bad.streamPort": {"text": "Der Stream-Port muss eine Zahl von 1 bis 65535 sein.", "from": "The stream port must be a number from 1 to 65535."},
+ "srv.remoteKeys.noCaptureResult": {"text": "Kein Aufnahmeergebnis", "from": "No capture result"},
+ "srv.remoteKeys.screenshotFailed": {"text": "Screenshot fehlgeschlagen: {error}", "from": "Screenshot failed: {error}"},
+ "srv.remoteKeys.screenshotResolution": {"text": "Screenshot · {method} · {resolution}", "from": "Screenshot · {method} · {resolution}"},
+ "srv.remoteKeys.screenshotSaved": {"text": "Screenshot gespeichert: {path}", "from": "Screenshot saved: {path}"},
  "srv.remoteKeys.homeBar": {"text": "Glasshouse Bar", "from": "Glasshouse Bar"},
  "srv.remoteKeys.homeBarInstall": {"text": "Glasshouse Bar konnte nicht auf dem Fernseher installiert werden. Versuchen Sie es gleich noch einmal.", "from": "Glasshouse Bar could not be put on the TV. Try again in a moment."},
  "ctl.remoteLink.full": {"text": "Ganzes Dashboard", "from": "Full dashboard"},
@@ -1282,5 +1286,11 @@
  "apps.running.noneDesc": {"text": "Derzeit sind keine Apps im Speicher aktiv.", "from": "No apps are currently running in memory."},
  "apps.running.summaryMb": {"text": "{n} Apps · {mb} MB", "from": "{n} apps · {mb} MB"},
  "apps.running.summaryOneMb": {"text": "1 App · {mb} MB", "from": "1 app · {mb} MB"},
- "apps.running.title": {"text": "Apps im Speicher", "from": "Apps in memory"}
+ "apps.running.title": {"text": "Apps im Speicher", "from": "Apps in memory"},
+ "apps.remoteKeys.screenshots": {"text": "Screenshots", "from": "Screenshots"},
+ "tools.screenshots.display": {"text": "Gesamter Bildschirm", "from": "Full screen"},
+ "tools.screenshots.graphic": {"text": "Nur Grafik", "from": "Graphics only"},
+ "tools.screenshots.method": {"text": "Aufnahme", "from": "Capture"},
+ "tools.screenshots.resolution": {"text": "Auflösung", "from": "Resolution"},
+ "tools.screenshots.video": {"text": "Nur Video", "from": "Video only"}
 }

@@ -2032,6 +2032,8 @@ button.tools-jump:active{background:var(--w80)}
 @media (max-width:560px){
   .rk-opts.rk-opts-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
+.rk-capture-groups{display:flex;flex-wrap:wrap;column-gap:24px}
+.rk-capture-groups>.rk-opts{flex:0 0 auto;max-width:100%}
 /* A catalog's address is one long word. */
 .catalog-url, #apps-others-list .prot-sub{overflow-wrap:anywhere}
 #apps-catalog-list .prot-main, #apps-others-list .prot-main{overflow-wrap:anywhere}
