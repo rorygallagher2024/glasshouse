@@ -10,9 +10,21 @@
 var assert = require('assert');
 var fs = require('fs');
 var path = require('path');
-var vm = require('vm');
 
 console.log('Running test-home-video-idle.js ...');
+
+/*
+ * Runs code from home.html in a function of its own and returns run(expr) to
+ * read or call what it declares, and run(name, value) to set a variable.
+ * Not a vm context: on Node 0.10, which CI tests on, values set in one are
+ * only seen outside after the next runInContext.
+ */
+function sandbox(vars, code) {
+  var decl = Object.keys(vars).map(function (n) { return 'var ' + n + ' = env.' + n + ';'; }).join('');
+  return new Function('env', decl + code + '\nreturn function (expr, value) {' +
+    ' if (arguments.length > 1) { env.__value = value; return eval(expr + " = env.__value"); }' +
+    ' return eval(expr); };')(vars);
+}
 
 var src = fs.readFileSync(path.join(__dirname, '..', 'server', 'assets', 'home.html'), 'utf8');
 var start = src.indexOf('  var WALL_VIDEO_IDLE_MS');
@@ -22,24 +34,22 @@ assert.ok(start !== -1 && end !== -1, 'the idle code is in home.html');
 var now = 1000000;
 var timers = [];
 var attrs = { src: 'http://media.example/coast.mov' };
-var ctx = {
+var wallVideoEl = {
+  style: { opacity: '0.55' },
+  getAttribute: function (k) { return attrs.hasOwnProperty(k) ? attrs[k] : null; }
+};
+var caption = { textContent: 'Above the bay' };
+var run = sandbox({
   Date: { now: function () { return now; } },
-  Math: Math,
-  wallVideoEl: {
-    style: { opacity: '0.55' },
-    getAttribute: function (k) { return attrs.hasOwnProperty(k) ? attrs[k] : null; }
-  },
-  caption: { textContent: 'Above the bay' },
+  wallVideoEl: wallVideoEl, caption: caption,
   wallChoice: 'video', wallVideoInputAt: now, wallVideoIdleTimer: null,
   WALL_VIDEO_FADE_S: 2.5, walls: 0,
   setTimeout: function (fn, ms) { timers.push({ fn: fn, at: now + ms }); return timers.length; },
   clearTimeout: function (id) { if (id && timers[id - 1]) timers[id - 1].fn = null; }
-};
-vm.createContext(ctx);
-vm.runInContext(
+},
   'function $(id) { return id === "wall-caption" ? caption : null; }' +
   'function updateWall() { walls++; }' +
-  src.slice(start, end), ctx);
+  src.slice(start, end));
 
 // Moves the clock on, running each timer that falls due on the way.
 function advance(ms) {
@@ -56,46 +66,46 @@ function advance(ms) {
   now = until;
 }
 
-vm.runInContext('scheduleWallVideoIdle()', ctx);
+run('scheduleWallVideoIdle()');
 advance(119000);
-assert.strictEqual(vm.runInContext('wallVideoIdle()', ctx), false, 'not idle before two minutes');
-assert.strictEqual(ctx.wallVideoEl.style.opacity, '0.55', 'the video plays on');
+assert.strictEqual(run('wallVideoIdle()'), false, 'not idle before two minutes');
+assert.strictEqual(wallVideoEl.style.opacity, '0.55', 'the video plays on');
 console.log('  ✓ plays on for two minutes without a key');
 
 // A key at 1:59 starts the two minutes again.
-vm.runInContext('noteWallVideoInput()', ctx);
-assert.strictEqual(ctx.walls, 0, 'a key while it plays changes nothing on screen');
+run('noteWallVideoInput()');
+assert.strictEqual(run('walls'), 0, 'a key while it plays changes nothing on screen');
 advance(119000);
-assert.strictEqual(ctx.wallVideoEl.style.opacity, '0.55', 'still playing 1:59 after the key');
+assert.strictEqual(wallVideoEl.style.opacity, '0.55', 'still playing 1:59 after the key');
 console.log('  ✓ a key starts the two minutes again');
 
 advance(2000);
-assert.strictEqual(vm.runInContext('wallVideoIdle()', ctx), true, 'idle after two minutes');
-assert.strictEqual(ctx.wallVideoEl.style.opacity, 0, 'faded out first');
-assert.strictEqual(ctx.caption.textContent, '', 'its caption with it');
-assert.strictEqual(ctx.walls, 0, 'not yet let go, while it fades');
+assert.strictEqual(run('wallVideoIdle()'), true, 'idle after two minutes');
+assert.strictEqual(wallVideoEl.style.opacity, 0, 'faded out first');
+assert.strictEqual(caption.textContent, '', 'its caption with it');
+assert.strictEqual(run('walls'), 0, 'not yet let go, while it fades');
 advance(2600);
-assert.strictEqual(ctx.walls, 1, 'then updateWall lets the video go');
+assert.strictEqual(run('walls'), 1, 'then updateWall lets the video go');
 console.log('  ✓ after two minutes it fades out and lets the video go');
 
-vm.runInContext('noteWallVideoInput()', ctx);
-assert.strictEqual(vm.runInContext('wallVideoIdle()', ctx), false, 'a key ends the idle');
-assert.strictEqual(ctx.walls, 2, 'and has updateWall play it again');
+run('noteWallVideoInput()');
+assert.strictEqual(run('wallVideoIdle()'), false, 'a key ends the idle');
+assert.strictEqual(run('walls'), 2, 'and has updateWall play it again');
 console.log('  ✓ a key plays it again');
 
 // A key during the fade keeps it.
 advance(120100);
-assert.strictEqual(ctx.wallVideoEl.style.opacity, 0, 'fading again');
-var walls = ctx.walls;
-vm.runInContext('noteWallVideoInput()', ctx);
+assert.strictEqual(wallVideoEl.style.opacity, 0, 'fading again');
+var walls = run('walls');
+run('noteWallVideoInput()');
 advance(2600);
-assert.strictEqual(ctx.walls, walls + 1, 'only the key\'s own update: the fade does not let it go after');
+assert.strictEqual(run('walls'), walls + 1, 'only the key\'s own update: the fade does not let it go after');
 console.log('  ✓ a key during the fade keeps the video');
 
 // Not a video background: no timer.
-ctx.wallChoice = 'landscape';
-vm.runInContext('scheduleWallVideoIdle()', ctx);
-assert.strictEqual(ctx.wallVideoIdleTimer, null, 'no timer for a picture background');
+run('wallChoice', 'landscape');
+run('scheduleWallVideoIdle()');
+assert.strictEqual(run('wallVideoIdleTimer'), null, 'no timer for a picture background');
 console.log('  ✓ no timer without a video background');
 
 console.log('test-home-video-idle.js passed');
