@@ -2310,7 +2310,8 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
    * Always, whatever was playing: a stream set as the video's src has no
    * <source> children, and returning early on that left it connected.
    */
-  function releaseVideo() {
+  // keepWall: a reconnect lets the stream go only to open it again.
+  function releaseVideo(keepWall) {
     var v = $('pvVideo');
     v.onplaying = v.onerror = v.onwaiting = v.onstalled = v.ontimeupdate = v.onloadedmetadata = v.onended = null;
     try { v.pause(); } catch (e) {}
@@ -2318,7 +2319,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     // Hiding the element keeps the input, tuner or stream; emptied and loaded, it lets it go.
     if (v.getAttribute('src') !== null) v.removeAttribute('src');
     try { v.load(); } catch (e) {}
-    wallVideoResume();
+    if (!keepWall) wallVideoResume();
   }
 
   function stopPreview() {
@@ -2937,7 +2938,12 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     if (tilePreview.target && tilePreview.target.tv) tilePreview.playing = false;
     // Its own generation: a stop or another play meanwhile strands it.
     var retryGen = ++tvStream.gen;
-    releaseVideo();
+    /*
+     * The video background stays away until the retry: brought back in the wait,
+     * it took the decoder again and every retry failed with code 4 (a G3, webOS 10),
+     * leaving a preview over a video background at "No picture".
+     */
+    releaseVideo(true);
     tvStream.item = it;
     tvStream.onState = cb;
     if (cb) cb('reconnecting');
