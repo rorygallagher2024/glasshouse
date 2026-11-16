@@ -804,7 +804,12 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     // well: under the screen saver the preview kept the tuner playing (#1209).
     followPreview();
     if (on) unloadWallVideo();
-    else updateWall();
+    else {
+      // Uncovered by a key Home did not see, such as the one ending the screen saver.
+      wallVideoInputAt = Date.now();
+      scheduleWallVideoIdle();
+      updateWall();
+    }
     if (!anim) return;
     if (on) animStop();
     else animRun();
@@ -835,6 +840,8 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
   var wallVideoSources = [], wallVideoItems = [], wallVideoShuffle = false, wallVideoStyle = null, wallVideoRevision = '', wallVideoKey = '', wallVideoIndex = -1;
   var wallVideoNeedsRestart = false;
   var wallVideoEl = $('wallVideo');
+  // The last key, pointer move or return to Home, for letting the video go when idle.
+  var wallVideoInputAt = Date.now(), wallVideoIdleTimer = null;
 
   function $(id) { return document.getElementById(id); }
   function pad(n) { return (n < 10 ? '0' : '') + n; }
@@ -2189,7 +2196,9 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     var onRows = state.bar < 0 && !state.rail;
     var row = rowKey(), col = colOf(row), it = onRows ? items(row)[col] : null;
     var target = tileTarget(row, it, col);
-    if (!target && layout.previewAlways === true) target = keptTarget();
+    // Kept with Preview always, but not over a video background: the two
+    // cannot share the decoder, and the video would never play.
+    if (!target && layout.previewAlways === true && !(wallChoice === 'video' && wallVideoSources.length)) target = keptTarget();
     if (!target) { tilePreview.opened = null; return null; }
     // A guide or catalogue reply can repaint Home before the input opens.
     // Keep that tile released until focus moves away or Home returns.
@@ -5062,6 +5071,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     wallAvailable = !!(w && w.available);
     wallSlots = w && w.slots;
     wallRevision = w && w.revision || '';
+    var wasChoice = wallChoice;
     wallChoice = w && w.choice || '';
     wallPictures = w && w.pictures || [];
     wallVideoSources = w && w.videoUrls || [];
@@ -5069,7 +5079,11 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     wallVideoShuffle = !!(w && w.videoShuffle);
     wallVideoStyle = w && w.videoStyle || {};
     applyWallVideoCaptionStyle();
-    wallVideoRevision = w && w.videoRevision || '';
+    var videoRevision = w && w.videoRevision || '';
+    // Videos chosen or changed on a dashboard play at once, as if a key had been pressed.
+    if (wallChoice === 'video' && (wasChoice !== 'video' || videoRevision !== wallVideoRevision)) wallVideoInputAt = Date.now();
+    wallVideoRevision = videoRevision;
+    scheduleWallVideoIdle();
   }
 
   function applyWallVideoCaptionStyle() {
@@ -5146,7 +5160,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     if (wallChoice === 'video') {
       var videoLayers = $('wall').querySelectorAll('.layer');
       if (anim.style !== 'off' || !wallAvailable || !wallVideoSources.length || document.hidden ||
-          document.documentElement.classList.contains('resting') || previewHoldsVideo()) {
+          document.documentElement.classList.contains('resting') || previewHoldsVideo() || wallVideoIdle()) {
         unloadWallVideo();
         if (anim.style !== 'off' || !wallVideoSources.length) wallVideoKey = '';
         for (var blankVideo = 0; blankVideo < videoLayers.length; blankVideo++) { videoLayers[blankVideo].style.opacity = 0; videoLayers[blankVideo].style.backgroundImage = ''; }
@@ -5265,6 +5279,38 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
   }
   // Room for a 4K stream over the network to reach its first frame.
   var WALL_VIDEO_START_MS = 20000;
+
+  /*
+   * LG's screen saver never comes over a playing video: while the wallpaper
+   * plays, a B8 (webOS 4.4) and a C2 (webOS 9.2) refused turnOnScreenSaver
+   * and asked for no idle screen saver in over 6 minutes, leaving Home's
+   * clock and tiles on an OLED panel. So after this long without a key or
+   * the pointer, the video fades out and lets the decoder go, and the TV's
+   * own screen saver comes as it does over a still background. A key, the
+   * pointer or Home coming back plays it again.
+   */
+  var WALL_VIDEO_IDLE_MS = 120000;
+  function wallVideoIdle() { return Date.now() - wallVideoInputAt >= WALL_VIDEO_IDLE_MS; }
+  function scheduleWallVideoIdle() {
+    clearTimeout(wallVideoIdleTimer);
+    wallVideoIdleTimer = null;
+    if (wallChoice !== 'video') return;
+    wallVideoIdleTimer = setTimeout(function () {
+      wallVideoIdleTimer = null;
+      if (!wallVideoIdle()) return scheduleWallVideoIdle();
+      if (!wallVideoEl || wallVideoEl.getAttribute('src') === null) return updateWall();
+      // Faded out first, as at a clip's end, rather than cut to black.
+      wallVideoEl.style.opacity = 0;
+      if ($('wall-caption')) $('wall-caption').textContent = '';
+      setTimeout(function () { if (wallVideoIdle()) updateWall(); }, WALL_VIDEO_FADE_S * 1000);
+    }, Math.max(0, WALL_VIDEO_IDLE_MS - (Date.now() - wallVideoInputAt)) + 50);
+  }
+  function noteWallVideoInput() {
+    var wasIdle = wallVideoIdle();
+    wallVideoInputAt = Date.now();
+    scheduleWallVideoIdle();
+    if (wasIdle && wallChoice === 'video') updateWall();
+  }
   // The wallpaper's opacity transition (#wall video) is 2.4 s.
   var WALL_VIDEO_FADE_S = 2.5;
   /*
@@ -6289,6 +6335,8 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
       }
       wallVideoNeedsRestart = true;
     }
+    wallVideoInputAt = Date.now();
+    scheduleWallVideoIdle();
     updateWall();
     // Back from an app, Home is as it was left: the same tile in focus and
     // every row where it was scrolled, brought to rest where it was headed.
@@ -6313,6 +6361,9 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
 
   window.addEventListener('resize', fit);
   document.addEventListener('keydown', noteOkKey, true);
+  document.addEventListener('keydown', noteWallVideoInput, true);
+  document.addEventListener('mousemove', noteWallVideoInput, true);
+  document.addEventListener('onwheel' in document ? 'wheel' : 'mousewheel', noteWallVideoInput, true);
   document.addEventListener('keyup', noteOkKey, true);
   document.addEventListener('keydown', onKeyDown, true);
   document.addEventListener('keyup', onKeyUp, true);

@@ -332,6 +332,8 @@ Enter one direct HTTP or HTTPS video URL per line, or an Aerial `entries.json` p
 
 While an Internet TV channel, a TV channel or an input plays in a tile or full screen, the video wallpaper stops and gives the TV's video decoder to it, and starts again when it ends.
 
+After two minutes without a key or the pointer, the video fades out and stops, so the TV's own screen saver can come on: LG's screen saver never starts over a playing video, which would leave Home's clock and tiles on screen for as long as the TV stays on. On a B8 (webOS 4.4) and a C2 (webOS 9.2) the screen saver followed about two minutes later. Any key, the pointer, or coming back to Home plays the video again. With **Keep the preview on**, the preview still plays on a focused input or channel tile, but is not kept over the video elsewhere, as both cannot have the decoder.
+
 ### Darkening
 
 **Darkening** sets how much the background is darkened behind the clock and the rows, which keeps them easy to read on a bright picture. It is 100% by default; the web dashboard's slider goes down in steps of 5% to **Off**, which shows the picture as it is, and the TV app's **Darkening** row steps through 100%, 75%, 50%, 25% and Off with OK. Behind an animated background it is lighter, as these are dark already. With **None** chosen it is not shown.
@@ -518,7 +520,7 @@ When enabled, resting on an input or a TV channel for a moment shows it live in 
 * **Additional options (webOS 5+):**
     * **Preview sound (off by default):** Plays the sound of the input or channel in the preview. Off, the preview is silent. Switching it from a dashboard changes a preview already playing. Opening a channel full screen always has sound.
     * **Preview in the tile:** Renders the preview inside the hovered tile itself, under the tile's name, rather than beside the clock.
-    * **Keep the preview on:** Runs the preview whenever Glasshouse Home is on screen, showing the last-watched HDMI input or TV channel until another is focused.
+    * **Keep the preview on:** Runs the preview whenever Glasshouse Home is on screen, showing the last-watched HDMI input or TV channel until another is focused. Not with a [video background](#video), which it would keep from playing.
     *(These options are not offered on webOS 4, where background video playback in tiles is unsupported and preview sound was not tried.)*
 
 ### Animations
