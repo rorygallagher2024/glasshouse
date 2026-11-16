@@ -16,6 +16,15 @@ var defaultStyle = { showClock: true, showDate: true, showWeather: true, showCap
 var style = { showClock: false, showWeather: true, infoPosition: 'bottom-right', captionPosition: 'bottom-left',
   clockFont: 'Manrope', textFont: 'Outfit', textColor: '#ffcc88', infoSize: 118, captionSize: 40 };
 
+// Object.assign is not in Node 0.10 and 0.12, which this runs on as the TVs do.
+function merged() {
+  var out = {};
+  for (var i = 0; i < arguments.length; i++) {
+    for (var k in arguments[i]) if (Object.prototype.hasOwnProperty.call(arguments[i], k)) out[k] = arguments[i][k];
+  }
+  return out;
+}
+
 function set(urls, shuffle, videoStyle) {
   var result;
   wallpapers.setVideoSources(urls, shuffle, function (r) { result = r; }, videoStyle);
@@ -31,7 +40,7 @@ assert.deepEqual(wallpapers.videoSources(), {
   items: [
     { url: 'https://media.example/one.mp4', title: '', pointsOfInterest: [] },
     { url: 'http://homeassistant:8123/local/two.webm', title: '', pointsOfInterest: [] }
-  ], shuffle: true, style: Object.assign({}, defaultStyle, style)
+  ], shuffle: true, style: merged({}, defaultStyle, style)
 });
 assert.strictEqual(set(['file:///etc/passwd'], false).ok, false);
 assert.strictEqual(set(['https://user:password@media.example/a.mp4'], false).ok, false);
@@ -45,7 +54,7 @@ assert.deepEqual(wallpapers.videoSources(), {
   items: [
     { url: 'https://media.example/one.mp4', title: '', pointsOfInterest: [] },
     { url: 'http://homeassistant:8123/local/two.webm', title: '', pointsOfInterest: [] }
-  ], shuffle: true, style: Object.assign({}, defaultStyle, style)
+  ], shuffle: true, style: merged({}, defaultStyle, style)
 });
 var aerial = wallpapers.parseVideoEntries({ assets: [
   { accessibilityLabel: 'Coastline', 'url-4K-HDR': 'http://media.example/coast.mov', pointsOfInterest: { '0': 'Above the bay', '12': 'Passing the headland' } },
@@ -67,19 +76,19 @@ assert.strictEqual(feedResult.ok, true, feedResult.error);
 assert.deepEqual(wallpapers.videoSources(), {
   urls: ['http://media.example/coast.mov'],
   items: [{ url: 'http://media.example/coast.mov', title: 'Coastline', pointsOfInterest: [{ at: 0, text: 'Above the bay' }] }],
-  shuffle: false, style: Object.assign({}, defaultStyle, style)
+  shuffle: false, style: merged({}, defaultStyle, style)
 });
 
 wallpapers.init(dir);
 assert.deepEqual(wallpapers.videoSources(), {
   urls: ['http://media.example/coast.mov'],
   items: [{ url: 'http://media.example/coast.mov', title: 'Coastline', pointsOfInterest: [{ at: 0, text: 'Above the bay' }] }],
-  shuffle: false, style: Object.assign({}, defaultStyle, style)
+  shuffle: false, style: merged({}, defaultStyle, style)
 });
 var saved = JSON.parse(fs.readFileSync(path.join(dir, 'home-wallpaper.json'), 'utf8'));
 assert.strictEqual(saved.choice, 'video');
 assert.deepEqual(saved.videoInputs, ['http://media.example/entries.json']);
-assert.deepEqual(saved.videoStyle, Object.assign({}, defaultStyle, style));
+assert.deepEqual(saved.videoStyle, merged({}, defaultStyle, style));
 
 // Shuffle and one detail at a time, as the dashboard saves them: the playlist stays, a bad value is ignored.
 var optionsResult;
@@ -88,7 +97,7 @@ assert.strictEqual(optionsResult.ok, true, optionsResult.error);
 assert.deepEqual(wallpapers.videoSources(), {
   urls: ['http://media.example/coast.mov'],
   items: [{ url: 'http://media.example/coast.mov', title: 'Coastline', pointsOfInterest: [{ at: 0, text: 'Above the bay' }] }],
-  shuffle: true, style: Object.assign({}, defaultStyle, style, { showCaptions: false, captionSize: 56 })
+  shuffle: true, style: merged({}, defaultStyle, style, { showCaptions: false, captionSize: 56 })
 });
 wallpapers.init(dir);
 assert.strictEqual(wallpapers.videoSources().shuffle, true);
