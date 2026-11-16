@@ -67,7 +67,12 @@ async def main():
     configs = json.loads(subprocess.check_output(['node', str(ROOT / 'scripts' / 'discovery-configs.js')]))
     problems = []
 
+    # Not Home Assistant MQTT platforms: the media_player config is read by a separate
+    # integration (homeassistant-mqtt-media-player), which has its own schema.
+    custom_platforms = ('media_player',)
     for c in configs:
+        if c['type'] in custom_platforms:
+            continue
         schema = importlib.import_module('homeassistant.components.mqtt.' + c['type']).DISCOVERY_SCHEMA
         try:
             schema(dict(c['conf'], platform='mqtt'))
@@ -170,7 +175,7 @@ async def main():
     for p in problems:
         print(p)
     print('%d discovery configs checked against Home Assistant %s, %d problem%s'
-          % (len(configs), HA_VERSION, len(problems),
+          % (len([c for c in configs if c['type'] not in custom_platforms]), HA_VERSION, len(problems),
              '' if len(problems) == 1 else 's'))
     return 1 if problems else 0
 

@@ -250,7 +250,13 @@ function renderInputBar() {
     : t('inputs.bar.isOther', 'Set to something else on the Remote tab: {opens}.', { opens: input.opens || t('apps.remoteKeys.doesNothing', 'Does nothing') });
   const layout = (inputsCat && inputsCat.layout) || {};
   const transparent = layout.inputBarTransparent === true;
+  const onOk = layout.inputBarSwitchOnOk === true;
   q('inputs-bar-opts').innerHTML = `<div class="prot-row">
+    <div class="prot-main"><div class="prot-title">${esc(t('inputs.bar.switchOnOk', 'Switch only on OK'))}</div>
+      <div class="prot-desc">${esc(t('inputs.bar.switchOnOkDesc', 'Moving along the bar only picks an input, and OK switches to it. Off, the TV switches a second after the last press.'))}</div></div>
+    <div class="prot-status">${renderToggle({ id: 'inputs-bar-switch-on-ok', cls: onOk ? 'good' : 'idle', label: onOk ? t('common.on', 'On') : t('common.off', 'Off'),
+      on: onOk, disabled: !writable, onclick: `inputsSave({ inputBarSwitchOnOk: ${onOk ? 'false' : 'true'} })` })}</div></div>
+    <div class="prot-row">
     <div class="prot-main"><div class="prot-title">${esc(t('inputs.bar.transparent', 'Transparent tiles'))}</div>
       <div class="prot-desc">${esc(t('inputs.bar.transparentDesc', 'Lets the picture show through the bar\u2019s tiles.'))}</div></div>
     <div class="prot-status">${renderToggle({ id: 'inputs-bar-transparent', cls: transparent ? 'good' : 'idle', label: transparent ? t('common.on', 'On') : t('common.off', 'Off'),

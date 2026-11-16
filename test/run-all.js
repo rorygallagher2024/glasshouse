@@ -8,6 +8,10 @@
  *
  * Usage:  node test/run-all.js [word ...]
  *
+ * TEST_SKIP leaves out the suites whose file name contains one of its
+ * comma-separated words: CI runs test-tvwebctl.js on its own, in a process
+ * namespace (.github/workflows/checks.yml).
+ *
  * With words, only the suites whose file name contains one of them run, as
  * `node test/run-all.js home luna` while working on those. --times lists the
  * slowest suites after the results.
@@ -22,9 +26,11 @@ var testDir = __dirname;
 var args = process.argv.slice(2);
 var showTimes = args.indexOf('--times') !== -1;
 var words = args.filter(function (a) { return a !== '--times'; });
+var skipped = String(process.env.TEST_SKIP || '').split(',').filter(Boolean);
 var suites = fs.readdirSync(testDir)
   .filter(function (f) { return /^test-.*\.js$/.test(f); })
   .filter(function (f) { return !words.length || words.some(function (w) { return f.indexOf(w) !== -1; }); })
+  .filter(function (f) { return !skipped.some(function (w) { return f.indexOf(w) !== -1; }); })
   .sort();
 
 if (suites.length === 0) {
@@ -73,20 +79,6 @@ var left = runs.length;
 var startedAt = Date.now();
 var defaultTimeoutSecs = Number(process.env.TEST_TIMEOUT_SECS) || 60;
 var concurrency = Number(process.env.TEST_CONCURRENCY) || Math.max(4, os.cpus().length * 2);
-/*
- * Suites that never run at the same time. Now and then a CI runner stops
- * answering altogether; the heartbeat of one that did (on Node 20) last showed
- * server-boot and tvwebctl running together and nothing else, as did the live
- * log of an earlier one, and in 60 jobs the freezes came only where the two
- * overlapped (docs/development/testing.md). Kept apart, to see whether the
- * freezes stop.
- */
-var APART = { 'test-server-boot.js': 'test-tvwebctl.js', 'test-tvwebctl.js': 'test-server-boot.js' };
-function heldApart(run) {
-  var other = APART[run.suite];
-  return !!other && runs.some(function (r) { return r.suite === other && r.started && !r.finished; });
-}
-
 // Every suite running, with how long it has run.
 function progressLine() {
   var elapsed = Math.round((Date.now() - startedAt) / 1000);
@@ -116,16 +108,15 @@ var progressTimer = setInterval(function () {
 }, 5000);
 if (progressTimer.unref) progressTimer.unref();
 
-// Starts the next suite in order that is not held apart, if any.
+// Starts the next suite in order, if any.
 function startNext() {
   for (var i = 0; i < runs.length; i++) {
-    if (!runs[i].started && !heldApart(runs[i])) { startRun(runs[i]); return true; }
+    if (!runs[i].started) { startRun(runs[i]); return true; }
   }
   return false;
 }
 
-// As many as are allowed at once: a suite held apart leaves its turn to the
-// next, and takes it back when the one it waits for finishes.
+// As many as are allowed at once.
 function fillSlots() {
   var running = runs.filter(function (r) { return r.started && !r.finished; }).length;
   while (running < concurrency && startNext()) running++;

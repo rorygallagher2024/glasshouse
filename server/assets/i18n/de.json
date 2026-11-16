@@ -978,5 +978,7 @@
  "srv.home.videoUrl": {"text": "Verwende eine HTTP- oder HTTPS-Video-URL ohne Benutzername oder Passwort.", "from": "Use an HTTP or HTTPS video URL without a user name or password."},
  "srv.home.videoManifest": {"text": "Die Videoplaylist enthält kein gültiges JSON.", "from": "The video playlist did not contain valid JSON."},
  "srv.home.videoManifestEmpty": {"text": "Die Videoplaylist enthält keine verwendbaren Videoeinträge.", "from": "The video playlist contained no usable video entries."},
- "srv.home.videoEmpty": {"text": "Füge zuerst mindestens eine Video-URL hinzu.", "from": "Add at least one video URL first."}
+ "srv.home.videoEmpty": {"text": "Füge zuerst mindestens eine Video-URL hinzu.", "from": "Add at least one video URL first."},
+ "inputs.bar.switchOnOk": {"text": "Nur mit OK wechseln", "from": "Switch only on OK"},
+ "inputs.bar.switchOnOkDesc": {"text": "Das Bewegen in der Leiste wählt nur einen Eingang aus, OK wechselt dorthin. Aus: Der Fernseher wechselt eine Sekunde nach dem letzten Tastendruck.", "from": "Moving along the bar only picks an input, and OK switches to it. Off, the TV switches a second after the last press."}
 }

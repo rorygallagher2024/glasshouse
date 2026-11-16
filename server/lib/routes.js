@@ -286,6 +286,9 @@ function validateSettings(j) {
   if (!(iv >= 1000 && iv <= 600000)) e.push('telemetry interval must be between 1000 and 600000 ms');
   else out.mqtt.telemetryIntervalMs = iv;
 
+  // The media_player entity, for owners with the separate integration that reads it. A form without it keeps what is saved.
+  if (typeof m.universalMediaPlayer === 'boolean') out.mqtt.universalMediaPlayer = m.universalMediaPlayer;
+
   out.mqtt.entities = {};
   var me = (m && m.entities) || {};
   for (var c = 0; c < HA_CATEGORIES.length; c++) {
@@ -1137,6 +1140,7 @@ function getSettingsPayload() {
       topicPrefix: mc.topicPrefix || 'lgtv',
       discoveryPrefix: mc.discoveryPrefix || 'homeassistant',
       telemetryIntervalMs: mc.telemetryIntervalMs || 10000,
+      universalMediaPlayer: mc.universalMediaPlayer === true,
       entities: {
         controls: !mc.entities || mc.entities.controls !== false,
         oled: !mc.entities || mc.entities.oled !== false,
@@ -1458,7 +1462,7 @@ function handleIptvRoute(req, res, u, pathname) {
       if (pathname === '/api/iptv/playlists') return iptvModule.playlistsAction(body, reply);
       if (pathname === '/api/iptv/selection') return iptvModule.setSelection(body, reply);
       if (pathname === '/api/iptv/lineup') return iptvModule.setLineup(body, reply);
-      if (pathname === '/api/iptv/lease') return reply(iptvModule.lease(body && body.on === true, body && body.full === true));
+      if (pathname === '/api/iptv/lease') return reply(iptvModule.lease(body && body.on === true, body && body.full === true, body && body.open === true));
       if (pathname === '/api/iptv/event') return reply(iptvModule.streamEvent(body));
       if (pathname === '/api/iptv/output') return reply(iptvModule.setOutput(body));
       if (pathname === '/api/iptv/timeshift') return reply(iptvModule.setTimeshift(body));
@@ -1469,6 +1473,40 @@ function handleIptvRoute(req, res, u, pathname) {
   send(res, 404, JSON.stringify({ ok: false, error: 'not found' }));
 }
 
+// An asset's gzipped copy, or null where it is no smaller. On this thread
+// rather than zlib's worker pool: see loadUI.
+function gzipAsset(file, buf) {
+  try {
+    var gz = zlib.gzipSync(buf);
+    return gz.length < buf.length ? gz : null;
+  } catch (e) {
+    console.warn('assets: could not gzip ' + file + ': ' + e.message + '; serving uncompressed');
+    return null;
+  }
+}
+
+function acceptsGzip(acceptEncoding) {
+  if (!acceptEncoding) return false;
+  var encodings = String(acceptEncoding).split(',');
+  var wildcardAccepted = false;
+  for (var i = 0; i < encodings.length; i++) {
+    var parts = encodings[i].split(';');
+    var coding = parts[0].replace(/^\s+|\s+$/g, '').toLowerCase();
+    if (coding !== 'gzip' && coding !== '*') continue;
+    var quality = 1;
+    for (var j = 1; j < parts.length; j++) {
+      var parameter = parts[j].replace(/^\s+|\s+$/g, '');
+      if (!/^q\s*=/i.test(parameter)) continue;
+      var value = parameter.slice(parameter.indexOf('=') + 1).replace(/^\s+|\s+$/g, '');
+      quality = /^(0(?:\.\d*)?|1(?:\.0*)?)$/.test(value) ? Number(value) : 0;
+      break;
+    }
+    if (coding === 'gzip') return quality > 0;
+    wildcardAccepted = quality > 0;
+  }
+  return wildcardAccepted;
+}
+
 function handleRequest(req, res) {
   var u = parseUrl(req.url);
   var pathname = u.pathname;
@@ -1476,7 +1514,7 @@ function handleRequest(req, res) {
 
   if (pathname === '/' || pathname === '/index.html') {
     if (UI_HTML) {
-      var gzip = !!UI_HTML_GZ && (req.headers['accept-encoding'] || '').indexOf('gzip') !== -1;
+      var gzip = !!UI_HTML_GZ && acceptsGzip(req.headers && req.headers['accept-encoding']);
       // no-cache, not no-store: the browser keeps the page and asks each
       // time, and an unchanged one comes back as a 304 with no body.
       var uiHeaders = {
@@ -1548,6 +1586,9 @@ function handleRequest(req, res) {
     if (!file) return send(res, 404, JSON.stringify({ ok: false, error: 'not found' }));
     var ext = path.extname(file).toLowerCase();
     var mime = MIME[ext] || 'application/octet-stream';
+    // Node 0.10 has no gzipSync, and there nothing is compressed or varies.
+    var compressible = (ext === '.html' || ext === '.css' || ext === '.js' || ext === '.json' || ext === '.svg') &&
+      typeof zlib.gzipSync === 'function';
     // The strings and their translations change with each release as the pages
     // do, so a day-old copy beside a new page would show text the page no
     // longer has, or miss text it now does.
@@ -1555,27 +1596,41 @@ function handleRequest(req, res) {
     // newer one calls what an older copy lacks, and the playlist order Home calls.
     var fresh = ext === '.html' || ext === '.json' || /(^|\/)(i18n|home-kit|video-order)\.js$/.test(file);
     var cacheHdr = fresh ? 'no-cache' : 'public, max-age=86400';
-    var respondWithBuf = function (buf) {
-      var etag = '"' + (displayVersionStr || '1') + '-' + buf.length.toString(16) + '"';
+    var respondWithEntry = function (entry) {
+      var etag = '"' + (displayVersionStr || '1') + '-' + entry.raw.length.toString(16) + '"';
+      var assetHeaders = { 'ETag': etag, 'Cache-Control': cacheHdr };
+      if (compressible) assetHeaders['Vary'] = 'Accept-Encoding';
       if (req.headers && req.headers['if-none-match'] === etag) {
-        res.writeHead(304, { 'ETag': etag, 'Cache-Control': cacheHdr });
+        res.writeHead(304, assetHeaders);
         return res.end();
       }
-      res.writeHead(200, {
-        'Content-Type': mime,
-        'Content-Length': buf.length,
-        'Cache-Control': cacheHdr,
-        'ETag': etag
-      });
-      res.end(buf);
+      /*
+       * Only for a browser elsewhere on the network. The TV's own pages come
+       * over loopback, where fewer bytes save nothing, and gzipSync holds this
+       * thread: 126 to 161 ms for a translation file and 78 ms for home.html on
+       * a B8 (webOS 4.4.3, node 0.12.2), once each after a start. So it is done
+       * when a request from the network first asks for it, not as a file is read.
+       */
+      var wantGz = compressible && !fromTV(req) && acceptsGzip(req.headers && req.headers['accept-encoding']);
+      if (wantGz && entry.gz === undefined) entry.gz = gzipAsset(file, entry.raw);
+      var useGz = wantGz && !!entry.gz;
+      var outBuf = useGz ? entry.gz : entry.raw;
+      assetHeaders['Content-Type'] = mime;
+      assetHeaders['Content-Length'] = outBuf.length;
+      if (useGz) assetHeaders['Content-Encoding'] = 'gzip';
+      res.writeHead(200, assetHeaders);
+      res.end(outBuf);
     };
     if (ASSET_CACHE[file]) {
-      return respondWithBuf(ASSET_CACHE[file]);
+      return respondWithEntry(ASSET_CACHE[file]);
     }
     return fs.readFile(file, function (e, buf) {
       if (e) return send(res, 500, JSON.stringify({ ok: false, error: 'read failed' }));
-      ASSET_CACHE[file] = buf;
-      respondWithBuf(buf);
+      // gz: undefined until a request from the network wants it, then the
+      // compressed copy, or null where gzip saves nothing.
+      var entry = { raw: buf, gz: undefined };
+      ASSET_CACHE[file] = entry;
+      respondWithEntry(entry);
     });
   }
 
@@ -2343,9 +2398,10 @@ function handleRequest(req, res) {
     }
     return readJsonBody(req, res, function (body) {
       if (!quickAccessModule) return send(res, 503, JSON.stringify({ ok: false, error: 'quick access module unavailable' }));
-      quickAccessModule.setQuickAccess(body && body.key, body && body.id, function (r) {
-        send(res, r && r.ok ? 200 : 400, JSON.stringify(r));
-      });
+      var reply = function (r) { send(res, r && r.ok ? 200 : 400, JSON.stringify(r)); };
+      // { key, lg: true }: the key as LG has it (#1539).
+      if (body && body.lg === true) return quickAccessModule.resetQuickAccess(body.key, reply);
+      quickAccessModule.setQuickAccess(body && body.key, body && body.id, reply);
     });
   }
 

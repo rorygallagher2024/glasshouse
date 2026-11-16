@@ -753,6 +753,8 @@
  "mqtt.icons": {"text": "Ikony aplikacji", "from": "App icons"},
  "mqtt.icons.desc": {"text": "Pozwala programowi uruchamiającemu lub panelowi na innym urządzeniu pokazywać aplikacje tego telewizora z ich własnymi ikonami. Launch App w Home Assistant podaje wtedy adres każdej ikony. Każdy w sieci może pobrać ikony, a tym samym sprawdzić, jakie aplikacje są zainstalowane.", "from": "Lets a launcher or dashboard on another device show this TV's apps with their own icons. Launch App in Home Assistant then lists each icon's address. Anyone on the network can fetch the icons, and so tell which apps are installed."},
  "mqtt.icons.toggle": {"text": "Udostępniaj ikony aplikacji", "from": "Share app icons"},
+ "mqtt.mediaPlayer.toggle": {"text": "Odtwarzacz multimedialny", "from": "Media player"},
+ "mqtt.mediaPlayer.desc": {"text": "Jedna encja odtwarzacza multimedialnego z zasilaniem, głośnością, wyjściem dźwięku, odtwarzaniem, wejściami i aplikacjami telewizora jako źródłami oraz ikoną bieżącej aplikacji jako okładką. Home Assistant pokazuje ją tylko z zainstalowaną integracją MQTT Media Player (grzegorz914/homeassistant-mqtt-media-player). Ikony wymagają włączonej opcji Udostępniaj ikony aplikacji.", "from": "One media player entity with power, volume, sound output, playback, the TV's inputs and apps as sources and the current app's icon as its cover. Home Assistant shows it only with the MQTT Media Player integration (grzegorz914/homeassistant-mqtt-media-player) installed. The icons need Share app icons on."},
  "mqtt.interval": {"text": "Interwał telemetrii", "from": "Telemetry interval"},
  "mqtt.interval.hint": {"text": "Milisekundy między publikacjami.", "from": "Milliseconds between publishes."},
  "mqtt.net.latency": {"text": "{ms} ms", "from": "{ms} ms"},
@@ -3335,5 +3337,7 @@
  "srv.home.videoUrl": {"text": "Użyj adresu HTTP lub HTTPS bez nazwy użytkownika i hasła.", "from": "Use an HTTP or HTTPS video URL without a user name or password."},
  "srv.home.videoManifest": {"text": "Playlista wideo nie zawiera prawidłowego JSON-a.", "from": "The video playlist did not contain valid JSON."},
  "srv.home.videoManifestEmpty": {"text": "Playlista wideo nie zawiera użytecznych wpisów wideo.", "from": "The video playlist contained no usable video entries."},
- "srv.home.videoEmpty": {"text": "Najpierw dodaj co najmniej jeden adres URL wideo.", "from": "Add at least one video URL first."}
+ "srv.home.videoEmpty": {"text": "Najpierw dodaj co najmniej jeden adres URL wideo.", "from": "Add at least one video URL first."},
+ "inputs.bar.switchOnOk": {"text": "Przełączaj tylko przyciskiem OK", "from": "Switch only on OK"},
+ "inputs.bar.switchOnOkDesc": {"text": "Przesuwanie po pasku tylko wybiera wejście, a OK na nie przełącza. Wyłączone: telewizor przełącza sekundę po ostatnim naciśnięciu.", "from": "Moving along the bar only picks an input, and OK switches to it. Off, the TV switches a second after the last press."}
 }

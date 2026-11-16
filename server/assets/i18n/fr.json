@@ -1288,6 +1288,8 @@
  "mqtt.icons": {"from": "App icons", "text": "Icônes des apps"},
  "mqtt.icons.desc": {"from": "Lets a launcher or dashboard on another device show this TV's apps with their own icons. Launch App in Home Assistant then lists each icon's address. Anyone on the network can fetch the icons, and so tell which apps are installed.", "text": "Permet à un lanceur ou tableau de bord sur un autre appareil d'afficher les apps de cette TV avec leurs propres icônes. Lancer une app dans Home Assistant liste alors l'adresse de chaque icône. Quiconque sur le réseau peut récupérer les icônes, et ainsi savoir quelles apps sont installées."},
  "mqtt.icons.toggle": {"from": "Share app icons", "text": "Partager les icônes des apps"},
+ "mqtt.mediaPlayer.toggle": {"from": "Media player", "text": "Lecteur multimédia"},
+ "mqtt.mediaPlayer.desc": {"from": "One media player entity with power, volume, sound output, playback, the TV's inputs and apps as sources and the current app's icon as its cover. Home Assistant shows it only with the MQTT Media Player integration (grzegorz914/homeassistant-mqtt-media-player) installed. The icons need Share app icons on.", "text": "Une entité lecteur multimédia avec alimentation, volume, sortie audio, lecture, les entrées et apps du téléviseur comme sources et l’icône de l’app en cours comme pochette. Home Assistant ne l’affiche qu’avec l’intégration MQTT Media Player (grzegorz914/homeassistant-mqtt-media-player) installée. Les icônes nécessitent Partager les icônes des apps activé."},
  "mqtt.interval": {"from": "Telemetry interval", "text": "Intervalle de télémétrie"},
  "mqtt.interval.hint": {"from": "Milliseconds between publishes.", "text": "Millisecondes entre les publications."},
  "mqtt.net.latency": {"from": "{ms} ms", "text": "{ms} ms"},
@@ -3335,5 +3337,7 @@
  "srv.home.videoUrl": {"text": "Utilisez une URL vidéo HTTP ou HTTPS sans nom d’utilisateur ni mot de passe.", "from": "Use an HTTP or HTTPS video URL without a user name or password."},
  "srv.home.videoManifest": {"text": "La liste vidéo ne contient pas de JSON valide.", "from": "The video playlist did not contain valid JSON."},
  "srv.home.videoManifestEmpty": {"text": "La liste vidéo ne contient aucune entrée vidéo utilisable.", "from": "The video playlist contained no usable video entries."},
- "srv.home.videoEmpty": {"text": "Ajoutez d’abord au moins une URL vidéo.", "from": "Add at least one video URL first."}
+ "srv.home.videoEmpty": {"text": "Ajoutez d’abord au moins une URL vidéo.", "from": "Add at least one video URL first."},
+ "inputs.bar.switchOnOk": {"text": "Changer uniquement avec OK", "from": "Switch only on OK"},
+ "inputs.bar.switchOnOkDesc": {"text": "Se déplacer dans la barre ne fait que choisir une entrée, et OK y bascule. Désactivé, la TV bascule une seconde après le dernier appui.", "from": "Moving along the bar only picks an input, and OK switches to it. Off, the TV switches a second after the last press."}
 }

@@ -1725,7 +1725,8 @@ button.tools-jump:active{background:var(--w80)}
 #home-more:not(.for-bar) .home-bar-only, #home-more.for-bar .home-launcher-only{display:none}
 #home-more.for-launcher .home-row:not([data-kind="app"]),
 #home-more.for-launcher .home-row-move{display:none}
-#home-custom.lg-home .home-gh-row{display:none}
+#home-custom.lg-home .home-gh-row:not(.home-bar-row),
+#home-custom.lg-home:not(.for-bar) .home-bar-row{display:none}
 /* Each group's last row draws no line, as the next group's heading follows. */
 .home-custom-table .prot-row.last{border-bottom:0}
 .home-group+.home-group .pv-g,#home-more>.pv-g{margin:34px 0 6px}
