@@ -27,7 +27,7 @@ process.on('exit', function () {
   });
   fs.rmdirSync(directory);
 });
-screenshots.init({ directory: directory });
+screenshots.init({ directory: directory, maxMiB: 64 });
 var config = { allowControl: true, token: 'screenshot-test-token' };
 routes.init({ config: config, screenshots: screenshots });
 var server = http.createServer(function (req, res) {
@@ -57,7 +57,7 @@ step(function list(next) {
     assert.strictEqual(res.statusCode, 200);
     assert.strictEqual(result.ok, true);
     assert.strictEqual(result.writable, true);
-    assert.strictEqual(result.maxBytes, 32 * 1024 * 1024);
+    assert.strictEqual(result.maxBytes, 64 * 1024 * 1024);
     assert.deepEqual(result.screenshots, [
       { id: manualId, size: png.length, modified: new Date(2000).toISOString() },
       { id: remoteId, size: png.length, modified: new Date(1000).toISOString() }

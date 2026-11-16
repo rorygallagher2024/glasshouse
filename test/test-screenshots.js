@@ -86,7 +86,25 @@ function checkCleanup() {
           next();
         });
       });
-
+    },
+    function configuredLimit(next) {
+      var limits = [64, 16, 0, -1, '64', null, Infinity, NaN, 1e308, undefined, { toString: null, valueOf: null }];
+      (function check() {
+        if (!limits.length) return next();
+        var limit = limits.shift();
+        reset();
+        ['a', 'b', 'c'].forEach(function (id, index) { make('capture_' + id + '.png', 16, index + 1); });
+        screenshots.init({ directory: directory, maxMiB: limit, now: function () { return 100000; } });
+        screenshots.cleanup(function (r) {
+          assert.strictEqual(r.ok, true);
+          var kept = ['a', 'b', 'c'].filter(function (id) { return fs.existsSync(file('capture_' + id + '.png')); });
+          assert.deepEqual(kept, limit === 64 ? ['a', 'b', 'c'] : limit === 16 ? ['c'] : ['b', 'c'], 'configured budget or 32 MiB fallback');
+          screenshots.list(function (listed) {
+            assert.strictEqual(listed.maxBytes, (limit === 64 ? 64 : limit === 16 ? 16 : 32) * 1024 * 1024);
+            check();
+          });
+        });
+      })();
     }
   ];
   (function next() {

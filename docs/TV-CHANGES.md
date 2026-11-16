@@ -293,8 +293,8 @@ in the TV app.
 Screenshot assignments write PNGs only under `/tmp/capture_*.png`.
 Captures disappear when the TV restarts.
 
-While the server runs, cleanup targets 32 MiB, deleting the oldest matching
-regular files first.
+While the server runs, cleanup targets `screenshots.maxMiB` in `config.json`
+(32 MiB by default), deleting the oldest matching regular files first.
 It keeps the newest capture and files modified within 15 seconds, and uses the
 same checked deletion as the API.
 Cleanup runs at startup and every 20 seconds; errors are logged

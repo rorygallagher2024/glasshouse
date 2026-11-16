@@ -41,7 +41,8 @@ var CONFIG = {
   ntp: { server: '192.168.8.1', port: 123 },
   history: { enabled: true },
   prometheus: { enabled: true },
-  update: { check: false, intervalHours: 24 }
+  update: { check: false, intervalHours: 24 },
+  screenshots: { maxMiB: 32 }
 };
 
 // The list of apps to install is kept here, not in /var/lib/tvweb.
@@ -61,7 +62,8 @@ var PENDING = require('path').join(require('os').tmpdir(), 'gh-restore-apps-earl
       ntp: { server: '192.168.8.1', port: 123 },
       history: { enabled: true },
       prometheus: { enabled: true },
-      update: { check: false }
+      update: { check: false },
+      screenshots: { maxMiB: 32 }
     }, 'no access, MQTT, device or experimental settings, and no syslog hostname');
     var text = JSON.stringify(b);
     assert.strictEqual(text.indexOf('secret'), -1, 'no token');
@@ -91,7 +93,8 @@ var PENDING = require('path').join(require('os').tmpdir(), 'gh-restore-apps-earl
       history: { enabled: true },
       prometheus: { enabled: 'yes' },
       token: 'other', port: 9999, allowControl: false, host: '0.0.0.0',
-      mqtt: { topicPrefix: 'lgtv' }, allowNetworkDebugger: true
+      mqtt: { topicPrefix: 'lgtv' }, allowNetworkDebugger: true,
+      screenshots: { maxMiB: 64 }
     }
   }, function (r) {
     assert.strictEqual(r.ok, true);
@@ -102,8 +105,8 @@ var PENDING = require('path').join(require('os').tmpdir(), 'gh-restore-apps-earl
       { id: 'avSync', reason: 'value' }, { id: 'deepColor2', reason: 'inactive' }, { id: 'eArc', reason: 'absent' }
     ]);
     assert.deepEqual(r.lg.failed, [{ id: 'refuses', error: 'refused' }]);
-    assert.deepEqual(written, { ntp: { server: '192.168.8.2' } }, 'only an allowed setting that differs is written');
-    assert.deepEqual(r.glasshouse, ['ntp.server']);
+    assert.deepEqual(written, { ntp: { server: '192.168.8.2' }, screenshots: { maxMiB: 64 } }, 'only allowed settings that differ are written');
+    assert.deepEqual(r.glasshouse, ['ntp.server', 'screenshots.maxMiB']);
     assert.strictEqual(r.restart, true);
     console.log('  ✓ a restore sets what this TV has and offers, and says why it skipped the rest');
     console.log('  ✓ a backup cannot change who can reach or control the server');
@@ -120,7 +123,7 @@ var PENDING = require('path').join(require('os').tmpdir(), 'gh-restore-apps-earl
     assert.strictEqual(r.ok, false, 'from a newer Glasshouse');
   });
   assert.deepEqual(lg.sets, [], 'nothing set');
-  backup.restore({ format: 'glasshouse-backup', version: 1, lg: { homePromotion: false } }, function (r) {
+  backup.restore({ format: 'glasshouse-backup', version: 1, lg: { homePromotion: false }, glasshouse: { screenshots: { maxMiB: 0 } } }, function (r) {
     assert.strictEqual(r.ok, true);
     assert.strictEqual(r.restart, false, 'nothing of Glasshouse\'s changed, so no restart');
   });

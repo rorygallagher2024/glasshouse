@@ -8,7 +8,7 @@ Open **Screenshots** to view captures from an assigned physical remote key, newe
 
 Each card shows the capture time and resolution; hover over the image for its filename. Select a loaded preview to enlarge it. Close with **×**, outside the image or Escape; keyboard focus returns to the preview. **Download** shows the file size and saves the original PNG and filename.
 
-While the server runs, old captures are removed oldest first to target 32 MiB of saved images. The total size and target appear beside **Clear all**. The newest capture and recently modified files are kept. Images also disappear when the TV restarts.
+While the server runs, old captures are removed oldest first to target 32 MiB of saved images. The total size and target appear beside **Clear all**. Set `"screenshots": { "maxMiB": 64 }` in `/var/lib/tvweb/config.json` and restart the server to change the target. The value must be positive; missing or invalid values use 32 MiB. The newest capture and recently modified files are kept. Images also disappear when the TV restarts.
 
 The gallery refreshes every three seconds while open and visible, pausing during deletion and viewing. **Refresh** clears the previous result, reloads the list and retries failed previews. Already loaded images are reused when refreshing or returning to the gallery. Deleting an image keeps the remaining previews in place. Viewing, downloading and refreshing work with controls disabled.
 
