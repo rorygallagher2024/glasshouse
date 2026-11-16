@@ -269,6 +269,15 @@ steps.push(function () {
   util.writeJsonAtomic(tmpFile, { level: 50, at: 1234567, mac: REMOTE.address, step: 'mid' });
   rb.init({ stateFile: tmpFile });
   assert.strictEqual(rb.details({ mac: REMOTE.address }).batteryStep, 'mid', 'the step is kept across a restart');
+  util.writeJsonAtomic(tmpFile, { level: 50, at: 1234567, mac: REMOTE.address, source: 'mrcu' });
+  rb.init({ stateFile: tmpFile });
+  assert.strictEqual(rb.details({ mac: REMOTE.address }).batteryStep, 'mid', 'a file from before steps were kept');
+  util.writeJsonAtomic(tmpFile, { level: 50, at: 1234567, mac: REMOTE.address, source: 'mrcu', step: null });
+  rb.init({ stateFile: tmpFile });
+  assert.strictEqual(rb.details({ mac: REMOTE.address }).batteryStep, null, 'but not one that says it was a percentage');
+  util.writeJsonAtomic(tmpFile, { level: 50, at: 1234567, mac: REMOTE.address, source: 'bluetooth' });
+  rb.init({ stateFile: tmpFile });
+  assert.strictEqual(rb.details({ mac: REMOTE.address }).batteryStep, null, 'nor a Bluetooth reading');
   util.writeJsonAtomic(tmpFile, { level: 75 });
   rb.init({ stateFile: tmpFile });
   assert.strictEqual(rb.level(REMOTE.address), null, 'unbound cached readings cannot follow a new remote');

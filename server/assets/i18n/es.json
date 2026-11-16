@@ -2469,7 +2469,7 @@
  "home.remoteBattery.lowStep": {"text": "Baja", "from": "Low"},
  "home.remoteBattery.mid": {"text": "Media", "from": "Medium"},
  "home.remoteBattery.low": {"text": "Cuando esté baja", "from": "When low"},
- "home.remoteBatteryDesc": {"text": "Tras la fecha: la batería del Magic Remote, según su último aviso. «Cuando esté baja» solo la muestra cuando baja al 20 %.", "from": "After the date: the Magic Remote’s battery, as it last reported it. When low shows it only once it is down to 20%."},
+ "home.remoteBatteryDesc": {"text": "Tras la fecha: la batería del Magic Remote, según su último aviso. «Cuando esté baja» solo la muestra cuando baja al 20 %, o en Baja en un mando que solo indica Alta, Media o Baja.", "from": "After the date: the Magic Remote’s battery, as it last reported it. When low shows it only once it is down to 20%, or at Low on a remote that reports only High, Medium or Low."},
  "home.previewSound": {"text": "Sonido de la vista previa", "from": "Preview sound"},
  "home.previewSoundDesc": {"text": "La vista previa reproduce el sonido de la entrada o el canal que muestra, en lugar de ninguno. El cambio se aplica también a una vista previa que ya se está reproduciendo.", "from": "The preview plays the sound of the input or channel it shows, rather than none. Switching it changes a preview already playing."},
  "home.search": {"text": "Buscar", "from": "Search"},

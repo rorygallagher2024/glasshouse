@@ -745,7 +745,7 @@
  "home.remoteBattery.lowStep": {"text": "Faible", "from": "Low"},
  "home.remoteBattery.mid": {"text": "Moyen", "from": "Medium"},
  "home.remoteBattery.low": {"text": "Quand elles sont faibles", "from": "When low"},
- "home.remoteBatteryDesc": {"text": "Après la date : le niveau des piles de la Magic Remote, tel qu’elle l’a signalé en dernier. « Quand elles sont faibles » ne l’affiche qu’à partir de 20 %.", "from": "After the date: the Magic Remote’s battery, as it last reported it. When low shows it only once it is down to 20%."},
+ "home.remoteBatteryDesc": {"text": "Après la date : le niveau des piles de la Magic Remote, tel qu’elle l’a signalé en dernier. « Quand elles sont faibles » ne l’affiche qu’à partir de 20 %, ou à Faible sur une télécommande qui n’indique que Élevé, Moyen ou Faible.", "from": "After the date: the Magic Remote’s battery, as it last reported it. When low shows it only once it is down to 20%, or at Low on a remote that reports only High, Medium or Low."},
  "home.previewSound": {"from": "Preview sound", "text": "Son de l'aperçu"},
  "home.previewSoundDesc": {"from": "The preview plays the sound of the input or channel it shows, rather than none. Switching it changes a preview already playing.", "text": "L'aperçu diffuse le son de l'entrée ou de la chaîne qu'il affiche, au lieu d'aucun son. Le changement s'applique aussi à un aperçu déjà en cours."},
  "home.recCount": {"from": "{n} on Glasshouse Home now", "text": "{n} sur Glasshouse Home maintenant"},

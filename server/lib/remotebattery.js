@@ -162,6 +162,18 @@ function deviceStepFrom(info) {
   return STEPS.indexOf(step) !== -1 ? step : null;
 }
 
+/*
+ * The step a saved reading stands in for. A file from before steps were kept
+ * has no step field: there getDeviceInfo's 100, 50 or 10 is taken as the step,
+ * as a step remote would otherwise show a percentage until its next read. A
+ * webOS 4 remote's true 100, 50 or 10 then reads High, Medium or Low until then.
+ */
+function savedStep(saved) {
+  if (STEPS.indexOf(saved.step) !== -1) return saved.step;
+  if (saved.step !== undefined || saved.source !== 'mrcu') return null;
+  return { 100: 'high', 50: 'mid', 10: 'low' }[saved.level] || null;
+}
+
 function saveLevel(level, mac, source, step) {
   step = step || null;
   var changed = !last || last.level !== level || !sameAddress(last.mac, mac);
@@ -402,7 +414,7 @@ function init(opts) {
   if (saved && validLevel(saved.level)) {
     var at = typeof saved.at === 'number' && isFinite(saved.at) && saved.at > 0 ? saved.at : null;
     last = { level: saved.level, at: at, mac: saved.mac || null, source: saved.source || null,
-      step: STEPS.indexOf(saved.step) !== -1 ? saved.step : null };
+      step: savedStep(saved) };
     if (typeof saved.lowStrength === 'boolean') lowStrength = saved.lowStrength;
   } else {
     last = null;

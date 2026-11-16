@@ -2543,7 +2543,7 @@
  "home.remoteBattery.lowStep": {"text": "Низкий", "from": "Low"},
  "home.remoteBattery.mid": {"text": "Средний", "from": "Medium"},
  "home.remoteBattery.low": {"text": "Когда разряжается", "from": "When low"},
- "home.remoteBatteryDesc": {"text": "После даты: заряд батареи Magic Remote по последним данным. «Когда разряжается» показывает его, только когда заряд падает до 20%.", "from": "After the date: the Magic Remote’s battery, as it last reported it. When low shows it only once it is down to 20%."},
+ "home.remoteBatteryDesc": {"text": "После даты: заряд батареи Magic Remote по последним данным. «Когда разряжается» показывает его, только когда заряд падает до 20%, или на уровне «Низкий» у пульта, который сообщает только «Высокий», «Средний» или «Низкий».", "from": "After the date: the Magic Remote’s battery, as it last reported it. When low shows it only once it is down to 20%, or at Low on a remote that reports only High, Medium or Low."},
  "home.previewSound": {"text": "Звук предпросмотра", "from": "Preview sound"},
  "home.previewSoundDesc": {"text": "Предпросмотр воспроизводит звук показываемого входа или канала, а не остаётся беззвучным. Изменение действует и на уже идущий предпросмотр.", "from": "The preview plays the sound of the input or channel it shows, rather than none. Switching it changes a preview already playing."},
  "server.tvName.desc": {"text": "Показывается под Glasshouse на боковой панели и как имя телевизора в Home Assistant. Если оставить пустым, это LG и модель.", "from": "Shown under Glasshouse in the sidebar and as the TV's name in Home Assistant. Left empty, it is LG and the model."},

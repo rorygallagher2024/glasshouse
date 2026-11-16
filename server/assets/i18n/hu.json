@@ -2543,7 +2543,7 @@
  "home.remoteBattery.lowStep": {"text": "Alacsony", "from": "Low"},
  "home.remoteBattery.mid": {"text": "Közepes", "from": "Medium"},
  "home.remoteBattery.low": {"text": "Ha lemerülőben", "from": "When low"},
- "home.remoteBatteryDesc": {"text": "A dátum után: a Magic Remote elemének töltöttsége, ahogy legutóbb jelezte. A „Ha lemerülőben” csak 20% alatt jeleníti meg.", "from": "After the date: the Magic Remote’s battery, as it last reported it. When low shows it only once it is down to 20%."},
+ "home.remoteBatteryDesc": {"text": "A dátum után: a Magic Remote elemének töltöttsége, ahogy legutóbb jelezte. A „Ha lemerülőben” csak 20% alatt jeleníti meg, illetve Alacsony szinten olyan távirányítónál, amely csak Magas, Közepes vagy Alacsony szintet jelez.", "from": "After the date: the Magic Remote’s battery, as it last reported it. When low shows it only once it is down to 20%, or at Low on a remote that reports only High, Medium or Low."},
  "home.previewSound": {"text": "Előnézet hangja", "from": "Preview sound"},
  "home.previewSoundDesc": {"text": "Az előnézet lejátssza a mutatott bemenet vagy csatorna hangját, ahelyett hogy néma maradna. A váltás a már futó előnézetre is érvényes.", "from": "The preview plays the sound of the input or channel it shows, rather than none. Switching it changes a preview already playing."},
  "server.tvName.desc": {"text": "Az oldalsávban a Glasshouse alatt és a Home Assistantban a TV neveként jelenik meg. Üresen hagyva LG és a típus.", "from": "Shown under Glasshouse in the sidebar and as the TV's name in Home Assistant. Left empty, it is LG and the model."},

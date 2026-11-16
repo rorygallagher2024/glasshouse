@@ -1331,7 +1331,7 @@ function glasshouseHomeRows(d) {
     r.push({ label: t('home.remoteBattery', 'Remote battery'), key: 'remoteBattery', value: rbNames[rbNow], cls: rbNow === 'off' ? 'off' : 'on',
              act: can ? 'homeRemoteBattery' : null,
              press: t('tv.press.change', 'Press OK to change'),
-             hint: t('home.remoteBatteryDesc', 'After the date: the Magic Remote\u2019s battery, as it last reported it. When low shows it only once it is down to 20%.') });
+             hint: t('home.remoteBatteryDesc', 'After the date: the Magic Remote\u2019s battery, as it last reported it. When low shows it only once it is down to 20%, or at Low on a remote that reports only High, Medium or Low.') });
     }
     var moving = homeMotionRows(d).filter(function (m) { return m.on; }).length;
     r.push({ label: t('home.group.motion', 'Animations'), value: t('tv.home.someOn', '{n} of {total} on', { n: moving, total: homeMotionRows(d).length }),
