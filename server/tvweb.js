@@ -148,6 +148,7 @@ var backupParts = require('./lib/backup-parts');
 var resettime = require('./lib/resettime');
 var power = require('./lib/power');
 var names = require('./lib/names');
+var screenshots = require('./lib/screenshots');
 var msg = say.msg;
 var luna = lunaTransport.call;
 
@@ -1114,6 +1115,7 @@ function appsChanged() {
 pointer.init({ luna: luna, hasService: lunaTransport.hasService, config: CONFIG,
   onActivity: function () { screensavers.pointerUsed(); },
   authed: function (req) { return routes.authed(url.parse(req.url || '/', true).query, req); } });
+screenshots.init({});
 routes.init({
   config: CONFIG,
   audioLevels: audioLevels,
@@ -1185,7 +1187,8 @@ routes.init({
   appsChanged: appsChanged,
   logs: logsModule,
   version: TVWEB_VERSION,
-  displayVersion: TVWEB_DISPLAY_VERSION
+  displayVersion: TVWEB_DISPLAY_VERSION,
+  screenshots: screenshots
 });
 
 backupParts.init({
@@ -2250,6 +2253,7 @@ var BEAT_FILE = '/var/run/tvweb.beat';
    32-bit, and a 13-digit millisecond stamp overflows it into nonsense. */
 function heartbeat() {
   fs.writeFile(BEAT_FILE, String(Math.floor(Date.now() / 1000)), function () {});
+  screenshots.cleanup();
 }
 
 /*
