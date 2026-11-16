@@ -35,21 +35,24 @@ var now = 1000000;
 var timers = [];
 var attrs = { src: 'http://media.example/coast.mov' };
 var wallVideoEl = {
-  style: { opacity: '0.55' },
+  style: { visibility: 'visible' },
   getAttribute: function (k) { return attrs.hasOwnProperty(k) ? attrs[k] : null; }
 };
 var caption = { textContent: 'Above the bay' };
+// The black shade over the video, at 0.45 while it shows at 0.55.
+var shade = { style: { opacity: 0.45 } };
 var run = sandbox({
   Date: { now: function () { return now; } },
-  wallVideoEl: wallVideoEl, caption: caption,
+  wallVideoEl: wallVideoEl, caption: caption, shade: shade,
   wallChoice: 'video', wallVideoInputAt: now, wallVideoIdleTimer: null,
   WALL_VIDEO_FADE_S: 2.5, walls: 0,
   setTimeout: function (fn, ms) { timers.push({ fn: fn, at: now + ms }); return timers.length; },
   clearTimeout: function (id) { if (id && timers[id - 1]) timers[id - 1].fn = null; }
 },
-  'function $(id) { return id === "wall-caption" ? caption : null; }' +
+  'function $(id) { return id === "wall-caption" ? caption : id === "wallShade" ? shade : null; }' +
   'function updateWall() { walls++; }' +
-  src.slice(start, end));
+  src.slice(start, end) +
+  src.slice(src.indexOf('  /*\n   * How much of the wallpaper video shows'), src.indexOf('  function unloadWallVideo()')));
 
 // Moves the clock on, running each timer that falls due on the way.
 function advance(ms) {
@@ -69,19 +72,20 @@ function advance(ms) {
 run('scheduleWallVideoIdle()');
 advance(119000);
 assert.strictEqual(run('wallVideoIdle()'), false, 'not idle before two minutes');
-assert.strictEqual(wallVideoEl.style.opacity, '0.55', 'the video plays on');
+assert.strictEqual(shade.style.opacity, 0.45, 'the video plays on');
 console.log('  ✓ plays on for two minutes without a key');
 
 // A key at 1:59 starts the two minutes again.
 run('noteWallVideoInput()');
 assert.strictEqual(run('walls'), 0, 'a key while it plays changes nothing on screen');
 advance(119000);
-assert.strictEqual(wallVideoEl.style.opacity, '0.55', 'still playing 1:59 after the key');
+assert.strictEqual(shade.style.opacity, 0.45, 'still playing 1:59 after the key');
 console.log('  ✓ a key starts the two minutes again');
 
 advance(2000);
 assert.strictEqual(run('wallVideoIdle()'), true, 'idle after two minutes');
-assert.strictEqual(wallVideoEl.style.opacity, 0, 'faded out first');
+assert.strictEqual(shade.style.opacity, 1, 'faded out first, under the shade');
+assert.strictEqual(wallVideoEl.style.visibility, 'visible', 'the video still there while it fades');
 assert.strictEqual(caption.textContent, '', 'its caption with it');
 assert.strictEqual(run('walls'), 0, 'not yet let go, while it fades');
 advance(2600);
@@ -95,7 +99,7 @@ console.log('  ✓ a key plays it again');
 
 // A key during the fade keeps it.
 advance(120100);
-assert.strictEqual(wallVideoEl.style.opacity, 0, 'fading again');
+assert.strictEqual(shade.style.opacity, 1, 'fading again');
 var walls = run('walls');
 run('noteWallVideoInput()');
 advance(2600);
