@@ -2495,3 +2495,19 @@ html.remote-view #disc-pointer .pointer-pad{min-height:min(52vh,420px)}
 html.remote-asleep .rp-asleep{display:block}
 .rp button:disabled{opacity:.32;cursor:default;transform:none;background:transparent}
 html.remote-asleep #disc-pointer,html.remote-asleep #disc-keyboard{opacity:.4;pointer-events:none}
+
+#disc-screenshots>summary{border-top:0;border-bottom:1px solid var(--w25);padding:0 0 12px;margin-bottom:26px}
+.screenshot-storage{display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+#screenshots-storage{margin:0;white-space:nowrap}
+#screenshots-message{min-height:1.4em}
+.screenshot-delete.screenshot-pending:disabled{opacity:1;color:var(--red);border-color:var(--red)}
+.screenshot-gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,280px),1fr));gap:16px;margin:16px 0 28px}
+.screenshot-card{min-width:0;border:1px solid var(--w25);padding:12px}
+.screenshot-preview{display:block;width:100%;padding:0;border:0;background:none;margin-bottom:12px}
+.screenshot-card img{display:block;width:100%;aspect-ratio:16/9;object-fit:contain;background:#000}
+.screenshot-meta{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin:8px 0}
+.screenshot-meta>.sub{margin:0;white-space:nowrap}
+.screenshot-card>.pill{min-width:0}
+#screenshot-viewer .modal-card{position:relative;max-width:100%;width:auto;max-height:none;padding:48px 12px 12px;overflow:visible;background:none;border:0;box-shadow:none}
+#screenshot-viewer-close{position:absolute;top:6px;right:8px;font-size:24px;letter-spacing:0;min-width:36px;padding:0;color:#fff;border-color:currentColor;outline-color:currentColor}
+#screenshot-viewer-image{display:block;max-width:calc(100vw - 68px);max-height:calc(100vh - 124px);object-fit:contain}

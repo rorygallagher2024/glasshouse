@@ -117,6 +117,7 @@ function showTab(name) {
   // Opened at the newest line, wherever it was left scrolled.
   if (name === 'tools') { toolsAutoScroll = true; loadLogs(); scheduleToolsPoll(); loadLogForwarding(); }
   else if (typeof scheduleToolsPoll === 'function') { scheduleToolsPoll(); }
+  updateScreenshots();
 }
 
 document.querySelectorAll('#tabs button').forEach(b =>
