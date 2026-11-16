@@ -162,6 +162,8 @@ function homeTvFormHtml() {
       ? field('home-tv-server', t('home.tv.tunerAddress', 'Tuner address'), 'text', keep || '192.168.1.10') +
         field('home-tv-user', t('home.tv.tunerUser', 'User name (if the tuner asks for one)'), 'text', keep) +
         field('home-tv-pass', t('home.tv.pass', 'Password'), 'password', keep) +
+        field('home-tv-streamport', t('home.tv.streamPort', 'Stream port (optional)'), 'number', keep || '8001') +
+        `<div class="sub">${esc(t('home.tv.streamPortNote', 'Only needed when the channel is to come from a different port than the tuner’s own address, such as a transcoding profile on 8002.'))}</div>` +
         homeTvSwitchHtml('takeOver', t('home.tv.takeOverTitle', 'When every tuner is busy, switch a tuner to the requested channel'),
           t('home.tv.takeOverDesc', 'Moves the tuner showing live TV. A tuner that is recording or streaming for someone else is never touched.')) +
         homeTvSwitchHtml('streamLogin', t('home.tv.streamLoginTitle', 'The tuner asks for a login to play a channel'),
@@ -210,7 +212,11 @@ async function homeTvSave() {
   const body = { action: f.id ? 'edit' : 'add', id: f.id || undefined, kind: f.kind, label: val('home-tv-label') };
   if (f.kind === 'xtream' || f.kind === 'enigma2') { body.server = val('home-tv-server'); body.user = val('home-tv-user'); body.pass = val('home-tv-pass'); }
   else body.url = val('home-tv-url');
-  if (f.kind === 'enigma2') { body.takeOver = !!f.takeOver; if (f.streamLogin) body.streamLogin = true; if (f.noLogin) body.noLogin = true; }
+  if (f.kind === 'enigma2') {
+    body.takeOver = !!f.takeOver; if (f.streamLogin) body.streamLogin = true; if (f.noLogin) body.noLogin = true;
+    const streamPort = val('home-tv-streamport');
+    if (streamPort || f.id) body.streamPort = streamPort;
+  }
   else {
     const guide = val('home-tv-guide');
     if (guide || !f.id) body.guide = guide;
@@ -223,6 +229,7 @@ async function homeTvSave() {
       server: f.kind === 'enigma2' ? t('home.tv.bad.tuner', 'Enter the tuner’s address, like 192.168.1.10.') : t('home.tv.bad.server', 'The server must start with http:// or https://.'),
       login: t('home.tv.bad.login', 'A user name and password are both needed.'),
       guide: t('home.tv.bad.guide', 'The guide link must start with http:// or https://.'),
+      streamPort: t('home.tv.bad.streamPort', 'The stream port must be a number from 1 to 65535.'),
       'too-many': t('home.tv.bad.many', 'Eight playlists is the most the TV keeps.') }[e.message];
     return showErr(why || e.message);
   }

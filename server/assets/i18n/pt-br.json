@@ -3313,5 +3313,8 @@
  "srv.remoteKeys.ok": {"text": "OK", "from": "OK"},
  "apps.remoteKeys.buttons": {"text": "Botões", "from": "Buttons"},
  "inputs.bar.switchOnOk": {"text": "Trocar só com OK", "from": "Switch only on OK"},
- "inputs.bar.switchOnOkDesc": {"text": "Percorrer a barra apenas escolhe uma entrada, e o OK troca para ela. Desligado, a TV troca um segundo após o último toque.", "from": "Moving along the bar only picks an input, and OK switches to it. Off, the TV switches a second after the last press."}
+ "inputs.bar.switchOnOkDesc": {"text": "Percorrer a barra apenas escolhe uma entrada, e o OK troca para ela. Desligado, a TV troca um segundo após o último toque.", "from": "Moving along the bar only picks an input, and OK switches to it. Off, the TV switches a second after the last press."},
+ "home.tv.streamPort": {"text": "Porta do stream (opcional)", "from": "Stream port (optional)"},
+ "home.tv.streamPortNote": {"text": "Só é necessário quando o canal deve vir de uma porta diferente do endereço do receptor, como um perfil de transcodificação na porta 8002.", "from": "Only needed when the channel is to come from a different port than the tuner’s own address, such as a transcoding profile on 8002."},
+ "home.tv.bad.streamPort": {"text": "A porta do stream deve ser um número de 1 a 65535.", "from": "The stream port must be a number from 1 to 65535."}
 }
