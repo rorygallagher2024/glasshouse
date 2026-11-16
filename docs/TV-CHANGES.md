@@ -161,6 +161,8 @@ Switching Glasshouse Home off reports a Home-key restore failure, including a sa
 
 Home wallpapers uploaded through the browser go into `/var/lib/tvweb/home-wallpaper-uploads`, one for each time of day, or for **Your own, shuffled** into `/var/lib/tvweb/home-wallpaper-shuffle`, up to 50 under names made on the TV; a set chosen on the Home tab is downloaded from the `v2` tag of `rorygallagher2024/glasshouse-wallpapers` into `/var/lib/tvweb/home-wallpaper-sets/<set>`, and the choice is kept in `/var/lib/tvweb/home-wallpaper.json`. The directories are excluded from packages and rollback copies and removed with the server. Failed LG Home restoration remains visible and retryable on both dashboards.
 
+Home's heartbeat recovery waits while another app's card or a focused overlay such as LG's broadcast Guide covers it. The overlay must be present and focused; checks continue so a view that stays silent after the overlay closes can still recover. A heartbeat received during the window check cancels that recovery attempt.
+
 Glasshouse Home leaves empty rows out and centres the remaining rows below the clock. Empty rows reappear as movable strips while arranging.
 
 Glasshouse Home's text, accent and tile highlight colours are saved in `/var/lib/tvweb/home.json` and applied to its view within a few seconds. **Use the default colours** clears the choice.

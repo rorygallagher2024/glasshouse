@@ -248,6 +248,9 @@ function luna(uri, p, cb) {
     r.appId = tv.front || '';
   } else if (uri === 'com.webos.surfacemanager/getForegroundWindowInfo') {
     if (tv.windows) r.windows = copy(tv.windows);
+  } else if (uri === 'com.webos.surfacemanager/getFocusedWindowInfo') {
+    if (tv.focusedReply) return tv.focusedReply(cb);
+    if (tv.focusedWindows) r.focusedWindowInfo = copy(tv.focusedWindows);
   } else if (uri === 'com.webos.service.utp.boot/getLastChannelId') {
     r.channelId = tv.lastChannel;
   } else if (uri === 'com.webos.service.attachedstoragemanager/listDevices') {
@@ -2354,6 +2357,85 @@ step('a view that stops beating behind another app\'s window is left alone; in f
         assert.strictEqual(tv.samType, 'native', 'the view\'s own window in front: LG\'s Home given its place');
         home.disable(function () { done(); });
       });
+    });
+  });
+});
+
+step('LG Guide can focus its overlay over Home without a heartbeat, and recovery resumes when it closes', function (done) {
+  start({ enabled: true }, { webosVersion: '10.2.2' });
+  home.start(function () {
+    foreground(LG_HOME);
+    tv.windows = [
+      { appId: 'com.webos.app.volume', windowType: '_WEBOS_WINDOW_TYPE_VOLUME' },
+      { appId: LG_HOME, windowType: '_WEBOS_WINDOW_TYPE_CARD' },
+      { appId: 'com.webos.app.livemenu', windowType: '_WEBOS_WINDOW_TYPE_OVERLAY' }
+    ];
+    tv.focusedWindows = [{ appId: 'com.webos.app.livemenu', type: 'overlaySurface' }];
+    home.beat();
+    tv.launched = [];
+    wait(25100, function () {
+      assert.deepEqual(tv.launched, [], 'nothing opens over Guide after multiple grace periods');
+      assert.ok(taken(), 'Home keeps its place while Guide has focus');
+      tv.focusedWindows = [{ appId: LG_HOME, type: 'fullscreen' }];
+      tv.windows = [{ appId: LG_HOME, windowType: '_WEBOS_WINDOW_TYPE_CARD' }];
+      wait(5100, function () {
+        assert.strictEqual(tv.samType, 'native', 'with Guide closed, a genuinely silent view is recovered without another heartbeat');
+        home.disable(function () { done(); });
+      });
+    });
+  });
+});
+
+step('unfocused overlays or an unavailable focus reply do not hide a stopped Home view', function (done) {
+  var cases = [
+    { focusedWindowInfo: [{ appId: LG_HOME, type: 'fullscreen' }] },
+    { returnValue: false },
+    { focusedWindowInfo: [{ appId: 'com.webos.app.livemenu', type: 'overlaySurface' }] }
+  ];
+  function nextCase() {
+    if (!cases.length) return done();
+    var reply = cases.shift();
+    start({ enabled: true });
+    home.start(function () {
+      foreground(LG_HOME);
+      tv.windows = [
+        { appId: LG_HOME, windowType: '_WEBOS_WINDOW_TYPE_CARD' },
+        { appId: 'com.webos.app.volume', windowType: '_WEBOS_WINDOW_TYPE_VOLUME' }
+      ];
+      if (!cases.length) tv.windows.push({ appId: 'com.webos.app.settings', windowType: '_WEBOS_WINDOW_TYPE_OVERLAY' });
+      else tv.windows.push({ appId: 'com.webos.app.livemenu', windowType: '_WEBOS_WINDOW_TYPE_OVERLAY' });
+      tv.focusedReply = function (cb) { process.nextTick(function () { cb(reply); }); };
+      home.beat();
+      wait(10100, function () {
+        assert.strictEqual(tv.samType, 'native', 'an overlay must be both present and focused to defer recovery');
+        home.disable(nextCase);
+      });
+    });
+  }
+  nextCase();
+});
+
+step('a heartbeat arriving while overlay focus is checked cancels that recovery attempt', function (done) {
+  start({ enabled: true });
+  home.start(function () {
+    foreground(LG_HOME);
+    tv.windows = [
+      { appId: LG_HOME, windowType: '_WEBOS_WINDOW_TYPE_CARD' },
+      { appId: 'com.webos.app.livemenu', windowType: '_WEBOS_WINDOW_TYPE_OVERLAY' }
+    ];
+    var checked = false;
+    tv.focusedReply = function (cb) {
+      checked = true;
+      home.beat();
+      cb({ returnValue: true, focusedWindowInfo: [{ appId: LG_HOME, type: 'fullscreen' }] });
+    };
+    home.beat();
+    tv.launched = [];
+    wait(10100, function () {
+      assert.ok(checked, 'the focus reply arrived after the newer heartbeat');
+      assert.deepEqual(tv.launched, [], 'the stale window check cannot replace a responding view');
+      assert.ok(taken());
+      home.disable(function () { done(); });
     });
   });
 });

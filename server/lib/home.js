@@ -2735,9 +2735,13 @@ function watchBeat(ms) {
       console.log('home: the view is hidden for an app still starting; waiting for it');
       return watchBeat(starting);
     }
+    var checkedAtBeat = beats;
     behindAnother(function (app) {
+      if (!viewInFront() || !powerActive || beats !== checkedAtBeat) return;
       if (!app) return hung();
       console.log('home: the view is behind ' + app + ', not hung');
+      // An overlay can close without sam changing the foreground app.
+      watchBeat(beatGraceMs);
     });
   }, ms);
 }
@@ -2745,15 +2749,29 @@ function watchBeat(ms) {
 /*
  * The app whose window is in front where the view's is not, or null. A C1
  * (webOS 6.4.0) brought an app back from Recent apps without sam naming it in
- * front, so the hidden view, beating no more, looked hung.
+ * front. A C3's Guide focuses livemenu's overlay while sam and the card list
+ * still name Home, so its overlay must also be checked for focus.
  */
 function behindAnother(cb) {
   var homeId = isStandalone() ? HOME_APP : LG_HOME;
   luna('com.webos.surfacemanager/getForegroundWindowInfo', {}, function (r) {
     var windows = r && r.returnValue !== false && isArray(r.windows) ? r.windows : null;
-    if (!windows || windows.some(function (w) { return w && w.appId === homeId; })) return cb(null);
-    var other = windows.filter(function (w) { return w && w.appId && w.windowType === '_WEBOS_WINDOW_TYPE_CARD'; })[0];
-    cb(other ? other.appId : null);
+    if (!windows) return cb(null);
+    if (!windows.some(function (w) { return w && w.appId === homeId; })) {
+      var other = windows.filter(function (w) { return w && w.appId && w.windowType === '_WEBOS_WINDOW_TYPE_CARD'; })[0];
+      return cb(other ? other.appId : null);
+    }
+    var overlays = windows.filter(function (w) {
+      return w && w.appId && w.appId !== homeId && w.windowType === '_WEBOS_WINDOW_TYPE_OVERLAY';
+    });
+    if (!overlays.length) return cb(null);
+    luna('com.webos.surfacemanager/getFocusedWindowInfo', {}, function (focus) {
+      var focused = focus && focus.returnValue !== false && isArray(focus.focusedWindowInfo) ? focus.focusedWindowInfo : [];
+      var overlay = overlays.filter(function (w) {
+        return focused.some(function (f) { return f && f.appId === w.appId; });
+      })[0];
+      cb(overlay ? overlay.appId : null);
+    });
   });
 }
 
