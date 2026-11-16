@@ -387,7 +387,10 @@ var CONFIG = {
      * in the usual places. Set it when a rooted client lives somewhere else.
      */
     client: ''
-  }
+  },
+
+  // Screenshot retention target in MiB; the newest capture is always kept.
+  screenshots: { maxMiB: 32 }
 };
 
 /* Scanned before loadConfig so --config can point at an alternative file:
@@ -1070,7 +1073,7 @@ function appsChanged() {
 pointer.init({ luna: luna, hasService: lunaTransport.hasService, config: CONFIG,
   onActivity: function () { screensavers.pointerUsed(); },
   authed: function (req) { return routes.authed(url.parse(req.url || '/', true).query, req); } });
-screenshots.init({});
+screenshots.init({ maxMiB: CONFIG.screenshots && CONFIG.screenshots.maxMiB });
 routes.init({
   config: CONFIG,
   pointer: pointer,

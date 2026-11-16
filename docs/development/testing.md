@@ -729,7 +729,7 @@ before closing each page, so pending stats replies cannot outlive the page.
 
 `test-remote-availability.js` checks the lightweight Remote availability route: Quick Access needs one settings read, remote keys are checked only as a fallback, and neither path collects the Apps catalogue or writes settings.
 
-`test-screenshots.js` checks oldest-first deletion at the default 32 MiB boundary, overlapping cleanup, recent writes, an oversized newest capture, deletion failure and retry, and preservation of unrelated files, empty files, symlinks and directories.
+`test-screenshots.js` checks oldest-first deletion at the default 32 MiB boundary, custom budgets and invalid-value fallback, overlapping cleanup, recent writes, an oversized newest capture, deletion failure and retry, and preservation of unrelated files, empty files, symlinks and directories.
 
 `test-remotekeys.js` checks screenshot mappings for every method and size, persisted assignments, one capture per press, saved-path and error notices, timestamp-only filenames, and legacy-service fallback including overlapping replies. Capture requires `RCU` or `MRCU` input; network, invalid and unavailable sources are refused while other assignments still work. The webOS 11 suite rejects screenshot assignments. `test-remotekeys-ui.js` checks that screenshot tiles use the translated choice title in both visible text and the accessible label, without changing the API response.
 

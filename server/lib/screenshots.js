@@ -13,6 +13,8 @@ var cleaning = false;
 var nowFn = Date.now;
 
 function init(opts) {
+  var bytes = typeof opts.maxMiB === 'number' ? opts.maxMiB * 1024 * 1024 : 0;
+  maxBytes = isFinite(bytes) && bytes > 0 ? bytes : DEFAULT_MAX_BYTES;
   directory = opts.directory || '/tmp';
   nowFn = opts.now || Date.now;
 }

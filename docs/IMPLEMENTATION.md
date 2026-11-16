@@ -2161,7 +2161,9 @@ to 960x540 when they are omitted. The filter writes
 and colons and dots replaced by hyphens.
 Files are lost on restart. Only non-empty regular files appear in the gallery.
 
-Cleanup targets 32 MiB, deleting the oldest
+Cleanup targets `screenshots.maxMiB` in `config.json` (32 MiB by default).
+The value must be a positive finite number; missing or invalid values use the
+default. Changes take effect after a server restart. Cleanup deletes the oldest
 through the same file checks as manual deletion. It runs at startup and on the
 existing 20-second heartbeat. Overlapping cleanup and files modified within
 15 seconds are skipped. The newest capture is kept even if it alone exceeds
