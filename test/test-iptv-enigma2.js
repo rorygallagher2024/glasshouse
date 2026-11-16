@@ -390,6 +390,35 @@ step('an edit keeps the login that was set, and noLogin clears it', function (do
   });
 });
 
+step('a favourite whose key moved follows its channel, though a whole group carries it', function (done) {
+  iptv.playlistsAction({ action: 'edit', id: pl, user: USER, pass: PASS }, function (r0) {
+  assert.equal(r0.ok, true);
+  wait(function () { var p = playlistOf(pl); return idle() && p.ready && !p.loginRefused; }, function () {
+  iptv.setLineup({ action: 'add-group', pl: pl, group: 'Polskie' }, function (r) {
+    assert.equal(r.ok, true);
+    wait(function () { return idle(); }, function () {
+      var file = path.join(stateDir, 'iptv', 'selection.json');
+      var text = fs.readFileSync(file, 'utf8');
+      assert.ok(text.indexOf(tvp.key) !== -1, 'the favourite is in the saved selection');
+      // A newer generation, as an edit made while the server was off would leave: the select job reads it again.
+      fs.writeFileSync(file, text.split(tvp.key).join('mstalekey0001').replace(/"generation":(\d+)/, function (m, n) { return '"generation":' + (+n + 1); }));
+      iptv.stop();
+      iptv.init({ stateDir: stateDir, clients: function () { return [CURL]; }, version: 'test', catchupMs: 0,
+        onChange: function () { changes++; } });
+      iptv.start();
+      wait(function () {
+        var favs = iptv.lineup().favourites;
+        return idle() && favs.indexOf(pl + ':' + tvp.key) !== -1;
+      }, function () {
+        assert.ok(iptv.lineup().favourites.indexOf(pl + ':mstalekey0001') === -1, 'the old key is gone');
+        done();
+      });
+    });
+  });
+  });
+  });
+});
+
 step('an address and a login are checked when added', function (done) {
   iptv.playlistsAction({ action: 'add', kind: 'enigma2', server: '', user: USER, pass: PASS }, function (r) {
     assert.deepEqual([r.ok, r.error], [false, 'server']);
