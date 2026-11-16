@@ -2282,6 +2282,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
   function releaseVideo() {
     var v = $('pvVideo');
     releaseMse();
+    if (tvStream.stallMuted) { tvStream.stallMuted = false; v.muted = false; }
     v.onplaying = v.onerror = v.onwaiting = v.onstalled = v.ontimeupdate = v.onloadedmetadata = v.onended = null;
     try { v.pause(); } catch (e) {}
     while (v.firstChild) v.removeChild(v.firstChild);
@@ -2673,7 +2674,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     // seekTo: seconds behind live the next open starts at; seekTarget: where left and right are heading; kept: seconds the stick holds.
     seekTo: null, seekTarget: null, seekTimer: null, kept: null,
     // engine: 'mse' (Home's own player, mpegts.js) or 'native' (the TV's); mse: the mpegts.js player.
-    engine: '', mse: null };
+    engine: '', mse: null, stallMuted: false };
   var STREAM_START_MS = 12000;
   // The picture not moving this long is a stall, whatever events the <video> sent;
   // sooner with nothing buffered past it: every stall logged on a provider's
@@ -2743,6 +2744,16 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
   }
   function mseUsable() {
     try { return !!(window.MediaSource && window.mpegts && window.mpegts.getFeatureList().mseLivePlayback); } catch (e) { return false; }
+  }
+  // True when a channel's decoding failures in Home's player reach two, which sends it to the TV's.
+  var mseFailures = {};
+  function mseRefusedOnce(it, detail) {
+    var id = it.pl + ':' + it.key;
+    mseFailures[id] = (mseFailures[id] || 0) + 1;
+    if (mseFailures[id] < 2) return false;
+    nativeOnly[id] = true;
+    streamEvent('native', { detail: detail });
+    return true;
   }
   function releaseMse() {
     var m = tvStream.mse;
@@ -2881,6 +2892,8 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
       // reconnect asks past it.
       v.onerror = function () {
         if (gen !== tvStream.gen) return;
+        // Home's own player failing in the <video> itself: as its decoding errors.
+        if (tvStream.engine === 'mse') mseRefusedOnce(it, 'video-' + (v.error ? v.error.code : 0));
         tvStream.pastCache = true;
         lost(gen, 'error', { code: v.error ? v.error.code : 0 });
       };
@@ -2911,17 +2924,21 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
         });
         tvStream.mse = m;
         m.on(window.mpegts.Events.MEDIA_INFO, function () { gotData = true; });
-        m.on(window.mpegts.Events.ERROR, function (type, detail) {
+        m.on(window.mpegts.Events.ERROR, function (type, detail, info) {
           if (gen !== tvStream.gen || tvStream.mse !== m) return;
-          // Decoding refused before a picture: a codec Media Source cannot take. The TV's player has it.
-          if (!gotData && type === window.mpegts.ErrorTypes.MEDIA_ERROR) {
-            nativeOnly[it.pl + ':' + it.key] = true;
-            streamEvent('native', { detail: String(detail) });
-            releaseMse();
-            return openNative();
-          }
-          tvStream.pastCache = true;
-          lost(gen, 'error', { detail: type + ':' + detail });
+          /*
+           * Decoding refused: once, Home's player opens the channel again; twice
+           * in a visit, the stream has something Media Source cannot take, and
+           * the TV's player plays the channel until Home is opened again.
+           */
+          if (type === window.mpegts.ErrorTypes.MEDIA_ERROR && mseRefusedOnce(it, String(detail).slice(0, 20))) {
+            if (!gotData) {
+              releaseMse();
+              return openNative();
+            }
+          } else if (type !== window.mpegts.ErrorTypes.MEDIA_ERROR) tvStream.pastCache = true;
+          // The log keeps 20 characters of a name: mpegts.js's are longer (UnrecoverableEarlyEof).
+          lost(gen, 'error', { detail: String(detail).slice(0, 20), code: info && typeof info.code === 'number' ? info.code : 0 });
         });
         // A live stream has no end: one that ends was closed by the provider.
         m.on(window.mpegts.Events.LOADING_COMPLETE, function () { if (gen === tvStream.gen && tvStream.mse === m) lost(gen, 'ended', {}); });
@@ -2955,6 +2972,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
             refillSince = 0;
             refillTo = Math.min(refillTo + REFILL_STEP_S, REFILL_MAX_S);
             lastMove = now;
+            if (tvStream.stallMuted) { tvStream.stallMuted = false; v.muted = false; }
             playNow();
           } else if (now - refillSince > STALL_MS) {
             refillSince = 0;
@@ -2962,7 +2980,22 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
           }
           return;
         }
+        /*
+         * Home's own player at a hole in the stream (11 s of Nat Geo Wild missing, seen
+         * on a G3): stepped over before the picture stops. Waiting at the edge froze it
+         * while the TV's sound output buzzed on its last samples.
+         */
+        if (tvStream.engine === 'mse') {
+          buf = bufferedAhead(v);
+          if (buf.next > ct && buf.ahead < 0.3) {
+            streamEvent('skipped', { gap: Math.round((buf.next - ct) * 10) / 10 });
+            try { v.currentTime = buf.next + 0.1; } catch (e) {}
+            lastMove = now;
+            return;
+          }
+        }
         if (ct !== lastTime) {
+          if (tvStream.stallMuted) { tvStream.stallMuted = false; v.muted = false; }
           lastTime = ct;
           lastMove = now;
           nudged = false;
@@ -2971,6 +3004,8 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
           return;
         }
         var still = now - lastMove;
+        // Silent while the picture is stuck, rather than whatever the sound output repeats.
+        if (tvStream.engine === 'mse' && still >= WATCH_MS && !v.muted) { tvStream.stallMuted = true; v.muted = true; }
         buf = bufferedAhead(v);
         // Stuck at a hole with more buffered after it: step over it rather than reconnect.
         if (still > NUDGE_MS && !nudged && buf.next > ct) {

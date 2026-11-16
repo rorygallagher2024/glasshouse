@@ -151,7 +151,7 @@ files 600), and they stay there:
 
 A satellite tuner's login is kept the same way. It goes to curl on its
 standard input, never in a command line, and is sent only to the tuner's own
-address: a picon on another host is fetched without it. A tuner whose stream port asks for the login is played through a relay on the TV that only Home's own page may use (the same request from the network gets 403), and that asks only the tuner's host. The tuner's address
+address: a picon on another host is fetched without it. A tuner whose stream port asks for the login is played through a relay on the TV that only Home's own page may use (the same request from the network gets 403), and that asks only the tuner's host. Home's own player reads a provider's MPEG-TS channels through the same relay, which asks only that channel's play link and the redirects it answers with. The tuner's address
 is stored as a bare origin, and an address with a user name in it is refused.
 
 Removing a playlist on the Home tab deletes its folder at once.

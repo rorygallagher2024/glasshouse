@@ -1797,7 +1797,7 @@ function setOutput(body) {
  * most 120 an hour, so a stream failing in a loop cannot fill the log.
  */
 var EVENTS_PER_HOUR = 120;
-var EVENT_FIELDS = ['why', 'after', 'lostFor', 'still', 'ahead', 'gap', 'wait', 'tries', 'code', 'state', 'net', 'size', 'dropped', 'format'];
+var EVENT_FIELDS = ['why', 'after', 'lostFor', 'still', 'ahead', 'gap', 'wait', 'tries', 'code', 'state', 'net', 'size', 'dropped', 'format', 'engine', 'held', 'to', 'detail'];
 var events = { hour: 0, count: 0 };
 function streamEvent(body) {
   var name = body && str(body.event, 20);

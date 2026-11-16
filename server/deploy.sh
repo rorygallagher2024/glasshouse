@@ -69,7 +69,7 @@ assets/dashboard-app/appinfo.json assets/dashboard-app/index.html \
 assets/dashboard-app/packageinfo.json assets/dashboard-app/install-app.sh \
 assets/dashboard-app/assets/icon80.png assets/dashboard-app/assets/icon130.png assets/dashboard-app/assets/splash.png \
 assets/home.html assets/home-kit.js assets/home-web.html assets/home-minimal.html assets/devicons.js \
-assets/vendor/mpegts.js assets/vendor/mpegts-LICENSE.txt \
+assets/vendor/mpegts.js assets/vendor/mpegts-LICENSE.txt assets/vendor/mpegts-TiviBro-LICENSE.txt \
 assets/inputbar-app/appinfo.json assets/inputbar-app/index.html assets/inputbar-app/packageinfo.json \
 assets/homebar-app/appinfo.json assets/homebar-app/index.html assets/homebar-app/packageinfo.json \
 assets/homebar-app/assets/icon80.png assets/homebar-app/assets/icon130.png \
