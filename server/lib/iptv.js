@@ -283,8 +283,8 @@ function httpUrl(v) {
 function enigma2Server(v) {
   var u = str(v, 2048).replace(/\s+/g, '');
   if (u && !/^[a-z][a-z0-9+.\-]*:\/\//i.test(u)) u = 'http://' + u;
-  var m = /^(https?:\/\/[^\/?#@]+)/i.exec(u);
-  return m ? m[1] : '';
+  var m = /^https?:\/\/[^\/?#]*/i.exec(u);
+  return m && m[0].indexOf('@') === -1 ? m[0] : '';
 }
 
 function validStored(p) {

@@ -393,10 +393,14 @@ step('an edit keeps the login that was set, and noLogin clears it', function (do
 step('an address and a login are checked when added', function (done) {
   iptv.playlistsAction({ action: 'add', kind: 'enigma2', server: '', user: USER, pass: PASS }, function (r) {
     assert.deepEqual([r.ok, r.error], [false, 'server']);
-    iptv.playlistsAction({ action: 'add', kind: 'enigma2', server: 'http://user:secret@box.test', user: '', pass: 'p' }, function (r2) {
-      // A login in the address is dropped, and a password with no user is no login.
-      assert.deepEqual([r2.ok, r2.error], [false, 'login']);
-      done();
+    iptv.playlistsAction({ action: 'add', kind: 'enigma2', server: 'http://user:secret@box.test', user: USER, pass: PASS }, function (r2) {
+      // A login in the address is refused, not read as the host.
+      assert.deepEqual([r2.ok, r2.error], [false, 'server']);
+      iptv.playlistsAction({ action: 'add', kind: 'enigma2', server: 'box.test', user: '', pass: 'p' }, function (r3) {
+        // A password with no user is no login.
+        assert.deepEqual([r3.ok, r3.error], [false, 'login']);
+        done();
+      });
     });
   });
 });
