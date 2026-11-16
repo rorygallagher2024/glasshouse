@@ -1728,6 +1728,19 @@ app in front. Remote Keys puts its own filter first.
   `com.webos.service.networkinput/test/sendKeyCode` with a Linux key code (the
   `IR_KEY_*` value in `/usr/share/X11/xkb/keycodes/lg` less 8: Blue 401, TV 377)
   reached a mapped key's filter like the remote's own press.
+  Without a source check, a paired SSAP WebSocket controller's input socket
+  also triggered a Blue screenshot mapping with `type:button` / `name:BLUE`,
+  producing a complete 960×540 PNG without calling a capture API.
+- **LG's filters can check the input source.** The inspected compositor passes
+  a fourth `deviceId` argument. LG's `preProcess.js` calls
+  `global.getDeviceType(deviceId)` and permits long-press handling only for
+  `RCU` and `MRCU`, rejecting device ID `-1`. Physical Blue presses reported
+  `MRCU` (device ID `2`); paired WebSocket presses reported an empty type
+  (device ID `10`). The deployed screenshot filter produced two complete
+  960×540 PNGs from two physical presses and none from four paired presses,
+  sent before and after the physical presses. All six reached the TV's button
+  listener. Device IDs are observations, not constants to match. IR remotes
+  and older compositor versions remain untested.
 - **A filter can send keys over the network.** On a C3 (webOS 10.2.2) the
   filter's own `lunaCall.send` to `networkinput/test/sendKeyCode` with play
   207, pause 119, stop 128, rewind 168, fast forward 208, volume up 115, volume

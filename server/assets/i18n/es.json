@@ -222,7 +222,7 @@
  "apps.remoteKeys.close": {"text": "Cerrar", "from": "Close"},
  "apps.remoteKeys.colour": {"text": "Teclas de colores", "from": "Color keys"},
  "apps.remoteKeys.count": {"text": "{n} cambiadas", "from": "{n} changed"},
- "apps.remoteKeys.desc": {"text": "Lo que hace una tecla del mando: como lo tiene LG, nada, o abrir en su lugar una app o una entrada. Un cambio se aplica al momento y se mantiene tras reiniciar. Una tecla asignada aquí se toma antes de que la vea ninguna app, así que una app que usa esa tecla por sí misma, como YouTube con Guía, deja de recibirla. Las teclas listadas son las que maneja esta TV; un mando concreto puede no tenerlas todas.", "from": "What a key on the remote does: as LG has it, nothing, or opening an app or input instead. A change applies straight away and lasts across reboots. A key set here is taken before any app sees it, so an app that uses the key itself, such as YouTube with Guide, no longer gets it. The keys listed are the ones this TV handles; a given remote may not have them all."},
+ "apps.remoteKeys.desc": {"text": "Lo que hace una tecla del mando: como lo tiene LG, nada, un control multimedia, una captura de pantalla o abrir en su lugar una app o una entrada. Un cambio se aplica al momento y se mantiene tras reiniciar. Una tecla asignada aquí se toma antes de que la vea ninguna app, así que una app que usa esa tecla por sí misma, como YouTube con Guía, deja de recibirla. Las teclas listadas son las que maneja esta TV; un mando concreto puede no tenerlas todas.", "from": "What a key on the remote does: as LG has it, nothing, a media control, a screenshot, or opening an app or input instead. A change applies straight away and lasts across reboots. A key set here is taken before any app sees it, so an app that uses the key itself, such as YouTube with Guide, no longer gets it. The keys listed are the ones this TV handles; a given remote may not have them all."},
  "apps.remoteKeys.doesNothing": {"text": "No hace nada", "from": "Does nothing"},
  "apps.remoteKeys.elsewhere": {"text": "Botones de mandos vendidos en otros países ({n})", "from": "Buttons on remotes sold elsewhere ({n})"},
  "apps.remoteKeys.failed": {"text": "No se pudo cambiar: {error}", "from": "Could not change it: {error}"},
@@ -3372,5 +3372,15 @@
  "rp.input": {"text": "Entrada", "from": "Input"},
  "rp.buttons": {"text": "Botones", "from": "Buttons"},
  "rp.touchpad": {"text": "Panel táctil", "from": "Touchpad"},
- "rp.standby": {"text": "La TV está en espera. Enciéndela para usar el mando.", "from": "The TV is in standby. Power on to use the remote."}
+ "rp.standby": {"text": "La TV está en espera. Enciéndela para usar el mando.", "from": "The TV is in standby. Power on to use the remote."},
+ "apps.remoteKeys.screenshots": {"text": "Capturas de pantalla", "from": "Screenshots"},
+ "srv.remoteKeys.noCaptureResult": {"text": "Sin resultado de captura", "from": "No capture result"},
+ "srv.remoteKeys.screenshotFailed": {"text": "Error al capturar la pantalla: {error}", "from": "Screenshot failed: {error}"},
+ "srv.remoteKeys.screenshotResolution": {"text": "Captura · {method} · {resolution}", "from": "Screenshot · {method} · {resolution}"},
+ "srv.remoteKeys.screenshotSaved": {"text": "Captura guardada: {path}", "from": "Screenshot saved: {path}"},
+ "tools.screenshots.display": {"text": "Pantalla completa", "from": "Full screen"},
+ "tools.screenshots.graphic": {"text": "Solo gráficos", "from": "Graphics only"},
+ "tools.screenshots.method": {"text": "Captura", "from": "Capture"},
+ "tools.screenshots.resolution": {"text": "Resolución", "from": "Resolution"},
+ "tools.screenshots.video": {"text": "Solo vídeo", "from": "Video only"}
 }

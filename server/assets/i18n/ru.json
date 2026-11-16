@@ -224,7 +224,7 @@
  "apps.remoteKeys.close": {"text": "Закрыть", "from": "Close"},
  "apps.remoteKeys.colour": {"text": "Цветные кнопки", "from": "Color keys"},
  "apps.remoteKeys.count": {"text": "Изменено: {n}", "from": "{n} changed"},
- "apps.remoteKeys.desc": {"text": "Что делает кнопка пульта: как задано в LG, ничего или открывает приложение либо вход. Изменение действует сразу и сохраняется после перезагрузки. Заданная здесь кнопка перехватывается раньше, чем ее увидит приложение, поэтому приложение, которое использует кнопку само, например YouTube с кнопкой Guide, ее больше не получает. В списке кнопки, которые обрабатывает этот телевизор; на конкретном пульте их может быть не все.", "from": "What a key on the remote does: as LG has it, nothing, or opening an app or input instead. A change applies straight away and lasts across reboots. A key set here is taken before any app sees it, so an app that uses the key itself, such as YouTube with Guide, no longer gets it. The keys listed are the ones this TV handles; a given remote may not have them all."},
+ "apps.remoteKeys.desc": {"text": "Что делает кнопка пульта: как задано в LG, ничего, управляет мультимедиа, делает снимок экрана или открывает приложение либо вход. Изменение действует сразу и сохраняется после перезагрузки. Заданная здесь кнопка перехватывается раньше, чем её увидит приложение, поэтому приложение, которое использует кнопку само, например YouTube с кнопкой Guide, её больше не получает. В списке кнопки, которые обрабатывает этот телевизор; на конкретном пульте могут быть не все из них.", "from": "What a key on the remote does: as LG has it, nothing, a media control, a screenshot, or opening an app or input instead. A change applies straight away and lasts across reboots. A key set here is taken before any app sees it, so an app that uses the key itself, such as YouTube with Guide, no longer gets it. The keys listed are the ones this TV handles; a given remote may not have them all."},
  "apps.remoteKeys.doesNothing": {"text": "Ничего не делает", "from": "Does nothing"},
  "apps.remoteKeys.elsewhere": {"text": "Кнопки пультов из других регионов ({n})", "from": "Buttons on remotes sold elsewhere ({n})"},
  "apps.remoteKeys.failed": {"text": "Не удалось изменить: {error}", "from": "Could not change it: {error}"},
@@ -3386,5 +3386,15 @@
  "rp.input": {"text": "Вход", "from": "Input"},
  "rp.buttons": {"text": "Кнопки", "from": "Buttons"},
  "rp.touchpad": {"text": "Тачпад", "from": "Touchpad"},
- "rp.standby": {"text": "Телевизор в режиме ожидания. Включите его, чтобы пользоваться пультом.", "from": "The TV is in standby. Power on to use the remote."}
+ "rp.standby": {"text": "Телевизор в режиме ожидания. Включите его, чтобы пользоваться пультом.", "from": "The TV is in standby. Power on to use the remote."},
+ "apps.remoteKeys.screenshots": {"text": "Снимки экрана", "from": "Screenshots"},
+ "srv.remoteKeys.noCaptureResult": {"text": "Нет результата захвата", "from": "No capture result"},
+ "srv.remoteKeys.screenshotFailed": {"text": "Не удалось сделать снимок экрана: {error}", "from": "Screenshot failed: {error}"},
+ "srv.remoteKeys.screenshotResolution": {"text": "Снимок · {method} · {resolution}", "from": "Screenshot · {method} · {resolution}"},
+ "srv.remoteKeys.screenshotSaved": {"text": "Снимок сохранён: {path}", "from": "Screenshot saved: {path}"},
+ "tools.screenshots.display": {"text": "Весь экран", "from": "Full screen"},
+ "tools.screenshots.graphic": {"text": "Только графика", "from": "Graphics only"},
+ "tools.screenshots.method": {"text": "Захват", "from": "Capture"},
+ "tools.screenshots.resolution": {"text": "Разрешение", "from": "Resolution"},
+ "tools.screenshots.video": {"text": "Только видео", "from": "Video only"}
 }

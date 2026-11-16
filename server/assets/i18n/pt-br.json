@@ -241,7 +241,7 @@
  "apps.remoteKeys.close": {"text": "Fechar", "from": "Close"},
  "apps.remoteKeys.colour": {"text": "Botões coloridos", "from": "Color keys"},
  "apps.remoteKeys.count": {"text": "{n} alterados", "from": "{n} changed"},
- "apps.remoteKeys.desc": {"text": "O que um botão do controle remoto faz: como a LG deixou, nada, ou abrir um app ou entrada. Uma alteração vale imediatamente e continua depois de reiniciar. Um botão definido aqui é capturado antes que qualquer app o veja, então um app que usa esse botão, como o YouTube com Guide, deixa de recebê-lo. Os botões listados são os que esta TV reconhece; um controle remoto específico pode não ter todos.", "from": "What a key on the remote does: as LG has it, nothing, or opening an app or input instead. A change applies straight away and lasts across reboots. A key set here is taken before any app sees it, so an app that uses the key itself, such as YouTube with Guide, no longer gets it. The keys listed are the ones this TV handles; a given remote may not have them all."},
+ "apps.remoteKeys.desc": {"text": "O que um botão do controle remoto faz: como a LG deixou, nada, um controle de mídia, uma captura de tela ou abrir um app ou entrada. Uma alteração vale imediatamente e continua depois de reiniciar. Um botão definido aqui é capturado antes que qualquer app o veja, então um app que usa esse botão, como o YouTube com Guide, deixa de recebê-lo. Os botões listados são os que esta TV reconhece; um controle remoto específico pode não ter todos.", "from": "What a key on the remote does: as LG has it, nothing, a media control, a screenshot, or opening an app or input instead. A change applies straight away and lasts across reboots. A key set here is taken before any app sees it, so an app that uses the key itself, such as YouTube with Guide, no longer gets it. The keys listed are the ones this TV handles; a given remote may not have them all."},
  "apps.remoteKeys.doesNothing": {"text": "Não faz nada", "from": "Does nothing"},
  "apps.remoteKeys.elsewhere": {"text": "Botões de controles vendidos em outros lugares ({n})", "from": "Buttons on remotes sold elsewhere ({n})"},
  "apps.remoteKeys.failed": {"text": "Não foi possível alterar: {error}", "from": "Could not change it: {error}"},
@@ -3372,5 +3372,15 @@
  "rp.input": {"text": "Entrada", "from": "Input"},
  "rp.buttons": {"text": "Botões", "from": "Buttons"},
  "rp.touchpad": {"text": "Touchpad", "from": "Touchpad"},
- "rp.standby": {"text": "A TV está em espera. Ligue-a para usar o controle.", "from": "The TV is in standby. Power on to use the remote."}
+ "rp.standby": {"text": "A TV está em espera. Ligue-a para usar o controle.", "from": "The TV is in standby. Power on to use the remote."},
+ "apps.remoteKeys.screenshots": {"text": "Capturas de tela", "from": "Screenshots"},
+ "srv.remoteKeys.noCaptureResult": {"text": "Nenhum resultado da captura", "from": "No capture result"},
+ "srv.remoteKeys.screenshotFailed": {"text": "Falha na captura de tela: {error}", "from": "Screenshot failed: {error}"},
+ "srv.remoteKeys.screenshotResolution": {"text": "Captura · {method} · {resolution}", "from": "Screenshot · {method} · {resolution}"},
+ "srv.remoteKeys.screenshotSaved": {"text": "Captura salva: {path}", "from": "Screenshot saved: {path}"},
+ "tools.screenshots.display": {"text": "Tela inteira", "from": "Full screen"},
+ "tools.screenshots.graphic": {"text": "Somente gráficos", "from": "Graphics only"},
+ "tools.screenshots.method": {"text": "Captura", "from": "Capture"},
+ "tools.screenshots.resolution": {"text": "Resolução", "from": "Resolution"},
+ "tools.screenshots.video": {"text": "Somente vídeo", "from": "Video only"}
 }

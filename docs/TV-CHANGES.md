@@ -258,3 +258,14 @@ Control page also has quick toggles below Playback, using the same commands and
 write permissions. Both dashboards hide the Ambient Light tab when neither
 integration is available; saved links then open Control on the web or Metrics
 in the TV app.
+
+Screenshot assignments write PNGs only under `/tmp/capture_*.png`.
+Captures disappear when the TV restarts.
+
+A remote key assigned to screenshots stores its capture method and size in
+the existing remote-key mapping. Each press calls the capture service from the
+compositor filter only when LG identifies the source as `RCU` or `MRCU`, and
+shows a saved-path or error notice afterward; holding the key does not repeat.
+Network and unknown sources cannot capture. The assignment works without the server and is
+removed with **As LG has it** or `tvwebctl restore-keys`. Screenshot assignments
+are not offered through webOS 11's native mappings.

@@ -1011,5 +1011,15 @@
  "rp.input": {"text": "Eingang", "from": "Input"},
  "rp.buttons": {"text": "Tasten", "from": "Buttons"},
  "rp.touchpad": {"text": "Touchpad", "from": "Touchpad"},
- "rp.standby": {"text": "Der Fernseher ist im Standby. Schalten Sie ihn ein, um die Fernbedienung zu nutzen.", "from": "The TV is in standby. Power on to use the remote."}
+ "rp.standby": {"text": "Der Fernseher ist im Standby. Schalten Sie ihn ein, um die Fernbedienung zu nutzen.", "from": "The TV is in standby. Power on to use the remote."},
+ "apps.remoteKeys.screenshots": {"text": "Screenshots", "from": "Screenshots"},
+ "srv.remoteKeys.noCaptureResult": {"text": "Kein Aufnahmeergebnis", "from": "No capture result"},
+ "srv.remoteKeys.screenshotFailed": {"text": "Screenshot fehlgeschlagen: {error}", "from": "Screenshot failed: {error}"},
+ "srv.remoteKeys.screenshotResolution": {"text": "Screenshot · {method} · {resolution}", "from": "Screenshot · {method} · {resolution}"},
+ "srv.remoteKeys.screenshotSaved": {"text": "Screenshot gespeichert: {path}", "from": "Screenshot saved: {path}"},
+ "tools.screenshots.display": {"text": "Gesamter Bildschirm", "from": "Full screen"},
+ "tools.screenshots.graphic": {"text": "Nur Grafik", "from": "Graphics only"},
+ "tools.screenshots.method": {"text": "Aufnahme", "from": "Capture"},
+ "tools.screenshots.resolution": {"text": "Auflösung", "from": "Resolution"},
+ "tools.screenshots.video": {"text": "Nur Video", "from": "Video only"}
 }

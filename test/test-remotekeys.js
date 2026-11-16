@@ -86,6 +86,7 @@ function loadFilter(broken, extra) {
              Key_webOS_USP: 1005 },
     Qt: { Key_Super_L: 2001 },
     KeyPolicy: { NextPolicy: 'next', Accepted: 'accepted', NotAccepted: 'notAccepted' },
+    global: { getDeviceType: function (id) { return id === 2 ? 'MRCU' : id === 0 ? 'RCU' : ''; } },
     lunaCall: {
       appId: 'com.webos.surfacemanager',
       // configd's keys, and tvpower's state, which the test sets with power().
@@ -97,6 +98,13 @@ function loadFilter(broken, extra) {
       send: function (service, method, payload, cb) {
         sent.push({ uri: service + method, payload: JSON.parse(payload) });
         if (method === '/getAppInfo') cb(JSON.stringify({ returnValue: true, appInfo: { type: tv.homeType } }));
+        else if (method === '/executeOneShot') {
+          var reply = tv.captureMissing && service === 'com.webos.service.capture'
+            ? JSON.stringify({ returnValue: false, errorText: 'Service does not exist' })
+            : tv.captureReply === undefined ? JSON.stringify({ returnValue: true }) : tv.captureReply;
+          if (tv.capturePending) tv.capturePending.push(function () { cb(reply); });
+          else cb(reply);
+        }
         else if (cb) cb(JSON.stringify({ returnValue: true }));
       }
     },
@@ -150,6 +158,9 @@ step(function (next) {
     assert.deepEqual(r.choices.map(function (c) { return c.id; }),
       ['action:screenOff', 'action:powerOff', 'media:ok', 'media:play', 'media:pause', 'media:stop', 'media:rewind', 'media:fastForward',
        'media:volumeUp', 'media:volumeDown', 'media:mute',
+       'capture:DISPLAY:1920x1080', 'capture:VIDEO:1920x1080', 'capture:GRAPHIC:1920x1080',
+       'capture:DISPLAY:3840x2160', 'capture:VIDEO:3840x2160', 'capture:GRAPHIC:3840x2160',
+       'capture:DISPLAY:960x540', 'capture:VIDEO:960x540', 'capture:GRAPHIC:960x540',
        'com.webos.app.hdmi1', 'com.webos.app.hdmi2', 'com.webos.app.livetv',
        'com.webos.app.home', 'netflix', 'youtube.leanback.v4']);
     console.log('  ✓ only the keys the TV\'s filters name are offered, each as LG has it, with the media controls, inputs, Home and apps a key can open');
@@ -377,6 +388,101 @@ step(function (next) {
       }));
     }));
   }));
+});
+
+step(function (next) {
+  var cases = [];
+  ['DISPLAY', 'VIDEO', 'GRAPHIC'].forEach(function (method) {
+    ['3840x2160', '1920x1080', '960x540'].forEach(function (resolution) { cases.push([method, resolution]); });
+  });
+  function check() {
+    if (!cases.length) return checkSources();
+    var pair = cases.shift(), id = 'capture:' + pair.join(':');
+    rk.setRemoteKey('red', 'open', id, guard(function (result) {
+      assert.strictEqual(result.ok, true);
+      assert.strictEqual(JSON.parse(fs.readFileSync(MAP, 'utf8')).keys.red, id);
+      var f = loadFilter();
+      assert.strictEqual(f.handle(1004, true, false, 2), 'accepted');
+      assert.strictEqual(f.handle(1004, true, true, 2), 'accepted');
+      assert.strictEqual(f.handle(1004, false, false, 2), 'accepted');
+      assert.strictEqual(f.launched.length, 0);
+      assert.strictEqual(f.sent.length, 2, 'one capture and its notice, without repeat or release');
+      var payload = f.sent[0].payload, size = pair[1].split('x');
+      assert.strictEqual(f.sent[0].uri, 'com.webos.service.capture/executeOneShot');
+      assert.strictEqual(payload.method, pair[0]);
+      assert.strictEqual(payload.format, 'PNG');
+      assert.strictEqual(payload.width, +size[0]);
+      assert.strictEqual(payload.height, +size[1]);
+      assert.ok(/^\/tmp\/capture_\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}-\d{3}Z\.png$/.test(payload.path));
+      assert.strictEqual(f.sent[1].payload.sourceId, 'com.webos.surfacemanager');
+      assert.strictEqual(f.sent[1].payload.message, 'Screenshot saved: ' + payload.path);
+      f.handle(1004, true, false, 2);
+      assert.strictEqual(f.sent.length, 4, 'a second press captures again');
+      check();
+    }));
+  }
+  function checkSources() {
+    [['MRCU', 2, true], ['RCU', 0, true], ['', 10, false], ['NETWORK', 10, false],
+     ['MRCU', -1, false], ['MRCU', undefined, false], ['MRCU', '2', false]].forEach(function (source) {
+      var f = loadFilter(null, { global: { getDeviceType: function () { return source[0]; } } });
+      assert.strictEqual(f.handle(1004, true, false, source[1]), 'accepted');
+      assert.strictEqual(f.sent.length, source[2] ? 2 : 0, 'only verified physical remote sources may capture');
+    });
+    [undefined, {}, { getDeviceType: function () { throw new Error('source unavailable'); } }].forEach(function (global) {
+      var f = loadFilter(null, { global: global });
+      f.handle(1004, true, false, 2);
+      assert.strictEqual(f.sent.length, 0, 'unavailable device reporting cannot permit capture');
+      f.tell({ keys: { red: 'youtube.leanback.v4' } });
+      f.handle(1004, true, false, 10);
+      assert.strictEqual(f.launched.length, 1, 'other assignments still accept network presses');
+    });
+    checkFailures();
+  }
+  function checkFailures() {
+    tv.captureMissing = true;
+    tv.captureReply = JSON.stringify({ returnValue: false, errorText: 'No video is playing' });
+    var f = loadFilter();
+    f.handle(1004, true, false, 2);
+    assert.strictEqual(f.sent.length, 3);
+    assert.deepEqual(f.sent[0].payload, f.sent[1].payload, 'fallback preserves the payload');
+    assert.strictEqual(f.sent[1].uri, 'com.webos.service.tv.capture/executeOneShot');
+    assert.ok(/Screenshot failed: No video is playing/.test(f.sent[2].payload.message));
+    f.handle(1004, true, false, 2);
+    assert.strictEqual(f.sent[3].uri, 'com.webos.service.tv.capture/executeOneShot', 'legacy service is remembered after failure');
+    delete tv.captureMissing;
+    f = loadFilter();
+    f.handle(1004, true, false, 2);
+    assert.strictEqual(f.sent.length, 2, 'ordinary errors do not fall back');
+    tv.captureReply = 'not json';
+    f.handle(1004, true, false, 2);
+    assert.ok(/Screenshot failed: No capture result/.test(f.sent[3].payload.message));
+    tv.captureReply = { returnValue: true };
+    f.handle(1004, true, false, 2);
+    assert.ok(/^Screenshot saved:/.test(f.sent[5].payload.message), 'object replies also work');
+    delete tv.captureReply;
+    tv.captureMissing = true;
+    tv.capturePending = [];
+    f = loadFilter();
+    f.handle(1004, true, false, 2);
+    f.handle(1004, true, false, 2);
+    tv.capturePending.shift()();
+    tv.capturePending.shift()();
+    assert.strictEqual(f.sent[2].uri, 'com.webos.service.tv.capture/executeOneShot');
+    assert.strictEqual(f.sent[3].uri, 'com.webos.service.tv.capture/executeOneShot', 'both in-flight missing-service replies retry');
+    var pending = tv.capturePending;
+    delete tv.capturePending;
+    delete tv.captureMissing;
+    pending.forEach(function (answer) { answer(); });
+    assert.strictEqual(f.sent.filter(function (call) { return call.uri === 'com.webos.notification/createToast'; }).length, 2);
+    rk.setRemoteKey('red', 'open', 'capture:DISPLAY:1280x720', guard(function (invalid) {
+      assert.strictEqual(invalid.ok, false);
+      rk.setRemoteKey('red', 'lg', '', guard(function () {
+        console.log('  ✓ screenshot keys persist every method and size, capture once per press, and remember the legacy service');
+        next();
+      }));
+    }));
+  }
+  check();
 });
 
 // #1088: with MQTT on, a key whose presses Home Assistant receives can be set

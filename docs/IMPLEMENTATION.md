@@ -2149,3 +2149,23 @@ directly. The web Control page has the same toggles below Playback; they share
 state and write permissions with Ambient Light. Status callbacks check the apps’
 install paths before calling Luna, and unavailable integrations are hidden as
 complete categories and shortcuts.
+
+## One-shot screenshots
+
+The remote-key filter takes PNG captures through
+`com.webos.service.capture/executeOneShot`. Methods are `DISPLAY` (video and
+graphics), `VIDEO` or `GRAPHIC`; sizes are 3840x2160, 1920x1080 (default),
+or 960x540. Glasshouse always passes `width` and `height`; LG's service defaults
+to 960x540 when they are omitted. The filter writes
+`/tmp/capture_<timestamp>.png`, using a UTC ISO timestamp with milliseconds
+and colons and dots replaced by hyphens.
+Files are lost on restart.
+
+Remote-key assignments hold `capture:<method>:<resolution>` in the existing
+mapping. The compositor filter calls the capture service directly, once on
+key-down only when its fourth `deviceId` argument is a nonnegative number and
+`global.getDeviceType(deviceId)` returns `RCU` or `MRCU`. Missing device reporting,
+unknown types and network input cannot capture. Screenshots work without the
+server. The filter remembers the legacy service after a missing-service reply
+and shows a saved-path or error toast after capture. webOS 11's native mappings
+do not offer screenshots.

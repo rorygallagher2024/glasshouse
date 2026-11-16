@@ -407,6 +407,7 @@ function rkDoes(k, kindOf) {
   if (kindOf(k.id) === 'action') return `<span class="rk-none" aria-hidden="true">◼</span>${esc(k.opens)}`;
   if (kindOf(k.id) === 'ha') return `<span class="rk-none" aria-hidden="true">⌂</span>${esc(t('apps.remoteKeys.toHomeAssistant', 'To Home Assistant'))}`;
   if (kindOf(k.id) === 'media') return `<span class="rk-none" aria-hidden="true">${RK_MEDIA_GLYPHS[k.id] || '⏯'}</span>${esc(k.opens)}`;
+  if (kindOf(k.id) === 'capture') return esc(k.opens);
   const icon = kindOf(k.id) === 'app' ? rkIcon(k.id) : '';
   return `${icon}<span translate="no">${esc(k.opens)}</span>`;
 }
@@ -453,9 +454,10 @@ function renderRemoteKeys(d) {
   rk.choices.forEach(c => { kinds[c.id] = c.kind; });
   const kindOf = id => kinds[id] || 'app';
   const tile = k => {
+    if (kindOf(k.id) === 'capture') k = { ...k, opens: rk.choices.find(c => c.id === k.id).title };
     const dot = RK_COLOURS[k.key] ? `<i class="rk-dot" style="background:${RK_COLOURS[k.key]}"></i>` : '';
     const label = k.action === 'open' && kindOf(k.id) === 'ha' ? t('apps.remoteKeys.toHomeAssistant', 'To Home Assistant')
-      : k.action === 'open' && (kindOf(k.id) === 'media' || kindOf(k.id) === 'action') ? k.opens
+      : k.action === 'open' && ['media', 'action', 'capture'].includes(kindOf(k.id)) ? k.opens
       : k.action === 'open' ? t('apps.remoteKeys.opens', 'Opens {app}', { app: k.opens })
       : k.action === 'nothing' ? t('apps.remoteKeys.doesNothing', 'Does nothing') : t('apps.remoteKeys.lg', 'As LG has it');
     return `<button type="button" class="rk-key${k.action !== 'lg' ? ' rk-changed' : ''}" data-key="${esc(k.key)}"
@@ -508,9 +510,12 @@ function toggleRemoteKey(tile) {
   const i = tiles.indexOf(tile);
   const after = tiles[Math.min(tiles.length - 1, (Math.floor(i / cols) + 1) * cols - 1)];
   const cur = k.action === 'open' ? k.id : k.action;
-  const opt = (value, html, extra) => `<button type="button" class="rk-opt${value === cur ? ' on' : ''}${extra || ''}"
+  const opt = (value, html) => `<button type="button" class="rk-opt${value === cur ? ' on' : ''}"
       data-value="${esc(value)}" aria-pressed="${value === cur}" onclick="chooseRemoteKey(this)">${html}</button>`;
   const media = rkData.choices.filter(c => c.kind === 'media');
+  const captures = rkData.choices.filter(c => c.kind === 'capture');
+  const capture = captures.find(c => c.id === cur);
+  const captureParts = capture ? capture.id.split(':') : ['capture', 'DISPLAY', '1920x1080'];
   const inputs = rkData.choices.filter(c => c.kind === 'input');
   const apps = rkData.choices.filter(c => c.kind === 'app');
   // LG's input switcher and Screen off, beside As LG has it and Nothing.
@@ -535,6 +540,17 @@ function toggleRemoteKey(tile) {
     <div class="rk-opts">${opt('lg', esc(t('apps.remoteKeys.lg', 'As LG has it')))}${k.noNothing ? '' : opt('nothing', `<span aria-hidden="true">⦸</span> ${esc(t('apps.remoteKeys.nothing', 'Nothing'))}`)}${switchers}${gone}</div>
     ${media.length ? `<div class="rk-sub">${esc(t('apps.remoteKeys.buttons', 'Buttons'))}</div>
     <div class="rk-opts">${media.map(c => opt(c.id, esc(c.title))).join('')}</div>` : ''}
+    ${captures.length ? `<div class="rk-sub">${esc(t('apps.remoteKeys.screenshots', 'Screenshots'))}</div>
+    <div class="rk-capture-groups">
+    <div class="rk-opts" role="group" aria-label="${esc(t('tools.screenshots.method', 'Capture'))}">
+      ${opt('capture:DISPLAY:' + captureParts[2], esc(t('tools.screenshots.display', 'Full screen')))}
+      ${opt('capture:VIDEO:' + captureParts[2], esc(t('tools.screenshots.video', 'Video only')))}
+      ${opt('capture:GRAPHIC:' + captureParts[2], esc(t('tools.screenshots.graphic', 'Graphics only')))}
+    </div>
+    <div class="rk-opts" role="group" aria-label="${esc(t('tools.screenshots.resolution', 'Resolution'))}">
+      ${['3840x2160', '1920x1080', '960x540'].map(size => opt('capture:' + captureParts[1] + ':' + size, size.replace('x', '×'))).join('')}
+    </div>
+    </div>` : ''}
     ${inputs.length ? `<div class="rk-sub">${esc(t('apps.remoteKeys.inputs', 'Inputs'))}</div>
     <div class="rk-opts">${inputs.map(c => opt(c.id, `<span translate="no">${esc(c.title)}</span>`)).join('')}</div>` : ''}
     ${apps.length ? `<div class="rk-sub">${esc(t('apps.remoteKeys.apps', 'Apps'))}</div>

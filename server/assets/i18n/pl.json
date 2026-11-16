@@ -230,7 +230,7 @@
  "apps.remoteKeys.close": {"text": "Zamknij", "from": "Close"},
  "apps.remoteKeys.colour": {"text": "Kolorowe przyciski", "from": "Color keys"},
  "apps.remoteKeys.count": {"text": "Zmienione: {n}", "from": "{n} changed"},
- "apps.remoteKeys.desc": {"text": "Co robi przycisk na pilocie: to, co u LG, nic albo zamiast tego otwiera aplikację lub wejście. Zmiana działa od razu i przetrwa ponowne uruchomienie. Przycisk ustawiony tutaj jest przechwytywany, zanim zobaczy go jakakolwiek aplikacja, więc aplikacja, która sama go używa, jak YouTube z Guide, już go nie dostaje. Wymienione przyciski to te, które obsługuje ten telewizor; dany pilot może nie mieć ich wszystkich.", "from": "What a key on the remote does: as LG has it, nothing, or opening an app or input instead. A change applies straight away and lasts across reboots. A key set here is taken before any app sees it, so an app that uses the key itself, such as YouTube with Guide, no longer gets it. The keys listed are the ones this TV handles; a given remote may not have them all."},
+ "apps.remoteKeys.desc": {"text": "Co robi przycisk na pilocie: to, co u LG, nic, steruje multimediami, robi zrzut ekranu albo otwiera aplikację lub wejście. Zmiana działa od razu i przetrwa ponowne uruchomienie. Przycisk ustawiony tutaj jest przechwytywany, zanim zobaczy go jakakolwiek aplikacja, więc aplikacja, która sama go używa, jak YouTube z Guide, już go nie dostaje. Wymienione przyciski to te, które obsługuje ten telewizor; dany pilot może nie mieć ich wszystkich.", "from": "What a key on the remote does: as LG has it, nothing, a media control, a screenshot, or opening an app or input instead. A change applies straight away and lasts across reboots. A key set here is taken before any app sees it, so an app that uses the key itself, such as YouTube with Guide, no longer gets it. The keys listed are the ones this TV handles; a given remote may not have them all."},
  "apps.remoteKeys.doesNothing": {"text": "Nic nie robi", "from": "Does nothing"},
  "apps.remoteKeys.elsewhere": {"text": "Przyciski na pilotach sprzedawanych gdzie indziej ({n})", "from": "Buttons on remotes sold elsewhere ({n})"},
  "apps.remoteKeys.failed": {"text": "Nie udało się zmienić: {error}", "from": "Could not change it: {error}"},
@@ -3372,5 +3372,15 @@
  "rp.input": {"text": "Wejście", "from": "Input"},
  "rp.buttons": {"text": "Przyciski", "from": "Buttons"},
  "rp.touchpad": {"text": "Touchpad", "from": "Touchpad"},
- "rp.standby": {"text": "Telewizor jest w trybie czuwania. Włącz go, aby używać pilota.", "from": "The TV is in standby. Power on to use the remote."}
+ "rp.standby": {"text": "Telewizor jest w trybie czuwania. Włącz go, aby używać pilota.", "from": "The TV is in standby. Power on to use the remote."},
+ "apps.remoteKeys.screenshots": {"text": "Zrzuty ekranu", "from": "Screenshots"},
+ "srv.remoteKeys.noCaptureResult": {"text": "Brak wyniku przechwytywania", "from": "No capture result"},
+ "srv.remoteKeys.screenshotFailed": {"text": "Nie udało się zrobić zrzutu ekranu: {error}", "from": "Screenshot failed: {error}"},
+ "srv.remoteKeys.screenshotResolution": {"text": "Zrzut ekranu · {method} · {resolution}", "from": "Screenshot · {method} · {resolution}"},
+ "srv.remoteKeys.screenshotSaved": {"text": "Zapisano zrzut ekranu: {path}", "from": "Screenshot saved: {path}"},
+ "tools.screenshots.display": {"text": "Cały ekran", "from": "Full screen"},
+ "tools.screenshots.graphic": {"text": "Tylko grafika", "from": "Graphics only"},
+ "tools.screenshots.method": {"text": "Przechwytywanie", "from": "Capture"},
+ "tools.screenshots.resolution": {"text": "Rozdzielczość", "from": "Resolution"},
+ "tools.screenshots.video": {"text": "Tylko wideo", "from": "Video only"}
 }
