@@ -1589,8 +1589,11 @@ function enigma2Free(p, streamUrlText, cb) {
 var RELAY_CONNECT_MS = 10000;
 var RELAY_IDLE_MS = 20000;
 var RELAY_HOPS = 4;
-// What lib/iptv-timeshift sends: a test provider refused curl's own with HTTP 461.
-var RELAY_UA = 'VLC/3.0.18 LibVLC/3.0.18';
+/*
+ * Node 0.12's https has no CA bundle worth trusting (docs/IMPLEMENTATION.md), so on
+ * such a TV an https link goes to the TV's player rather than through the relay.
+ */
+var RELAY_HTTPS = +String(process.versions.node).split('.')[0] >= 12;
 function relayStream(id, key, req, res) {
   var upstream = null, closed = false;
   function refuse(code, why) {
@@ -1609,12 +1612,14 @@ function relayStream(id, key, req, res) {
   function ask(link, hops) {
     var u = urlLib.parse(link), lib = u.protocol === 'https:' ? https : u.protocol === 'http:' ? http : null;
     if (!lib || !u.hostname) return refuse(502, 'network');
-    var headers = { 'User-Agent': tunerLogin ? 'Glasshouse/' + version : RELAY_UA, Connection: 'close' };
+    var headers = { 'User-Agent': tunerLogin ? 'Glasshouse/' + version : timeshift.UA, Connection: 'close' };
     if (tunerLogin) headers.Authorization = 'Basic ' + toBuffer(p.user + ':' + (p.pass || ''), 'utf8').toString('base64');
-    upstream = lib.request({ host: u.hostname, port: u.port || (lib === https ? 443 : 80), path: u.path, method: 'GET', agent: false, headers: headers }, function (up) {
+    // Each hop its own request: a late timeout or error on one that redirected must not touch the next.
+    var mine = lib.request({ host: u.hostname, port: u.port || (lib === https ? 443 : 80), path: u.path, method: 'GET', agent: false, headers: headers }, function (up) {
       var to = up.headers.location;
       if (!tunerLogin && up.statusCode >= 300 && up.statusCode < 400 && to && hops < RELAY_HOPS) {
         up.resume();
+        mine.setTimeout(0);
         return ask(urlLib.resolve(link, String(to)), hops + 1);
       }
       if (up.statusCode !== 200) {
@@ -1622,15 +1627,16 @@ function relayStream(id, key, req, res) {
         console.log('iptv: relay for ' + id + ' answered ' + up.statusCode);
         return refuse(502, up.statusCode === 401 || up.statusCode === 403 ? 'login' : 'http');
       }
-      up.socket.setTimeout(RELAY_IDLE_MS, function () { upstream.abort(); });
+      up.socket.setTimeout(RELAY_IDLE_MS, function () { mine.abort(); });
       res.writeHead(200, { 'Content-Type': 'video/MP2T', 'Cache-Control': 'no-store' });
       up.on('end', function () { res.end(); });
       up.on('error', function () { res.end(); });
       up.pipe(res, { end: false });
     });
-    upstream.setTimeout(RELAY_CONNECT_MS, function () { upstream.abort(); });
-    upstream.on('error', function () { refuse(502, 'network'); });
-    upstream.end();
+    upstream = mine;
+    mine.setTimeout(RELAY_CONNECT_MS, function () { mine.abort(); });
+    mine.on('error', function () { if (upstream === mine) refuse(502, 'network'); });
+    mine.end();
   }
   // A channel change hangs up at once: an account may allow one connection.
   function hangUp() { if (closed) return; closed = true; if (upstream) upstream.abort(); }
@@ -1663,14 +1669,14 @@ function deliverStream(id, key, full, s, cb) {
   // The tuner's stream port wants a login the player cannot send: Home plays it through the TV's relay.
   var owner = playlist(id);
   if (owner && owner.kind === 'enigma2' && owner.streamLogin === true) {
-    s.url = s.relay = '/api/iptv/relay?pl=' + encodeURIComponent(id) + '&key=' + encodeURIComponent(key);
+    s.url = '/api/iptv/relay?pl=' + encodeURIComponent(id) + '&key=' + encodeURIComponent(key);
     s.format = 'ts';
     return cb(s);
   }
   var local = timeshift.current(at);
   if (local) { s.url = local; s.timeshift = true; return cb(s); }
   // Home's own player reads MPEG-TS through the relay (relayStream); the TV's player takes s.url.
-  if (s.format === 'ts') s.relay = '/api/iptv/relay?pl=' + encodeURIComponent(id) + '&key=' + encodeURIComponent(key);
+  if (s.format === 'ts' && (RELAY_HTTPS || !/^https:/i.test(s.url))) s.relay = '/api/iptv/relay?pl=' + encodeURIComponent(id) + '&key=' + encodeURIComponent(key);
   if (!full || config.timeshift !== true || s.format !== 'ts') return cb(s);
   timeshift.open(at, s.url, function (r) {
     if (r) { s.url = r.url; s.timeshift = true; delete s.relay; }

@@ -2282,7 +2282,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
   function releaseVideo() {
     var v = $('pvVideo');
     releaseMse();
-    if (tvStream.stallMuted) { tvStream.stallMuted = false; v.muted = false; }
+    if (tvStream.stallMuted) { tvStream.stallMuted = false; v.muted = tvStream.muted; }
     v.onplaying = v.onerror = v.onwaiting = v.onstalled = v.ontimeupdate = v.onloadedmetadata = v.onended = null;
     try { v.pause(); } catch (e) {}
     while (v.firstChild) v.removeChild(v.firstChild);
@@ -2700,7 +2700,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
    */
   var REFILL_S = 3;
   var REFILL_STEP_S = 1.5;
-  var REFILL_MAX_S = 10;
+  var REFILL_MAX_S = 6;
   var WATCH_MS = 500;
   /*
    * Reconnects in a row before giving up. A live channel reopens at the live
@@ -2871,7 +2871,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
       // As shown now: the preview may have become the player while this was asked for.
       v.muted = tvStream.muted;
       v.defaultMuted = tvStream.muted;
-      var startedAt = Date.now(), lastTime = -1, lastMove = 0, steadyFrom = 0, nudged = false, kicked = false;
+      var startedAt = Date.now(), lastTime = -1, lastMove = 0, steadyFrom = 0, nudged = false, kicked = false, skippedTo = -1;
       var refillSince = 0, refillTo = REFILL_S;
       v.onplaying = function () {
         if (gen !== tvStream.gen || tvStream.playing) return;
@@ -2923,7 +2923,11 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
           liveBufferLatencyChasing: false, fixAudioTimestampGap: true
         });
         tvStream.mse = m;
-        m.on(window.mpegts.Events.MEDIA_INFO, function () { gotData = true; });
+        m.on(window.mpegts.Events.MEDIA_INFO, function (info) {
+          gotData = true;
+          // mpegts.js reads H.264 and HEVC only: MPEG-2 video (DVB SD channels) is passed over without an error.
+          if (gen === tvStream.gen && tvStream.mse === m && info && info.hasVideo === false) toNative('novideo');
+        });
         m.on(window.mpegts.Events.ERROR, function (type, detail, info) {
           if (gen !== tvStream.gen || tvStream.mse !== m) return;
           /*
@@ -2936,12 +2940,23 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
               releaseMse();
               return openNative();
             }
-          } else if (type !== window.mpegts.ErrorTypes.MEDIA_ERROR) tvStream.pastCache = true;
+          } else if (type !== window.mpegts.ErrorTypes.MEDIA_ERROR) {
+            // The relay could not reach the channel (502) before anything played: an HTTPS link the TV's
+            // node cannot verify, or a provider refusing the relay. The TV's player asks it directly.
+            if (!gotData && !tvStream.everPlayed && info && info.code === 502) return toNative('relay');
+            tvStream.pastCache = true;
+          }
           // The log keeps 20 characters of a name: mpegts.js's are longer (UnrecoverableEarlyEof).
           lost(gen, 'error', { detail: String(detail).slice(0, 20), code: info && typeof info.code === 'number' ? info.code : 0 });
         });
         // A live stream has no end: one that ends was closed by the provider.
         m.on(window.mpegts.Events.LOADING_COMPLETE, function () { if (gen === tvStream.gen && tvStream.mse === m) lost(gen, 'ended', {}); });
+        var toNative = function (why) {
+          nativeOnly[it.pl + ':' + it.key] = true;
+          streamEvent('native', { detail: why });
+          releaseMse();
+          openNative();
+        };
         m.attachMediaElement(v);
         m.load();
         playNow();
@@ -2972,11 +2987,12 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
             refillSince = 0;
             refillTo = Math.min(refillTo + REFILL_STEP_S, REFILL_MAX_S);
             lastMove = now;
-            if (tvStream.stallMuted) { tvStream.stallMuted = false; v.muted = false; }
+            if (tvStream.stallMuted) { tvStream.stallMuted = false; v.muted = tvStream.muted; }
             playNow();
-          } else if (now - refillSince > STALL_MS) {
+          } else if (now - refillSince > Math.max(STALL_MS, refillTo * 1000 + 4000)) {
+            // A live stream fills about as fast as it plays: the hold allows the goal's seconds and more.
             refillSince = 0;
-            lost(gen, 'stall', { refill: true, ahead: Math.round(buf.ahead * 10) / 10, state: v.readyState });
+            lost(gen, 'refill', { ahead: Math.round(buf.ahead * 10) / 10, state: v.readyState });
           }
           return;
         }
@@ -2987,20 +3003,23 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
          */
         if (tvStream.engine === 'mse') {
           buf = bufferedAhead(v);
-          if (buf.next > ct && buf.ahead < 0.3) {
+          if (buf.next > ct && buf.ahead < 0.3 && buf.next !== skippedTo) {
+            skippedTo = buf.next;
             streamEvent('skipped', { gap: Math.round((buf.next - ct) * 10) / 10 });
             try { v.currentTime = buf.next + 0.1; } catch (e) {}
-            lastMove = now;
             return;
           }
         }
         if (ct !== lastTime) {
-          if (tvStream.stallMuted) { tvStream.stallMuted = false; v.muted = false; }
+          if (tvStream.stallMuted) { tvStream.stallMuted = false; v.muted = tvStream.muted; }
           lastTime = ct;
           lastMove = now;
           nudged = false;
           kicked = false;
-          if (tvStream.tries && now - steadyFrom > STEADY_MS) tvStream.tries = 0;
+          if (now - steadyFrom > STEADY_MS) {
+            if (tvStream.tries) tvStream.tries = 0;
+            if (tvStream.engine === 'mse') mseFailures[it.pl + ':' + it.key] = 0;
+          }
           return;
         }
         var still = now - lastMove;
@@ -3028,7 +3047,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
             try { v.currentTime = ct + 0.1; } catch (e) {}
             return;
           }
-          if (still > FROZEN_MS) return lost(gen, 'frozen', { still: still, ahead: Math.round(buf.ahead * 10) / 10, state: v.readyState });
+          if (tvStream.engine === 'mse' && still > FROZEN_MS) return lost(gen, 'frozen', { still: still, ahead: Math.round(buf.ahead * 10) / 10, state: v.readyState });
         }
         if (still > STALL_MS || (still > STALL_EMPTY_MS && buf.ahead < 0.5)) lost(gen, 'stall', { still: still, ahead: Math.round(buf.ahead * 10) / 10, state: v.readyState, net: v.networkState });
       }, WATCH_MS);
