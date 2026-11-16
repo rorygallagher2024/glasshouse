@@ -2282,7 +2282,6 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
   function releaseVideo() {
     var v = $('pvVideo');
     releaseMse();
-    if (tvStream.stallMuted) { tvStream.stallMuted = false; v.muted = tvStream.muted; }
     v.onplaying = v.onerror = v.onwaiting = v.onstalled = v.ontimeupdate = v.onloadedmetadata = v.onended = null;
     try { v.pause(); } catch (e) {}
     while (v.firstChild) v.removeChild(v.firstChild);
@@ -2674,7 +2673,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     // seekTo: seconds behind live the next open starts at; seekTarget: where left and right are heading; kept: seconds the stick holds.
     seekTo: null, seekTarget: null, seekTimer: null, kept: null,
     // engine: 'mse' (Home's own player, mpegts.js) or 'native' (the TV's); mse: the mpegts.js player.
-    engine: '', mse: null, stallMuted: false };
+    engine: '', mse: null };
   var STREAM_START_MS = 12000;
   // The picture not moving this long is a stall, whatever events the <video> sent;
   // sooner with nothing buffered past it: every stall logged on a provider's
@@ -2692,6 +2691,8 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
    */
   var KICK_AHEAD_S = 1;
   var KICK_MS = 1500;
+  // Buffered seconds below which Home's player holds for a refill.
+  var REFILL_LOW_S = 0.5;
   var KICK_EVERY_MS = 30000;
   var FROZEN_MS = 4000;
   /*
@@ -2942,9 +2943,6 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
               return openNative();
             }
           } else if (type !== window.mpegts.ErrorTypes.MEDIA_ERROR) {
-            // The relay could not reach the channel (502) before anything played: an HTTPS link the TV's
-            // node cannot verify, or a provider refusing the relay. The TV's player asks it directly.
-            if (!gotData && !tvStream.everPlayed && info && info.code === 502) return toNative('relay');
             tvStream.pastCache = true;
           }
           // The log keeps 20 characters of a name: mpegts.js's are longer (UnrecoverableEarlyEof).
@@ -2988,7 +2986,6 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
             refillSince = 0;
             refillTo = Math.min(refillTo + REFILL_STEP_S, REFILL_MAX_S);
             lastMove = now;
-            if (tvStream.stallMuted) { tvStream.stallMuted = false; v.muted = tvStream.muted; }
             playNow();
           } else if (now - refillSince > Math.max(STALL_MS, refillTo * 1000 + 4000)) {
             // A live stream fills about as fast as it plays: the hold allows the goal's seconds and more.
@@ -3010,9 +3007,17 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
             try { v.currentTime = buf.next + 0.1; } catch (e) {}
             return;
           }
+          /*
+           * About to run dry: held paused for a refill before the buffer empties. Played
+           * to the last frame, the TV's sound output buzzed on its last samples.
+           */
+          if (buf.next < 0 && buf.ahead < REFILL_LOW_S) {
+            refillSince = now;
+            try { v.pause(); } catch (e) {}
+            return;
+          }
         }
         if (ct !== lastTime) {
-          if (tvStream.stallMuted) { tvStream.stallMuted = false; v.muted = tvStream.muted; }
           lastTime = ct;
           lastMove = now;
           nudged = false;
@@ -3023,20 +3028,12 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
           return;
         }
         var still = now - lastMove;
-        // Silent while the picture is stuck, rather than whatever the sound output repeats.
-        if (tvStream.engine === 'mse' && still >= WATCH_MS && !v.muted) { tvStream.stallMuted = true; v.muted = true; }
         buf = bufferedAhead(v);
         // Stuck at a hole with more buffered after it: step over it rather than reconnect.
         if (still > NUDGE_MS && !nudged && buf.next > ct) {
           nudged = true;
           streamEvent('skipped', { gap: Math.round((buf.next - ct) * 10) / 10 });
           try { v.currentTime = buf.next + 0.1; } catch (e) {}
-          return;
-        }
-        // Run dry with no hole to step over: hold the picture until there is a cushion again.
-        if (tvStream.engine === 'mse' && buf.ahead < 0.3 && buf.next < 0) {
-          refillSince = now;
-          try { v.pause(); } catch (e) {}
           return;
         }
         // Frozen with plenty buffered: step the decoder on, then reopen.

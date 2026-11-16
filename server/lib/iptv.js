@@ -41,6 +41,8 @@ var memory = require('./iptv-memory');
 var timeshift = require('./iptv-timeshift');
 var http = require('http');
 var https = require('https');
+var dns = require('dns');
+var net = require('net');
 var urlLib = require('url');
 var toBuffer = require('./util').toBuffer;
 var spawn = require('child_process').spawn;
@@ -1586,7 +1588,8 @@ function enigma2Free(p, streamUrlText, cb) {
  *   provider sends no CORS headers. Xtream's live links redirect to a token
  *   on another host, followed here, a few hops at most.
  */
-var RELAY_CONNECT_MS = 10000;
+// A provider seen taking 7.5 to 11 s to accept a connection, on each of its two hops.
+var RELAY_CONNECT_MS = 20000;
 var RELAY_IDLE_MS = 20000;
 var RELAY_HOPS = 4;
 /*
@@ -1594,6 +1597,43 @@ var RELAY_HOPS = 4;
  * such a TV an https link goes to the TV's player rather than through the relay.
  */
 var RELAY_HTTPS = +String(process.versions.node).split('.')[0] >= 12;
+/*
+ * A provider's host can name several servers of which only some answer: one
+ * seen with five, four never accepting a connection. Node connects to the first
+ * and waits on it; curl and the TV's player go on to the next, after seconds
+ * each. All are tried at once here and the first to connect is used, and kept
+ * for the host's next request until it fails one.
+ */
+var RELAY_PROBE_MS = 4000;
+var RELAY_ADDRESS_MS = 10 * 60 * 1000;
+var relayAddresses = {};
+function reachableAddress(host, port, cb) {
+  if (net.isIP(host)) return cb(host);
+  var key = host + ':' + port, known = relayAddresses[key];
+  if (known && nowMs() - known.at < RELAY_ADDRESS_MS) return cb(known.address);
+  dns.resolve4(host, function (err, addresses) {
+    if (err || !addresses || !addresses.length) return cb(null);
+    if (addresses.length === 1) return cb(addresses[0]);
+    var done = false, left = addresses.length, sockets = [];
+    var finish = function (address) {
+      if (done) return;
+      done = true;
+      clearTimeout(timer);
+      sockets.forEach(function (sock) { sock.destroy(); });
+      if (address) relayAddresses[key] = { address: address, at: nowMs() };
+      cb(address);
+    };
+    var timer = setTimeout(function () { finish(null); }, RELAY_PROBE_MS);
+    addresses.forEach(function (address) {
+      var sock = net.connect({ host: address, port: port });
+      sockets.push(sock);
+      sock.on('connect', function () { finish(address); });
+      sock.on('error', function () { if (--left === 0) finish(null); });
+    });
+  });
+}
+function forgetAddress(host, port) { delete relayAddresses[host + ':' + port]; }
+
 function relayStream(id, key, req, res) {
   var upstream = null, closed = false;
   function refuse(code, why) {
@@ -1614,12 +1654,23 @@ function relayStream(id, key, req, res) {
     if (!lib || !u.hostname) return refuse(502, 'network');
     var headers = { 'User-Agent': tunerLogin ? 'Glasshouse/' + version : timeshift.UA, Connection: 'close' };
     if (tunerLogin) headers.Authorization = 'Basic ' + toBuffer(p.user + ':' + (p.pass || ''), 'utf8').toString('base64');
+    var port = +(u.port || (lib === https ? 443 : 80));
+    reachableAddress(u.hostname, port, function (address) {
+      if (closed) return;
+      // The host's name still goes in Host and, over https, in SNI and the certificate check.
+      if (address) headers.Host = u.host;
+      askAt(lib, u, port, address || u.hostname, headers, link, hops);
+    });
+  }
+  function askAt(lib, u, port, address, headers, link, hops) {
+    var options = { host: address, port: port, path: u.path, method: 'GET', agent: false, headers: headers };
+    if (lib === https) options.servername = u.hostname;
     // Each hop its own request: a late timeout or error on one that redirected must not touch the next.
-    var mine = lib.request({ host: u.hostname, port: u.port || (lib === https ? 443 : 80), path: u.path, method: 'GET', agent: false, headers: headers }, function (up) {
+    var mine = lib.request(options, function (up) {
+      clearTimeout(connectTimer);
       var to = up.headers.location;
       if (!tunerLogin && up.statusCode >= 300 && up.statusCode < 400 && to && hops < RELAY_HOPS) {
         up.resume();
-        mine.setTimeout(0);
         return ask(urlLib.resolve(link, String(to)), hops + 1);
       }
       if (up.statusCode !== 200) {
@@ -1629,13 +1680,28 @@ function relayStream(id, key, req, res) {
       }
       up.socket.setTimeout(RELAY_IDLE_MS, function () { mine.abort(); });
       res.writeHead(200, { 'Content-Type': 'video/MP2T', 'Cache-Control': 'no-store' });
+      // Node 16 ends an aborted response with 'close' alone, no 'end' or 'error'.
       up.on('end', function () { res.end(); });
       up.on('error', function () { res.end(); });
+      up.on('close', function () { res.end(); });
       up.pipe(res, { end: false });
     });
     upstream = mine;
-    mine.setTimeout(RELAY_CONNECT_MS, function () { mine.abort(); });
-    mine.on('error', function () { if (upstream === mine) refuse(502, 'network'); });
+    /*
+     * From the request, not the socket: a request's own timeout starts only once
+     * connected, so a server that never accepts was waited on for good. Answered
+     * here: an abort raises no 'error' on node 16.
+     */
+    var connectTimer = setTimeout(function () {
+      forgetAddress(u.hostname, port);
+      if (upstream === mine && !res.headersSent) refuse(504, 'timeout');
+      mine.abort();
+    }, RELAY_CONNECT_MS);
+    mine.on('error', function () {
+      clearTimeout(connectTimer);
+      forgetAddress(u.hostname, port);
+      if (upstream === mine) refuse(502, 'network');
+    });
     mine.end();
   }
   // A channel change hangs up at once: an account may allow one connection.
