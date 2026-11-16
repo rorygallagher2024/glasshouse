@@ -315,6 +315,9 @@ function renderHome() {
   // Its size, while it is on and beside the clock. Plain CSS, so offered on every webOS.
   const sizeRow = q('home-preview-size-row');
   if (sizeRow) sizeRow.hidden = !st.supported.ok || !st.layout || st.layout.livePreview !== true || st.layout.previewInTile === true;
+  // Not offered with no remote paired, or one whose battery cannot be read.
+  const batteryRow = q('home-remote-battery-row');
+  if (batteryRow) batteryRow.hidden = !st.supported.ok || st.remoteBatteryAvailable === false;
   const batterySel = q('home-remote-battery-sel');
   if (batterySel) {
     batterySel.value = (st.layout && st.layout.remoteBattery) || 'low';

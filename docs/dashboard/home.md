@@ -501,11 +501,13 @@ The badge appears once data is received, is kept when the TV restarts, and is hi
 
 ### Remote battery
 
-The Magic Remote's battery, as a remote outline and a percentage after the date, in orange once it is down to 20%. It is the level the remote last reported, the same one the dashboard's Remote section shows. The **Remote battery** setting chooses when it appears:
+The Magic Remote's battery, as a remote outline and a percentage after the date, in orange once it is down to 20%. It is the level the remote last reported, the same one the dashboard's Remote section shows. A remote that reports only High, Medium or Low (such as an MR19) shows that word instead, in orange at Low. The **Remote battery** setting chooses when it appears:
 
-* **When low (default):** only once the battery is down to 20%.
+* **When low (default):** only once the battery is down to 20%, or at Low.
 * **Always:** at any level, once the remote has reported one.
 * **Off:** never.
+
+The setting is not offered with no remote paired, or once the remote's battery has turned out not to be readable.
 
 ### Live preview
 

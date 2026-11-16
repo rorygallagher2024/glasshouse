@@ -57,9 +57,10 @@ var SHOW_KEYS = ['showClock', 'showLastOn', 'showAppCount', 'showAppLabels', 'sh
 var WEATHER_SOURCES = ['off', 'ha', 'internet'];
 // The Magic Remote's battery beside the date: never, only once it is low, or always.
 var REMOTE_BATTERY = ['off', 'low', 'always'];
-// At or under this, the badge shows in 'low' and is drawn as low. LG's
-// three-step remotes report LOW as 10 (lib/remotebattery's deviceLevelFrom).
+// At or under this, the badge shows in 'low' and is drawn as low. A remote
+// that gives only HIGH, MID or LOW is low at LOW (lib/remotebattery).
 var REMOTE_BATTERY_LOW = 20;
+var REMOTE_BATTERY_STEPS = ['high', 'mid', 'low'];
 // The live preview beside the clock: 356x200, 512x288 or 640x360 on the 1920x1080 view.
 var PREVIEW_SIZES = ['small', 'medium', 'large'];
 // Each kind of motion on the view, on unless switched off: the wallpaper's
@@ -288,7 +289,9 @@ var pictureDetailsFn = function () {};
  */
 // The TV, for the compatibility table and its report links: { webos, model, firmware, glasshouse }.
 var tvInfoFn = function () { return { webos: webosVersion }; };
-// The remote's battery level, 0 to 100, or null while it is not known.
+// The paired remote's battery, null with none paired: { level: 0 to 100 or
+// null, step: 'high', 'mid', 'low' or null, status: as the Remote section's
+// batteryStatus }.
 var remoteBatteryFn = function () { return null; };
 var setHomeKeyFn = function (id, cb) { cb({ ok: true, none: true }); };
 // Whether the remote's keys can be read (lib/remotebuttons), for webOS 3's Home button.
@@ -2800,17 +2803,27 @@ function beat(body) {
 
 /*
  * The remote's battery as the view's badge shows it, or null to hide it:
- * switched off, not yet read, or above the low mark in 'low'. The level is
- * what lib/remotebattery last read, so this reads no Bluetooth of its own.
+ * switched off, not yet read, or not low in 'low'. A remote that gives only a
+ * step is shown by it (step), not by the percentage standing in for it. The
+ * level is what lib/remotebattery last read, so this reads no Bluetooth of its own.
  */
 function remoteBatteryBadge() {
   var choice = readConfig().remoteBattery;
   if (choice === 'off') return null;
-  var level = remoteBatteryFn();
+  var b = remoteBatteryFn();
+  var level = b && b.level;
   if (typeof level !== 'number' || !isFinite(level) || level < 0 || level > 100) return null;
-  var low = level <= REMOTE_BATTERY_LOW;
+  var step = REMOTE_BATTERY_STEPS.indexOf(b.step) !== -1 ? b.step : null;
+  var low = step ? step === 'low' : level <= REMOTE_BATTERY_LOW;
   if (choice === 'low' && !low) return null;
-  return { level: Math.round(level), low: low };
+  return step ? { level: null, step: step, low: low } : { level: Math.round(level), step: null, low: low };
+}
+
+// Whether the badge could ever show: a remote is paired and its battery read
+// has not given up as unsupported. The dashboards offer the setting only then.
+function remoteBatteryAvailable() {
+  var b = remoteBatteryFn();
+  return !!b && b.status !== 'unsupported';
 }
 
 function foregroundChanged(id) {
@@ -3203,6 +3216,7 @@ function status(cb) {
         lgHomeOpen: escaped,
         hideLgHomeAtStart: c.hideLgHomeAtStart === true,
         hideLgHomeAtStartAvailable: startLayoutAvailable(),
+        remoteBatteryAvailable: remoteBatteryAvailable(),
         history: !!(historyModule && historyModule.enabled && historyModule.enabled()),
         wallpapers: wallpapers.status(),
         colourPresets: COLOUR_PRESETS,

@@ -1885,13 +1885,18 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
   /*
    * The remote's battery after the date. The server sends it with each
    * heartbeat only while the layout's remoteBattery shows it (lib/home.js,
-   * remoteBatteryBadge), so null hides it.
+   * remoteBatteryBadge), so null hides it. A remote that reports only High,
+   * Medium or Low comes as that step, not a percentage.
    */
   function renderRemoteBattery(b) {
     var el = $('rbat');
-    if (!b || typeof b.level !== 'number') { el.className = 'none'; return; }
-    $('rbatPct').textContent = t('home.remoteBattery.level', '{level}%', { level: b.level });
-    el.setAttribute('aria-label', t('home.remoteBattery.aria', 'Remote battery {level}%', { level: b.level }));
+    var steps = { high: t('home.remoteBattery.high', 'High'), mid: t('home.remoteBattery.mid', 'Medium'),
+                  low: t('home.remoteBattery.lowStep', 'Low') };
+    var text = b && steps[b.step] ? steps[b.step]
+      : b && typeof b.level === 'number' ? t('home.remoteBattery.level', '{level}%', { level: b.level }) : '';
+    if (!text) { el.className = 'none'; return; }
+    $('rbatPct').textContent = text;
+    el.setAttribute('aria-label', t('home.remoteBattery.ariaText', 'Remote battery: {level}', { level: text }));
     el.className = b.low ? 'low' : '';
   }
 

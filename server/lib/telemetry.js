@@ -779,6 +779,8 @@ function remoteInfo() {
     battery: level !== null ? level : file.battery,
     batteryUpdatedAt: batteryDetails.batteryUpdatedAt || null,
     batterySource: level !== null ? batteryDetails.batterySource : file.battery !== null ? 'pairing' : null,
+    // 'high', 'mid' or 'low' where the remote gave only a step, which battery stands in for.
+    batteryStep: level !== null ? batteryDetails.batteryStep || null : null,
     batteryStatus: file.battery !== null ? 'available' : batteryDetails.batteryStatus || 'waiting',
     model: file.model,
     mac: file.mac,
