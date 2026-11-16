@@ -78,7 +78,7 @@ function renderHomeTv() {
   const usable = homeWritable();
   const rows = homeTv.playlists.map(p => {
     const err = p.loginRefused ? homeTvError({ code: 'login' }) : p.error ? homeTvError(p.error) + (p.ready ? ' ' + t('home.tv.keptOld', 'The list from before is still in use.') : '') : '';
-    const kind = p.kind === 'xtream' ? t('home.tv.xtream', 'Xtream login') : t('home.tv.m3u', 'M3U link');
+    const kind = p.kind === 'xtream' ? t('home.tv.xtream', 'Xtream login') : p.kind === 'enigma2' ? t('home.tv.enigma2', 'Satellite tuner') : t('home.tv.m3u', 'M3U link');
     const armed = homeTvArmed === p.id;
     return `<div class="prot-row">
       <div class="prot-main"><div class="prot-title"><span translate="no">${esc(p.label)}</span> <span class="pill idle">${esc(kind)}</span></div>
@@ -98,7 +98,8 @@ function renderHomeTv() {
     ${waiting ? `<div class="pv-note">${esc(waiting)}</div>` : ''}
     ${homeTvForm ? homeTvFormHtml() : `<div class="btns" style="max-width:420px">
       <button type="button" ${usable ? '' : 'disabled'} onclick="homeTvOpenForm('xtream')">${esc(t('home.tv.addXtream', 'Add an Xtream login'))}</button>
-      <button type="button" ${usable ? '' : 'disabled'} onclick="homeTvOpenForm('m3u')">${esc(t('home.tv.addM3u', 'Add an M3U link'))}</button></div>`}
+      <button type="button" ${usable ? '' : 'disabled'} onclick="homeTvOpenForm('m3u')">${esc(t('home.tv.addM3u', 'Add an M3U link'))}</button>
+      <button type="button" ${usable ? '' : 'disabled'} onclick="homeTvOpenForm('enigma2')">${esc(t('home.tv.addEnigma2', 'Add a satellite tuner'))}</button></div>`}
     ${homeGuideKeyHtml()}
     ${homeTv.playlists.some(p => p.ready) ? homeTvManageHtml() + homeTvPauseHtml() : ''}`;
 }
@@ -148,18 +149,31 @@ function homeTvManageHtml() {
 function homeTvFormHtml() {
   const f = homeTvForm, editing = !!f.id;
   const p = editing ? homeTv.playlists.find(x => x.id === f.id) : null;
+  if (f.takeOver === undefined) f.takeOver = !!(p && p.takeOver);
+  if (f.noLogin === undefined) f.noLogin = false;
+  if (f.streamLogin === undefined) f.streamLogin = !!(p && p.streamLogin);
   const keep = editing ? t('home.tv.keepBlank', 'Leave blank to keep the one saved') : '';
   const field = (id, label, type, ph) => `<label class="home-tv-field"><span>${esc(label)}</span>
     <input id="${id}" type="${type}" autocomplete="off" spellcheck="false" placeholder="${esc(ph || '')}"></label>`;
   return `<div class="home-tv-form">
-    <div class="prot-title">${esc(editing ? t('home.tv.editTitle', 'Edit {name}', { name: p ? p.label : '' }) : f.kind === 'xtream' ? t('home.tv.addXtream', 'Add an Xtream login') : t('home.tv.addM3u', 'Add an M3U link'))}</div>
+    <div class="prot-title">${esc(editing ? t('home.tv.editTitle', 'Edit {name}', { name: p ? p.label : '' }) : f.kind === 'xtream' ? t('home.tv.addXtream', 'Add an Xtream login') : f.kind === 'enigma2' ? t('home.tv.addEnigma2', 'Add a satellite tuner') : t('home.tv.addM3u', 'Add an M3U link'))}</div>
     ${field('home-tv-label', t('home.tv.label', 'Name on the row'), 'text', p ? p.label : t('home.tv.labelPh', 'Home IPTV'))}
-    ${f.kind === 'xtream'
+    ${f.kind === 'enigma2'
+      ? field('home-tv-server', t('home.tv.tunerAddress', 'Tuner address'), 'text', keep || '192.168.1.10') +
+        field('home-tv-user', t('home.tv.tunerUser', 'User name (if the tuner asks for one)'), 'text', keep) +
+        field('home-tv-pass', t('home.tv.pass', 'Password'), 'password', keep) +
+        homeTvSwitchHtml('takeOver', t('home.tv.takeOverTitle', 'When every tuner is busy, switch a tuner to the requested channel'),
+          t('home.tv.takeOverDesc', 'Moves the tuner showing live TV. A tuner that is recording or streaming for someone else is never touched.')) +
+        homeTvSwitchHtml('streamLogin', t('home.tv.streamLoginTitle', 'The tuner asks for a login to play a channel'),
+          t('home.tv.streamLoginDesc', 'Sends the same login when a channel plays, through the TV, for a tuner that asks for one on its stream port. Needs a user name above.')) +
+        (editing ? homeTvSwitchHtml('noLogin', t('home.tv.noLogin', 'The tuner needs no login any more'), t('home.tv.noLoginDesc', 'Remove the saved login.')) : '') +
+        `<div class="sub">${esc(t('home.tv.tunerNote', 'Reads the bouquets, channels, logos and a week of guide from the tuner’s web interface (OpenWebif). The picture streams straight from the tuner.'))}</div>`
+      : f.kind === 'xtream'
       ? field('home-tv-server', t('home.tv.server', 'Server'), 'url', keep || 'http://example.host:8080') +
         field('home-tv-user', t('home.tv.user', 'User name'), 'text', keep) +
         field('home-tv-pass', t('home.tv.pass', 'Password'), 'password', keep)
       : field('home-tv-url', t('home.tv.url', 'Playlist link'), 'url', keep || 'http://example.host/get.php?…')}
-    ${field('home-tv-guide', t('home.tv.guideLink', 'Guide link (optional)'), 'url', p && p.hasGuideLink ? keep : f.kind === 'xtream' ? t('home.tv.guidePhX', 'Not needed: the guide comes from the login') : t('home.tv.guidePh', 'XMLTV link, if the playlist has none'))}
+    ${f.kind === 'enigma2' ? '' : field('home-tv-guide', t('home.tv.guideLink', 'Guide link (optional)'), 'url', p && p.hasGuideLink ? keep : f.kind === 'xtream' ? t('home.tv.guidePhX', 'Not needed: the guide comes from the login') : t('home.tv.guidePh', 'XMLTV link, if the playlist has none'))}
     <div class="sub">${esc(t('home.tv.private', 'Kept on the TV only, readable by Glasshouse alone. It is never sent to Home Assistant, the logs or this page.'))}</div>
     <div class="btns" style="max-width:360px">
       <button type="button" onclick="homeTvSave()">${esc(editing ? t('home.tv.saveEdit', 'Save and read it again') : t('home.tv.saveAdd', 'Add and read it'))}</button>
@@ -167,10 +181,26 @@ function homeTvFormHtml() {
   </div>`;
 }
 
+// An On/Off switch in the form, like the ones elsewhere on the dashboard. It keeps its state in the form and
+// changes in place, so what has been typed in the fields stays.
+function homeTvSwitchHtml(name, title, desc) {
+  const on = !!homeTvForm[name];
+  return `<div class="prot-table"><div class="prot-row">
+    <div class="prot-main"><div class="prot-title">${esc(title)}</div><div class="prot-desc">${esc(desc)}</div></div>
+    <div class="prot-status"><button type="button" class="pill ${on ? 'good' : 'idle'}" onclick="homeTvSwitch('${name}', this)">${esc(on ? t('common.on', 'On') : t('common.off', 'Off'))}</button></div>
+  </div></div>`;
+}
+
+function homeTvSwitch(name, btn) {
+  homeTvForm[name] = !homeTvForm[name];
+  btn.className = 'pill ' + (homeTvForm[name] ? 'good' : 'idle');
+  btn.textContent = homeTvForm[name] ? t('common.on', 'On') : t('common.off', 'Off');
+}
+
 function homeTvOpenForm(kind, id) {
   homeTvForm = { kind, id: id || null };
   renderHomeTv();
-  const first = q(id ? 'home-tv-label' : kind === 'xtream' ? 'home-tv-server' : 'home-tv-url');
+  const first = q(id ? 'home-tv-label' : kind === 'xtream' || kind === 'enigma2' ? 'home-tv-server' : 'home-tv-url');
   if (first) first.focus();
 }
 
@@ -178,16 +208,19 @@ async function homeTvSave() {
   const f = homeTvForm;
   const val = id => (q(id) ? q(id).value.trim() : '');
   const body = { action: f.id ? 'edit' : 'add', id: f.id || undefined, kind: f.kind, label: val('home-tv-label') };
-  if (f.kind === 'xtream') { body.server = val('home-tv-server'); body.user = val('home-tv-user'); body.pass = val('home-tv-pass'); }
+  if (f.kind === 'xtream' || f.kind === 'enigma2') { body.server = val('home-tv-server'); body.user = val('home-tv-user'); body.pass = val('home-tv-pass'); }
   else body.url = val('home-tv-url');
-  const guide = val('home-tv-guide');
-  if (guide || !f.id) body.guide = guide;
+  if (f.kind === 'enigma2') { body.takeOver = !!f.takeOver; if (f.streamLogin) body.streamLogin = true; if (f.noLogin) body.noLogin = true; }
+  else {
+    const guide = val('home-tv-guide');
+    if (guide || !f.id) body.guide = guide;
+  }
   try {
     await homePost('/api/iptv/playlists', body);
     homeTvForm = null;
   } catch (e) {
     const why = { url: t('home.tv.bad.url', 'The playlist link must start with http:// or https://.'),
-      server: t('home.tv.bad.server', 'The server must start with http:// or https://.'),
+      server: f.kind === 'enigma2' ? t('home.tv.bad.tuner', 'Enter the tuner’s address, like 192.168.1.10.') : t('home.tv.bad.server', 'The server must start with http:// or https://.'),
       login: t('home.tv.bad.login', 'A user name and password are both needed.'),
       guide: t('home.tv.bad.guide', 'The guide link must start with http:// or https://.'),
       'too-many': t('home.tv.bad.many', 'Eight playlists is the most the TV keeps.') }[e.message];

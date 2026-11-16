@@ -534,6 +534,17 @@ whatever the HTTP status, short EPG text is decoded only when it is base64 of
 UTF-8 text, a guide id matches loosely only where one guide channel does, and
 two channels whose links differ only in a rotated token keep separate keys.
 
+`test-iptv-enigma2.js` does the same against a stand-in for a satellite
+receiver's OpenWebif behind a Basic login: a wrong login stopping at the
+first request, bouquets read as groups with markers left out, a bare
+`host:port` accepted, picons fetched with the login and kept, the guide
+matched by service reference and cut at a week, a channel with no guide not
+breaking the others, an edit keeping or clearing the login, no address, user
+name or password in any reply, and the tuner's own takeover: a tuner showing
+live TV moved only when none is free and never one that records or streams,
+and the relay for a tuner whose stream port wants the login (not offered
+before it is on, the login sent, a refused one a 502).
+
 `test-iptv.js` runs the server module with real worker processes and curl
 against a local provider: a playlist read and published 0600 in a 0700
 folder, search leaving out a provider's `### NEWS ###` headings, an added

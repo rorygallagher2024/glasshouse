@@ -1445,6 +1445,11 @@ function handleIptvRoute(req, res, u, pathname) {
           switchable: stream.switchable, timeshift: stream.timeshift === true }));
       });
     }
+    if (pathname === '/api/iptv/relay') {
+      // A tuner's stream with the owner's login: for the TV's own Home only, like the play link.
+      if (!fromTV(req)) return send(res, 403, JSON.stringify({ ok: false, error: 'forbidden' }));
+      return iptvModule.relay(String(qs.pl || ''), String(qs.key || ''), req, res);
+    }
     if (pathname === '/api/iptv/timeshift') {
       if (qs.pl === undefined) return iptvModule.timeshiftStatus(reply);
       var ts = iptvModule.timeshiftStats(String(qs.pl || ''), String(qs.key || ''));
