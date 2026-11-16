@@ -11,6 +11,10 @@
  * next one starts, so a PES a closed connection cut short is dropped
  * (restart()) and comes whole from the next.
  *
+ * A step back of more than a minute is the provider starting the channel again,
+ * from new timestamps: restarted is set, for the relay to end the response,
+ * since a player discards what comes before the timestamps it started from.
+ *
  * Packets other than an elementary stream's (PAT, PMT, SDT, PCR-only) pass at
  * once. Holding one PES per stream (a frame of video) reorders packets across
  * streams by at most that, which a demuxer separating them by PID does not see.
@@ -32,6 +36,7 @@ function Splice() {
   this.pmtPid = -1;
   // pid -> { packets, ts, keep, last }
   this.streams = {};
+  this.restarted = false;
 }
 
 // The connection closed: what it left unfinished is dropped.
@@ -74,7 +79,9 @@ Splice.prototype.packet = function (p, out) {
     var ts = payload > 0 ? pesTimestamp(p, payload) : -1;
     if (ts < 0) stream.keep = true;
     else {
-      stream.keep = stream.last < 0 || after(ts, stream.last);
+      var order = stream.last < 0 ? LATER : compare(ts, stream.last);
+      if (order === RESTART) this.restarted = true;
+      stream.keep = order !== REPEAT;
       if (stream.keep) stream.ts = ts;
     }
   }
@@ -112,13 +119,15 @@ function flush(stream, out) {
   if (stream.ts >= 0) stream.last = stream.ts;
 }
 
-// Later than last: ahead by less than half the clock, or so far behind it started again.
-function after(ts, last) {
+var LATER = 1, REPEAT = 0, RESTART = 2;
+// Ahead by less than half the clock is later; so far behind, the stream started again.
+function compare(ts, last) {
   var ahead = (ts - last + WRAP) % WRAP;
-  if (ahead > 0 && ahead < HALF) return true;
+  if (ahead > 0 && ahead < HALF) return LATER;
   var behind = (last - ts + WRAP) % WRAP;
-  return behind > RESET_TICKS && behind < HALF;
+  return behind > RESET_TICKS && behind < HALF ? RESTART : REPEAT;
 }
+function after(ts, last) { return compare(ts, last) !== REPEAT; }
 
 // Where a packet's payload starts, or -1 when it carries none.
 function payloadAt(p) {

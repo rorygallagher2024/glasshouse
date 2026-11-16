@@ -571,7 +571,7 @@ across a provider's reconnect. Fed in pieces that cut packets in half, a
 connection's PES packets pass in order. A PES cut short by the close comes whole
 from the next connection, and the seconds that connection sends again are dropped.
 Before a PMT, a stream passes as it is. Timestamps compare across the 33-bit wrap,
-and a step back of more than a minute counts as the stream starting again.
+and a step back of more than a minute counts as the stream starting again and is reported, so the relay can end the response.
 
 `test-iptv-timeshift.js` runs the recording for pausing live TV: the real
 worker records a local provider's MPEG-TS packets through curl into a folder

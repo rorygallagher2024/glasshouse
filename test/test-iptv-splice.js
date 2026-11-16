@@ -106,6 +106,14 @@ assert.ok(!splice._after(WRAP - 5, 5), 'before the wrap is earlier');
 assert.ok(!splice._after(10 * T, 20 * T), '10 s back is a repeat');
 assert.ok(splice._after(0, 120 * T), 'two minutes back is the stream starting again');
 assert.equal(splice._timestamp(pes(VIDEO, WRAP - 1, 1, 0)[0], 4 + 9), WRAP - 1, 'a 33-bit timestamp is read whole');
-console.log('  ✓ timestamps wrap at 33 bits, and a big step back starts the stream again');
+var r = new splice.Splice();
+r.feed(stream([PAT, PMT_PACKET], pes(VIDEO, 600 * T, 1, 1), pes(VIDEO, 601 * T, 1, 2)));
+assert.ok(!r.restarted, 'a stream going on is not a restart');
+r.restart();
+r.feed(stream([PAT, PMT_PACKET], pes(VIDEO, 590 * T, 1, 3)));
+assert.ok(!r.restarted, 'a reconnect\'s repeat is not a restart');
+r.feed(stream(pes(VIDEO, 2 * T, 1, 4)));
+assert.ok(r.restarted, 'ten minutes back is the channel starting again');
+console.log('  ✓ timestamps wrap at 33 bits, and a big step back starts the stream again and is told');
 
 console.log('ALL test-iptv-splice.js assertions passed!\n');

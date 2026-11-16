@@ -1732,6 +1732,17 @@ function relayStream(id, key, req, res) {
       up.on('data', function (chunk) {
         if (upstream !== mine || closed) return;
         var out = splice ? splice.feed(chunk) : chunk;
+        /*
+         * The channel started again from new timestamps (a provider seen doing so,
+         * refusing and repeating meanwhile): ended here, Home opens it again at once
+         * with a player that takes them, where its last discarded all it was sent.
+         */
+        if (splice && splice.restarted) {
+          console.log('iptv: relay for ' + id + ' ended at the channel starting again');
+          closed = true;
+          upstream.abort();
+          return res.end();
+        }
         if (out && !res.write(out)) {
           up.pause();
           res.once('drain', function () { up.resume(); });
