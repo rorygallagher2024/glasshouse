@@ -2921,7 +2921,12 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
         var gotData = false;
         var m = window.mpegts.createPlayer({ type: 'mpegts', isLive: true, url: location.protocol + '//' + location.host + r.relay }, {
           enableWorker: true, enableStashBuffer: true, stashInitialSize: 384 * 1024, lazyLoad: false,
-          autoCleanupSourceBuffer: true, autoCleanupMaxBackwardDuration: 8, autoCleanupMinBackwardDuration: 4,
+          /*
+           * A browser removes video up to the next keyframe after the end it is given:
+           * with 4 s kept and keyframes 10 s apart (Nat Geo Wild), every cleanup took the
+           * seconds just ahead of the picture too, a 0.6 s hole every 10 s.
+           */
+          autoCleanupSourceBuffer: true, autoCleanupMaxBackwardDuration: 24, autoCleanupMinBackwardDuration: 12,
           liveBufferLatencyChasing: false, fixAudioTimestampGap: true
         });
         tvStream.mse = m;

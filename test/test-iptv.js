@@ -488,13 +488,13 @@ step('channels added just before a restart get their play links at once after it
     pick.channels = pick.channels.filter(function (x) { return x.key !== c.key; }).concat([{ pl: xc, key: c.key, name: c.name, group: c.group }]);
     sel.generation++;
     fs.writeFileSync(path.join(stateDir, 'iptv', 'selection.json'), JSON.stringify(sel));
-    iptv.init({ stateDir: stateDir, clients: function () { return [CURL]; }, version: 'test', catchupMs: 600000,
+    iptv.init({ stateDir: stateDir, clients: function () { return [CURL]; }, version: 'test', relayRetryMs: [], catchupMs: 600000,
       onChange: function () { changes++; } });
     iptv.start();
     wait(function () { return iptv.streamUrl(xc, c.key); }, function () {
       assert.strictEqual(iptv.streamUrl(xc, c.key).account, true, 'a provider\'s login is an account');
       iptv.stop();
-      iptv.init({ stateDir: stateDir, clients: function () { return [CURL]; }, version: 'test', catchupMs: 0, onChange: function () { changes++; } });
+      iptv.init({ stateDir: stateDir, clients: function () { return [CURL]; }, version: 'test', relayRetryMs: [], catchupMs: 0, onChange: function () { changes++; } });
       iptv.start();
       wait(idle, done);
     }, 15000);
@@ -510,7 +510,7 @@ step('an Xtream channel plays as MPEG-TS once chosen, after a restart too, and a
     assert.equal(iptv.setOutput({ pl: xc, key: c.key, output: 'ts' }).ok, true);
     assert.equal(iptv.streamUrl(xc, c.key).url, hls.url.replace(/\.m3u8$/, '.ts'));
     iptv.stop();
-    iptv.init({ stateDir: stateDir, clients: function () { return [CURL]; }, version: 'test', catchupMs: 600000, onChange: function () { changes++; } });
+    iptv.init({ stateDir: stateDir, clients: function () { return [CURL]; }, version: 'test', relayRetryMs: [], catchupMs: 600000, onChange: function () { changes++; } });
     iptv.start();
     assert.equal(iptv.streamUrl(xc, c.key).format, 'ts', 'kept in the playlist\'s settings');
     assert.equal(iptv.setOutput({ pl: xc, key: c.key, output: 'hls' }).ok, true);
@@ -568,7 +568,7 @@ step('live TV pause is off by default, kept, and records only an MPEG-TS channel
     assert.equal(iptv.setTimeshift({ on: 'yes' }).ok, false);
     assert.equal(iptv.setTimeshift({ on: true }).ok, true);
     iptv.stop();
-    iptv.init({ stateDir: stateDir, clients: function () { return [CURL]; }, version: 'test', catchupMs: 600000, onChange: function () { changes++; } });
+    iptv.init({ stateDir: stateDir, clients: function () { return [CURL]; }, version: 'test', relayRetryMs: [], catchupMs: 600000, onChange: function () { changes++; } });
     iptv.start();
     assert.strictEqual(iptv.status().timeshift.on, true, 'kept across a restart');
     assert.strictEqual(iptv.rowStatus().timeshift, true, 'Home knows');
@@ -699,7 +699,7 @@ step('a playlist with no reachable server is refused when added, before any down
 
 provider.listen(0, '127.0.0.1', function () {
   base = 'http://127.0.0.1:' + provider.address().port;
-  iptv.init({ stateDir: stateDir, clients: function () { return [CURL]; }, version: 'test', catchupMs: 0,
+  iptv.init({ stateDir: stateDir, clients: function () { return [CURL]; }, version: 'test', relayRetryMs: [], catchupMs: 0,
     onChange: function () { changes++; } });
   iptv.start();
   run(0);
