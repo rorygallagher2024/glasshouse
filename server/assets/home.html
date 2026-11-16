@@ -2692,6 +2692,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
    */
   var KICK_AHEAD_S = 1;
   var KICK_MS = 1500;
+  var KICK_EVERY_MS = 30000;
   var FROZEN_MS = 4000;
   /*
    * Home's own player holds the picture when its buffer runs dry, until it has
@@ -2871,7 +2872,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
       // As shown now: the preview may have become the player while this was asked for.
       v.muted = tvStream.muted;
       v.defaultMuted = tvStream.muted;
-      var startedAt = Date.now(), lastTime = -1, lastMove = 0, steadyFrom = 0, nudged = false, kicked = false, skippedTo = -1;
+      var startedAt = Date.now(), lastTime = -1, lastMove = 0, steadyFrom = 0, nudged = false, kickedAt = 0, skippedTo = -1;
       var refillSince = 0, refillTo = REFILL_S;
       v.onplaying = function () {
         if (gen !== tvStream.gen || tvStream.playing) return;
@@ -3015,7 +3016,6 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
           lastTime = ct;
           lastMove = now;
           nudged = false;
-          kicked = false;
           if (now - steadyFrom > STEADY_MS) {
             if (tvStream.tries) tvStream.tries = 0;
             if (tvStream.engine === 'mse') mseFailures[it.pl + ':' + it.key] = 0;
@@ -3041,8 +3041,13 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
         }
         // Frozen with plenty buffered: step the decoder on, then reopen.
         if (buf.ahead > KICK_AHEAD_S) {
-          if (tvStream.engine === 'mse' && still > KICK_MS && !kicked) {
-            kicked = true;
+          /*
+           * Once in KICK_EVERY_MS: the kick's step reads as movement, so kicked again and
+           * again a stuck decoder never reached the reopen (Nat Geo Wild on a G3: kicked
+           * every 2 s with 15 s buffered, frozen 54 s a minute).
+           */
+          if (tvStream.engine === 'mse' && still > KICK_MS && now - kickedAt > KICK_EVERY_MS) {
+            kickedAt = now;
             streamEvent('kicked', { ahead: Math.round(buf.ahead * 10) / 10 });
             try { v.currentTime = ct + 0.1; } catch (e) {}
             return;
