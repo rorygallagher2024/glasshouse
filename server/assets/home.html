@@ -2281,6 +2281,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
    */
   function releaseVideo() {
     var v = $('pvVideo');
+    releaseMse();
     v.onplaying = v.onerror = v.onwaiting = v.onstalled = v.ontimeupdate = v.onloadedmetadata = v.onended = null;
     try { v.pause(); } catch (e) {}
     while (v.firstChild) v.removeChild(v.firstChild);
@@ -2670,7 +2671,9 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     muted: true, retryTimer: null, tries: 0, everPlayed: false, lostAt: 0, openedAt: 0, full: false,
     timeshift: false, paused: false, pausedAt: 0, behindMs: 0, capacity: null, tsTimer: null, tsUrl: '', noPauseAt: 0,
     // seekTo: seconds behind live the next open starts at; seekTarget: where left and right are heading; kept: seconds the stick holds.
-    seekTo: null, seekTarget: null, seekTimer: null, kept: null };
+    seekTo: null, seekTarget: null, seekTimer: null, kept: null,
+    // engine: 'mse' (Home's own player, mpegts.js) or 'native' (the TV's); mse: the mpegts.js player.
+    engine: '', mse: null };
   var STREAM_START_MS = 12000;
   // The picture not moving this long is a stall, whatever events the <video> sent;
   // sooner with nothing buffered past it: every stall logged on a provider's
@@ -2679,6 +2682,25 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
   var STALL_EMPTY_MS = 3000;
   // A hole in what is buffered is stepped over after this long, before reconnecting.
   var NUDGE_MS = 2500;
+  /*
+   * The picture stopped with more than KICK_AHEAD_S buffered past it: the
+   * decoder, not the network. A G3 (webOS 10) held one still for 9 s on 19.5 s
+   * buffered before the stall reconnect; mpegts.js was seen doing the same.
+   * Home's own player is stepped on after KICK_MS, and either player reopened
+   * after FROZEN_MS.
+   */
+  var KICK_AHEAD_S = 1;
+  var KICK_MS = 1500;
+  var FROZEN_MS = 4000;
+  /*
+   * Home's own player holds the picture when its buffer runs dry, until it has
+   * this much again, a little more each time on the same stream: playing on at
+   * the browser's tenth of a second stutters again at the next hiccup.
+   */
+  var REFILL_S = 3;
+  var REFILL_STEP_S = 1.5;
+  var REFILL_MAX_S = 10;
+  var WATCH_MS = 500;
   /*
    * Reconnects in a row before giving up. A live channel reopens at the live
    * point. A provider's CDN was seen sending nothing for 30 to 50 s at a time,
@@ -2690,6 +2712,44 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
   var RETRY_WAIT_MS = [400, 1500, 3000, 5000, 8000, 10000];
   // Playing this long since the last reconnect, a stream has all its reconnects back.
   var STEADY_MS = 30000;
+
+  /*
+   * Home's own player for MPEG-TS (mpegts.js, assets/vendor): it reads the
+   * stream through the server's relay and feeds the TV's decoder through Media
+   * Source Extensions, so starting, stalls and freezes are Home's to handle
+   * rather than the TV player's. Loaded on the first channel that can use it.
+   * A channel it cannot play goes to the TV's player for the rest of the visit.
+   */
+  var MPEGTS_SRC = '/assets/vendor/mpegts.js';
+  var mpegtsLoad = { state: 0, waiting: [] };
+  var nativeOnly = {};
+  function withMpegts(cb) {
+    if (mpegtsLoad.state === 2) return cb(true);
+    if (mpegtsLoad.state < 0) return cb(false);
+    mpegtsLoad.waiting.push(cb);
+    if (mpegtsLoad.state === 1) return;
+    mpegtsLoad.state = 1;
+    var el = document.createElement('script');
+    var done = function (ok) {
+      mpegtsLoad.state = ok ? 2 : -1;
+      var w = mpegtsLoad.waiting;
+      mpegtsLoad.waiting = [];
+      w.forEach(function (f) { f(ok); });
+    };
+    el.onload = function () { done(true); };
+    el.onerror = function () { done(false); };
+    el.src = MPEGTS_SRC;
+    document.head.appendChild(el);
+  }
+  function mseUsable() {
+    try { return !!(window.MediaSource && window.mpegts && window.mpegts.getFeatureList().mseLivePlayback); } catch (e) { return false; }
+  }
+  function releaseMse() {
+    var m = tvStream.mse;
+    tvStream.mse = null;
+    if (!m) return;
+    try { m.destroy(); } catch (e) {}
+  }
 
   function stopTvStream() {
     tvStream.gen++;
@@ -2742,6 +2802,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     var body = { event: event, pl: it.pl, key: it.key, format: tvStream.format, full: !!player.open, tries: tvStream.tries };
     if (v.videoWidth) body.size = v.videoWidth + 'x' + v.videoHeight;
     if (q) body.dropped = q.droppedVideoFrames;
+    if (tvStream.engine) body.engine = tvStream.engine;
     for (var k in detail) if (detail.hasOwnProperty(k)) body[k] = detail[k];
     postJson('/api/iptv/event', body);
   }
@@ -2799,7 +2860,8 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
       // As shown now: the preview may have become the player while this was asked for.
       v.muted = tvStream.muted;
       v.defaultMuted = tvStream.muted;
-      var startedAt = Date.now(), lastTime = -1, lastMove = 0, steadyFrom = 0, nudged = false;
+      var startedAt = Date.now(), lastTime = -1, lastMove = 0, steadyFrom = 0, nudged = false, kicked = false;
+      var refillSince = 0, refillTo = REFILL_S;
       v.onplaying = function () {
         if (gen !== tvStream.gen || tvStream.playing) return;
         tvStream.playing = true;
@@ -2828,10 +2890,52 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
       if (tvStream.pastCache) extra.push('gh=' + Date.now());
       if (tvStream.timeshift && tvStream.seekTo !== null) extra.push(tvStream.seekTo > 0 ? 'behind=' + tvStream.seekTo : 'live=1');
       tvStream.seekTo = null;
-      v.src = extra.length ? r.url + (r.url.indexOf('?') === -1 ? '?' : '&') + extra.join('&') : r.url;
-      v.load();
-      var played = v.play();
-      if (played && played.then) played.then(null, function () {});
+      var src = extra.length ? r.url + (r.url.indexOf('?') === -1 ? '?' : '&') + extra.join('&') : r.url;
+      var playNow = function () {
+        var played = v.play();
+        if (played && played.then) played.then(null, function () {});
+      };
+      var openNative = function () {
+        tvStream.engine = 'native';
+        v.src = src;
+        v.load();
+        playNow();
+      };
+      var openMse = function () {
+        tvStream.engine = 'mse';
+        var gotData = false;
+        var m = window.mpegts.createPlayer({ type: 'mpegts', isLive: true, url: location.protocol + '//' + location.host + r.relay }, {
+          enableWorker: true, enableStashBuffer: true, stashInitialSize: 384 * 1024, lazyLoad: false,
+          autoCleanupSourceBuffer: true, autoCleanupMaxBackwardDuration: 8, autoCleanupMinBackwardDuration: 4,
+          liveBufferLatencyChasing: false, fixAudioTimestampGap: true
+        });
+        tvStream.mse = m;
+        m.on(window.mpegts.Events.MEDIA_INFO, function () { gotData = true; });
+        m.on(window.mpegts.Events.ERROR, function (type, detail) {
+          if (gen !== tvStream.gen || tvStream.mse !== m) return;
+          // Decoding refused before a picture: a codec Media Source cannot take. The TV's player has it.
+          if (!gotData && type === window.mpegts.ErrorTypes.MEDIA_ERROR) {
+            nativeOnly[it.pl + ':' + it.key] = true;
+            streamEvent('native', { detail: String(detail) });
+            releaseMse();
+            return openNative();
+          }
+          tvStream.pastCache = true;
+          lost(gen, 'error', { detail: type + ':' + detail });
+        });
+        // A live stream has no end: one that ends was closed by the provider.
+        m.on(window.mpegts.Events.LOADING_COMPLETE, function () { if (gen === tvStream.gen && tvStream.mse === m) lost(gen, 'ended', {}); });
+        m.attachMediaElement(v);
+        m.load();
+        playNow();
+      };
+      if (r.relay && !tvStream.timeshift && !nativeOnly[it.pl + ':' + it.key]) {
+        withMpegts(function (ok) {
+          if (gen !== tvStream.gen) return;
+          if (ok && mseUsable()) openMse();
+          else openNative();
+        });
+      } else openNative();
       clearInterval(tvStream.watch);
       tvStream.watch = setInterval(function () {
         if (gen !== tvStream.gen) return;
@@ -2842,15 +2946,32 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
         }
         // Paused on purpose: a picture that does not move is no stall.
         if (tvStream.paused) { lastMove = now; return; }
-        var ct = v.currentTime;
+        var ct = v.currentTime, buf;
+        // Held for a refill (Home's own player): played on once the buffer is back, reopened if it never comes.
+        if (refillSince) {
+          buf = bufferedAhead(v);
+          if (buf.ahead >= refillTo) {
+            streamEvent('refilled', { held: now - refillSince, to: refillTo });
+            refillSince = 0;
+            refillTo = Math.min(refillTo + REFILL_STEP_S, REFILL_MAX_S);
+            lastMove = now;
+            playNow();
+          } else if (now - refillSince > STALL_MS) {
+            refillSince = 0;
+            lost(gen, 'stall', { refill: true, ahead: Math.round(buf.ahead * 10) / 10, state: v.readyState });
+          }
+          return;
+        }
         if (ct !== lastTime) {
           lastTime = ct;
           lastMove = now;
           nudged = false;
+          kicked = false;
           if (tvStream.tries && now - steadyFrom > STEADY_MS) tvStream.tries = 0;
           return;
         }
-        var still = now - lastMove, buf = bufferedAhead(v);
+        var still = now - lastMove;
+        buf = bufferedAhead(v);
         // Stuck at a hole with more buffered after it: step over it rather than reconnect.
         if (still > NUDGE_MS && !nudged && buf.next > ct) {
           nudged = true;
@@ -2858,8 +2979,24 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
           try { v.currentTime = buf.next + 0.1; } catch (e) {}
           return;
         }
+        // Run dry with no hole to step over: hold the picture until there is a cushion again.
+        if (tvStream.engine === 'mse' && buf.ahead < 0.3 && buf.next < 0) {
+          refillSince = now;
+          try { v.pause(); } catch (e) {}
+          return;
+        }
+        // Frozen with plenty buffered: step the decoder on, then reopen.
+        if (buf.ahead > KICK_AHEAD_S) {
+          if (tvStream.engine === 'mse' && still > KICK_MS && !kicked) {
+            kicked = true;
+            streamEvent('kicked', { ahead: Math.round(buf.ahead * 10) / 10 });
+            try { v.currentTime = ct + 0.1; } catch (e) {}
+            return;
+          }
+          if (still > FROZEN_MS) return lost(gen, 'frozen', { still: still, ahead: Math.round(buf.ahead * 10) / 10, state: v.readyState });
+        }
         if (still > STALL_MS || (still > STALL_EMPTY_MS && buf.ahead < 0.5)) lost(gen, 'stall', { still: still, ahead: Math.round(buf.ahead * 10) / 10, state: v.readyState, net: v.networkState });
-      }, 1000);
+      }, WATCH_MS);
     });
   }
 

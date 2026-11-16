@@ -11,6 +11,7 @@ var fs = require('fs');
 var os = require('os');
 var path = require('path');
 var http = require('http');
+var urlLib = require('url');
 var zlib = require('zlib');
 var toBuffer = require('../server/lib/util').toBuffer;
 
@@ -31,6 +32,8 @@ fs.mkdirSync(stateDir);
 var PNG = toBuffer('iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAAEklEQVR4nGP8z8DwnwEPYMIjBwBTZgH/2EydfwAAAABJRU5ErkJggg==', 'base64');
 var mode = 'ok';
 var hits = {};
+// Two transport stream packets: sync byte, then filler.
+var TS_BYTES = Buffer.concat([0, 1].map(function () { var b = Buffer.alloc ? Buffer.alloc(188, 0xff) : new Buffer(188); b.fill(0xff); b[0] = 0x47; return b; }));
 var provider = http.createServer(function (req, res) {
   var u = req.url;
   hits[u.split('?')[0]] = (hits[u.split('?')[0]] || 0) + 1;
@@ -69,6 +72,15 @@ var provider = http.createServer(function (req, res) {
       '#EXTINF:-1 tvg-id="hs1.uk" tvg-logo="' + base + '/logo.png" group-title="Sport",Harbour Sport 1\nhttp://s.test/1.m3u8?token=SECRET-TOKEN-Q\n' +
       '#EXTINF:-1 tvg-id="wt.uk" group-title="News",World Today\nhttp://s.test/2.m3u8?token=SECRET-TOKEN-Q\n' +
       '#EXTINF:-1 group-title="News",### NEWS ###\nhttp://s.test/0.m3u8\n' + extra);
+  }
+  // An Xtream live link redirects to a token on another path, as a panel's does.
+  if (/^\/live\/[^\/]+\/[^\/]+\/[0-9]+\.ts$/.test(u)) {
+    res.writeHead(302, { Location: base + '/token/abc123.ts' });
+    return res.end();
+  }
+  if (u === '/token/abc123.ts') {
+    res.writeHead(200, { 'Content-Type': 'video/mp2t' });
+    return res.end(TS_BYTES);
   }
   if (/^\/xmltv\.php/.test(u) && u.indexOf('username=canary-user&password=canary-pass') === -1) { res.writeHead(401); return res.end('no'); }
   if (/^\/(guide\.xml\.gz|xmltv\.php)/.test(u)) {
@@ -505,6 +517,44 @@ step('an Xtream channel plays as MPEG-TS once chosen, after a restart too, and a
     assert.equal(iptv.streamUrl(xc, c.key).url, hls.url);
     assert.equal(iptv.setOutput({ pl: m3u, key: c.key, output: 'ts' }).ok, false, 'a plain list has one kind of link');
     done();
+  });
+});
+
+step('an MPEG-TS channel is relayed for Home\'s own player, following the panel\'s redirect; an HLS one is not', function (done) {
+  iptv.search(xc, 'harbour sport 1', '', function (s) {
+    var c = s.channels[0];
+    assert.equal(iptv.setOutput({ pl: xc, key: c.key, output: 'ts' }).ok, true);
+    iptv.playUrl(xc, c.key, false, function (stream) {
+      assert.equal(stream.relay, '/api/iptv/relay?pl=' + encodeURIComponent(xc) + '&key=' + encodeURIComponent(c.key));
+      assert.ok(/\.ts$/.test(stream.url), 'the TV\'s player keeps the provider\'s link');
+      var relayServer = http.createServer(function (req, res) {
+        var q = urlLib.parse(req.url, true).query;
+        iptv.relay(String(q.pl || ''), String(q.key || ''), req, res);
+      });
+      function get(p, cb) {
+        http.get({ host: '127.0.0.1', port: relayServer.address().port, path: p, agent: false }, function (res) {
+          var parts = [];
+          res.on('data', function (d) { parts.push(d); });
+          res.on('end', function () { cb(res.statusCode, Buffer.concat(parts)); });
+        });
+      }
+      relayServer.listen(0, '127.0.0.1', function () {
+        get(stream.relay, function (code, body) {
+          assert.equal(code, 200);
+          assert.ok(body.equals(TS_BYTES), 'the stream from behind the redirect, as sent');
+          assert.equal(hits['/token/abc123.ts'], 1);
+          assert.equal(iptv.setOutput({ pl: xc, key: c.key, output: 'hls' }).ok, true);
+          iptv.playUrl(xc, c.key, false, function (hls) {
+            assert.strictEqual(hls.relay, undefined, 'an HLS channel plays in the TV\'s player');
+            get(stream.relay, function (code2) {
+              assert.equal(code2, 404, 'and is not relayed');
+              relayServer.close();
+              done();
+            });
+          });
+        });
+      });
+    });
   });
 });
 

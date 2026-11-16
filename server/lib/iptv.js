@@ -40,6 +40,7 @@ var lineupLib = require('./iptv-lineup');
 var memory = require('./iptv-memory');
 var timeshift = require('./iptv-timeshift');
 var http = require('http');
+var https = require('https');
 var urlLib = require('url');
 var toBuffer = require('./util').toBuffer;
 var spawn = require('child_process').spawn;
@@ -1576,45 +1577,66 @@ function enigma2Free(p, streamUrlText, cb) {
 }
 
 /*
- * A tuner's stream passed on to Home with the owner's login, for a tuner
- * whose stream port asks for one: a <video> cannot send a login, and one in
- * its URL is dropped by the browser. Only the tuner's own host is asked, so
- * the login cannot go elsewhere through a channel's address, and nothing is
- * kept or parsed: the transport stream is piped through as it arrives.
+ * A channel's MPEG-TS stream passed on to Home as it arrives, nothing kept or
+ * parsed. Two users:
+ * - a tuner whose stream port asks for a login: a <video> cannot send one,
+ *   and one in its URL is dropped by the browser. Only the tuner's own host is
+ *   asked, so the login cannot go elsewhere through a channel's address;
+ * - Home's own player (mpegts.js), which reads the stream with fetch, and a
+ *   provider sends no CORS headers. Xtream's live links redirect to a token
+ *   on another host, followed here, a few hops at most.
  */
 var RELAY_CONNECT_MS = 10000;
 var RELAY_IDLE_MS = 20000;
+var RELAY_HOPS = 4;
+// What lib/iptv-timeshift sends: a test provider refused curl's own with HTTP 461.
+var RELAY_UA = 'VLC/3.0.18 LibVLC/3.0.18';
 function relayStream(id, key, req, res) {
+  var upstream = null, closed = false;
   function refuse(code, why) {
     if (res.headersSent) return res.end();
     res.writeHead(code, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
     res.end(JSON.stringify({ ok: false, error: why }));
   }
   var p = playlist(id), s = streamUrl(id, key);
-  if (!p || p.kind !== 'enigma2' || p.streamLogin !== true || !p.user || !s) return refuse(404, 'no-stream');
-  var target = urlLib.parse(s.url), tuner = urlLib.parse(p.server || '');
-  if (!target.hostname || target.protocol !== 'http:' || target.hostname.toLowerCase() !== String(tuner.hostname || '').toLowerCase()) return refuse(403, 'forbidden');
-  var upstream = http.request({
-    host: target.hostname, port: target.port || 80, path: target.path, method: 'GET', agent: false,
-    headers: { Authorization: 'Basic ' + toBuffer(p.user + ':' + (p.pass || ''), 'utf8').toString('base64'), 'User-Agent': 'Glasshouse/' + version, Connection: 'close' }
-  }, function (up) {
-    if (up.statusCode !== 200) {
-      up.resume();
-      console.log('iptv: relay for ' + id + ' answered ' + up.statusCode);
-      return refuse(502, up.statusCode === 401 || up.statusCode === 403 ? 'login' : 'http');
-    }
-    up.socket.setTimeout(RELAY_IDLE_MS, function () { upstream.abort(); });
-    res.writeHead(200, { 'Content-Type': 'video/MP2T', 'Cache-Control': 'no-store' });
-    up.on('end', function () { res.end(); });
-    up.on('error', function () { res.end(); });
-    up.pipe(res, { end: false });
-  });
-  upstream.setTimeout(RELAY_CONNECT_MS, function () { upstream.abort(); });
-  upstream.on('error', function () { refuse(502, 'network'); });
-  function closed() { upstream.abort(); }
-  req.on('close', closed);
-  res.on('close', closed);
-  upstream.end();
+  if (!p || !s) return refuse(404, 'no-stream');
+  var tunerLogin = p.kind === 'enigma2' && p.streamLogin === true && !!p.user;
+  if (p.kind === 'enigma2' && !tunerLogin) return refuse(404, 'no-stream');
+  if (tunerLogin) {
+    var target = urlLib.parse(s.url), tuner = urlLib.parse(p.server || '');
+    if (!target.hostname || target.protocol !== 'http:' || target.hostname.toLowerCase() !== String(tuner.hostname || '').toLowerCase()) return refuse(403, 'forbidden');
+  } else if (s.format !== 'ts') return refuse(404, 'no-stream');
+  function ask(link, hops) {
+    var u = urlLib.parse(link), lib = u.protocol === 'https:' ? https : u.protocol === 'http:' ? http : null;
+    if (!lib || !u.hostname) return refuse(502, 'network');
+    var headers = { 'User-Agent': tunerLogin ? 'Glasshouse/' + version : RELAY_UA, Connection: 'close' };
+    if (tunerLogin) headers.Authorization = 'Basic ' + toBuffer(p.user + ':' + (p.pass || ''), 'utf8').toString('base64');
+    upstream = lib.request({ host: u.hostname, port: u.port || (lib === https ? 443 : 80), path: u.path, method: 'GET', agent: false, headers: headers }, function (up) {
+      var to = up.headers.location;
+      if (!tunerLogin && up.statusCode >= 300 && up.statusCode < 400 && to && hops < RELAY_HOPS) {
+        up.resume();
+        return ask(urlLib.resolve(link, String(to)), hops + 1);
+      }
+      if (up.statusCode !== 200) {
+        up.resume();
+        console.log('iptv: relay for ' + id + ' answered ' + up.statusCode);
+        return refuse(502, up.statusCode === 401 || up.statusCode === 403 ? 'login' : 'http');
+      }
+      up.socket.setTimeout(RELAY_IDLE_MS, function () { upstream.abort(); });
+      res.writeHead(200, { 'Content-Type': 'video/MP2T', 'Cache-Control': 'no-store' });
+      up.on('end', function () { res.end(); });
+      up.on('error', function () { res.end(); });
+      up.pipe(res, { end: false });
+    });
+    upstream.setTimeout(RELAY_CONNECT_MS, function () { upstream.abort(); });
+    upstream.on('error', function () { refuse(502, 'network'); });
+    upstream.end();
+  }
+  // A channel change hangs up at once: an account may allow one connection.
+  function hangUp() { if (closed) return; closed = true; if (upstream) upstream.abort(); }
+  req.on('close', hangUp);
+  res.on('close', hangUp);
+  ask(s.url, 0);
 }
 
 /*
@@ -1641,15 +1663,17 @@ function deliverStream(id, key, full, s, cb) {
   // The tuner's stream port wants a login the player cannot send: Home plays it through the TV's relay.
   var owner = playlist(id);
   if (owner && owner.kind === 'enigma2' && owner.streamLogin === true) {
-    s.url = '/api/iptv/relay?pl=' + encodeURIComponent(id) + '&key=' + encodeURIComponent(key);
+    s.url = s.relay = '/api/iptv/relay?pl=' + encodeURIComponent(id) + '&key=' + encodeURIComponent(key);
     s.format = 'ts';
     return cb(s);
   }
   var local = timeshift.current(at);
   if (local) { s.url = local; s.timeshift = true; return cb(s); }
+  // Home's own player reads MPEG-TS through the relay (relayStream); the TV's player takes s.url.
+  if (s.format === 'ts') s.relay = '/api/iptv/relay?pl=' + encodeURIComponent(id) + '&key=' + encodeURIComponent(key);
   if (!full || config.timeshift !== true || s.format !== 'ts') return cb(s);
   timeshift.open(at, s.url, function (r) {
-    if (r) { s.url = r.url; s.timeshift = true; }
+    if (r) { s.url = r.url; s.timeshift = true; delete s.relay; }
     cb(s);
   });
 }
