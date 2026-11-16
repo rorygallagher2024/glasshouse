@@ -328,7 +328,7 @@ Its colours: **Time of day**, the default, follows the four times of day, and th
 
 Plays videos behind Glasshouse Home, and in the **Video** screen saver. Enter links in the box, one per line, and press **Save videos**: [Which video links work](#which-video-links-work) says what to enter. Up to 50 videos play, muted, streamed by the TV as they play and never copied to it. Links are read again only when **Save videos** is pressed; the other settings below save as they are changed. **Random order** plays every video once, in a new order each time round, before any plays again; otherwise they play in order and repeat. Home's existing darkening setting applies over the video.
 
-**Captions** show each scene's name, and what is in view as it plays, where an [aerial playlist](#which-video-links-work) gives them; a plain video link has none. They can be switched off, placed in any corner, made one of four sizes and set in Outfit or Manrope. They show on Glasshouse Home in its text colour (see Colours) and on the Video screen saver, whose clock, date and weather are set on the [Screen savers](screen-savers.md) tab.
+**Captions** show each scene's name, and what is in view as it plays, where a [playlist](#which-video-links-work) gives them; a plain video link has none. They can be switched off, placed in any corner, made one of four sizes and set in Outfit or Manrope. They show on Glasshouse Home in its text colour (see Colours) and on the Video screen saver, whose clock, date and weather are set on the [Screen savers](screen-savers.md) tab.
 
 While an Internet TV channel, a TV channel or an input plays in a tile or full screen, the video wallpaper stops and gives the TV's video decoder to it, and starts again when it ends.
 
@@ -339,7 +339,7 @@ After two minutes without a key or the pointer, the video fades out and stops, s
 Two kinds of link go in the box, and both can be mixed:
 
 * **A link to a video file**, such as `https://example.com/videos/beach.mp4`. It has to be the file itself, not a page with a video on it: a YouTube, Vimeo or Google Drive page does not work. The TV fetches it, so it has to be reachable from the TV, on the internet or on your own network. On your network that can be a NAS or any computer that serves files over HTTP, or Home Assistant, which serves a file in its `www` folder at `http://<home-assistant>:8123/local/<file>`. MP4 or MOV files in H.264 play on every webOS TV, and most also play HEVC (H.265). 1080p is the safe choice: 4K needs a network and TV that keep up.
-* **A link to an aerial playlist**: a JSON file in the format Apple TV uses to list its aerial screen savers, which Aerial (macOS) and Aerial Views (Android TV) read too. Each video in it adds one to the list, with its scene's name as a caption, and, where it has them, captions that change at set points in the video. A playlist like this one adds a single video:
+* **A link to a playlist**: a JSON file in the format Apple TV uses to list its aerial screen savers, which Aerial (macOS) and Aerial Views (Android TV) read too. Each video in it adds one to the list, with its scene's name as a caption, and, where it has them, captions that change at set points in the video. A playlist like this one adds a single video:
 
     ```json
     {"assets": [
