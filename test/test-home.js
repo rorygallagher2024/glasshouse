@@ -473,6 +473,15 @@ step('the heartbeat says when the view is covered: by the screen saver, or on we
   start(null);
   foreground('com.webos.app.hdmi2');
   assert.strictEqual(home.beat().covered, false, 'on webOS 9 the view is LG\'s Home and the screen saver alone covers it');
+  var manuallyLaunched = true;
+  start(null, { screensavers: { launchedShowing: function () { return manuallyLaunched; } } });
+  b = home.beat();
+  assert.strictEqual(b.covered, true, 'a saver launched directly from the dashboard covers Home even while tvpower says Active');
+  assert.strictEqual(b.saver, true, 'the direct app launch is reported as a saver');
+  manuallyLaunched = false;
+  b = home.beat();
+  assert.strictEqual(b.covered, false, 'Home is uncovered when the manually launched saver closes');
+  assert.strictEqual(b.saver, false);
   done();
 });
 

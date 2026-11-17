@@ -33,6 +33,18 @@ body{font-family:'Manrope',sans-serif;color:#ece7df;-webkit-font-smoothing:antia
 #wall .layer{position:absolute;left:-3%;top:-3%;right:-3%;bottom:-3%;background-position:center;background-size:cover;
   background-repeat:no-repeat;opacity:0;-webkit-transition:opacity 2.4s ease;transition:opacity 2.4s ease;
   -webkit-animation:drift 180s steps(360) infinite alternate;animation:drift 180s steps(360) infinite alternate}
+/* The video is never drawn at partial opacity: on webOS 4 it is a hardware
+   plane under the page, seen through a hole the <video> punches, and a hole
+   at 70% showed nothing at all (a B8, webOS 4.4.3). It is dimmed and faded
+   by the black shade over it instead, and hidden while nothing is loaded. */
+#wall video{position:absolute;left:0;top:0;width:100%;height:100%;object-fit:cover;visibility:hidden}
+#wallShade{position:absolute;left:0;top:0;width:100%;height:100%;background:#000;opacity:1;display:none;
+  -webkit-transition:opacity 2.4s ease;transition:opacity 2.4s ease}
+/* The caption sits above the scrim, after it in the page, with no z-index of its
+   own: Home's panels drawn later (search, the guide, adding channels) cover it. */
+#wall-caption{position:absolute;left:4%;top:4%;width:34%;text-align:left;color:#ece7df;
+  font-family:'Manrope',sans-serif;font-size:1.65vw;line-height:1.35;white-space:normal;overflow-wrap:break-word;
+  text-shadow:0 2px 8px #000,0 0 18px #000;pointer-events:none}
 /* At rest while covered: the wallpaper is not animated under the screen saver or
    another app. It stays shown, still, so that it is there the moment Home is
    uncovered rather than coming in over a black screen a beat later; paused, it
@@ -482,7 +494,7 @@ html.resting #wall .layer{-webkit-animation-play-state:paused;animation-play-sta
    stream is not opened twice. The band and the channel list are drawn over
    it and go when not in use: nothing still stays on the panel. */
 .playing #now{z-index:4}
-.playing #rows,.playing #rail,.playing #wall,.playing #scrim,
+.playing #rows,.playing #rail,.playing #wall,.playing #wall-caption,.playing #scrim,
 .playing #when,.playing #source,.playing #plate,.playing #weather,.playing #wxCredit{visibility:hidden}
 #preview.full{position:absolute;left:0;top:0;width:1920px;height:1080px;margin:0;box-shadow:none;
   -webkit-transform-origin:0 0;transform-origin:0 0}
@@ -639,8 +651,9 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
 </head>
 <body>
 <div id="stage" class="no-search no-clock">
-  <div id="wall"><canvas id="anim" width="0" height="0"></canvas><div class="layer"></div><div class="layer"></div></div>
+  <div id="wall"><canvas id="anim" width="0" height="0"></canvas><div class="layer"></div><div class="layer"></div><video id="wallVideo" muted playsinline></video><div id="wallShade"></div></div>
   <div id="scrim"></div>
+  <div id="wall-caption"></div>
 
   <section id="now">
     <div id="when">
@@ -744,6 +757,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
 
 <script src="/assets/i18n.js"></script>
 <script src="/assets/devicons.js"></script>
+<script src="/assets/video-order.js"></script>
 <script>
 /*
  * Glasshouse Home's view. Everything comes from /api/home/*: the layout shared
@@ -794,6 +808,13 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     // in front), so the live preview and the animated background stop here as
     // well: under the screen saver the preview kept the tuner playing (#1209).
     followPreview();
+    if (on) unloadWallVideo();
+    else {
+      // Uncovered by a key Home did not see, such as the one ending the screen saver.
+      wallVideoInputAt = Date.now();
+      scheduleWallVideoIdle();
+      updateWall();
+    }
     if (!anim) return;
     if (on) animStop();
     else animRun();
@@ -821,6 +842,11 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
   // takes about a minute (a B8, webOS 4.4.3): the logo stays until then.
   var pageOpenedAt = Date.now(), STARTING_MS = 60000;
   var wallSlots = null, wallRevision = '', wallChoice = '', wallPictures = [];
+  var wallVideoSources = [], wallVideoItems = [], wallVideoShuffle = false, wallVideoStyle = null, wallVideoRevision = '', wallVideoKey = '', wallVideoIndex = -1;
+  var wallVideoNeedsRestart = false;
+  var wallVideoEl = $('wallVideo');
+  // The last key, pointer move or return to Home, for letting the video go when idle.
+  var wallVideoInputAt = Date.now(), wallVideoIdleTimer = null;
 
   function $(id) { return document.getElementById(id); }
   function pad(n) { return (n < 10 ? '0' : '') + n; }
@@ -1731,6 +1757,8 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     $('srcKind').textContent = kind || ' ';
     $('srcTitle').textContent = title || ' ';
     $('srcVia').textContent = via || ' ';
+    // Last watched or the preview coming or going moves what the caption keeps clear of.
+    clearWallCaption();
   }
 
   /*
@@ -1772,7 +1800,10 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
   function renderPicture() {
     var p = picture;
     var s = p && p.signal;
-    var showNoSignal = lastOn.kind === 'input' && (!p || p.signalKnown !== false);
+    // The last HDMI input can still have no signal while Home itself is
+    // showing a working video wallpaper; do not put a contradictory notice
+    // over that picture.
+    var showNoSignal = lastOn.kind === 'input' && wallChoice !== 'video' && (!p || p.signalKnown !== false);
     if (!p || !(s || p.mode || showNoSignal)) { $('plate').className = 'none'; return; }
     var sig = [];
     if (s) {
@@ -2113,6 +2144,8 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
    */
   var PREVIEW_DWELL_MS = 400;
   var PREVIEW_START_MS = 4000;
+  // How long an input or channel waits after the video background lets the decoder go.
+  var PREVIEW_HANDOFF_MS = 400;
   var PREVIEW_SIGNAL_MS = 1000;
   var PREVIEW_SIGNAL_TRIES = 3;
   // A G3's decoder had no format for an HD channel 1.8 s after the picture
@@ -2121,7 +2154,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
   var PREVIEW_CHANNEL_POLL_MS = 400;
   var PREVIEW_CHANNEL_TRIES = 15;
   // target: { key, row, item, port } - port for an input, 0 for a channel.
-  var tilePreview = { target: null, gen: 0, timer: null, playing: false, blank: false, info: null, details: false, opened: null, inTile: false };
+  var tilePreview = { target: null, gen: 0, timer: null, playing: false, blank: false, info: null, details: false, opened: null, inTile: false, opening: null };
 
   // What a tile previews: a connected input, a TV channel, or the TV's tile,
   // which shows the channel it was last on. col is the tile's place in its row.
@@ -2172,7 +2205,9 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     var onRows = state.bar < 0 && !state.rail;
     var row = rowKey(), col = colOf(row), it = onRows ? items(row)[col] : null;
     var target = tileTarget(row, it, col);
-    if (!target && layout.previewAlways === true) target = keptTarget();
+    // Kept with Preview always, but not over a video background: the two
+    // cannot share the decoder, and the video would never play.
+    if (!target && layout.previewAlways === true && !(wallChoice === 'video' && wallVideoSources.length)) target = keptTarget();
     if (!target) { tilePreview.opened = null; return null; }
     // A guide or catalogue reply can repaint Home before the input opens.
     // Keep that tile released until focus moves away or Home returns.
@@ -2279,7 +2314,8 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
    * Always, whatever was playing: a stream set as the video's src has no
    * <source> children, and returning early on that left it connected.
    */
-  function releaseVideo() {
+  // keepWall: a reconnect lets the stream go only to open it again.
+  function releaseVideo(keepWall) {
     var v = $('pvVideo');
     v.onplaying = v.onerror = v.onwaiting = v.onstalled = v.ontimeupdate = v.onloadedmetadata = v.onended = null;
     try { v.pause(); } catch (e) {}
@@ -2287,6 +2323,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     // Hiding the element keeps the input, tuner or stream; emptied and loaded, it lets it go.
     if (v.getAttribute('src') !== null) v.removeAttribute('src');
     try { v.load(); } catch (e) {}
+    if (!keepWall) wallVideoResume();
   }
 
   function stopPreview() {
@@ -2426,32 +2463,58 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
 
   function startPreview(target) {
     if (target.tv) return startTvPreview(target);
-    var gen = tilePreview.gen, v = $('pvVideo'), s = document.createElement('source');
+    var gen = tilePreview.gen, v = $('pvVideo'), retried = false;
     var current = function () { return gen === tilePreview.gen; };
     v.muted = previewMuted();
     v.defaultMuted = v.muted;
-    s.setAttribute('type', target.port ? 'service/webos-external' :
-                   oldBroadcast() ? 'service/webos-broadcast' : 'service/webos-broadcast-preview');
-    s.setAttribute('src', target.port ? 'ext://hdmi:' + target.port : 'tv://' + target.item.id);
-    v.appendChild(s);
-    v.onplaying = function () {
-      if (!current() || tilePreview.playing) return;
-      tilePreview.playing = true;
-      if (target.port) checkSignal(target.port, gen, PREVIEW_SIGNAL_TRIES);
-      // The decoder reports the channel's format a moment after it plays.
-      else setTimeout(function () { if (current()) loadPreviewInfo(target, gen); }, PREVIEW_CHANNEL_INFO_MS);
+    /*
+     * Opened in the same turn as the video background let the decoder go, an
+     * input could fail at once, and with no retry the preview ended and the
+     * background came back (a C2, webOS 9, over a video background). So the
+     * preview waits a moment after the background, and an open that fails
+     * tries once more before it gives up.
+     */
+    var open = function () {
+      tilePreview.opening = null;
+      if (!current()) return;
+      var s = document.createElement('source');
+      s.setAttribute('type', target.port ? 'service/webos-external' :
+                     oldBroadcast() ? 'service/webos-broadcast' : 'service/webos-broadcast-preview');
+      s.setAttribute('src', target.port ? 'ext://hdmi:' + target.port : 'tv://' + target.item.id);
+      v.appendChild(s);
+      v.onplaying = function () {
+        if (!current() || tilePreview.playing) return;
+        tilePreview.playing = true;
+        if (target.port) checkSignal(target.port, gen, PREVIEW_SIGNAL_TRIES);
+        // The decoder reports the channel's format a moment after it plays.
+        else setTimeout(function () { if (current()) loadPreviewInfo(target, gen); }, PREVIEW_CHANNEL_INFO_MS);
+      };
+      v.onerror = function () {
+        if (!current()) return;
+        if (retried) return blankPreview();
+        retried = true;
+        // Let go and open again, with the background still away.
+        releaseVideo(true);
+        afterHandoff();
+      };
+      v.load();
+      // Promise or undefined, by engine; the events say how it went.
+      var played = v.play();
+      if (played && played.then) played.then(null, function () {});
     };
-    v.onerror = function () { if (current()) blankPreview(); };
-    v.load();
-    // Promise or undefined, by engine; the events say how it went.
-    var played = v.play();
-    if (played && played.then) played.then(null, function () {});
+    // previewHoldsVideo counts the wait, so nothing brings the background back in it.
+    var afterHandoff = function () {
+      tilePreview.opening = gen;
+      setTimeout(open, PREVIEW_HANDOFF_MS);
+    };
+    if (wallVideoYield()) afterHandoff();
+    else open();
     $('preview').className = 'on';
     tilePreview.inTile = inTile();
     placePreview();
     $('now').className = tilePreview.inTile ? '' : 'previewing';
     renderNow();
-    tilePreview.timer = setTimeout(function () { if (current() && !tilePreview.playing) blankPreview(); }, PREVIEW_START_MS);
+    tilePreview.timer = setTimeout(function () { if (current() && !tilePreview.playing) blankPreview(); }, PREVIEW_START_MS + 2 * PREVIEW_HANDOFF_MS);
   }
 
   function checkSignal(port, gen, tries) {
@@ -2828,6 +2891,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
       if (tvStream.pastCache) extra.push('gh=' + Date.now());
       if (tvStream.timeshift && tvStream.seekTo !== null) extra.push(tvStream.seekTo > 0 ? 'behind=' + tvStream.seekTo : 'live=1');
       tvStream.seekTo = null;
+      wallVideoYield();
       v.src = extra.length ? r.url + (r.url.indexOf('?') === -1 ? '?' : '&') + extra.join('&') : r.url;
       v.load();
       var played = v.play();
@@ -2904,7 +2968,12 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     if (tilePreview.target && tilePreview.target.tv) tilePreview.playing = false;
     // Its own generation: a stop or another play meanwhile strands it.
     var retryGen = ++tvStream.gen;
-    releaseVideo();
+    /*
+     * The video background stays away until the retry: brought back in the wait,
+     * it took the decoder again and every retry failed with code 4 (a G3, webOS 10),
+     * leaving a preview over a video background at "No picture".
+     */
+    releaseVideo(true);
     tvStream.item = it;
     tvStream.onState = cb;
     if (cb) cb('reconnecting');
@@ -5043,8 +5112,80 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     wallAvailable = !!(w && w.available);
     wallSlots = w && w.slots;
     wallRevision = w && w.revision || '';
+    var wasChoice = wallChoice;
     wallChoice = w && w.choice || '';
     wallPictures = w && w.pictures || [];
+    wallVideoSources = w && w.videoUrls || [];
+    wallVideoItems = w && w.videoItems || wallVideoSources.map(function (source) { return { url: source, title: '', pointsOfInterest: [] }; });
+    wallVideoShuffle = !!(w && w.videoShuffle);
+    wallVideoStyle = w && w.videoStyle || {};
+    applyWallVideoCaptionStyle();
+    var videoRevision = w && w.videoRevision || '';
+    // Videos chosen or changed on a dashboard play at once, as if a key had been pressed.
+    if (wallChoice === 'video' && (wasChoice !== 'video' || videoRevision !== wallVideoRevision)) wallVideoInputAt = Date.now();
+    wallVideoRevision = videoRevision;
+    scheduleWallVideoIdle();
+  }
+
+  function applyWallVideoCaptionStyle() {
+    var el = $('wall-caption'), style = wallVideoStyle || {};
+    if (!el) return;
+    var pos = style.captionPosition || 'top-left', right = pos.indexOf('right') !== -1, bottom = pos.indexOf('bottom') === 0;
+    // 'auto', not '': an empty value falls back to the stylesheet's left and top.
+    el.style.left = right ? 'auto' : '4%';
+    el.style.right = right ? '4%' : 'auto';
+    el.style.top = bottom ? 'auto' : '4%';
+    el.style.bottom = bottom ? '4%' : 'auto';
+    el.style.textAlign = right ? 'right' : 'left';
+    el.style.fontFamily = style.captionFont === 'Outfit' ? 'Outfit,sans-serif' : 'Manrope,sans-serif';
+    // In Home's text colour, from its Colours, as the rest of Home is.
+    el.style.fontSize = (Number(style.captionSize) || 32) + 'px';
+    el.style.display = style.showCaptions === false ? 'none' : '';
+    clearWallCaption();
+  }
+
+  /*
+   * Lined up with Home's own text on its side of the screen, and moved clear
+   * of Home's clock, weather and tiles where its corner has them. Both vary
+   * with Home's layout, so they are measured: at a fixed 4% the caption sat
+   * apart from Last watched's text above it in the alternative view.
+   */
+  function clearWallCaption() {
+    var el = $('wall-caption'), style = wallVideoStyle || {};
+    if (!el || !el.textContent) return;
+    var pos = style.captionPosition || '', bottom = pos.indexOf('bottom') === 0, right = pos.indexOf('right') !== -1;
+    var width = window.innerWidth, height = window.innerHeight, gap = 24, edge = null, side = null;
+    var shown = function (m) {
+      // An empty #source keeps its place, hidden.
+      var r = m && window.getComputedStyle(m).visibility !== 'hidden' && m.getBoundingClientRect();
+      return r && r.width && r.height && r.bottom > 0 && r.top < height ? r : null;
+    };
+    var now = [$('when'), $('weather'), $('source'), $('plate'), $('preview')];
+    // Where the text starts in the marks on the caption's half of the screen.
+    for (var n = 0; n < now.length; n++) {
+      var nr = shown(now[n]), cs = nr && window.getComputedStyle(now[n]), inset = null;
+      if (!nr) continue;
+      if (right && nr.right > width / 2) inset = width - nr.right + (parseFloat(cs.paddingRight) || 0) + (parseFloat(cs.borderRightWidth) || 0);
+      if (!right && nr.left < width / 2) inset = nr.left + (parseFloat(cs.paddingLeft) || 0) + (parseFloat(cs.borderLeftWidth) || 0);
+      if (inset !== null) side = side === null ? inset : Math.min(side, inset);
+    }
+    var at = side === null ? '4%' : Math.round(side) + 'px';
+    el.style.left = right ? 'auto' : at;
+    el.style.right = right ? at : 'auto';
+    el.style.top = bottom ? 'auto' : '4%';
+    el.style.bottom = bottom ? '4%' : 'auto';
+    var box = el.getBoundingClientRect();
+    if (!box.width) return;
+    var marks = bottom ? document.querySelectorAll('#rows .tile') : now;
+    for (var i = 0; i < marks.length; i++) {
+      var r = shown(marks[i]);
+      if (!r || r.right <= box.left || r.left >= box.right) continue;
+      if (bottom) edge = edge === null ? r.top : Math.min(edge, r.top);
+      else edge = edge === null ? r.bottom : Math.max(edge, r.bottom);
+    }
+    if (edge === null) return;
+    if (bottom && edge < box.bottom + gap) el.style.bottom = Math.round(height - edge + gap) + 'px';
+    if (!bottom && edge > box.top - gap) el.style.top = Math.round(edge + gap) + 'px';
   }
 
   /*
@@ -5077,6 +5218,43 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
   function updateWall() {
     syncAnim();
     var slot = wallSlot(), shuffled = wallChoice === 'shuffle';
+    if ($('wallShade')) $('wallShade').style.display = wallChoice === 'video' && anim.style === 'off' ? 'block' : 'none';
+    if (wallChoice === 'video') {
+      var videoLayers = $('wall').querySelectorAll('.layer');
+      if (anim.style !== 'off' || !wallAvailable || !wallVideoSources.length || document.hidden ||
+          document.documentElement.classList.contains('resting') || previewHoldsVideo() || wallVideoIdle()) {
+        unloadWallVideo();
+        if (anim.style !== 'off' || !wallVideoSources.length) wallVideoKey = '';
+        for (var blankVideo = 0; blankVideo < videoLayers.length; blankVideo++) { videoLayers[blankVideo].style.opacity = 0; videoLayers[blankVideo].style.backgroundImage = ''; }
+        return;
+      }
+      var videoKey = wallVideoRevision;
+      if (videoKey !== wallVideoKey) {
+        wallVideoKey = videoKey;
+        wallVideoIndex = -1;
+        wallVideoOrder = [];
+        wallVideoOrderAt = 0;
+        playWallVideo(nextWallVideoIndex(), slot.strength);
+      } else if (wallVideoEl) {
+        // The strength follows the time of day, but not into a clip still
+        // loading or fading out at its end.
+        var fadingOut = wallVideoEl.duration && wallVideoEl.duration - (wallVideoEl.currentTime || 0) < WALL_VIDEO_FADE_S;
+        if (wallVideoPlaying && !fadingOut) wallVideoShow(slot.strength);
+        // Back from the screen saver, its player can still have the decoder: a
+        // play refused or a picture that never comes is tried again here, at
+        // the heartbeat, rather than leaving Home black.
+        if (wallVideoNeedsRestart || (!wallVideoPlaying && Date.now() - wallVideoLoadedAt > WALL_VIDEO_START_MS)) restartWallVideo(slot.strength);
+        else if (wallVideoEl.paused) {
+          var resumed = wallVideoEl.play();
+          if (resumed && typeof resumed.catch === 'function') resumed.catch(function () {});
+        }
+      }
+      for (var v = 0; v < videoLayers.length; v++) { videoLayers[v].style.opacity = 0; videoLayers[v].style.backgroundImage = ''; }
+      wallShown = null;
+      return;
+    }
+    unloadWallVideo();
+    wallVideoKey = '';
     var picture = shuffled && anim.style === 'off' && wallAvailable ? shufflePick() : null;
     if (anim.style !== 'off' || !wallAvailable || (shuffled ? !picture : wallSlots && !wallSlots[slot.key])) {
       var blank = $('wall').querySelectorAll('.layer');
@@ -5103,6 +5281,189 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
       wallFront = 1 - wallFront;
     };
     img.src = src;
+  }
+
+  /*
+   * The wallpaper video and the preview's <video> (an Internet TV channel, a
+   * channel or an input) cannot both have the TV's video decoder: with a 4K
+   * HEVC wallpaper playing, an Internet TV stream never started. Paused, the
+   * wallpaper keeps the decoder; emptied and loaded, it lets it go, and plays
+   * again from the same video once the preview's is released.
+   */
+  function previewHoldsVideo() {
+    var v = $('pvVideo');
+    if (tilePreview.opening !== null && tilePreview.opening === tilePreview.gen) return true;
+    return !!v && (v.getAttribute('src') !== null || !!v.firstChild);
+  }
+
+  /*
+   * How much of the wallpaper video shows, 0 to 1, through the shade over it
+   * (see #wallShade). 0 is a fade to black that leaves the video in place;
+   * wallVideoHide takes it away at once, for a clip let go or not yet loaded.
+   */
+  function wallVideoShow(strength) {
+    var shade = $('wallShade');
+    if (shade) shade.style.opacity = 1 - strength;
+    if (wallVideoEl && strength > 0) wallVideoEl.style.visibility = 'visible';
+  }
+  function wallVideoHide() {
+    var shade = $('wallShade');
+    if (shade) shade.style.opacity = 1;
+    if (wallVideoEl) wallVideoEl.style.visibility = 'hidden';
+  }
+
+  function unloadWallVideo() {
+    if (!wallVideoEl) return;
+    wallVideoHide();
+    if ($('wall-caption')) $('wall-caption').textContent = '';
+    if (wallVideoEl.getAttribute('src') === null) return;
+    wallVideoNeedsRestart = true;
+    wallVideoLeftAt = wallVideoEl.currentTime || 0;
+    wallVideoLeftWhen = Date.now();
+    wallVideoEl.oncanplay = wallVideoEl.onplaying = wallVideoEl.onerror = wallVideoEl.onended = wallVideoEl.ontimeupdate = wallVideoEl.onloadedmetadata = null;
+    wallVideoPlaying = false;
+    try { wallVideoEl.pause(); } catch (e) {}
+    wallVideoEl.removeAttribute('src');
+    try { wallVideoEl.load(); } catch (e) {}
+  }
+
+  // Before the preview's <video> takes a stream or an input.
+  // True when the background had a video loaded, which may still hold the decoder.
+  function wallVideoYield() {
+    if (wallChoice !== 'video') return false;
+    var held = !!wallVideoEl && wallVideoEl.getAttribute('src') !== null;
+    unloadWallVideo();
+    return held;
+  }
+
+  // After it lets one go: a stream changing channel takes the next in the same
+  // turn, so the wallpaper comes back only if nothing has by the next one.
+  function wallVideoResume() {
+    if (wallChoice !== 'video') return;
+    setTimeout(function () { if (!previewHoldsVideo()) updateWall(); }, 0);
+  }
+
+  var wallVideoFailures = 0, wallVideoOrder = [], wallVideoOrderAt = 0, wallVideoLoadedAt = 0, wallVideoPlaying = false, wallVideoOffScreen = 0;
+
+  /*
+   * The server's word on whether the wallpaper reaches the screen (lib/home
+   * checkWallVideoOutput). Loaded while the screen saver was closing, it plays
+   * on with no picture and says nothing: two heartbeats of that, and it is
+   * loaded again.
+   */
+  function noteWallVideoOutput(onScreen) {
+    if (onScreen !== false || !wallVideoPlaying || previewHoldsVideo() || document.documentElement.classList.contains('resting')) {
+      wallVideoOffScreen = 0;
+      return;
+    }
+    if (++wallVideoOffScreen < 2) return;
+    wallVideoOffScreen = 0;
+    wallVideoNeedsRestart = true;
+  }
+  // Room for a 4K stream over the network to reach its first frame.
+  var WALL_VIDEO_START_MS = 20000;
+
+  /*
+   * LG's screen saver never comes over a playing video: while the wallpaper
+   * plays, a B8 (webOS 4.4) and a C2 (webOS 9.2) refused turnOnScreenSaver
+   * and asked for no idle screen saver in over 6 minutes, leaving Home's
+   * clock and tiles on an OLED panel. So after this long without a key or
+   * the pointer, the video fades out and lets the decoder go, and the TV's
+   * own screen saver comes as it does over a still background. A key, the
+   * pointer or Home coming back plays it again.
+   */
+  var WALL_VIDEO_IDLE_MS = 120000;
+  function wallVideoIdle() { return Date.now() - wallVideoInputAt >= WALL_VIDEO_IDLE_MS; }
+  function scheduleWallVideoIdle() {
+    clearTimeout(wallVideoIdleTimer);
+    wallVideoIdleTimer = null;
+    if (wallChoice !== 'video') return;
+    wallVideoIdleTimer = setTimeout(function () {
+      wallVideoIdleTimer = null;
+      if (!wallVideoIdle()) return scheduleWallVideoIdle();
+      if (!wallVideoEl || wallVideoEl.getAttribute('src') === null) return updateWall();
+      // Faded out first, as at a clip's end, rather than cut to black.
+      wallVideoShow(0);
+      if ($('wall-caption')) $('wall-caption').textContent = '';
+      setTimeout(function () { if (wallVideoIdle()) updateWall(); }, WALL_VIDEO_FADE_S * 1000);
+    }, Math.max(0, WALL_VIDEO_IDLE_MS - (Date.now() - wallVideoInputAt)) + 50);
+  }
+  function noteWallVideoInput() {
+    var wasIdle = wallVideoIdle();
+    wallVideoInputAt = Date.now();
+    scheduleWallVideoIdle();
+    if (wasIdle && wallChoice === 'video') updateWall();
+  }
+  // The wallpaper's opacity transition (#wall video) is 2.4 s.
+  var WALL_VIDEO_FADE_S = 2.5;
+  /*
+   * Back after a moment (a preview while moving along the rows), the same
+   * video goes on from where it was; after longer (the screen saver), the
+   * next one plays, so coming back is not always the same scene from its start.
+   */
+  var wallVideoLeftAt = 0, wallVideoLeftWhen = 0;
+  var WALL_VIDEO_RESUME_MS = 60000;
+  function restartWallVideo(strength) {
+    var brief = wallVideoLeftWhen && Date.now() - wallVideoLeftWhen < WALL_VIDEO_RESUME_MS;
+    var at = brief ? wallVideoLeftAt : 0;
+    wallVideoLeftWhen = 0;
+    if (brief) playWallVideo(wallVideoIndex, strength, at);
+    else playWallVideo(nextWallVideoIndex(), strength);
+  }
+
+  function playWallVideo(index, strength, startAt) {
+    if (!wallVideoEl || !wallVideoSources.length) return;
+    wallVideoNeedsRestart = false;
+    wallVideoIndex = ((index % wallVideoSources.length) + wallVideoSources.length) % wallVideoSources.length;
+    var video = wallVideoEl, item = wallVideoItems[wallVideoIndex] || { url: wallVideoSources[wallVideoIndex] }, source = item.url;
+    wallVideoHide();
+    video.muted = true;
+    wallVideoLoadedAt = Date.now();
+    wallVideoPlaying = false;
+    video.onplaying = function () { wallVideoPlaying = true; };
+    video.oncanplay = function () {
+      wallVideoFailures = 0;
+      wallVideoShow(strength);
+      var playing = video.play();
+      if (playing && typeof playing.catch === 'function') playing.catch(wallVideoHide);
+    };
+    video.onended = function () { playWallVideo(nextWallVideoIndex(), wallSlot().strength); };
+    video.ontimeupdate = function () {
+      var points = item.pointsOfInterest || [], caption = item.title || '', time = video.currentTime || 0;
+      for (var p = 0; p < points.length; p++) {
+        if (Number(points[p].at) > time) break;
+        caption = points[p].text || caption;
+      }
+      if ($('wall-caption').textContent !== caption) {
+        $('wall-caption').textContent = caption;
+        clearWallCaption();
+      }
+      // Faded out over its last moments, so the next one loading is a dip to black rather than a cut.
+      if (wallVideoPlaying && video.duration && video.duration - time < WALL_VIDEO_FADE_S) wallVideoShow(0);
+    };
+    video.onerror = function () {
+      wallVideoHide();
+      if (++wallVideoFailures < wallVideoSources.length) return playWallVideo(nextWallVideoIndex(), strength);
+      // Every one failed in a row: the next heartbeat tries again.
+      wallVideoFailures = 0;
+      wallVideoNeedsRestart = true;
+    };
+    video.onloadedmetadata = startAt > 0 ? function () {
+      try { if (startAt < (video.duration || 0) - 1) video.currentTime = startAt; } catch (e) {}
+    } : null;
+    video.pause();
+    video.src = source;
+    video.load();
+  }
+
+  function nextWallVideoIndex() {
+    if (wallVideoSources.length < 2) return 0;
+    if (!wallVideoShuffle) return (wallVideoIndex + 1) % wallVideoSources.length;
+    if (!wallVideoOrder.length || wallVideoOrderAt >= wallVideoOrder.length) {
+      wallVideoOrder = window.TVWebVideoOrder.shuffled(wallVideoSources.length, Math.random, wallVideoIndex);
+      wallVideoOrderAt = 0;
+    }
+    return wallVideoOrder[wallVideoOrderAt++];
   }
 
   // ---------------------------------------------------------------- animated background
@@ -5839,6 +6200,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
       refreshPicture();
       clearTimeout(loadRetry);
       readWallpapers(r.wallpapers);
+      renderPicture();
       updateWall();
       if (!state.arranging) render();
       if (firstLoad) { beat(); fadeIn(); }
@@ -5995,6 +6357,8 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
         coveredSince = r.covered && !r.saver ? (coveredSince || Date.now()) : 0;
         if (standalone && coveredSince && Date.now() - coveredSince > CLOSE_BEHIND_MS) return window.close();
         readWallpapers(r.wallpapers);
+        renderPicture();
+        noteWallVideoOutput(r.wallVideoOnScreen);
         updateWall();
         $('fault').className = '';
         // The TV's setting can change while the view is open, so the heartbeat
@@ -6042,6 +6406,20 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     if (guide.open && !guideAsked) closeGuide();
     keepSearch();
     readLaunchParams();
+    // Start screensaver in the dashboard can launch the saver app directly,
+    // without a tvpower "Screen Saver" state or a covered heartbeat. Its video
+    // player can stop Home's decoder anyway, so reload the wallpaper on return.
+    if (wallChoice === 'video' && wallVideoSources.length) {
+      // Not unloaded on the way out (a relaunch over Home, a quick trip): the
+      // reload carries on with the same clip from where it was.
+      if (!wallVideoLeftWhen && wallVideoEl && wallVideoEl.getAttribute('src')) {
+        wallVideoLeftAt = wallVideoEl.currentTime || 0;
+        wallVideoLeftWhen = Date.now();
+      }
+      wallVideoNeedsRestart = true;
+    }
+    wallVideoInputAt = Date.now();
+    scheduleWallVideoIdle();
     updateWall();
     // Back from an app, Home is as it was left: the same tile in focus and
     // every row where it was scrolled, brought to rest where it was headed.
@@ -6066,6 +6444,9 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
 
   window.addEventListener('resize', fit);
   document.addEventListener('keydown', noteOkKey, true);
+  document.addEventListener('keydown', noteWallVideoInput, true);
+  document.addEventListener('mousemove', noteWallVideoInput, true);
+  document.addEventListener('onwheel' in document ? 'wheel' : 'mousewheel', noteWallVideoInput, true);
   document.addEventListener('keyup', noteOkKey, true);
   document.addEventListener('keydown', onKeyDown, true);
   document.addEventListener('keyup', onKeyUp, true);
@@ -6093,7 +6474,8 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
   // Home pressed with the view already open reaches it as a relaunch.
   document.addEventListener('webOSRelaunch', function () { guideLaunch(); returned(); });
   document.addEventListener('visibilitychange', function () {
-    if (document.hidden) { animStop(); darken(); }
+    // Hidden behind an app, which may need the decoder the wallpaper holds.
+    if (document.hidden) { animStop(); darken(); unloadWallVideo(); }
     else { returned(); animRun(); }
   });
   window.addEventListener('pagehide', function () { if (player.open) closePlayer(); stopPreview(); });

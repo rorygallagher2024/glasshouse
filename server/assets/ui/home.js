@@ -1179,12 +1179,95 @@ function homeAnim(style) {
  */
 const HOME_ANIMS = ['waves', 'particles', 'aquarium', 'aurora', 'glow', 'stars', 'ripples'];
 const homeBgLast = { scene: 'waves', set: 'landscape' };
+let homeBgSelectedKind = null;
+// The Video wallpaper's and screen saver's own look, as lib/home-wallpapers keeps it.
+// The Screen savers tab sets the rest of it (ui/screensavers.js).
+const HOME_VIDEO_STYLE = { showClock: true, showDate: true, showWeather: true, showCaptions: true,
+  infoPosition: 'top-right', captionPosition: 'top-left', clockFont: 'Outfit', textFont: 'Manrope', captionFont: 'Manrope',
+  textColor: '#ece7df', infoSize: 100, captionSize: 32 };
+// Sizes in Home's 1920-wide pixels; 100 and 32 are Home's own clock and caption.
+const HOME_VIDEO_SIZES = { infoSize: [72, 86, 100, 128], captionSize: [24, 32, 40, 48] };
+
+// The four corners, sizes and faces, as both tabs offer them.
+function homeVideoChoices() {
+  return {
+    corners: [['top-left', t('home.video.topLeft', 'Top left')], ['top-right', t('home.video.topRight', 'Top right')],
+      ['bottom-left', t('home.video.bottomLeft', 'Bottom left')], ['bottom-right', t('home.video.bottomRight', 'Bottom right')]],
+    sizes: [t('home.video.small', 'Small'), t('home.video.medium', 'Medium'), t('home.video.large', 'Large'), t('home.video.extraLarge', 'Extra large')],
+    fonts: [['Outfit', 'Outfit'], ['Manrope', 'Manrope']]
+  };
+}
+
+function homeVideoStyle() {
+  return Object.assign({}, HOME_VIDEO_STYLE, (homeStatus && homeStatus.wallpapers && homeStatus.wallpapers.videoStyle) || {});
+}
+
+function homeVideoCount() {
+  const count = q('home-video-urls').value.split(/\r?\n/).filter(value => value.trim()).length;
+  const max = (homeStatus && homeStatus.wallpapers && homeStatus.wallpapers.maxVideoSources) || 50;
+  q('home-video-count').textContent = t('home.video.sourceCount', '{count} links, up to {max} videos', { count, max });
+}
+
+// Shuffle and the look save as they are changed; the links wait for Save, as reading a playlist takes a moment.
+async function homeVideoOptions(patch) {
+  if (!homeWritable() || homeWallUploading) return;
+  homeWallUploading = 'video-options';
+  renderHomeBg();
+  try {
+    const r = await homePost('/api/home/wallpapers', patch);
+    if (r.wallpapers) homeStatus.wallpapers = r.wallpapers;
+  } catch (e) { showErr(e.message); }
+  finally {
+    homeWallUploading = false;
+    renderHomeBg();
+  }
+}
+
+function homeVideoShuffle() {
+  homeVideoOptions({ videoShuffle: !(homeStatus.wallpapers || {}).videoShuffle });
+}
+
+function homeVideoShow(key) {
+  homeVideoOptions({ videoStyle: { [key]: homeVideoStyle()[key] === false } });
+}
+
+function homeVideoStyleSet(patch) {
+  homeVideoOptions({ videoStyle: patch });
+}
+
+function renderHomeVideo(busy) {
+  const walls = homeStatus.wallpapers || {}, style = homeVideoStyle();
+  const videoUrls = q('home-video-urls');
+  if (!videoUrls) return;
+  if (document.activeElement !== videoUrls) videoUrls.value = (walls.videoInputs || walls.videoUrls || []).join('\n');
+  homeVideoCount();
+  videoUrls.disabled = busy;
+  q('home-video-save').disabled = busy;
+  q('home-video-save').textContent = homeWallUploading === 'video' ? t('home.video.saving', 'Reading the playlist…') : t('home.video.save', 'Save videos');
+  const pill = (el, on) => {
+    updateToggle(el, { cls: on ? 'good' : 'idle', label: on ? t('common.on', 'On') : t('common.off', 'Off') });
+    el.disabled = busy;
+  };
+  pill(q('home-video-shuffle'), !!walls.videoShuffle);
+  pill(q('home-video-show-captions'), style.showCaptions !== false);
+  const { corners, sizes, fonts } = homeVideoChoices();
+  const choices = (id, key, options) => {
+    q(id).innerHTML = options.map(([value, label]) =>
+      `<button type="button" class="${style[key] === value ? 'on' : ''}" ${busy ? 'disabled' : ''} aria-pressed="${style[key] === value}"
+        onclick="homeVideoStyleSet(${esc(JSON.stringify({ [key]: value }))})">${esc(label)}</button>`).join('');
+  };
+  choices('home-video-caption-position', 'captionPosition', corners);
+  choices('home-video-caption-size', 'captionSize', HOME_VIDEO_SIZES.captionSize.map((size, i) => [size, sizes[i]]));
+  choices('home-video-caption-font', 'captionFont', fonts);
+}
 
 function homeBgKind() {
   const anim = (homeLayout && homeLayout.wallAnim) || 'off';
-  if (anim !== 'off') return 'animated';
   const choice = (homeStatus && homeStatus.wallpapers && homeStatus.wallpapers.choice) || 'own';
-  return choice === 'black' ? 'none' : 'pictures';
+  const saved = anim !== 'off' ? 'animated' : choice === 'black' ? 'none' : choice === 'video' ? 'video' : 'pictures';
+  // A kind picked here that the TV has not taken yet (Video before its first Save) shows until it does.
+  if (homeBgSelectedKind === saved) homeBgSelectedKind = null;
+  return homeBgSelectedKind || saved;
 }
 
 function renderHomeBg() {
@@ -1194,12 +1277,14 @@ function renderHomeBg() {
   const anim = (homeLayout && homeLayout.wallAnim) || 'off';
   const choice = (homeStatus.wallpapers && homeStatus.wallpapers.choice) || 'own';
   if (anim !== 'off') homeBgLast.scene = anim;
-  if (choice !== 'black') homeBgLast.set = choice;
-  const kinds = [['none', t('home.bg.none', 'None')], ['pictures', t('home.bg.pictures', 'Pictures')], ['animated', t('home.bg.animated', 'Animated')]];
+  if (choice !== 'black' && choice !== 'video') homeBgLast.set = choice;
+  const kinds = [['none', t('home.bg.none', 'None')], ['pictures', t('home.bg.pictures', 'Pictures')], ['animated', t('home.bg.animated', 'Animated')], ['video', t('home.bg.video', 'Video')]];
   kindBox.innerHTML = kinds.map(([k, label]) => `<button type="button" class="${k === kind ? 'on' : ''}" ${busy ? 'disabled' : ''}
     aria-pressed="${k === kind}" onclick="homeBgChoose('${k}')">${esc(label)}</button>`).join('');
   q('home-bg-pictures').hidden = kind !== 'pictures';
   q('home-bg-animated').hidden = kind !== 'animated';
+  q('home-bg-video').hidden = kind !== 'video';
+  renderHomeVideo(busy);
   const dark = document.querySelector('#homepane .home-dark') || document.querySelector('.home-dark');
   if (dark) dark.hidden = kind === 'none';
   const names = { waves: t('home.anim.waves', 'Light waves'), particles: t('home.anim.particles', 'Particles'),
@@ -1212,12 +1297,42 @@ function renderHomeBg() {
 
 async function homeBgChoose(kind) {
   if (!homeWritable() || homeWallUploading || kind === homeBgKind()) return;
+  homeBgSelectedKind = kind;
+  renderHomeBg();
   const choice = (homeStatus.wallpapers && homeStatus.wallpapers.choice) || 'own';
   if (kind === 'animated') return homeSaveLayout({ wallAnim: homeBgLast.scene });
   if (homeLayout && homeLayout.wallAnim && homeLayout.wallAnim !== 'off') await homeSaveLayout({ wallAnim: 'off' });
   if (kind === 'none' && choice !== 'black') return homeWallSet('black');
-  if (kind === 'pictures' && choice === 'black') return homeWallSet(homeBgLast.set);
+  if (kind === 'video') {
+    const walls = homeStatus.wallpapers || {};
+    q('home-video-urls').value = (walls.videoInputs || walls.videoUrls || []).join('\n');
+    // With videos saved, they play now; without, the section waits for its first Save.
+    if ((walls.videoUrls || []).length && choice !== 'video') return homeWallSet('video');
+    renderHomeBg();
+    return;
+  }
+  if (kind === 'pictures' && (choice === 'black' || choice === 'video')) return homeWallSet(homeBgLast.set);
   renderHomeBg();
+}
+
+async function homeVideoSave() {
+  if (!homeWritable() || homeWallUploading) return;
+  const note = q('home-video-note');
+  const urls = q('home-video-urls').value.split(/\r?\n/).map(value => value.trim()).filter(Boolean);
+  note.textContent = '';
+  homeWallUploading = 'video';
+  renderHomeBg();
+  try {
+    if (homeLayout && homeLayout.wallAnim && homeLayout.wallAnim !== 'off') await homeSaveLayout({ wallAnim: 'off' });
+    const r = await homePost('/api/home/wallpapers', { videoUrls: urls, videoShuffle: !!(homeStatus.wallpapers || {}).videoShuffle });
+    const n = ((r.wallpapers || {}).videoUrls || []).length;
+    note.textContent = n ? t('home.video.saved', '{count} videos ready.', { count: n }) : '';
+  } catch (e) { note.textContent = e.message; }
+  finally {
+    homeWallUploading = false;
+    await loadHome();
+    renderHomeWalls();
+  }
 }
 
 function homeRowsBottom() {
@@ -1356,9 +1471,9 @@ function renderHomeWalls() {
   if (choiceBox) {
     const label = { black: t('home.wall.setBlack', 'Black'), landscape: t('home.wall.setLandscape', 'Landscape'),
       abstract: t('home.wall.setAbstract', 'Abstract'), own: t('home.wall.setOwn', 'Your own'),
-      shuffle: t('home.wall.setShuffle', 'Your own, shuffled') };
+      shuffle: t('home.wall.setShuffle', 'Your own, shuffled'), video: t('home.bg.video', 'Video') };
     // Black is the background's None, chosen above.
-    choiceBox.innerHTML = (walls.choices || ['black', 'landscape', 'abstract', 'own']).filter(name => name !== 'black').map(name =>
+    choiceBox.innerHTML = (walls.choices || ['black', 'landscape', 'abstract', 'own']).filter(name => name !== 'black' && name !== 'video').map(name =>
       `<button type="button" class="${name === choice ? 'on' : ''}${name === getting ? ' busy' : ''}" ${busy ? 'disabled' : ''}
         aria-pressed="${name === choice}" onclick="homeWallSet('${name}')">${esc(name === getting ? t('home.wall.examplesBusy', 'Downloading…') : label[name] || name)}</button>`).join('');
   }

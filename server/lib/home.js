@@ -37,6 +37,7 @@ var recent = require('./home-recent');
 var recentApps = require('./home-recent-apps');
 var search = require('./home-search');
 var recommended = require('./home-recommended');
+var screensaversModule = null;
 
 // The separate app earlier builds installed: removed, and its settings undone.
 var HOME_APP = 'com.tvweb.home';
@@ -2709,6 +2710,12 @@ function viewInFront() {
   return foreground === homeId && !escaped && readConfig().enabled && isHomeInPlace();
 }
 
+// Home's muted wallpaper video is not watched content: let the TV's screen
+// saver take over from Home when idle, then play the same playlist there.
+function videoBackgroundActive() {
+  return viewInFront() && config.wallAnim === 'off' && wallpapers.status().choice === 'video';
+}
+
 function stopBeatWatch() {
   if (beatTimer) clearTimeout(beatTimer);
   beatTimer = null;
@@ -2763,9 +2770,31 @@ function behindAnother(cb) {
  * its drifting wallpaper kept the web app manager at 34% under the screen
  * saver, which got 2% and stuttered.
  */
-function viewCovered() {
+function viewCovered(saverActive) {
   if (powerState === 'Screen Saver') return true;
+  // The dashboard's manual start fallback launches the saver app directly.
+  // On those TVs tvpower remains Active, so its state alone misses the cover.
+  if (saverActive === undefined && screensaversModule) saverActive = screensaversModule.launchedShowing();
+  if (saverActive) return true;
   return isStandalone() && !!foreground && foreground !== HOME_APP;
+}
+
+/*
+ * Whether Home's video wallpaper reaches the screen. Reloaded as the screen
+ * saver closed, its <video> went on playing with nothing on the main video
+ * output (G3, webOS 10.3: videooutput listed no Home client until it was
+ * loaded again). null where unknown or not wanted.
+ */
+var wallVideoOnScreen = null;
+function checkWallVideoOutput() {
+  if (!lunaFn || !videoBackgroundActive()) { wallVideoOnScreen = null; return; }
+  lunaFn('com.webos.service.videooutput/getStatus', {}, function (r) {
+    var sinks = r && Array.isArray(r.video) ? r.video : null;
+    wallVideoOnScreen = sinks ? sinks.some(function (v) {
+      return !!v && v.sink === 'MAIN' && v.connected === true && v.connectedSource === 'VDEC' &&
+        (v.appId === HOME_APP || v.appId === LG_HOME);
+    }) : null;
+  });
 }
 
 function beat(body) {
@@ -2778,7 +2807,11 @@ function beat(body) {
   if (iptvModule && body && typeof body.iptv === 'boolean') iptvModule.front(body.iptv && viewInFront());
   beats++;
   if (viewInFront()) watchBeat(beatGraceMs);
-  return { ok: true, enabled: readConfig().enabled, standalone: isStandalone(), covered: viewCovered(), saver: powerState === 'Screen Saver',
+  var saver = powerState === 'Screen Saver' || !!(screensaversModule && screensaversModule.launchedShowing());
+  // As last seen: the reply does not wait for videooutput.
+  var onScreen = wallVideoOnScreen;
+  checkWallVideoOutput();
+  return { ok: true, wallVideoOnScreen: onScreen, enabled: readConfig().enabled, standalone: isStandalone(), covered: viewCovered(saver), saver: saver,
            build: buildId, wallpapers: wallpapers.status(),
            layoutVersion: layoutVersion(), sleeps: sleeps, trace: fs.existsSync(traceFile()),
            // So a push shows within a heartbeat rather than at the next poll.
@@ -3205,6 +3238,7 @@ function startLayoutAvailable() { return /^9\./.test(String(webosVersion || ''))
 
 function init(opts) {
   opts = opts || {};
+  screensaversModule = opts.screensavers || null;
   lunaFn = opts.luna || null;
   liveState = opts.liveState || null;
   historyModule = opts.history || null;
@@ -3465,6 +3499,7 @@ module.exports = {
   status: status,
   catalogue: catalogue,
   viewStatus: viewStatus,
+  videoBackgroundActive: videoBackgroundActive,
   channelList: channelList,
   guide: guide,
   now: now,
@@ -3510,8 +3545,17 @@ module.exports = {
     // The shuffled collection: one picture, or every one.
     if (body && typeof body.removePicture === 'string') return wallpapers.removePictures(cb, body.removePicture);
     if (body && body.removePictures === true) return wallpapers.removePictures(cb);
+    // The Video screen saver is staged with the playlist and its details filled in.
+    var restaged = function (result) {
+      if (result && result.ok && screensaversModule) screensaversModule.restageScreensaver(true);
+      cb(result);
+    };
+    if (body && Array.isArray(body.videoUrls)) return wallpapers.setVideoSources(body.videoUrls, body.videoShuffle, restaged, body.videoStyle);
+    if (body && (typeof body.videoShuffle === 'boolean' || (body.videoStyle && typeof body.videoStyle === 'object'))) {
+      return wallpapers.setVideoOptions({ shuffle: body.videoShuffle, style: body.videoStyle }, restaged);
+    }
     if (body && typeof body.choose === 'string') return wallpapers.choose(body.choose, cb);
-    cb({ ok: false, error: 'removeUploads, remove, removePicture, removePictures or choose expected' });
+    cb({ ok: false, error: 'removeUploads, remove, removePicture, removePictures, videoUrls, videoShuffle, videoStyle or choose expected' });
   },
   normalise: normalise,
   hideApps: hideApps,

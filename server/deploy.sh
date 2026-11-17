@@ -64,7 +64,7 @@ assets/ui/ui.css assets/ui/core.js assets/ui/theme.js assets/ui/format.js assets
 assets/ui/update.js assets/ui/controls.js assets/ui/privacy.js assets/ui/lgsettings.js assets/ui/game.js \
 assets/ui/system.js assets/ui/history.js assets/ui/ssh.js assets/ui/screentime.js assets/ui/apps.js assets/ui/inputs.js assets/ui/install.js assets/ui/home.js assets/ui/iptv.js assets/ui/tvchannels.js assets/ui/tabs.js assets/ui/servicemenu.js \
 assets/ui/oled.js assets/ui/screensavers.js assets/ui/mqtt.js assets/ui/tools.js assets/ui/search-aliases.js assets/ui/search.js assets/ui/main.js assets/ui/audio.js assets/ui/bluetooth.js assets/ui/picture.js \
-assets/qr.js assets/i18n.js assets/i18n/es.json assets/i18n/de.json assets/i18n/ru.json assets/i18n/hu.json assets/i18n/it.json assets/i18n/ar.json assets/i18n/pt.json assets/i18n/pt-br.json assets/i18n/pl.json assets/i18n/fr.json assets/setup.html assets/setup-phone.html \
+assets/qr.js assets/i18n.js assets/video-order.js assets/i18n/es.json assets/i18n/de.json assets/i18n/ru.json assets/i18n/hu.json assets/i18n/it.json assets/i18n/ar.json assets/i18n/pt.json assets/i18n/pt-br.json assets/i18n/pl.json assets/i18n/fr.json assets/setup.html assets/setup-phone.html \
 assets/dashboard-app/appinfo.json assets/dashboard-app/index.html \
 assets/dashboard-app/packageinfo.json assets/dashboard-app/install-app.sh \
 assets/dashboard-app/assets/icon80.png assets/dashboard-app/assets/icon130.png assets/dashboard-app/assets/splash.png \
@@ -94,6 +94,7 @@ assets/screensavers/neo/main.qml assets/screensavers/neo/saver.json \
 assets/screensavers/starfield/main.qml assets/screensavers/starfield/saver.json \
 assets/screensavers/starfield/star.png assets/screensavers/tesseract/main.qml \
 assets/screensavers/tesseract/saver.json assets/screensavers/tesseract/tesseract.js \
+assets/screensavers/video/saver.json assets/screensavers/video/web/index.html \
 assets/screensavers/veils/main.qml \
 assets/screensavers/veils/saver.json assets/screensavers/vitals/main.qml \
 assets/screensavers/vitals/saver.json assets/screensavers/vortex/main.qml \
