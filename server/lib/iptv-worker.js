@@ -760,14 +760,16 @@ function selectJob(cb) {
     if (ep && ep.length < 2) ep.push(e);
   });
   if (!ok) return cb(fail('no-snapshot'));
-  var rematch = {};
+  var rematch = {}, taken = {};
   Object.keys(wanted).forEach(function (k) {
     if (found[k]) return;
     var w = wanted[k];
     var ng = w.name ? byNameGroup[nameGroupOf(w.name, w.group)] || [] : [];
     var ep = w.epgId ? byEpg[w.epgId] || [] : [];
     var hit = ng.length === 1 ? ng[0] : ep.length === 1 ? ep[0] : null;
-    if (hit && !wanted.hasOwnProperty(hit.key) && !found[hit.key]) {
+    // A key a group section already carries still follows: only a second wanted key may not claim it too.
+    if (hit && !wanted.hasOwnProperty(hit.key) && !taken[hit.key]) {
+      taken[hit.key] = true;
       found[hit.key] = hit;
       rematch[k] = hit.key;
     } else missingKeys.push(k);
