@@ -2415,7 +2415,6 @@ html.remote-embed body{padding-top:4px}
 .remote-modal.shown .remote-sheet{opacity:1;transform:translate(-50%,-50%)}
 .remote-sheet-head{display:flex;align-items:center;gap:16px;padding:10px 10px 10px 20px;border-bottom:1px solid var(--w06)}
 .remote-sheet-title{font:500 12px 'Manrope';letter-spacing:.10em;text-transform:uppercase;color:var(--w60);margin-right:auto}
-.remote-sheet-head .link-btn{margin-top:0}
 .remote-close{appearance:none;width:36px;height:36px;min-height:0;padding:0;border:0;border-radius:18px;background:transparent;
   color:var(--w60);font-size:22px;line-height:1;cursor:pointer}
 .remote-close:hover{background:var(--w06);color:var(--w100)}
@@ -2480,8 +2479,9 @@ html.remote-view.remote-inputs .rp-body,html.remote-view:not(.remote-mode-button
 .rp-key.rp-wide{grid-column:span 2;flex-direction:row;min-height:52px;gap:10px}
 .rp-key.on{background:var(--w10);color:var(--w100);border-color:var(--w35)}
 .rp-modes{grid-template-columns:repeat(auto-fit,minmax(0,1fr));gap:4px;margin-top:22px;padding:4px;border:1px solid var(--w12);border-radius:24px}
-.rp-modes button{appearance:none;min-height:0;height:38px;border:0;border-radius:19px;background:transparent;color:var(--w60);
-  font:500 11.5px 'Manrope';letter-spacing:.08em;text-transform:uppercase;cursor:pointer}
+.rp-modes button{appearance:none;display:flex;align-items:center;justify-content:center;min-height:0;height:38px;margin:0;
+  padding:0 0 0 .08em;border:0;border-radius:19px;background:transparent;color:var(--w60);
+  font:500 11.5px/1 'Manrope';letter-spacing:.08em;text-transform:uppercase;cursor:pointer}
 .rp-modes button[hidden]{display:none}
 .rp-modes button[aria-selected="true"]{background:var(--w10);color:var(--w100)}
 html.remote-view #disc-pointer .pointer-pad{min-height:min(52vh,420px)}

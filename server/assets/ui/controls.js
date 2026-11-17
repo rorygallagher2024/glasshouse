@@ -725,24 +725,71 @@ function queuePointerMove(dx, dy) {
   }, 1000 / pointerRate);
 }
 
+/*
+ * The pad. A mouse moves the cursor 1.5 TV pixels a page pixel. A finger is
+ * given more, and more again the faster it moves, so one swipe can cross the
+ * TV's screen and a slow one still places the cursor. Two fingers scroll, as
+ * the wheel does. A tap clicks.
+ */
 (function initPointerPad() {
   const pad = q('pointer-pad');
   if (!pad) return;
   let active = null;
+  const touches = new Map();
+  let scrollLast = null, scrollCarry = 0, scrollCarryX = 0;
+  const gain = (e, dist, dt) => {
+    if (e.pointerType !== 'touch' && e.pointerType !== 'pen') return 1.5;
+    const speed = dt > 0 ? dist / dt : 0;           // page px a ms
+    return 2.5 * (1 + Math.min(2.5, speed * 1.4));
+  };
+  const centre = () => {
+    let x = 0, y = 0;
+    touches.forEach(p => { x += p.x; y += p.y; });
+    return { x: x / touches.size, y: y / touches.size };
+  };
   pad.addEventListener('pointerdown', e => {
     if (e.button !== 0) return;
     e.preventDefault();
-    active = { id: e.pointerId, x: e.clientX, y: e.clientY, carryX: 0, carryY: 0, moved: 0, at: Date.now() };
-    pad.classList.add('dragging');
     try { pad.setPointerCapture(e.pointerId); } catch (err) {}
+    if (e.pointerType === 'touch') touches.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (touches.size >= 2) {
+      // A second finger: scrolling, not moving, and no click at the end.
+      active = null;
+      scrollLast = centre();
+      scrollCarry = scrollCarryX = 0;
+      pad.classList.add('dragging');
+      return;
+    }
+    active = { id: e.pointerId, x: e.clientX, y: e.clientY, carryX: 0, carryY: 0, moved: 0, at: Date.now(), t: e.timeStamp };
+    pad.classList.add('dragging');
   });
   pad.addEventListener('pointermove', e => {
+    if (touches.has(e.pointerId)) touches.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (touches.size >= 2 && scrollLast) {
+      const c = centre();
+      // Natural scrolling: fingers up, the page moves on down. 20 page pixels a step.
+      scrollCarry += (scrollLast.y - c.y) / 20;
+      scrollCarryX += (scrollLast.x - c.x) / 20;
+      scrollLast = c;
+      const dy = scrollCarry < 0 ? Math.ceil(scrollCarry) : Math.floor(scrollCarry);
+      const dx = scrollCarryX < 0 ? Math.ceil(scrollCarryX) : Math.floor(scrollCarryX);
+      if (dx || dy) {
+        scrollCarry -= dy;
+        scrollCarryX -= dx;
+        sendPointer({ scroll: { dx, dy } });
+      }
+      return;
+    }
     if (!active || e.pointerId !== active.id) return;
-    active.carryX += (e.clientX - active.x) * 1.5;
-    active.carryY += (e.clientY - active.y) * 1.5;
-    active.moved += Math.abs(e.clientX - active.x) + Math.abs(e.clientY - active.y);
+    const mx = e.clientX - active.x, my = e.clientY - active.y;
+    const dist = Math.abs(mx) + Math.abs(my);
+    const g = gain(e, dist, e.timeStamp - active.t);
+    active.carryX += mx * g;
+    active.carryY += my * g;
+    active.moved += dist;
     active.x = e.clientX;
     active.y = e.clientY;
+    active.t = e.timeStamp;
     const dx = active.carryX < 0 ? Math.ceil(active.carryX) : Math.floor(active.carryX);
     const dy = active.carryY < 0 ? Math.ceil(active.carryY) : Math.floor(active.carryY);
     if (!dx && !dy) return;
@@ -751,11 +798,16 @@ function queuePointerMove(dx, dy) {
     queuePointerMove(dx, dy);
   });
   const finish = (e, cancelled) => {
-    if (!active || e.pointerId !== active.id) return;
-    const tap = !cancelled && active.moved < 8 && Date.now() - active.at < 400;
+    touches.delete(e.pointerId);
+    try { pad.releasePointerCapture(e.pointerId); } catch (err) {}
+    if (touches.size < 2) scrollLast = null;
+    if (!active || e.pointerId !== active.id) {
+      if (!active && !touches.size) pad.classList.remove('dragging');
+      return;
+    }
+    const tap = !cancelled && active.moved < 10 && Date.now() - active.at < 400;
     active = null;
     pad.classList.remove('dragging');
-    try { pad.releasePointerCapture(e.pointerId); } catch (err) {}
     if (tap) sendPointer({ click: true });
   };
   pad.addEventListener('pointerup', e => finish(e, false));
@@ -947,6 +999,19 @@ document.addEventListener('keydown', e => {
  * Back would step back inside it rather than close it.
  */
 function remoteModal() { return q('remote-modal'); }
+/*
+ * The Android app is told while the remote is showing: its volume keys then
+ * step the TV's volume, and its pull-to-refresh is off, which otherwise took
+ * a drag down the touchpad. The top page only: a frame has the bridge too.
+ */
+function tellAppRemote(open) {
+  try {
+    if (window.top === window && window.GlasshouseApp && typeof window.GlasshouseApp.remoteState === 'function') {
+      window.GlasshouseApp.remoteState(!!open);
+    }
+  } catch (e) {}
+}
+if (remoteView) tellAppRemote(true);
 let remoteHideTimer = null;
 function openRemote() {
   const m = remoteModal(), slot = q('remote-frame-slot');
@@ -965,6 +1030,7 @@ function openRemote() {
   slot.appendChild(frame);
   m.hidden = false;
   document.documentElement.classList.add('remote-open');
+  tellAppRemote(true);
   requestAnimationFrame(() => requestAnimationFrame(() => m.classList.add('shown')));
   try { history.pushState({ remote: true }, '', location.href); } catch (e) {}
 }
@@ -973,6 +1039,7 @@ function hideRemote() {
   if (!m || m.hidden) return;
   m.classList.remove('shown');
   document.documentElement.classList.remove('remote-open');
+  tellAppRemote(false);
   clearTimeout(remoteHideTimer);
   remoteHideTimer = setTimeout(() => { m.hidden = true; if (slot) slot.textContent = ''; }, 220);
   const btn = q('hdr-remote');

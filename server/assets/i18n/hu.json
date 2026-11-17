@@ -3382,7 +3382,6 @@
  "srv.remoteKeys.homeBarInstall": {"text": "A Glasshouse Bart nem sikerült feltenni a TV-re. Próbálja újra egy pillanat múlva.", "from": "Glasshouse Bar could not be put on the TV. Try again in a moment."},
  "ctl.remoteLink.full": {"text": "Teljes irányítópult", "from": "Full dashboard"},
  "header.remote": {"text": "Távirányító", "from": "Remote"},
- "ctl.remoteLink.page": {"text": "Megnyitás oldalként", "from": "Open as a page"},
  "remote.close": {"text": "Bezárás", "from": "Close"},
  "rp.input": {"text": "Bemenet", "from": "Input"},
  "rp.buttons": {"text": "Gombok", "from": "Buttons"},

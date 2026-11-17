@@ -4560,6 +4560,30 @@ async function visitRemoteView(browser, base, problems) {
         await page.locator('#remote-modes [data-mode="buttons"]').click();
         if (!(await page.locator('.rp-ring').isVisible())) fail('Buttons left the D-pad hidden');
         if (await page.evaluate(() => localStorage.getItem('remoteMode')) !== 'buttons') fail('the mode is not kept');
+        // The touchpad with fingers: a tap clicks, a drag moves further than a mouse would, two fingers scroll.
+        const pad = await page.evaluate(() => {
+          const sent = [], moves = [];
+          window.sendPointer = body => sent.push(body);
+          window.queuePointerMove = (dx, dy) => moves.push([dx, dy]);
+          const el = document.getElementById('pointer-pad');
+          const fire = (type, id, x, y) => el.dispatchEvent(new PointerEvent(type, { pointerId: id, pointerType: 'touch', isPrimary: id === 1,
+            clientX: x, clientY: y, button: 0, buttons: type === 'pointerup' ? 0 : 1, bubbles: true, cancelable: true }));
+          fire('pointerdown', 1, 100, 100); fire('pointerup', 1, 100, 100);
+          const clicks = sent.filter(b => b.click).length;
+          fire('pointerdown', 1, 100, 100);
+          for (let i = 1; i <= 10; i++) fire('pointermove', 1, 100 + i * 10, 100);
+          fire('pointerup', 1, 200, 100);
+          const moved = moves.reduce((n, m) => n + m[0], 0);
+          sent.length = 0;
+          fire('pointerdown', 1, 100, 200); fire('pointerdown', 2, 160, 200);
+          for (let i = 1; i <= 6; i++) { fire('pointermove', 1, 100, 200 - i * 10); fire('pointermove', 2, 160, 200 - i * 10); }
+          fire('pointerup', 1, 100, 140); fire('pointerup', 2, 160, 140);
+          const scrolled = sent.filter(b => b.scroll).reduce((n, b) => n + b.scroll.dy, 0);
+          return { clicks, moved, scrolled, clicked: sent.filter(b => b.click).length };
+        });
+        if (pad.clicks !== 1) fail('a tap on the touchpad sent ' + pad.clicks + ' clicks');
+        if (pad.moved <= 150) fail('a 100 px finger drag moved the cursor only ' + pad.moved + ' px');
+        if (pad.scrolled < 2 || pad.clicked) fail('two fingers up 60 px scrolled ' + pad.scrolled + ' and clicked ' + pad.clicked);
       }
       if (s.tab !== 'apps') fail(label + ': the remembered tab became ' + s.tab);
       if (JSON.stringify(s.shownPanels) !== JSON.stringify(['tab-control'])) fail(label + ': panels shown ' + JSON.stringify(s.shownPanels));
@@ -4570,6 +4594,8 @@ async function visitRemoteView(browser, base, problems) {
   const page = await browser.newPage({ viewport: { width: 1400, height: 900 } });
   page.on('pageerror', e => fail('dashboard: ' + e.message));
   try {
+    // The Android app's bridge, told while the remote shows.
+    await page.addInitScript(() => { window.__app = []; window.GlasshouseApp = { remoteState: v => window.__app.push(v) }; });
     await page.goto(base + '/?tab=metrics');
     await page.waitForFunction(() => !document.getElementById('tab-metrics').hidden);
     if (await page.locator('#remote-full').isVisible()) fail('the remote\'s way back shows on the full dashboard');
@@ -4601,6 +4627,8 @@ async function visitRemoteView(browser, base, problems) {
       if (!shut.hidden || shut.src !== 'none') fail(how + ' left the modal ' + JSON.stringify(shut));
       if (!(await page.evaluate(() => !document.getElementById('tab-metrics').hidden))) fail(how + ' left the Metrics tab');
     }
+    const told = await page.evaluate(() => window.__app.join(','));
+    if (told !== 'true,false,true,false') fail('the app was told ' + JSON.stringify(told));
     await page.goto(base + '/?open=keyboard');
     await page.waitForFunction(() => !document.getElementById('tab-control').hidden);
     if (!(await page.evaluate(() => document.getElementById('disc-keyboard').open))) fail('?open=keyboard left the keyboard shut');

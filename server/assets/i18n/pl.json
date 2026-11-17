@@ -3368,7 +3368,6 @@
  "srv.remoteKeys.homeBarInstall": {"text": "Nie udało się zainstalować Glasshouse Bar na telewizorze. Spróbuj ponownie za chwilę.", "from": "Glasshouse Bar could not be put on the TV. Try again in a moment."},
  "ctl.remoteLink.full": {"text": "Pełny panel", "from": "Full dashboard"},
  "header.remote": {"text": "Pilot", "from": "Remote"},
- "ctl.remoteLink.page": {"text": "Otwórz jako stronę", "from": "Open as a page"},
  "remote.close": {"text": "Zamknij", "from": "Close"},
  "rp.input": {"text": "Wejście", "from": "Input"},
  "rp.buttons": {"text": "Przyciski", "from": "Buttons"},
