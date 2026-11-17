@@ -336,13 +336,33 @@ step(function (next) {
       assert.strictEqual(down.ok, true);
       var f = loadFilter();
       var writes = function () { return f.sent.filter(function (m) { return m.uri === 'com.webos.service.settings/setSystemSettings'; }).length; };
+      // expire() runs every timer set so far; one tick runs those waiting and drops them.
+      var tick = function () { var n = f.timers.length; f.expire(); f.timers.splice(0, n); };
+      f.timers.length = 0;
       tv.backlight = 50;
       assert.strictEqual(f.handle(1004, true, false), 'accepted');
       assert.strictEqual(tv.backlight, 60, 'up one step on the press');
-      f.handle(1004, false, false);
-      assert.strictEqual(tv.backlight, 60, 'the release does nothing');
+      // This remote sends no auto-repeat: the filter's own timer repeats while the key is down.
       f.handle(1004, true, true);
-      assert.strictEqual(tv.backlight, 70, 'a held key steps again');
+      assert.strictEqual(tv.backlight, 60, 'an auto-repeat is not a second press');
+      tick();
+      assert.strictEqual(tv.backlight, 70, 'a held key steps again on the timer');
+      tick();
+      assert.strictEqual(tv.backlight, 80, 'and again');
+      f.handle(1004, false, false);
+      assert.strictEqual(tv.backlight, 80, 'the release itself steps nothing');
+      tick();
+      assert.strictEqual(tv.backlight, 80, 'no step once the key is up');
+      tv.backlight = 90;
+      f.handle(1004, true, false);
+      assert.strictEqual(tv.backlight, 100);
+      tick();
+      assert.strictEqual(tv.backlight, 100, 'stops at the end of the range');
+      f.handle(1004, false, false);
+      tv.backlight = 50;
+      f.handle(1004, true, false);
+      f.handle(1004, false, false);
+      assert.strictEqual(tv.backlight, 60);
       assert.strictEqual(f.launched.length, 0, 'opens no app');
       tv.backlight = 98;
       f.handle(1004, true, false);
