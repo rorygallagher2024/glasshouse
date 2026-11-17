@@ -3736,3 +3736,23 @@ refuses to start any service named in
 one that is not running fails at once. The C2 has neither file. On the C2 the
 hub starts `/usr/sbin/accountmanager` on demand, and with a program that exits
 at once mounted over it, the same call was still waiting after 90 s.
+
+## LG Guide covering Glasshouse Home (C3, webOS 10.2.2)
+
+On 16 November 2026, LG's broadcast Guide was visible while
+`applicationManager/getForegroundAppInfo` still named `com.webos.app.home`,
+with category `home`. `surfacemanager/getForegroundWindowInfo` listed Home as
+`_WEBOS_WINDOW_TYPE_CARD`, `com.webos.app.livemenu` as
+`_WEBOS_WINDOW_TYPE_OVERLAY`, and the volume window as
+`_WEBOS_WINDOW_TYPE_VOLUME`. `getFocusedWindowInfo` named `livemenu`, with
+`type: overlaySurface`.
+
+That evening's Glasshouse log recorded three “view not answering” recoveries
+which gave LG's Home its place. Checking only for a different foreground card
+does not recognise this Guide state. Recovery checks match a focused overlay
+to the foreground window list and keep checking after it closes; an unfocused
+or merely cached overlay does not exempt a stopped Home view.
+
+With the correction installed, navigating Guide for at least 30 s kept it
+open. Successive watchdog checks logged that the view was behind
+`com.webos.app.livemenu`, rather than restoring LG's Home.
