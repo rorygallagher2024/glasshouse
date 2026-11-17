@@ -302,13 +302,15 @@ html.resting #wall .layer{-webkit-animation-play-state:paused;animation-play-sta
    rows where they were. The sides stay as they are, as scrolling counts on
    their 22px; the glow is kept within them. */
 .cards .row[data-key="app"] .wrap{padding-top:36px;padding-bottom:36px;margin-top:-30px;margin-bottom:-30px}
-/* The shading where the cards run on, faded out on every side: the row's
-   room for the glow made the plain one end in a hard-edged box. */
-.cards .row[data-key="app"] .wrap .edge{width:150px;
-  -webkit-mask-image:linear-gradient(180deg,transparent,#000 32%,#000 68%,transparent);
-  mask-image:linear-gradient(180deg,transparent,#000 32%,#000 68%,transparent)}
-.cards .row[data-key="app"] .wrap .edge.l{background:linear-gradient(90deg,rgba(0,0,0,.66),rgba(0,0,0,.4) 30%,rgba(0,0,0,.14) 65%,rgba(0,0,0,0))}
-.cards .row[data-key="app"] .wrap .edge.r{background:linear-gradient(270deg,rgba(0,0,0,.66),rgba(0,0,0,.4) 30%,rgba(0,0,0,.14) 65%,rgba(0,0,0,0))}
+/* The shading where the cards run on: a soft oval behind the arrow, clear
+   well inside every side. The row is taller than the cards, for the glow, and
+   stops short of the screen's edge, so a shade still dark at its sides showed
+   as a straight line above and below the cards. */
+.cards .row[data-key="app"] .wrap .edge{width:200px}
+.cards .row[data-key="app"] .wrap .edge.l{background:radial-gradient(ellipse 50% 40% at 50% 50%,rgba(0,0,0,.6),rgba(0,0,0,.3) 50%,rgba(0,0,0,.08) 80%,rgba(0,0,0,0))}
+.cards .row[data-key="app"] .wrap .edge.r{background:radial-gradient(ellipse 50% 40% at 50% 50%,rgba(0,0,0,.6),rgba(0,0,0,.3) 50%,rgba(0,0,0,.08) 80%,rgba(0,0,0,0))}
+.cards .row[data-key="app"] .wrap .edge.l:after{left:76px}
+.cards .row[data-key="app"] .wrap .edge.r:after{right:76px}
 .cards .app .nm{margin-top:14px;opacity:0;-webkit-transition:opacity .12s;transition:opacity .12s}
 .cards .app.focus .nm,.arranging.cards .app .nm{opacity:1}
 .no-app-labels.cards .app{width:300px}
