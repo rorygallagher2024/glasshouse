@@ -5393,13 +5393,32 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
    * LG's screen saver never comes over a playing video: while the wallpaper
    * plays, a B8 (webOS 4.4) and a C2 (webOS 9.2) refused turnOnScreenSaver
    * and asked for no idle screen saver in over 6 minutes, leaving Home's
-   * clock and tiles on an OLED panel. So after this long without a key or
-   * the pointer, the video fades out and lets the decoder go, and the TV's
-   * own screen saver comes as it does over a still background. A key, the
-   * pointer or Home coming back plays it again.
+   * clock and tiles on an OLED panel. Where the TV's screen saver time is
+   * known (the heartbeat's saverIdleMs, LG's setting), the video fades out
+   * as it runs out, lets the decoder go and asks the server to start the
+   * screen saver: the TV's own timer does not run while a video plays, so it
+   * would only start then. Where it is not known, the video fades out after 2
+   * minutes without a key or the pointer, and the TV's own screen saver comes
+   * as it does over a still background. A key, the pointer or Home coming
+   * back plays it again.
    */
   var WALL_VIDEO_IDLE_MS = 120000;
-  function wallVideoIdle() { return Date.now() - wallVideoInputAt >= WALL_VIDEO_IDLE_MS; }
+  // The fade (WALL_VIDEO_FADE_S), so the screen saver starts at the TV's time.
+  var WALL_VIDEO_SAVER_LEAD_MS = 3000;
+  var saverIdleMs = null;
+  function wallVideoIdleMs() {
+    return saverIdleMs ? Math.max(WALL_VIDEO_IDLE_MS, saverIdleMs - WALL_VIDEO_SAVER_LEAD_MS) : WALL_VIDEO_IDLE_MS;
+  }
+  function noteSaverIdleMs(ms) {
+    var next = typeof ms === 'number' && ms > 0 ? ms : null;
+    if (next === saverIdleMs) return;
+    var wasIdle = wallVideoIdle();
+    saverIdleMs = next;
+    scheduleWallVideoIdle();
+    // A longer time can bring back a video already let go.
+    if (wasIdle && !wallVideoIdle() && wallChoice === 'video') updateWall();
+  }
+  function wallVideoIdle() { return Date.now() - wallVideoInputAt >= wallVideoIdleMs(); }
   function scheduleWallVideoIdle() {
     clearTimeout(wallVideoIdleTimer);
     wallVideoIdleTimer = null;
@@ -5411,8 +5430,12 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
       // Faded out first, as at a clip's end, rather than cut to black.
       wallVideoShow(0);
       if ($('wall-caption')) $('wall-caption').textContent = '';
-      setTimeout(function () { if (wallVideoIdle()) updateWall(); }, WALL_VIDEO_FADE_S * 1000);
-    }, Math.max(0, WALL_VIDEO_IDLE_MS - (Date.now() - wallVideoInputAt)) + 50);
+      setTimeout(function () {
+        if (!wallVideoIdle()) return;
+        updateWall();
+        if (saverIdleMs) postJson('/api/home/idle-saver', {}, function () {});
+      }, WALL_VIDEO_FADE_S * 1000);
+    }, Math.max(0, wallVideoIdleMs() - (Date.now() - wallVideoInputAt)) + 50);
   }
   function noteWallVideoInput() {
     var wasIdle = wallVideoIdle();
@@ -6386,6 +6409,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
         readWallpapers(r.wallpapers);
         renderPicture();
         noteWallVideoOutput(r.wallVideoOnScreen);
+        noteSaverIdleMs(r.saverIdleMs);
         updateWall();
         $('fault').className = '';
         // The TV's setting can change while the view is open, so the heartbeat
