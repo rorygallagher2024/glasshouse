@@ -1569,6 +1569,10 @@ button.tools-jump:active{background:var(--w80)}
 .rk-lg{color:var(--w50)}
 .rk-none{font-size:17px;line-height:1}
 .rk-ico{width:24px;height:24px;border-radius:6px;object-fit:contain;background:var(--w06);flex:none}
+/* An app's card icon on the Home tab, on the dark card it is drawn for. */
+.home-card-pick{display:flex;align-items:center;gap:8px;margin-top:6px}
+.home-card-ico{width:64px;height:36px;border-radius:5px;object-fit:contain;background:#0d0d0d;flex:none}
+.home-card-pick .inp-name{max-width:240px}
 .rk-pick{grid-column:1/-1;position:relative;border:1px solid var(--w100);padding:16px 18px 18px;margin-top:2px}
 .rk-pick::before{content:'';position:absolute;top:-9px;left:calc(var(--rk-arrow, 40px) - 8px);
   border:8px solid transparent;border-top:0;border-bottom-color:var(--w100)}

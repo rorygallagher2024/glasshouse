@@ -3740,6 +3740,51 @@ step('the input bar\'s Switch only on OK is off until switched on, and kept (#15
   })();
 });
 
+step('apps take card icons from the folder by title, or the one chosen, and the switches are kept', function (done) {
+  start(null);
+  var icons = path.join(dir, 'home-icons');
+  fs.mkdirSync(icons);
+  ['netflix', 'plex', 'youtube_music'].forEach(function (n) { fs.writeFileSync(path.join(icons, n + '.png'), 'png'); });
+  fs.writeFileSync(path.join(icons, 'Not An Icon.png'), 'png');
+  assert.deepEqual(home.cardIconNames(), ['netflix', 'plex', 'youtube_music'], 'only names an app title can match');
+  assert.strictEqual(home.cardIconPath('plex'), path.join(icons, 'plex.png'));
+  assert.strictEqual(home.cardIconPath('../plex'), null, 'nothing outside the folder');
+  assert.strictEqual(home.cardIconPath('youtube'), null);
+  function cards(c) {
+    var out = {};
+    c.apps.forEach(function (a) { out[a.id] = a.card || null; });
+    return out;
+  }
+  home.catalogue(function (c) {
+    var by = cards(c);
+    assert.strictEqual(by.netflix, '/api/home/card-icon?name=netflix', 'by its title');
+    assert.strictEqual(by['cdp-30'], '/api/home/card-icon?name=plex', 'by its title, not its id');
+    assert.strictEqual(by['youtube.leanback.v4'], null, 'none where no name fits');
+    home.setLayout({ appCards: true, focusPulse: true, navSound: 'yes', appIcons: { 'youtube.leanback.v4': 'youtube_music', netflix: 'Bad Name' } }, function (r) {
+      assert.ok(r.ok, r.error);
+      assert.strictEqual(r.layout.appCards, true);
+      assert.strictEqual(r.layout.focusPulse, true);
+      assert.strictEqual(r.layout.navSound, 'off', 'only a sound Home has');
+      assert.strictEqual(fs.existsSync(home.navSoundFile('click').path), true, 'the click ships with Glasshouse');
+      assert.strictEqual(fs.existsSync(home.navSoundFile('rollover').path), true);
+      assert.strictEqual(home.navSoundFile('own'), null, 'no own sound until one is put on the TV');
+      assert.strictEqual(home.navSoundFile('../click'), null);
+      assert.strictEqual(r.layout.cardFade, 20, 'the cards fade a fifth by default');
+      assert.deepEqual(r.layout.appIcons, { 'youtube.leanback.v4': 'youtube_music' }, 'a name no pack uses is dropped');
+      home.catalogue(function (c2) {
+        assert.strictEqual(cards(c2)['youtube.leanback.v4'], '/api/home/card-icon?name=youtube_music', 'the one chosen');
+        home.setLayout({ appIcons: { 'youtube.leanback.v4': '' }, cardFade: 0 }, function (r2) {
+          assert.deepEqual(r2.layout.appIcons, {}, 'an empty choice goes back to matching by name');
+          assert.strictEqual(r2.layout.cardFade, 0, 'solid');
+          fs.readdirSync(icons).forEach(function (f) { fs.unlinkSync(path.join(icons, f)); });
+          fs.rmdirSync(icons);
+          done();
+        });
+      });
+    });
+  });
+});
+
 step('custom appNames rename apps in the catalogue and last opened, and clear back to default', function (done) {
   start({ enabled: true });
   foreground('netflix');

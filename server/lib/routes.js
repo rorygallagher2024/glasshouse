@@ -1296,6 +1296,23 @@ function handleHomeRoute(req, res, u, pathname) {
         send(res, status, JSON.stringify({ ok: false, error: error }));
       }, /\.png$/i.test(snapshot) ? 'image/png' : 'image/jpeg', 'private, no-cache');
     }
+    if (pathname === '/api/home/card-icon') {
+      var cardPath = homeModule.cardIconPath(u.query && u.query.name);
+      if (!cardPath) return send(res, 404, JSON.stringify({ ok: false, error: 'icon not found' }));
+      return sendIconFile(req, res, cardPath, function (status, error) {
+        send(res, status, JSON.stringify({ ok: false, error: error }));
+      }, 'image/png');
+    }
+    if (pathname === '/api/home/nav-sound') {
+      var navSound = homeModule.navSoundFile(u.query && u.query.name);
+      if (!navSound) return send(res, 404, JSON.stringify({ ok: false, error: 'no sound' }));
+      return sendIconFile(req, res, navSound.path, function (status, error) {
+        send(res, status, JSON.stringify({ ok: false, error: error }));
+      }, navSound.type, 'no-cache');
+    }
+    if (pathname === '/api/home/card-icons') {
+      return reply({ ok: true, names: homeModule.cardIconNames() });
+    }
     if (pathname === '/api/home/icon') {
       return homeModule.iconPath(u.query && u.query.id, function (iconPath) {
         if (!iconPath) return send(res, 404, JSON.stringify({ ok: false, error: 'icon not found' }));

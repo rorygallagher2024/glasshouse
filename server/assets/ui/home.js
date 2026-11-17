@@ -339,6 +339,24 @@ function renderHome() {
     updateToggle(el, { cls: on && !unused ? 'good' : 'idle', label: on ? t('common.on', 'On') : t('common.off', 'Off') });
     el.disabled = !homeWritable() || unused;
   });
+  HOME_OPT_IN.forEach(([key, id]) => {
+    const el = q(id);
+    if (!el) return;
+    const on = !!st.layout && st.layout[key] === true;
+    updateToggle(el, { cls: on ? 'good' : 'idle', label: on ? t('common.on', 'On') : t('common.off', 'Off') });
+    el.disabled = !homeWritable();
+  });
+  const soundSel = q('home-nav-sound-sel');
+  if (soundSel) {
+    soundSel.value = (st.layout && st.layout.navSound) || 'off';
+    soundSel.disabled = !homeWritable();
+  }
+  const fadeSel = q('home-card-fade-sel');
+  if (fadeSel) {
+    fadeSel.value = String(st.layout && typeof st.layout.cardFade === 'number' ? st.layout.cardFade : 20);
+    fadeSel.disabled = !homeWritable() || !(st.layout && st.layout.appCards === true);
+  }
+  loadHomeCardIcons();
   renderHomeWeather(st);
   const countAlt = q('home-show-count-alt');
   if (countAlt) countAlt.hidden = !altView;
@@ -638,7 +656,7 @@ function renderHomeRows() {
         : `<span translate="no">${esc(it.title)}</span>`;
       return `<div class="prot-row home-tile${hidden || folded ? ' home-hidden' : ''}">
         <div class="prot-main"><div class="prot-title">${icon}${titleHtml}</div>
-          ${it.sub ? `<div class="prot-desc">${esc(it.sub)}</div>` : ''}</div>
+          ${it.sub ? `<div class="prot-desc">${esc(it.sub)}</div>` : ''}${kind === 'app' && it.lg !== true && homeLayout.appCards === true ? homeCardIconField(id, editable) : ''}</div>
         <div class="prot-status">
           <button type="button" class="pill idle home-move" ${movable && i > 0 ? '' : 'disabled'} onclick="homeMoveTile('${kind}', ${i}, -1)" aria-label="${esc(t('home.earlier', 'Earlier'))}">↑</button>
           <button type="button" class="pill idle home-move" ${movable && i < order.length - 1 ? '' : 'disabled'} onclick="homeMoveTile('${kind}', ${i}, 1)" aria-label="${esc(t('home.later', 'Later'))}">↓</button>
@@ -1169,6 +1187,61 @@ function homeWeatherPick(i) {
 
 function homeShow(key) {
   homeSaveLayout({ [key]: homeLayout[key] === false });
+}
+
+// Off until switched on: apps as cards and the pulse on the one in focus.
+const HOME_OPT_IN = [['appCards', 'home-app-cards'], ['focusPulse', 'home-focus-pulse']];
+function homeOptIn(key) {
+  homeSaveLayout({ [key]: homeLayout[key] !== true });
+}
+
+function homeCardFade(v) {
+  homeSaveLayout({ cardFade: Number(v) });
+}
+
+function homeNavSound(v) {
+  homeSaveLayout({ navSound: v });
+}
+
+/*
+ * The card icons on the TV (lib/home cardIconNames), read once a visit: an
+ * app's own choice among them is typed or picked in its row.
+ */
+let homeCardIcons = null;
+async function loadHomeCardIcons() {
+  if (homeCardIcons) return;
+  try {
+    const r = await (await fetch(api('/api/home/card-icons'))).json();
+    homeCardIcons = (r && r.names) || [];
+  } catch (e) { homeCardIcons = []; }
+  let list = document.getElementById('home-card-icon-list');
+  if (!list) {
+    list = document.createElement('datalist');
+    list.id = 'home-card-icon-list';
+    document.body.appendChild(list);
+  }
+  list.innerHTML = homeCardIcons.map(n => `<option value="${esc(n)}">`).join('');
+  if (homeCardIcons.length && homeCat) renderHomeRows();
+}
+
+function homeCardIconField(id, editable) {
+  if (!homeCardIcons || !homeCardIcons.length) return '';
+  const app = ((homeCat && homeCat.apps) || []).find(a => a.id === id);
+  const chosen = (homeLayout && homeLayout.appIcons && homeLayout.appIcons[id]) || '';
+  const img = app && app.card ? `<img class="home-card-ico" src="${esc(api(app.card))}" alt="">` : '';
+  return `<div class="prot-desc home-card-pick">${img}<input type="text" class="inp-name" list="home-card-icon-list" translate="no"
+    value="${esc(chosen)}" placeholder="${esc(t('home.cardIconAuto', 'Card icon: matched by name'))}" data-card-app="${esc(id)}"
+    aria-label="${esc(t('home.cardIconLabel', 'Card icon'))}" ${editable ? '' : 'disabled'}
+    onkeydown="homeAppNameKey(event, this)" onchange="homeSetCardIcon(this)"></div>`;
+}
+
+function homeSetCardIcon(el) {
+  const id = el.dataset.cardApp;
+  const name = el.value.trim().toLowerCase();
+  if (name && !(homeCardIcons || []).includes(name)) { el.value = (homeLayout.appIcons || {})[id] || ''; return; }
+  homeLayout.appIcons = Object.assign({}, homeLayout.appIcons);
+  if (name) homeLayout.appIcons[id] = name; else delete homeLayout.appIcons[id];
+  homeSaveLayout({ appIcons: { [id]: name } });
 }
 
 function homeSearch() {

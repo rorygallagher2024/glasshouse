@@ -518,6 +518,18 @@ function defaults() {
     deviceNames: {},
     // Custom app labels keyed by app id.
     appNames: {},
+    // Apps as wide cards with a logo from the card icon folder (CARD_ICON_DIR)
+    // rather than square icons, the card in focus pulsing, and a click as
+    // focus moves: each off until switched on.
+    appCards: false,
+    focusPulse: false,
+    // The sound as focus moves: off, click, rollover or own (lib navSoundFile).
+    navSound: 'off',
+    // How see-through the cards not in focus are, in percent: 0 is solid.
+    cardFade: 20,
+    // The card icon chosen for an app, by name, keyed by app id: in place of
+    // the one matched by its title.
+    appIcons: {},
     // Transparent tiles on the Glasshouse Input bar: off by default so stepping
     // through inputs does not repaint translucent tiles over the picture.
     inputBarTransparent: false,
@@ -619,6 +631,12 @@ function normalise(raw) {
   d.showMediaServers = raw.showMediaServers === true;
   d.deviceNames = validDeviceNames(raw.deviceNames);
   d.appNames = validAppNames(raw.appNames);
+  d.appCards = raw.appCards === true;
+  d.focusPulse = raw.focusPulse === true;
+  // true, from before there was a choice, is the click.
+  d.navSound = NAV_SOUNDS.indexOf(raw.navSound) !== -1 ? raw.navSound : raw.navSound === true ? 'click' : 'off';
+  d.cardFade = validCardFade(raw.cardFade);
+  d.appIcons = validAppIcons(raw.appIcons);
   d.inputBarTransparent = raw.inputBarTransparent === true;
   d.inputBarSwitchOnOk = raw.inputBarSwitchOnOk === true;
   // null, saved, is the view's own look; none saved keeps the default.
@@ -635,6 +653,11 @@ function normalise(raw) {
 function validDarkening(v) {
   var n = typeof v === 'number' ? Math.round(v) : NaN;
   return n >= 0 && n <= 100 ? n : 100;
+}
+
+// 0 to 90 in steps of 10; anything else is the default, 20.
+function validCardFade(v) {
+  return typeof v === 'number' && v >= 0 && v <= 90 && v % 10 === 0 ? v : 20;
 }
 
 function validHexColour(v) {
@@ -673,6 +696,22 @@ function validCustomNames(v, base, maxKeys) {
 }
 
 function validDeviceNames(v, base) { return validCustomNames(v, base, 32); }
+
+// Card icon names keyed by app id; null or '' removes one.
+var CARD_ICON_NAME = /^[a-z0-9_]{1,80}$/;
+function validAppIcons(v, base) {
+  var out = {};
+  if (base && typeof base === 'object') Object.keys(base).forEach(function (k) { out[k] = base[k]; });
+  if (!v || typeof v !== 'object' || isArray(v)) return out;
+  Object.keys(v).forEach(function (k) {
+    if (!k || k.length > 200) return;
+    var val = v[k];
+    if (val === null || val === '') return delete out[k];
+    if (typeof val === 'string' && CARD_ICON_NAME.test(val) &&
+        (Object.keys(out).length < 200 || Object.prototype.hasOwnProperty.call(out, k))) out[k] = val;
+  });
+  return out;
+}
 function validAppNames(v, base) { return validCustomNames(v, base, 200); }
 
 function validSnapshot(s) {
@@ -819,6 +858,11 @@ function setLayout(body, cb) {
     showMediaServers: typeof body.showMediaServers === 'boolean' ? body.showMediaServers : c.showMediaServers,
     deviceNames: body.deviceNames !== undefined ? oneNamePerPort(validDeviceNames(body.deviceNames, c.deviceNames), body.deviceNames) : c.deviceNames,
     appNames: body.appNames !== undefined ? validAppNames(body.appNames, c.appNames) : c.appNames,
+    appCards: typeof body.appCards === 'boolean' ? body.appCards : c.appCards,
+    focusPulse: typeof body.focusPulse === 'boolean' ? body.focusPulse : c.focusPulse,
+    navSound: body.navSound !== undefined ? body.navSound : c.navSound,
+    cardFade: body.cardFade !== undefined ? body.cardFade : c.cardFade,
+    appIcons: body.appIcons !== undefined ? validAppIcons(body.appIcons, c.appIcons) : c.appIcons,
     inputBarTransparent: typeof body.inputBarTransparent === 'boolean' ? body.inputBarTransparent : c.inputBarTransparent,
     inputBarSwitchOnOk: typeof body.inputBarSwitchOnOk === 'boolean' ? body.inputBarSwitchOnOk : c.inputBarSwitchOnOk,
     // null puts the view's own colours back.
@@ -937,7 +981,7 @@ function layoutOf(c) {
     excludedRecents: c.excludedRecents,
     searchHintSeen: c.searchHintSeen, picture: c.picture, livePreview: c.livePreview, search: c.search, recommended: c.recommended,
     fade: c.fade, wallDrift: c.wallDrift, wallCrossfade: c.wallCrossfade, smoothScroll: c.smoothScroll, slidePanels: c.slidePanels,
-    darkening: c.darkening, hideUnused: c.hideUnused, showMediaServers: c.showMediaServers, deviceNames: devNamesNow(c.deviceNames), appNames: c.appNames, inputBarTransparent: c.inputBarTransparent, inputBarSwitchOnOk: c.inputBarSwitchOnOk, showClock: c.showClock, rowsBottom: c.rowsBottom, view: c.view,
+    darkening: c.darkening, hideUnused: c.hideUnused, showMediaServers: c.showMediaServers, deviceNames: devNamesNow(c.deviceNames), appNames: c.appNames, appCards: c.appCards, focusPulse: c.focusPulse, navSound: c.navSound, cardFade: c.cardFade, appIcons: c.appIcons, inputBarTransparent: c.inputBarTransparent, inputBarSwitchOnOk: c.inputBarSwitchOnOk, showClock: c.showClock, rowsBottom: c.rowsBottom, view: c.view,
     showLastOn: c.showLastOn, showAppCount: c.showAppCount, showAppLabels: c.showAppLabels, showCec: c.showCec, showTvLogos: c.showTvLogos, showPointer: c.showPointer, weather: c.weather, weatherPlace: c.weatherPlace, previewAlways: c.previewAlways, previewInTile: c.previewInTile, previewSize: c.previewSize, previewSound: c.previewSound, wallAnim: c.wallAnim,
     remoteBattery: c.remoteBattery,
     animTheme: c.animTheme, animSky: c.animSky, animLight: c.animLight, animThemes: ANIM_THEMES,
@@ -945,6 +989,89 @@ function layoutOf(c) {
     tileHighlight: c.tileHighlight,
     // Not saved: { host, by } while the ad blocker blocks LG's search (lib/home-search).
     searchBlocked: search.blocked() };
+}
+
+// ---------------------------------------------------------------- card icons
+
+/*
+ * Wide logos for the apps as cards: PNGs the owner puts in this folder, named
+ * for the app (netflix.png, youtube_music.png). Drawn on a dark 16:9 card, so
+ * 320 by 180 with a light logo on a clear background suits them best.
+ */
+function cardIconDir() { return path.join(stateDir, 'home-icons'); }
+var cardIconCache = { mtime: -1, names: [] };
+function cardIconNames() {
+  var mtime = 0;
+  try { mtime = fs.statSync(cardIconDir()).mtime.getTime(); } catch (e) { mtime = 0; }
+  if (mtime === cardIconCache.mtime) return cardIconCache.names;
+  var names = [];
+  if (mtime) {
+    try {
+      names = fs.readdirSync(cardIconDir()).map(function (f) {
+        var m = /^([a-z0-9_]{1,80})\.png$/.exec(f);
+        return m ? m[1] : null;
+      }).filter(Boolean).sort();
+    } catch (e2) { names = []; }
+  }
+  cardIconCache = { mtime: mtime, names: names };
+  return names;
+}
+
+// An app's title as its card icon is named: "YouTube Music" is youtube_music, "A&E" a_and_e.
+function cardIconKey(title) {
+  return String(title || '').toLowerCase().replace(/&/g, ' and ').replace(/\+/g, ' plus ')
+    .replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
+}
+
+/*
+ * The card icon for an app: the one chosen for it, else the first of its
+ * titles (as renamed, then its own) found by name, then its app id's last
+ * part where a title has that word, then a title's first word of four
+ * letters or more ("Spotify - Music and Podcasts" as spotify). null where
+ * none is found.
+ */
+function cardIconFor(appId, titles, chosen) {
+  var available = cardIconNames();
+  if (!available.length) return null;
+  function has(n) { return !!n && available.indexOf(n) !== -1; }
+  if (has(chosen)) return chosen;
+  var keys = [];
+  (titles || []).forEach(function (t) { var k = cardIconKey(t); if (k) keys.push(k); });
+  // Only where a title has it too: LG's Apps is com.webos.app.discovery.
+  var idPart = cardIconKey(String(appId || '').split('.').pop());
+  if (idPart && keys.some(function (k) { return ('_' + k + '_').indexOf('_' + idPart + '_') !== -1; })) keys.push(idPart);
+  (titles || []).forEach(function (t) {
+    var first = cardIconKey(t).split('_')[0];
+    if (first && first.length >= 4) keys.push(first);
+  });
+  for (var i = 0; i < keys.length; i++) if (has(keys[i])) return keys[i];
+  return null;
+}
+
+/*
+ * The sound as focus moves: Glasshouse's click or rollover (assets/sounds,
+ * Kenney's CC0 UI Audio), or the owner's own, nav.ogg, nav.wav or nav.mp3 in
+ * the home-sounds folder. null for off, or an own sound not there.
+ */
+var NAV_SOUNDS = ['off', 'click', 'rollover', 'own'];
+var NAV_SOUND_TYPES = [['ogg', 'audio/ogg'], ['wav', 'audio/wav'], ['mp3', 'audio/mpeg']];
+function navSoundFile(name) {
+  if (name === 'click' || name === 'rollover') {
+    return { path: path.join(__dirname, '..', 'assets', 'sounds', name + '.wav'), type: 'audio/wav' };
+  }
+  if (name !== 'own') return null;
+  for (var i = 0; i < NAV_SOUND_TYPES.length; i++) {
+    var file = path.join(stateDir, 'home-sounds', 'nav.' + NAV_SOUND_TYPES[i][0]);
+    if (fs.existsSync(file)) return { path: file, type: NAV_SOUND_TYPES[i][1] };
+  }
+  return null;
+}
+
+// The file for a card icon by name, or null.
+function cardIconPath(name) {
+  name = String(name || '');
+  if (!CARD_ICON_NAME.test(name) || cardIconNames().indexOf(name) === -1) return null;
+  return path.join(cardIconDir(), name + '.png');
 }
 
 // ---------------------------------------------------------------- what it shows
@@ -1374,6 +1501,8 @@ function build(c, apps, devs, chans, recs, tv) {
     apps: appList.map(function (a) {
       var custom = c.appNames && c.appNames[a.id];
       var app = { id: a.id, title: custom || a.title, icon: a.icon ? '/api/home/icon?id=' + encodeURIComponent(a.id) : null };
+      var card = cardIconFor(a.id, [custom, a.title], c.appIcons && c.appIcons[a.id]);
+      if (card) app.card = '/api/home/card-icon?name=' + card;
       if (custom && custom !== a.title) {
         app.defaultTitle = a.title;
         app.renamed = true;
@@ -3593,6 +3722,9 @@ module.exports = {
   disable: function (cb) { change(function (done) { disable(function (r) { homeKeysFn(false); done(r); }); }, cb); },
   uninstall: function (cb) { change(uninstall, cb); },
   beat: beat,
+  cardIconNames: cardIconNames,
+  cardIconPath: cardIconPath,
+  navSoundFile: navSoundFile,
   pageAlive: pageAlive,
   layoutVersion: layoutVersion,
   homeKey: homeKey,

@@ -1443,6 +1443,50 @@
     </div>
     <div class="prot-row home-gh-row home-show-row" hidden>
       <div class="prot-main">
+        <div class="prot-title" data-t="home.appCards">Apps as cards</div>
+        <div class="prot-desc" data-t="home.appCardsDesc">Wide dark cards with each app’s logo, from the card icons on the TV, rather than square icons. An app with no card icon shows its own icon on the card.</div>
+      </div>
+      <div class="prot-status"><button type="button" class="pill idle" id="home-app-cards" onclick="homeOptIn('appCards')">&mdash;</button></div>
+    </div>
+    <div class="prot-row home-gh-row home-show-row" hidden>
+      <div class="prot-main">
+        <div class="prot-title" data-t="home.cardFade">Card transparency</div>
+        <div class="prot-desc" data-t="home.cardFadeDesc">How see-through the cards not in focus are. Solid shows them all at full strength.</div>
+      </div>
+      <div class="prot-status"><select class="pill-sel" id="home-card-fade-sel" onchange="homeCardFade(this.value)" aria-label="Card transparency" data-t-aria-label="home.cardFade">
+        <option value="0" data-t="home.cardFade.solid">Solid</option>
+        <option value="10">10%</option>
+        <option value="20">20%</option>
+        <option value="30">30%</option>
+        <option value="40">40%</option>
+        <option value="50">50%</option>
+        <option value="60">60%</option>
+        <option value="70">70%</option>
+        <option value="80">80%</option>
+        <option value="90">90%</option>
+      </select></div>
+    </div>
+    <div class="prot-row home-gh-row home-show-row" hidden>
+      <div class="prot-main">
+        <div class="prot-title" data-t="home.focusPulse">Pulse on the app in focus</div>
+        <div class="prot-desc" data-t="home.focusPulseDesc">The ring around the app you are on breathes, with a soft glow, in the accent colour of your colours.</div>
+      </div>
+      <div class="prot-status"><button type="button" class="pill idle" id="home-focus-pulse" onclick="homeOptIn('focusPulse')">&mdash;</button></div>
+    </div>
+    <div class="prot-row home-gh-row home-show-row" hidden>
+      <div class="prot-main">
+        <div class="prot-title" data-t="home.navSound">Sound when moving</div>
+        <div class="prot-desc" data-t="home.navSoundDesc">A sound each time you move between tiles. Your own plays the file you put on the TV as home-sounds/nav.ogg, nav.wav or nav.mp3 in Glasshouse’s folder.</div>
+      </div>
+      <div class="prot-status"><select class="pill-sel" id="home-nav-sound-sel" onchange="homeNavSound(this.value)" aria-label="Sound when moving" data-t-aria-label="home.navSound">
+        <option value="off" data-t="home.navSound.off">Off</option>
+        <option value="click" data-t="home.navSound.click">Click</option>
+        <option value="rollover" data-t="home.navSound.rollover">Rollover</option>
+        <option value="own" data-t="home.navSound.own">Your own</option>
+      </select></div>
+    </div>
+    <div class="prot-row home-gh-row home-show-row" hidden>
+      <div class="prot-main">
         <div class="prot-title" data-t="home.showCec">CEC addresses</div>
         <div class="prot-desc" data-t="home.showCecDesc">On each input’s tile: the HDMI-CEC address of the device behind it.</div>
       </div>

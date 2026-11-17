@@ -481,7 +481,7 @@ The Home tab's **Home customisation** section holds what applies to whichever Ho
 * While Glasshouse Home is on:
     * **Starting up:** Open Home at power-on, Hide LG's Home while the TV starts.
     * **Layout:** Alternative View, Rows along the bottom.
-    * **Shown on Home:** Clock and date, Last watched, App count, App labels, CEC addresses, Channel logos, Weather, Remote battery, Picture details.
+    * **Shown on Home:** Clock and date, Last watched, App count, App labels, Apps as cards, Card transparency, Pulse on the app in focus, Sound when moving, CEC addresses, Channel logos, Weather, Remote battery, Picture details.
     * **Live preview:** Live preview, with Preview sound, Keep the preview on, Preview in the tile and Preview size once it is on.
     * **Search.**
     * **Animations:** Fade in and out, Wallpaper drift, Wallpaper cross-fade, Smooth scrolling, Sliding panels.
@@ -517,10 +517,25 @@ Individual toggles in the **Shown on Home** section control informative badges a
 * **Last watched:** Displays the most recently active source in the top strip and highlights its tile. Behind an AV receiver, Last watched names the specific active downstream device (e.g. the console rather than the receiver) whenever recorded by the TV; if unrecorded, all connected devices on the port are named. The top strip stays empty until the saved layout loads. Switching it off leaves the clock in place.
 * **App count:** Displays the count of visible vs total apps (e.g. *"4 of 18 shown"*) next to the Apps row header. (Hidden in Alternative View).
 * **App labels:** Shows or hides app names beneath app icons on Glasshouse Home and Glasshouse Bar. Switched off, only the icons appear. Individual apps can also be renamed inline under **Rows and tiles** → **Apps** on the web dashboard, applying across Glasshouse Home, Glasshouse Minimal, and Glasshouse Bar (clearing a custom name restores the TV's own title).
+* **Apps as cards:** Off by default. Switched on, apps show as wide dark cards rather than square icons, with a logo of your own on each where you add one (see [Card icons](#card-icons)); the name shows under the card in focus. An app with no card icon shows its own icon on the card.
+* **Card transparency:** With apps as cards, how see-through the cards not in focus are, from Solid to 90% (20% by default). The card in focus is always solid.
+* **Pulse on the app in focus:** Off by default. The ring around the app in focus breathes, with a soft glow around it, as a card or a square tile. Both the ring and the glow take the accent of Home's colours.
+* **Sound when moving:** Off by default. A sound plays through the TV each time focus moves to another tile: **Click** or **Rollover**, from Kenney's UI Audio (CC0), or **Your own**, a file you put on the TV as `/var/lib/tvweb/home-sounds/nav.ogg` (or `nav.wav`, `nav.mp3`). Your own stays silent until the file is there.
 * **CEC addresses:** Displays physical HDMI-CEC port addresses (such as `1.0.0.0` or `2.1.0.0`) on each input tile.
 * **Channel logos:** Displays graphical channel logos on Internet TV tiles; when disabled, channels display plain text names instead.
 * **Picture details:** Displays the active picture preset, OLED light / backlight level, and signal format in the top-right corner.
 * **Magic Remote pointer:** On by default. Switched off, the remote's pointer is hidden on Glasshouse Home and moving the remote no longer moves the focus, so only the arrow keys move around Home; OK opens the tile in focus. The wheel still scrolls the rows. Apps, inputs and LG's menus keep the pointer.
+
+### Card icons
+
+With **Apps as cards** on, each card can show a wide logo of your own. Glasshouse comes with none: you add the ones you want.
+
+* **Where:** PNG files in `/var/lib/tvweb/home-icons` on the TV (copy them over SSH, for example `scp youtube.png root@<tv>:/var/lib/tvweb/home-icons/`). Home shows new files the next time it opens.
+* **Size:** 16:9. 320 × 180 suits the card best; another size is scaled to fit inside it without cropping.
+* **Look:** the card is near black (`#0d0d0d`), so a light or full-colour logo on a transparent background works best. A logo with its own background fills the card.
+* **Name:** lower case letters, digits and underscores only, at most 80 characters, then `.png`. Other files in the folder are ignored.
+
+Each app takes the file named for its title, as renamed on the dashboard or its own: spaces and punctuation become underscores, `&` becomes `and` and `+` becomes `plus`, so "YouTube Music" takes `youtube_music.png` and "Disney+" takes `disney_plus.png`. Failing that, it takes one named for the title's first word of four letters or more ("Spotify - Music and Podcasts" takes `spotify.png`). Under **Rows and tiles** → **Apps**, each app's **Card icon** field picks any of the files by name instead, and clearing it goes back to matching by title.
 
 ### Weather badge
 

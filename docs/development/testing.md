@@ -228,6 +228,8 @@ before its first read.
 
 `test-home.js` also checks that a port whose tile changes once a CEC device on it is listed has the view draw its tiles again, and that the tile drawn before still opens that port, and only that port.
 
+`test-home.js` also checks that apps take card icons from the card icon folder by title rather than by app id, or the one chosen for them, that only names an app title can match are listed or served, that the card and pulse switches are saved only when sent as true or false, that the sound as focus moves is one Home has and that the two it ships with are there, and that card transparency keeps to steps of ten from 0 to 90.
+
 `test-home.js` also checks that an input keeps its hiding, place and custom name whether the TV lists the device on its port or not, and that with two devices on a port neither takes a setting kept for the port.
 
 `test-nosignal.js` checks that the No Signal screen is patched for both plain and disconnected cable icon modes only where the expected QML lines are there exactly once, that switching it on mounts the copy and restarts the input app only once no input is in front or the one in front has nothing coming in, that switching modes while mounted updates `Screensaver.qml` in place from LG's saved copy, that a server start leaves a mounted copy alone, and that switching it off unmounts it.

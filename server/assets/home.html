@@ -280,6 +280,26 @@ html.resting #wall .layer{-webkit-animation-play-state:paused;animation-play-sta
    so a black background never swallows them. */
 .app img.dark-ico,.chip img.dark-ico{background:#ece7df}
 
+/* Apps as wide cards (layout appCards): a dark 16:9 card with the app's logo
+   from the card icon folder, or its own icon centred where it has none. The
+   ring and the lift are on the card; the name shows under the one in focus. */
+.cards .app{width:300px;padding:12px 12px 10px}
+.cards .tile.app,.cards .tile.app.focus{background:none;outline-color:transparent}
+.cards .app .card{position:relative;width:276px;height:155px;margin:0 auto;border-radius:12px;background:#0d0d0d;
+  outline:3px solid transparent;outline-offset:3px;
+  display:-webkit-flex;display:flex;-webkit-align-items:center;align-items:center;-webkit-justify-content:center;justify-content:center;
+  -webkit-transition:outline-color .12s,-webkit-transform .15s;transition:outline-color .12s,transform .15s}
+.cards .app .card img.logo{width:100%;height:100%;margin:0;border-radius:12px;object-fit:contain}
+.cards .app .card img,.cards .app .card .mono{width:92px;height:92px;line-height:92px;font-size:38px}
+.cards .app.focus .card{outline-color:#ece7df;-webkit-transform:scale(1.06);transform:scale(1.06)}
+.cards .app .nm{margin-top:14px;opacity:0;-webkit-transition:opacity .12s;transition:opacity .12s}
+.cards .app.focus .nm,.arranging.cards .app .nm{opacity:1}
+.no-app-labels.cards .app{width:300px}
+.alternative.cards .app{width:268px}
+.alternative.cards .app .card{width:244px;height:137px}
+/* The pulse on the app in focus (layout focusPulse) and how see-through the
+   cards are (layout cardFade) follow the owner's choices: see applyCardLook. */
+
 .dev{width:470px;min-height:142px;display:-webkit-flex;display:flex;-webkit-flex-direction:column;flex-direction:column;
   -webkit-justify-content:space-between;justify-content:space-between}
 .dev .dhead{display:-webkit-flex;display:flex;-webkit-align-items:center;align-items:center;min-width:0}
@@ -1209,6 +1229,12 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     return a.icon ? appImgTag(a.icon) :
       '<span class="mono">' + esc(a.lg ? 'LG' : String(a.title).charAt(0)) + '</span>';
   }
+  function cardsOn() { return !!(layout && layout.appCards === true); }
+  // As a card, its logo from the card icon folder, or its own icon on the card.
+  function appArt(a) {
+    if (!cardsOn()) return appIcon(a);
+    return '<div class="card">' + (a.card ? '<img class="logo" src="' + esc(a.card) + '" alt="">' : appIcon(a)) + '</div>';
+  }
   // The first four of the folder's icons, as the tile that opens it.
   function folderIcon(inside) {
     var html = '';
@@ -1231,10 +1257,12 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
   var TILE = {
     app: function (a, i) {
       if (a.folder) {
-        return '<div class="tile app" data-c="' + i + '">' + folderIcon(a.folder) + '<div class="nm">' + esc(a.title) + '</div></div>';
+        var fold = folderIcon(a.folder);
+        return '<div class="tile app" data-c="' + i + '">' + (cardsOn() ? '<div class="card">' + fold + '</div>' : fold) +
+          '<div class="nm">' + esc(a.title) + '</div></div>';
       }
       var cls = 'tile app' + (hidden('app', a.id) ? ' hidden' : inFolder('app', a.id) ? ' folded' : '');
-      return '<div class="' + cls + '" data-c="' + i + '">' + appIcon(a) + '<div class="nm">' + esc(a.title) + '</div>' +
+      return '<div class="' + cls + '" data-c="' + i + '">' + appArt(a) + '<div class="nm">' + esc(a.title) + '</div>' +
         hiddenLabel + folderLabel + '</div>';
     },
     dev: function (d, i) {
@@ -2131,7 +2159,45 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
       if (outside) state.col[kind] = dc > 0 ? span[0] : span[1];
       else state.col[kind] = Math.max(state.arranging ? -1 : 0, Math.min(items(kind).length - 1, c + dc));
     }
+    if (state.row !== fromRow || colOf(rowKey()) !== fromCol) navTick();
     applyFocus();
+  }
+
+  /*
+   * The sound as focus moves (layout navSound, lib/home navSoundFile), loaded
+   * at the first move after it is chosen. The context is made then too, as
+   * that follows a key.
+   */
+  var navAudio = null, navBuffer = null, navBufferFor = '';
+  function loadNavSound(name) {
+    navBufferFor = name;
+    navBuffer = null;
+    var x = new XMLHttpRequest();
+    x.open('GET', '/api/home/nav-sound?name=' + encodeURIComponent(name));
+    x.responseType = 'arraybuffer';
+    x.onload = function () {
+      if (x.status !== 200 || !navAudio) return;
+      try {
+        navAudio.decodeAudioData(x.response, function (b) { if (navBufferFor === name) navBuffer = b; }, function () {});
+      } catch (e) {}
+    };
+    x.send();
+  }
+  function navTick() {
+    var name = layout && layout.navSound;
+    if (name !== 'click' && name !== 'rollover' && name !== 'own') return;
+    try {
+      var Ctx = window.AudioContext || window.webkitAudioContext;
+      if (!Ctx) return;
+      if (!navAudio) navAudio = new Ctx();
+      if (navAudio.state === 'suspended' && navAudio.resume) navAudio.resume();
+      if (navBufferFor !== name) loadNavSound(name);
+      if (!navBuffer) return;
+      var src = navAudio.createBufferSource();
+      src.buffer = navBuffer;
+      src.connect(navAudio.destination);
+      src.start(0);
+    } catch (e) {}
   }
 
   // Medium or Large beside the clock; in the tile, the tile sets its size.
@@ -2145,6 +2211,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
       (finder.open ? ' finding' : '') + (finder.typing ? ' typing' : '') + (searchOn() ? '' : ' no-search') + (folder.open ? ' folder' : '') +
       (!layout || layout.showClock === false ? ' no-clock' : '') + (layout && layout.rowsBottom === true ? ' rows-bottom' : '') +
       (layout && layout.view === 'alternative' ? ' alternative' : '') + (layout && layout.showAppLabels === false ? ' no-app-labels' : '') +
+      (cardsOn() ? ' cards' : '') + (layout && layout.focusPulse === true ? ' pulse' : '') +
       (player.open ? ' playing' : '') + (adder.open ? ' adding' : '') +
       (adder.open && adder.typing ? ' adtyping' : '') + (guide.open ? ' guiding' : '') + previewSizeClass();
     // Home Assistant's media player shows IPTV while the guide or a player is up: told at once, not at the next heartbeat.
@@ -6159,6 +6226,33 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     $('scrim').style.opacity = String(n / 100 * (anim.style === 'off' ? 1 : ANIM_SCRIM));
   }
 
+  /*
+   * The cards' fade and the pulse, in the accent colour: the ring itself
+   * breathes between the accent and a dimmer one, with a glow around it.
+   */
+  var cardLookShown = null;
+  function applyCardLook(l) {
+    var accent = (l.colours && l.colours.accent) || '#ece7df';
+    var fade = typeof l.cardFade === 'number' ? l.cardFade : 20;
+    var key = accent + '|' + fade;
+    if (key === cardLookShown) return;
+    cardLookShown = key;
+    var rgb = hexRgb(accent), shown = (100 - fade) / 100;
+    var frames = '{0%,100%{outline-color:' + rgbaStr(rgb, 1, '.55') + ';box-shadow:0 0 8px 1px ' + rgbaStr(rgb, 1, '.22') + '}' +
+      '50%{outline-color:' + accent + ';box-shadow:0 0 30px 8px ' + rgbaStr(rgb, 1, '.55') + '}}';
+    var el = $('card-look');
+    if (!el) {
+      el = document.createElement('style');
+      el.id = 'card-look';
+      document.head.appendChild(el);
+    }
+    el.textContent = '.cards .tile.app,.cards .row:not(.active) .tile.app{opacity:' + shown + '}' +
+      '.cards .tile.app.focus{opacity:1}' +
+      '.cards .app.focus .card{outline-color:' + accent + '}' +
+      '@-webkit-keyframes cardPulse' + frames + '@keyframes cardPulse' + frames +
+      '.pulse.cards .app.focus .card,.pulse:not(.cards) .tile.app.focus{-webkit-animation:cardPulse 1.8s ease-in-out infinite;animation:cardPulse 1.8s ease-in-out infinite}';
+  }
+
   function applyColours(c, highlight) {
     var key = (c ? c.text + c.accent : '') + '|' + (highlight || '');
     if (key === lookShown) return;
@@ -6219,6 +6313,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
       setFadeOn(layout.fade === true);
       applyMotion(layout);
       applyColours(layout.colours, layout.tileHighlight);
+      applyCardLook(layout);
       applyDarkening(layout.darkening);
       stageClass();
       renderNow();
