@@ -57,6 +57,8 @@ function luna(uri, params, cb) {
     if (params.configs[rk.MAP_KEY]) { tv.keys = JSON.parse(JSON.stringify(params.configs[rk.MAP_KEY])); tv.keysWrites++; }
   } else if (uri === 'com.webos.applicationManager/listApps') {
     r.apps = APPS;
+  } else if (uri === 'com.webos.service.settings/getSystemSettings') {
+    r.settings = { backlight: String(tv.backlight) };
   } else if (uri === 'com.webos.applicationManager/getAppInfo') {
     // A CX has no quick input picker, so no input switcher choice.
     r.returnValue = false;
@@ -1029,6 +1031,64 @@ step(function (next) {
                 next();
               }));
             }));
+          }));
+        }));
+      }));
+    }));
+  }));
+});
+
+// A Brightness key shows its level in the bar's app, so that is put on the TV for it.
+step(function (next) {
+  rk.init({ luna: luna, inputNames: { hdmi1: 'HDMI 1', hdmi2: 'Apple TV' }, stateDir: stateDir, filtersDir: filtersDir,
+    inputBarAllowed: function () { return bar.allowed; },
+    inputBarApp: function (action, cb) {
+      bar.calls.push(action);
+      process.nextTick(function () { cb({ ok: action !== 'install' || bar.installs }); });
+    },
+    onInputBarKey: function () { bar.pokes++; } });
+  bar.calls.length = 0;
+  bar.allowed = false;
+  rk.setRemoteKey('red', 'open', 'action:brightnessUp', guard(function (s) {
+    assert.ok(s.ok, s.error);
+    assert.deepEqual(bar.calls, [], 'no app installed where the bar is not allowed');
+    assert.strictEqual(tv.keys.osd, undefined, 'and the filter is not told to open it');
+    bar.allowed = true;
+    bar.pokes = 0;
+    rk.setRemoteKey('red', 'open', 'action:brightnessUp', guard(function (s2) {
+      assert.ok(s2.ok, s2.error);
+      assert.deepEqual(bar.calls, ['install'], 'the bar\'s app is put on the TV first');
+      assert.strictEqual(bar.pokes, 1, 'the preloader is told');
+      assert.strictEqual(rk.opensInputBar(), true, 'it counts as a key that needs the app');
+      assert.strictEqual(tv.keys.osd, true, 'the filter is told to open it');
+      var f = loadFilter();
+      var tick = function () { var n = f.timers.length; f.expire(); f.timers.splice(0, n); };
+      f.timers.length = 0;
+      tv.backlight = 50;
+      f.handle(1004, true, false);
+      var opened = f.launched.filter(function (l) { return l.id === 'com.tvweb.inputbar'; });
+      assert.strictEqual(opened.length, 1, 'the bar opens on the press');
+      assert.deepEqual(JSON.parse(opened[0].params), { glasshouse: 'osd', kind: 'brightness', level: 60 });
+      tick();
+      tick();
+      assert.strictEqual(f.launched.length, 1, 'a held key opens it once: its page follows the level');
+      f.handle(1004, false, false);
+      f.handle(1004, true, false);
+      assert.strictEqual(f.launched.length, 2, 'a new press opens it again');
+      f.handle(1004, false, false);
+      tv.backlight = 100;
+      f.handle(1004, true, false);
+      assert.deepEqual(JSON.parse(f.launched[f.launched.length - 1].params).level, 100, 'at the end of the range the level is still shown');
+      f.handle(1004, false, false);
+      rk.getBrightness(guard(function (b) {
+        assert.deepEqual(b, { ok: true, level: 100 });
+        rk.setRemoteKey('red', 'lg', '', guard(function (s3) {
+          assert.ok(s3.ok, s3.error);
+          setImmediate(guard(function () {
+            assert.deepEqual(bar.calls.slice(-1), ['remove'], 'the last key leaving takes the app off again');
+            assert.strictEqual(rk.opensInputBar(), false);
+            console.log('  ✓ a Brightness key puts the bar\'s app on the TV, opens it once for each press, and gives it up with the last key');
+            next();
           }));
         }));
       }));

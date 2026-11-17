@@ -151,6 +151,9 @@ var BRIGHTNESS_MAX_STEP = 50;
 var BRIGHTNESS_DELTAS = {};
 BRIGHTNESS_DELTAS[BRIGHTNESS_UP] = 1;
 BRIGHTNESS_DELTAS[BRIGHTNESS_DOWN] = -1;
+function isBrightnessAction(id) {
+  return Object.prototype.hasOwnProperty.call(BRIGHTNESS_DELTAS, id);
+}
 // The actions webOS 11 answers from the log: LG's own action for the key is off.
 function isLoggedAction(id) {
   return id === SCREEN_OFF || Object.prototype.hasOwnProperty.call(BRIGHTNESS_DELTAS, id);
@@ -291,6 +294,8 @@ var homeBarAppFn = null;
 var homeBarAllowedFn = function () { return false; };
 var homeBarKeySetFn = null;
 var homeBarLauncherFn = function () { return false; };
+// Whether the bar's app can be put on this TV and kept loaded, which the brightness keys' on-screen level needs.
+function barAvailable() { return !!barAppFn && barAllowedFn(); }
 var inputNames = null;
 var stateDir = '/var/lib/tvweb';
 var filtersDir = LG_FILTERS_DIR;
@@ -500,6 +505,7 @@ function filterSource() {
     '        glasshouseKeyIds = ids;',
     '        glasshousePowerOffArmed = {};',
     '        glasshouseStarting = typeof value.starting === "string" ? value.starting : "";',
+    '        glasshouseOsd = value.osd === true;',
     '        glasshouseBrightnessStep = typeof value.brightnessStep === "number" && value.brightnessStep >= 1 ? value.brightnessStep : ' + BRIGHTNESS_DEFAULT_STEP + ';',
     '    } catch (e) {',
     '        console.warn("glasshouse keyfilter: " + e + "; keys left as they were");',
@@ -529,6 +535,15 @@ function filterSource() {
     'var glasshouseBrightnessRun = 0;',
     'var glasshouseBrightnessPress = 0;',
     'var glasshouseBrightnessPending = [];',
+    // The bar's app shows the new level (assets/inputbar-app), opened once for each press:
+    // its page follows the level itself while the key is held.
+    'var glasshouseOsd = false;',
+    'var glasshouseOsdPress = 0;',
+    'function glasshouseBrightnessShow(level, press) {',
+    '    if (!glasshouseOsd || press === glasshouseOsdPress) return;',
+    '    glasshouseOsdPress = press;',
+    '    try { applicationManager.launch(' + JSON.stringify(INPUT_BAR) + ', JSON.stringify({ "glasshouse": "osd", "kind": "brightness", "level": level })); } catch (e) {}',
+    '}',
     'function glasshouseBrightnessKey(direction, pressed, autoRepeat) {',
     '    if (!pressed) { glasshouseBrightnessHeld = 0; return; }',
     '    if (autoRepeat) return;',
@@ -571,8 +586,10 @@ function filterSource() {
     '            var r = typeof payload === "string" ? JSON.parse(payload) : payload;',
     '            var current = r && r.settings ? Math.round(parseFloat(r.settings.backlight)) : NaN;',
     '            var level = Math.max(0, Math.min(100, current + delta));',
-    '            if (isNaN(current) || level === current) { glasshouseBrightnessNext(direction, true, press); return; }',
+    '            if (isNaN(current)) { glasshouseBrightnessNext(direction, true, press); return; }',
+    '            if (level === current) { glasshouseBrightnessShow(current, press); glasshouseBrightnessNext(direction, true, press); return; }',
     '            lunaCall.send("com.webos.service.settings", "/setSystemSettings", JSON.stringify({ "category": "picture", "settings": { "backlight": String(level) } }), function () {',
+    '                glasshouseBrightnessShow(level, press);',
     '                glasshouseBrightnessNext(direction, level === 0 || level === 100, press);',
     '            });',
     '        } catch (e) {',
@@ -736,6 +753,7 @@ function writeKeys(map, cb, home, starting) {
   if (starting) value.starting = starting;
   var step = readStoredBrightnessStep();
   if (step) value.brightnessStep = step;
+  if (barAvailable() && Object.keys(map).some(function (k) { return isBrightnessAction(map[k]); })) value.osd = true;
   configs[MAP_KEY] = value;
   lunaFn('com.webos.service.config/setConfigs', { configs: configs }, function (r) {
     cb(!!(r && r.returnValue));
@@ -1762,7 +1780,7 @@ function setRemoteKey(key, action, id, cb) {
 
 function setOfferedKey(def, action, id, kind, cb) {
   var map = readMap();
-  var hadBar = map[def.key] === INPUT_BAR, hadHomeBar = map[def.key] === HOME_BAR;
+  var hadBar = map[def.key] === INPUT_BAR || isBrightnessAction(map[def.key]), hadHomeBar = map[def.key] === HOME_BAR;
   function saved(r) {
     if (r && r.ok) { dropBarIfUnused(hadBar); dropHomeBarIfUnused(hadHomeBar); }
     cb(r);
@@ -1794,18 +1812,20 @@ function setOfferedKey(def, action, id, kind, cb) {
         return cb({ ok: false, error: msg('srv.remoteKeys.notReported', 'Home Assistant does not receive this key\'s presses') });
       }
       if (!allowed) return cb({ ok: false, error: msg('srv.remoteKeys.unknownApp', 'That app is not on this TV') });
+      // The bar's app also shows the level a Brightness key has set, where the filter can open it.
+      var wantsBar = id === INPUT_BAR || (isBrightnessAction(id) && kind === 'filter' && barAvailable());
       function store() {
         map[def.key] = id;
         save(map, function (r) {
-          if (r && r.ok && id === INPUT_BAR && keySetFn) keySetFn();
+          if (r && r.ok && wantsBar && keySetFn) keySetFn();
           if (r && r.ok && id === HOME_BAR && homeBarKeySetFn) homeBarKeySetFn();
-          if (id === INPUT_BAR) { if (r && r.ok) dropHomeBarIfUnused(hadHomeBar); return cb(r); }
+          if (wantsBar) { if (r && r.ok) dropHomeBarIfUnused(hadHomeBar); return cb(r); }
           if (id === HOME_BAR) { if (r && r.ok) dropBarIfUnused(hadBar); return cb(r); }
           saved(r);
         });
       }
       // A bar's app goes on first, so a key is never set to an app that is not there.
-      if (id === INPUT_BAR) {
+      if (wantsBar) {
         return barAppFn('install', function (r) {
           if (!r || !r.ok) return cb({ ok: false, error: msg('srv.remoteKeys.inputBarInstall', 'The input bar could not be put on the TV. Try again in a moment.') });
           store();
@@ -1867,6 +1887,15 @@ function setBrightnessStep(value, cb) {
  * The app the Home key opens, for Glasshouse Home, or '' to give Home back to
  * LG's filters. cb({ ok, error }).
  */
+// The current picture mode's brightness, for the bar's page to follow while a key is held. cb({ ok, level }).
+function getBrightness(cb) {
+  if (!lunaFn) return cb({ ok: false });
+  lunaFn('com.webos.service.settings/getSystemSettings', { category: 'picture', keys: ['backlight'] }, function (r) {
+    var level = r && r.settings ? parseFloat(r.settings.backlight) : NaN;
+    cb(isNaN(level) ? { ok: false } : { ok: true, level: Math.round(level) });
+  });
+}
+
 function setHome(id, cb) {
   if (!lunaFn) return cb({ ok: false, error: 'no luna wrapper' });
   save(readMap(), cb, String(id || ''));
@@ -2024,9 +2053,10 @@ function dropInputBar(cb) {
 }
 
 // Whether a key is set to open the input bar, which lib/inputbar.js keeps loaded.
+// Whether a key needs the bar's app: it opens the bar, or shows a Brightness key's level.
 function opensInputBar() {
   var map = readMap();
-  return Object.keys(map).some(function (k) { return map[k] === INPUT_BAR; });
+  return Object.keys(map).some(function (k) { return map[k] === INPUT_BAR || isBrightnessAction(map[k]); });
 }
 
 // Whether a key is set to open Glasshouse Bar, which lib/homebar.js keeps loaded.
@@ -2050,6 +2080,7 @@ module.exports = {
   setRemoteKey: setRemoteKey,
   setHome: setHome,
   setBrightnessStep: setBrightnessStep,
+  getBrightness: getBrightness,
   setStarting: setStarting,
   homeApp: readHome,
   ensure: ensure,

@@ -41,11 +41,28 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
 .tworow #bar{bottom:54px}
 .tworow .tile{margin-top:16px;margin-bottom:16px}
 .tworow .tile.now:after{bottom:-20px}
+/*
+ * The level bar (opened by a Brightness key): a dark pill low on the screen
+ * with an icon, a track and the number, drawn like the TV's own volume bar.
+ */
+#osd{position:absolute;left:50%;bottom:96px;width:840px;height:104px;margin-left:-420px;border-radius:52px;
+  background:rgba(34,34,36,.94);box-shadow:0 8px 32px rgba(0,0,0,.5);opacity:0;display:-webkit-flex;display:flex;
+  -webkit-align-items:center;align-items:center;padding:0 40px;
+  -webkit-transition:opacity .16s ease-out;transition:opacity .16s ease-out}
+.osdon #osd{opacity:1}
+/* Opening is at once: only closing fades. */
+.osdon #osd{-webkit-transition:none;transition:none}
+#osd .oico{-webkit-flex:0 0 auto;flex:0 0 auto;width:48px;height:48px;margin-right:32px}
+#osd .oico svg{display:block;width:100%;height:100%}
+#osd .otrack{-webkit-flex:1 1 auto;flex:1 1 auto;height:14px;border-radius:7px;background:rgba(255,255,255,.22);overflow:hidden}
+#osd .ofill{height:100%;width:0;border-radius:7px;background:#fff}
+#osd .onum{-webkit-flex:0 0 auto;flex:0 0 auto;width:96px;margin-left:28px;text-align:right;font-size:46px;font-weight:500;color:#fff}
 </style>
 </head>
 <body>
 <div id="shade"></div>
 <div id="bar"><div id="tiles"></div></div>
+<div id="osd"><div class="oico"><svg viewBox="0 0 48 48" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round"><circle cx="24" cy="24" r="8" fill="#fff" stroke="none"/><path d="M24 5v6M24 37v6M5 24h6M37 24h6M10.6 10.6l4.2 4.2M33.2 33.2l4.2 4.2M10.6 37.4l4.2-4.2M33.2 14.8l4.2-4.2"/></svg></div><div class="otrack"><div class="ofill" id="ofill"></div></div><div class="onum" id="onum"></div></div>
 <script>
 /*
  * The input bar: an overlay over the picture with the HDMI inputs Glasshouse
@@ -143,6 +160,64 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
     var params = !d.tuner && typeof d.uniqueId === 'number' && d.uniqueId > 0 && d.uniqueId < 15 ?
       { id: 'uniqueId', value: String(d.uniqueId) } : {};
     callService('luna://com.webos.applicationManager/launch', { id: id, params: params }, cb);
+  }
+
+  /*
+   * The level bar. Opened by a launch carrying { glasshouse: 'osd', kind:
+   * 'brightness', level } (the key filter, once for each press), it draws that
+   * level at once and then follows the server's while the key is held, up to
+   * OSD_IDLE_MS after the last change. A press while it is up only moves the
+   * time it closes.
+   */
+  var OSD_IDLE_MS = 1600;
+  var OSD_POLL_MS = 120;
+  var osdTimer = null, osdPoll = null, osdLevel = -1, osdOpen = false;
+  function osdDraw(level) {
+    if (level === osdLevel) return false;
+    osdLevel = level;
+    $('ofill').style.width = level + '%';
+    $('onum').textContent = String(level);
+    return true;
+  }
+  function osdStill() {
+    clearTimeout(osdTimer);
+    osdTimer = setTimeout(osdClose, OSD_IDLE_MS);
+  }
+  function osdClose() {
+    clearTimeout(osdTimer);
+    clearInterval(osdPoll);
+    osdPoll = null;
+    osdOpen = false;
+    document.body.className = '';
+    setTimeout(function () { window.close(); }, 170);
+  }
+  function osdFollow() {
+    if (osdPoll) return;
+    osdPoll = setInterval(function () {
+      getJson(BASE + '/api/remotekeys/brightness', function (j) {
+        if (osdOpen && j && j.ok && osdDraw(j.level)) osdStill();
+      });
+    }, OSD_POLL_MS);
+  }
+  function osdShow(p) {
+    var level = Math.max(0, Math.min(100, Math.round(Number(p.level))));
+    if (isNaN(level)) return osdClose();
+    clearTimeout(switchTimer);
+    clearTimeout(idle);
+    closing = false;
+    osdOpen = true;
+    osdDraw(level);
+    document.body.className = 'osdon';
+    osdStill();
+    osdFollow();
+  }
+  // What a launch or relaunch carried: the event's detail, else the app's launch parameters.
+  function launchParamsNow(e) {
+    var p = e && e.detail;
+    if (!p || typeof p !== 'object') {
+      try { p = JSON.parse(window.PalmSystem.launchParams || '{}'); } catch (x) { p = {}; }
+    }
+    return p || {};
   }
 
   function close() {
@@ -335,12 +410,28 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
   }
   var idleUntilOpened = preloaded();
   // A relaunch while the bar is up is a further press that reached it that
-  // way rather than as a key: it moves on.
-  document.addEventListener('webOSRelaunch', function () {
+  // way rather than as a key: it moves on. One carrying a level is a Brightness
+  // key's, which draws the level bar instead.
+  document.addEventListener('webOSRelaunch', function (e) {
+    var p = launchParamsNow(e);
+    if (p.glasshouse === 'osd') { idleUntilOpened = false; return osdShow(p); }
+    // The Input key pressed while the level bar is up: the level bar goes, the input bar opens.
+    if (osdOpen) {
+      osdOpen = false;
+      clearTimeout(osdTimer);
+      clearInterval(osdPoll);
+      osdPoll = null;
+      idleUntilOpened = false;
+      return start();
+    }
     if (idleUntilOpened || closing) { idleUntilOpened = false; start(); }
     else setFocus(focus + 1, true);
   });
-  if (idleUntilOpened) {
+  var firstParams = launchParamsNow(null);
+  if (firstParams.glasshouse === 'osd') {
+    idleUntilOpened = false;
+    osdShow(firstParams);
+  } else if (idleUntilOpened) {
     // Only the icons, so the first open draws at once.
     var icons = document.createElement('script');
     icons.src = BASE + '/assets/devicons.js';
