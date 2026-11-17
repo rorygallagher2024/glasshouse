@@ -1010,5 +1010,6 @@
  "remote.close": {"text": "Schließen", "from": "Close"},
  "rp.input": {"text": "Eingang", "from": "Input"},
  "rp.buttons": {"text": "Tasten", "from": "Buttons"},
- "rp.touchpad": {"text": "Touchpad", "from": "Touchpad"}
+ "rp.touchpad": {"text": "Touchpad", "from": "Touchpad"},
+ "rp.standby": {"text": "Der Fernseher ist im Standby. Schalten Sie ihn ein, um die Fernbedienung zu nutzen.", "from": "The TV is in standby. Power on to use the remote."}
 }

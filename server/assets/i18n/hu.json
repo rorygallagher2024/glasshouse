@@ -3385,5 +3385,6 @@
  "remote.close": {"text": "Bezárás", "from": "Close"},
  "rp.input": {"text": "Bemenet", "from": "Input"},
  "rp.buttons": {"text": "Gombok", "from": "Buttons"},
- "rp.touchpad": {"text": "Érintőpad", "from": "Touchpad"}
+ "rp.touchpad": {"text": "Érintőpad", "from": "Touchpad"},
+ "rp.standby": {"text": "A TV készenlétben van. Kapcsolja be a távirányító használatához.", "from": "The TV is in standby. Power on to use the remote."}
 }

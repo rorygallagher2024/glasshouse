@@ -3371,5 +3371,6 @@
  "remote.close": {"text": "Zamknij", "from": "Close"},
  "rp.input": {"text": "Wejście", "from": "Input"},
  "rp.buttons": {"text": "Przyciski", "from": "Buttons"},
- "rp.touchpad": {"text": "Touchpad", "from": "Touchpad"}
+ "rp.touchpad": {"text": "Touchpad", "from": "Touchpad"},
+ "rp.standby": {"text": "Telewizor jest w trybie czuwania. Włącz go, aby używać pilota.", "from": "The TV is in standby. Power on to use the remote."}
 }
