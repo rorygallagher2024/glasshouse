@@ -336,6 +336,12 @@
       </div>
     </div>
 
+    <!-- The remote on its own (?view=remote, #1586): a row like those below it,
+         opening it in a window of its own. -->
+    <div class="disc disc-link" id="remote-link" data-col="0">
+      <a href="?view=remote" target="_blank" rel="noopener"><span data-t="ctl.remoteLink">Remote only</span> <span class="cur" data-t="ctl.remoteLink.sub">For a phone or the Dock</span></a>
+    </div>
+
     <!-- Pinned to the first column: it is the one control here that people
          reach for repeatedly, so it should not move about as the others grow. -->
     <details class="disc" id="disc-dpad" data-col="0" data-remote>
@@ -386,18 +392,13 @@
       </div>
     </details>
 
-    <!-- A link to the remote on its own, for a phone's Home Screen or the Dock (#1586). -->
-    <div class="set" id="remote-link" data-col="0">
-      <div class="lbl" data-t="ctl.remoteLink">Remote on its own</div>
-      <p class="sub" data-t="ctl.remoteLink.desc">A page with just playback, volume, the D-pad, the pointer and the keyboard. Open the link on a phone and add it to the Home Screen, or keep it in the Dock. It signs in as this page does, so keep it to yourself.</p>
-      <div class="btns">
-        <button type="button" id="remote-link-copy" onclick="copyRemoteLink()" data-t="ctl.remoteLink.copy">Copy link</button>
-        <button type="button" id="remote-link-open" onclick="window.open('?view=remote', '_blank', 'noopener')" data-t="ctl.remoteLink.open">Open</button>
-      </div>
-    </div>
-
+    <!-- The remote on its own, at its foot: its link to copy, and the way back. -->
     <div class="set" id="remote-full" data-remote>
-      <div class="btns"><button type="button" onclick="location.href = location.pathname" data-t="ctl.remoteLink.full">Full dashboard</button></div>
+      <p class="sub remote-foot">
+        <button type="button" class="link-btn" id="remote-link-copy" onclick="copyRemoteLink()" data-t="ctl.remoteLink.copy">Copy link</button>
+        <a class="link-btn" href="./" data-t="ctl.remoteLink.full">Full dashboard</a>
+      </p>
+      <p class="sub" data-t="ctl.remoteLink.desc">Add this page to a phone's Home Screen, or keep it in the Dock. Its link signs in as the dashboard does, so keep it to yourself.</p>
     </div>
 
     <details class="disc" id="disc-timers">

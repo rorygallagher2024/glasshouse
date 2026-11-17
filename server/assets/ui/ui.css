@@ -2380,6 +2380,16 @@ h3 .tvm-tags i{font-size:11px}
    volume, D-pad, pointer and keyboard in one column, with nothing around them. */
 #remote-full{display:none}
 html.remote-view #remote-full{display:block}
+/* The Control tab's way in: a row like the D-pad's, with an arrow out. */
+.disc-link>a{display:flex;align-items:center;justify-content:space-between;font-family:'Manrope';font-weight:500;
+  font-size:13.5px;letter-spacing:.10em;text-transform:uppercase;color:var(--w60);text-decoration:none;
+  padding:14px 0 4px;min-height:44px;box-sizing:border-box}
+.disc-link>a::after{content:'\2197';font-size:15px;line-height:1;color:var(--w60)}
+.disc-link>a:hover{color:var(--w80)}
+.disc-link>a:focus-visible{outline:2px solid var(--w80);outline-offset:2px}
+.disc-link>a .cur{font-size:14px;font-weight:400;letter-spacing:.02em;text-transform:none;color:var(--w60);margin-left:auto;margin-right:12px}
+.remote-foot{display:flex;gap:24px}
+.remote-foot .link-btn{margin-top:0}
 html.remote-view #remote-link,
 html.remote-view .nav-bar,
 html.remote-view .sidenav,

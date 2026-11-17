@@ -3368,11 +3368,11 @@
  "home.tv.bad.streamPort": {"text": "Le port du flux doit être un nombre de 1 à 65535.", "from": "The stream port must be a number from 1 to 65535."},
  "srv.remoteKeys.homeBar": {"text": "Glasshouse Bar", "from": "Glasshouse Bar"},
  "srv.remoteKeys.homeBarInstall": {"text": "Glasshouse Bar n’a pas pu être installée sur le téléviseur. Réessayez dans un instant.", "from": "Glasshouse Bar could not be put on the TV. Try again in a moment."},
- "ctl.remoteLink": {"text": "La télécommande seule", "from": "Remote on its own"},
- "ctl.remoteLink.desc": {"text": "Une page avec seulement la lecture, le volume, la croix directionnelle, le pointeur et le clavier. Ouvrez le lien sur un téléphone et ajoutez-le à l’écran d’accueil, ou gardez-le dans le Dock. Il se connecte comme cette page, gardez-le donc pour vous.", "from": "A page with just playback, volume, the D-pad, the pointer and the keyboard. Open the link on a phone and add it to the Home Screen, or keep it in the Dock. It signs in as this page does, so keep it to yourself."},
+ "ctl.remoteLink": {"text": "Télécommande seule", "from": "Remote only"},
+ "ctl.remoteLink.desc": {"text": "Ajoutez cette page à l’écran d’accueil d’un téléphone, ou gardez-la dans le Dock. Son lien se connecte comme le tableau de bord, gardez-le donc pour vous.", "from": "Add this page to a phone's Home Screen, or keep it in the Dock. Its link signs in as the dashboard does, so keep it to yourself."},
  "ctl.remoteLink.copy": {"text": "Copier le lien", "from": "Copy link"},
- "ctl.remoteLink.open": {"text": "Ouvrir", "from": "Open"},
  "ctl.remoteLink.full": {"text": "Tableau de bord complet", "from": "Full dashboard"},
  "ctl.remoteLink.copied": {"text": "Copié", "from": "Copied"},
- "ctl.remoteLink.notCopied": {"text": "Copie impossible", "from": "Could not copy"}
+ "ctl.remoteLink.notCopied": {"text": "Copie impossible", "from": "Could not copy"},
+ "ctl.remoteLink.sub": {"text": "Pour un téléphone ou le Dock", "from": "For a phone or the Dock"}
 }

@@ -3382,11 +3382,11 @@
  "home.tv.bad.streamPort": {"text": "Порт потока должен быть числом от 1 до 65535.", "from": "The stream port must be a number from 1 to 65535."},
  "srv.remoteKeys.homeBar": {"text": "Glasshouse Bar", "from": "Glasshouse Bar"},
  "srv.remoteKeys.homeBarInstall": {"text": "Не удалось установить Glasshouse Bar на телевизор. Повторите попытку через мгновение.", "from": "Glasshouse Bar could not be put on the TV. Try again in a moment."},
- "ctl.remoteLink": {"text": "Только пульт", "from": "Remote on its own"},
- "ctl.remoteLink.desc": {"text": "Страница только с воспроизведением, громкостью, крестовиной, указателем и клавиатурой. Откройте ссылку на телефоне и добавьте её на экран «Домой» или держите в Dock. Она входит так же, как эта страница, поэтому не передавайте её другим.", "from": "A page with just playback, volume, the D-pad, the pointer and the keyboard. Open the link on a phone and add it to the Home Screen, or keep it in the Dock. It signs in as this page does, so keep it to yourself."},
+ "ctl.remoteLink": {"text": "Только пульт", "from": "Remote only"},
+ "ctl.remoteLink.desc": {"text": "Добавьте эту страницу на экран «Домой» телефона или держите её в Dock. Её ссылка входит так же, как панель, поэтому не передавайте её другим.", "from": "Add this page to a phone's Home Screen, or keep it in the Dock. Its link signs in as the dashboard does, so keep it to yourself."},
  "ctl.remoteLink.copy": {"text": "Копировать ссылку", "from": "Copy link"},
- "ctl.remoteLink.open": {"text": "Открыть", "from": "Open"},
  "ctl.remoteLink.full": {"text": "Вся панель", "from": "Full dashboard"},
  "ctl.remoteLink.copied": {"text": "Скопировано", "from": "Copied"},
- "ctl.remoteLink.notCopied": {"text": "Не удалось скопировать", "from": "Could not copy"}
+ "ctl.remoteLink.notCopied": {"text": "Не удалось скопировать", "from": "Could not copy"},
+ "ctl.remoteLink.sub": {"text": "Для телефона или Dock", "from": "For a phone or the Dock"}
 }

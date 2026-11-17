@@ -4507,8 +4507,9 @@ async function visitAdblockCards(browser, base, problems) {
  * The remote on its own (?view=remote, #1586): on a phone and in a wide
  * window, only playback, volume, the D-pad, the pointer where its
  * experimental switch is on, the keyboard and a way back, in one column, the D-pad and the
- * keyboard open, and the full dashboard's remembered tab left alone. The
- * Control tab copies the link with the token, and ?open= opens the keyboard.
+ * keyboard open, and the full dashboard's remembered tab left alone, and
+ * Copy link there copies its link with the token. The Control tab has a row
+ * opening it, and ?open= opens the keyboard.
  */
 async function visitRemoteView(browser, base, problems) {
   const fail = what => problems.push('Remote view: ' + what);
@@ -4529,7 +4530,11 @@ async function visitRemoteView(browser, base, problems) {
     const page = await browser.newPage({ viewport });
     page.on('pageerror', e => fail(viewport.width + ': ' + e.message));
     try {
-      await page.addInitScript(() => { try { if (!localStorage.getItem('tab')) localStorage.setItem('tab', 'apps'); } catch (e) {} });
+      await page.addInitScript(() => {
+        try { if (!localStorage.getItem('tab')) localStorage.setItem('tab', 'apps'); localStorage.setItem('tvweb_k', 'tok en'); } catch (e) {}
+        window.__copied = null;
+        Object.defineProperty(navigator, 'clipboard', { value: { writeText: text => { window.__copied = text; return Promise.resolve(); } } });
+      });
       await page.goto(base + '/?view=remote');
       await page.waitForFunction(() => !document.getElementById('tab-control').hidden);
       await page.waitForTimeout(300);
@@ -4542,6 +4547,12 @@ async function visitRemoteView(browser, base, problems) {
       if (!s.dpad || !s.keyboard) fail(viewport.width + ': D-pad open ' + s.dpad + ', keyboard open ' + s.keyboard);
       if (s.tab !== 'apps') fail(viewport.width + ': the remembered tab became ' + s.tab);
       if (JSON.stringify(s.shownPanels) !== JSON.stringify(['tab-control'])) fail(viewport.width + ': panels shown ' + JSON.stringify(s.shownPanels));
+      if (viewport.width === 390) {
+        await page.locator('#remote-link-copy').click();
+        await page.waitForFunction(() => window.__copied !== null);
+        const copied = await page.evaluate(() => window.__copied);
+        if (!/\/\?view=remote&k=tok%20en$/.test(copied)) fail('copied ' + JSON.stringify(copied));
+      }
     } finally {
       await page.close();
     }
@@ -4549,21 +4560,14 @@ async function visitRemoteView(browser, base, problems) {
   const page = await browser.newPage({ viewport: { width: 1400, height: 900 } });
   page.on('pageerror', e => fail('dashboard: ' + e.message));
   try {
-    await page.addInitScript(() => {
-      window.__copied = null;
-      try { localStorage.setItem('tvweb_k', 'tok en'); } catch (e) {}
-      Object.defineProperty(navigator, 'clipboard', { value: { writeText: text => { window.__copied = text; return Promise.resolve(); } } });
-    });
     await page.goto(base + '/?open=keyboard');
     await page.waitForFunction(() => !document.getElementById('tab-control').hidden);
     const opened = await page.evaluate(() => document.getElementById('disc-keyboard').open);
     if (!opened) fail('?open=keyboard left the keyboard shut');
-    if (!(await page.locator('#remote-link').isVisible())) fail('no remote link on the Control tab');
-    if (await page.locator('#remote-full').isVisible()) fail('the way back shows on the full dashboard');
-    await page.locator('#remote-link-copy').click();
-    await page.waitForFunction(() => window.__copied !== null);
-    const copied = await page.evaluate(() => window.__copied);
-    if (!/\/\?view=remote&k=tok%20en$/.test(copied)) fail('copied ' + JSON.stringify(copied));
+    if (!(await page.locator('#remote-link').isVisible())) fail('no Remote only row on the Control tab');
+    const href = await page.locator('#remote-link a').getAttribute('href');
+    if (href !== '?view=remote') fail('the Remote only row opens ' + JSON.stringify(href));
+    if (await page.locator('#remote-full').isVisible()) fail('the remote view\'s foot shows on the full dashboard');
   } finally {
     await page.close();
   }

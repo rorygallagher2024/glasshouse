@@ -3368,11 +3368,11 @@
  "home.tv.bad.streamPort": {"text": "يجب أن يكون منفذ البث رقمًا من 1 إلى 65535.", "from": "The stream port must be a number from 1 to 65535."},
  "srv.remoteKeys.homeBar": {"text": "Glasshouse Bar", "from": "Glasshouse Bar"},
  "srv.remoteKeys.homeBarInstall": {"text": "تعذّر تثبيت Glasshouse Bar على التلفاز. حاول مرة أخرى بعد لحظات.", "from": "Glasshouse Bar could not be put on the TV. Try again in a moment."},
- "ctl.remoteLink": {"text": "جهاز التحكم وحده", "from": "Remote on its own"},
- "ctl.remoteLink.desc": {"text": "صفحة فيها التشغيل ومستوى الصوت ولوحة الاتجاهات والمؤشر ولوحة المفاتيح فقط. افتح الرابط على هاتف وأضفه إلى الشاشة الرئيسية، أو احتفظ به في Dock. يسجّل الدخول كما تفعل هذه الصفحة، فاحتفظ به لنفسك.", "from": "A page with just playback, volume, the D-pad, the pointer and the keyboard. Open the link on a phone and add it to the Home Screen, or keep it in the Dock. It signs in as this page does, so keep it to yourself."},
+ "ctl.remoteLink": {"text": "جهاز التحكم فقط", "from": "Remote only"},
+ "ctl.remoteLink.desc": {"text": "أضف هذه الصفحة إلى الشاشة الرئيسية في هاتف، أو احتفظ بها في Dock. رابطها يسجّل الدخول كما تفعل لوحة التحكم، فاحتفظ به لنفسك.", "from": "Add this page to a phone's Home Screen, or keep it in the Dock. Its link signs in as the dashboard does, so keep it to yourself."},
  "ctl.remoteLink.copy": {"text": "نسخ الرابط", "from": "Copy link"},
- "ctl.remoteLink.open": {"text": "فتح", "from": "Open"},
  "ctl.remoteLink.full": {"text": "لوحة التحكم كاملة", "from": "Full dashboard"},
  "ctl.remoteLink.copied": {"text": "تم النسخ", "from": "Copied"},
- "ctl.remoteLink.notCopied": {"text": "تعذّر النسخ", "from": "Could not copy"}
+ "ctl.remoteLink.notCopied": {"text": "تعذّر النسخ", "from": "Could not copy"},
+ "ctl.remoteLink.sub": {"text": "لهاتف أو لـ Dock", "from": "For a phone or the Dock"}
 }
