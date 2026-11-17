@@ -97,8 +97,15 @@ function loadFilter(broken, extra) {
       send: function (service, method, payload, cb) {
         sent.push({ uri: service + method, payload: JSON.parse(payload) });
         if (method === '/getAppInfo') cb(JSON.stringify({ returnValue: true, appInfo: { type: tv.homeType } }));
-        else if (method === '/getSystemSettings') cb(JSON.stringify({ returnValue: true, settings: { backlight: String(tv.backlight) } }));
-        else if (method === '/setSystemSettings') { tv.backlight = Number(JSON.parse(payload).settings.backlight); if (cb) cb(JSON.stringify({ returnValue: true })); }
+        else if (method === '/getSystemSettings' || method === '/setSystemSettings') {
+          // tv.deferred holds the answers back, as the settings service is not instant.
+          var answer = function () {
+            if (method === '/getSystemSettings') return cb(JSON.stringify({ returnValue: true, settings: { backlight: String(tv.backlight) } }));
+            tv.backlight = Number(JSON.parse(payload).settings.backlight);
+            if (cb) cb(JSON.stringify({ returnValue: true }));
+          };
+          if (tv.deferred) tv.deferred.push(answer); else answer();
+        }
         else if (cb) cb(JSON.stringify({ returnValue: true }));
       }
     },
@@ -363,6 +370,27 @@ step(function (next) {
       f.handle(1004, true, false);
       f.handle(1004, false, false);
       assert.strictEqual(tv.backlight, 60);
+      // A tap soon after another: the first press's timer must not step again.
+      f.timers.length = 0;
+      tv.backlight = 50;
+      f.handle(1004, true, false);
+      f.handle(1004, false, false);
+      f.handle(1004, true, false);
+      assert.strictEqual(tv.backlight, 70, 'the second tap is one step');
+      // The first press's repeat timer fires with the second key still down: it must do nothing,
+      // so only the second press's own repeat adds a step.
+      tick();
+      assert.strictEqual(tv.backlight, 80, 'a timer left from the first tap does not step again');
+      f.handle(1004, false, false);
+      // Taps while a step is still being written each count, one after another.
+      f.timers.length = 0;
+      tv.backlight = 50;
+      tv.deferred = [];
+      [1, 2, 3, 4].forEach(function () { f.handle(1004, true, false); f.handle(1004, false, false); });
+      while (tv.deferred.length) tv.deferred.shift()();
+      tv.deferred = null;
+      tick();
+      assert.strictEqual(tv.backlight, 90, 'four quick taps are four steps');
       assert.strictEqual(f.launched.length, 0, 'opens no app');
       tv.backlight = 98;
       f.handle(1004, true, false);
