@@ -25,8 +25,14 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
  * again (a shadow, a blur, opacity over the picture) changes as it moves,
  * which on a C2 (webOS 9.2.2) made each step visibly slower.
  */
+/*
+ * The row glides as Glasshouse Home's rows do: this curve follows Home's spring
+ * (SPRING in home.html) to within 2%, 90% of the way in 195 ms. At .12s, Smooth
+ * scrolling on looked no different from off (#1558). A key pressed again
+ * mid-glide starts the next from where the row is.
+ */
 #row{position:absolute;left:96px;top:18px;white-space:nowrap;font-size:0;will-change:transform;
-  -webkit-transition:-webkit-transform .12s ease-out;transition:transform .12s ease-out}
+  -webkit-transition:-webkit-transform .36s cubic-bezier(.25,.25,.15,1);transition:transform .36s cubic-bezier(.25,.25,.15,1)}
 /* Opaque, so a bright picture behind never shows through or hides a name. */
 .tile{display:inline-block;vertical-align:top;position:relative;width:180px;height:200px;margin-right:24px;padding-top:22px;border-radius:24px;
   text-align:center;background:#1e1e1e;color:#c8c8c8;border:2px solid #2e2e2e;
