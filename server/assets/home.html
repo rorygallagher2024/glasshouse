@@ -285,15 +285,15 @@ html.resting #wall .layer{-webkit-animation-play-state:paused;animation-play-sta
    ring and the lift are on the card; the name shows under the one in focus. */
 .cards .app{width:300px;padding:12px 12px 10px}
 .cards .tile.app,.cards .tile.app.focus{background:none;outline-color:transparent}
-.cards .app .card{position:relative;width:276px;height:155px;margin:0 auto;border-radius:12px;background:#000;
+.cards .app .card{position:relative;width:276px;height:155px;margin:0 auto;border-radius:18px;background:#000;
   display:-webkit-flex;display:flex;-webkit-align-items:center;align-items:center;-webkit-justify-content:center;justify-content:center;
   -webkit-transition:-webkit-transform .15s;transition:transform .15s}
 /* The ring is a rounded border on a layer just outside the card, not an
    outline: an outline's offset corner is tighter than the card's and drew
-   rough on a G3 (webOS 10.3). 18px is the card's 12px plus the 6px gap. */
+   rough on a G3 (webOS 10.3). 24px is the card's 18px plus the 6px gap. */
 .cards .app .card:after{content:'';position:absolute;top:-6px;left:-6px;right:-6px;bottom:-6px;border:3px solid transparent;
-  border-radius:18px;pointer-events:none;-webkit-transition:border-color .12s;transition:border-color .12s}
-.cards .app .card img.logo{width:100%;height:100%;margin:0;border-radius:12px;object-fit:contain}
+  border-radius:24px;pointer-events:none;-webkit-transition:border-color .12s;transition:border-color .12s}
+.cards .app .card img.logo{width:100%;height:100%;margin:0;border-radius:18px;object-fit:contain}
 .cards .app .card img,.cards .app .card .mono{width:92px;height:92px;line-height:92px;font-size:38px}
 .cards .app.focus .card{-webkit-transform:scale(1.06);transform:scale(1.06)}
 .cards .app.focus .card:after{border-color:#ece7df}
