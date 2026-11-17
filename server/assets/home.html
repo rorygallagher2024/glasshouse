@@ -2698,11 +2698,12 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
   /*
    * Home's own player holds the picture when its buffer runs dry, until it has
    * this much again, a little more each time on the same stream: playing on at
-   * the browser's tenth of a second stutters again at the next hiccup.
+   * the browser's tenth of a second stutters again at the next hiccup. Up to
+   * more than a provider seen sending a channel as one 10 s piece every 10 s.
    */
   var REFILL_S = 3;
-  var REFILL_STEP_S = 1.5;
-  var REFILL_MAX_S = 6;
+  var REFILL_STEP_S = 3;
+  var REFILL_MAX_S = 12;
   var WATCH_MS = 500;
   /*
    * Reconnects in a row before giving up. A live channel reopens at the live
