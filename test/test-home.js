@@ -1607,7 +1607,7 @@ step('webOS 8, untried, is offered and uses takeover', function (done) {
   });
 });
 
-step('webOS 5 and 6 are offered, experimental, standalone, without restarting sam; webOS 3, untried, standalone', function (done) {
+step('webOS 5 and 6 are offered, experimental, standalone, without restarting sam; webOS 3, tried, standalone', function (done) {
   start(null, { webosVersion: '5.5.0' });
   home.status(function (st5) {
     assert.strictEqual(st5.supported.ok, true, 'no setting needed on a CX');
@@ -1637,8 +1637,8 @@ step('webOS 5 and 6 are offered, experimental, standalone, without restarting sa
             assert.strictEqual(st4.supported.restartsApps, undefined);
             start(null, { webosVersion: '3.9.3' });
             home.status(function (st3on) {
-              assert.strictEqual(st3on.supported.ok, true, 'offered on webOS 3, untried');
-              assert.strictEqual(st3on.supported.untried, true);
+              assert.strictEqual(st3on.supported.ok, true, 'offered on webOS 3, reported working (#1573)');
+              assert.strictEqual(st3on.supported.untried, undefined);
               assert.strictEqual(st3on.supported.standalone, true, 'run as on webOS 4');
               assert.strictEqual(st3on.supported.previewOptions, false, 'webOS 3 omits live preview options');
               done();
