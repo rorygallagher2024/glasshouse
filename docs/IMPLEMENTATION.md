@@ -219,6 +219,10 @@ its own, `lib/iptv-worker.js` with its readers in `lib/iptv-parse.js`:
   seven days ahead, 2,500 a channel, descriptions cut at 240 characters.
   The tuner is read one request at a time with a pause between, as Enigma2
   becomes unresponsive under many rapid requests.
+  The M3U carries the receiver's own streaming port in each channel's URL;
+  `streamPort`, set, replaces it in `streamUrl` for every channel, for a
+  tuner whose channels are to come from a different port instead, such as a
+  transcoding profile on its own port.
   A tuner whose stream port asks for a login (`streamLogin`) is played through
   `/api/iptv/relay`, for the TV's own Home only: a `<video>` cannot send a
   login and drops one written into its URL. The server asks the tuner with

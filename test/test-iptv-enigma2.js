@@ -374,6 +374,35 @@ step('a refused login on the stream port is a 502, and the password is not stuck
   });
 });
 
+step('a stream port set on the tuner replaces the one in every channel\'s URL', function (done) {
+  iptv.playlistsAction({ action: 'edit', id: pl, streamPort: '8002' }, function (r) {
+    assert.equal(r.ok, true);
+    wait(function () { var p = playlistOf(pl); return idle() && p.ready && p.streamPort === 8002; }, function () {
+      assert.equal(iptv.streamUrl(pl, tvp.key).url, streamBase.replace(/:\d+$/, ':8002') + '/' + TVP_HD);
+      iptv.playlistsAction({ action: 'edit', id: pl, streamPort: '' }, function (r2) {
+        assert.equal(r2.ok, true);
+        wait(function () { var p2 = playlistOf(pl); return idle() && p2.ready && p2.streamPort === 0; }, function () {
+          assert.equal(iptv.streamUrl(pl, tvp.key).url, streamBase + '/' + TVP_HD, 'cleared, the tuner\'s own port is used again');
+          done();
+        });
+      });
+    });
+  });
+});
+
+step('a stream port out of range is refused when added or edited', function (done) {
+  iptv.playlistsAction({ action: 'edit', id: pl, streamPort: '0' }, function (r) {
+    assert.deepEqual([r.ok, r.error], [false, 'streamPort']);
+    iptv.playlistsAction({ action: 'edit', id: pl, streamPort: '70000' }, function (r2) {
+      assert.deepEqual([r2.ok, r2.error], [false, 'streamPort']);
+      iptv.playlistsAction({ action: 'edit', id: pl, streamPort: '8002abc' }, function (r3) {
+        assert.deepEqual([r3.ok, r3.error], [false, 'streamPort'], 'only a whole number is a port');
+        done();
+      });
+    });
+  });
+});
+
 step('an edit keeps the login that was set, and noLogin clears it', function (done) {
   iptv.playlistsAction({ action: 'edit', id: pl, label: 'Living room' }, function (r) {
     assert.equal(r.ok, true);

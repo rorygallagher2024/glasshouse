@@ -3361,5 +3361,9 @@
  "srv.home.videoManifestEmpty": {"text": "Playlista wideo nie zawiera użytecznych wpisów wideo.", "from": "The video playlist contained no usable video entries."},
  "srv.home.videoEmpty": {"text": "Najpierw dodaj co najmniej jeden adres URL wideo.", "from": "Add at least one video URL first."},
  "inputs.bar.switchOnOk": {"text": "Przełączaj tylko przyciskiem OK", "from": "Switch only on OK"},
- "inputs.bar.switchOnOkDesc": {"text": "Przesuwanie po pasku tylko wybiera wejście, a OK na nie przełącza. Wyłączone: telewizor przełącza sekundę po ostatnim naciśnięciu.", "from": "Moving along the bar only picks an input, and OK switches to it. Off, the TV switches a second after the last press."}
+ "inputs.bar.switchOnOkDesc": {"text": "Przesuwanie po pasku tylko wybiera wejście, a OK na nie przełącza. Wyłączone: telewizor przełącza sekundę po ostatnim naciśnięciu.", "from": "Moving along the bar only picks an input, and OK switches to it. Off, the TV switches a second after the last press."},
+ "home.tv.streamPort": {"text": "Port strumienia (opcjonalnie)", "from": "Stream port (optional)"},
+ "home.tv.streamPortNote": {"text": "Potrzebne tylko wtedy, gdy kanał ma pochodzić z innego portu niż adres tunera, na przykład profilu transkodowania na porcie 8002.", "from": "Only needed when the channel is to come from a different port than the tuner’s own address, such as a transcoding profile on 8002."},
+ "home.tv.streamPortPh": {"text": "Puste: port tunera, zwykle 8001", "from": "Empty: the tuner’s own, usually 8001"},
+ "home.tv.bad.streamPort": {"text": "Port strumienia musi być liczbą od 1 do 65535.", "from": "The stream port must be a number from 1 to 65535."}
 }

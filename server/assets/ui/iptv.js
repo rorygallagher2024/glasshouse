@@ -153,8 +153,8 @@ function homeTvFormHtml() {
   if (f.noLogin === undefined) f.noLogin = false;
   if (f.streamLogin === undefined) f.streamLogin = !!(p && p.streamLogin);
   const keep = editing ? t('home.tv.keepBlank', 'Leave blank to keep the one saved') : '';
-  const field = (id, label, type, ph) => `<label class="home-tv-field"><span>${esc(label)}</span>
-    <input id="${id}" type="${type}" autocomplete="off" spellcheck="false" placeholder="${esc(ph || '')}"></label>`;
+  const field = (id, label, type, ph, value) => `<label class="home-tv-field"><span>${esc(label)}</span>
+    <input id="${id}" type="${type}" autocomplete="off" spellcheck="false" placeholder="${esc(ph || '')}"${value ? ` value="${esc(value)}"` : ''}></label>`;
   return `<div class="home-tv-form">
     <div class="prot-title">${esc(editing ? t('home.tv.editTitle', 'Edit {name}', { name: p ? p.label : '' }) : f.kind === 'xtream' ? t('home.tv.addXtream', 'Add an Xtream login') : f.kind === 'enigma2' ? t('home.tv.addEnigma2', 'Add a satellite tuner') : t('home.tv.addM3u', 'Add an M3U link'))}</div>
     ${field('home-tv-label', t('home.tv.label', 'Name on the row'), 'text', p ? p.label : t('home.tv.labelPh', 'Home IPTV'))}
@@ -162,6 +162,10 @@ function homeTvFormHtml() {
       ? field('home-tv-server', t('home.tv.tunerAddress', 'Tuner address'), 'text', keep || '192.168.1.10') +
         field('home-tv-user', t('home.tv.tunerUser', 'User name (if the tuner asks for one)'), 'text', keep) +
         field('home-tv-pass', t('home.tv.pass', 'Password'), 'password', keep) +
+        // Shown as saved (a port is no secret), so emptying the field clears it.
+        field('home-tv-streamport', t('home.tv.streamPort', 'Stream port (optional)'), 'number',
+          t('home.tv.streamPortPh', 'Empty: the tuner’s own, usually 8001'), p && p.streamPort ? String(p.streamPort) : '') +
+        `<div class="sub">${esc(t('home.tv.streamPortNote', 'Only needed when the channel is to come from a different port than the tuner’s own address, such as a transcoding profile on 8002.'))}</div>` +
         homeTvSwitchHtml('takeOver', t('home.tv.takeOverTitle', 'When every tuner is busy, switch a tuner to the requested channel'),
           t('home.tv.takeOverDesc', 'Moves the tuner showing live TV. A tuner that is recording or streaming for someone else is never touched.')) +
         homeTvSwitchHtml('streamLogin', t('home.tv.streamLoginTitle', 'The tuner asks for a login to play a channel'),
@@ -210,7 +214,11 @@ async function homeTvSave() {
   const body = { action: f.id ? 'edit' : 'add', id: f.id || undefined, kind: f.kind, label: val('home-tv-label') };
   if (f.kind === 'xtream' || f.kind === 'enigma2') { body.server = val('home-tv-server'); body.user = val('home-tv-user'); body.pass = val('home-tv-pass'); }
   else body.url = val('home-tv-url');
-  if (f.kind === 'enigma2') { body.takeOver = !!f.takeOver; if (f.streamLogin) body.streamLogin = true; if (f.noLogin) body.noLogin = true; }
+  if (f.kind === 'enigma2') {
+    body.takeOver = !!f.takeOver; if (f.streamLogin) body.streamLogin = true; if (f.noLogin) body.noLogin = true;
+    const streamPort = val('home-tv-streamport');
+    if (streamPort || f.id) body.streamPort = streamPort;
+  }
   else {
     const guide = val('home-tv-guide');
     if (guide || !f.id) body.guide = guide;
@@ -223,6 +231,7 @@ async function homeTvSave() {
       server: f.kind === 'enigma2' ? t('home.tv.bad.tuner', 'Enter the tuner’s address, like 192.168.1.10.') : t('home.tv.bad.server', 'The server must start with http:// or https://.'),
       login: t('home.tv.bad.login', 'A user name and password are both needed.'),
       guide: t('home.tv.bad.guide', 'The guide link must start with http:// or https://.'),
+      streamPort: t('home.tv.bad.streamPort', 'The stream port must be a number from 1 to 65535.'),
       'too-many': t('home.tv.bad.many', 'Eight playlists is the most the TV keeps.') }[e.message];
     return showErr(why || e.message);
   }

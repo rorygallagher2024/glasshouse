@@ -294,6 +294,13 @@ function enigma2Server(v) {
   return m && m[0].indexOf('@') === -1 ? m[0] : '';
 }
 
+// A TCP port from a dashboard field, or 0 for none chosen.
+function portNumber(v) {
+  var s = typeof v === 'number' ? String(v) : str(v, 5);
+  var n = /^[0-9]{1,5}$/.test(s) ? Number(s) : 0;
+  return n >= 1 && n <= 65535 ? n : 0;
+}
+
 function validStored(p) {
   return p && typeof p.id === 'string' && /^p[0-9a-f]{6,12}$/.test(p.id) && (p.kind === 'm3u' || p.kind === 'xtream' || p.kind === 'enigma2');
 }
@@ -1094,6 +1101,7 @@ function publicPlaylist(p) {
     id: p.id, label: p.label, kind: p.kind,
     takeOver: p.kind === 'enigma2' && p.takeOver === true,
     streamLogin: p.kind === 'enigma2' && p.streamLogin === true,
+    streamPort: p.kind === 'enigma2' ? p.streamPort || 0 : 0,
     host: hostOf(p.kind === 'm3u' ? p.url : p.server),
     hasGuideLink: !!p.guide,
     channels: meta ? meta.channels : null,
@@ -1181,6 +1189,16 @@ function playlistsAction(body, cb) {
       if (body.noLogin === true) delete next.streamLogin;
       if (next.streamLogin && !next.user) return cb({ ok: false, error: 'login' });
       if (next.pass && !next.user) return cb({ ok: false, error: 'login' });
+      /*
+       * The bouquets' M3U carries the receiver's main streaming port, not a
+       * transcoding profile on a port of its own (often 8002). Set, it
+       * replaces the port in every channel's stream URL (streamUrl).
+       */
+      if (body.streamPort !== undefined) {
+        var sp = body.streamPort === '' || body.streamPort === null ? 0 : portNumber(body.streamPort);
+        if (body.streamPort !== '' && body.streamPort !== null && !sp) return cb({ ok: false, error: 'streamPort' });
+        next.streamPort = sp;
+      } else next.streamPort = p && p.kind === 'enigma2' ? p.streamPort || 0 : 0;
       if (!label) next.label = hostOf(next.server);
     } else {
       next.server = body.server !== undefined && body.server !== '' ? httpUrl(body.server) : p && p.kind === 'xtream' ? p.server : '';
@@ -1398,6 +1416,7 @@ function streamUrl(id, key) {
     if (st.size > 4096) return null;
     var url = String(fs.readFileSync(f, 'utf8')).replace(/\s+$/, '');
     if (!/^https?:\/\//i.test(url)) return null;
+    if (p.kind === 'enigma2' && p.streamPort) url = url.replace(/^(https?:\/\/[^\/:]+)(?::\d+)?/i, '$1:' + p.streamPort);
     var account = cache.meta[id] && cache.meta[id].account;
     // An Xtream panel serves a live channel as HLS or as MPEG-TS, by the URL's
     // extension; the owner can choose either for a channel (setOutput).
