@@ -1570,9 +1570,32 @@ button.tools-jump:active{background:var(--w80)}
 .rk-none{font-size:17px;line-height:1}
 .rk-ico{width:24px;height:24px;border-radius:6px;object-fit:contain;background:var(--w06);flex:none}
 /* An app's card icon on the Home tab, on the dark card it is drawn for. */
-.home-card-pick{display:flex;align-items:center;gap:8px;margin-top:6px}
-.home-card-ico{width:64px;height:36px;border-radius:5px;object-fit:contain;background:#000;flex:none}
-.home-card-pick .inp-name{max-width:240px}
+/* An app's card in its row, in its icon's place: a button that opens its card icon dialog. */
+.home-card-btn{position:relative;width:64px;height:36px;padding:0;border-radius:7px;background:#000;border:1px solid var(--w25);
+  flex:none;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;overflow:hidden;margin-right:2px}
+.home-card-btn:hover,.home-card-btn:focus-visible{border-color:var(--w80)}
+.home-card-btn:disabled{cursor:default}
+.home-card-btn img{width:100%;height:100%;object-fit:contain}
+.home-card-btn img.home-card-own,.home-card-modal-preview img.home-card-own{width:44%;height:auto;max-height:70%}
+.home-card-modal{max-width:520px;border-color:var(--w25)}
+.home-card-modal-title{font-size:20px;font-weight:500;color:var(--w100)}
+.home-card-modal-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px}
+.home-card-modal-preview{aspect-ratio:16/9;border-radius:18px;background:#000;border:1px solid var(--w25);display:flex;
+  align-items:center;justify-content:center;overflow:hidden;cursor:pointer;margin-bottom:10px}
+.home-card-modal-preview.drag{border-color:var(--green);border-style:dashed}
+.home-card-modal-preview img{width:100%;height:100%;object-fit:contain}
+.home-card-modal-btns{margin-top:14px}
+.home-card-specs{margin:14px 0 0;padding-left:18px;color:var(--w60);font-size:13px;line-height:1.5}
+.home-card-modal-pick{display:flex;flex-direction:column;gap:6px;margin-top:16px;padding-top:14px;border-top:1px solid var(--w10)}
+.home-card-modal-pick[hidden]{display:none}
+.home-card-modal-pickline{display:flex;gap:8px;align-items:center}
+.home-card-search{flex:1;min-width:0;font:400 15px 'Manrope';color:var(--w100);background:transparent;border:1px solid var(--edge);
+  height:40px;padding:0 12px;border-radius:2px;-webkit-appearance:none;appearance:none}
+.home-card-search:focus{outline:none;border-color:var(--w80)}
+.home-sound-own{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-top:8px}
+.home-sound-own[hidden]{display:none}
+.home-sound-ctl{display:flex;align-items:center;gap:8px}
+.home-sound-play{min-width:0;padding-left:14px;padding-right:14px}
 .rk-pick{grid-column:1/-1;position:relative;border:1px solid var(--w100);padding:16px 18px 18px;margin-top:2px}
 .rk-pick::before{content:'';position:absolute;top:-9px;left:calc(var(--rk-arrow, 40px) - 8px);
   border:8px solid transparent;border-top:0;border-bottom-color:var(--w100)}

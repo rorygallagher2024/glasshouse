@@ -3744,15 +3744,20 @@ step('apps take card icons from the folder by title, or the one chosen, and the 
   start(null);
   var icons = path.join(dir, 'home-icons');
   fs.mkdirSync(icons);
-  ['netflix', 'plex', 'youtube_music'].forEach(function (n) { fs.writeFileSync(path.join(icons, n + '.png'), 'png'); });
+  ['netflix', 'plex', 'youtube_music', 'shahid', 'lgapp'].forEach(function (n) { fs.writeFileSync(path.join(icons, n + '.png'), 'png'); });
   fs.writeFileSync(path.join(icons, 'Not An Icon.png'), 'png');
-  assert.deepEqual(home.cardIconNames(), ['netflix', 'plex', 'youtube_music'], 'only names an app title can match');
+  assert.deepEqual(home.cardIconNames(), ['lgapp', 'netflix', 'plex', 'shahid', 'youtube_music'], 'only names an app title can match');
+  assert.strictEqual(home.cardIconFor('net.mbc.shahid-lgapp', ['MBC Shahid']), 'shahid', 'a part of its id its title has');
+  assert.strictEqual(home.cardIconFor('com.example.lgapp', ['Other']), null, 'not a part of its id its title lacks');
   assert.strictEqual(home.cardIconPath('plex'), path.join(icons, 'plex.png'));
   assert.strictEqual(home.cardIconPath('../plex'), null, 'nothing outside the folder');
   assert.strictEqual(home.cardIconPath('youtube'), null);
   function cards(c) {
     var out = {};
-    c.apps.forEach(function (a) { out[a.id] = a.card || null; });
+    c.apps.forEach(function (a) {
+      if (a.card) assert.ok(/&v=\d+-\d+$/.test(a.card), 'a replaced icon is fetched again: ' + a.card);
+      out[a.id] = a.card ? a.card.replace(/&v=.*$/, '') : null;
+    });
     return out;
   }
   home.catalogue(function (c) {
@@ -3779,6 +3784,68 @@ step('apps take card icons from the folder by title, or the one chosen, and the 
           fs.readdirSync(icons).forEach(function (f) { fs.unlinkSync(path.join(icons, f)); });
           fs.rmdirSync(icons);
           done();
+        });
+      });
+    });
+  });
+});
+
+step('card icons and the own sound are uploaded and removed from a dashboard', function (done) {
+  start(null);
+  var EventEmitter = require('events').EventEmitter;
+  function bytes(list) { return Buffer.from ? Buffer.from(list) : new Buffer(list); }
+  function upload(body, length) {
+    var req = new EventEmitter();
+    req.headers = { 'content-length': String(length === undefined ? body.length : length) };
+    setTimeout(function () { req.emit('data', body); req.emit('end'); }, 0);
+    return req;
+  }
+  // A PNG's signature and IHDR: enough for the header check, which is all the server reads.
+  function png(w, h) {
+    var b = bytes([137, 80, 78, 71, 13, 10, 26, 10, 0, 0, 0, 13, 73, 72, 68, 82, 0, 0, 0, 0, 0, 0, 0, 0, 8, 6, 0, 0, 0, 0, 0, 0, 0, 0]);
+    b.writeUInt32BE(w, 16);
+    b.writeUInt32BE(h, 20);
+    return b;
+  }
+  var wav = Buffer.concat([bytes([82, 73, 70, 70, 36, 0, 0, 0, 87, 65, 86, 69]), bytes([0, 0, 0, 0])]);
+  var ogg = Buffer.concat([bytes([79, 103, 103, 83]), bytes([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])]);
+  var before = home.layoutVersion();
+  home.uploadCardIcon('../evil', upload(png(640, 360)), function (bad) {
+    assert.strictEqual(bad.ok, false, 'only a card icon name');
+    home.uploadCardIcon('netflix', upload(png(4000, 360)), function (big) {
+      assert.strictEqual(big.ok, false, 'held to 1280 x 720');
+      home.uploadCardIcon('netflix', upload(bytes([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33])), function (notPng) {
+        assert.strictEqual(notPng.ok, false, 'only a PNG');
+        home.uploadCardIcon('netflix', upload(png(640, 360)), function (r) {
+          assert.ok(r.ok, r.error);
+          assert.deepEqual(r.names, ['netflix']);
+          assert.notStrictEqual(home.layoutVersion(), before, 'Home loads again with it');
+          home.setLayout({ appIcons: { youtube: 'netflix' } }, function () {
+            home.removeCardIcon('netflix', function (gone) {
+              assert.ok(gone.ok, gone.error);
+              assert.deepEqual(gone.names, []);
+              assert.deepEqual(home.layout().appIcons, {}, 'an app that chose it goes back to matching by name');
+              home.uploadNavSound(upload(bytes([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12])), function (noSound) {
+                assert.strictEqual(noSound.ok, false, 'only OGG, WAV or MP3');
+                home.uploadNavSound(upload(wav), function (w) {
+                  assert.ok(w.ok, w.error);
+                  assert.strictEqual(w.ownSound.type, 'audio/wav');
+                  assert.strictEqual(home.navSoundFile('own').type, 'audio/wav');
+                  home.uploadNavSound(upload(ogg), function (o) {
+                    assert.strictEqual(o.ownSound.type, 'audio/ogg', 'a new one replaces the last whatever its kind');
+                    assert.strictEqual(fs.existsSync(path.join(dir, 'home-sounds', 'nav.wav')), false);
+                    assert.strictEqual(home.layout().ownSound.type, 'audio/ogg', 'Home and the dashboard see it');
+                    home.removeNavSound(function (rm) {
+                      assert.ok(rm.ok);
+                      assert.strictEqual(home.navSoundFile('own'), null);
+                      assert.strictEqual(home.layout().ownSound, null);
+                      done();
+                    });
+                  });
+                });
+              });
+            });
+          });
         });
       });
     });

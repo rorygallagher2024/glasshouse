@@ -1333,6 +1333,28 @@ function handleHomeRoute(req, res, u, pathname) {
         reply(r);
       });
     }
+    if (pathname === '/api/home/card-icons/upload') {
+      if (!postGuard(req, res, 'image/png', true)) return;
+      return homeModule.uploadCardIcon(String(u.query && u.query.name || ''), req, function (r) {
+        if (!r.ok) return refuseUpload(req, res, r.error, r.status || 400);
+        reply(r);
+      });
+    }
+    if (pathname === '/api/home/card-icons/remove') {
+      return readJsonBody(req, res, function (body) {
+        homeModule.removeCardIcon(String(body && body.name || ''), function (r) { send(res, r.ok ? 200 : 400, JSON.stringify(r)); });
+      }, 1024);
+    }
+    if (pathname === '/api/home/nav-sound/upload') {
+      if (!postGuard(req, res, 'application/octet-stream', true)) return;
+      return homeModule.uploadNavSound(req, function (r) {
+        if (!r.ok) return refuseUpload(req, res, r.error, r.status || 400);
+        reply(r);
+      });
+    }
+    if (pathname === '/api/home/nav-sound/remove') {
+      return readJsonBody(req, res, function () { homeModule.removeNavSound(reply); }, 1024);
+    }
     if (pathname === '/api/home/launcher/upload' && homeLauncherModule) {
       // It runs as the TV's Home app, so it is held to what a sideloaded package is.
       if (!sideloadVia(req)) return sideloadRefused(res);

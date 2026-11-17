@@ -302,6 +302,13 @@ html.resting #wall .layer{-webkit-animation-play-state:paused;animation-play-sta
    rows where they were. The sides stay as they are, as scrolling counts on
    their 22px; the glow is kept within them. */
 .cards .row[data-key="app"] .wrap{padding-top:36px;padding-bottom:36px;margin-top:-30px;margin-bottom:-30px}
+/* The shading where the cards run on, faded out on every side: the row's
+   room for the glow made the plain one end in a hard-edged box. */
+.cards .row[data-key="app"] .wrap .edge{width:150px;
+  -webkit-mask-image:linear-gradient(180deg,transparent,#000 32%,#000 68%,transparent);
+  mask-image:linear-gradient(180deg,transparent,#000 32%,#000 68%,transparent)}
+.cards .row[data-key="app"] .wrap .edge.l{background:linear-gradient(90deg,rgba(0,0,0,.66),rgba(0,0,0,.4) 30%,rgba(0,0,0,.14) 65%,rgba(0,0,0,0))}
+.cards .row[data-key="app"] .wrap .edge.r{background:linear-gradient(270deg,rgba(0,0,0,.66),rgba(0,0,0,.4) 30%,rgba(0,0,0,.14) 65%,rgba(0,0,0,0))}
 .cards .app .nm{margin-top:14px;opacity:0;-webkit-transition:opacity .12s;transition:opacity .12s}
 .cards .app.focus .nm,.arranging.cards .app .nm{opacity:1}
 .no-app-labels.cards .app{width:300px}
@@ -2179,16 +2186,17 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
    * that follows a key.
    */
   var navAudio = null, navBuffer = null, navBufferFor = '';
-  function loadNavSound(name) {
-    navBufferFor = name;
+  // key: the sound's name, and for the own sound its revision, so one replaced is loaded again.
+  function loadNavSound(name, key) {
+    navBufferFor = key;
     navBuffer = null;
     var x = new XMLHttpRequest();
-    x.open('GET', '/api/home/nav-sound?name=' + encodeURIComponent(name));
+    x.open('GET', '/api/home/nav-sound?name=' + encodeURIComponent(name) + '&v=' + encodeURIComponent(key));
     x.responseType = 'arraybuffer';
     x.onload = function () {
       if (x.status !== 200 || !navAudio) return;
       try {
-        navAudio.decodeAudioData(x.response, function (b) { if (navBufferFor === name) navBuffer = b; }, function () {});
+        navAudio.decodeAudioData(x.response, function (b) { if (navBufferFor === key) navBuffer = b; }, function () {});
       } catch (e) {}
     };
     x.send();
@@ -2201,7 +2209,9 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
       if (!Ctx) return;
       if (!navAudio) navAudio = new Ctx();
       if (navAudio.state === 'suspended' && navAudio.resume) navAudio.resume();
-      if (navBufferFor !== name) loadNavSound(name);
+      var key = name === 'own' ? 'own@' + (layout.ownSound ? layout.ownSound.rev : '') : name;
+      if (name === 'own' && !layout.ownSound) return;
+      if (navBufferFor !== key) loadNavSound(name, key);
       if (!navBuffer) return;
       var src = navAudio.createBufferSource();
       src.buffer = navBuffer;

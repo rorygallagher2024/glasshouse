@@ -228,7 +228,7 @@ before its first read.
 
 `test-home.js` also checks that a port whose tile changes once a CEC device on it is listed has the view draw its tiles again, and that the tile drawn before still opens that port, and only that port.
 
-`test-home.js` also checks that apps take card icons from the card icon folder by title rather than by app id, or the one chosen for them, that only names an app title can match are listed or served, that the card and pulse switches are saved only when sent as true or false, that the sound as focus moves is one Home has and that the two it ships with are there, and that card transparency keeps to steps of ten from 0 to 90.
+`test-home.js` also checks that apps take card icons from the card icon folder by title, or by a part of their app id only where the title has it, or the one chosen for them, that only names an app title can match are listed or served, that the card and pulse switches are saved only when sent as true or false, that the sound as focus moves is one Home has and that the two it ships with are there, that card transparency keeps to steps of ten from 0 to 90, and that card icons and the own sound uploaded from a dashboard are held to a card icon name, a PNG of at most 1280 × 720, and an OGG, WAV or MP3 file, that a new sound replaces the last whatever its kind, and that removing an icon clears any app's choice of it.
 
 `test-home.js` also checks that an input keeps its hiding, place and custom name whether the TV lists the device on its port or not, and that with two devices on a port neither takes a setting kept for the port.
 
