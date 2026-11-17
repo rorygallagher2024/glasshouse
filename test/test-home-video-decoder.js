@@ -50,7 +50,7 @@ var run = sandbox({
   wallChoice: 'video', wallVideoNeedsRestart: false, walls: 0,
   setTimeout: function (fn) { timers.push(fn); }
 },
-  'var wallVideoEl = wall;' +
+  'var wallVideoEl = wall, tilePreview = { gen: 0, opening: null };' +
   'function $(id) { return id === "pvVideo" ? preview : id === "wall-caption" ? caption : null; }' +
   'function updateWall() { walls++; }' +
   src.slice(start, end));
@@ -104,6 +104,7 @@ assert.ok(noteStart !== -1, 'noteWallVideoOutput is in home.html');
 var outPreview = fakeVideo();
 var runOut = sandbox({ preview: outPreview, wallVideoPlaying: true, wallVideoOffScreen: 0, wallVideoNeedsRestart: false,
   document: { documentElement: { classList: { contains: function () { return false; } } } } },
+  'var tilePreview = { gen: 0, opening: null };' +
   'function $() { return preview; }' + src.slice(start, src.indexOf('  function unloadWallVideo')) +
   src.slice(noteStart, noteEnd + '\n  }\n'.length));
 runOut('noteWallVideoOutput(false)');

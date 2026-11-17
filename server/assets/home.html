@@ -2142,6 +2142,8 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
    */
   var PREVIEW_DWELL_MS = 400;
   var PREVIEW_START_MS = 4000;
+  // How long an input or channel waits after the video background lets the decoder go.
+  var PREVIEW_HANDOFF_MS = 400;
   var PREVIEW_SIGNAL_MS = 1000;
   var PREVIEW_SIGNAL_TRIES = 3;
   // A G3's decoder had no format for an HD channel 1.8 s after the picture
@@ -2150,7 +2152,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
   var PREVIEW_CHANNEL_POLL_MS = 400;
   var PREVIEW_CHANNEL_TRIES = 15;
   // target: { key, row, item, port } - port for an input, 0 for a channel.
-  var tilePreview = { target: null, gen: 0, timer: null, playing: false, blank: false, info: null, details: false, opened: null, inTile: false };
+  var tilePreview = { target: null, gen: 0, timer: null, playing: false, blank: false, info: null, details: false, opened: null, inTile: false, opening: null };
 
   // What a tile previews: a connected input, a TV channel, or the TV's tile,
   // which shows the channel it was last on. col is the tile's place in its row.
@@ -2459,33 +2461,58 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
 
   function startPreview(target) {
     if (target.tv) return startTvPreview(target);
-    var gen = tilePreview.gen, v = $('pvVideo'), s = document.createElement('source');
+    var gen = tilePreview.gen, v = $('pvVideo'), retried = false;
     var current = function () { return gen === tilePreview.gen; };
     v.muted = previewMuted();
     v.defaultMuted = v.muted;
-    s.setAttribute('type', target.port ? 'service/webos-external' :
-                   oldBroadcast() ? 'service/webos-broadcast' : 'service/webos-broadcast-preview');
-    s.setAttribute('src', target.port ? 'ext://hdmi:' + target.port : 'tv://' + target.item.id);
-    wallVideoYield();
-    v.appendChild(s);
-    v.onplaying = function () {
-      if (!current() || tilePreview.playing) return;
-      tilePreview.playing = true;
-      if (target.port) checkSignal(target.port, gen, PREVIEW_SIGNAL_TRIES);
-      // The decoder reports the channel's format a moment after it plays.
-      else setTimeout(function () { if (current()) loadPreviewInfo(target, gen); }, PREVIEW_CHANNEL_INFO_MS);
+    /*
+     * Opened in the same turn as the video background let the decoder go, an
+     * input could fail at once, and with no retry the preview ended and the
+     * background came back (a C2, webOS 9, over a video background). So the
+     * preview waits a moment after the background, and an open that fails
+     * tries once more before it gives up.
+     */
+    var open = function () {
+      tilePreview.opening = null;
+      if (!current()) return;
+      var s = document.createElement('source');
+      s.setAttribute('type', target.port ? 'service/webos-external' :
+                     oldBroadcast() ? 'service/webos-broadcast' : 'service/webos-broadcast-preview');
+      s.setAttribute('src', target.port ? 'ext://hdmi:' + target.port : 'tv://' + target.item.id);
+      v.appendChild(s);
+      v.onplaying = function () {
+        if (!current() || tilePreview.playing) return;
+        tilePreview.playing = true;
+        if (target.port) checkSignal(target.port, gen, PREVIEW_SIGNAL_TRIES);
+        // The decoder reports the channel's format a moment after it plays.
+        else setTimeout(function () { if (current()) loadPreviewInfo(target, gen); }, PREVIEW_CHANNEL_INFO_MS);
+      };
+      v.onerror = function () {
+        if (!current()) return;
+        if (retried) return blankPreview();
+        retried = true;
+        // Let go and open again, with the background still away.
+        releaseVideo(true);
+        afterHandoff();
+      };
+      v.load();
+      // Promise or undefined, by engine; the events say how it went.
+      var played = v.play();
+      if (played && played.then) played.then(null, function () {});
     };
-    v.onerror = function () { if (current()) blankPreview(); };
-    v.load();
-    // Promise or undefined, by engine; the events say how it went.
-    var played = v.play();
-    if (played && played.then) played.then(null, function () {});
+    // previewHoldsVideo counts the wait, so nothing brings the background back in it.
+    var afterHandoff = function () {
+      tilePreview.opening = gen;
+      setTimeout(open, PREVIEW_HANDOFF_MS);
+    };
+    if (wallVideoYield()) afterHandoff();
+    else open();
     $('preview').className = 'on';
     tilePreview.inTile = inTile();
     placePreview();
     $('now').className = tilePreview.inTile ? '' : 'previewing';
     renderNow();
-    tilePreview.timer = setTimeout(function () { if (current() && !tilePreview.playing) blankPreview(); }, PREVIEW_START_MS);
+    tilePreview.timer = setTimeout(function () { if (current() && !tilePreview.playing) blankPreview(); }, PREVIEW_START_MS + 2 * PREVIEW_HANDOFF_MS);
   }
 
   function checkSignal(port, gen, tries) {
@@ -5242,6 +5269,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
    */
   function previewHoldsVideo() {
     var v = $('pvVideo');
+    if (tilePreview.opening !== null && tilePreview.opening === tilePreview.gen) return true;
     return !!v && (v.getAttribute('src') !== null || !!v.firstChild);
   }
 
@@ -5277,8 +5305,12 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
   }
 
   // Before the preview's <video> takes a stream or an input.
+  // True when the background had a video loaded, which may still hold the decoder.
   function wallVideoYield() {
-    if (wallChoice === 'video') unloadWallVideo();
+    if (wallChoice !== 'video') return false;
+    var held = !!wallVideoEl && wallVideoEl.getAttribute('src') !== null;
+    unloadWallVideo();
+    return held;
   }
 
   // After it lets one go: a stream changing channel takes the next in the same
