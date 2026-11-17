@@ -45,7 +45,8 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
  * The level bar (opened by a Brightness key): a dark pill low on the screen
  * with an icon, a track and the number, drawn like the TV's own volume bar.
  */
-#osd{position:absolute;left:50%;bottom:80px;width:640px;height:80px;margin-left:-320px;border-radius:40px;
+/* As wide as its parts and centred, so the track keeps its length at every level and the pill gives way to the number's digits. */
+#osd{position:absolute;left:50%;bottom:80px;height:80px;border-radius:40px;-webkit-transform:translateX(-50%);transform:translateX(-50%);
   background:rgba(34,34,36,.94);box-shadow:0 8px 32px rgba(0,0,0,.5);opacity:0;display:-webkit-flex;display:flex;
   -webkit-align-items:center;align-items:center;padding:0 32px;
   -webkit-transition:opacity .16s ease-out;transition:opacity .16s ease-out}
@@ -54,9 +55,9 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
 .osdon #osd{-webkit-transition:none;transition:none}
 #osd .oico{-webkit-flex:0 0 auto;flex:0 0 auto;width:38px;height:38px;margin-right:24px}
 #osd .oico svg{display:block;width:100%;height:100%}
-#osd .otrack{-webkit-flex:1 1 auto;flex:1 1 auto;height:11px;border-radius:6px;background:rgba(255,255,255,.22);overflow:hidden}
+#osd .otrack{-webkit-flex:0 0 460px;flex:0 0 460px;width:460px;height:11px;border-radius:6px;background:rgba(255,255,255,.22);overflow:hidden}
 #osd .ofill{height:100%;width:0;border-radius:6px;background:#fff}
-/* As wide as its digits, so the track gives way to a third one and the gap to it stays the icon's. */
+/* As wide as its digits: the gap to the track stays the icon's. */
 #osd .onum{-webkit-flex:0 0 auto;flex:0 0 auto;margin-left:24px;text-align:right;font-size:36px;font-weight:500;font-variant-numeric:tabular-nums;color:#fff}
 </style>
 </head>
