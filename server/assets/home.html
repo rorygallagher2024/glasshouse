@@ -1757,6 +1757,8 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     $('srcKind').textContent = kind || ' ';
     $('srcTitle').textContent = title || ' ';
     $('srcVia').textContent = via || ' ';
+    // Last watched or the preview coming or going moves what the caption keeps clear of.
+    clearWallCaption();
   }
 
   /*
@@ -5141,22 +5143,42 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     clearWallCaption();
   }
 
-  // Moved clear of Home's clock, weather and tiles where its corner has them,
-  // which vary with Home's layout, so they are measured.
+  /*
+   * Lined up with Home's own text on its side of the screen, and moved clear
+   * of Home's clock, weather and tiles where its corner has them. Both vary
+   * with Home's layout, so they are measured: at a fixed 4% the caption sat
+   * apart from Last watched's text above it in the alternative view.
+   */
   function clearWallCaption() {
     var el = $('wall-caption'), style = wallVideoStyle || {};
     if (!el || !el.textContent) return;
-    var bottom = (style.captionPosition || '').indexOf('bottom') === 0;
+    var pos = style.captionPosition || '', bottom = pos.indexOf('bottom') === 0, right = pos.indexOf('right') !== -1;
+    var width = window.innerWidth, height = window.innerHeight, gap = 24, edge = null, side = null;
+    var shown = function (m) {
+      // An empty #source keeps its place, hidden.
+      var r = m && window.getComputedStyle(m).visibility !== 'hidden' && m.getBoundingClientRect();
+      return r && r.width && r.height && r.bottom > 0 && r.top < height ? r : null;
+    };
+    var now = [$('when'), $('weather'), $('source'), $('plate'), $('preview')];
+    // Where the text starts in the marks on the caption's half of the screen.
+    for (var n = 0; n < now.length; n++) {
+      var nr = shown(now[n]), cs = nr && window.getComputedStyle(now[n]), inset = null;
+      if (!nr) continue;
+      if (right && nr.right > width / 2) inset = width - nr.right + (parseFloat(cs.paddingRight) || 0) + (parseFloat(cs.borderRightWidth) || 0);
+      if (!right && nr.left < width / 2) inset = nr.left + (parseFloat(cs.paddingLeft) || 0) + (parseFloat(cs.borderLeftWidth) || 0);
+      if (inset !== null) side = side === null ? inset : Math.min(side, inset);
+    }
+    var at = side === null ? '4%' : Math.round(side) + 'px';
+    el.style.left = right ? 'auto' : at;
+    el.style.right = right ? at : 'auto';
     el.style.top = bottom ? 'auto' : '4%';
     el.style.bottom = bottom ? '4%' : 'auto';
-    var box = el.getBoundingClientRect(), height = window.innerHeight, gap = 24, edge = null;
+    var box = el.getBoundingClientRect();
     if (!box.width) return;
-    var marks = bottom ? document.querySelectorAll('#rows .tile') : [$('when'), $('weather'), $('source'), $('plate'), $('preview')];
+    var marks = bottom ? document.querySelectorAll('#rows .tile') : now;
     for (var i = 0; i < marks.length; i++) {
-      // An empty #source keeps its place, hidden.
-      var r = marks[i] && window.getComputedStyle(marks[i]).visibility !== 'hidden' && marks[i].getBoundingClientRect();
-      if (!r || !r.width || !r.height || r.bottom <= 0 || r.top >= height) continue;
-      if (r.right <= box.left || r.left >= box.right) continue;
+      var r = shown(marks[i]);
+      if (!r || r.right <= box.left || r.left >= box.right) continue;
       if (bottom) edge = edge === null ? r.top : Math.min(edge, r.top);
       else edge = edge === null ? r.bottom : Math.max(edge, r.bottom);
     }
