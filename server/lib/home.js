@@ -3143,7 +3143,15 @@ function powerStateChanged(raw) {
   var was = powerState;
   powerState = String(raw || '');
   if (was === powerState) return;
-  if (was === 'Screen Saver') saverEndedAt = nowMs();
+  if (was === 'Screen Saver') {
+    saverEndedAt = nowMs();
+    /*
+     * The view can be slow to beat as the screen saver ends: a G5 (webOS
+     * 11.2.0), short of memory with the live preview always on, missed one
+     * and LG's Home took over (#1549). It is given the wait of a first beat.
+     */
+    if (viewInFront() && powerActive && beatTimer) watchBeat(firstBeatGraceMs);
+  }
   cancelWake();
   if (was === null || names.powerState(was).systemOn || !names.powerState(powerState).systemOn) return;
   if (!readConfig().enabled) return;
