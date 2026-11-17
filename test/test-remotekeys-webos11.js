@@ -93,6 +93,15 @@ function luna(uri, params, cb) {
     Object.keys(params.settings).forEach(function (k) {
       if (k === 'mapping_info') { tv.mapping = copy(params.settings[k]); tv.mappingWrites++; } else { tv.custom[k] = copy(params.settings[k]); tv.customWrites++; }
     });
+  } else if (uri === 'com.webos.service.settings/getSystemSettings') {
+    assert.strictEqual(params.category, 'picture');
+    r.settings = { backlight: String(panel.backlight) };
+  } else if (uri === 'com.webos.service.settings/setSystemSettings') {
+    assert.strictEqual(params.category, 'picture');
+    panel.backlight = Number(params.settings.backlight);
+    panel.writes++;
+  } else if (uri === 'com.webos.notification/createToast') {
+    toasts.push(params.message);
   } else if (uri === 'com.webos.applicationManager/listApps') {
     r.apps = APPS;
   } else if (uri === 'com.webos.applicationManager/launch') {
@@ -137,6 +146,7 @@ function luna(uri, params, cb) {
 var launched = [];
 var toasts = [];
 var power = { state: 'Active', screenOffs: 0 };
+var panel = { backlight: 50, writes: 0 };
 
 // lib/services.js as the TV has it: the voice assistant there and running.
 var voice = { off: false, switches: [] };
@@ -174,6 +184,7 @@ function until(ready, ms, cb) {
 }
 var AI_LINE = '2026-10-18T11:37:06.284Z [60] user.info lginput2 [] lginput2 NL_BUTTON_CLICK {"remote_type":"LGE MR25GA","button_type":"KEY_VOICE"} \n';
 var ALEXA_LINE = '2026-10-18T11:59:12.600Z [60] user.info lginput2 [] lginput2 NL_BUTTON_CLICK {"remote_type":"LGE MR25GA","button_type":"KEY_ALEXAVOICE"} \n';
+var AMAZON_LINE = '2026-10-18T11:37:12.100Z [60] user.info lginput2 [] lginput2 NL_BUTTON_CLICK {"remote_type":"LGE MR25GA","button_type":"KEY_AMAZON"} \n';
 var NETFLIX_LINE = '2026-10-18T11:37:09.100Z [60] user.info lginput2 [] lginput2 NL_BUTTON_CLICK {"remote_type":"LGE MR25GA","button_type":"KEY_NETFLIX"} \n';
 
 // The settings service subscription, as luna.Subscription: its handler is kept
@@ -596,6 +607,45 @@ step('Screen off is turned off once more when the button\'s release wakes the TV
       }, 900);
     });
   }); });
+});
+
+step('Brightness up and down on streaming buttons switch LG\'s entries off and step the panel brightness from the log, within 0 to 100', function (next) {
+  rk.getRemoteKeys(function (r) {
+    ['action:brightnessUp', 'action:brightnessDown'].forEach(function (id) {
+      assert.ok(r.choices.some(function (c) { return c.id === id; }), id + ' offered');
+    });
+    rk.setRemoteKey('guide', 'open', 'action:brightnessUp', function (g) {
+      assert.strictEqual(g.ok, false, 'refused on Guide, whose presses the TV does not log');
+      set('netflix', 'open', 'action:brightnessUp', function () {
+        set('amazon', 'open', 'action:brightnessDown', function () { afterWatching(function () {
+          assert.strictEqual(entry('netflix').isActive, false, 'LG\'s app switched off, as for Nothing');
+          assert.strictEqual(entry('amazon').isActive, false);
+          panel.backlight = 50;
+          toasts = [];
+          logLine(NETFLIX_LINE);
+          until(function () { return panel.backlight === 55; }, 5000, function () {
+            assert.strictEqual(panel.backlight, 55, 'up one step');
+            logLine(AMAZON_LINE);
+            until(function () { return panel.backlight === 50; }, 5000, function () {
+              assert.strictEqual(panel.backlight, 50, 'down one step');
+              assert.ok(toasts.indexOf('Brightness 55') !== -1 && toasts.indexOf('Brightness 50') !== -1, 'the new level shown');
+              // At the top: nothing written.
+              panel.backlight = 100;
+              panel.writes = 0;
+              setTimeout(function () {
+                logLine(NETFLIX_LINE);
+                setTimeout(function () {
+                  assert.strictEqual(panel.backlight, 100);
+                  assert.strictEqual(panel.writes, 0, 'no write at the top');
+                  set('netflix', 'lg', '', function () { set('amazon', 'lg', '', function () { next(); }); });
+                }, POLLED + 200);
+              }, 600);
+            });
+          });
+        }); });
+      });
+    });
+  });
 });
 
 step('the Alexa button set blocks Amazon\'s view and opens its app from the log, apart from the AI button; As LG has it releases it', function (next) {

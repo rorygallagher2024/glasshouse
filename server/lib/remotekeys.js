@@ -137,6 +137,21 @@ var MEDIA_REPEATS = { volumeUp: true, volumeDown: true };
  * TV had woken.
  */
 var SCREEN_OFF = 'action:screenOff';
+/*
+ * Panel brightness (OLED light, or the backlight on an LCD) up or down one
+ * step per press. Offered on webOS 11 beside Screen off, answered from the
+ * system log the same way; the JavaScript filter does not carry it.
+ */
+var BRIGHTNESS_UP = 'action:brightnessUp';
+var BRIGHTNESS_DOWN = 'action:brightnessDown';
+var BRIGHTNESS_STEP = 5;
+var BRIGHTNESS_DELTAS = {};
+BRIGHTNESS_DELTAS[BRIGHTNESS_UP] = BRIGHTNESS_STEP;
+BRIGHTNESS_DELTAS[BRIGHTNESS_DOWN] = -BRIGHTNESS_STEP;
+// The actions webOS 11 answers from the log: LG's own action for the key is off.
+function isLoggedAction(id) {
+  return id === SCREEN_OFF || Object.prototype.hasOwnProperty.call(BRIGHTNESS_DELTAS, id);
+}
 // Wait for release to avoid sending more key events as standby starts.
 var POWER_OFF = 'action:powerOff';
 /*
@@ -877,7 +892,7 @@ function nativeKeys(tv, lg) {
 // What a streaming button's entry becomes, from LG's own, or undefined for LG's.
 function mappingWanted(map, key, lgEntry) {
   if (!Object.prototype.hasOwnProperty.call(map, key)) return undefined;
-  if (!map[key] || map[key] === SCREEN_OFF) {
+  if (!map[key] || isLoggedAction(map[key])) {
     var off = copyValue(lgEntry);
     off.isActive = false;
     return off;
@@ -887,7 +902,7 @@ function mappingWanted(map, key, lgEntry) {
 
 function actionWanted(map, key) {
   if (!Object.prototype.hasOwnProperty.call(map, key)) return undefined;
-  return map[key] && map[key] !== SCREEN_OFF ? { action: 'launch', id: map[key] } : { action: 'ignore', accept: true };
+  return map[key] && !isLoggedAction(map[key]) ? { action: 'launch', id: map[key] } : { action: 'ignore', accept: true };
 }
 
 // The ? button has no setting for nothing: LG opens Accessibility for a type
@@ -1168,7 +1183,7 @@ function loggedTargets(map, lg) {
     if (off) targets[LOGGED_BUTTONS[key]] = map[key];
   });
   Object.keys(SCREEN_OFF_BUTTONS).forEach(function (key) {
-    if (map[key] === SCREEN_OFF) targets[SCREEN_OFF_BUTTONS[key]] = SCREEN_OFF;
+    if (isLoggedAction(map[key])) targets[SCREEN_OFF_BUTTONS[key]] = map[key];
   });
   return targets;
 }
@@ -1248,8 +1263,28 @@ function buttonPressed(button) {
   var id = pressTargets[button];
   if (!id || !lunaFn) return;
   if (id === SCREEN_OFF) return screenOffFromPress(button);
+  if (Object.prototype.hasOwnProperty.call(BRIGHTNESS_DELTAS, id)) return stepBrightness(BRIGHTNESS_DELTAS[id]);
   lunaFn('com.webos.applicationManager/launch', { id: id }, function (r) {
     if (!(r && r.returnValue)) console.log('remotekeys: ' + button + ' could not open ' + id);
+  });
+}
+
+/*
+ * One step of the current picture mode's brightness, read first since the
+ * settings service keeps one value per mode and input (controls.js's
+ * backlight). A toast shows the new level, as LG shows no slider for a write
+ * made here.
+ */
+function stepBrightness(delta) {
+  lunaFn('com.webos.service.settings/getSystemSettings', { category: 'picture', keys: ['backlight'] }, function (r) {
+    var current = r && r.settings ? parseFloat(r.settings.backlight) : NaN;
+    if (isNaN(current)) return console.log('remotekeys: brightness not changed: the TV did not give its level');
+    var level = Math.max(0, Math.min(100, Math.round(current) + delta));
+    if (level === Math.round(current)) return;
+    lunaFn('com.webos.service.settings/setSystemSettings', { category: 'picture', settings: { backlight: String(level) } }, function (w) {
+      if (!(w && w.returnValue)) return console.log('remotekeys: brightness could not be set to ' + level);
+      lunaFn('com.webos.notification/createToast', { sourceId: 'com.webos.service.settings', message: msg('srv.remoteKeys.brightnessToast', 'Brightness {level}', { level: level }) }, function () {});
+    });
   });
 }
 
@@ -1422,9 +1457,13 @@ function actionChoices() {
   return out;
 }
 
-// webOS 11's one action, for the keys in SCREEN_OFF_BUTTONS.
-function screenOffChoice() {
-  return [{ id: SCREEN_OFF, title: msg('srv.remoteKeys.screenOff', 'Screen off'), kind: 'action' }];
+// webOS 11's actions, for the keys in SCREEN_OFF_BUTTONS.
+function loggedActionChoices() {
+  return [
+    { id: SCREEN_OFF, title: msg('srv.remoteKeys.screenOff', 'Screen off'), kind: 'action' },
+    { id: BRIGHTNESS_UP, title: msg('srv.remoteKeys.brightnessUp', 'Brightness up'), kind: 'action' },
+    { id: BRIGHTNESS_DOWN, title: msg('srv.remoteKeys.brightnessDown', 'Brightness down'), kind: 'action' }
+  ];
 }
 
 // Whether a key's presses reach Home Assistant, so it can be set to send them there.
@@ -1504,11 +1543,11 @@ function describeKeys(keys, inChain, cb, native) {
       var titles = {};
       (apps || []).forEach(function (a) { if (a && a.id) titles[a.id] = a.title || a.id; });
       var inputs = inputChoices();
-      var media = native ? screenOffChoice() : actionChoices().concat(mediaChoices());
+      var media = native ? loggedActionChoices() : actionChoices().concat(mediaChoices());
       var cc = country();
       titles[HOME_ASSISTANT] = msg('srv.remoteKeys.homeAssistant', 'Home Assistant');
       titles[HOME_GUIDE] = msg('srv.remoteKeys.homeGuide', 'Glasshouse Home\'s guide');
-      switchers.concat(inputs, actionChoices(), mediaChoices(), homeChoices(false), barChoices(false)).forEach(function (c) { titles[c.id] = c.title; });
+      switchers.concat(inputs, actionChoices(), loggedActionChoices(), mediaChoices(), homeChoices(false), barChoices(false)).forEach(function (c) { titles[c.id] = c.title; });
       var out = keys.map(function (k) {
         var set = Object.prototype.hasOwnProperty.call(map, k.key);
         var id = set ? map[k.key] : null;
@@ -1576,7 +1615,7 @@ function setOfferedKey(def, action, id, kind, cb) {
   switcherChoices(function (switchers) {
     listApps(function (apps) {
       if (!apps) return cb({ ok: false, error: msg('srv.remoteKeys.noApps', 'Could not read the TV\'s apps. Try again in a moment.') });
-      var media = kind === 'filter' ? actionChoices().concat(mediaChoices()) : SCREEN_OFF_BUTTONS[def.key] ? screenOffChoice() : [];
+      var media = kind === 'filter' ? actionChoices().concat(mediaChoices()) : SCREEN_OFF_BUTTONS[def.key] ? loggedActionChoices() : [];
       var allowed = switchers.concat(media, inputChoices(), homeChoices(kind !== 'filter'), barChoices(kind !== 'filter'), appChoices(apps))
         .some(function (c) { return c.id === id; });
       if (id === HOME_ASSISTANT && !reported(def.key)) {
