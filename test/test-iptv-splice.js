@@ -97,7 +97,7 @@ console.log('  ✓ a reconnect\'s repeat is cut where the last connection stoppe
 
 // Bytes before the program's tables pass as they come.
 var raw = blank();
-assert.ok(new splice.Splice().feed(raw).equals(raw), 'a stream with no PMT yet passes as it is');
+assert.strictEqual(new splice.Splice().feed(raw).toString('hex'), raw.toString('hex'), 'a stream with no PMT yet passes as it is');
 console.log('  ✓ a stream passes as it is until its PMT names its streams');
 
 var WRAP = 8589934592;

@@ -544,7 +544,7 @@ step('an MPEG-TS channel is relayed for Home\'s own player, following the panel\
       relayServer.listen(0, '127.0.0.1', function () {
         get(stream.relay, function (code, body) {
           assert.equal(code, 200);
-          assert.ok(body.equals(TS_BYTES), 'the stream from behind the redirect, as sent');
+          assert.strictEqual(body.toString('hex'), TS_BYTES.toString('hex'), 'the stream from behind the redirect, as sent');
           assert.equal(hits['/token/abc123.ts'], 1);
           assert.equal(iptv.setOutput({ pl: xc, key: c.key, output: 'hls' }).ok, true);
           iptv.playUrl(xc, c.key, false, function (hls) {
@@ -582,7 +582,7 @@ step('a provider\'s stream that goes quiet is asked for again in the same respon
           res.on('end', function () {
             goQuietRest = false;
             assert.equal(res.statusCode, 200);
-            assert.ok(Buffer.concat(parts).equals(TS_BYTES), 'what came before the silence, then the rest from the next connection');
+            assert.strictEqual(Buffer.concat(parts).toString('hex'), TS_BYTES.toString('hex'), 'what came before the silence, then the rest from the next connection');
             assert.equal(hits['/token/abc123.ts'] - before, 2, 'asked for twice');
             relayServer.close();
             assert.equal(iptv.setOutput({ pl: xc, key: c.key, output: 'hls' }).ok, true);
