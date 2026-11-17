@@ -296,7 +296,8 @@ function enigma2Server(v) {
 
 // A TCP port from a dashboard field, or 0 for none chosen.
 function portNumber(v) {
-  var n = parseInt(str(v, 5), 10);
+  var s = typeof v === 'number' ? String(v) : str(v, 5);
+  var n = /^[0-9]{1,5}$/.test(s) ? Number(s) : 0;
   return n >= 1 && n <= 65535 ? n : 0;
 }
 

@@ -3316,5 +3316,6 @@
  "inputs.bar.switchOnOkDesc": {"text": "Moverse por la barra solo elige una entrada, y OK cambia a ella. Desactivado, la TV cambia un segundo después de la última pulsación.", "from": "Moving along the bar only picks an input, and OK switches to it. Off, the TV switches a second after the last press."},
  "home.tv.streamPort": {"text": "Puerto de la transmisión (opcional)", "from": "Stream port (optional)"},
  "home.tv.streamPortNote": {"text": "Solo es necesario cuando el canal debe venir de un puerto distinto al de la dirección del receptor, como un perfil de transcodificación en el puerto 8002.", "from": "Only needed when the channel is to come from a different port than the tuner’s own address, such as a transcoding profile on 8002."},
+ "home.tv.streamPortPh": {"text": "Vacío: el del propio sintonizador, normalmente 8001", "from": "Empty: the tuner’s own, usually 8001"},
  "home.tv.bad.streamPort": {"text": "El puerto de la transmisión debe ser un número del 1 al 65535.", "from": "The stream port must be a number from 1 to 65535."}
 }

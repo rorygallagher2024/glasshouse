@@ -956,5 +956,6 @@
  "inputs.bar.switchOnOkDesc": {"text": "Das Bewegen in der Leiste wählt nur einen Eingang aus, OK wechselt dorthin. Aus: Der Fernseher wechselt eine Sekunde nach dem letzten Tastendruck.", "from": "Moving along the bar only picks an input, and OK switches to it. Off, the TV switches a second after the last press."},
  "home.tv.streamPort": {"text": "Stream-Port (optional)", "from": "Stream port (optional)"},
  "home.tv.streamPortNote": {"text": "Nur nötig, wenn der Kanal von einem anderen Port als der Adresse des Tuners kommen soll, etwa einem Transcoding-Profil auf Port 8002.", "from": "Only needed when the channel is to come from a different port than the tuner’s own address, such as a transcoding profile on 8002."},
+ "home.tv.streamPortPh": {"text": "Leer: der des Tuners, meist 8001", "from": "Empty: the tuner’s own, usually 8001"},
  "home.tv.bad.streamPort": {"text": "Der Stream-Port muss eine Zahl von 1 bis 65535 sein.", "from": "The stream port must be a number from 1 to 65535."}
 }

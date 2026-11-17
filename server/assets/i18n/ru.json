@@ -3330,5 +3330,6 @@
  "inputs.bar.switchOnOkDesc": {"text": "Перемещение по панели только выбирает вход, а OK переключает на него. Если выключено, телевизор переключается через секунду после последнего нажатия.", "from": "Moving along the bar only picks an input, and OK switches to it. Off, the TV switches a second after the last press."},
  "home.tv.streamPort": {"text": "Порт потока (необязательно)", "from": "Stream port (optional)"},
  "home.tv.streamPortNote": {"text": "Нужно, только если канал должен поступать с другого порта, а не с адреса тюнера, например с профиля транскодирования на порту 8002.", "from": "Only needed when the channel is to come from a different port than the tuner’s own address, such as a transcoding profile on 8002."},
+ "home.tv.streamPortPh": {"text": "Пусто: порт самого тюнера, обычно 8001", "from": "Empty: the tuner’s own, usually 8001"},
  "home.tv.bad.streamPort": {"text": "Порт потока должен быть числом от 1 до 65535.", "from": "The stream port must be a number from 1 to 65535."}
 }

@@ -395,7 +395,10 @@ step('a stream port out of range is refused when added or edited', function (don
     assert.deepEqual([r.ok, r.error], [false, 'streamPort']);
     iptv.playlistsAction({ action: 'edit', id: pl, streamPort: '70000' }, function (r2) {
       assert.deepEqual([r2.ok, r2.error], [false, 'streamPort']);
-      done();
+      iptv.playlistsAction({ action: 'edit', id: pl, streamPort: '8002abc' }, function (r3) {
+        assert.deepEqual([r3.ok, r3.error], [false, 'streamPort'], 'only a whole number is a port');
+        done();
+      });
     });
   });
 });
