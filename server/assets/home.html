@@ -2205,7 +2205,15 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
       if (!navBuffer) return;
       var src = navAudio.createBufferSource();
       src.buffer = navBuffer;
-      src.connect(navAudio.destination);
+      // The bundled sounds at half volume (-6 dB): at full, every move cut
+      // through what was playing. An owner's own file plays as they made it.
+      if (name === 'own' || !navAudio.createGain) src.connect(navAudio.destination);
+      else {
+        var gain = navAudio.createGain();
+        gain.gain.value = 0.5;
+        src.connect(gain);
+        gain.connect(navAudio.destination);
+      }
       src.start(0);
     } catch (e) {}
   }
