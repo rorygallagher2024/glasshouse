@@ -4560,6 +4560,22 @@ async function visitRemoteView(browser, base, problems) {
         await page.locator('#remote-modes [data-mode="buttons"]').click();
         if (!(await page.locator('.rp-ring').isVisible())) fail('Buttons left the D-pad hidden');
         if (await page.evaluate(() => localStorage.getItem('remoteMode')) !== 'buttons') fail('the mode is not kept');
+        // In standby: Power on, everything else put aside, a line saying why; back on, as it was.
+        const asleep = async on => page.evaluate(on => {
+          const st = document.getElementById('state');
+          st.classList.toggle('standby', on);
+          st.classList.toggle('on', !on);
+          return new Promise(r => setTimeout(() => r({
+            label: document.getElementById('rp-screen-label').textContent,
+            screen: document.getElementById('rp-screen').disabled,
+            others: Array.from(document.querySelectorAll('#remote-pad button')).filter(b => b.id !== 'rp-screen' && !b.disabled).length,
+            note: getComputedStyle(document.querySelector('.rp-asleep')).display !== 'none'
+          }), 50));
+        }, on);
+        const off = await asleep(true);
+        if (off.label !== 'Power on' || off.screen || off.others || !off.note) fail('in standby: ' + JSON.stringify(off));
+        const back = await asleep(false);
+        if (back.label !== 'Screen off' || back.others === 0 || back.note) fail('out of standby: ' + JSON.stringify(back));
         // The touchpad with fingers: a tap clicks, a drag moves further than a mouse would, two fingers scroll.
         const pad = await page.evaluate(() => {
           const sent = [], moves = [];
