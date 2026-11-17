@@ -3558,6 +3558,7 @@ function stop() {
 
 module.exports = {
   LG_HOME: LG_HOME,
+  viewInFront: viewInFront,
   playChannel: playChannel,
   openInternetTv: openInternetTv,
   init: init,

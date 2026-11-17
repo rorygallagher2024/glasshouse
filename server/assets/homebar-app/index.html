@@ -160,6 +160,9 @@ img.ico{background:none;object-fit:contain}
     order.forEach(function (id) {
       if (hiddenApps.indexOf(id) !== -1 || folder.indexOf(id) !== -1) return;
       if (id === LG_HOME_TILE) {
+        // Beside Glasshouse Home (opened by a remote key, #1499), Home opens it
+        // and a held Home LG's, and launching LG's Home would open Glasshouse Home.
+        if (cat.enabled) return;
         var lgName = (layout.appNames && layout.appNames[id]) || 'LG Home';
         return out.push({ kind: 'lg', id: id, name: lgName, letter: lgName.slice(0, 2).toUpperCase() || 'LG' });
       }
@@ -464,6 +467,38 @@ img.ico{background:none;object-fit:contain}
   }
 
   /*
+   * Whether Glasshouse Home is on, so a remote key pressed over it does
+   * nothing (#1499). Kept, as a press is answered before the catalogue is
+   * read. The server says whether it is in front: this app may not ask the
+   * TV's app manager (getForegroundAppInfo is denied it on a B8, webOS 4.4.3).
+   */
+  var HOME_KEPT = 'glasshouse.homebar.home';
+  function keepHome(c) {
+    if (!c) return;
+    try { window.localStorage.setItem(HOME_KEPT, c.enabled ? '1' : ''); } catch (e) {}
+  }
+  function keptHome() {
+    try { return window.localStorage.getItem(HOME_KEPT) === '1'; } catch (e) { return false; }
+  }
+  // cb(true) where Glasshouse Home is in front.
+  function overHome(cb) {
+    if (!keptHome()) return cb(false);
+    var answered = false;
+    var done = function (yes) { if (!answered) { answered = true; cb(yes); } };
+    // Never held up for long: a press with no answer opens the Bar.
+    setTimeout(function () { done(false); }, 500);
+    getJson(BASE + '/api/home/now', function (j) { done(!!(j && j.homeInFront === true)); });
+  }
+  // A press: the Bar opened, unless Glasshouse Home is in front, where it closes unseen.
+  function pressed() {
+    overHome(function (yes) {
+      if (!yes) return start();
+      idleUntilOpened = false;
+      window.close();
+    });
+  }
+
+  /*
    * Prewarming while hidden: renders the cached row and fetches the catalogue
    * and app icons ahead of the Home press without showing the window, so the
    * press only switches body.on and updates the active input dot in place.
@@ -483,7 +518,7 @@ img.ico{background:none;object-fit:contain}
       applyRow(fresh, onPort, nextLabelsOff);
     }
     ensureDevIcons(donePrewarm);
-    getJson(BASE + '/api/home/catalogue', function (j) { preCat = j; donePrewarm(); });
+    getJson(BASE + '/api/home/catalogue', function (j) { preCat = j; keepHome(j); donePrewarm(); });
   }
 
   /*
@@ -531,6 +566,7 @@ img.ico{background:none;object-fit:contain}
       readyFor();
     });
     getJson(BASE + '/api/home/catalogue', function (j) {
+      keepHome(j);
       if (mySeq !== seq || closing) return;
       cat = j;
       readyFor();
@@ -587,13 +623,13 @@ img.ico{background:none;object-fit:contain}
     if (idleUntilOpened || closing || document.body.className !== 'on') {
       idleUntilOpened = false;
       visibleSince = visibleSince || at;
-      start();
+      pressed();
     } else {
       close();
     }
   });
   if (idleUntilOpened) prewarm();
-  else start();
+  else pressed();
 })();
 </script>
 </body>

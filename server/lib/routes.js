@@ -1265,7 +1265,13 @@ function handleHomeRoute(req, res, u, pathname) {
     // A custom launcher's own saved values (Glasshouse.storage).
     if (pathname === '/api/home/store' && homeLauncherModule) return homeLauncherModule.store(reply);
     if (pathname === '/api/home/guide') return homeModule.guide(function (g) { reply({ ok: true, guide: g }); });
-    if (pathname === '/api/home/now') return homeModule.now(reply);
+    if (pathname === '/api/home/now') {
+      // homeInFront: Glasshouse Bar, opened by a remote key, does nothing over Glasshouse Home (#1499).
+      return homeModule.now(function (r) {
+        if (r && typeof r === 'object' && typeof homeModule.viewInFront === 'function') r.homeInFront = homeModule.viewInFront();
+        reply(r);
+      });
+    }
     if (pathname === '/api/home/weather') return homeModule.weather(reply);
     if (pathname === '/api/home/weather/places') {
       return homeModule.weatherPlaces(String(u.query && u.query.q || ''), String(u.query && u.query.lang || ''), reply);
