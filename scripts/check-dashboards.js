@@ -4506,7 +4506,7 @@ async function visitAdblockCards(browser, base, problems) {
 /*
  * The remote on its own (?view=remote, #1586): on a phone and in a wide
  * window, only playback, volume, the D-pad, the pointer where its
- * experimental switch is on, the keyboard and the way back, in one column,
+ * switch is on (Server, Advanced), the keyboard and the way back, in one column,
  * the D-pad and keyboard open, and the full dashboard's remembered tab left
  * alone; in the header's modal (embed=1), no masthead and no way back. The
  * header's Remote opens the modal over any tab with the page faded, Esc and
