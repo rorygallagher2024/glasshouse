@@ -1743,6 +1743,12 @@ function handleRequest(req, res) {
     }));
   }
 
+  // For a screen saver that plays video: whether an app holds the decoder (#1599).
+  if (pathname === '/api/screensaver/video-busy' && req.method === 'GET') {
+    if (!authed(u.query, req)) return send(res, 401, JSON.stringify({ ok: false, error: 'unauthorised' }));
+    return screensaversModule.videoBusy(function (r) { send(res, 200, JSON.stringify(r)); });
+  }
+
   if (pathname === '/api/screensaver') {
     var ssList = screensaversModule.screensaverList();
     ssList.noSignal = nosignal.status();
