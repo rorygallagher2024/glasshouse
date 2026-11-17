@@ -1,6 +1,6 @@
 # Glasshouse for Android
 
-[Glasshouse for Android](https://github.com/rorygallagher2024/glasshouse-android) is an Android companion app for Glasshouse on rooted LG webOS TVs. It keeps a list of TVs on your network, shows each one's state and what it is showing, turns TVs on and off (with Wake-on-LAN when they are fully off), and opens each TV's dashboard full screen.
+[Glasshouse for Android](https://github.com/rorygallagher2024/glasshouse-android) is an Android companion app for Glasshouse on rooted LG webOS TVs. It keeps a list of TVs on your network, shows each one's state and what it is showing, turns TVs on and off (with Wake-on-LAN when they are fully off), and opens each TV's dashboard or remote full screen.
 
 The app runs on Android 10 and later, and follows the dashboard's design: monochrome styling, Manrope typography, and light/dark theme matching.
 
@@ -28,9 +28,19 @@ Saved TVs, including their tokens, remain stored securely in private app storage
 
 ## The TV list
 
-Each TV is a card with its model number, the name given to it and its power state, and, while it is on, what is on screen and its volume, with the remote's volume steps and mute. **Turn on** or **Turn off** works from the list without opening the dashboard, and keeps saying so until the TV reports the change; **Open dashboard** opens it. The list opens on each TV's last state, shown faint until the TV answers, and pulling it down checks every TV at once.
+Each TV is a card with its model number, the name given to it and its power state, and, while it is on, what is on screen and its volume, with the remote's volume steps and mute. **Turn on** or **Turn off** works from the list without opening the dashboard, and keeps saying so until the TV reports the change; **Open dashboard** opens it. A TV that answers also has **Remote** under its volume, which opens [the dashboard's remote](../dashboard/control.md#the-remote-on-its-own) on its own. The list opens on each TV's last state, shown faint until the TV answers, and pulling it down checks every TV at once.
 
 A **Quick Settings tile** turns one TV on and off: the one chosen with **Use for Quick Settings tile** in its card's menu, or the only one.
+
+## The remote
+
+The dashboard's remote, opened from a TV's card or from **Remote** at the top of its dashboard, works as it does in a browser, with three things only the app can do:
+
+* **The phone's volume keys** step the TV's volume while the remote is showing: one step a press, and about six a second while held. Otherwise they are the phone's own.
+* **Pull-to-refresh** is off while the remote is showing, so a drag down the touchpad moves the cursor rather than reloading the page.
+* **A short buzz** on each press.
+
+These need app version 0.6.0 or later, and Glasshouse 0.156.0 or later on the TV for the remote opened from the dashboard.
 
 ## Turning a TV on
 
