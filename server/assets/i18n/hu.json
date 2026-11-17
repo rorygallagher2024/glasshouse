@@ -374,8 +374,6 @@
  "game.refreshRate": {"text": "Frissítési gyakoriság", "from": "Refresh rate"},
  "game.scope": {"text": "Az LG ezeket bemenetenként és műfajonként tárolja. Megjelenítve: {input}.", "from": "LG keeps these for each input and genre. Showing {input}."},
  "game.vrr": {"text": "VRR", "from": "VRR"},
- "header.volume": {"text": "Hangerő {n}", "from": "Volume {n}"},
- "header.muted": {"text": "Némítva", "from": "Muted"},
  "header.sleep": {"text": "Elalváskapcsoló {n} perc", "from": "Sleep timer {n} min"},
  "home.arrange.done": {"text": "Kész", "from": "Done"},
  "home.arrange.emptyRow": {"text": "Ez a sor üres", "from": "This row is empty"},
@@ -3382,11 +3380,8 @@
  "home.tv.bad.streamPort": {"text": "A stream portnak 1 és 65535 közötti számnak kell lennie.", "from": "The stream port must be a number from 1 to 65535."},
  "srv.remoteKeys.homeBar": {"text": "Glasshouse Bar", "from": "Glasshouse Bar"},
  "srv.remoteKeys.homeBarInstall": {"text": "A Glasshouse Bart nem sikerült feltenni a TV-re. Próbálja újra egy pillanat múlva.", "from": "Glasshouse Bar could not be put on the TV. Try again in a moment."},
- "ctl.remoteLink": {"text": "Csak távirányító", "from": "Remote only"},
- "ctl.remoteLink.desc": {"text": "Tegye ezt az oldalt egy telefon kezdőképernyőjére, vagy tartsa a Dockban. A linkje úgy jelentkezik be, mint az irányítópult, ezért ne adja tovább.", "from": "Add this page to a phone's Home Screen, or keep it in the Dock. Its link signs in as the dashboard does, so keep it to yourself."},
- "ctl.remoteLink.copy": {"text": "Link másolása", "from": "Copy link"},
  "ctl.remoteLink.full": {"text": "Teljes irányítópult", "from": "Full dashboard"},
- "ctl.remoteLink.copied": {"text": "Másolva", "from": "Copied"},
- "ctl.remoteLink.notCopied": {"text": "Nem sikerült másolni", "from": "Could not copy"},
- "ctl.remoteLink.sub": {"text": "Telefonra vagy a Dockba", "from": "For a phone or the Dock"}
+ "header.remote": {"text": "Távirányító", "from": "Remote"},
+ "ctl.remoteLink.page": {"text": "Megnyitás oldalként", "from": "Open as a page"},
+ "remote.close": {"text": "Bezárás", "from": "Close"}
 }

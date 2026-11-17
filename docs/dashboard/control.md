@@ -20,7 +20,9 @@ The **Control** tab, `/?tab=control`, turns the TV into a locally controlled dev
 
 ## The remote on its own
 
-`/?view=remote` is the remote without the rest of the dashboard: playback, volume, the D-pad, the pointer (where its switch is on) and the keyboard box, in one column, with the D-pad and keyboard open. It is meant for an icon on a phone's Home Screen or a shortcut in the Mac's Dock. The **Remote only** row, above the D-pad on the Control tab, opens it in a window of its own. At its foot, **Copy link** copies its link to open on a phone, and **Full dashboard** goes back. The copied link carries the dashboard's token, as the TV's QR codes do, so a phone opening it is signed in; keep it to yourself. The computer keyboard works as the remote there too. Opening it leaves the tab the full dashboard opens on as it was.
+**Remote**, at the top right of every tab, brings up the remote over the page with the page faded behind it: a panel in the middle on a computer, a sheet from the bottom on a phone. It holds playback, volume, the D-pad, the pointer (where its switch is on) and the keyboard box, with the D-pad and keyboard open. **×**, a tap outside it, **Esc** or the phone's **Back** closes it, and the page is as it was. On Android, a press gives a short buzz where the browser allows it.
+
+**Open as a page**, at its top, opens the same remote as a page of its own, `/?view=remote`, to add to a phone's Home Screen or keep in the Mac's Dock. It signs in as the dashboard does on that device, and has **Full dashboard** at its foot. The computer keyboard works as the remote in both. Neither changes the tab the full dashboard opens on.
 
 `?open=dpad`, `?open=pointer` and `?open=keyboard` open the full Control tab with that section expanded.
 

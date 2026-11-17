@@ -4506,10 +4506,11 @@ async function visitAdblockCards(browser, base, problems) {
 /*
  * The remote on its own (?view=remote, #1586): on a phone and in a wide
  * window, only playback, volume, the D-pad, the pointer where its
- * experimental switch is on, the keyboard and a way back, in one column, the D-pad and the
- * keyboard open, and the full dashboard's remembered tab left alone, and
- * Copy link there copies its link with the token. The Control tab has a row
- * opening it, and ?open= opens the keyboard.
+ * experimental switch is on, the keyboard and the way back, in one column,
+ * the D-pad and keyboard open, and the full dashboard's remembered tab left
+ * alone; in the header's modal (embed=1), no masthead and no way back. The
+ * header's Remote opens the modal over any tab with the page faded, Esc and
+ * Back close it and empty its frame, and ?open= opens the keyboard.
  */
 async function visitRemoteView(browser, base, problems) {
   const fail = what => problems.push('Remote view: ' + what);
@@ -4520,39 +4521,34 @@ async function visitRemoteView(browser, base, problems) {
       sets: Array.from(document.querySelectorAll('#tab-control .col-controls .set, #tab-control .col-controls details'))
         .filter(el => vis(el) && !el.parentElement.closest('.set, details')).map(el => el.id || el.querySelector('.lbl, summary').textContent.trim().split(/\s+/)[0]),
       nav: vis(document.getElementById('sidenav')) || vis(document.querySelector('.nav-bar')),
+      header: vis(document.querySelector('header')), button: vis(document.getElementById('hdr-remote')),
       cols: document.querySelectorAll('#tab-control .lcols').length,
       pointer: !document.getElementById('disc-pointer').hidden,
       dpad: document.getElementById('disc-dpad').open, keyboard: document.getElementById('disc-keyboard').open,
       tab: localStorage.getItem('tab'), shownPanels: Array.from(document.querySelectorAll('#panels > section')).filter(s => !s.hidden).map(s => s.id)
     };
   });
-  for (const viewport of [{ width: 390, height: 844 }, { width: 1400, height: 900 }]) {
+  for (const [label, path, viewport] of [['390', '/?view=remote', { width: 390, height: 844 }], ['1400', '/?view=remote', { width: 1400, height: 900 }],
+                                         ['embed', '/?view=remote&embed=1', { width: 440, height: 880 }]]) {
     const page = await browser.newPage({ viewport });
-    page.on('pageerror', e => fail(viewport.width + ': ' + e.message));
+    page.on('pageerror', e => fail(label + ': ' + e.message));
     try {
-      await page.addInitScript(() => {
-        try { if (!localStorage.getItem('tab')) localStorage.setItem('tab', 'apps'); localStorage.setItem('tvweb_k', 'tok en'); } catch (e) {}
-        window.__copied = null;
-        Object.defineProperty(navigator, 'clipboard', { value: { writeText: text => { window.__copied = text; return Promise.resolve(); } } });
-      });
-      await page.goto(base + '/?view=remote');
+      await page.addInitScript(() => { try { if (!localStorage.getItem('tab')) localStorage.setItem('tab', 'apps'); } catch (e) {} });
+      await page.goto(base + path);
       await page.waitForFunction(() => !document.getElementById('tab-control').hidden);
       await page.waitForTimeout(300);
       const s = await shown(page);
-      const want = ['control-playback', 'Volume', 'disc-dpad'].concat(s.pointer ? ['disc-pointer'] : [], ['disc-keyboard', 'remote-full']);
-      if (!s.cls) fail(viewport.width + ': no remote-view class');
-      if (JSON.stringify(s.sets) !== JSON.stringify(want)) fail(viewport.width + ': shows ' + JSON.stringify(s.sets) + ', not ' + JSON.stringify(want));
-      if (s.nav) fail(viewport.width + ': the tabs are shown');
-      if (s.cols) fail(viewport.width + ': in columns');
-      if (!s.dpad || !s.keyboard) fail(viewport.width + ': D-pad open ' + s.dpad + ', keyboard open ' + s.keyboard);
-      if (s.tab !== 'apps') fail(viewport.width + ': the remembered tab became ' + s.tab);
-      if (JSON.stringify(s.shownPanels) !== JSON.stringify(['tab-control'])) fail(viewport.width + ': panels shown ' + JSON.stringify(s.shownPanels));
-      if (viewport.width === 390) {
-        await page.locator('#remote-link-copy').click();
-        await page.waitForFunction(() => window.__copied !== null);
-        const copied = await page.evaluate(() => window.__copied);
-        if (!/\/\?view=remote&k=tok%20en$/.test(copied)) fail('copied ' + JSON.stringify(copied));
-      }
+      const embed = label === 'embed';
+      const want = ['control-playback', 'Volume', 'disc-dpad'].concat(s.pointer ? ['disc-pointer'] : [], ['disc-keyboard'], embed ? [] : ['remote-full']);
+      if (!s.cls) fail(label + ': no remote-view class');
+      if (JSON.stringify(s.sets) !== JSON.stringify(want)) fail(label + ': shows ' + JSON.stringify(s.sets) + ', not ' + JSON.stringify(want));
+      if (s.nav) fail(label + ': the tabs are shown');
+      if (s.header === embed) fail(label + ': masthead shown ' + s.header);
+      if (s.button) fail(label + ': the header\'s Remote shows in the remote');
+      if (s.cols) fail(label + ': in columns');
+      if (!s.dpad || !s.keyboard) fail(label + ': D-pad open ' + s.dpad + ', keyboard open ' + s.keyboard);
+      if (s.tab !== 'apps') fail(label + ': the remembered tab became ' + s.tab);
+      if (JSON.stringify(s.shownPanels) !== JSON.stringify(['tab-control'])) fail(label + ': panels shown ' + JSON.stringify(s.shownPanels));
     } finally {
       await page.close();
     }
@@ -4560,14 +4556,40 @@ async function visitRemoteView(browser, base, problems) {
   const page = await browser.newPage({ viewport: { width: 1400, height: 900 } });
   page.on('pageerror', e => fail('dashboard: ' + e.message));
   try {
+    await page.goto(base + '/?tab=metrics');
+    await page.waitForFunction(() => !document.getElementById('tab-metrics').hidden);
+    if (await page.locator('#remote-full').isVisible()) fail('the remote\'s way back shows on the full dashboard');
+    const modalState = () => page.evaluate(() => {
+      const m = document.getElementById('remote-modal'), f = document.getElementById('remote-frame');
+      let src = '';
+      try { src = f.contentWindow.location.href; } catch (e) { src = 'unreadable'; }
+      return { hidden: m.hidden, shown: m.classList.contains('shown'), src };
+    });
+    for (const how of ['Escape', 'back']) {
+      await page.locator('#hdr-remote').click();
+      await page.waitForFunction(() => document.getElementById('remote-modal').classList.contains('shown'));
+      await page.waitForFunction(() => /view=remote/.test(document.getElementById('remote-frame').contentWindow.location.href));
+      const open = await modalState();
+      if (!/\?view=remote&embed=1$/.test(open.src)) fail('the modal\'s frame opens ' + JSON.stringify(open.src));
+      await page.waitForFunction(() => {
+        const d = document.getElementById('remote-frame').contentDocument;
+        return d && d.documentElement.classList.contains('remote-embed') && !d.getElementById('tab-control').hidden;
+      }, null, { timeout: 8000 }).catch(() => fail('the remote did not load in the modal'));
+      if (how === 'Escape') {
+        await page.evaluate(() => document.getElementById('hdr-remote').focus());
+        await page.keyboard.press('Escape');
+      } else {
+        // The phone's or the browser's Back: one step through the history.
+        await page.evaluate(() => history.back());
+      }
+      await page.waitForFunction(() => document.getElementById('remote-modal').hidden, null, { timeout: 3000 }).catch(() => {});
+      const shut = await modalState();
+      if (!shut.hidden || shut.src !== 'about:blank') fail(how + ' left the modal ' + JSON.stringify(shut));
+      if (!(await page.evaluate(() => !document.getElementById('tab-metrics').hidden))) fail(how + ' left the Metrics tab');
+    }
     await page.goto(base + '/?open=keyboard');
     await page.waitForFunction(() => !document.getElementById('tab-control').hidden);
-    const opened = await page.evaluate(() => document.getElementById('disc-keyboard').open);
-    if (!opened) fail('?open=keyboard left the keyboard shut');
-    if (!(await page.locator('#remote-link').isVisible())) fail('no Remote only row on the Control tab');
-    const href = await page.locator('#remote-link a').getAttribute('href');
-    if (href !== '?view=remote') fail('the Remote only row opens ' + JSON.stringify(href));
-    if (await page.locator('#remote-full').isVisible()) fail('the remote view\'s foot shows on the full dashboard');
+    if (!(await page.evaluate(() => document.getElementById('disc-keyboard').open))) fail('?open=keyboard left the keyboard shut');
   } finally {
     await page.close();
   }

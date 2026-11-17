@@ -374,8 +374,6 @@
  "game.refreshRate": {"text": "Частота обновления", "from": "Refresh rate"},
  "game.scope": {"text": "LG хранит их отдельно для каждого входа и жанра. Показан: {input}.", "from": "LG keeps these for each input and genre. Showing {input}."},
  "game.vrr": {"text": "VRR", "from": "VRR"},
- "header.volume": {"text": "Громкость {n}", "from": "Volume {n}"},
- "header.muted": {"text": "Без звука", "from": "Muted"},
  "header.sleep": {"text": "Таймер сна {n} мин", "from": "Sleep timer {n} min"},
  "home.arrange.done": {"text": "Готово", "from": "Done"},
  "home.arrange.emptyRow": {"text": "Этот ряд пуст", "from": "This row is empty"},
@@ -3382,11 +3380,8 @@
  "home.tv.bad.streamPort": {"text": "Порт потока должен быть числом от 1 до 65535.", "from": "The stream port must be a number from 1 to 65535."},
  "srv.remoteKeys.homeBar": {"text": "Glasshouse Bar", "from": "Glasshouse Bar"},
  "srv.remoteKeys.homeBarInstall": {"text": "Не удалось установить Glasshouse Bar на телевизор. Повторите попытку через мгновение.", "from": "Glasshouse Bar could not be put on the TV. Try again in a moment."},
- "ctl.remoteLink": {"text": "Только пульт", "from": "Remote only"},
- "ctl.remoteLink.desc": {"text": "Добавьте эту страницу на экран «Домой» телефона или держите её в Dock. Её ссылка входит так же, как панель, поэтому не передавайте её другим.", "from": "Add this page to a phone's Home Screen, or keep it in the Dock. Its link signs in as the dashboard does, so keep it to yourself."},
- "ctl.remoteLink.copy": {"text": "Копировать ссылку", "from": "Copy link"},
  "ctl.remoteLink.full": {"text": "Вся панель", "from": "Full dashboard"},
- "ctl.remoteLink.copied": {"text": "Скопировано", "from": "Copied"},
- "ctl.remoteLink.notCopied": {"text": "Не удалось скопировать", "from": "Could not copy"},
- "ctl.remoteLink.sub": {"text": "Для телефона или Dock", "from": "For a phone or the Dock"}
+ "header.remote": {"text": "Пульт", "from": "Remote"},
+ "ctl.remoteLink.page": {"text": "Открыть как страницу", "from": "Open as a page"},
+ "remote.close": {"text": "Закрыть", "from": "Close"}
 }

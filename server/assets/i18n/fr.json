@@ -535,9 +535,7 @@
  "game.refreshRate": {"from": "Refresh rate", "text": "Taux de rafraîchissement"},
  "game.scope": {"from": "LG keeps these for each input and genre. Showing {input}.", "text": "LG les garde par entrée et par genre. Affichage de {input}."},
  "game.vrr": {"from": "VRR", "text": "VRR"},
- "header.muted": {"from": "Muted", "text": "Muet"},
  "header.sleep": {"from": "Sleep timer {n} min", "text": "Minuterie de veille {n} min"},
- "header.volume": {"from": "Volume {n}", "text": "Volume {n}"},
  "home.alternative": {"from": "Alternative View", "text": "Vue alternative"},
  "home.alternativeDesc": {"from": "A smaller clock on the right, and the rows as rounded, translucent tiles, titled only while arranging.", "text": "Une horloge plus petite à droite, et les rangées en tuiles arrondies et translucides, titrées seulement pendant l'arrangement."},
  "home.anim.aquarium": {"from": "Aquarium", "text": "Aquarium"},
@@ -3368,11 +3366,8 @@
  "home.tv.bad.streamPort": {"text": "Le port du flux doit être un nombre de 1 à 65535.", "from": "The stream port must be a number from 1 to 65535."},
  "srv.remoteKeys.homeBar": {"text": "Glasshouse Bar", "from": "Glasshouse Bar"},
  "srv.remoteKeys.homeBarInstall": {"text": "Glasshouse Bar n’a pas pu être installée sur le téléviseur. Réessayez dans un instant.", "from": "Glasshouse Bar could not be put on the TV. Try again in a moment."},
- "ctl.remoteLink": {"text": "Télécommande seule", "from": "Remote only"},
- "ctl.remoteLink.desc": {"text": "Ajoutez cette page à l’écran d’accueil d’un téléphone, ou gardez-la dans le Dock. Son lien se connecte comme le tableau de bord, gardez-le donc pour vous.", "from": "Add this page to a phone's Home Screen, or keep it in the Dock. Its link signs in as the dashboard does, so keep it to yourself."},
- "ctl.remoteLink.copy": {"text": "Copier le lien", "from": "Copy link"},
  "ctl.remoteLink.full": {"text": "Tableau de bord complet", "from": "Full dashboard"},
- "ctl.remoteLink.copied": {"text": "Copié", "from": "Copied"},
- "ctl.remoteLink.notCopied": {"text": "Copie impossible", "from": "Could not copy"},
- "ctl.remoteLink.sub": {"text": "Pour un téléphone ou le Dock", "from": "For a phone or the Dock"}
+ "header.remote": {"text": "Télécommande", "from": "Remote"},
+ "ctl.remoteLink.page": {"text": "Ouvrir en page", "from": "Open as a page"},
+ "remote.close": {"text": "Fermer", "from": "Close"}
 }

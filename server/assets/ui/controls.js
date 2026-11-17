@@ -349,6 +349,8 @@ async function sendCommand(action, value) {
     triggerBtn = document.activeElement;
   }
   if (triggerBtn) triggerBtn.classList.add('busy');
+  // The remote on its own: a short buzz on a press, where the phone has one (Android; iOS has none).
+  if (remoteView && triggerBtn && navigator.vibrate) { try { navigator.vibrate(8); } catch (e) {} }
   setBusy(true, 'tx');
   applyOptimistic(action, value);
   try {
@@ -935,23 +937,48 @@ document.addEventListener('keydown', e => {
 
 // D-pad disclosure: uncollapse by default on mobile so the TV remote is immediately accessible.
 /*
- * The remote view's link, with the token, as the TV's QR codes carry it: a
- * phone has none of this browser's storage (#1586). Copied, it says so on the button.
+ * The header's remote (#1586): the remote view in a frame over the page, the
+ * page faded behind it, as a sheet from the foot on a phone. Back, on the
+ * phone or in the browser, closes it: it is an entry in the history. The frame
+ * is emptied on closing, so it reads nothing from the TV while shut. It is
+ * loaded by replace, which adds nothing to the history, or Back would step
+ * back inside the frame rather than close it.
  */
-function remoteLink() {
-  return location.origin + location.pathname + '?view=remote' + (token ? '&k=' + encodeURIComponent(token) : '');
+function remoteModal() { return q('remote-modal'); }
+function remoteFrameTo(frame, url) {
+  try { frame.contentWindow.location.replace(url); } catch (e) { frame.src = url; }
 }
-function copyRemoteLink() {
-  const b = q('remote-link-copy');
-  const label = t('ctl.remoteLink.copy', 'Copy link');
-  const said = text => {
-    if (!b) return;
-    b.textContent = text;
-    setTimeout(() => { b.textContent = label; }, 2000);
-  };
-  copyToClipboard(remoteLink()).then(() => said(t('ctl.remoteLink.copied', 'Copied')),
-    () => said(t('ctl.remoteLink.notCopied', 'Could not copy')));
+function openRemote() {
+  const m = remoteModal(), frame = q('remote-frame');
+  if (!m || !frame || remoteView || !m.hidden) return;
+  m.hidden = false;
+  remoteFrameTo(frame, location.pathname + '?view=remote&embed=1');
+  document.documentElement.classList.add('remote-open');
+  requestAnimationFrame(() => requestAnimationFrame(() => m.classList.add('shown')));
+  try { history.pushState({ remote: true }, '', location.href); } catch (e) {}
+  frame.addEventListener('load', () => { try { frame.contentWindow.focus(); } catch (e) {} }, { once: true });
 }
+function hideRemote() {
+  const m = remoteModal(), frame = q('remote-frame');
+  if (!m || m.hidden) return;
+  m.classList.remove('shown');
+  document.documentElement.classList.remove('remote-open');
+  setTimeout(() => { if (m.classList.contains('shown')) return; m.hidden = true; if (frame) remoteFrameTo(frame, 'about:blank'); }, 220);
+  const btn = q('hdr-remote');
+  if (btn) btn.focus();
+}
+function closeRemote() {
+  if (history.state && history.state.remote) history.back();
+  else hideRemote();
+}
+window.addEventListener('popstate', () => { if (!(history.state && history.state.remote)) hideRemote(); });
+// Esc on the page closes it (in the frame Esc is the remote's Back), before the Control tab's keys see it.
+document.addEventListener('keydown', e => {
+  const m = remoteModal();
+  if (e.key !== 'Escape' || !m || m.hidden) return;
+  e.preventDefault();
+  closeRemote();
+}, true);
 
 function updateDpadMobileDefault() {
   const dpad = q('disc-dpad');

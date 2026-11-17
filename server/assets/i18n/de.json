@@ -1005,11 +1005,8 @@
  "home.tv.bad.streamPort": {"text": "Der Stream-Port muss eine Zahl von 1 bis 65535 sein.", "from": "The stream port must be a number from 1 to 65535."},
  "srv.remoteKeys.homeBar": {"text": "Glasshouse Bar", "from": "Glasshouse Bar"},
  "srv.remoteKeys.homeBarInstall": {"text": "Glasshouse Bar konnte nicht auf dem Fernseher installiert werden. Versuchen Sie es gleich noch einmal.", "from": "Glasshouse Bar could not be put on the TV. Try again in a moment."},
- "ctl.remoteLink": {"text": "Nur Fernbedienung", "from": "Remote only"},
- "ctl.remoteLink.desc": {"text": "Legen Sie diese Seite auf den Home-Bildschirm eines Smartphones oder behalten Sie sie im Dock. Ihr Link meldet sich an wie das Dashboard, behalten Sie ihn also für sich.", "from": "Add this page to a phone's Home Screen, or keep it in the Dock. Its link signs in as the dashboard does, so keep it to yourself."},
- "ctl.remoteLink.copy": {"text": "Link kopieren", "from": "Copy link"},
  "ctl.remoteLink.full": {"text": "Ganzes Dashboard", "from": "Full dashboard"},
- "ctl.remoteLink.copied": {"text": "Kopiert", "from": "Copied"},
- "ctl.remoteLink.notCopied": {"text": "Kopieren nicht möglich", "from": "Could not copy"},
- "ctl.remoteLink.sub": {"text": "Für Smartphone oder Dock", "from": "For a phone or the Dock"}
+ "header.remote": {"text": "Fernbedienung", "from": "Remote"},
+ "ctl.remoteLink.page": {"text": "Als Seite öffnen", "from": "Open as a page"},
+ "remote.close": {"text": "Schließen", "from": "Close"}
 }

@@ -517,9 +517,7 @@
  "game.refreshRate": {"text": "Taxa de atualização", "from": "Refresh rate"},
  "game.scope": {"text": "A LG guarda isto por entrada e gênero. Mostrando {input}.", "from": "LG keeps these for each input and genre. Showing {input}."},
  "game.vrr": {"text": "VRR", "from": "VRR"},
- "header.muted": {"text": "Sem som", "from": "Muted"},
  "header.sleep": {"text": "Temporizador para dormir {n} min", "from": "Sleep timer {n} min"},
- "header.volume": {"text": "Volume {n}", "from": "Volume {n}"},
  "home.alternative": {"text": "Visualização alternativa", "from": "Alternative View"},
  "home.alternativeDesc": {"text": "Um relógio menor à direita e as fileiras como blocos arredondados e translúcidos, com títulos só durante a organização.", "from": "A smaller clock on the right, and the rows as rounded, translucent tiles, titled only while arranging."},
  "home.arrange.done": {"text": "Concluído", "from": "Done"},
@@ -3368,11 +3366,8 @@
  "home.tv.bad.streamPort": {"text": "A porta do stream deve ser um número de 1 a 65535.", "from": "The stream port must be a number from 1 to 65535."},
  "srv.remoteKeys.homeBar": {"text": "Glasshouse Bar", "from": "Glasshouse Bar"},
  "srv.remoteKeys.homeBarInstall": {"text": "Não foi possível instalar o Glasshouse Bar na TV. Tente novamente em instantes.", "from": "Glasshouse Bar could not be put on the TV. Try again in a moment."},
- "ctl.remoteLink": {"text": "Só o controle", "from": "Remote only"},
- "ctl.remoteLink.desc": {"text": "Adicione esta página à Tela de Início de um celular ou deixe no Dock. O link dela entra como o painel, então não compartilhe.", "from": "Add this page to a phone's Home Screen, or keep it in the Dock. Its link signs in as the dashboard does, so keep it to yourself."},
- "ctl.remoteLink.copy": {"text": "Copiar link", "from": "Copy link"},
  "ctl.remoteLink.full": {"text": "Painel completo", "from": "Full dashboard"},
- "ctl.remoteLink.copied": {"text": "Copiado", "from": "Copied"},
- "ctl.remoteLink.notCopied": {"text": "Não foi possível copiar", "from": "Could not copy"},
- "ctl.remoteLink.sub": {"text": "Para um celular ou o Dock", "from": "For a phone or the Dock"}
+ "header.remote": {"text": "Controle", "from": "Remote"},
+ "ctl.remoteLink.page": {"text": "Abrir como página", "from": "Open as a page"},
+ "remote.close": {"text": "Fechar", "from": "Close"}
 }

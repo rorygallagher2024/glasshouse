@@ -138,6 +138,25 @@ header{display:flex;justify-content:space-between;align-items:flex-start;gap:24p
 .src.now .stream-primary{justify-content:flex-start;margin-top:6px}
 .hdr-status{text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:5px}
 .hdr-line{font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--w60)}
+/* The remote, from any tab: a quiet pill that lights on hover. */
+.hdr-remote{appearance:none;display:inline-flex;align-items:center;gap:9px;min-height:0;height:34px;
+  padding:0 15px 0 11px;border:1px solid var(--w12);border-radius:17px;background:transparent;color:var(--w60);
+  font:500 12px 'Manrope';letter-spacing:.10em;text-transform:uppercase;cursor:pointer;
+  transition:border-color .15s,background .15s,color .15s}
+.hdr-remote:hover{border-color:var(--w40);background:var(--w06);color:var(--w100)}
+.hdr-remote:focus-visible{outline:2px solid var(--w80);outline-offset:2px}
+.hdr-remote-ico{width:18px;height:18px;flex:none;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+/* Already the remote there. */
+html.remote-view .hdr-remote{display:none}
+/* A phone: the icon alone, round, at the top right beside what is showing,
+   rather than a row of its own under it. Its label stays for screen readers. */
+@media (max-width:620px){
+  header{flex-wrap:nowrap}
+  header .src.now{flex:1 1 auto}
+  header .hdr-status{flex:none;align-items:flex-end;text-align:right}
+  .hdr-remote{width:38px;height:38px;padding:0;justify-content:center;border-radius:19px}
+  .hdr-remote-label{position:absolute;width:1px;height:1px;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+}
 .foot-tv{margin-right:auto}
 .sidenav-titles{display:flex;flex-direction:column;min-width:0}
 .sidenav-tv{font-size:12px;letter-spacing:.04em;color:var(--w60);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -2380,16 +2399,34 @@ h3 .tvm-tags i{font-size:11px}
    volume, D-pad, pointer and keyboard in one column, with nothing around them. */
 #remote-full{display:none}
 html.remote-view #remote-full{display:block}
-/* The Control tab's way in: a row like the D-pad's, with an arrow out. */
-.disc-link>a{display:flex;align-items:center;justify-content:space-between;font-family:'Manrope';font-weight:500;
-  font-size:13.5px;letter-spacing:.10em;text-transform:uppercase;color:var(--w60);text-decoration:none;
-  padding:14px 0 4px;min-height:44px;box-sizing:border-box}
-.disc-link>a::after{content:'\2197';font-size:15px;line-height:1;color:var(--w60)}
-.disc-link>a:hover{color:var(--w80)}
-.disc-link>a:focus-visible{outline:2px solid var(--w80);outline-offset:2px}
-.disc-link>a .cur{font-size:14px;font-weight:400;letter-spacing:.02em;text-transform:none;color:var(--w60);margin-left:auto;margin-right:12px}
-.remote-foot{display:flex;gap:24px}
-.remote-foot .link-btn{margin-top:0}
+html.remote-embed header,
+html.remote-embed #remote-full{display:none !important}
+html.remote-embed body{padding-top:4px}
+
+/* The remote over the page (#1586): faded behind, a panel in the middle, or a
+   sheet from the foot on a phone. */
+.remote-modal{position:fixed;inset:0;z-index:950}
+.remote-backdrop{position:absolute;inset:0;background:rgba(0,0,0,.62);opacity:0;transition:opacity .2s ease}
+.remote-sheet{position:absolute;left:50%;top:50%;width:min(440px,calc(100vw - 32px));height:min(880px,calc(100vh - 48px));
+  display:flex;flex-direction:column;background:var(--bg);border:1px solid var(--w12);border-radius:14px;overflow:hidden;
+  box-shadow:0 24px 80px rgba(0,0,0,.55);opacity:0;transform:translate(-50%,-48%) scale(.98);
+  transition:opacity .2s ease,transform .2s ease}
+.remote-modal.shown .remote-backdrop{opacity:1}
+.remote-modal.shown .remote-sheet{opacity:1;transform:translate(-50%,-50%)}
+.remote-sheet-head{display:flex;align-items:center;gap:16px;padding:10px 10px 10px 20px;border-bottom:1px solid var(--w06)}
+.remote-sheet-title{font:500 12px 'Manrope';letter-spacing:.10em;text-transform:uppercase;color:var(--w60);margin-right:auto}
+.remote-sheet-head .link-btn{margin-top:0}
+.remote-close{appearance:none;width:36px;height:36px;min-height:0;padding:0;border:0;border-radius:18px;background:transparent;
+  color:var(--w60);font-size:22px;line-height:1;cursor:pointer}
+.remote-close:hover{background:var(--w06);color:var(--w100)}
+.remote-frame{flex:1;width:100%;border:0;background:var(--bg)}
+html.remote-open,html.remote-open body{overflow:hidden}
+@media (max-width:620px){
+  .remote-sheet{left:0;right:0;top:auto;bottom:0;width:auto;height:calc(100% - 28px - env(safe-area-inset-top));
+    border-radius:16px 16px 0 0;border-bottom:0;transform:translateY(100%);transition:transform .26s cubic-bezier(.2,.8,.2,1),opacity .2s ease}
+  .remote-modal.shown .remote-sheet{transform:translateY(0)}
+}
+@media (prefers-reduced-motion:reduce){.remote-backdrop,.remote-sheet{transition:none}}
 html.remote-view #remote-link,
 html.remote-view .nav-bar,
 html.remote-view .sidenav,

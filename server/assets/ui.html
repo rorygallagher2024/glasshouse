@@ -21,7 +21,11 @@
     </div>
   </div>
   <div class="hdr-status">
-    <div class="hdr-line num" id="hdr-volume" hidden></div>
+    <!-- The remote at any time (#1586). The volume is on the Control tab and in the remote itself. -->
+    <button type="button" class="hdr-remote" id="hdr-remote" onclick="openRemote()">
+      <svg class="hdr-remote-ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="2.5" width="8" height="19" rx="3"/><circle cx="12" cy="8" r="1.6"/><path d="M10.5 13h3M10.5 16h3"/></svg>
+      <span class="hdr-remote-label" data-t="header.remote">Remote</span>
+    </button>
     <div class="hdr-line" id="hdr-sleep" hidden></div>
   </div>
 </header>
@@ -336,12 +340,6 @@
       </div>
     </div>
 
-    <!-- The remote on its own (?view=remote, #1586): a row like those below it,
-         opening it in a window of its own. -->
-    <div class="disc disc-link" id="remote-link" data-col="0">
-      <a href="?view=remote" target="_blank" rel="noopener"><span data-t="ctl.remoteLink">Remote only</span> <span class="cur" data-t="ctl.remoteLink.sub">For a phone or the Dock</span></a>
-    </div>
-
     <!-- Pinned to the first column: it is the one control here that people
          reach for repeatedly, so it should not move about as the others grow. -->
     <details class="disc" id="disc-dpad" data-col="0" data-remote>
@@ -392,13 +390,9 @@
       </div>
     </details>
 
-    <!-- The remote on its own, at its foot: its link to copy, and the way back. -->
+    <!-- The remote as a page of its own: the way back, at its foot. -->
     <div class="set" id="remote-full" data-remote>
-      <p class="sub remote-foot">
-        <button type="button" class="link-btn" id="remote-link-copy" onclick="copyRemoteLink()" data-t="ctl.remoteLink.copy">Copy link</button>
-        <a class="link-btn" href="./" data-t="ctl.remoteLink.full">Full dashboard</a>
-      </p>
-      <p class="sub" data-t="ctl.remoteLink.desc">Add this page to a phone's Home Screen, or keep it in the Dock. Its link signs in as the dashboard does, so keep it to yourself.</p>
+      <p class="sub"><a class="link-btn" href="./" data-t="ctl.remoteLink.full">Full dashboard</a></p>
     </div>
 
     <details class="disc" id="disc-timers">
@@ -2386,6 +2380,20 @@
   </div>
 </section>
 </main>
+
+<!-- The remote over any tab (#1586): the remote view in a frame, the page faded behind
+     it. A sheet from the foot on a phone, a panel in the middle on a computer. -->
+<div class="remote-modal" id="remote-modal" hidden>
+  <div class="remote-backdrop" onclick="closeRemote()"></div>
+  <div class="remote-sheet" role="dialog" aria-modal="true" aria-labelledby="remote-modal-title">
+    <div class="remote-sheet-head">
+      <span class="remote-sheet-title" id="remote-modal-title" data-t="header.remote">Remote</span>
+      <a class="link-btn" href="?view=remote" data-t="ctl.remoteLink.page">Open as a page</a>
+      <button type="button" class="remote-close" onclick="closeRemote()" aria-label="Close" data-t-aria-label="remote.close">&times;</button>
+    </div>
+    <iframe class="remote-frame" id="remote-frame" title="Remote" data-t-title="header.remote"></iframe>
+  </div>
+</div>
 
 <footer>
   <span class="foot-tv" id="foot-tv" translate="no"></span>

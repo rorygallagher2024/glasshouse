@@ -412,8 +412,6 @@
  "game.refreshRate": {"text": "معدل التحديث", "from": "Refresh rate"},
  "game.scope": {"text": "يحفظ التلفاز هذه الإعدادات لكل مدخل ونوع ألعاب. المعروض حالياً: {input}.", "from": "LG keeps these for each input and genre. Showing {input}."},
  "game.vrr": {"text": "معدل التحديث المتغير (VRR)", "from": "VRR"},
- "header.volume": {"text": "مستوى الصوت {n}", "from": "Volume {n}"},
- "header.muted": {"text": "مكتوم", "from": "Muted"},
  "header.sleep": {"text": "مؤقت النوم {n} دقيقة", "from": "Sleep timer {n} min"},
  "home.arrange.done": {"text": "تم", "from": "Done"},
  "home.arrange.emptyRow": {"text": "هذا الصف فارغ", "from": "This row is empty"},
@@ -3368,11 +3366,8 @@
  "home.tv.bad.streamPort": {"text": "يجب أن يكون منفذ البث رقمًا من 1 إلى 65535.", "from": "The stream port must be a number from 1 to 65535."},
  "srv.remoteKeys.homeBar": {"text": "Glasshouse Bar", "from": "Glasshouse Bar"},
  "srv.remoteKeys.homeBarInstall": {"text": "تعذّر تثبيت Glasshouse Bar على التلفاز. حاول مرة أخرى بعد لحظات.", "from": "Glasshouse Bar could not be put on the TV. Try again in a moment."},
- "ctl.remoteLink": {"text": "جهاز التحكم فقط", "from": "Remote only"},
- "ctl.remoteLink.desc": {"text": "أضف هذه الصفحة إلى الشاشة الرئيسية في هاتف، أو احتفظ بها في Dock. رابطها يسجّل الدخول كما تفعل لوحة التحكم، فاحتفظ به لنفسك.", "from": "Add this page to a phone's Home Screen, or keep it in the Dock. Its link signs in as the dashboard does, so keep it to yourself."},
- "ctl.remoteLink.copy": {"text": "نسخ الرابط", "from": "Copy link"},
  "ctl.remoteLink.full": {"text": "لوحة التحكم كاملة", "from": "Full dashboard"},
- "ctl.remoteLink.copied": {"text": "تم النسخ", "from": "Copied"},
- "ctl.remoteLink.notCopied": {"text": "تعذّر النسخ", "from": "Could not copy"},
- "ctl.remoteLink.sub": {"text": "لهاتف أو لـ Dock", "from": "For a phone or the Dock"}
+ "header.remote": {"text": "جهاز التحكم", "from": "Remote"},
+ "ctl.remoteLink.page": {"text": "افتحه كصفحة", "from": "Open as a page"},
+ "remote.close": {"text": "إغلاق", "from": "Close"}
 }
