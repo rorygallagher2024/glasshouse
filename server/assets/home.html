@@ -2924,7 +2924,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
           enableWorker: true, enableStashBuffer: true, stashInitialSize: 384 * 1024, lazyLoad: false,
           /*
            * A browser removes video up to the next keyframe after the end it is given:
-           * with 4 s kept and keyframes 10 s apart (Nat Geo Wild), every cleanup took the
+           * with 4 s kept and keyframes 10 s apart (an HEVC channel), every cleanup took the
            * seconds just ahead of the picture too, a 0.6 s hole every 10 s.
            */
           autoCleanupSourceBuffer: true, autoCleanupMaxBackwardDuration: 24, autoCleanupMinBackwardDuration: 12,
@@ -3001,7 +3001,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
           return;
         }
         /*
-         * Home's own player at a hole in the stream (11 s of Nat Geo Wild missing, seen
+         * Home's own player at a hole in the stream (11 s of a channel missing, seen
          * on a G3): stepped over before the picture stops. Waiting at the edge froze it
          * while the TV's sound output buzzed on its last samples.
          */
@@ -3046,7 +3046,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
         if (buf.ahead > KICK_AHEAD_S) {
           /*
            * Once in KICK_EVERY_MS: the kick's step reads as movement, so kicked again and
-           * again a stuck decoder never reached the reopen (Nat Geo Wild on a G3: kicked
+           * again a stuck decoder never reached the reopen (an HEVC channel on a G3: kicked
            * every 2 s with 15 s buffered, frozen 54 s a minute).
            */
           if (tvStream.engine === 'mse' && still > KICK_MS && now - kickedAt > KICK_EVERY_MS) {
