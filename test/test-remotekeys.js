@@ -335,11 +335,10 @@ step(function (next) {
     rk.setRemoteKey('netflix', 'open', 'action:brightnessDown', guard(function (down) {
       assert.strictEqual(down.ok, true);
       var f = loadFilter();
-      var toasts = function () { return f.sent.filter(function (m) { return m.uri === 'com.webos.notification/createToast'; }); };
+      var writes = function () { return f.sent.filter(function (m) { return m.uri === 'com.webos.service.settings/setSystemSettings'; }).length; };
       tv.backlight = 50;
       assert.strictEqual(f.handle(1004, true, false), 'accepted');
       assert.strictEqual(tv.backlight, 55, 'up one step on the press');
-      assert.strictEqual(toasts()[0].payload.message, 'Brightness 55');
       f.handle(1004, false, false);
       assert.strictEqual(tv.backlight, 55, 'the release does nothing');
       f.handle(1004, true, true);
@@ -348,9 +347,9 @@ step(function (next) {
       tv.backlight = 98;
       f.handle(1004, true, false);
       assert.strictEqual(tv.backlight, 100, 'clamped to 100');
-      var writes = toasts().length;
+      var before = writes();
       f.handle(1004, true, false);
-      assert.strictEqual(toasts().length, writes, 'nothing written at the top');
+      assert.strictEqual(writes(), before, 'nothing written at the top');
       tv.backlight = 3;
       f.handle(1001, true, false);
       assert.strictEqual(tv.backlight, 0, 'down clamped to 0');

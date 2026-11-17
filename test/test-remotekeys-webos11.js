@@ -100,8 +100,6 @@ function luna(uri, params, cb) {
     assert.strictEqual(params.category, 'picture');
     panel.backlight = Number(params.settings.backlight);
     panel.writes++;
-  } else if (uri === 'com.webos.notification/createToast') {
-    toasts.push(params.message);
   } else if (uri === 'com.webos.applicationManager/listApps') {
     r.apps = APPS;
   } else if (uri === 'com.webos.applicationManager/launch') {
@@ -621,14 +619,12 @@ step('Brightness up and down on streaming buttons switch LG\'s entries off and s
           assert.strictEqual(entry('netflix').isActive, false, 'LG\'s app switched off, as for Nothing');
           assert.strictEqual(entry('amazon').isActive, false);
           panel.backlight = 50;
-          toasts = [];
           logLine(NETFLIX_LINE);
           until(function () { return panel.backlight === 55; }, 5000, function () {
             assert.strictEqual(panel.backlight, 55, 'up one step');
             logLine(AMAZON_LINE);
             until(function () { return panel.backlight === 50; }, 5000, function () {
               assert.strictEqual(panel.backlight, 50, 'down one step');
-              assert.ok(toasts.indexOf('Brightness 55') !== -1 && toasts.indexOf('Brightness 50') !== -1, 'the new level shown');
               // At the top: nothing written.
               panel.backlight = 100;
               panel.writes = 0;

@@ -27,7 +27,7 @@ Core keys (**Home**, **Back**, volume, mute, channel, and power) are reserved an
 * **Input bar:** Opens Glasshouse's [input bar](inputs.md#glasshouse-input-bar) overlay instead of LG's inputs list.
 * **Input switcher:** Opens LG's quick input picker on TVs that support it (such as a C5 on webOS 11).
 * **Screen off:** Blanks the display while audio continues playing; pressing any key turns the screen back on.
-* **Brightness up** and **Brightness down:** Raises or lowers the panel brightness (OLED Light, or Backlight on an LCD) by 5 points per press, for the current picture mode and input, within 0 to 100. A toast shows the new level, and a held key repeats. Set one key to each.
+* **Brightness up** and **Brightness down:** Raises or lowers the panel brightness (OLED Light, or Backlight on an LCD) by 5 points per press, for the current picture mode and input, within 0 to 100. A held key repeats. Set one key to each.
 * **Power off:** Puts the TV into standby on key release. When using TVs side by side, assigning this to a Magic Remote's RF button allows putting one TV into standby without an IR signal affecting the other. (The dedicated Power button is unchanged, and power actions are not offered in Quick Access).
 * **Buttons:** Acts as **OK**, or sends **Play**, **Pause**, **Stop**, **Rewind**, **Fast forward**, **Volume up**, **Volume down**, or **Mute** to on-screen media. **OK** puts the Magic Remote's OK, the scroll wheel's press, on a flat button too. Volume commands repeat while held and control connected HDMI ARC soundbars.
 * **Home & Guide:** Opens Glasshouse Home (or LG's Home if disabled), or opens Glasshouse Home's [IPTV guide](home.md#internet-tv).

@@ -433,7 +433,6 @@ function filterSource() {
     'var glasshouseScreenOffArmed = false;',
     'var glasshousePowerOffArmed = {};',
     'var glasshouseBarPress = 0;',
-    'var glasshouseBrightnessText = ' + JSON.stringify(msg('srv.remoteKeys.brightnessToast', 'Brightness {level}', { level: '' })) + ';',
     '',
     '// Key code by name; a name this firmware lacks is left out.',
     'function glasshouseKeyCodes() {',
@@ -493,7 +492,6 @@ function filterSource() {
     '            if (isNaN(current) || level === current) { glasshouseBrightnessBusy = false; return; }',
     '            lunaCall.send("com.webos.service.settings", "/setSystemSettings", JSON.stringify({ "category": "picture", "settings": { "backlight": String(level) } }), function () {',
     '                glasshouseBrightnessBusy = false;',
-    '                lunaCall.send("com.webos.notification", "/createToast", JSON.stringify({ "sourceId": lunaCall.appId, "message": glasshouseBrightnessText + level }), function () {});',
     '            });',
     '        } catch (e) {',
     '            glasshouseBrightnessBusy = false;',
@@ -1299,8 +1297,7 @@ function buttonPressed(button) {
 /*
  * One step of the current picture mode's brightness, read first since the
  * settings service keeps one value per mode and input (controls.js's
- * backlight). A toast shows the new level, as LG shows no slider for a write
- * made here.
+ * backlight).
  */
 function stepBrightness(delta) {
   lunaFn('com.webos.service.settings/getSystemSettings', { category: 'picture', keys: ['backlight'] }, function (r) {
@@ -1310,7 +1307,6 @@ function stepBrightness(delta) {
     if (level === Math.round(current)) return;
     lunaFn('com.webos.service.settings/setSystemSettings', { category: 'picture', settings: { backlight: String(level) } }, function (w) {
       if (!(w && w.returnValue)) return console.log('remotekeys: brightness could not be set to ' + level);
-      lunaFn('com.webos.notification/createToast', { sourceId: 'com.webos.service.settings', message: msg('srv.remoteKeys.brightnessToast', 'Brightness {level}', { level: level }) }, function () {});
     });
   });
 }
