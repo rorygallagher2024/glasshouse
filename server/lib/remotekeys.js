@@ -263,6 +263,16 @@ var keySetFn = null;
 var barAppFn = null;
 // Whether this TV is offered the input bar (lib/inputbar.js allowed).
 var barAllowedFn = function () { return false; };
+/*
+ * Glasshouse Bar on a key, beside Glasshouse Home (#1499): its app installed
+ * or removed as the input bar's, offered where the bars are, lib/homebar told
+ * when a key is set to it so it keeps it loaded, and its app left on the TV
+ * while the Bar is the launcher.
+ */
+var homeBarAppFn = null;
+var homeBarAllowedFn = function () { return false; };
+var homeBarKeySetFn = null;
+var homeBarLauncherFn = function () { return false; };
 var inputNames = null;
 var stateDir = '/var/lib/tvweb';
 var filtersDir = LG_FILTERS_DIR;
@@ -287,6 +297,10 @@ function init(opts) {
   keySetFn = typeof opts.onInputBarKey === 'function' ? opts.onInputBarKey : null;
   barAppFn = typeof opts.inputBarApp === 'function' ? opts.inputBarApp : null;
   barAllowedFn = typeof opts.inputBarAllowed === 'function' ? opts.inputBarAllowed : function () { return false; };
+  homeBarAppFn = typeof opts.homeBarApp === 'function' ? opts.homeBarApp : null;
+  homeBarAllowedFn = typeof opts.homeBarAllowed === 'function' ? opts.homeBarAllowed : function () { return false; };
+  homeBarKeySetFn = typeof opts.onHomeBarKey === 'function' ? opts.onHomeBarKey : null;
+  homeBarLauncherFn = typeof opts.homeBarLauncher === 'function' ? opts.homeBarLauncher : function () { return false; };
   inputNames = opts.inputNames || {};
   if (opts.stateDir) stateDir = opts.stateDir;
   filtersDir = opts.filtersDir || LG_FILTERS_DIR;
@@ -1444,8 +1458,11 @@ function homeChoices(native) {
  * further presses, so webOS 11's native keys never offer it.
  */
 function barChoices(native) {
-  var offered = !native && !!barAppFn && barAllowedFn();
-  return offered ? [{ id: INPUT_BAR, title: msg('srv.remoteKeys.inputBar', 'Input bar'), kind: 'app' }] : [];
+  var out = [];
+  if (!native && !!barAppFn && barAllowedFn()) out.push({ id: INPUT_BAR, title: msg('srv.remoteKeys.inputBar', 'Input bar'), kind: 'app' });
+  // Opened as the Home key opens it when it is the launcher, with a press number.
+  if (!native && !!homeBarAppFn && homeBarAllowedFn()) out.push({ id: HOME_BAR, title: msg('srv.remoteKeys.homeBar', 'Glasshouse Bar'), kind: 'app' });
+  return out;
 }
 
 // The bar's app, removed once no key opens the bar. Its answer is not waited
@@ -1454,6 +1471,14 @@ function dropBarIfUnused(hadBar) {
   if (!hadBar || opensInputBar() || !barAppFn) return;
   barAppFn('remove', function (r) {
     if (!r || !r.ok) console.log('remotekeys: could not remove the input bar app: ' + ((r && r.error) || 'no answer'));
+  });
+}
+
+// Glasshouse Bar's app, removed once no key opens it, unless it is the launcher.
+function dropHomeBarIfUnused(hadBar) {
+  if (!hadBar || opensHomeBar() || !homeBarAppFn || homeBarLauncherFn()) return;
+  homeBarAppFn('remove', function (r) {
+    if (!r || !r.ok) console.log('remotekeys: could not remove Glasshouse Bar\'s app: ' + ((r && r.error) || 'no answer'));
   });
 }
 
@@ -1558,9 +1583,9 @@ function setRemoteKey(key, action, id, cb) {
 
 function setOfferedKey(def, action, id, kind, cb) {
   var map = readMap();
-  var hadBar = map[def.key] === INPUT_BAR;
+  var hadBar = map[def.key] === INPUT_BAR, hadHomeBar = map[def.key] === HOME_BAR;
   function saved(r) {
-    if (r && r.ok) dropBarIfUnused(hadBar);
+    if (r && r.ok) { dropBarIfUnused(hadBar); dropHomeBarIfUnused(hadHomeBar); }
     cb(r);
   }
   if (action === 'lg') {
@@ -1587,16 +1612,26 @@ function setOfferedKey(def, action, id, kind, cb) {
         map[def.key] = id;
         save(map, function (r) {
           if (r && r.ok && id === INPUT_BAR && keySetFn) keySetFn();
-          if (id !== INPUT_BAR) return saved(r);
-          cb(r);
+          if (r && r.ok && id === HOME_BAR && homeBarKeySetFn) homeBarKeySetFn();
+          if (id === INPUT_BAR) { if (r && r.ok) dropHomeBarIfUnused(hadHomeBar); return cb(r); }
+          if (id === HOME_BAR) { if (r && r.ok) dropBarIfUnused(hadBar); return cb(r); }
+          saved(r);
         });
       }
-      if (id !== INPUT_BAR) return store();
-      // The bar's app goes on first, so a key is never set to an app that is not there.
-      barAppFn('install', function (r) {
-        if (!r || !r.ok) return cb({ ok: false, error: msg('srv.remoteKeys.inputBarInstall', 'The input bar could not be put on the TV. Try again in a moment.') });
-        store();
-      });
+      // A bar's app goes on first, so a key is never set to an app that is not there.
+      if (id === INPUT_BAR) {
+        return barAppFn('install', function (r) {
+          if (!r || !r.ok) return cb({ ok: false, error: msg('srv.remoteKeys.inputBarInstall', 'The input bar could not be put on the TV. Try again in a moment.') });
+          store();
+        });
+      }
+      if (id === HOME_BAR && !homeBarLauncherFn()) {
+        return homeBarAppFn('install', function (r) {
+          if (!r || !r.ok) return cb({ ok: false, error: msg('srv.remoteKeys.homeBarInstall', 'Glasshouse Bar could not be put on the TV. Try again in a moment.') });
+          store();
+        });
+      }
+      store();
     });
   });
 }
@@ -1721,9 +1756,14 @@ function restore(done) {
   // The input bar's app goes with the keys that opened it, where it is on the
   // TV. Best effort: an app left behind has no tile and nothing opens it.
   var barThere = opensInputBar() || fs.existsSync(INPUT_BAR_DIR);
+  // Glasshouse Bar's app stays while it is the launcher: lib/homebar removes it then.
+  var homeBarGoes = opensHomeBar() && !homeBarLauncherFn();
   function cb(ok) {
-    if (!lunaFn || !barThere) return done(ok);
-    lunaFn('com.webos.appInstallService/dev/remove', { id: INPUT_BAR }, function () { done(ok); });
+    if (!lunaFn || (!barThere && !homeBarGoes)) return done(ok);
+    var left = (barThere ? 1 : 0) + (homeBarGoes ? 1 : 0);
+    var one = function () { if (--left === 0) done(ok); };
+    if (barThere) lunaFn('com.webos.appInstallService/dev/remove', { id: INPUT_BAR }, one);
+    if (homeBarGoes) lunaFn('com.webos.appInstallService/dev/remove', { id: HOME_BAR }, one);
   }
   if (fs.existsSync(lgFile())) {
     if (!lunaFn) return cb(false);
@@ -1783,9 +1823,16 @@ function opensInputBar() {
   return Object.keys(map).some(function (k) { return map[k] === INPUT_BAR; });
 }
 
+// Whether a key is set to open Glasshouse Bar, which lib/homebar.js keeps loaded.
+function opensHomeBar() {
+  var map = readMap();
+  return Object.keys(map).some(function (k) { return map[k] === HOME_BAR; });
+}
+
 module.exports = {
   init: init,
   opensInputBar: opensInputBar,
+  opensHomeBar: opensHomeBar,
   dropInputBar: dropInputBar,
   availabilityChanged: availabilityChanged,
   getRemoteKeys: getRemoteKeys,

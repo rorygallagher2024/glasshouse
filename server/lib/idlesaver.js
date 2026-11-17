@@ -31,6 +31,7 @@ var mediaStateFn = function (cb) { cb(null); };
 // TV's media state, which reads stopped while a stream plays there.
 /** @type {function(): boolean} */
 var watchingFn = function () { return false; };
+var homeVideoBackgroundFn = function () { return false; };
 var requestSeenAt = 0;
 var ownRequestAt = 0;
 var lastState = '';
@@ -54,6 +55,7 @@ function init(opts) {
   lunaFn = opts.luna;
   mediaStateFn = opts.mediaState || function (cb) { cb(null); };
   watchingFn = opts.watching || function () { return false; };
+  homeVideoBackgroundFn = opts.homeVideoBackground || function () { return false; };
   liftedApp = readTrimmed(LIFTED_MARKER) || '';
   recovering = !!liftedApp;
 }
@@ -183,12 +185,13 @@ function appVideoShowing(cb) {
 function idleRequestRefused() {
   var generation = powerGeneration;
   mediaStateFn(function (media) {
-    if (!media || media.state === 'playing' || watchingFn() || lastState !== 'Active' || generation !== powerGeneration) return;
+    var homeVideo = homeVideoBackgroundFn();
+    if ((!media && !homeVideo) || (media && media.state === 'playing' && !homeVideo) || watchingFn() || lastState !== 'Active' || generation !== powerGeneration) return;
     // A player the media service does not list leaves it reading idle while
     // its video plays (and while paused too, since VDEC stays connected).
     // Paused is a state it read, and the screen saver may come over a listed
     // player's paused video as it does without the hold.
-    if (media.state === 'paused') return liftIdle(generation);
+    if (homeVideo || (media && media.state === 'paused')) return liftIdle(generation);
     appVideoShowing(function (showing) {
       if (showing || lastState !== 'Active' || generation !== powerGeneration) return;
       liftIdle(generation);

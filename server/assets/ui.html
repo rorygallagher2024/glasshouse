@@ -976,6 +976,21 @@
     <select class="pill-sel ss-sel" id="ss-color" aria-labelledby="ss-color-lbl ss-color" onchange="pickSsColor(this.value)"></select>
   </div>
 
+  <!-- The Video saver's details over the video, kept with Home's playlist -->
+  <div class="ss-level-row" id="ss-video-row" hidden>
+    <div class="ss-level-lbl" data-t="ss.video.shown">Shown over the video</div>
+    <div class="ss-pool-box ss-video-box" id="ss-video-show"></div>
+    <div class="ss-level-lbl ss-video-lbl" id="ss-video-info-lbl" data-t="ss.video.info">Clock and weather</div>
+    <select class="pill-sel ss-sel" id="ss-video-info-position" aria-labelledby="ss-video-info-lbl ss-video-info-position" onchange="ssVideoStyle('infoPosition', this.value)"></select>
+    <select class="pill-sel ss-sel" id="ss-video-info-size" aria-labelledby="ss-video-info-lbl ss-video-info-size" onchange="ssVideoStyle('infoSize', Number(this.value))"></select>
+    <select class="pill-sel ss-sel" id="ss-video-clock-font" aria-labelledby="ss-video-info-lbl ss-video-clock-font" onchange="ssVideoStyle('clockFont', this.value)"></select>
+    <div class="ss-level-lbl ss-video-lbl" id="ss-video-text-lbl" data-t="ss.video.text">Date, weather and captions</div>
+    <select class="pill-sel ss-sel" id="ss-video-text-font" aria-labelledby="ss-video-text-lbl ss-video-text-font" onchange="ssVideoStyle('textFont', this.value)"></select>
+    <label class="ss-video-colour"><input type="color" id="ss-video-text-color" onchange="ssVideoStyle('textColor', this.value)"> <span data-t="ss.video.colour">Text colour</span></label>
+    <div class="ss-pool-actions ss-video-actions"><button type="button" class="ss-pool-btn" id="ss-video-reset" onclick="ssVideoReset()" data-t="ss.video.reset">Use the default look</button></div>
+    <div class="pv-sub" data-t="ss.video.where">The videos, their order and the captions are set on the Home tab, under Background.</div>
+  </div>
+
   <div class="ss-level-row" id="ss-entities-row" hidden>
     <div class="ss-level-lbl" data-t="ss.entities">Home Assistant Entities</div>
     <div id="ss-entities-list"></div>
@@ -1416,6 +1431,17 @@
       <div class="sub" id="home-weather-chosen" role="status"></div>
       <div class="sub home-weather-credit" data-t="home.weather.credits">Weather data by Open-Meteo.com. Location data based on GeoNames.</div>
     </div>
+    <div class="prot-row home-gh-row" id="home-remote-battery-row" hidden>
+      <div class="prot-main">
+        <div class="prot-title" data-t="home.remoteBattery">Remote battery</div>
+        <div class="prot-desc" data-t="home.remoteBatteryDesc">After the date: the Magic Remote’s battery, as it last reported it. When low shows it only once it is down to 20%, or at Low on a remote that reports only High, Medium or Low.</div>
+      </div>
+      <div class="prot-status"><select class="pill-sel" id="home-remote-battery-sel" onchange="homeRemoteBattery(this.value)" aria-label="Remote battery" data-t-aria-label="home.remoteBattery">
+        <option value="off" data-t="common.off">Off</option>
+        <option value="low" data-t="home.remoteBattery.low">When low</option>
+        <option value="always" data-t="home.remoteBattery.always">Always</option>
+      </select></div>
+    </div>
     <div class="prot-row home-gh-row" id="home-picture-row" hidden>
       <div class="prot-main">
         <div class="prot-title" data-t="home.picture">Picture details</div>
@@ -1631,6 +1657,34 @@
         <label><input type="color" id="home-anim-sky" onchange="homeAnimCustom()"> <span data-t="home.animSky">Background</span></label>
         <label><input type="color" id="home-anim-light" onchange="homeAnimCustom()"> <span data-t="home.animLight">Light</span></label>
       </div>
+    </div>
+  </div>
+  <div id="home-bg-video" hidden>
+    <div class="sub"><span data-t="home.video.help">Links to video files, one per line, such as https://example.com/beach.mp4, or to a playlist of them. The TV streams them itself, from the internet or your own network.</span> <a href="https://rorygallagher2024.github.io/glasshouse/dashboard/home/#which-video-links-work" target="_blank" rel="noopener" data-t="home.video.docs">Which links work</a></div>
+    <textarea id="home-video-urls" class="home-video-urls" rows="5" spellcheck="false" aria-label="Video URLs, one per line" data-t-aria-label="home.video.urlsLabel" oninput="homeVideoCount()"></textarea>
+    <div class="wall-foot">
+      <div class="sub" id="home-video-count"></div>
+      <div class="wall-foot-btns"><button type="button" class="pill idle" id="home-video-save" onclick="homeVideoSave()">&mdash;</button></div>
+    </div>
+    <div class="sub" id="home-video-note" role="status"></div>
+    <div class="prot-row">
+      <div class="prot-main">
+        <div class="prot-title" data-t="home.video.shuffle">Random order</div>
+        <div class="prot-desc" data-t="home.video.shuffleHelp">Every video plays once before any plays again.</div>
+      </div>
+      <div class="prot-status"><button type="button" class="pill idle" id="home-video-shuffle" onclick="homeVideoShuffle()">&mdash;</button></div>
+    </div>
+    <div class="prot-row">
+      <div class="prot-main">
+        <div class="prot-title" data-t="home.video.captions">Captions</div>
+        <div class="prot-desc" data-t="home.video.captionsDesc">Each scene’s name, and what is in view as it plays, where a playlist gives them; a plain video link has none. Shown on Glasshouse Home in its text colour, and on the Video screen saver, where its clock and weather are set.</div>
+      </div>
+      <div class="prot-status"><button type="button" class="pill idle" id="home-video-show-captions" onclick="homeVideoShow('showCaptions')">&mdash;</button></div>
+    </div>
+    <div class="set"><div class="lbl" data-t="home.video.captionPosition">Captions</div>
+      <div class="btns wall-choice" id="home-video-caption-position"></div>
+      <div class="btns wall-choice" id="home-video-caption-size"></div>
+      <div class="btns wall-choice" id="home-video-caption-font"></div>
     </div>
   </div>
   <div class="set home-dark"><div class="lbl"><span data-t="home.darkening">Darkening</span> &middot; <span id="home-dark-lbl" class="num">&mdash;</span></div>

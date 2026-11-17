@@ -27,7 +27,7 @@ var FEATURES = {
   // Minimal and a custom launcher. No version is known not to run it.
   home: {
     title: 'Glasshouse Home',
-    tried: [4, 5, 6, 7, 9, 10, 11]
+    tried: [3, 4, 5, 6, 7, 9, 10, 11]
   },
   // The input bar and Glasshouse Bar: overlay apps opened by the remote key
   // filter, which webOS 3 does not have and which, from webOS 11, cannot hand
@@ -36,7 +36,7 @@ var FEATURES = {
   inputBar: {
     title: 'Glasshouse Bar and the input bar',
     parts: ['The input bar', 'Glasshouse Bar'],
-    tried: [4, 5, 6, 7, 9],
+    tried: [4, 5, 6, 7, 9, 10],
     from: 4,
     upTo: 10,
     tooOld: function () {

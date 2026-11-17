@@ -37,6 +37,7 @@ var recent = require('./home-recent');
 var recentApps = require('./home-recent-apps');
 var search = require('./home-search');
 var recommended = require('./home-recommended');
+var screensaversModule = null;
 
 // The separate app earlier builds installed: removed, and its settings undone.
 var HOME_APP = 'com.tvweb.home';
@@ -55,6 +56,12 @@ var SORTS = ['custom', 'recent'];
 var SHOW_KEYS = ['showClock', 'showLastOn', 'showAppCount', 'showAppLabels', 'showCec', 'showTvLogos', 'showPointer'];
 // Where the weather badge's weather comes from: nowhere, Home Assistant's pushes, or Open-Meteo.
 var WEATHER_SOURCES = ['off', 'ha', 'internet'];
+// The Magic Remote's battery beside the date: never, only once it is low, or always.
+var REMOTE_BATTERY = ['off', 'low', 'always'];
+// At or under this, the badge shows in 'low' and is drawn as low. A remote
+// that gives only HIGH, MID or LOW is low at LOW (lib/remotebattery).
+var REMOTE_BATTERY_LOW = 20;
+var REMOTE_BATTERY_STEPS = ['high', 'mid', 'low'];
 // The live preview beside the clock: 356x200, 512x288 or 640x360 on the 1920x1080 view.
 var PREVIEW_SIZES = ['small', 'medium', 'large'];
 // Each kind of motion on the view, on unless switched off: the wallpaper's
@@ -283,6 +290,10 @@ var pictureDetailsFn = function () {};
  */
 // The TV, for the compatibility table and its report links: { webos, model, firmware, glasshouse }.
 var tvInfoFn = function () { return { webos: webosVersion }; };
+// The paired remote's battery, null with none paired: { level: 0 to 100 or
+// null, step: 'high', 'mid', 'low' or null, status: as the Remote section's
+// batteryStatus }.
+var remoteBatteryFn = function () { return null; };
 var setHomeKeyFn = function (id, cb) { cb({ ok: true, none: true }); };
 // Whether the remote's keys can be read (lib/remotebuttons), for webOS 3's Home button.
 var readsHomeKeyFn = function () { return false; };
@@ -466,6 +477,9 @@ function defaults() {
     previewInTile: false,
     // Its size beside the clock, one of PREVIEW_SIZES.
     previewSize: 'small',
+    // The remote's battery beside the date, one of REMOTE_BATTERY: shown once
+    // it is low unless chosen otherwise.
+    remoteBattery: 'low',
     // The live preview's sound: muted unless switched on, as Home is often
     // passed through on the way to something else.
     previewSound: false,
@@ -585,6 +599,7 @@ function normalise(raw) {
   d.previewAlways = raw.previewAlways === true;
   d.previewInTile = raw.previewInTile === true;
   d.previewSize = PREVIEW_SIZES.indexOf(raw.previewSize) !== -1 ? raw.previewSize : 'small';
+  d.remoteBattery = REMOTE_BATTERY.indexOf(raw.remoteBattery) !== -1 ? raw.remoteBattery : 'low';
   d.previewSound = raw.previewSound === true;
   d.wallAnim = WALL_ANIMS.indexOf(raw.wallAnim) !== -1 ? raw.wallAnim : 'off';
   d.animTheme = raw.animTheme === 'custom' || ANIM_THEMES.some(function (th) { return th.id === raw.animTheme; }) ? raw.animTheme : 'auto';
@@ -785,6 +800,7 @@ function setLayout(body, cb) {
     previewAlways: typeof body.previewAlways === 'boolean' ? body.previewAlways : c.previewAlways,
     previewInTile: typeof body.previewInTile === 'boolean' ? body.previewInTile : c.previewInTile,
     previewSize: body.previewSize !== undefined ? body.previewSize : c.previewSize,
+    remoteBattery: body.remoteBattery !== undefined ? body.remoteBattery : c.remoteBattery,
     previewSound: typeof body.previewSound === 'boolean' ? body.previewSound : c.previewSound,
     wallAnim: body.wallAnim !== undefined ? body.wallAnim : c.wallAnim,
     animTheme: body.animTheme !== undefined ? body.animTheme : c.animTheme,
@@ -923,6 +939,7 @@ function layoutOf(c) {
     fade: c.fade, wallDrift: c.wallDrift, wallCrossfade: c.wallCrossfade, smoothScroll: c.smoothScroll, slidePanels: c.slidePanels,
     darkening: c.darkening, hideUnused: c.hideUnused, showMediaServers: c.showMediaServers, deviceNames: devNamesNow(c.deviceNames), appNames: c.appNames, inputBarTransparent: c.inputBarTransparent, inputBarSwitchOnOk: c.inputBarSwitchOnOk, showClock: c.showClock, rowsBottom: c.rowsBottom, view: c.view,
     showLastOn: c.showLastOn, showAppCount: c.showAppCount, showAppLabels: c.showAppLabels, showCec: c.showCec, showTvLogos: c.showTvLogos, showPointer: c.showPointer, weather: c.weather, weatherPlace: c.weatherPlace, previewAlways: c.previewAlways, previewInTile: c.previewInTile, previewSize: c.previewSize, previewSound: c.previewSound, wallAnim: c.wallAnim,
+    remoteBattery: c.remoteBattery,
     animTheme: c.animTheme, animSky: c.animSky, animLight: c.animLight, animThemes: ANIM_THEMES,
     wallShuffleMinutes: c.wallShuffleMinutes, shuffleMinutes: SHUFFLE_MINUTES, colours: c.colours,
     tileHighlight: c.tileHighlight,
@@ -2709,6 +2726,12 @@ function viewInFront() {
   return foreground === homeId && !escaped && readConfig().enabled && isHomeInPlace();
 }
 
+// Home's muted wallpaper video is not watched content: let the TV's screen
+// saver take over from Home when idle, then play the same playlist there.
+function videoBackgroundActive() {
+  return viewInFront() && config.wallAnim === 'off' && wallpapers.status().choice === 'video';
+}
+
 function stopBeatWatch() {
   if (beatTimer) clearTimeout(beatTimer);
   beatTimer = null;
@@ -2735,9 +2758,13 @@ function watchBeat(ms) {
       console.log('home: the view is hidden for an app still starting; waiting for it');
       return watchBeat(starting);
     }
+    var checkedAtBeat = beats;
     behindAnother(function (app) {
+      if (!viewInFront() || !powerActive || beats !== checkedAtBeat) return;
       if (!app) return hung();
       console.log('home: the view is behind ' + app + ', not hung');
+      // An overlay can close without sam changing the foreground app.
+      watchBeat(beatGraceMs);
     });
   }, ms);
 }
@@ -2745,15 +2772,29 @@ function watchBeat(ms) {
 /*
  * The app whose window is in front where the view's is not, or null. A C1
  * (webOS 6.4.0) brought an app back from Recent apps without sam naming it in
- * front, so the hidden view, beating no more, looked hung.
+ * front. A C3's Guide focuses livemenu's overlay while sam and the card list
+ * still name Home, so its overlay must also be checked for focus.
  */
 function behindAnother(cb) {
   var homeId = isStandalone() ? HOME_APP : LG_HOME;
   luna('com.webos.surfacemanager/getForegroundWindowInfo', {}, function (r) {
     var windows = r && r.returnValue !== false && isArray(r.windows) ? r.windows : null;
-    if (!windows || windows.some(function (w) { return w && w.appId === homeId; })) return cb(null);
-    var other = windows.filter(function (w) { return w && w.appId && w.windowType === '_WEBOS_WINDOW_TYPE_CARD'; })[0];
-    cb(other ? other.appId : null);
+    if (!windows) return cb(null);
+    if (!windows.some(function (w) { return w && w.appId === homeId; })) {
+      var other = windows.filter(function (w) { return w && w.appId && w.windowType === '_WEBOS_WINDOW_TYPE_CARD'; })[0];
+      return cb(other ? other.appId : null);
+    }
+    var overlays = windows.filter(function (w) {
+      return w && w.appId && w.appId !== homeId && w.windowType === '_WEBOS_WINDOW_TYPE_OVERLAY';
+    });
+    if (!overlays.length) return cb(null);
+    luna('com.webos.surfacemanager/getFocusedWindowInfo', {}, function (focus) {
+      var focused = focus && focus.returnValue !== false && isArray(focus.focusedWindowInfo) ? focus.focusedWindowInfo : [];
+      var overlay = overlays.filter(function (w) {
+        return focused.some(function (f) { return f && f.appId === w.appId; });
+      })[0];
+      cb(overlay ? overlay.appId : null);
+    });
   });
 }
 
@@ -2763,9 +2804,31 @@ function behindAnother(cb) {
  * its drifting wallpaper kept the web app manager at 34% under the screen
  * saver, which got 2% and stuttered.
  */
-function viewCovered() {
+function viewCovered(saverActive) {
   if (powerState === 'Screen Saver') return true;
+  // The dashboard's manual start fallback launches the saver app directly.
+  // On those TVs tvpower remains Active, so its state alone misses the cover.
+  if (saverActive === undefined && screensaversModule) saverActive = screensaversModule.launchedShowing();
+  if (saverActive) return true;
   return isStandalone() && !!foreground && foreground !== HOME_APP;
+}
+
+/*
+ * Whether Home's video wallpaper reaches the screen. Reloaded as the screen
+ * saver closed, its <video> went on playing with nothing on the main video
+ * output (G3, webOS 10.3: videooutput listed no Home client until it was
+ * loaded again). null where unknown or not wanted.
+ */
+var wallVideoOnScreen = null;
+function checkWallVideoOutput() {
+  if (!lunaFn || !videoBackgroundActive()) { wallVideoOnScreen = null; return; }
+  lunaFn('com.webos.service.videooutput/getStatus', {}, function (r) {
+    var sinks = r && Array.isArray(r.video) ? r.video : null;
+    wallVideoOnScreen = sinks ? sinks.some(function (v) {
+      return !!v && v.sink === 'MAIN' && v.connected === true && v.connectedSource === 'VDEC' &&
+        (v.appId === HOME_APP || v.appId === LG_HOME);
+    }) : null;
+  });
 }
 
 function beat(body) {
@@ -2778,11 +2841,40 @@ function beat(body) {
   if (iptvModule && body && typeof body.iptv === 'boolean') iptvModule.front(body.iptv && viewInFront());
   beats++;
   if (viewInFront()) watchBeat(beatGraceMs);
-  return { ok: true, enabled: readConfig().enabled, standalone: isStandalone(), covered: viewCovered(), saver: powerState === 'Screen Saver',
+  var saver = powerState === 'Screen Saver' || !!(screensaversModule && screensaversModule.launchedShowing());
+  // As last seen: the reply does not wait for videooutput.
+  var onScreen = wallVideoOnScreen;
+  checkWallVideoOutput();
+  return { ok: true, wallVideoOnScreen: onScreen, enabled: readConfig().enabled, standalone: isStandalone(), covered: viewCovered(saver), saver: saver,
            build: buildId, wallpapers: wallpapers.status(),
            layoutVersion: layoutVersion(), sleeps: sleeps, trace: fs.existsSync(traceFile()),
            // So a push shows within a heartbeat rather than at the next poll.
-           weather: currentWeather() };
+           weather: currentWeather(), remoteBattery: remoteBatteryBadge() };
+}
+
+/*
+ * The remote's battery as the view's badge shows it, or null to hide it:
+ * switched off, not yet read, or not low in 'low'. A remote that gives only a
+ * step is shown by it (step), not by the percentage standing in for it. The
+ * level is what lib/remotebattery last read, so this reads no Bluetooth of its own.
+ */
+function remoteBatteryBadge() {
+  var choice = readConfig().remoteBattery;
+  if (choice === 'off') return null;
+  var b = remoteBatteryFn();
+  var level = b && b.level;
+  if (typeof level !== 'number' || !isFinite(level) || level < 0 || level > 100) return null;
+  var step = REMOTE_BATTERY_STEPS.indexOf(b.step) !== -1 ? b.step : null;
+  var low = step ? step === 'low' : level <= REMOTE_BATTERY_LOW;
+  if (choice === 'low' && !low) return null;
+  return step ? { level: null, step: step, low: low } : { level: Math.round(level), step: null, low: low };
+}
+
+// Whether the badge could ever show: a remote is paired and its battery read
+// has not given up as unsupported. The dashboards offer the setting only then.
+function remoteBatteryAvailable() {
+  var b = remoteBatteryFn();
+  return !!b && b.status !== 'unsupported';
 }
 
 function foregroundChanged(id) {
@@ -3051,7 +3143,15 @@ function powerStateChanged(raw) {
   var was = powerState;
   powerState = String(raw || '');
   if (was === powerState) return;
-  if (was === 'Screen Saver') saverEndedAt = nowMs();
+  if (was === 'Screen Saver') {
+    saverEndedAt = nowMs();
+    /*
+     * The view can be slow to beat as the screen saver ends: a G5 (webOS
+     * 11.2.0), short of memory with the live preview always on, missed one
+     * and LG's Home took over (#1549). It is given the wait of a first beat.
+     */
+    if (viewInFront() && powerActive && beatTimer) watchBeat(firstBeatGraceMs);
+  }
   cancelWake();
   if (was === null || names.powerState(was).systemOn || !names.powerState(powerState).systemOn) return;
   if (!readConfig().enabled) return;
@@ -3175,6 +3275,7 @@ function status(cb) {
         lgHomeOpen: escaped,
         hideLgHomeAtStart: c.hideLgHomeAtStart === true,
         hideLgHomeAtStartAvailable: startLayoutAvailable(),
+        remoteBatteryAvailable: remoteBatteryAvailable(),
         history: !!(historyModule && historyModule.enabled && historyModule.enabled()),
         wallpapers: wallpapers.status(),
         colourPresets: COLOUR_PRESETS,
@@ -3205,6 +3306,7 @@ function startLayoutAvailable() { return /^9\./.test(String(webosVersion || ''))
 
 function init(opts) {
   opts = opts || {};
+  screensaversModule = opts.screensavers || null;
   lunaFn = opts.luna || null;
   liveState = opts.liveState || null;
   historyModule = opts.history || null;
@@ -3255,6 +3357,7 @@ function init(opts) {
   systemctlPath = opts.systemctl !== undefined ? opts.systemctl
     : SYSTEMCTLS.filter(function (p) { return fs.existsSync(p); })[0] || '';
   if (typeof opts.tvInfo === 'function') tvInfoFn = opts.tvInfo;
+  remoteBatteryFn = typeof opts.remoteBattery === 'function' ? opts.remoteBattery : function () { return null; };
   homeKeysFn = opts.homeKeys || function () {};
   handOverFn = opts.handOverTileHiding || function () {};
   pictureDetailsFn = opts.pictureDetails || function () {};
@@ -3455,6 +3558,7 @@ function stop() {
 
 module.exports = {
   LG_HOME: LG_HOME,
+  viewInFront: viewInFront,
   playChannel: playChannel,
   openInternetTv: openInternetTv,
   init: init,
@@ -3465,6 +3569,7 @@ module.exports = {
   status: status,
   catalogue: catalogue,
   viewStatus: viewStatus,
+  videoBackgroundActive: videoBackgroundActive,
   channelList: channelList,
   guide: guide,
   now: now,
@@ -3510,8 +3615,17 @@ module.exports = {
     // The shuffled collection: one picture, or every one.
     if (body && typeof body.removePicture === 'string') return wallpapers.removePictures(cb, body.removePicture);
     if (body && body.removePictures === true) return wallpapers.removePictures(cb);
+    // The Video screen saver is staged with the playlist and its details filled in.
+    var restaged = function (result) {
+      if (result && result.ok && screensaversModule) screensaversModule.restageScreensaver(true);
+      cb(result);
+    };
+    if (body && Array.isArray(body.videoUrls)) return wallpapers.setVideoSources(body.videoUrls, body.videoShuffle, restaged, body.videoStyle);
+    if (body && (typeof body.videoShuffle === 'boolean' || (body.videoStyle && typeof body.videoStyle === 'object'))) {
+      return wallpapers.setVideoOptions({ shuffle: body.videoShuffle, style: body.videoStyle }, restaged);
+    }
     if (body && typeof body.choose === 'string') return wallpapers.choose(body.choose, cb);
-    cb({ ok: false, error: 'removeUploads, remove, removePicture, removePictures or choose expected' });
+    cb({ ok: false, error: 'removeUploads, remove, removePicture, removePictures, videoUrls, videoShuffle, videoStyle or choose expected' });
   },
   normalise: normalise,
   hideApps: hideApps,

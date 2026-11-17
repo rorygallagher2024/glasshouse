@@ -129,7 +129,7 @@ realNextTick(function () {
             assert.strictEqual(over.held, false);
             assert.strictEqual(over.heldOverridden, true);
             over.modes.forEach(function (m) {
-              assert.strictEqual(m.available, true, m.id);
+              assert.strictEqual(m.available, m.id !== 'video', m.id);
             });
             console.log('  ✓ allowExperimentalScreensavers turns them back on and is reported');
 

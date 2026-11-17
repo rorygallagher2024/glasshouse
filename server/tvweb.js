@@ -19,7 +19,7 @@
  * first 4096 bytes of a downloaded tvweb.js for this line (up to 0.82.2), and
  * refuses a release where it is further down (#586).
  */
-var TVWEB_VERSION = '0.154.0';
+var TVWEB_VERSION = '0.155.0';
 
 var http = require('http');
 var fs = require('fs');
@@ -621,7 +621,13 @@ remoteKeys.init({ luna: luna, subscription: lunaTransport.Subscription, services
   // when a key is set to it, and preloaded from then on.
   inputBarAllowed: function () { return inputBar.allowed(); },
   inputBarApp: function (action, cb) { tvApp(action, cb, 'inputbar-app'); },
-  onInputBarKey: function () { inputBar.poke(); } });
+  onInputBarKey: function () { inputBar.poke(); },
+  // Glasshouse Bar on a key beside Glasshouse Home (#1499): offered where the
+  // Bar is, its app installed for the key unless the Bar is the launcher.
+  homeBarAllowed: function () { return inputBar.allowed(); },
+  homeBarApp: function (action, cb) { tvApp(action, cb, 'homebar-app'); },
+  homeBarLauncher: function () { return homebar.enabled(); },
+  onHomeBarKey: function () { homebar.keySet(); } });
 inputBar.init({
   luna: luna,
   webosVersion: telemetry.detectWebosVersion(),
@@ -639,6 +645,7 @@ homebar.init({
   standing: function () { return inputBar.standing(); },
   compat: function () { return compat.info('inputBar', compatTv(), 'Glasshouse Bar'); },
   on: function () { return !liveState || (liveState.state.snapshot().power || {}).systemOn !== false; },
+  byKey: remoteKeys.opensHomeBar,
   // Glasshouse Home, or a launcher in its place, off first: LG's Home keeps its place.
   homeOff: function (cb) {
     if (!glasshouseHome || !glasshouseHome.enabled()) return cb({ ok: true });
@@ -665,9 +672,11 @@ screensavers.init({
   watchKeys: function (on) { if (!on || remotebuttons.isSupported()) remotebuttons.want('screensaver', on); },
   watchPointer: function (on) { if (!on || remotebuttons.isSupported()) remotebuttons.want('saverPointer', on); },
   mediaState: telemetry.readMediaState,
+  homeVideoBackground: function () { return !!(glasshouseHome && glasshouseHome.videoBackgroundActive()); },
   haEntity: haEntity
 });
 idlesaver.init({ luna: luna, mediaState: telemetry.readMediaState,
+  homeVideoBackground: function () { return !!(glasshouseHome && glasshouseHome.videoBackgroundActive()); },
   watching: function () { return !!(iptv && iptv.watching()); } });
 // A mount does not outlive a reboot: the plain No Signal screen is mounted again.
 nosignal.init({ luna: luna });
@@ -2194,7 +2203,14 @@ function startGlasshouseHome() {
   var weather = require('./lib/weather');
   weather.init({ getJson: fetchLib.getJson });
   glasshouseHome.init({
+    screensavers: screensavers,
     weather: weather,
+    // What the dashboard's Remote section shows: the level, the step it stands
+    // in for, and whether it can be read at all. null with no remote paired.
+    remoteBattery: function () {
+      var remote = telemetry.remoteInfo();
+      return remote ? { level: remote.battery, step: remote.batteryStep, status: remote.batteryStatus } : null;
+    },
     iptv: iptv,
     luna: luna,
     Subscription: lunaTransport.Subscription,

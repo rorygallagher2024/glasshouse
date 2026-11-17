@@ -15,7 +15,7 @@ console.log('Running test-homebar.js ...');
 
 var dir = path.join(os.tmpdir(), 'homebar-' + process.pid);
 fs.mkdirSync(dir);
-var events = [], homeKey = '', allowed = true, keyRefused = false, homeOn = true, preloads = 0;
+var events = [], homeKey = '', allowed = true, keyRefused = false, homeOn = true, preloads = 0, byKey = false;
 function FakeSub() { this.handlers = {}; }
 FakeSub.prototype.start = function () { events.push('watch running'); sub = this; };
 var sub = null;
@@ -36,7 +36,8 @@ homebar.init({
   },
   allowed: function () { return allowed; },
   standing: function () { return 'tried'; },
-  homeOff: function (cb) { events.push(homeOn ? 'Glasshouse Home off' : 'LG Home already'); homeOn = false; setImmediate(function () { cb({ ok: true }); }); }
+  homeOff: function (cb) { events.push(homeOn ? 'Glasshouse Home off' : 'LG Home already'); homeOn = false; setImmediate(function () { cb({ ok: true }); }); },
+  byKey: function () { return byKey; }
 });
 
 var steps = [
@@ -96,6 +97,33 @@ var steps = [
         next();
       }, 100);
     });
+  },
+  // A remote key set to open it, beside Glasshouse Home (#1499).
+  function (next) {
+    byKey = true;
+    var before = preloads;
+    homebar.keySet();
+    assert.deepEqual(homebar.status(), { enabled: false, offered: true, standing: 'tried', byKey: true });
+    sub.handlers.message({ running: [{ id: 'com.tvweb.homebar' }] });
+    sub.handlers.message({ running: [] });
+    waitFor(function () { return preloads > before; }, function () {
+      homebar.enable(function (r) {
+        assert.strictEqual(r.ok, true, r.error);
+        events = [];
+        homebar.disable(function (r2) {
+          assert.strictEqual(r2.ok, true, r2.error);
+          assert.deepEqual(events, ['Home key LG'], 'its app stays while a key opens it');
+          var after = preloads;
+          sub.handlers.message({ running: [{ id: 'com.tvweb.homebar' }] });
+          sub.handlers.message({ running: [] });
+          waitFor(function () { return preloads > after; }, function () {
+            byKey = false;
+            console.log('  ✓ opened by a remote key, it is kept loaded, and its app stays when it stops being the launcher');
+            next();
+          }, 'a preload for the key after the launcher is switched off', 3000);
+        });
+      });
+    }, 'a preload for the key', 3000);
   }
 ];
 (function run(i) {

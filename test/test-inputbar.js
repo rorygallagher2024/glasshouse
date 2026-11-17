@@ -39,13 +39,13 @@ function run(i) {
 }
 
 step(function (next) {
-  ['4.4.3', '5.6.2', '6.5.3', '7.6.0', '9.2.2'].forEach(function (v) {
+  ['4.4.3', '5.6.2', '6.5.3', '7.6.0', '9.2.2', '10.3.2'].forEach(function (v) {
     setUp(v);
     assert.strictEqual(bar.standing(), 'tried', 'webOS ' + v);
     assert.strictEqual(bar.allowed(), true);
     assert.strictEqual(bar.summary().report, undefined, 'no report links where it has been tried');
   });
-  ['8.3.0', '10.1.0', null].forEach(function (v) {
+  ['8.3.0', null].forEach(function (v) {
     setUp(v);
     assert.strictEqual(bar.standing(), 'untried', 'webOS ' + v);
     assert.strictEqual(bar.allowed(), true, 'offered on webOS ' + v + ', untried');

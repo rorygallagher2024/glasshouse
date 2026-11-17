@@ -653,6 +653,10 @@ function enigma2Auth(src) {
   return src && src.user ? { user: src.user, pass: src.pass || '' } : null;
 }
 
+function withoutUserInfo(u) {
+  return String(u || '').replace(/^(https?:\/\/)[^\/?#@]*@/i, '$1');
+}
+
 // The characters a URL cannot carry as they are, in a picon's name for one.
 function encodeUrlChars(u) {
   return String(u || '').replace(/[^\x21-\x7e]/g, function (c) {
@@ -696,7 +700,10 @@ function enigma2Playlist(src, cb) {
           if (/^1:64:/.test(e.tvgId)) return false;
           // The number of the channel in its bouquet, as the receiver lists it.
           e.number = String(++position);
-          e.logo = encodeUrlChars(e.logo);
+          // A receiver with a login puts a session (-sid:token@) into every address, new on each read: the
+          // channel's key would move with it and the logo would be refused. The login is sent apart instead.
+          e.url = withoutUserInfo(e.url);
+          e.logo = encodeUrlChars(withoutUserInfo(e.logo));
           return true;
         }
       };
@@ -760,14 +767,16 @@ function selectJob(cb) {
     if (ep && ep.length < 2) ep.push(e);
   });
   if (!ok) return cb(fail('no-snapshot'));
-  var rematch = {};
+  var rematch = {}, taken = {};
   Object.keys(wanted).forEach(function (k) {
     if (found[k]) return;
     var w = wanted[k];
     var ng = w.name ? byNameGroup[nameGroupOf(w.name, w.group)] || [] : [];
     var ep = w.epgId ? byEpg[w.epgId] || [] : [];
     var hit = ng.length === 1 ? ng[0] : ep.length === 1 ? ep[0] : null;
-    if (hit && !wanted.hasOwnProperty(hit.key) && !found[hit.key]) {
+    // A key a group section already carries still follows: only a second wanted key may not claim it too.
+    if (hit && !wanted.hasOwnProperty(hit.key) && !taken[hit.key]) {
+      taken[hit.key] = true;
       found[hit.key] = hit;
       rematch[k] = hit.key;
     } else missingKeys.push(k);

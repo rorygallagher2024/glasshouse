@@ -248,6 +248,9 @@ function luna(uri, p, cb) {
     r.appId = tv.front || '';
   } else if (uri === 'com.webos.surfacemanager/getForegroundWindowInfo') {
     if (tv.windows) r.windows = copy(tv.windows);
+  } else if (uri === 'com.webos.surfacemanager/getFocusedWindowInfo') {
+    if (tv.focusedReply) return tv.focusedReply(cb);
+    if (tv.focusedWindows) r.focusedWindowInfo = copy(tv.focusedWindows);
   } else if (uri === 'com.webos.service.utp.boot/getLastChannelId') {
     r.channelId = tv.lastChannel;
   } else if (uri === 'com.webos.service.attachedstoragemanager/listDevices') {
@@ -373,6 +376,61 @@ step('a layout saved from a dashboard changes the version the view\'s heartbeat 
   });
 });
 
+step('the heartbeat brings the remote\'s battery as the layout\'s choice shows it', function (done) {
+  var level = 55;
+  start(null, { remoteBattery: function () { return { level: level, step: null, status: 'available' }; } });
+  assert.strictEqual(home.normalise({}).remoteBattery, 'low', 'shown once low unless chosen otherwise');
+  assert.strictEqual(home.normalise({ remoteBattery: 'sometimes' }).remoteBattery, 'low', 'and only one of the choices offered');
+  assert.strictEqual(home.beat().remoteBattery, null, 'above the low mark, When low hides it');
+  level = 20;
+  assert.deepEqual(home.beat().remoteBattery, { level: 20, step: null, low: true }, 'at the mark it shows, drawn as low');
+  level = null;
+  assert.strictEqual(home.beat().remoteBattery, null, 'and not before a level is read');
+  home.setLayout({ remoteBattery: 'always' }, function (r) {
+    assert.ok(r.ok, r.error);
+    assert.strictEqual(r.layout.remoteBattery, 'always');
+    level = 87.4;
+    assert.deepEqual(home.beat().remoteBattery, { level: 87, step: null, low: false }, 'Always shows it at any level');
+    home.setLayout({ remoteBattery: 'off' }, function (r2) {
+      assert.ok(r2.ok, r2.error);
+      level = 5;
+      assert.strictEqual(home.beat().remoteBattery, null, 'and Off never does');
+      done();
+    });
+  });
+});
+
+step('a remote that reports only High, Medium or Low is shown by that step, not a percentage', function (done) {
+  var b = { level: 50, step: 'mid', status: 'available' };
+  start(null, { remoteBattery: function () { return b; } });
+  assert.strictEqual(home.beat().remoteBattery, null, 'Medium is not low');
+  b = { level: 10, step: 'low', status: 'available' };
+  assert.deepEqual(home.beat().remoteBattery, { level: null, step: 'low', low: true }, 'Low shows in When low, as Low');
+  home.setLayout({ remoteBattery: 'always' }, function (r) {
+    assert.ok(r.ok, r.error);
+    b = { level: 100, step: 'high', status: 'available' };
+    assert.deepEqual(home.beat().remoteBattery, { level: null, step: 'high', low: false }, 'High, never 100%');
+    done();
+  });
+});
+
+step('the Remote battery setting is offered only where the badge could show', function (done) {
+  var b = null;
+  start(null, { webosVersion: '11.2.0', remoteBattery: function () { return b; } });
+  home.status(function (none) {
+    assert.strictEqual(none.remoteBatteryAvailable, false, 'not with no remote paired');
+    b = { level: null, step: null, status: 'unsupported' };
+    home.status(function (unsupported) {
+      assert.strictEqual(unsupported.remoteBatteryAvailable, false, 'nor once the read gives up as unsupported');
+      b = { level: null, step: null, status: 'waiting' };
+      home.status(function (waiting) {
+        assert.strictEqual(waiting.remoteBatteryAvailable, true, 'but while a first read is awaited');
+        done();
+      });
+    });
+  });
+});
+
 step('the heartbeat asks the view to measure its frames only while the trace file is there, and logs what it sends', function (done) {
   start(null);
   var flag = path.join(dir, 'home-trace');
@@ -473,6 +531,15 @@ step('the heartbeat says when the view is covered: by the screen saver, or on we
   start(null);
   foreground('com.webos.app.hdmi2');
   assert.strictEqual(home.beat().covered, false, 'on webOS 9 the view is LG\'s Home and the screen saver alone covers it');
+  var manuallyLaunched = true;
+  start(null, { screensavers: { launchedShowing: function () { return manuallyLaunched; } } });
+  b = home.beat();
+  assert.strictEqual(b.covered, true, 'a saver launched directly from the dashboard covers Home even while tvpower says Active');
+  assert.strictEqual(b.saver, true, 'the direct app launch is reported as a saver');
+  manuallyLaunched = false;
+  b = home.beat();
+  assert.strictEqual(b.covered, false, 'Home is uncovered when the manually launched saver closes');
+  assert.strictEqual(b.saver, false);
   done();
 });
 
@@ -1540,7 +1607,7 @@ step('webOS 8, untried, is offered and uses takeover', function (done) {
   });
 });
 
-step('webOS 5 and 6 are offered, experimental, standalone, without restarting sam; webOS 3, untried, standalone', function (done) {
+step('webOS 5 and 6 are offered, experimental, standalone, without restarting sam; webOS 3, tried, standalone', function (done) {
   start(null, { webosVersion: '5.5.0' });
   home.status(function (st5) {
     assert.strictEqual(st5.supported.ok, true, 'no setting needed on a CX');
@@ -1570,8 +1637,8 @@ step('webOS 5 and 6 are offered, experimental, standalone, without restarting sa
             assert.strictEqual(st4.supported.restartsApps, undefined);
             start(null, { webosVersion: '3.9.3' });
             home.status(function (st3on) {
-              assert.strictEqual(st3on.supported.ok, true, 'offered on webOS 3, untried');
-              assert.strictEqual(st3on.supported.untried, true);
+              assert.strictEqual(st3on.supported.ok, true, 'offered on webOS 3, reported working (#1573)');
+              assert.strictEqual(st3on.supported.untried, undefined);
               assert.strictEqual(st3on.supported.standalone, true, 'run as on webOS 4');
               assert.strictEqual(st3on.supported.previewOptions, false, 'webOS 3 omits live preview options');
               done();
@@ -2358,6 +2425,85 @@ step('a view that stops beating behind another app\'s window is left alone; in f
   });
 });
 
+step('LG Guide can focus its overlay over Home without a heartbeat, and recovery resumes when it closes', function (done) {
+  start({ enabled: true }, { webosVersion: '10.2.2' });
+  home.start(function () {
+    foreground(LG_HOME);
+    tv.windows = [
+      { appId: 'com.webos.app.volume', windowType: '_WEBOS_WINDOW_TYPE_VOLUME' },
+      { appId: LG_HOME, windowType: '_WEBOS_WINDOW_TYPE_CARD' },
+      { appId: 'com.webos.app.livemenu', windowType: '_WEBOS_WINDOW_TYPE_OVERLAY' }
+    ];
+    tv.focusedWindows = [{ appId: 'com.webos.app.livemenu', type: 'overlaySurface' }];
+    home.beat();
+    tv.launched = [];
+    wait(25100, function () {
+      assert.deepEqual(tv.launched, [], 'nothing opens over Guide after multiple grace periods');
+      assert.ok(taken(), 'Home keeps its place while Guide has focus');
+      tv.focusedWindows = [{ appId: LG_HOME, type: 'fullscreen' }];
+      tv.windows = [{ appId: LG_HOME, windowType: '_WEBOS_WINDOW_TYPE_CARD' }];
+      wait(5100, function () {
+        assert.strictEqual(tv.samType, 'native', 'with Guide closed, a genuinely silent view is recovered without another heartbeat');
+        home.disable(function () { done(); });
+      });
+    });
+  });
+});
+
+step('unfocused overlays or an unavailable focus reply do not hide a stopped Home view', function (done) {
+  var cases = [
+    { focusedWindowInfo: [{ appId: LG_HOME, type: 'fullscreen' }] },
+    { returnValue: false },
+    { focusedWindowInfo: [{ appId: 'com.webos.app.livemenu', type: 'overlaySurface' }] }
+  ];
+  function nextCase() {
+    if (!cases.length) return done();
+    var reply = cases.shift();
+    start({ enabled: true });
+    home.start(function () {
+      foreground(LG_HOME);
+      tv.windows = [
+        { appId: LG_HOME, windowType: '_WEBOS_WINDOW_TYPE_CARD' },
+        { appId: 'com.webos.app.volume', windowType: '_WEBOS_WINDOW_TYPE_VOLUME' }
+      ];
+      if (!cases.length) tv.windows.push({ appId: 'com.webos.app.settings', windowType: '_WEBOS_WINDOW_TYPE_OVERLAY' });
+      else tv.windows.push({ appId: 'com.webos.app.livemenu', windowType: '_WEBOS_WINDOW_TYPE_OVERLAY' });
+      tv.focusedReply = function (cb) { process.nextTick(function () { cb(reply); }); };
+      home.beat();
+      wait(10100, function () {
+        assert.strictEqual(tv.samType, 'native', 'an overlay must be both present and focused to defer recovery');
+        home.disable(nextCase);
+      });
+    });
+  }
+  nextCase();
+});
+
+step('a heartbeat arriving while overlay focus is checked cancels that recovery attempt', function (done) {
+  start({ enabled: true });
+  home.start(function () {
+    foreground(LG_HOME);
+    tv.windows = [
+      { appId: LG_HOME, windowType: '_WEBOS_WINDOW_TYPE_CARD' },
+      { appId: 'com.webos.app.livemenu', windowType: '_WEBOS_WINDOW_TYPE_OVERLAY' }
+    ];
+    var checked = false;
+    tv.focusedReply = function (cb) {
+      checked = true;
+      home.beat();
+      cb({ returnValue: true, focusedWindowInfo: [{ appId: LG_HOME, type: 'fullscreen' }] });
+    };
+    home.beat();
+    tv.launched = [];
+    wait(10100, function () {
+      assert.ok(checked, 'the focus reply arrived after the newer heartbeat');
+      assert.deepEqual(tv.launched, [], 'the stale window check cannot replace a responding view');
+      assert.ok(taken());
+      home.disable(function () { done(); });
+    });
+  });
+});
+
 // With WebAppMgr running the view may only be loading: the wait runs to the
 // first beat's (20 s; 7 s here).
 step('with WebAppMgr running, a short Home press that brings no heartbeat gives LG\'s Home its place after the longer wait', function (done) {
@@ -3131,6 +3277,31 @@ step('a heartbeat check held up by a suspend waits for the view, and a real hang
       wait(250, function () {
         assert.deepEqual(tv.launched, [LG_HOME], 'with no beat after the wake, it is one');
         done();
+      });
+    });
+  });
+});
+
+// A G5 (webOS 11.2.0): the view missed a beat as the screen saver ended, and
+// LG's Home took over (#1549). The grace periods are shortened here.
+step('the end of the screen saver gives the view a first beat\'s wait, and a real hang still falls back', function (done) {
+  start(null, { beatGraceMs: 100, firstBeatGraceMs: 300 });
+  home.enable(function () {
+    foreground(LG_HOME);
+    powerState('Active');
+    home.beat();
+    powerState('Screen Saver');
+    wait(60, function () {
+      home.beat();
+      tv.launched = [];
+      powerState('Active');   // a check left from the last beat would fire in 100 ms
+      wait(200, function () {
+        assert.deepEqual(tv.launched, [], 'slow to beat as the saver ends is not a hang');
+        assert.ok(taken(), 'Glasshouse Home keeps its place');
+        wait(250, function () {
+          assert.deepEqual(tv.launched, [LG_HOME], 'with no beat after the saver, it is one');
+          done();
+        });
       });
     });
   });

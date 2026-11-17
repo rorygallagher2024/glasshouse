@@ -45,6 +45,7 @@ function decodeRef(u) {
 
 // The tuner's stream port: a transport stream behind the same login, and what it was asked for.
 var streamHits = [];
+var sessions = 0;
 var TS_BYTES = toBuffer(new Array(188 * 40 + 1).join('G'), 'utf8');
 var streamer = http.createServer(function (req, res) {
   var auth = /^Basic (.+)$/.exec(req.headers.authorization || '');
@@ -81,8 +82,10 @@ var receiver = http.createServer(function (req, res) {
     hits.m3u.push(ref);
     res.writeHead(200, { 'Content-Type': 'audio/x-mpegurl' });
     if (ref === POLSKIE) {
+      // A receiver with a login names a new session in the addresses of each read.
+      var session = function (u) { return u.replace('://', '://-sid:token' + (++sessions) + '@'); };
       return res.end('#EXTM3U \n' +
-        '#EXTVLCOPT:http-reconnect=true\n#EXTINF:-1 tvg-chno="4408" tvg-logo="' + base + '/picon/tvp hd.png" tvg-id="' + TVP_HD + '",TVP HD\n#EXTVLCOPT:program=4408\n' + streamBase + '/' + TVP_HD + '\n' +
+        '#EXTVLCOPT:http-reconnect=true\n#EXTINF:-1 tvg-chno="4408" tvg-logo="' + session(base) + '/picon/tvp hd.png" tvg-id="' + TVP_HD + '",TVP HD\n#EXTVLCOPT:program=4408\n' + session(streamBase) + '/' + TVP_HD + '\n' +
         '#EXTINF:-1 tvg-id="1:64:1:0:0:0:0:0:0:0:",--- News ---\n' + streamBase + '/1:64:1:0:0:0:0:0:0:0:\n' +
         '#EXTINF:-1 tvg-id="' + TVN + '" tvg-logo="' + base + '/picon/tvn.png",TVN\n' + streamBase + '/' + TVN + '\n');
     }
@@ -368,7 +371,42 @@ step('a refused login on the stream port is a 502, and the password is not stuck
       assert.equal(status, 502);
       iptv.playlistsAction({ action: 'edit', id: pl, pass: PASS }, function (r2) {
         assert.equal(r2.ok, true);
-        wait(function () { var p = playlistOf(pl); return idle() && p.ready && !p.loginRefused; }, function () { done(); });
+        wait(function () { var p = playlistOf(pl); return idle() && p.ready && !p.loginRefused; }, function () {
+          // Read again with a new session in every address: the channel keeps its key.
+          iptv.search(pl, 'tvp', '', function (s) {
+            assert.equal(s.channels[0].key, tvp.key);
+            done();
+          });
+        });
+      });
+    });
+  });
+});
+
+step('a stream port set on the tuner replaces the one in every channel\'s URL', function (done) {
+  iptv.playlistsAction({ action: 'edit', id: pl, streamPort: '8002' }, function (r) {
+    assert.equal(r.ok, true);
+    wait(function () { var p = playlistOf(pl); return idle() && p.ready && p.streamPort === 8002; }, function () {
+      assert.equal(iptv.streamUrl(pl, tvp.key).url, streamBase.replace(/:\d+$/, ':8002') + '/' + TVP_HD);
+      iptv.playlistsAction({ action: 'edit', id: pl, streamPort: '' }, function (r2) {
+        assert.equal(r2.ok, true);
+        wait(function () { var p2 = playlistOf(pl); return idle() && p2.ready && p2.streamPort === 0; }, function () {
+          assert.equal(iptv.streamUrl(pl, tvp.key).url, streamBase + '/' + TVP_HD, 'cleared, the tuner\'s own port is used again');
+          done();
+        });
+      });
+    });
+  });
+});
+
+step('a stream port out of range is refused when added or edited', function (done) {
+  iptv.playlistsAction({ action: 'edit', id: pl, streamPort: '0' }, function (r) {
+    assert.deepEqual([r.ok, r.error], [false, 'streamPort']);
+    iptv.playlistsAction({ action: 'edit', id: pl, streamPort: '70000' }, function (r2) {
+      assert.deepEqual([r2.ok, r2.error], [false, 'streamPort']);
+      iptv.playlistsAction({ action: 'edit', id: pl, streamPort: '8002abc' }, function (r3) {
+        assert.deepEqual([r3.ok, r3.error], [false, 'streamPort'], 'only a whole number is a port');
+        done();
       });
     });
   });
@@ -387,6 +425,35 @@ step('an edit keeps the login that was set, and noLogin clears it', function (do
         });
       });
     });
+  });
+});
+
+step('a favourite whose key moved follows its channel, though a whole group carries it', function (done) {
+  iptv.playlistsAction({ action: 'edit', id: pl, user: USER, pass: PASS }, function (r0) {
+  assert.equal(r0.ok, true);
+  wait(function () { var p = playlistOf(pl); return idle() && p.ready && !p.loginRefused; }, function () {
+  iptv.setLineup({ action: 'add-group', pl: pl, group: 'Polskie' }, function (r) {
+    assert.equal(r.ok, true);
+    wait(function () { return idle(); }, function () {
+      var file = path.join(stateDir, 'iptv', 'selection.json');
+      var text = fs.readFileSync(file, 'utf8');
+      assert.ok(text.indexOf(tvp.key) !== -1, 'the favourite is in the saved selection');
+      // A newer generation, as an edit made while the server was off would leave: the select job reads it again.
+      fs.writeFileSync(file, text.split(tvp.key).join('mstalekey0001').replace(/"generation":(\d+)/, function (m, n) { return '"generation":' + (+n + 1); }));
+      iptv.stop();
+      iptv.init({ stateDir: stateDir, clients: function () { return [CURL]; }, version: 'test', catchupMs: 0,
+        onChange: function () { changes++; } });
+      iptv.start();
+      wait(function () {
+        var favs = iptv.lineup().favourites;
+        return idle() && favs.indexOf(pl + ':' + tvp.key) !== -1;
+      }, function () {
+        assert.ok(iptv.lineup().favourites.indexOf(pl + ':mstalekey0001') === -1, 'the old key is gone');
+        done();
+      });
+    });
+  });
+  });
   });
 });
 

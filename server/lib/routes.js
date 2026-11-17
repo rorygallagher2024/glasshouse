@@ -1265,7 +1265,13 @@ function handleHomeRoute(req, res, u, pathname) {
     // A custom launcher's own saved values (Glasshouse.storage).
     if (pathname === '/api/home/store' && homeLauncherModule) return homeLauncherModule.store(reply);
     if (pathname === '/api/home/guide') return homeModule.guide(function (g) { reply({ ok: true, guide: g }); });
-    if (pathname === '/api/home/now') return homeModule.now(reply);
+    if (pathname === '/api/home/now') {
+      // homeInFront: Glasshouse Bar, opened by a remote key, does nothing over Glasshouse Home (#1499).
+      return homeModule.now(function (r) {
+        if (r && typeof r === 'object' && typeof homeModule.viewInFront === 'function') r.homeInFront = homeModule.viewInFront();
+        reply(r);
+      });
+    }
     if (pathname === '/api/home/weather') return homeModule.weather(reply);
     if (pathname === '/api/home/weather/places') {
       return homeModule.weatherPlaces(String(u.query && u.query.q || ''), String(u.query && u.query.lang || ''), reply);
@@ -1334,10 +1340,12 @@ function handleHomeRoute(req, res, u, pathname) {
     if (pathname === '/api/home/store' && homeLauncherModule) {
       return readJsonBody(req, res, function (body) { homeLauncherModule.setStore(body, reply); }, homeLauncherModule.MAX_STORE + 1024);
     }
+    if (pathname === '/api/home/wallpapers') {
+      return readJsonBody(req, res, function (body) { homeModule.setWallpapers(body, reply); }, 128 * 1024);
+    }
     return readJsonBody(req, res, function (body) {
       if (pathname === '/api/home/layout') return homeModule.setLayout(body, reply);
       if (pathname === '/api/home/start-layout') return homeModule.setHideLgHomeAtStart(body, reply);
-      if (pathname === '/api/home/wallpapers') return homeModule.setWallpapers(body, reply);
       // Glasshouse Bar leaves LG's Home its place, so it is switched off first.
       if (pathname === '/api/home/enable') {
         if (!homebarModule || !homebarModule.enabled()) return homeModule.enable(reply);
@@ -1596,8 +1604,8 @@ function handleRequest(req, res) {
     // do, so a day-old copy beside a new page would show text the page no
     // longer has, or miss text it now does.
     // So is the script a custom launcher is given: a launcher written for a
-    // newer one calls what an older copy lacks.
-    var fresh = ext === '.html' || ext === '.json' || /(^|\/)(i18n|home-kit)\.js$/.test(file);
+    // newer one calls what an older copy lacks, and the playlist order Home calls.
+    var fresh = ext === '.html' || ext === '.json' || /(^|\/)(i18n|home-kit|video-order)\.js$/.test(file);
     var cacheHdr = fresh ? 'no-cache' : 'public, max-age=86400';
     var respondWithEntry = function (entry) {
       var etag = '"' + (displayVersionStr || '1') + '-' + entry.raw.length.toString(16) + '"';
