@@ -32,7 +32,7 @@ Use it for remote control, app installation and removal, OLED panel care, privac
 * **webOS**: 2.2 through 11 (LG's webOS 26) confirmed; tested across 2015–2026 models. Other versions likely work as well. LG names its versions two ways: [webOS version numbers](tested-tvs.md#webos-version-numbers) gives both
 * **Panels**: OLED (full panel wear telemetry and burn-in controls) and LCD (core dashboard, controls, and telemetry; OLED Care tab hides automatically)
 * **Access**: Rooted via [Homebrew Channel](https://github.com/webosbrew/webos-homebrew-channel). Telnet or SSH. No external dependencies or internet access needed on the TV
-* **Tested hardware**: 75 TVs across 51 series verified so far (LF632V, UF850T, UH600V, UH6030, UH610V, UH635V, B6, B7, SJ80, UJ63, B8, C8, LK61, UK63, LM57, UM71, UM73, C9, CX, GX, UN73, C1, G1, NANO75, NANO85, UP80, UP81, QNED82, UQ80, B2, C2, G2, C3, UR80, QNED80, B4, G3, C4, G4, QNED86, UT73, UT81, C5, G5, CS, LX3, UA73, UA75, C6, NU80, QNED84). Other rooted models should work; [see full table](tested-tvs.md)
+* **Tested hardware**: 92 TVs across 58 series verified so far (LF632V, UF850T, UH600V, UH6030, UH610V, UH635V, B6, B7, SJ80, UJ63, UJ65, UJ75, B8, C8, LK61, UK63, LM57, UM71, UM73, C9, CX, GX, UN70, UN73, A1, C1, G1, NANO75, NANO85, UP80, UP81, A2, B2, C2, G2, QNED82, UQ80, LX3, SQ700S, CS, B3, C3, G3, UR80, QNED80, B4, C4, G4, QNED86, UT73, UT81, C5, G5, UA73, UA75, C6, NU80, QNED84). Other rooted models should work; [see full table](tested-tvs.md)
 
 [Install](install.md){ .md-button .md-button--primary } [See the dashboard](dashboard/index.md){ .md-button }
 
@@ -46,6 +46,16 @@ Use it for remote control, app installation and removal, OLED panel care, privac
       <a href="screenshots/dashboard-light.png"><img src="screenshots/dashboard-light.png" alt="Control tab: panel, source, volume, playback, sleep timer and power, light theme (OLED42C24LA)" width="440"></a>
       <br>
       <sub>Metrics and Control tabs in dark and light themes — served directly from the TV with no cloud or external dependencies.</sub>
+    </p>
+
+=== "Remote"
+
+    <p align="center">
+      <a href="screenshots/control-remote.png"><img src="screenshots/control-remote.png" alt="The remote over the Control tab: Screen off, Input and Settings, a ring D-pad, volume, Back, Home, Mute and playback" width="560"></a>
+      &nbsp;
+      <a href="screenshots/control-remote-phone.png"><img src="screenshots/control-remote-phone.png" alt="The remote as a sheet on a phone" width="200"></a>
+      <br>
+      <sub><a href="dashboard/control/#the-remote-on-its-own">The remote</a> comes up over any tab from the Remote button, or keeps its own icon on a phone's Home Screen.</sub>
     </p>
 
 === "Glasshouse Home"
@@ -79,11 +89,11 @@ Use it for remote control, app installation and removal, OLED panel care, privac
 === "Android app"
 
     <p align="center">
-      <a href="screenshots/android-tvs.png"><img src="screenshots/android-tvs.png" alt="Android app showing online TVs" width="280"></a>
+      <a href="screenshots/android-tvs.png"><img src="screenshots/android-tvs.png" alt="Android app showing a TV with its volume, Remote, Turn off and Open dashboard" width="280"></a>
       &nbsp;&nbsp;
       <a href="screenshots/android-dashboard.png"><img src="screenshots/android-dashboard.png" alt="Android app showing the full-screen TV dashboard" width="280"></a>
       <br>
-      <sub><a href="apps/android/">Glasshouse for Android</a> keeps a list of TVs, shows which are online, wakes them with Wake-on-LAN, and opens each dashboard full screen.</sub>
+      <sub><a href="apps/android/">Glasshouse for Android</a> keeps a list of TVs, shows which are online, wakes them with Wake-on-LAN, and opens each dashboard or remote full screen.</sub>
     </p>
 
 === "Pane (macOS)"
@@ -112,13 +122,13 @@ This project is intended to give a rooted webOS TV a useful local control surfac
 
     ---
 
-    A replacement Home app with full control over what displays, and no ads, with a row of Internet TV channels from your own IPTV playlist. Or choose Glasshouse Minimal, a plainer one that comes with it, or put a launcher of your own in its place, or a web page such as a Home Assistant dashboard. Available on webOS 4, 5, 6, 7, 9, 10 and 11; webOS 3 and later versions can try it with a setting.
+    A replacement Home app with full control over what displays, and no ads: your own pictures or videos as the background, the remote's battery after the date, and a row of Internet TV channels from your own IPTV playlist or satellite tuner. Or choose Glasshouse Minimal, Glasshouse Bar along the bottom of the picture, a launcher of your own, or a web page such as a Home Assistant dashboard. Reported working on webOS 3 to 7 and 9 to 11, and offered with a note on other versions.
 
 -   **[Controlling the TV without the cloud](dashboard/control.md)**
 
     ---
 
-    Remote's keys, volume, inputs, power, sleep timer, comprehensive picture and sound settings, Game Optimizer, and much more.
+    A remote that comes up over any tab or sits on a phone's Home Screen, with a D-pad, touchpad and keyboard, plus volume, inputs, power, sleep timer, comprehensive picture and sound settings, Game Optimizer, and much more.
 
 -   **[Seeing what the TV is configured to collect, and switching it off](dashboard/privacy.md)**
 
@@ -132,11 +142,11 @@ This project is intended to give a rooted webOS TV a useful local control surfac
 
     Install apps from the Homebrew Channel catalog, uninstall apps, disable unnecessary background system services to free up RAM and CPU cycles, stop LG keeping apps loaded in the background that are never used, and hide non-removable built-in LG system apps from LG's Home.
 
--   **[Remapping the remote's buttons](dashboard/remote.md#remote-keys)**
+-   **[Remapping the remote's buttons](dashboard/remote.md)**
 
     ---
 
-    Point Netflix, Prime Video, Guide, the color keys and the TV's other shortcut buttons at any installed app, an HDMI input or Live TV, or turn them off.
+    Point Netflix, Prime Video, Guide, the color keys and the TV's other shortcut buttons at any installed app, an HDMI input, Live TV, the input bar or Glasshouse Bar, or turn them off.
 
 -   **[Replacing the screen saver](dashboard/screen-savers.md)**
 
@@ -148,7 +158,7 @@ This project is intended to give a rooted webOS TV a useful local control surfac
 
     ---
 
-    The MQTT bridge exposes the TV as a single device with its controls and telemetry, with Home Assistant support through MQTT Discovery and the same underlying interface available to other MQTT clients. You can also send button press events to Home Assistant to control your smart home from your TV remote.
+    The MQTT bridge exposes the TV as a single device with its controls and telemetry, with Home Assistant support through MQTT Discovery and the same underlying interface available to other MQTT clients. An optional media player card brings power, volume, sources, apps and Internet TV channels together, and button press events let your TV remote control your smart home.
 
 -   **[Seeing what the TV is actually doing](dashboard/metrics.md)**
 
@@ -184,7 +194,7 @@ This project is intended to give a rooted webOS TV a useful local control surfac
 
     ---
 
-    A phone app that keeps a list of TVs, shows which are online, wakes them over Wake-on-LAN, and opens each one's dashboard full screen.
+    A phone app that keeps a list of TVs, shows which are online, wakes them over Wake-on-LAN, and opens each one's dashboard or remote full screen, with the phone's volume keys stepping the TV's volume while the remote shows.
 
 -   **[Menu-bar remote for macOS](apps/pane.md)**
 

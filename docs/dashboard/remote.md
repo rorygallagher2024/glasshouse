@@ -12,9 +12,9 @@ Sets what each number key on the remote opens when it is held: an installed app,
 
 # Remote keys
 
-![Remote keys as tiles in streaming buttons, color keys and other keys, each showing what the key does, with buttons on remotes sold elsewhere folded at the end](../screenshots/apps-remote-keys.png)
+![Remote keys as tiles in streaming buttons, voice assistant buttons, color keys and other keys, each showing what the key does, with buttons on remotes sold elsewhere folded at the end](../screenshots/apps-remote-keys.png)
 
-Configures what individual remote buttons do when pressed. Each key appears as a tile showing its active assignment, grouped under **Streaming buttons**, **Color keys**, and **Other keys**. Selecting a tile opens its available choices beneath the row.
+Configures what individual remote buttons do when pressed. Each key appears as a tile showing its active assignment, grouped under **Streaming buttons**, **Voice assistant buttons**, **Color keys**, and **Other keys**. Selecting a tile opens its available choices beneath the row.
 
 On webOS 11, **Ivi**, **Okko**, **Kinopoisk** and **LG Shop** are also offered under Streaming buttons when LG enables their assignments. They can open an app or input, do nothing, or return to **As LG has it**. A listed button may be absent from the physical remote.
 
