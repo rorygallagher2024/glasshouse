@@ -286,12 +286,22 @@ html.resting #wall .layer{-webkit-animation-play-state:paused;animation-play-sta
 .cards .app{width:300px;padding:12px 12px 10px}
 .cards .tile.app,.cards .tile.app.focus{background:none;outline-color:transparent}
 .cards .app .card{position:relative;width:276px;height:155px;margin:0 auto;border-radius:12px;background:#0d0d0d;
-  outline:3px solid transparent;outline-offset:3px;
   display:-webkit-flex;display:flex;-webkit-align-items:center;align-items:center;-webkit-justify-content:center;justify-content:center;
-  -webkit-transition:outline-color .12s,-webkit-transform .15s;transition:outline-color .12s,transform .15s}
+  -webkit-transition:-webkit-transform .15s;transition:transform .15s}
+/* The ring is a rounded border on a layer just outside the card, not an
+   outline: an outline's offset corner is tighter than the card's and drew
+   rough on a G3 (webOS 10.3). 18px is the card's 12px plus the 6px gap. */
+.cards .app .card:after{content:'';position:absolute;top:-6px;left:-6px;right:-6px;bottom:-6px;border:3px solid transparent;
+  border-radius:18px;pointer-events:none;-webkit-transition:border-color .12s;transition:border-color .12s}
 .cards .app .card img.logo{width:100%;height:100%;margin:0;border-radius:12px;object-fit:contain}
 .cards .app .card img,.cards .app .card .mono{width:92px;height:92px;line-height:92px;font-size:38px}
-.cards .app.focus .card{outline-color:#ece7df;-webkit-transform:scale(1.06);transform:scale(1.06)}
+.cards .app.focus .card{-webkit-transform:scale(1.06);transform:scale(1.06)}
+.cards .app.focus .card:after{border-color:#ece7df}
+/* Room for the focus glow above and below the cards: the row's box hides what
+   is outside it, which cut the glow off square. The negative margin keeps the
+   rows where they were. The sides stay as they are, as scrolling counts on
+   their 22px; the glow is kept within them. */
+.cards .row[data-key="app"] .wrap{padding-top:36px;padding-bottom:36px;margin-top:-30px;margin-bottom:-30px}
 .cards .app .nm{margin-top:14px;opacity:0;-webkit-transition:opacity .12s;transition:opacity .12s}
 .cards .app.focus .nm,.arranging.cards .app .nm{opacity:1}
 .no-app-labels.cards .app{width:300px}
@@ -6238,8 +6248,13 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     if (key === cardLookShown) return;
     cardLookShown = key;
     var rgb = hexRgb(accent), shown = (100 - fade) / 100;
-    var frames = '{0%,100%{outline-color:' + rgbaStr(rgb, 1, '.55') + ';box-shadow:0 0 8px 1px ' + rgbaStr(rgb, 1, '.22') + '}' +
-      '50%{outline-color:' + accent + ';box-shadow:0 0 30px 8px ' + rgbaStr(rgb, 1, '.55') + '}}';
+    // The card's ring is a border (see .card:after), a square tile's an outline.
+    function frames(prop) {
+      return '{0%,100%{' + prop + ':' + rgbaStr(rgb, 1, '.55') + ';box-shadow:0 0 6px 0 ' + rgbaStr(rgb, 1, '.15') + '}' +
+        '50%{' + prop + ':' + accent + ';box-shadow:0 0 12px 1px ' + rgbaStr(rgb, 1, '.35') + '}}';
+    }
+    var cardFrames = frames('border-color'), tileFrames = frames('outline-color');
+    var breathe = ' 1.8s ease-in-out infinite;';
     var el = $('card-look');
     if (!el) {
       el = document.createElement('style');
@@ -6248,9 +6263,11 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     }
     el.textContent = '.cards .tile.app,.cards .row:not(.active) .tile.app{opacity:' + shown + '}' +
       '.cards .tile.app.focus{opacity:1}' +
-      '.cards .app.focus .card{outline-color:' + accent + '}' +
-      '@-webkit-keyframes cardPulse' + frames + '@keyframes cardPulse' + frames +
-      '.pulse.cards .app.focus .card,.pulse:not(.cards) .tile.app.focus{-webkit-animation:cardPulse 1.8s ease-in-out infinite;animation:cardPulse 1.8s ease-in-out infinite}';
+      '.cards .app.focus .card:after{border-color:' + accent + '}' +
+      '@-webkit-keyframes cardPulse' + cardFrames + '@keyframes cardPulse' + cardFrames +
+      '@-webkit-keyframes tilePulse' + tileFrames + '@keyframes tilePulse' + tileFrames +
+      '.pulse.cards .app.focus .card:after{-webkit-animation:cardPulse' + breathe + 'animation:cardPulse' + breathe + '}' +
+      '.pulse:not(.cards) .tile.app.focus{-webkit-animation:tilePulse' + breathe + 'animation:tilePulse' + breathe + '}';
   }
 
   function applyColours(c, highlight) {
