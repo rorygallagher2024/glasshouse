@@ -62,6 +62,11 @@ and then kept beside the file. The TV's own pages get them as they are: over
 loopback fewer bytes save nothing, and `gzipSync` holds the server's thread,
 126 to 161 ms for a translation file on a B8 (webOS 4.4.3, node 0.12.2).
 
+Local `.m3u` and `.m3u8` files under `/assets/` are read on each request,
+with `Cache-Control: no-cache` and a content-hashed ETag. A playlist can change
+between releases, including a replacement URL of the same length. It is not
+kept in the static asset cache.
+
 ### What it costs the TV
 
 Measured with `scripts/footprint.sh` on 2026-10-03, over a minute each, with MQTT publishing every 10s and no dashboard open:

@@ -1591,6 +1591,7 @@ function handleRequest(req, res) {
     if (!file) return send(res, 404, JSON.stringify({ ok: false, error: 'not found' }));
     var ext = path.extname(file).toLowerCase();
     var mime = MIME[ext] || 'application/octet-stream';
+    var playlistAsset = ext === '.m3u' || ext === '.m3u8';
     // Node 0.10 has no gzipSync, and there nothing is compressed or varies.
     var compressible = (ext === '.html' || ext === '.css' || ext === '.js' || ext === '.json' || ext === '.svg') &&
       typeof zlib.gzipSync === 'function';
@@ -1599,10 +1600,10 @@ function handleRequest(req, res) {
     // longer has, or miss text it now does.
     // So is the script a custom launcher is given: a launcher written for a
     // newer one calls what an older copy lacks, and the playlist order Home calls.
-    var fresh = ext === '.html' || ext === '.json' || /(^|\/)(i18n|home-kit|video-order)\.js$/.test(file);
+    var fresh = playlistAsset || ext === '.html' || ext === '.json' || /(^|\/)(i18n|home-kit|video-order)\.js$/.test(file);
     var cacheHdr = fresh ? 'no-cache' : 'public, max-age=86400';
     var respondWithEntry = function (entry) {
-      var etag = '"' + (displayVersionStr || '1') + '-' + entry.raw.length.toString(16) + '"';
+      var etag = entry.etag || '"' + (displayVersionStr || '1') + '-' + entry.raw.length.toString(16) + '"';
       var assetHeaders = { 'ETag': etag, 'Cache-Control': cacheHdr };
       if (compressible) assetHeaders['Vary'] = 'Accept-Encoding';
       if (req.headers && req.headers['if-none-match'] === etag) {
@@ -1626,15 +1627,18 @@ function handleRequest(req, res) {
       res.writeHead(200, assetHeaders);
       res.end(outBuf);
     };
-    if (ASSET_CACHE[file]) {
+    if (!playlistAsset && ASSET_CACHE[file]) {
       return respondWithEntry(ASSET_CACHE[file]);
     }
     return fs.readFile(file, function (e, buf) {
       if (e) return send(res, 500, JSON.stringify({ ok: false, error: 'read failed' }));
       // gz: undefined until a request from the network wants it, then the
       // compressed copy, or null where gzip saves nothing.
-      var entry = { raw: buf, gz: undefined };
-      ASSET_CACHE[file] = entry;
+      // A local playlist may change without a release or a server restart.
+      // Its length alone cannot distinguish replacement stream addresses.
+      var entry = { raw: buf, gz: undefined,
+        etag: playlistAsset ? '"' + crypto.createHash('sha256').update(buf).digest('hex') + '"' : null };
+      if (!playlistAsset) ASSET_CACHE[file] = entry;
       respondWithEntry(entry);
     });
   }

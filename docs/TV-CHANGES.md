@@ -205,6 +205,10 @@ The dashboard's TV app and the Homebrew Channel's app are static pages and open 
 
 ## Network
 
+Local `.m3u` and `.m3u8` playlist assets are read for each HTTP request rather
+than retained in memory, so edits can be fetched without restarting the server.
+This reads the files and makes no changes to them.
+
 The dashboard listens dual-stack on port 8080 (IPv4-only on a kernel without
 IPv6), on the whole network unless it is limited
 to the TV itself in `config.json` or from Settings on the TV. Installed from the
