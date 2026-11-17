@@ -3282,6 +3282,31 @@ step('a heartbeat check held up by a suspend waits for the view, and a real hang
   });
 });
 
+// A G5 (webOS 11.2.0): the view missed a beat as the screen saver ended, and
+// LG's Home took over (#1549). The grace periods are shortened here.
+step('the end of the screen saver gives the view a first beat\'s wait, and a real hang still falls back', function (done) {
+  start(null, { beatGraceMs: 100, firstBeatGraceMs: 300 });
+  home.enable(function () {
+    foreground(LG_HOME);
+    powerState('Active');
+    home.beat();
+    powerState('Screen Saver');
+    wait(60, function () {
+      home.beat();
+      tv.launched = [];
+      powerState('Active');   // a check left from the last beat would fire in 100 ms
+      wait(200, function () {
+        assert.deepEqual(tv.launched, [], 'slow to beat as the saver ends is not a hang');
+        assert.ok(taken(), 'Glasshouse Home keeps its place');
+        wait(250, function () {
+          assert.deepEqual(tv.launched, [LG_HOME], 'with no beat after the saver, it is one');
+          done();
+        });
+      });
+    });
+  });
+});
+
 step('switching the screen off ends the heartbeat check', function (done) {
   start(null, { beatGraceMs: 100, firstBeatGraceMs: 200 });
   home.enable(function () {
