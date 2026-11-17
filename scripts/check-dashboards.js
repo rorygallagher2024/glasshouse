@@ -704,6 +704,70 @@ async function visitHomeBarTiles(browser, base, problems) {
   }
 }
 
+/*
+ * Glasshouse Bar on a remote key beside Glasshouse Home (#1499): no LG's Home
+ * tile, which would open Glasshouse Home there, and a press over Glasshouse
+ * Home closes the page unseen; over anything else it opens.
+ */
+async function visitHomeBarBesideHome(browser, base, problems) {
+  const fail = what => problems.push('Glasshouse Bar beside Home: ' + what);
+  const catalogue = { ok: true, enabled: true, supported: { ok: true }, layout: {},
+    order: { app: ['lg-home', 'app1'], dev: [] }, apps: [{ id: 'app1', title: 'Test App' }], devices: [] };
+  const load = async (front, kept) => {
+    const page = await browser.newPage({ viewport: { width: 1920, height: 1080 } });
+    page.on('pageerror', e => fail(e.message));
+    await page.addInitScript(([front, kept]) => {
+      window.PalmSystem = { launchParams: '{}' };
+      window.__closed = false;
+      if (kept !== null) window.localStorage.setItem('glasshouse.homebar.home', kept);
+      window.PalmServiceBridge = function () {};
+      window.PalmServiceBridge.prototype.call = function () {
+        const me = this;
+        setTimeout(() => { if (me.onservicecallback) me.onservicecallback(JSON.stringify({ returnValue: true })); }, 5);
+      };
+      window.close = function () { window.__closed = true; };
+    }, [front, kept]);
+    await page.route('http://localhost:8080/**', route => {
+      const url = new URL(route.request().url());
+      if (url.pathname === '/assets/devicons.js') return route.continue({ url: base + '/assets/devicons.js' });
+      if (url.pathname === '/api/home/now') return route.fulfill({ json: { kind: null, homeInFront: front === 'home' } });
+      if (url.pathname === '/api/home/catalogue') return route.fulfill({ json: catalogue });
+      return route.fulfill({ json: {} });
+    });
+    await page.goto(base + '/assets/homebar-app/index.html');
+    return page;
+  };
+
+  let page = await load('youtube', null);
+  try {
+    await page.waitForFunction(() => document.querySelectorAll('#row .tile').length > 0);
+    const names = await page.evaluate(() => Array.from(document.querySelectorAll('#row .tile .nm')).map(el => el.textContent));
+    if (names.indexOf('LG Home') !== -1 || names.indexOf('Test App') === -1) fail('the tiles beside Glasshouse Home: ' + JSON.stringify(names));
+    const kept = await page.evaluate(() => window.localStorage.getItem('glasshouse.homebar.home'));
+    if (kept !== '1') fail('Glasshouse Home\'s app not kept for the next press: ' + JSON.stringify(kept));
+  } finally {
+    await page.close();
+  }
+
+  page = await load('home', '1');
+  try {
+    await page.waitForFunction(() => window.__closed, null, { timeout: 3000 }).catch(() => {});
+    const seen = await page.evaluate(() => ({ closed: window.__closed, on: document.body.className === 'on' }));
+    if (!seen.closed || seen.on) fail('a press over Glasshouse Home: ' + JSON.stringify(seen));
+  } finally {
+    await page.close();
+  }
+
+  page = await load('netflix', '1');
+  try {
+    await page.waitForFunction(() => document.body.className === 'on', null, { timeout: 3000 }).catch(() => {});
+    const seen = await page.evaluate(() => ({ closed: window.__closed, on: document.body.className === 'on' }));
+    if (seen.closed || !seen.on) fail('a press over another app: ' + JSON.stringify(seen));
+  } finally {
+    await page.close();
+  }
+}
+
 async function visitHomeWeather(browser, base, problems) {
   const page = await browser.newPage();
   page.on('pageerror', e => problems.push('Home weather: ' + e.message));
@@ -4444,7 +4508,7 @@ function groups(web, tv) {
     { job: 'tabs', tabs: web.map(t => ({ path: '/?tab=' + t, label: 'web ' + t })), visits: [visitHomeAnimations, visitHuesyncSettings, visitInputsAndRemote, visitAdblockCards, visitSaverEntitySlots] },
     { job: 'tabs', tabs: tv.map(t => ({ path: '/assets/dashboard.html?tab=' + t, label: 'TV ' + t })),
       visits: [visitTvDashboard, visitTvAudio, visitTvPictureWrites, visitPictureUnavailable, visitTvNonOled, visitTvHuesync] },
-    { job: 'home', tabs: [], visits: [visitHomePicture, visitHomePreview, visitHomePreviewOptions, visitHomePreviewWebos4, visitHomePreviewSize, visitHomePreviewSizeDetails, visitInputBarBehindHome, visitInputBarSwitchOnOk, visitHomeBarPrewarm, visitHomeBarIconsReady, visitHomeBarTiles, visitHomeBarScroll, visitHomeUpDown, visitHomePointerOff, visitHomeOrder, visitHomeAvailability, visitHomeSearch, visitHomeWeather, visitHomeWeatherSetting, visitHomeRemoteBattery, visitHomeRemoteBatterySetting] },
+    { job: 'home', tabs: [], visits: [visitHomePicture, visitHomePreview, visitHomePreviewOptions, visitHomePreviewWebos4, visitHomePreviewSize, visitHomePreviewSizeDetails, visitInputBarBehindHome, visitInputBarSwitchOnOk, visitHomeBarPrewarm, visitHomeBarIconsReady, visitHomeBarTiles, visitHomeBarBesideHome, visitHomeBarScroll, visitHomeUpDown, visitHomePointerOff, visitHomeOrder, visitHomeAvailability, visitHomeSearch, visitHomeWeather, visitHomeWeatherSetting, visitHomeRemoteBattery, visitHomeRemoteBatterySetting] },
     { job: 'home', tabs: [], visits: [visitHomeArrangement, visitHomeVisibility, visitHomeColours, visitHomeInputsEditor, visitHomeEditor,
       visitHomeRecentsHidden, visitHomeUploads, visitHomeShuffle, visitHomeLauncher, visitHomeReadiness, visitAudioOverride, visitHomeRecents, visitHomeGuide,
       visitHomeFadeAndInputs] },

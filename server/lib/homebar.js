@@ -16,6 +16,11 @@
  * Kept loaded in the background while chosen and the TV is on, as the input
  * bar is, so a press shows it at once.
  *
+ * A remote key can also open it, set on the Remote tab, with Glasshouse Home
+ * or LG's Home keeping the Home key (#1499): it is kept loaded then too, and
+ * its app stays on the TV while either opens it (lib/remotekeys installs it
+ * for a key).
+ *
  * Strict ES5: runs on node 0.12.
  */
 var fs = require('fs');
@@ -43,6 +48,8 @@ var compatFn = function () { return {}; };
 var onFn = function () { return true; };
 // Glasshouse Home, or a launcher in its place, given back to LG's Home first.
 var homeOffFn = function (cb) { cb({ ok: true }); };
+// Whether a remote key is set to open it (lib/remotekeys opensHomeBar).
+var byKeyFn = function () { return false; };
 var Subscription = luna.Subscription;
 var sub = null, running = null, timer = null, failures = 0;
 
@@ -52,6 +59,9 @@ function enabled() {
   var j = util.readJson(stateFile(), null);
   return !!(j && j.enabled === true);
 }
+
+// Opened by the Home key as the launcher, or by a remote key.
+function wanted() { return enabled() || byKeyFn(); }
 
 function save(on) {
   if (on) util.writeJsonAtomic(stateFile(), { enabled: true });
@@ -67,7 +77,7 @@ function schedule(ms) {
 function ensure() {
   timer = null;
   if (failures >= MAX_FAILURES || running !== false) return;
-  if (!enabled() || !allowedFn() || !onFn()) return;
+  if (!wanted() || !allowedFn() || !onFn()) return;
   lunaFn('com.webos.applicationManager/launch', { id: APP, preload: 'full' }, function (r) {
     if (r && r.returnValue) { failures = 0; return; }
     failures++;
@@ -94,7 +104,7 @@ function runningChanged(r) {
  * opts: luna (call), stateDir, app(action, cb) installing or removing its app,
  * setHomeKey(id, cb) pointing the Home key at an app ('' for LG's), allowed()
  * and standing() as the input bar's, on() whether the TV is on, homeOff(cb)
- * giving LG's Home its place back.
+ * giving LG's Home its place back, byKey() whether a remote key opens it.
  */
 function init(opts) {
   opts = opts || {};
@@ -107,6 +117,7 @@ function init(opts) {
   if (typeof opts.compat === 'function') compatFn = opts.compat;
   if (typeof opts.on === 'function') onFn = opts.on;
   if (typeof opts.homeOff === 'function') homeOffFn = opts.homeOff;
+  if (typeof opts.byKey === 'function') byKeyFn = opts.byKey;
   if (opts.Subscription) Subscription = opts.Subscription;
   // For the tests.
   if (opts.delaysMs) afterCloseMs = afterStartMs = afterSwitchOnMs = opts.delaysMs;
@@ -114,6 +125,7 @@ function init(opts) {
 
 function status() {
   var s = { enabled: enabled(), offered: allowedFn(), standing: standingFn() };
+  if (byKeyFn()) s.byKey = true;
   if (s.standing === 'untried') {
     var c = compatFn();
     s.webos = c.webos || null;
@@ -151,13 +163,17 @@ function enable(cb) {
   });
 }
 
-// Back to LG's Home: the Home key LG's again and the app removed.
+// Back to LG's Home: the Home key LG's again and the app removed, unless a remote key still opens it.
 function disable(cb) {
   cb = cb || function () {};
   if (!enabled()) return cb({ ok: true, bar: status() });
   setHomeKeyFn('', function (keyed) {
     if (!keyed || !keyed.ok) return cb(fail(msg('srv.homebar.keyBack', 'Could not give the Home key back to LG.')));
     try { save(false); } catch (e) { return cb(fail(e.message)); }
+    if (byKeyFn()) {
+      console.log('homebar: switched off; the Home key is LG\'s again, and a remote key still opens Glasshouse Bar');
+      return cb({ ok: true, bar: status() });
+    }
     clearTimeout(timer);
     appFn('remove', function () {
       console.log('homebar: switched off; the Home key is LG\'s again');
@@ -167,7 +183,7 @@ function disable(cb) {
 }
 
 function start() {
-  if (sub || !lunaFn || !enabled()) return;
+  if (sub || !lunaFn || !wanted()) return;
   sub = new Subscription('com.webos.applicationManager/running', { subscribe: true }, null, {});
   sub.handlers.message = runningChanged;
   sub.start();
@@ -176,10 +192,16 @@ function start() {
 
 // The TV switched on.
 function poke() {
-  if (!enabled()) return;
+  if (!wanted()) return;
   if (!sub) return start();
   schedule(afterSwitchOnMs);
 }
 
-module.exports = { init: init, start: start, poke: poke, enable: enable, disable: disable,
+// A remote key set to open it: loaded from now on, with its preload tried afresh.
+function keySet() {
+  failures = 0;
+  poke();
+}
+
+module.exports = { init: init, start: start, poke: poke, keySet: keySet, enable: enable, disable: disable,
   enabled: enabled, status: status, runningChanged: runningChanged, APP: APP };

@@ -3365,5 +3365,7 @@
  "home.tv.streamPort": {"text": "Port du flux (facultatif)", "from": "Stream port (optional)"},
  "home.tv.streamPortNote": {"text": "Nécessaire seulement si la chaîne doit provenir d’un port différent de l’adresse du tuner, comme un profil de transcodage sur le port 8002.", "from": "Only needed when the channel is to come from a different port than the tuner’s own address, such as a transcoding profile on 8002."},
  "home.tv.streamPortPh": {"text": "Vide : celui du tuner, en général 8001", "from": "Empty: the tuner’s own, usually 8001"},
- "home.tv.bad.streamPort": {"text": "Le port du flux doit être un nombre de 1 à 65535.", "from": "The stream port must be a number from 1 to 65535."}
+ "home.tv.bad.streamPort": {"text": "Le port du flux doit être un nombre de 1 à 65535.", "from": "The stream port must be a number from 1 to 65535."},
+ "srv.remoteKeys.homeBar": {"text": "Glasshouse Bar", "from": "Glasshouse Bar"},
+ "srv.remoteKeys.homeBarInstall": {"text": "Glasshouse Bar n’a pas pu être installée sur le téléviseur. Réessayez dans un instant.", "from": "Glasshouse Bar could not be put on the TV. Try again in a moment."}
 }

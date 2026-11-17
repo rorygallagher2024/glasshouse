@@ -621,7 +621,13 @@ remoteKeys.init({ luna: luna, subscription: lunaTransport.Subscription, services
   // when a key is set to it, and preloaded from then on.
   inputBarAllowed: function () { return inputBar.allowed(); },
   inputBarApp: function (action, cb) { tvApp(action, cb, 'inputbar-app'); },
-  onInputBarKey: function () { inputBar.poke(); } });
+  onInputBarKey: function () { inputBar.poke(); },
+  // Glasshouse Bar on a key beside Glasshouse Home (#1499): offered where the
+  // Bar is, its app installed for the key unless the Bar is the launcher.
+  homeBarAllowed: function () { return inputBar.allowed(); },
+  homeBarApp: function (action, cb) { tvApp(action, cb, 'homebar-app'); },
+  homeBarLauncher: function () { return homebar.enabled(); },
+  onHomeBarKey: function () { homebar.keySet(); } });
 inputBar.init({
   luna: luna,
   webosVersion: telemetry.detectWebosVersion(),
@@ -639,6 +645,7 @@ homebar.init({
   standing: function () { return inputBar.standing(); },
   compat: function () { return compat.info('inputBar', compatTv(), 'Glasshouse Bar'); },
   on: function () { return !liveState || (liveState.state.snapshot().power || {}).systemOn !== false; },
+  byKey: remoteKeys.opensHomeBar,
   // Glasshouse Home, or a launcher in its place, off first: LG's Home keeps its place.
   homeOff: function (cb) {
     if (!glasshouseHome || !glasshouseHome.enabled()) return cb({ ok: true });
