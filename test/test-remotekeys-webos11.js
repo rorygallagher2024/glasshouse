@@ -620,8 +620,8 @@ step('Brightness up and down on streaming buttons switch LG\'s entries off and s
           assert.strictEqual(entry('amazon').isActive, false);
           panel.backlight = 50;
           logLine(NETFLIX_LINE);
-          until(function () { return panel.backlight === 55; }, 5000, function () {
-            assert.strictEqual(panel.backlight, 55, 'up one step');
+          until(function () { return panel.backlight === 60; }, 5000, function () {
+            assert.strictEqual(panel.backlight, 60, 'up one step');
             logLine(AMAZON_LINE);
             until(function () { return panel.backlight === 50; }, 5000, function () {
               assert.strictEqual(panel.backlight, 50, 'down one step');

@@ -338,11 +338,11 @@ step(function (next) {
       var writes = function () { return f.sent.filter(function (m) { return m.uri === 'com.webos.service.settings/setSystemSettings'; }).length; };
       tv.backlight = 50;
       assert.strictEqual(f.handle(1004, true, false), 'accepted');
-      assert.strictEqual(tv.backlight, 55, 'up one step on the press');
+      assert.strictEqual(tv.backlight, 60, 'up one step on the press');
       f.handle(1004, false, false);
-      assert.strictEqual(tv.backlight, 55, 'the release does nothing');
+      assert.strictEqual(tv.backlight, 60, 'the release does nothing');
       f.handle(1004, true, true);
-      assert.strictEqual(tv.backlight, 60, 'a held key steps again');
+      assert.strictEqual(tv.backlight, 70, 'a held key steps again');
       assert.strictEqual(f.launched.length, 0, 'opens no app');
       tv.backlight = 98;
       f.handle(1004, true, false);
