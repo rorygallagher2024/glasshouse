@@ -2256,6 +2256,11 @@ about:blank`) in front.
   compositor's 120 s timer closes a Home window with nothing under it, sam
   launches the last app (`LAUNCH_LASTAPP on_foreground_null`). A Home that
   comes back that way closes the screen saver as it opens.
+- **G3 (webOS 10.3):** with `option.screenSaverTimer` at 10, Glasshouse
+  Home's video background let go 5 s before 10 minutes after the last key
+  brought no screen saver in the minute after: the timer had not run while
+  the video played. Started from Home at that time instead, the screen saver
+  came at once.
 
 ## sam losing the screen saver app (webOS 9.2.2, C2)
 
