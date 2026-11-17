@@ -532,7 +532,7 @@ With **Apps as cards** on, each card can show a wide logo of your own. Glasshous
 
 * **Where:** PNG files in `/var/lib/tvweb/home-icons` on the TV (copy them over SSH, for example `scp youtube.png root@<tv>:/var/lib/tvweb/home-icons/`). Home shows new files the next time it opens.
 * **Size:** 16:9. 320 × 180 suits the card best; another size is scaled to fit inside it without cropping.
-* **Look:** the card is near black (`#0d0d0d`), so a light or full-colour logo on a transparent background works best. A logo with its own background fills the card.
+* **Look:** the card is black, so a light or full-colour logo on a transparent background works best. A logo with its own background fills the card.
 * **Name:** lower case letters, digits and underscores only, at most 80 characters, then `.png`. Other files in the folder are ignored.
 
 Each app takes the file named for its title, as renamed on the dashboard or its own: spaces and punctuation become underscores, `&` becomes `and` and `+` becomes `plus`, so "YouTube Music" takes `youtube_music.png` and "Disney+" takes `disney_plus.png`. Failing that, it takes one named for the title's first word of four letters or more ("Spotify - Music and Podcasts" takes `spotify.png`). Under **Rows and tiles** → **Apps**, each app's **Card icon** field picks any of the files by name instead, and clearing it goes back to matching by title.
