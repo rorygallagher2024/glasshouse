@@ -2256,6 +2256,13 @@ about:blank`) in front.
   compositor's 120 s timer closes a Home window with nothing under it, sam
   launches the last app (`LAUNCH_LASTAPP on_foreground_null`). A Home that
   comes back that way closes the screen saver as it opens.
+- **G3 (webOS 10.3): a video screen saver started by tvpower is ended as
+  its video starts.** tvpower went from Screen Saver back to Active 2.4 to
+  2.6 s after `turnOnScreenSaver`, in the same millisecond as the Video
+  screen saver's first clip (4K Dolby Vision) reached the media pipeline,
+  from Home and from the Homebrew Channel alike, and with screenmanager's
+  `setScreenSaverMode` `manual` sent just before. The same app launched
+  through sam, with tvpower left Active, played on until a key.
 
 ## sam losing the screen saver app (webOS 9.2.2, C2)
 

@@ -742,8 +742,11 @@ var homeVideoBackgroundFn = function () { return false; };
  */
 var videoModeHeld = null;
 var videoModeGeneration = 0;
+// Whether the staged screen saver plays video, whatever screenmanager made of it.
+var stagedPlaysVideo = false;
 function setVideoMode(playsVideo) {
   var mine = ++videoModeGeneration;
+  stagedPlaysVideo = !!playsVideo;
   if (!lunaFn || !slowSwitch()) return;
   var mode = playsVideo ? 'manual' : 'auto';
   var tries = 0;
@@ -878,6 +881,10 @@ function init(opts) {
   closeCallbacks = [];
   randomConfigFile = (opts && opts.randomConfigFile) ? opts.randomConfigFile : RANDOM_CONFIG_FILE;
   wasInScreenSaver = false;
+  saverStartedAt = 0;
+  saverInputAt = 0;
+  stagedPlaysVideo = false;
+  watchingVideoSaver = false;
   if (opts.videoModeRetryMs !== undefined) videoModeRetryMs = opts.videoModeRetryMs;
   maxAppEntriesSearched = opts.maxAppEntriesSearched !== undefined ? opts.maxAppEntriesSearched : MAX_APP_ENTRIES_SEARCHED;
   videoModeHeld = null;
@@ -1110,13 +1117,57 @@ function stagedRunner() {
   }
 }
 
+/*
+ * A G3 (webOS 10.3) ended a screen saver that tvpower started as soon as its
+ * video began, "manual" mode or not: tvpower went from Screen Saver back to
+ * Active 2.4 to 2.6 s after the start, at the moment the Video screen saver's
+ * first clip reached the decoder, from Home and from the Homebrew Channel
+ * alike. One launched directly, with tvpower left Active, plays on. So a
+ * screen saver that plays video and ends this soon, with no key or pointer
+ * since it started, is launched again that way. The remote's keys are watched
+ * while it shows, to tell the two apart.
+ */
+var VIDEO_SAVER_CUT_MS = 6000;
+var saverStartedAt = 0;
+var saverInputAt = 0;
+// Whether the screen saver showing is one of these, decided as it starts.
+var watchingVideoSaver = false;
+/*
+ * Read from the files in place rather than kept from staging: at the
+ * server's start the Video screen saver is staged before Home's playlist is
+ * read, and is passed over then as having no videos.
+ */
+function stagedSaverPlaysVideo() {
+  if (stagedPlaysVideo) return true;
+  var m = readTrimmed(path.join(SCREENSAVER_APP_DIR, SCREENSAVER_MARKER));
+  var e = m && m !== 'stock' ? saverById(m) : null;
+  return !!(e && e.runtime === 'web');
+}
+function videoSaverCut(now) {
+  return watchingVideoSaver && !launchedDirectly && saverStartedAt > 0 &&
+    now - saverStartedAt < VIDEO_SAVER_CUT_MS && saverInputAt < saverStartedAt;
+}
+
 function onPowerChange(rawState) {
   var raw = (rawState && typeof rawState === 'object') ? (rawState.raw || rawState.state || rawState) : rawState;
   var isSS = power.isScreenSaver(power.mapState(raw));
+  var now = Date.now();
   if (wasInScreenSaver && !isSS) {
-    if (isRandomEnabled()) {
+    var cut = videoSaverCut(now);
+    saverStartedAt = 0;
+    if (watchingVideoSaver && !launchedDirectly) watchKeysFn(false);
+    watchingVideoSaver = false;
+    if (cut) {
+      console.log('screensaver: the TV ended it as its video started, with no key pressed; launching it again directly');
+      launchScreensaverApp(function () {});
+    } else if (isRandomEnabled()) {
       advanceRandomSaver();
     }
+  }
+  if (isSS && !wasInScreenSaver) {
+    saverStartedAt = now;
+    watchingVideoSaver = slowSwitch() && !launchedDirectly && stagedSaverPlaysVideo();
+    if (watchingVideoSaver) watchKeysFn(true);
   }
   if (isSS !== wasInScreenSaver) watchPointerFn(isSS && stagedScreensaver() !== 'stock');
   wasInScreenSaver = isSS;
@@ -1124,6 +1175,7 @@ function onPowerChange(rawState) {
 
 // The pointer moved or clicked: one of these screen savers showing ends.
 function pointerUsed() {
+  saverInputAt = Date.now();
   if (!lunaFn) return;
   if (launchedDirectly) return keyPressed();
   if (!wasInScreenSaver || stagedScreensaver() === 'stock') return;
@@ -1935,6 +1987,7 @@ function closeLaunched(cb) {
 }
 
 function keyPressed(code) {
+  saverInputAt = Date.now();
   if (code === BTN_LEFT && !launchedDirectly) return pointerUsed();
   if (!launchedDirectly || !lunaFn) return;
   console.log('screensaver: a remote key closes the screen saver');
