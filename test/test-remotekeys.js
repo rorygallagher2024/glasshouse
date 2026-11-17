@@ -97,6 +97,8 @@ function loadFilter(broken, extra) {
       send: function (service, method, payload, cb) {
         sent.push({ uri: service + method, payload: JSON.parse(payload) });
         if (method === '/getAppInfo') cb(JSON.stringify({ returnValue: true, appInfo: { type: tv.homeType } }));
+        else if (method === '/getSystemSettings') cb(JSON.stringify({ returnValue: true, settings: { backlight: String(tv.backlight) } }));
+        else if (method === '/setSystemSettings') { tv.backlight = Number(JSON.parse(payload).settings.backlight); if (cb) cb(JSON.stringify({ returnValue: true })); }
         else if (cb) cb(JSON.stringify({ returnValue: true }));
       }
     },
@@ -148,7 +150,7 @@ step(function (next) {
     assert.ok(r.keys.every(function (k) { return k.action === 'lg' && k.id === ''; }));
     assert.strictEqual(r.inChain, false);
     assert.deepEqual(r.choices.map(function (c) { return c.id; }),
-      ['action:screenOff', 'action:powerOff', 'media:ok', 'media:play', 'media:pause', 'media:stop', 'media:rewind', 'media:fastForward',
+      ['action:screenOff', 'action:powerOff', 'action:brightnessUp', 'action:brightnessDown', 'media:ok', 'media:play', 'media:pause', 'media:stop', 'media:rewind', 'media:fastForward',
        'media:volumeUp', 'media:volumeDown', 'media:mute',
        'com.webos.app.hdmi1', 'com.webos.app.hdmi2', 'com.webos.app.livetv',
        'com.webos.app.home', 'netflix', 'youtube.leanback.v4']);
@@ -322,6 +324,46 @@ step(function (next) {
       rk.setRemoteKey('red', 'lg', '', guard(function () {
         console.log('  ✓ a key set to Screen off blanks the panel on its release, and a press while it is off only wakes it');
         next();
+      }));
+    }));
+  }));
+});
+
+step(function (next) {
+  rk.setRemoteKey('red', 'open', 'action:brightnessUp', guard(function (up) {
+    assert.strictEqual(up.ok, true);
+    rk.setRemoteKey('netflix', 'open', 'action:brightnessDown', guard(function (down) {
+      assert.strictEqual(down.ok, true);
+      var f = loadFilter();
+      var toasts = function () { return f.sent.filter(function (m) { return m.uri === 'com.webos.notification/createToast'; }); };
+      tv.backlight = 50;
+      assert.strictEqual(f.handle(1004, true, false), 'accepted');
+      assert.strictEqual(tv.backlight, 55, 'up one step on the press');
+      assert.strictEqual(toasts()[0].payload.message, 'Brightness 55');
+      f.handle(1004, false, false);
+      assert.strictEqual(tv.backlight, 55, 'the release does nothing');
+      f.handle(1004, true, true);
+      assert.strictEqual(tv.backlight, 60, 'a held key steps again');
+      assert.strictEqual(f.launched.length, 0, 'opens no app');
+      tv.backlight = 98;
+      f.handle(1004, true, false);
+      assert.strictEqual(tv.backlight, 100, 'clamped to 100');
+      var writes = toasts().length;
+      f.handle(1004, true, false);
+      assert.strictEqual(toasts().length, writes, 'nothing written at the top');
+      tv.backlight = 3;
+      f.handle(1001, true, false);
+      assert.strictEqual(tv.backlight, 0, 'down clamped to 0');
+      rk.getRemoteKeys(guard(function (r) {
+        assert.ok(r.choices.some(function (c) { return c.id === 'action:brightnessUp'; }));
+        var red = r.keys.filter(function (k) { return k.key === 'red'; })[0];
+        assert.strictEqual(red.opens, 'Brightness up');
+        rk.setRemoteKey('red', 'lg', '', guard(function () {
+          rk.setRemoteKey('netflix', 'lg', '', guard(function () {
+            console.log('  ✓ Brightness up and down step the panel brightness in the filter, repeat while held, and stop at 0 and 100');
+            next();
+          }));
+        }));
       }));
     }));
   }));

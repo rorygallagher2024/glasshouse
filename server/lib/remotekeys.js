@@ -433,6 +433,7 @@ function filterSource() {
     'var glasshouseScreenOffArmed = false;',
     'var glasshousePowerOffArmed = {};',
     'var glasshouseBarPress = 0;',
+    'var glasshouseBrightnessText = ' + JSON.stringify(msg('srv.remoteKeys.brightnessToast', 'Brightness {level}', { level: '' })) + ';',
     '',
     '// Key code by name; a name this firmware lacks is left out.',
     'function glasshouseKeyCodes() {',
@@ -475,6 +476,30 @@ function filterSource() {
     '    } catch (e) {',
     '        return false;',
     '    }',
+    '}',
+    '',
+    // One step of the panel brightness, as lib/remotekeys.js's stepBrightness does it.
+    // A held key repeats, one step at a time: a step still being written is not stacked on.
+    'var glasshouseBrightnessBusy = false;',
+    'function glasshouseBrightness(delta) {',
+    '    if (glasshouseBrightnessBusy) return;',
+    '    glasshouseBrightnessBusy = true;',
+    '    try { genericTimer.set(1500, function () { glasshouseBrightnessBusy = false; }); } catch (e) {}',
+    '    lunaCall.send("com.webos.service.settings", "/getSystemSettings", JSON.stringify({ "category": "picture", "keys": ["backlight"] }), function (payload) {',
+    '        try {',
+    '            var r = typeof payload === "string" ? JSON.parse(payload) : payload;',
+    '            var current = r && r.settings ? Math.round(parseFloat(r.settings.backlight)) : NaN;',
+    '            var level = Math.max(0, Math.min(100, current + delta));',
+    '            if (isNaN(current) || level === current) { glasshouseBrightnessBusy = false; return; }',
+    '            lunaCall.send("com.webos.service.settings", "/setSystemSettings", JSON.stringify({ "category": "picture", "settings": { "backlight": String(level) } }), function () {',
+    '                glasshouseBrightnessBusy = false;',
+    '                lunaCall.send("com.webos.notification", "/createToast", JSON.stringify({ "sourceId": lunaCall.appId, "message": glasshouseBrightnessText + level }), function () {});',
+    '            });',
+    '        } catch (e) {',
+    '            glasshouseBrightnessBusy = false;',
+    '            console.warn("glasshouse keyfilter: " + e);',
+    '        }',
+    '    });',
     '}',
     '',
     'function glasshousePowerChanged(payload) {',
@@ -580,6 +605,8 @@ function filterSource() {
     '        } else if (id === ' + JSON.stringify(SCREEN_OFF) + ') {',
     '            if (!pressed && glasshouseScreenOffArmed) console.info("glasshouse keyfilter: key", key, "turns the screen off");',
     '            glasshouseScreenOffKey(pressed, autoRepeat);',
+    '        } else if (id === ' + JSON.stringify(BRIGHTNESS_UP) + ' || id === ' + JSON.stringify(BRIGHTNESS_DOWN) + ') {',
+    '            if (pressed) glasshouseBrightness(id === ' + JSON.stringify(BRIGHTNESS_UP) + ' ? ' + BRIGHTNESS_STEP + ' : -' + BRIGHTNESS_STEP + ');',
     '        } else if (id === ' + JSON.stringify(POWER_OFF) + ') {',
     '            if (pressed && !autoRepeat) {',
     '                var state = glasshousePowerState.toLowerCase().replace(/[\\s_-]/g, "");',
@@ -1446,11 +1473,13 @@ function mediaChoices() {
   return MEDIA_ACTIONS.map(function (a) { return { id: MEDIA_PREFIX + a, title: titles[a], kind: 'media' }; });
 }
 
-// Power and screen off where the JavaScript filter runs, and Home Assistant with MQTT on too.
+// Power, screen off and brightness where the JavaScript filter runs, and Home Assistant with MQTT on too.
 function actionChoices() {
   var out = [
     { id: SCREEN_OFF, title: msg('srv.remoteKeys.screenOff', 'Screen off'), kind: 'action' },
-    { id: POWER_OFF, title: msg('srv.remoteKeys.powerOff', 'Power off'), kind: 'action' }
+    { id: POWER_OFF, title: msg('srv.remoteKeys.powerOff', 'Power off'), kind: 'action' },
+    { id: BRIGHTNESS_UP, title: msg('srv.remoteKeys.brightnessUp', 'Brightness up'), kind: 'action' },
+    { id: BRIGHTNESS_DOWN, title: msg('srv.remoteKeys.brightnessDown', 'Brightness down'), kind: 'action' }
   ];
   if (homeAssistantOn()) out.push({ id: HOME_ASSISTANT, title: msg('srv.remoteKeys.homeAssistant', 'Home Assistant'), kind: 'ha' });
   if (homeGuideOn()) out.push({ id: HOME_GUIDE, title: msg('srv.remoteKeys.homeGuide', 'Glasshouse Home\'s guide'), kind: 'action' });
