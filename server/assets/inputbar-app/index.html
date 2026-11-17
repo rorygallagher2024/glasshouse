@@ -45,18 +45,18 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
  * The level bar (opened by a Brightness key): a dark pill low on the screen
  * with an icon, a track and the number, drawn like the TV's own volume bar.
  */
-#osd{position:absolute;left:50%;bottom:96px;width:840px;height:104px;margin-left:-420px;border-radius:52px;
+#osd{position:absolute;left:50%;bottom:80px;width:640px;height:80px;margin-left:-320px;border-radius:40px;
   background:rgba(34,34,36,.94);box-shadow:0 8px 32px rgba(0,0,0,.5);opacity:0;display:-webkit-flex;display:flex;
-  -webkit-align-items:center;align-items:center;padding:0 40px;
+  -webkit-align-items:center;align-items:center;padding:0 32px;
   -webkit-transition:opacity .16s ease-out;transition:opacity .16s ease-out}
 .osdon #osd{opacity:1}
 /* Opening is at once: only closing fades. */
 .osdon #osd{-webkit-transition:none;transition:none}
-#osd .oico{-webkit-flex:0 0 auto;flex:0 0 auto;width:48px;height:48px;margin-right:32px}
+#osd .oico{-webkit-flex:0 0 auto;flex:0 0 auto;width:38px;height:38px;margin-right:24px}
 #osd .oico svg{display:block;width:100%;height:100%}
-#osd .otrack{-webkit-flex:1 1 auto;flex:1 1 auto;height:14px;border-radius:7px;background:rgba(255,255,255,.22);overflow:hidden}
-#osd .ofill{height:100%;width:0;border-radius:7px;background:#fff}
-#osd .onum{-webkit-flex:0 0 auto;flex:0 0 auto;width:96px;margin-left:28px;text-align:right;font-size:46px;font-weight:500;color:#fff}
+#osd .otrack{-webkit-flex:1 1 auto;flex:1 1 auto;height:11px;border-radius:6px;background:rgba(255,255,255,.22);overflow:hidden}
+#osd .ofill{height:100%;width:0;border-radius:6px;background:#fff}
+#osd .onum{-webkit-flex:0 0 auto;flex:0 0 auto;width:74px;margin-left:22px;text-align:right;font-size:36px;font-weight:500;color:#fff}
 </style>
 </head>
 <body>
@@ -171,7 +171,7 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
    */
   var OSD_IDLE_MS = 1600;
   var OSD_POLL_MS = 120;
-  var osdTimer = null, osdPoll = null, osdLevel = -1, osdOpen = false;
+  var osdTimer = null, osdPoll = null, osdLevel = -1, osdOpen = false, osdCloseTimer = null;
   function osdDraw(level) {
     if (level === osdLevel) return false;
     osdLevel = level;
@@ -189,7 +189,9 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
     osdPoll = null;
     osdOpen = false;
     document.body.className = '';
-    setTimeout(function () { window.close(); }, 170);
+    // Not closed for real if a press shows the bar again while it fades (osdShow).
+    clearTimeout(osdCloseTimer);
+    osdCloseTimer = setTimeout(function () { window.close(); }, 170);
   }
   function osdFollow() {
     if (osdPoll) return;
@@ -204,6 +206,7 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
     if (isNaN(level)) return osdClose();
     clearTimeout(switchTimer);
     clearTimeout(idle);
+    clearTimeout(osdCloseTimer);
     closing = false;
     osdOpen = true;
     osdDraw(level);
@@ -416,6 +419,7 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
     var p = launchParamsNow(e);
     if (p.glasshouse === 'osd') { idleUntilOpened = false; return osdShow(p); }
     // The Input key pressed while the level bar is up: the level bar goes, the input bar opens.
+    clearTimeout(osdCloseTimer);
     if (osdOpen) {
       osdOpen = false;
       clearTimeout(osdTimer);
