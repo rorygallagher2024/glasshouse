@@ -62,7 +62,7 @@ function showTab(name) {
   clearErr();
   // The tab was System for a while, and links and remembered tabs still say so.
   if (name === 'system') name = 'metrics';
-  if (!TABS[name]) name = 'control';
+  if (!TABS[name] || remoteView) name = 'control';
   /*
    * The panel is about the OLED panel, so an LCD set has no tab for it - but a
    * deep link or a remembered choice can still ask for it.
@@ -89,7 +89,8 @@ function showTab(name) {
   const help = q('nav-help');
   if (help) help.href = DOCS + (TAB_DOCS[name] || 'dashboard/');
   closeNav();
-  try { localStorage.setItem('tab', name); } catch (e) { /* private window */ }
+  // The remote view leaves the full dashboard's remembered tab as it was.
+  if (!remoteView) { try { localStorage.setItem('tab', name); } catch (e) { /* private window */ } }
   relayout(false);   // the panel just became measurable
   cfgPollStatus(name === 'mqtt');
   if (name === 'metrics') loadHdmiOnce();

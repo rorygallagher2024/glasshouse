@@ -3367,5 +3367,12 @@
  "home.tv.streamPortPh": {"text": "Vazio: a do próprio recetor, normalmente 8001", "from": "Empty: the tuner’s own, usually 8001"},
  "home.tv.bad.streamPort": {"text": "A porta do stream deve ser um número de 1 a 65535.", "from": "The stream port must be a number from 1 to 65535."},
  "srv.remoteKeys.homeBar": {"text": "Glasshouse Bar", "from": "Glasshouse Bar"},
- "srv.remoteKeys.homeBarInstall": {"text": "Não foi possível instalar o Glasshouse Bar na TV. Tente novamente dentro de momentos.", "from": "Glasshouse Bar could not be put on the TV. Try again in a moment."}
+ "srv.remoteKeys.homeBarInstall": {"text": "Não foi possível instalar o Glasshouse Bar na TV. Tente novamente dentro de momentos.", "from": "Glasshouse Bar could not be put on the TV. Try again in a moment."},
+ "ctl.remoteLink": {"text": "Só o comando", "from": "Remote on its own"},
+ "ctl.remoteLink.desc": {"text": "Uma página só com a reprodução, o volume, o direcional, o ponteiro e o teclado. Abra a ligação num telemóvel e adicione-a ao ecrã principal, ou mantenha-a na Dock. Inicia sessão como esta página, por isso guarde-a para si.", "from": "A page with just playback, volume, the D-pad, the pointer and the keyboard. Open the link on a phone and add it to the Home Screen, or keep it in the Dock. It signs in as this page does, so keep it to yourself."},
+ "ctl.remoteLink.copy": {"text": "Copiar ligação", "from": "Copy link"},
+ "ctl.remoteLink.open": {"text": "Abrir", "from": "Open"},
+ "ctl.remoteLink.full": {"text": "Painel completo", "from": "Full dashboard"},
+ "ctl.remoteLink.copied": {"text": "Copiado", "from": "Copied"},
+ "ctl.remoteLink.notCopied": {"text": "Não foi possível copiar", "from": "Could not copy"}
 }

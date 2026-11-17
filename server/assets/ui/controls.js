@@ -934,9 +934,29 @@ document.addEventListener('keydown', e => {
 });
 
 // D-pad disclosure: uncollapse by default on mobile so the TV remote is immediately accessible.
+/*
+ * The remote view's link, with the token, as the TV's QR codes carry it: a
+ * phone has none of this browser's storage (#1586). Copied, it says so on the button.
+ */
+function remoteLink() {
+  return location.origin + location.pathname + '?view=remote' + (token ? '&k=' + encodeURIComponent(token) : '');
+}
+function copyRemoteLink() {
+  const b = q('remote-link-copy');
+  const label = t('ctl.remoteLink.copy', 'Copy link');
+  const said = text => {
+    if (!b) return;
+    b.textContent = text;
+    setTimeout(() => { b.textContent = label; }, 2000);
+  };
+  copyToClipboard(remoteLink()).then(() => said(t('ctl.remoteLink.copied', 'Copied')),
+    () => said(t('ctl.remoteLink.notCopied', 'Could not copy')));
+}
+
 function updateDpadMobileDefault() {
   const dpad = q('disc-dpad');
   if (!dpad) return;
+  if (remoteView) { dpad.open = true; return; }
   let stored = null;
   try { stored = localStorage.getItem('dpadOpen'); } catch (e) {}
   if (stored !== null) {

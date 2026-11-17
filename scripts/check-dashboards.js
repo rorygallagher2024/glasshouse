@@ -4503,9 +4503,75 @@ async function visitAdblockCards(browser, base, problems) {
   } finally { await page.unrouteAll({ behavior: 'wait' }); await page.close(); }
 }
 
+/*
+ * The remote on its own (?view=remote, #1586): on a phone and in a wide
+ * window, only playback, volume, the D-pad, the pointer where its
+ * experimental switch is on, the keyboard and a way back, in one column, the D-pad and the
+ * keyboard open, and the full dashboard's remembered tab left alone. The
+ * Control tab copies the link with the token, and ?open= opens the keyboard.
+ */
+async function visitRemoteView(browser, base, problems) {
+  const fail = what => problems.push('Remote view: ' + what);
+  const shown = page => page.evaluate(() => {
+    const vis = el => !!el && el.getBoundingClientRect().height > 0 && getComputedStyle(el).display !== 'none';
+    return {
+      cls: document.documentElement.classList.contains('remote-view'),
+      sets: Array.from(document.querySelectorAll('#tab-control .col-controls .set, #tab-control .col-controls details'))
+        .filter(el => vis(el) && !el.parentElement.closest('.set, details')).map(el => el.id || el.querySelector('.lbl, summary').textContent.trim().split(/\s+/)[0]),
+      nav: vis(document.getElementById('sidenav')) || vis(document.querySelector('.nav-bar')),
+      cols: document.querySelectorAll('#tab-control .lcols').length,
+      pointer: !document.getElementById('disc-pointer').hidden,
+      dpad: document.getElementById('disc-dpad').open, keyboard: document.getElementById('disc-keyboard').open,
+      tab: localStorage.getItem('tab'), shownPanels: Array.from(document.querySelectorAll('#panels > section')).filter(s => !s.hidden).map(s => s.id)
+    };
+  });
+  for (const viewport of [{ width: 390, height: 844 }, { width: 1400, height: 900 }]) {
+    const page = await browser.newPage({ viewport });
+    page.on('pageerror', e => fail(viewport.width + ': ' + e.message));
+    try {
+      await page.addInitScript(() => { try { if (!localStorage.getItem('tab')) localStorage.setItem('tab', 'apps'); } catch (e) {} });
+      await page.goto(base + '/?view=remote');
+      await page.waitForFunction(() => !document.getElementById('tab-control').hidden);
+      await page.waitForTimeout(300);
+      const s = await shown(page);
+      const want = ['control-playback', 'Volume', 'disc-dpad'].concat(s.pointer ? ['disc-pointer'] : [], ['disc-keyboard', 'remote-full']);
+      if (!s.cls) fail(viewport.width + ': no remote-view class');
+      if (JSON.stringify(s.sets) !== JSON.stringify(want)) fail(viewport.width + ': shows ' + JSON.stringify(s.sets) + ', not ' + JSON.stringify(want));
+      if (s.nav) fail(viewport.width + ': the tabs are shown');
+      if (s.cols) fail(viewport.width + ': in columns');
+      if (!s.dpad || !s.keyboard) fail(viewport.width + ': D-pad open ' + s.dpad + ', keyboard open ' + s.keyboard);
+      if (s.tab !== 'apps') fail(viewport.width + ': the remembered tab became ' + s.tab);
+      if (JSON.stringify(s.shownPanels) !== JSON.stringify(['tab-control'])) fail(viewport.width + ': panels shown ' + JSON.stringify(s.shownPanels));
+    } finally {
+      await page.close();
+    }
+  }
+  const page = await browser.newPage({ viewport: { width: 1400, height: 900 } });
+  page.on('pageerror', e => fail('dashboard: ' + e.message));
+  try {
+    await page.addInitScript(() => {
+      window.__copied = null;
+      try { localStorage.setItem('tvweb_k', 'tok en'); } catch (e) {}
+      Object.defineProperty(navigator, 'clipboard', { value: { writeText: text => { window.__copied = text; return Promise.resolve(); } } });
+    });
+    await page.goto(base + '/?open=keyboard');
+    await page.waitForFunction(() => !document.getElementById('tab-control').hidden);
+    const opened = await page.evaluate(() => document.getElementById('disc-keyboard').open);
+    if (!opened) fail('?open=keyboard left the keyboard shut');
+    if (!(await page.locator('#remote-link').isVisible())) fail('no remote link on the Control tab');
+    if (await page.locator('#remote-full').isVisible()) fail('the way back shows on the full dashboard');
+    await page.locator('#remote-link-copy').click();
+    await page.waitForFunction(() => window.__copied !== null);
+    const copied = await page.evaluate(() => window.__copied);
+    if (!/\/\?view=remote&k=tok%20en$/.test(copied)) fail('copied ' + JSON.stringify(copied));
+  } finally {
+    await page.close();
+  }
+}
+
 function groups(web, tv) {
   return [
-    { job: 'tabs', tabs: web.map(t => ({ path: '/?tab=' + t, label: 'web ' + t })), visits: [visitHomeAnimations, visitHuesyncSettings, visitInputsAndRemote, visitAdblockCards, visitSaverEntitySlots] },
+    { job: 'tabs', tabs: web.map(t => ({ path: '/?tab=' + t, label: 'web ' + t })), visits: [visitHomeAnimations, visitHuesyncSettings, visitInputsAndRemote, visitAdblockCards, visitSaverEntitySlots, visitRemoteView] },
     { job: 'tabs', tabs: tv.map(t => ({ path: '/assets/dashboard.html?tab=' + t, label: 'TV ' + t })),
       visits: [visitTvDashboard, visitTvAudio, visitTvPictureWrites, visitPictureUnavailable, visitTvNonOled, visitTvHuesync] },
     { job: 'home', tabs: [], visits: [visitHomePicture, visitHomePreview, visitHomePreviewOptions, visitHomePreviewWebos4, visitHomePreviewSize, visitHomePreviewSizeDetails, visitInputBarBehindHome, visitInputBarSwitchOnOk, visitHomeBarPrewarm, visitHomeBarIconsReady, visitHomeBarTiles, visitHomeBarBesideHome, visitHomeBarScroll, visitHomeUpDown, visitHomePointerOff, visitHomeOrder, visitHomeAvailability, visitHomeSearch, visitHomeWeather, visitHomeWeatherSetting, visitHomeRemoteBattery, visitHomeRemoteBatterySetting] },

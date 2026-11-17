@@ -3381,5 +3381,12 @@
  "home.tv.streamPortPh": {"text": "Üresen: a tuneré, általában 8001", "from": "Empty: the tuner’s own, usually 8001"},
  "home.tv.bad.streamPort": {"text": "A stream portnak 1 és 65535 közötti számnak kell lennie.", "from": "The stream port must be a number from 1 to 65535."},
  "srv.remoteKeys.homeBar": {"text": "Glasshouse Bar", "from": "Glasshouse Bar"},
- "srv.remoteKeys.homeBarInstall": {"text": "A Glasshouse Bart nem sikerült feltenni a TV-re. Próbálja újra egy pillanat múlva.", "from": "Glasshouse Bar could not be put on the TV. Try again in a moment."}
+ "srv.remoteKeys.homeBarInstall": {"text": "A Glasshouse Bart nem sikerült feltenni a TV-re. Próbálja újra egy pillanat múlva.", "from": "Glasshouse Bar could not be put on the TV. Try again in a moment."},
+ "ctl.remoteLink": {"text": "Csak a távirányító", "from": "Remote on its own"},
+ "ctl.remoteLink.desc": {"text": "Egy oldal csak a lejátszással, a hangerővel, a nyílgombokkal, a mutatóval és a billentyűzettel. Nyissa meg a linket egy telefonon, és tegye a kezdőképernyőre, vagy tartsa a Dockban. Úgy jelentkezik be, mint ez az oldal, ezért ne adja tovább.", "from": "A page with just playback, volume, the D-pad, the pointer and the keyboard. Open the link on a phone and add it to the Home Screen, or keep it in the Dock. It signs in as this page does, so keep it to yourself."},
+ "ctl.remoteLink.copy": {"text": "Link másolása", "from": "Copy link"},
+ "ctl.remoteLink.open": {"text": "Megnyitás", "from": "Open"},
+ "ctl.remoteLink.full": {"text": "Teljes irányítópult", "from": "Full dashboard"},
+ "ctl.remoteLink.copied": {"text": "Másolva", "from": "Copied"},
+ "ctl.remoteLink.notCopied": {"text": "Nem sikerült másolni", "from": "Could not copy"}
 }

@@ -100,6 +100,8 @@ function runTest(name, scenario, done) {
       addEventListener: function () {}
     },
     showTab: function () {},
+    // core.js's: the full dashboard, not the remote on its own.
+    remoteView: false,
     q: function (id) { return dom.getEl(id); },
     api: function (p) { return p; },
     t: function (k, d) { return d; },

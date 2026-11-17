@@ -17,6 +17,14 @@ const token = (() => {
 })();
 const q = id => document.getElementById(id);
 
+/*
+ * The remote on its own (?view=remote, #1586): playback, volume, the D-pad,
+ * the pointer and the keyboard of the Control tab, for an icon on a phone's
+ * Home Screen or a shortcut in the Dock. The same controls, and the same token.
+ */
+const remoteView = new URLSearchParams(location.search).get('view') === 'remote';
+if (remoteView) document.documentElement.classList.add('remote-view');
+
 let inFlight = 0;
 let rxTimer = null;
 function setBusy(on, stage) {
