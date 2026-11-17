@@ -45,6 +45,7 @@ function decodeRef(u) {
 
 // The tuner's stream port: a transport stream behind the same login, and what it was asked for.
 var streamHits = [];
+var sessions = 0;
 var TS_BYTES = toBuffer(new Array(188 * 40 + 1).join('G'), 'utf8');
 var streamer = http.createServer(function (req, res) {
   var auth = /^Basic (.+)$/.exec(req.headers.authorization || '');
@@ -81,8 +82,10 @@ var receiver = http.createServer(function (req, res) {
     hits.m3u.push(ref);
     res.writeHead(200, { 'Content-Type': 'audio/x-mpegurl' });
     if (ref === POLSKIE) {
+      // A receiver with a login names a new session in the addresses of each read.
+      var session = function (u) { return u.replace('://', '://-sid:token' + (++sessions) + '@'); };
       return res.end('#EXTM3U \n' +
-        '#EXTVLCOPT:http-reconnect=true\n#EXTINF:-1 tvg-chno="4408" tvg-logo="' + base + '/picon/tvp hd.png" tvg-id="' + TVP_HD + '",TVP HD\n#EXTVLCOPT:program=4408\n' + streamBase + '/' + TVP_HD + '\n' +
+        '#EXTVLCOPT:http-reconnect=true\n#EXTINF:-1 tvg-chno="4408" tvg-logo="' + session(base) + '/picon/tvp hd.png" tvg-id="' + TVP_HD + '",TVP HD\n#EXTVLCOPT:program=4408\n' + session(streamBase) + '/' + TVP_HD + '\n' +
         '#EXTINF:-1 tvg-id="1:64:1:0:0:0:0:0:0:0:",--- News ---\n' + streamBase + '/1:64:1:0:0:0:0:0:0:0:\n' +
         '#EXTINF:-1 tvg-id="' + TVN + '" tvg-logo="' + base + '/picon/tvn.png",TVN\n' + streamBase + '/' + TVN + '\n');
     }
@@ -368,7 +371,13 @@ step('a refused login on the stream port is a 502, and the password is not stuck
       assert.equal(status, 502);
       iptv.playlistsAction({ action: 'edit', id: pl, pass: PASS }, function (r2) {
         assert.equal(r2.ok, true);
-        wait(function () { var p = playlistOf(pl); return idle() && p.ready && !p.loginRefused; }, function () { done(); });
+        wait(function () { var p = playlistOf(pl); return idle() && p.ready && !p.loginRefused; }, function () {
+          // Read again with a new session in every address: the channel keeps its key.
+          iptv.search(pl, 'tvp', '', function (s) {
+            assert.equal(s.channels[0].key, tvp.key);
+            done();
+          });
+        });
       });
     });
   });
