@@ -535,9 +535,7 @@
  "game.refreshRate": {"from": "Refresh rate", "text": "Taux de rafraîchissement"},
  "game.scope": {"from": "LG keeps these for each input and genre. Showing {input}.", "text": "LG les garde par entrée et par genre. Affichage de {input}."},
  "game.vrr": {"from": "VRR", "text": "VRR"},
- "header.muted": {"from": "Muted", "text": "Muet"},
  "header.sleep": {"from": "Sleep timer {n} min", "text": "Minuterie de veille {n} min"},
- "header.volume": {"from": "Volume {n}", "text": "Volume {n}"},
  "home.alternative": {"from": "Alternative View", "text": "Vue alternative"},
  "home.alternativeDesc": {"from": "A smaller clock on the right, and the rows as rounded, translucent tiles, titled only while arranging.", "text": "Une horloge plus petite à droite, et les rangées en tuiles arrondies et translucides, titrées seulement pendant l'arrangement."},
  "home.anim.aquarium": {"from": "Aquarium", "text": "Aquarium"},
@@ -3367,5 +3365,11 @@
  "home.tv.streamPortPh": {"text": "Vide : celui du tuner, en général 8001", "from": "Empty: the tuner’s own, usually 8001"},
  "home.tv.bad.streamPort": {"text": "Le port du flux doit être un nombre de 1 à 65535.", "from": "The stream port must be a number from 1 to 65535."},
  "srv.remoteKeys.homeBar": {"text": "Glasshouse Bar", "from": "Glasshouse Bar"},
- "srv.remoteKeys.homeBarInstall": {"text": "Glasshouse Bar n’a pas pu être installée sur le téléviseur. Réessayez dans un instant.", "from": "Glasshouse Bar could not be put on the TV. Try again in a moment."}
+ "srv.remoteKeys.homeBarInstall": {"text": "Glasshouse Bar n’a pas pu être installée sur le téléviseur. Réessayez dans un instant.", "from": "Glasshouse Bar could not be put on the TV. Try again in a moment."},
+ "ctl.remoteLink.full": {"text": "Tableau de bord complet", "from": "Full dashboard"},
+ "header.remote": {"text": "Télécommande", "from": "Remote"},
+ "remote.close": {"text": "Fermer", "from": "Close"},
+ "rp.input": {"text": "Entrée", "from": "Input"},
+ "rp.buttons": {"text": "Boutons", "from": "Buttons"},
+ "rp.touchpad": {"text": "Pavé tactile", "from": "Touchpad"}
 }

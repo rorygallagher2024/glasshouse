@@ -2494,9 +2494,7 @@
  "ctl.keyboard.via.keys": {"text": "Escrita como toques de teclas; só minúsculas.", "from": "Typing as key presses; lowercase only."},
  "ctl.keyboard.via.none": {"text": "Esta aplicação não aceita escrita a partir daqui. Use o teclado que mostra na TV ou, quando abre o da LG, a caixa escreve nele.", "from": "This app does not take typing from here. Use the keyboard it shows on the TV, or, where it opens LG’s, the box types into that."},
  "ctl.keyboard.via.page": {"text": "Escrito na página da aplicação.", "from": "Typed into the app’s page."},
- "header.muted": {"text": "Sem som", "from": "Muted"},
  "header.sleep": {"text": "Temporizador para desligar {n} min", "from": "Sleep timer {n} min"},
- "header.volume": {"text": "Volume {n}", "from": "Volume {n}"},
  "home.darkening": {"text": "Escurecimento", "from": "Darkening"},
  "home.darkeningDesc": {"text": "Quanto a imagem de fundo é escurecida atrás do relógio e das filas, para se lerem facilmente. Desligado mostra a imagem tal como é.", "from": "How much the wallpaper is darkened behind the clock and the rows, to keep them easy to read. Off shows the picture as it is."},
  "home.livePreview": {"text": "Pré-visualização em direto", "from": "Live preview"},
@@ -3367,5 +3365,11 @@
  "home.tv.streamPortPh": {"text": "Vazio: a do próprio recetor, normalmente 8001", "from": "Empty: the tuner’s own, usually 8001"},
  "home.tv.bad.streamPort": {"text": "A porta do stream deve ser um número de 1 a 65535.", "from": "The stream port must be a number from 1 to 65535."},
  "srv.remoteKeys.homeBar": {"text": "Glasshouse Bar", "from": "Glasshouse Bar"},
- "srv.remoteKeys.homeBarInstall": {"text": "Não foi possível instalar o Glasshouse Bar na TV. Tente novamente dentro de momentos.", "from": "Glasshouse Bar could not be put on the TV. Try again in a moment."}
+ "srv.remoteKeys.homeBarInstall": {"text": "Não foi possível instalar o Glasshouse Bar na TV. Tente novamente dentro de momentos.", "from": "Glasshouse Bar could not be put on the TV. Try again in a moment."},
+ "ctl.remoteLink.full": {"text": "Painel completo", "from": "Full dashboard"},
+ "header.remote": {"text": "Comando", "from": "Remote"},
+ "remote.close": {"text": "Fechar", "from": "Close"},
+ "rp.input": {"text": "Entrada", "from": "Input"},
+ "rp.buttons": {"text": "Botões", "from": "Buttons"},
+ "rp.touchpad": {"text": "Touchpad", "from": "Touchpad"}
 }

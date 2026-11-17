@@ -1004,5 +1004,11 @@
  "home.tv.streamPortPh": {"text": "Leer: der des Tuners, meist 8001", "from": "Empty: the tuner’s own, usually 8001"},
  "home.tv.bad.streamPort": {"text": "Der Stream-Port muss eine Zahl von 1 bis 65535 sein.", "from": "The stream port must be a number from 1 to 65535."},
  "srv.remoteKeys.homeBar": {"text": "Glasshouse Bar", "from": "Glasshouse Bar"},
- "srv.remoteKeys.homeBarInstall": {"text": "Glasshouse Bar konnte nicht auf dem Fernseher installiert werden. Versuchen Sie es gleich noch einmal.", "from": "Glasshouse Bar could not be put on the TV. Try again in a moment."}
+ "srv.remoteKeys.homeBarInstall": {"text": "Glasshouse Bar konnte nicht auf dem Fernseher installiert werden. Versuchen Sie es gleich noch einmal.", "from": "Glasshouse Bar could not be put on the TV. Try again in a moment."},
+ "ctl.remoteLink.full": {"text": "Ganzes Dashboard", "from": "Full dashboard"},
+ "header.remote": {"text": "Fernbedienung", "from": "Remote"},
+ "remote.close": {"text": "Schließen", "from": "Close"},
+ "rp.input": {"text": "Eingang", "from": "Input"},
+ "rp.buttons": {"text": "Tasten", "from": "Buttons"},
+ "rp.touchpad": {"text": "Touchpad", "from": "Touchpad"}
 }

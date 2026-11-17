@@ -368,8 +368,6 @@
  "game.refreshRate": {"text": "Frecuencia de actualización", "from": "Refresh rate"},
  "game.scope": {"text": "LG los guarda para cada entrada y género. Se muestra {input}.", "from": "LG keeps these for each input and genre. Showing {input}."},
  "game.vrr": {"text": "VRR", "from": "VRR"},
- "header.volume": {"text": "Volumen {n}", "from": "Volume {n}"},
- "header.muted": {"text": "Silenciado", "from": "Muted"},
  "header.sleep": {"text": "Temporizador {n} min", "from": "Sleep timer {n} min"},
  "lgs.hdmi.audioFormat": {"text": "Formato de audio", "from": "Audio format"},
  "lgs.hdmi.deepColor": {"text": "Deep Colour", "from": "Deep Colour"},
@@ -3367,5 +3365,11 @@
  "home.tv.streamPortPh": {"text": "Vacío: el del propio sintonizador, normalmente 8001", "from": "Empty: the tuner’s own, usually 8001"},
  "home.tv.bad.streamPort": {"text": "El puerto de la transmisión debe ser un número del 1 al 65535.", "from": "The stream port must be a number from 1 to 65535."},
  "srv.remoteKeys.homeBar": {"text": "Glasshouse Bar", "from": "Glasshouse Bar"},
- "srv.remoteKeys.homeBarInstall": {"text": "No se pudo instalar Glasshouse Bar en la TV. Inténtalo de nuevo en un momento.", "from": "Glasshouse Bar could not be put on the TV. Try again in a moment."}
+ "srv.remoteKeys.homeBarInstall": {"text": "No se pudo instalar Glasshouse Bar en la TV. Inténtalo de nuevo en un momento.", "from": "Glasshouse Bar could not be put on the TV. Try again in a moment."},
+ "ctl.remoteLink.full": {"text": "Panel completo", "from": "Full dashboard"},
+ "header.remote": {"text": "Mando", "from": "Remote"},
+ "remote.close": {"text": "Cerrar", "from": "Close"},
+ "rp.input": {"text": "Entrada", "from": "Input"},
+ "rp.buttons": {"text": "Botones", "from": "Buttons"},
+ "rp.touchpad": {"text": "Panel táctil", "from": "Touchpad"}
 }

@@ -412,8 +412,6 @@
  "game.refreshRate": {"text": "معدل التحديث", "from": "Refresh rate"},
  "game.scope": {"text": "يحفظ التلفاز هذه الإعدادات لكل مدخل ونوع ألعاب. المعروض حالياً: {input}.", "from": "LG keeps these for each input and genre. Showing {input}."},
  "game.vrr": {"text": "معدل التحديث المتغير (VRR)", "from": "VRR"},
- "header.volume": {"text": "مستوى الصوت {n}", "from": "Volume {n}"},
- "header.muted": {"text": "مكتوم", "from": "Muted"},
  "header.sleep": {"text": "مؤقت النوم {n} دقيقة", "from": "Sleep timer {n} min"},
  "home.arrange.done": {"text": "تم", "from": "Done"},
  "home.arrange.emptyRow": {"text": "هذا الصف فارغ", "from": "This row is empty"},
@@ -3367,5 +3365,11 @@
  "home.tv.streamPortPh": {"text": "فارغ: منفذ الموالف نفسه، عادةً 8001", "from": "Empty: the tuner’s own, usually 8001"},
  "home.tv.bad.streamPort": {"text": "يجب أن يكون منفذ البث رقمًا من 1 إلى 65535.", "from": "The stream port must be a number from 1 to 65535."},
  "srv.remoteKeys.homeBar": {"text": "Glasshouse Bar", "from": "Glasshouse Bar"},
- "srv.remoteKeys.homeBarInstall": {"text": "تعذّر تثبيت Glasshouse Bar على التلفاز. حاول مرة أخرى بعد لحظات.", "from": "Glasshouse Bar could not be put on the TV. Try again in a moment."}
+ "srv.remoteKeys.homeBarInstall": {"text": "تعذّر تثبيت Glasshouse Bar على التلفاز. حاول مرة أخرى بعد لحظات.", "from": "Glasshouse Bar could not be put on the TV. Try again in a moment."},
+ "ctl.remoteLink.full": {"text": "لوحة التحكم كاملة", "from": "Full dashboard"},
+ "header.remote": {"text": "جهاز التحكم", "from": "Remote"},
+ "remote.close": {"text": "إغلاق", "from": "Close"},
+ "rp.input": {"text": "الإدخال", "from": "Input"},
+ "rp.buttons": {"text": "الأزرار", "from": "Buttons"},
+ "rp.touchpad": {"text": "لوحة اللمس", "from": "Touchpad"}
 }

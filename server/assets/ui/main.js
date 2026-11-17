@@ -44,7 +44,8 @@ async function waitForServer() {
   if (!want && p.get('controls') === '1') want = 'control';
   // ?open= names a disclosure inside Metrics or Control, so it has to pick that tab too -
   // otherwise the link opens something on a panel that is not showing.
-  if (!want && p.get('open')) want = p.get('open') === 'dpad' ? 'control' : 'metrics';
+  if (!want && p.get('open')) want = /^(dpad|pointer|keyboard)$/.test(p.get('open')) ? 'control' : 'metrics';
+  if (remoteView) want = 'control';
   if (!want) { try { want = localStorage.getItem('tab'); } catch (e) { /* private window */ } }
   showTab(want || 'control');
   if (p.get('expand') === '1') document.querySelectorAll('.pv-d').forEach(d => d.open = true);
@@ -55,7 +56,10 @@ if ((openSection === 'metrics' || openSection === 'system') && q('disc-hwinfo'))
 
 if (openSection === 'processes' && q('disc-proc')) q('disc-proc').open = true;
 
-if (openSection === 'dpad' && q('disc-dpad')) q('disc-dpad').open = true;
+// The Control tab's remote sections, named by ?open=, or all three in the remote view.
+['dpad', 'pointer', 'keyboard'].forEach(name => {
+  if ((remoteView || openSection === name) && q('disc-' + name)) q('disc-' + name).open = true;
+});
 
 /*
  * Fill the column containers. Runs when the number of columns changes and once
@@ -140,7 +144,8 @@ function layoutHost(host, n, force) {
 function relayout(force) {
   const w = window.innerWidth;
   if (typeof updateDpadMobileDefault === 'function') updateDpadMobileDefault();
-  layoutHost(document.querySelector('.col-controls'), w >= 820 ? 2 : 1, force);
+  // The remote view is one column, however wide its window.
+  layoutHost(document.querySelector('.col-controls'), !remoteView && w >= 820 ? 2 : 1, force);
   layoutHost(document.querySelector('.col-telemetry'), w >= 1280 ? 3 : (w >= 820 ? 2 : 1), force);
 }
 

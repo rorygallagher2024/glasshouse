@@ -349,6 +349,8 @@ async function sendCommand(action, value) {
     triggerBtn = document.activeElement;
   }
   if (triggerBtn) triggerBtn.classList.add('busy');
+  // The remote on its own: a short buzz on a press, where the phone has one (Android; iOS has none).
+  if (remoteView && triggerBtn && navigator.vibrate) { try { navigator.vibrate(8); } catch (e) {} }
   setBusy(true, 'tx');
   applyOptimistic(action, value);
   try {
@@ -723,24 +725,71 @@ function queuePointerMove(dx, dy) {
   }, 1000 / pointerRate);
 }
 
+/*
+ * The pad. A mouse moves the cursor 1.5 TV pixels a page pixel. A finger is
+ * given more, and more again the faster it moves, so one swipe can cross the
+ * TV's screen and a slow one still places the cursor. Two fingers scroll, as
+ * the wheel does. A tap clicks.
+ */
 (function initPointerPad() {
   const pad = q('pointer-pad');
   if (!pad) return;
   let active = null;
+  const touches = new Map();
+  let scrollLast = null, scrollCarry = 0, scrollCarryX = 0;
+  const gain = (e, dist, dt) => {
+    if (e.pointerType !== 'touch' && e.pointerType !== 'pen') return 1.5;
+    const speed = dt > 0 ? dist / dt : 0;           // page px a ms
+    return 2.5 * (1 + Math.min(2.5, speed * 1.4));
+  };
+  const centre = () => {
+    let x = 0, y = 0;
+    touches.forEach(p => { x += p.x; y += p.y; });
+    return { x: x / touches.size, y: y / touches.size };
+  };
   pad.addEventListener('pointerdown', e => {
     if (e.button !== 0) return;
     e.preventDefault();
-    active = { id: e.pointerId, x: e.clientX, y: e.clientY, carryX: 0, carryY: 0, moved: 0, at: Date.now() };
-    pad.classList.add('dragging');
     try { pad.setPointerCapture(e.pointerId); } catch (err) {}
+    if (e.pointerType === 'touch') touches.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (touches.size >= 2) {
+      // A second finger: scrolling, not moving, and no click at the end.
+      active = null;
+      scrollLast = centre();
+      scrollCarry = scrollCarryX = 0;
+      pad.classList.add('dragging');
+      return;
+    }
+    active = { id: e.pointerId, x: e.clientX, y: e.clientY, carryX: 0, carryY: 0, moved: 0, at: Date.now(), t: e.timeStamp };
+    pad.classList.add('dragging');
   });
   pad.addEventListener('pointermove', e => {
+    if (touches.has(e.pointerId)) touches.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (touches.size >= 2 && scrollLast) {
+      const c = centre();
+      // Natural scrolling: fingers up, the page moves on down. 20 page pixels a step.
+      scrollCarry += (scrollLast.y - c.y) / 20;
+      scrollCarryX += (scrollLast.x - c.x) / 20;
+      scrollLast = c;
+      const dy = scrollCarry < 0 ? Math.ceil(scrollCarry) : Math.floor(scrollCarry);
+      const dx = scrollCarryX < 0 ? Math.ceil(scrollCarryX) : Math.floor(scrollCarryX);
+      if (dx || dy) {
+        scrollCarry -= dy;
+        scrollCarryX -= dx;
+        sendPointer({ scroll: { dx, dy } });
+      }
+      return;
+    }
     if (!active || e.pointerId !== active.id) return;
-    active.carryX += (e.clientX - active.x) * 1.5;
-    active.carryY += (e.clientY - active.y) * 1.5;
-    active.moved += Math.abs(e.clientX - active.x) + Math.abs(e.clientY - active.y);
+    const mx = e.clientX - active.x, my = e.clientY - active.y;
+    const dist = Math.abs(mx) + Math.abs(my);
+    const g = gain(e, dist, e.timeStamp - active.t);
+    active.carryX += mx * g;
+    active.carryY += my * g;
+    active.moved += dist;
     active.x = e.clientX;
     active.y = e.clientY;
+    active.t = e.timeStamp;
     const dx = active.carryX < 0 ? Math.ceil(active.carryX) : Math.floor(active.carryX);
     const dy = active.carryY < 0 ? Math.ceil(active.carryY) : Math.floor(active.carryY);
     if (!dx && !dy) return;
@@ -749,11 +798,16 @@ function queuePointerMove(dx, dy) {
     queuePointerMove(dx, dy);
   });
   const finish = (e, cancelled) => {
-    if (!active || e.pointerId !== active.id) return;
-    const tap = !cancelled && active.moved < 8 && Date.now() - active.at < 400;
+    touches.delete(e.pointerId);
+    try { pad.releasePointerCapture(e.pointerId); } catch (err) {}
+    if (touches.size < 2) scrollLast = null;
+    if (!active || e.pointerId !== active.id) {
+      if (!active && !touches.size) pad.classList.remove('dragging');
+      return;
+    }
+    const tap = !cancelled && active.moved < 10 && Date.now() - active.at < 400;
     active = null;
     pad.classList.remove('dragging');
-    try { pad.releasePointerCapture(e.pointerId); } catch (err) {}
     if (tap) sendPointer({ click: true });
   };
   pad.addEventListener('pointerup', e => finish(e, false));
@@ -925,18 +979,153 @@ document.addEventListener('keydown', e => {
   keyboardRemoteAt = now;
   if (key === 'k') return toggleMute();
   if (key === ' ') return sendCommand('media', 'playPause');
-  const btn = document.querySelector('[data-rcu="' + rcu + '"]');
-  if (btn) {
+  document.querySelectorAll('[data-rcu="' + rcu + '"]').forEach(btn => {
     btn.classList.add('key-hit');
     setTimeout(() => btn.classList.remove('key-hit'), 150);
-  }
+  });
   sendCommand('rcu', rcu);
 });
 
 // D-pad disclosure: uncollapse by default on mobile so the TV remote is immediately accessible.
+/*
+ * The header's remote (#1586): the remote view in a frame over the page, the
+ * page faded behind it, as a sheet from the foot on a phone. Back, on the
+ * phone or in the browser, closes it: it is an entry in the history.
+ *
+ * The frame is made on opening and removed on closing, never left blank: a
+ * blank frame is drawn in the light scheme, white over a dark page. It shows
+ * once the remote has loaded, and is gone while shut, so nothing is read from
+ * the TV then. Made fresh each time, its load adds nothing to the history, or
+ * Back would step back inside it rather than close it.
+ */
+function remoteModal() { return q('remote-modal'); }
+/*
+ * The Android app is told while the remote is showing: its volume keys then
+ * step the TV's volume, and its pull-to-refresh is off, which otherwise took
+ * a drag down the touchpad. The top page only: a frame has the bridge too.
+ */
+function tellAppRemote(open) {
+  try {
+    if (window.top === window && window.GlasshouseApp && typeof window.GlasshouseApp.remoteState === 'function') {
+      window.GlasshouseApp.remoteState(!!open);
+    }
+  } catch (e) {}
+}
+if (remoteView) tellAppRemote(true);
+let remoteHideTimer = null;
+function openRemote() {
+  const m = remoteModal(), slot = q('remote-frame-slot');
+  if (!m || !slot || remoteView || !m.hidden) return;
+  clearTimeout(remoteHideTimer);
+  slot.textContent = '';
+  const frame = document.createElement('iframe');
+  frame.className = 'remote-frame';
+  frame.id = 'remote-frame';
+  frame.title = t('header.remote', 'Remote');
+  frame.addEventListener('load', () => {
+    frame.classList.add('loaded');
+    try { frame.contentWindow.focus(); } catch (e) {}
+  }, { once: true });
+  frame.src = location.pathname + '?view=remote&embed=1';
+  slot.appendChild(frame);
+  m.hidden = false;
+  document.documentElement.classList.add('remote-open');
+  tellAppRemote(true);
+  requestAnimationFrame(() => requestAnimationFrame(() => m.classList.add('shown')));
+  try { history.pushState({ remote: true }, '', location.href); } catch (e) {}
+}
+function hideRemote() {
+  const m = remoteModal(), slot = q('remote-frame-slot');
+  if (!m || m.hidden) return;
+  m.classList.remove('shown');
+  document.documentElement.classList.remove('remote-open');
+  tellAppRemote(false);
+  clearTimeout(remoteHideTimer);
+  remoteHideTimer = setTimeout(() => { m.hidden = true; if (slot) slot.textContent = ''; }, 220);
+  const btn = q('hdr-remote');
+  if (btn) btn.focus();
+}
+function closeRemote() {
+  if (history.state && history.state.remote) history.back();
+  else hideRemote();
+}
+window.addEventListener('popstate', () => { if (!(history.state && history.state.remote)) hideRemote(); });
+// Esc on the page closes it (in the frame Esc is the remote's Back), before the Control tab's keys see it.
+document.addEventListener('keydown', e => {
+  const m = remoteModal();
+  if (e.key !== 'Escape' || !m || m.hidden) return;
+  e.preventDefault();
+  closeRemote();
+}, true);
+
+/*
+ * The remote's own layout (#remote-pad, the remote view only): Screen,
+ * Input and Settings along the top, a ring D-pad, volume and playback
+ * rockers beside Back, Home and Mute, and Buttons, Touchpad and Keyboard
+ * along the foot. Its volume and mute follow the Control tab's, and its
+ * Screen button the header's state.
+ */
+const REMOTE_MODE_KEY = 'remoteMode';
+// quiet: as the page opens, where the keyboard box is not focused (a phone's keyboard would pop up).
+function remoteMode(mode, quiet) {
+  if (!remoteView) return;
+  const touchOk = q('disc-pointer') && !q('disc-pointer').hidden;
+  if (mode === 'touch' && !touchOk) mode = 'buttons';
+  if (['buttons', 'touch', 'keys'].indexOf(mode) === -1) mode = 'buttons';
+  const root = document.documentElement;
+  ['buttons', 'touch', 'keys'].forEach(m => root.classList.toggle('remote-mode-' + m, m === mode));
+  root.classList.remove('remote-inputs');
+  if (q('rp-input')) q('rp-input').setAttribute('aria-expanded', 'false');
+  document.querySelectorAll('#remote-modes [data-mode]').forEach(b => b.setAttribute('aria-selected', String(b.dataset.mode === mode)));
+  if (mode === 'touch' && q('disc-pointer')) q('disc-pointer').open = true;
+  if (mode === 'keys' && q('disc-keyboard')) { q('disc-keyboard').open = true; if (!quiet && q('kb-text')) q('kb-text').focus(); }
+  try { localStorage.setItem(REMOTE_MODE_KEY, mode); } catch (e) {}
+}
+// Input: the Control tab's sources in place of the buttons, until one is picked.
+function remoteInputs() {
+  const root = document.documentElement, open = !root.classList.contains('remote-inputs');
+  if (open) remoteMode('buttons');
+  root.classList.toggle('remote-inputs', open);
+  if (q('rp-input')) q('rp-input').setAttribute('aria-expanded', String(open));
+}
+// Screen: off while it is on, on while it is off, as the header's state has it.
+function remoteScreen() {
+  const st = q('state');
+  sendCommand(st && st.classList.contains('off') ? 'screenOn' : 'screenOff');
+}
+(function initRemotePad() {
+  if (!remoteView || !q('remote-pad')) return;
+  let mode = 'buttons';
+  try { mode = localStorage.getItem(REMOTE_MODE_KEY) || 'buttons'; } catch (e) {}
+  const mirror = () => {
+    const vol = q('vol'), mute = q('mute'), st = q('state'), touch = q('rp-mode-touch'), pointer = q('disc-pointer');
+    if (vol && q('rp-vol')) q('rp-vol').textContent = vol.textContent;
+    if (mute && q('rp-mute')) q('rp-mute').classList.toggle('on', mute.classList.contains('on'));
+    if (st && q('rp-screen-label')) {
+      const off = st.classList.contains('off');
+      q('rp-screen-label').textContent = off ? t('ctl.screenOn', 'Screen on') : t('ctl.screenOff', 'Screen off');
+    }
+    if (touch && pointer) {
+      touch.hidden = pointer.hidden;
+      if (pointer.hidden && document.documentElement.classList.contains('remote-mode-touch')) remoteMode('buttons');
+    }
+  };
+  const watch = new MutationObserver(mirror);
+  ['vol', 'mute', 'state', 'disc-pointer'].forEach(id => {
+    if (q(id)) watch.observe(q(id), { attributes: true, childList: true, characterData: true, subtree: true });
+  });
+  mirror();
+  remoteMode(mode, true);
+  // A source picked from Input: back to the buttons.
+  if (q('inputs')) q('inputs').addEventListener('click', e => {
+    if (e.target.closest('button') && document.documentElement.classList.contains('remote-inputs')) remoteMode('buttons');
+  });
+})();
+
 function updateDpadMobileDefault() {
   const dpad = q('disc-dpad');
   if (!dpad) return;
+  if (remoteView) { dpad.open = true; return; }
   let stored = null;
   try { stored = localStorage.getItem('dpadOpen'); } catch (e) {}
   if (stored !== null) {

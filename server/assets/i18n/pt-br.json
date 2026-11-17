@@ -517,9 +517,7 @@
  "game.refreshRate": {"text": "Taxa de atualização", "from": "Refresh rate"},
  "game.scope": {"text": "A LG guarda isto por entrada e gênero. Mostrando {input}.", "from": "LG keeps these for each input and genre. Showing {input}."},
  "game.vrr": {"text": "VRR", "from": "VRR"},
- "header.muted": {"text": "Sem som", "from": "Muted"},
  "header.sleep": {"text": "Temporizador para dormir {n} min", "from": "Sleep timer {n} min"},
- "header.volume": {"text": "Volume {n}", "from": "Volume {n}"},
  "home.alternative": {"text": "Visualização alternativa", "from": "Alternative View"},
  "home.alternativeDesc": {"text": "Um relógio menor à direita e as fileiras como blocos arredondados e translúcidos, com títulos só durante a organização.", "from": "A smaller clock on the right, and the rows as rounded, translucent tiles, titled only while arranging."},
  "home.arrange.done": {"text": "Concluído", "from": "Done"},
@@ -3367,5 +3365,11 @@
  "home.tv.streamPortPh": {"text": "Vazio: a do próprio receptor, geralmente 8001", "from": "Empty: the tuner’s own, usually 8001"},
  "home.tv.bad.streamPort": {"text": "A porta do stream deve ser um número de 1 a 65535.", "from": "The stream port must be a number from 1 to 65535."},
  "srv.remoteKeys.homeBar": {"text": "Glasshouse Bar", "from": "Glasshouse Bar"},
- "srv.remoteKeys.homeBarInstall": {"text": "Não foi possível instalar o Glasshouse Bar na TV. Tente novamente em instantes.", "from": "Glasshouse Bar could not be put on the TV. Try again in a moment."}
+ "srv.remoteKeys.homeBarInstall": {"text": "Não foi possível instalar o Glasshouse Bar na TV. Tente novamente em instantes.", "from": "Glasshouse Bar could not be put on the TV. Try again in a moment."},
+ "ctl.remoteLink.full": {"text": "Painel completo", "from": "Full dashboard"},
+ "header.remote": {"text": "Controle", "from": "Remote"},
+ "remote.close": {"text": "Fechar", "from": "Close"},
+ "rp.input": {"text": "Entrada", "from": "Input"},
+ "rp.buttons": {"text": "Botões", "from": "Buttons"},
+ "rp.touchpad": {"text": "Touchpad", "from": "Touchpad"}
 }
