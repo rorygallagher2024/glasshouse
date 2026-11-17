@@ -266,6 +266,18 @@ steps.push(function () {
   assert.strictEqual(rb.level('11:22:33:44:55:66'), null, 'refused on MAC mismatch');
   assert.strictEqual(rb.details({ mac: REMOTE.address }).batteryUpdatedAt, 1234567);
   assert.strictEqual(rb.details({ mac: '11:22:33:44:55:66' }).batteryUpdatedAt, null);
+  util.writeJsonAtomic(tmpFile, { level: 50, at: 1234567, mac: REMOTE.address, step: 'mid' });
+  rb.init({ stateFile: tmpFile });
+  assert.strictEqual(rb.details({ mac: REMOTE.address }).batteryStep, 'mid', 'the step is kept across a restart');
+  util.writeJsonAtomic(tmpFile, { level: 50, at: 1234567, mac: REMOTE.address, source: 'mrcu' });
+  rb.init({ stateFile: tmpFile });
+  assert.strictEqual(rb.details({ mac: REMOTE.address }).batteryStep, 'mid', 'a file from before steps were kept');
+  util.writeJsonAtomic(tmpFile, { level: 50, at: 1234567, mac: REMOTE.address, source: 'mrcu', step: null });
+  rb.init({ stateFile: tmpFile });
+  assert.strictEqual(rb.details({ mac: REMOTE.address }).batteryStep, null, 'but not one that says it was a percentage');
+  util.writeJsonAtomic(tmpFile, { level: 50, at: 1234567, mac: REMOTE.address, source: 'bluetooth' });
+  rb.init({ stateFile: tmpFile });
+  assert.strictEqual(rb.details({ mac: REMOTE.address }).batteryStep, null, 'nor a Bluetooth reading');
   util.writeJsonAtomic(tmpFile, { level: 75 });
   rb.init({ stateFile: tmpFile });
   assert.strictEqual(rb.level(REMOTE.address), null, 'unbound cached readings cannot follow a new remote');
@@ -284,6 +296,7 @@ steps.push(function () {
     assert.strictEqual(saved.level, 88);
     assert.strictEqual(saved.mac, REMOTE.address);
     assert.strictEqual(saved.source, 'bluetooth');
+    assert.strictEqual(saved.step, null, 'a Bluetooth percentage is no step');
     assert.ok(saved.at > Date.now() - 1000);
     util.unlinkQuiet(tmpFile);
     console.log('  ✓ a successful read saves the level and MAC to disk');
@@ -307,11 +320,14 @@ steps.push(function () {
   rb.init({ luna: luna, webosVersion: '4.5.0', discoverMs: 0, settleMs: 0 });
   rb.read(function (level) {
     assert.strictEqual(level, 50, 'an MR19\'s MID is a percentage');
+    assert.strictEqual(rb.details({ mac: REMOTE.address }).batteryStep, 'mid', 'kept as the step it stands in for');
     var low = fakeLuna({ deviceInfo: { returnValue: true, batteryLevel: 'low', bdAddress: REMOTE.address } });
     rb.init({ luna: low, webosVersion: '4.5.0', discoverMs: 0, settleMs: 0 });
     rb.read(function (lowLevel) {
       assert.strictEqual(lowLevel, 10, 'LOW, in any case, is under the usual low-battery alerts');
-      console.log('  ✓ a remote that answers in steps (an MR19) is read as 100, 50 or 10');
+      assert.strictEqual(rb.details({ mac: REMOTE.address }).batteryStep, 'low');
+      assert.strictEqual(rb.deviceStepFrom({ returnValue: true, batteryLevel: 63 }), null, 'a percentage is no step');
+      console.log('  ✓ a remote that answers in steps (an MR19) is read as 100, 50 or 10, and the step kept');
       pending--;
     });
   });

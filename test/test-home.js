@@ -373,6 +373,61 @@ step('a layout saved from a dashboard changes the version the view\'s heartbeat 
   });
 });
 
+step('the heartbeat brings the remote\'s battery as the layout\'s choice shows it', function (done) {
+  var level = 55;
+  start(null, { remoteBattery: function () { return { level: level, step: null, status: 'available' }; } });
+  assert.strictEqual(home.normalise({}).remoteBattery, 'low', 'shown once low unless chosen otherwise');
+  assert.strictEqual(home.normalise({ remoteBattery: 'sometimes' }).remoteBattery, 'low', 'and only one of the choices offered');
+  assert.strictEqual(home.beat().remoteBattery, null, 'above the low mark, When low hides it');
+  level = 20;
+  assert.deepEqual(home.beat().remoteBattery, { level: 20, step: null, low: true }, 'at the mark it shows, drawn as low');
+  level = null;
+  assert.strictEqual(home.beat().remoteBattery, null, 'and not before a level is read');
+  home.setLayout({ remoteBattery: 'always' }, function (r) {
+    assert.ok(r.ok, r.error);
+    assert.strictEqual(r.layout.remoteBattery, 'always');
+    level = 87.4;
+    assert.deepEqual(home.beat().remoteBattery, { level: 87, step: null, low: false }, 'Always shows it at any level');
+    home.setLayout({ remoteBattery: 'off' }, function (r2) {
+      assert.ok(r2.ok, r2.error);
+      level = 5;
+      assert.strictEqual(home.beat().remoteBattery, null, 'and Off never does');
+      done();
+    });
+  });
+});
+
+step('a remote that reports only High, Medium or Low is shown by that step, not a percentage', function (done) {
+  var b = { level: 50, step: 'mid', status: 'available' };
+  start(null, { remoteBattery: function () { return b; } });
+  assert.strictEqual(home.beat().remoteBattery, null, 'Medium is not low');
+  b = { level: 10, step: 'low', status: 'available' };
+  assert.deepEqual(home.beat().remoteBattery, { level: null, step: 'low', low: true }, 'Low shows in When low, as Low');
+  home.setLayout({ remoteBattery: 'always' }, function (r) {
+    assert.ok(r.ok, r.error);
+    b = { level: 100, step: 'high', status: 'available' };
+    assert.deepEqual(home.beat().remoteBattery, { level: null, step: 'high', low: false }, 'High, never 100%');
+    done();
+  });
+});
+
+step('the Remote battery setting is offered only where the badge could show', function (done) {
+  var b = null;
+  start(null, { webosVersion: '11.2.0', remoteBattery: function () { return b; } });
+  home.status(function (none) {
+    assert.strictEqual(none.remoteBatteryAvailable, false, 'not with no remote paired');
+    b = { level: null, step: null, status: 'unsupported' };
+    home.status(function (unsupported) {
+      assert.strictEqual(unsupported.remoteBatteryAvailable, false, 'nor once the read gives up as unsupported');
+      b = { level: null, step: null, status: 'waiting' };
+      home.status(function (waiting) {
+        assert.strictEqual(waiting.remoteBatteryAvailable, true, 'but while a first read is awaited');
+        done();
+      });
+    });
+  });
+});
+
 step('the heartbeat asks the view to measure its frames only while the trace file is there, and logs what it sends', function (done) {
   start(null);
   var flag = path.join(dir, 'home-trace');

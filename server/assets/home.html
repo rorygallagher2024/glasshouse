@@ -67,6 +67,14 @@ html.resting #wall .layer{-webkit-animation-play-state:paused;animation-play-sta
    which is sized for the digits alone. */
 #mer{font-size:.28em;letter-spacing:0;margin-left:.1em;opacity:.75;font-weight:400}
 #date{margin-top:22px;font-size:28px;color:#a39d93;white-space:nowrap}
+/* The remote's battery after the date, while the layout's remoteBattery and
+   its level show it: a remote's outline and the percentage, warm orange once
+   low (not the accent, which a chosen colour replaces). */
+#rbat{display:inline-block}
+#rbat.none{display:none}
+#rbat:before{content:"\00b7";margin:0 .4em}
+#rbat svg{width:.8em;height:.8em;vertical-align:-.08em;margin-right:.25em}
+#rbat.low{color:#ff8a4c}
 /* Switched off, the clock keeps its space, so the rows and Last watched stay put. */
 .no-clock #when{visibility:hidden}
 #source{-webkit-flex:1 1 auto;flex:1 1 auto;min-width:0;padding-left:24px;border-left:1px solid #2a2825;padding-bottom:2px}
@@ -658,7 +666,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
   <section id="now">
     <div id="when">
       <div id="clock"><span id="hm">&mdash;</span><span id="mer" hidden></span></div>
-      <div id="date">&mdash;</div>
+      <div id="date"><span id="dateText">&mdash;</span><span id="rbat" class="none"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><rect x="7" y="2" width="10" height="20" rx="5"/><circle cx="12" cy="8" r="1.6"/><path d="M10 14h4M10 17.5h4"/></svg><span id="rbatPct"></span></span></div>
     </div>
     <div id="source" class="none">
       <div id="srcKind">&mdash;</div>
@@ -1712,7 +1720,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     $('hm').textContent = p[0];
     $('mer').textContent = p[1];
     $('mer').hidden = !p[1];
-    $('date').textContent = dateText(d);
+    $('dateText').textContent = dateText(d);
     if (guide.open) return renderGuideStrip();
     var kind = '', title = '', via = '', pv = $('preview').className && !inTile() ? tilePreview.target : null;
     if (pv) {
@@ -1905,6 +1913,24 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
 
   // Drawn again only when it changes: the heartbeat brings it every 5 s.
   var shownWeather = null;
+  /*
+   * The remote's battery after the date. The server sends it with each
+   * heartbeat only while the layout's remoteBattery shows it (lib/home.js,
+   * remoteBatteryBadge), so null hides it. A remote that reports only High,
+   * Medium or Low comes as that step, not a percentage.
+   */
+  function renderRemoteBattery(b) {
+    var el = $('rbat');
+    var steps = { high: t('home.remoteBattery.high', 'High'), mid: t('home.remoteBattery.mid', 'Medium'),
+                  low: t('home.remoteBattery.lowStep', 'Low') };
+    var text = b && steps[b.step] ? steps[b.step]
+      : b && typeof b.level === 'number' ? t('home.remoteBattery.level', '{level}%', { level: b.level }) : '';
+    if (!text) { el.className = 'none'; return; }
+    $('rbatPct').textContent = text;
+    el.setAttribute('aria-label', t('home.remoteBattery.ariaText', 'Remote battery: {level}', { level: text }));
+    el.className = b.low ? 'low' : '';
+  }
+
   function renderWeather(w) {
     var key = w && typeof w.temp === 'number' ? JSON.stringify([w.condition, w.temp, w.city, w.source]) : '';
     if (key === shownWeather) return;
@@ -6352,6 +6378,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
         rest(!!r.covered);
         if (r.saver) scheduleBeat(SAVER_BEAT_MS);
         renderWeather(r.weather || null);
+        renderRemoteBattery(r.remoteBattery || null);
         // webOS 4: two minutes behind another app, not the screen saver, the
         // view closes itself to give its memory back; Home opens it afresh.
         coveredSince = r.covered && !r.saver ? (coveredSince || Date.now()) : 0;

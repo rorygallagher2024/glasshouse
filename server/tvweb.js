@@ -2198,6 +2198,12 @@ function startGlasshouseHome() {
   glasshouseHome.init({
     screensavers: screensavers,
     weather: weather,
+    // What the dashboard's Remote section shows: the level, the step it stands
+    // in for, and whether it can be read at all. null with no remote paired.
+    remoteBattery: function () {
+      var remote = telemetry.remoteInfo();
+      return remote ? { level: remote.battery, step: remote.batteryStep, status: remote.batteryStatus } : null;
+    },
     iptv: iptv,
     luna: luna,
     Subscription: lunaTransport.Subscription,
