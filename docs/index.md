@@ -89,7 +89,7 @@ Use it for remote control, app installation and removal, OLED panel care, privac
 === "Android app"
 
     <p align="center">
-      <a href="screenshots/android-tvs.png"><img src="screenshots/android-tvs.png" alt="Android app showing online TVs" width="280"></a>
+      <a href="screenshots/android-tvs.png"><img src="screenshots/android-tvs.png" alt="Android app showing a TV with its volume, Remote, Turn off and Open dashboard" width="280"></a>
       &nbsp;&nbsp;
       <a href="screenshots/android-dashboard.png"><img src="screenshots/android-dashboard.png" alt="Android app showing the full-screen TV dashboard" width="280"></a>
       <br>

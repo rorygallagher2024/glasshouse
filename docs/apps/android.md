@@ -5,12 +5,12 @@
 The app runs on Android 10 and later, and follows the dashboard's design: monochrome styling, Manrope typography, and light/dark theme matching.
 
 <p align="center" markdown>
-  ![The TV list, with power, volume and Open dashboard on each TV](../screenshots/android-tvs.png){ width="300" }
+  ![The TV list, with volume, Remote, Turn off and Open dashboard on each TV](../screenshots/android-tvs.png){ width="300" }
   &nbsp;&nbsp;&nbsp;&nbsp;
   ![A TV's dashboard, with TVs and the section menu along the bottom](../screenshots/android-dashboard.png){ width="300" }
 </p>
 
-*The TV list, with power and volume on each TV, and a TV's dashboard with the app's back button and section menu along the bottom.*
+*The TV list, with volume, Remote, power and Open dashboard on each TV, and a TV's dashboard with the app's back button and section menu along the bottom.*
 
 ## How to get the app
 
@@ -33,6 +33,8 @@ Each TV is a card with its model number, the name given to it and its power stat
 A **Quick Settings tile** turns one TV on and off: the one chosen with **Use for Quick Settings tile** in its card's menu, or the only one.
 
 ## The remote
+
+![The remote opened from a TV's card, with the app's back button and section menu along the bottom](../screenshots/android-remote.png){ width="300" }
 
 The dashboard's remote, opened from a TV's card or from **Remote** at the top of its dashboard, works as it does in a browser, with three things only the app can do:
 
