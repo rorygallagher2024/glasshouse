@@ -481,7 +481,20 @@ function renderRemoteKeys(d) {
   const more = away.length ? `<details class="rk-more"${rkMoreOpen ? ' open' : ''} ontoggle="rkMoreOpen = this.open">
       <summary class="rk-grp">${esc(t('apps.remoteKeys.elsewhere', 'Buttons on remotes sold elsewhere ({n})', { n: away.length }))}</summary>
       <div class="rk-grid">${away.map(tile).join('')}</div></details>` : '';
-  list.innerHTML = groups + more;
+  // How far a Brightness key moves the picture, where one can be set.
+  let stepRow = '';
+  if (rk.choices.some(c => c.id === 'action:brightnessUp')) {
+    const sizes = [5, 10, 15, 20, 25];
+    if (sizes.indexOf(rk.brightnessStep) === -1) sizes.push(rk.brightnessStep);
+    sizes.sort((a, b) => a - b);
+    stepRow = `<div class="prot-row">
+      <div class="prot-main"><div class="prot-title"><label for="apps-rk-step">${esc(t('apps.remoteKeys.step', 'Brightness step'))}</label></div>
+        <div class="prot-desc">${esc(t('apps.remoteKeys.stepDesc', 'How many points one press of a Brightness up or Brightness down key moves the picture, out of 100.'))}</div></div>
+      <div class="prot-status"><select id="apps-rk-step" class="pill-sel" ${rkWritable ? '' : 'disabled'} onchange="rkSetBrightnessStep(this.value)">
+        ${sizes.map(n => `<option value="${n}"${n === rk.brightnessStep ? ' selected' : ''}>${n}</option>`).join('')}
+      </select></div></div>`;
+  }
+  list.innerHTML = groups + more + stepRow;
   if (rkOpen) {
     const tile = list.querySelector(`.rk-key[data-key="${CSS.escape(rkOpen)}"]`);
     rkOpen = null;
@@ -588,6 +601,23 @@ async function chooseRemoteKey(btn) {
     error = e.message;
   }
   closeRemoteKeyPicker(true);
+  if (error) alert(t('apps.remoteKeys.failed', 'Could not change it: {error}', { error }));
+  await loadApps();
+}
+
+async function rkSetBrightnessStep(value) {
+  let error = null;
+  try {
+    const res = await fetch(api('/api/remotekeys'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ brightnessStep: Number(value) })
+    });
+    const r = await res.json();
+    if (!r || !r.ok) error = (r && r.error) || t('common.unknownError', 'unknown error');
+  } catch (e) {
+    error = e.message;
+  }
   if (error) alert(t('apps.remoteKeys.failed', 'Could not change it: {error}', { error }));
   await loadApps();
 }

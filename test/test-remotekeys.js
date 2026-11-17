@@ -369,6 +369,48 @@ step(function (next) {
 });
 
 step(function (next) {
+  rk.setRemoteKey('red', 'open', 'action:brightnessUp', guard(function () {
+    rk.getRemoteKeys(guard(function (before) {
+      assert.strictEqual(before.brightnessStep, 10, 'ten points unless set');
+      var refused = 0;
+      var bad = [0, 51, 2.5, 'x', -5];
+      (function refuse(i) {
+        if (i === bad.length) return accepted();
+        rk.setBrightnessStep(bad[i], guard(function (r) {
+          assert.strictEqual(r.ok, false, String(bad[i]) + ' refused');
+          refuse(i + 1);
+        }));
+      })(0);
+      function accepted() {
+        rk.setBrightnessStep(20, guard(function (r) {
+          assert.strictEqual(r.ok, true);
+          assert.strictEqual(tv.keys.brightnessStep, 20, 'sent to the filter with the keys');
+          var f = loadFilter();
+          tv.backlight = 30;
+          f.handle(1004, true, false);
+          assert.strictEqual(tv.backlight, 50, 'the filter steps by the set size');
+          // Kept through a change of keys, and by a later update of the filter.
+          rk.setRemoteKey('netflix', 'open', 'action:brightnessDown', guard(function () {
+            assert.strictEqual(tv.keys.brightnessStep, 20);
+            rk.getRemoteKeys(guard(function (after) {
+              assert.strictEqual(after.brightnessStep, 20);
+              rk.setRemoteKey('netflix', 'lg', '', guard(function () {
+                rk.setRemoteKey('red', 'lg', '', guard(function () {
+                  rk.setBrightnessStep(10, guard(function () {
+                    console.log('  ✓ the brightness step is a setting from 1 to 50 that the filter follows and a change of keys keeps');
+                    next();
+                  }));
+                }));
+              }));
+            }));
+          }));
+        }));
+      }
+    }));
+  }));
+});
+
+step(function (next) {
   rk.setRemoteKey('red', 'open', 'action:powerOff', guard(function (s) {
     assert.strictEqual(s.ok, true);
     var f = loadFilter();

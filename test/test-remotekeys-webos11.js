@@ -644,6 +644,20 @@ step('Brightness up and down on streaming buttons switch LG\'s entries off and s
   });
 });
 
+step('the set brightness step applies to the log\'s presses', function (next) {
+  set('netflix', 'open', 'action:brightnessUp', function () { afterWatching(function () {
+    rk.setBrightnessStep(20, function (r) {
+      assert.ok(r.ok);
+      panel.backlight = 30;
+      logLine(NETFLIX_LINE);
+      until(function () { return panel.backlight === 50; }, 5000, function () {
+        assert.strictEqual(panel.backlight, 50, 'up by 20');
+        rk.setBrightnessStep(10, function () { set('netflix', 'lg', '', function () { next(); }); });
+      });
+    });
+  }); });
+});
+
 step('the Alexa button set blocks Amazon\'s view and opens its app from the log, apart from the AI button; As LG has it releases it', function (next) {
   voice.switches = [];
   set('alexa', 'open', 'com.webos.app.hdmi2', function () {

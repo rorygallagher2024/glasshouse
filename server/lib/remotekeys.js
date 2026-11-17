@@ -144,10 +144,11 @@ var SCREEN_OFF = 'action:screenOff';
  */
 var BRIGHTNESS_UP = 'action:brightnessUp';
 var BRIGHTNESS_DOWN = 'action:brightnessDown';
-var BRIGHTNESS_STEP = 10;
+var BRIGHTNESS_DEFAULT_STEP = 10;
+var BRIGHTNESS_MAX_STEP = 50;
 var BRIGHTNESS_DELTAS = {};
-BRIGHTNESS_DELTAS[BRIGHTNESS_UP] = BRIGHTNESS_STEP;
-BRIGHTNESS_DELTAS[BRIGHTNESS_DOWN] = -BRIGHTNESS_STEP;
+BRIGHTNESS_DELTAS[BRIGHTNESS_UP] = 1;
+BRIGHTNESS_DELTAS[BRIGHTNESS_DOWN] = -1;
 // The actions webOS 11 answers from the log: LG's own action for the key is off.
 function isLoggedAction(id) {
   return id === SCREEN_OFF || Object.prototype.hasOwnProperty.call(BRIGHTNESS_DELTAS, id);
@@ -398,14 +399,32 @@ function readStarting() {
   }
 }
 
-function writeMap(map, home, starting) {
-  if (!Object.keys(map).length && !home && !starting) {
+// The points one brightness press moves, as set on the Remote tab, or 0 where it was not set.
+function readStoredBrightnessStep() {
+  try {
+    var j = JSON.parse(fs.readFileSync(mapFile(), 'utf8'));
+    var n = j && j.brightnessStep;
+    return typeof n === 'number' && n >= 1 && n <= BRIGHTNESS_MAX_STEP ? n : 0;
+  } catch (e) {
+    return 0;
+  }
+}
+
+function brightnessStep() {
+  return readStoredBrightnessStep() || BRIGHTNESS_DEFAULT_STEP;
+}
+
+// step is kept as it was in the file unless one is given.
+function writeMap(map, home, starting, step) {
+  if (step === undefined) step = readStoredBrightnessStep();
+  if (!Object.keys(map).length && !home && !starting && !step) {
     try { fs.unlinkSync(mapFile()); } catch (e) { if (e.code !== 'ENOENT') throw e; }
     return;
   }
   var j = { keys: map, updated: new Date().toISOString() };
   if (home) j.home = home;
   if (starting) j.starting = starting;
+  if (step) j.brightnessStep = step;
   fs.writeFileSync(mapFile(), JSON.stringify(j, null, 2) + '\n', 'utf8');
 }
 
@@ -433,6 +452,7 @@ function filterSource() {
     'var glasshouseScreenOffArmed = false;',
     'var glasshousePowerOffArmed = {};',
     'var glasshouseBarPress = 0;',
+    'var glasshouseBrightnessStep = ' + BRIGHTNESS_DEFAULT_STEP + ';',
     '',
     '// Key code by name; a name this firmware lacks is left out.',
     'function glasshouseKeyCodes() {',
@@ -460,6 +480,7 @@ function filterSource() {
     '        glasshouseKeyIds = ids;',
     '        glasshousePowerOffArmed = {};',
     '        glasshouseStarting = typeof value.starting === "string" ? value.starting : "";',
+    '        glasshouseBrightnessStep = typeof value.brightnessStep === "number" && value.brightnessStep >= 1 ? value.brightnessStep : ' + BRIGHTNESS_DEFAULT_STEP + ';',
     '    } catch (e) {',
     '        console.warn("glasshouse keyfilter: " + e + "; keys left as they were");',
     '    }',
@@ -480,7 +501,8 @@ function filterSource() {
     // One step of the panel brightness, as lib/remotekeys.js's stepBrightness does it.
     // A held key repeats, one step at a time: a step still being written is not stacked on.
     'var glasshouseBrightnessBusy = false;',
-    'function glasshouseBrightness(delta) {',
+    'function glasshouseBrightness(direction) {',
+    '    var delta = direction * glasshouseBrightnessStep;',
     '    if (glasshouseBrightnessBusy) return;',
     '    glasshouseBrightnessBusy = true;',
     '    try { genericTimer.set(1500, function () { glasshouseBrightnessBusy = false; }); } catch (e) {}',
@@ -604,7 +626,7 @@ function filterSource() {
     '            if (!pressed && glasshouseScreenOffArmed) console.info("glasshouse keyfilter: key", key, "turns the screen off");',
     '            glasshouseScreenOffKey(pressed, autoRepeat);',
     '        } else if (id === ' + JSON.stringify(BRIGHTNESS_UP) + ' || id === ' + JSON.stringify(BRIGHTNESS_DOWN) + ') {',
-    '            if (pressed) glasshouseBrightness(id === ' + JSON.stringify(BRIGHTNESS_UP) + ' ? ' + BRIGHTNESS_STEP + ' : -' + BRIGHTNESS_STEP + ');',
+    '            if (pressed) glasshouseBrightness(id === ' + JSON.stringify(BRIGHTNESS_UP) + ' ? 1 : -1);',
     '        } else if (id === ' + JSON.stringify(POWER_OFF) + ') {',
     '            if (pressed && !autoRepeat) {',
     '                var state = glasshousePowerState.toLowerCase().replace(/[\\s_-]/g, "");',
@@ -652,6 +674,8 @@ function writeKeys(map, cb, home, starting) {
   var value = { keys: inEffect(map) };
   if (home) value.home = home;
   if (starting) value.starting = starting;
+  var step = readStoredBrightnessStep();
+  if (step) value.brightnessStep = step;
   configs[MAP_KEY] = value;
   lunaFn('com.webos.service.config/setConfigs', { configs: configs }, function (r) {
     cb(!!(r && r.returnValue));
@@ -1288,7 +1312,7 @@ function buttonPressed(button) {
   var id = pressTargets[button];
   if (!id || !lunaFn) return;
   if (id === SCREEN_OFF) return screenOffFromPress(button);
-  if (Object.prototype.hasOwnProperty.call(BRIGHTNESS_DELTAS, id)) return stepBrightness(BRIGHTNESS_DELTAS[id]);
+  if (Object.prototype.hasOwnProperty.call(BRIGHTNESS_DELTAS, id)) return stepBrightness(BRIGHTNESS_DELTAS[id] * brightnessStep());
   lunaFn('com.webos.applicationManager/launch', { id: id }, function (r) {
     if (!(r && r.returnValue)) console.log('remotekeys: ' + button + ' could not open ' + id);
   });
@@ -1593,7 +1617,7 @@ function describeKeys(keys, inChain, cb, native) {
         return key;
       });
       cb({
-        ok: true, supported: true, keys: out,
+        ok: true, supported: true, keys: out, brightnessStep: brightnessStep(),
         choices: switchers.concat(media, inputs, homeChoices(native), barChoices(native), appChoices(apps)),
         inChain: inChain
       });
@@ -1684,6 +1708,26 @@ function applyAny(cb) {
     if (yes) return applyNative(cb);
     apply(cb);
   });
+}
+
+/*
+ * The points one press of a Brightness key moves, a whole number from 1 to
+ * BRIGHTNESS_MAX_STEP. Kept with the keys and sent to the filter with them.
+ * cb({ ok, error }).
+ */
+function setBrightnessStep(value, cb) {
+  var step = Number(value);
+  if (!(step >= 1 && step <= BRIGHTNESS_MAX_STEP && Math.floor(step) === step)) {
+    return cb({ ok: false, error: msg('srv.remoteKeys.badStep', 'The step must be a whole number from 1 to {max}', { max: BRIGHTNESS_MAX_STEP }) });
+  }
+  if (!lunaFn) return cb({ ok: false, error: 'no luna wrapper' });
+  try {
+    // The default is kept as nothing set, so a TV with no key set holds no file.
+    writeMap(readMap(), readHome(), readStarting(), step === BRIGHTNESS_DEFAULT_STEP ? 0 : step);
+  } catch (e) {
+    return cb({ ok: false, error: msg('srv.remoteKeys.saveFailed', 'Could not save the change: {error}', { error: e.message }) });
+  }
+  applyAny(function (ok) { cb(ok ? { ok: true } : { ok: false, error: msg('srv.remoteKeys.chainFailed', 'The TV did not take the change') }); });
 }
 
 /*
@@ -1856,6 +1900,7 @@ module.exports = {
   isSupported: isSupported,
   setRemoteKey: setRemoteKey,
   setHome: setHome,
+  setBrightnessStep: setBrightnessStep,
   setStarting: setStarting,
   homeApp: readHome,
   ensure: ensure,
