@@ -561,6 +561,7 @@ folder deleted, and a channel whose variant playlist names FairPlay found to
 be protected once checked, marked in the lineup and given no play link,
 while one with a plain AES-128 key is not. It also checks a channel's saved
 HLS or MPEG-TS choice across a restart, stream event logging without URLs,
+the relay asking again for a stream that goes quiet in the same response,
 and that pausing live TV is off by default, kept across a restart, and
 never records a preview, an HLS channel or without a USB stick.
 It is skipped where there is no curl. `test-iptv-drm.js` checks which HLS keys the TV's player cannot use,

@@ -34,6 +34,7 @@ var mode = 'ok';
 var hits = {};
 // Two transport stream packets: sync byte, then filler.
 var TS_BYTES = Buffer.concat([0, 1].map(function () { var b = Buffer.alloc ? Buffer.alloc(188, 0xff) : new Buffer(188); b.fill(0xff); b[0] = 0x47; return b; }));
+var goQuiet = false, goQuietRest = false;
 var provider = http.createServer(function (req, res) {
   var u = req.url;
   hits[u.split('?')[0]] = (hits[u.split('?')[0]] || 0) + 1;
@@ -80,7 +81,9 @@ var provider = http.createServer(function (req, res) {
   }
   if (u === '/token/abc123.ts') {
     res.writeHead(200, { 'Content-Type': 'video/mp2t' });
-    return res.end(TS_BYTES);
+    // A provider going quiet without closing: the first packet, then nothing.
+    if (goQuiet) { goQuiet = false; return res.write(TS_BYTES.slice(0, 188)); }
+    return res.end(goQuietRest ? TS_BYTES.slice(188) : TS_BYTES);
   }
   if (/^\/xmltv\.php/.test(u) && u.indexOf('username=canary-user&password=canary-pass') === -1) { res.writeHead(401); return res.end('no'); }
   if (/^\/(guide\.xml\.gz|xmltv\.php)/.test(u)) {
@@ -551,6 +554,42 @@ step('an MPEG-TS channel is relayed for Home\'s own player, following the panel\
               relayServer.close();
               done();
             });
+          });
+        });
+      });
+    });
+  });
+});
+
+step('a provider\'s stream that goes quiet is asked for again in the same response', function (done) {
+  iptv.stop();
+  iptv.init({ stateDir: stateDir, clients: function () { return [CURL]; }, version: 'test', relayRetryMs: [0], relayStallMs: 30, catchupMs: 600000, onChange: function () { changes++; } });
+  iptv.start();
+  iptv.search(xc, 'harbour sport 1', '', function (s) {
+    var c = s.channels[0];
+    assert.equal(iptv.setOutput({ pl: xc, key: c.key, output: 'ts' }).ok, true);
+    iptv.playUrl(xc, c.key, false, function (stream) {
+      var relayServer = http.createServer(function (req, res) {
+        var q = urlLib.parse(req.url, true).query;
+        iptv.relay(String(q.pl || ''), String(q.key || ''), req, res);
+      });
+      relayServer.listen(0, '127.0.0.1', function () {
+        var before = hits['/token/abc123.ts'] || 0;
+        goQuiet = goQuietRest = true;
+        http.get({ host: '127.0.0.1', port: relayServer.address().port, path: stream.relay, agent: false }, function (res) {
+          var parts = [];
+          res.on('data', function (d) { parts.push(d); });
+          res.on('end', function () {
+            goQuietRest = false;
+            assert.equal(res.statusCode, 200);
+            assert.ok(Buffer.concat(parts).equals(TS_BYTES), 'what came before the silence, then the rest from the next connection');
+            assert.equal(hits['/token/abc123.ts'] - before, 2, 'asked for twice');
+            relayServer.close();
+            assert.equal(iptv.setOutput({ pl: xc, key: c.key, output: 'hls' }).ok, true);
+            iptv.stop();
+            iptv.init({ stateDir: stateDir, clients: function () { return [CURL]; }, version: 'test', relayRetryMs: [], catchupMs: 600000, onChange: function () { changes++; } });
+            iptv.start();
+            done();
           });
         });
       });

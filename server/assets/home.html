@@ -3071,7 +3071,12 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     tvStream.watch = null;
     detail.why = why;
     var it = tvStream.item, cb = tvStream.onState;
-    var limit = tvStream.everPlayed ? RETRIES_PLAYING : why === 'nopicture' ? 0 : RETRIES_FIRST;
+    /*
+     * No picture on a first open is a channel this TV cannot show: given up at once.
+     * After a reconnect it is the provider's refusal (a 500 seen) leaving the next
+     * open short of time: that gets the first open's retries.
+     */
+    var limit = tvStream.everPlayed ? RETRIES_PLAYING : why === 'nopicture' && !tvStream.tries ? 0 : RETRIES_FIRST;
     if (tvStream.tries >= limit) {
       if (tvStream.lostAt) detail.lostFor = Date.now() - tvStream.lostAt;
       streamEvent('gave-up', detail);

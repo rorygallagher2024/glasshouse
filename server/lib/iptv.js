@@ -1636,7 +1636,7 @@ function reachableAddress(host, port, cb) {
 function forgetAddress(host, port) { delete relayAddresses[host + ':' + port]; }
 
 /*
- * A provider's stream that stops (closed after a burst, an error, 20 s with
+ * A provider's stream that stops (closed after a burst, an error, 15 s with
  * nothing) is asked for again in the same response, waiting this long before
  * each try, and lib/iptv-splice joins it up: Home's player plays on from its
  * buffer and never sees the join. The tries start again after a minute of
@@ -1646,6 +1646,12 @@ var RELAY_RETRY_MS = [300, 1000, 2000, 3000, 4000, 5000, 5000];
 var relayRetryMs = RELAY_RETRY_MS;
 var RELAY_STEADY_MS = 60000;
 var RELAY_REJOIN_LOGS = 20;
+/*
+ * Silence that long is a stream stopped. A provider seen sending a channel in
+ * bursts about 10 s apart, and going quiet for good without closing.
+ */
+var RELAY_STALL_MS = 15000;
+var relayStallMs = RELAY_STALL_MS;
 
 function relayStream(id, key, req, res) {
   var upstream = null, closed = false, tries = 0, retryTimer = null, flowingSince = 0, lostAt = 0, rejoins = 0;
@@ -1728,8 +1734,16 @@ function relayStream(id, key, req, res) {
       else if (rejoins++ < RELAY_REJOIN_LOGS) console.log('iptv: relay for ' + id + ' rejoined the stream after ' + (nowMs() - lostAt) + ' ms');
       lostAt = 0;
       flowingSince = nowMs();
-      up.socket.setTimeout(RELAY_IDLE_MS, function () { mine.abort(); });
+      var quiet = function () {
+        if (closed || settled) return;
+        console.log('iptv: relay for ' + id + ' heard nothing for ' + relayStallMs + ' ms');
+        done(502, 'stalled');
+        mine.abort();
+      };
+      var stallTimer = splice ? setTimeout(quiet, relayStallMs) : null;
+      if (!splice) up.socket.setTimeout(RELAY_IDLE_MS, function () { mine.abort(); });
       up.on('data', function (chunk) {
+        if (stallTimer) { clearTimeout(stallTimer); stallTimer = setTimeout(quiet, relayStallMs); }
         if (upstream !== mine || closed) return;
         var out = splice ? splice.feed(chunk) : chunk;
         /*
@@ -1749,7 +1763,7 @@ function relayStream(id, key, req, res) {
         }
       });
       // Node 16 ends an aborted response with 'close' alone, no 'end' or 'error'.
-      var stopped = function () { done(502, 'ended'); };
+      var stopped = function () { clearTimeout(stallTimer); done(502, 'ended'); };
       up.on('end', stopped);
       up.on('error', stopped);
       up.on('close', stopped);
@@ -1962,7 +1976,7 @@ function streamEvent(body) {
  * @param {{ stateDir?: string, launch?: function(function(): void): void, clients?: function(): string[],
  *   version?: string, nowMs?: function(): number, onChange?: function(): void, onFront?: function(): void, catchupMs?: number,
  *   procDir?: string, nodePath?: string, usbRoot?: string, mountsFile?: string, timeshiftChunkBytes?: number,
- *   timeshiftMaxBytes?: number, timeshiftSpareBytes?: number, timeshiftMinBytes?: number, relayRetryMs?: number[] }} opts
+ *   timeshiftMaxBytes?: number, timeshiftSpareBytes?: number, timeshiftMinBytes?: number, relayRetryMs?: number[], relayStallMs?: number }} opts
  */
 function init(opts) {
   opts = opts || {};
@@ -1972,6 +1986,7 @@ function init(opts) {
   if (opts.version) version = opts.version;
   if (opts.nowMs) nowMs = opts.nowMs;
   relayRetryMs = opts.relayRetryMs || RELAY_RETRY_MS;
+  relayStallMs = opts.relayStallMs || RELAY_STALL_MS;
   if (opts.onChange) changedFn = opts.onChange;
   if (opts.onFront) frontFn = opts.onFront;
   if (typeof opts.catchupMs === 'number') catchupMs = opts.catchupMs;
