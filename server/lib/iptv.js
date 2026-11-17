@@ -1580,8 +1580,8 @@ function enigma2Free(p, streamUrlText, cb) {
 }
 
 /*
- * A channel's MPEG-TS stream passed on to Home as it arrives, nothing kept or
- * parsed. Two users:
+ * A channel's MPEG-TS stream passed on to Home as it arrives, nothing kept.
+ * Two users:
  * - a tuner whose stream port asks for a login: a <video> cannot send one,
  *   and one in its URL is dropped by the browser. Only the tuner's own host is
  *   asked, so the login cannot go elsewhere through a channel's address;
@@ -1740,10 +1740,16 @@ function relayStream(id, key, req, res) {
         done(502, 'stalled');
         mine.abort();
       };
-      var stallTimer = splice ? setTimeout(quiet, relayStallMs) : null;
+      // Timed only while reading: held back for a player that has enough is no silence.
+      var stallTimer = null;
+      var listen = function () {
+        clearTimeout(stallTimer);
+        stallTimer = splice && !settled ? setTimeout(quiet, relayStallMs) : null;
+      };
+      listen();
       if (!splice) up.socket.setTimeout(RELAY_IDLE_MS, function () { mine.abort(); });
       up.on('data', function (chunk) {
-        if (stallTimer) { clearTimeout(stallTimer); stallTimer = setTimeout(quiet, relayStallMs); }
+        clearTimeout(stallTimer);
         if (upstream !== mine || closed) return;
         var out = splice ? splice.feed(chunk) : chunk;
         /*
@@ -1759,8 +1765,9 @@ function relayStream(id, key, req, res) {
         }
         if (out && !res.write(out)) {
           up.pause();
-          res.once('drain', function () { up.resume(); });
+          return res.once('drain', function () { up.resume(); listen(); });
         }
+        listen();
       });
       // Node 16 ends an aborted response with 'close' alone, no 'end' or 'error'.
       var stopped = function () { clearTimeout(stallTimer); done(502, 'ended'); };
@@ -1824,7 +1831,7 @@ function deliverStream(id, key, full, s, cb) {
   var local = timeshift.current(at);
   if (local) { s.url = local; s.timeshift = true; return cb(s); }
   // Home's own player reads MPEG-TS through the relay (relayStream); the TV's player takes s.url.
-  if (s.format === 'ts' && (RELAY_HTTPS || !/^https:/i.test(s.url))) s.relay = '/api/iptv/relay?pl=' + encodeURIComponent(id) + '&key=' + encodeURIComponent(key);
+  if (s.format === 'ts' && !(owner && owner.kind === 'enigma2') && (RELAY_HTTPS || !/^https:/i.test(s.url))) s.relay = '/api/iptv/relay?pl=' + encodeURIComponent(id) + '&key=' + encodeURIComponent(key);
   if (!full || config.timeshift !== true || s.format !== 'ts') return cb(s);
   timeshift.open(at, s.url, function (r) {
     if (r) { s.url = r.url; s.timeshift = true; delete s.relay; }

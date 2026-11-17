@@ -130,12 +130,37 @@ its own, `lib/iptv-worker.js` with its readers in `lib/iptv-parse.js`:
   a row, about a minute, as a provider's CDN was seen sending nothing for 30
   to 50 s at a time, and has them all back after 30 s of playing. One that
   never played gets two, as a one-stream account can refuse a channel change
-  for a moment, and none for no picture at all. Each reconnect adds
+  for a moment, and none for no picture at all on a first open; no picture
+  after a refused try gets the two as well. Each reconnect adds
   `gh=<time>` to the URL, as a provider's CDN may be holding a copy of the
   playlist the TV cannot read, such as one gzipped for a client with no
   `Accept-Encoding`. Home sends no Referer, as `localhost` gets a 204 from the
   same CDN. The message only mentions a limit on streams for a playlist with an
   account, which `/api/iptv/stream` reports as `account`.
+- **Home's own player for MPEG-TS**: a provider's MPEG-TS channel plays in
+  mpegts.js (`assets/vendor/mpegts.js`, loaded on the first such channel),
+  which reads it through `/api/iptv/relay` and feeds the TV's decoder through
+  Media Source Extensions. On top of the rules above: under half a second
+  buffered, the picture is paused until 3 s are buffered again, 3 s more each
+  time on the same stream up to 12 s, and reopened if that does not come; a
+  hole ahead is jumped as the picture reaches it; a picture frozen with over a
+  second buffered is stepped on (`currentTime + 0.1`, at most once in 30 s)
+  after 1.5 s and reopened after 4 s. It keeps 12 to 24 s behind the picture:
+  a browser removes video up to the next keyframe after the end it is given.
+  A channel with no H.264 or HEVC video, or two decoding errors in a visit
+  without 30 s of playing between them, goes to the TV's player. HLS, paused
+  live TV, satellite tuners, and an https link on node before 12 (no usable CA
+  bundle) use the TV's player.
+- **The relay rejoins**: for Home's player, `relayStream` follows up to 4
+  redirects and tries all of a host's IPv4 addresses at once, keeping the
+  first to connect for 10 minutes. A stream that closes, errors, or sends
+  nothing for 15 s while being read is asked for again in the same response
+  (after 0.3, 1, 2, 3, 4, 5 and 5 s; all back after a minute of stream).
+  `lib/iptv-splice` joins the connections: per elementary stream it drops a
+  PES whose timestamp is not after the last one sent, and holds the latest
+  until the next starts, so one cut short comes whole from the next
+  connection. Timestamps more than a minute back mean the channel started
+  again: the response ends and Home reopens it.
 - **Stream events go to the log**: Home posts each start, stall, error,
   skipped hole, reconnect, recovery and give-up to `/api/iptv/event`, which
   writes one `iptv: stream` line each (at most 120 an hour) with the

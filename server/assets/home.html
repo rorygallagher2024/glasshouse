@@ -2686,8 +2686,8 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
    * The picture stopped with more than KICK_AHEAD_S buffered past it: the
    * decoder, not the network. A G3 (webOS 10) held one still for 9 s on 19.5 s
    * buffered before the stall reconnect; mpegts.js was seen doing the same.
-   * Home's own player is stepped on after KICK_MS, and either player reopened
-   * after FROZEN_MS.
+   * Home's own player is stepped on after KICK_MS and reopened after FROZEN_MS;
+   * the TV's player keeps the stall rule below.
    */
   var KICK_AHEAD_S = 1;
   var KICK_MS = 1500;
