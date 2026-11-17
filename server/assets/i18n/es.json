@@ -3369,5 +3369,8 @@
  "ctl.remoteLink.full": {"text": "Panel completo", "from": "Full dashboard"},
  "header.remote": {"text": "Mando", "from": "Remote"},
  "ctl.remoteLink.page": {"text": "Abrir como página", "from": "Open as a page"},
- "remote.close": {"text": "Cerrar", "from": "Close"}
+ "remote.close": {"text": "Cerrar", "from": "Close"},
+ "rp.input": {"text": "Entrada", "from": "Input"},
+ "rp.buttons": {"text": "Botones", "from": "Buttons"},
+ "rp.touchpad": {"text": "Panel táctil", "from": "Touchpad"}
 }

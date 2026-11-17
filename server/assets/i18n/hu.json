@@ -3383,5 +3383,8 @@
  "ctl.remoteLink.full": {"text": "Teljes irányítópult", "from": "Full dashboard"},
  "header.remote": {"text": "Távirányító", "from": "Remote"},
  "ctl.remoteLink.page": {"text": "Megnyitás oldalként", "from": "Open as a page"},
- "remote.close": {"text": "Bezárás", "from": "Close"}
+ "remote.close": {"text": "Bezárás", "from": "Close"},
+ "rp.input": {"text": "Bemenet", "from": "Input"},
+ "rp.buttons": {"text": "Gombok", "from": "Buttons"},
+ "rp.touchpad": {"text": "Érintőpad", "from": "Touchpad"}
 }

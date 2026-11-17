@@ -3383,5 +3383,8 @@
  "ctl.remoteLink.full": {"text": "Вся панель", "from": "Full dashboard"},
  "header.remote": {"text": "Пульт", "from": "Remote"},
  "ctl.remoteLink.page": {"text": "Открыть как страницу", "from": "Open as a page"},
- "remote.close": {"text": "Закрыть", "from": "Close"}
+ "remote.close": {"text": "Закрыть", "from": "Close"},
+ "rp.input": {"text": "Вход", "from": "Input"},
+ "rp.buttons": {"text": "Кнопки", "from": "Buttons"},
+ "rp.touchpad": {"text": "Тачпад", "from": "Touchpad"}
 }

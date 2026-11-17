@@ -4518,13 +4518,14 @@ async function visitRemoteView(browser, base, problems) {
     const vis = el => !!el && el.getBoundingClientRect().height > 0 && getComputedStyle(el).display !== 'none';
     return {
       cls: document.documentElement.classList.contains('remote-view'),
-      sets: Array.from(document.querySelectorAll('#tab-control .col-controls .set, #tab-control .col-controls details'))
-        .filter(el => vis(el) && !el.parentElement.closest('.set, details')).map(el => el.id || el.querySelector('.lbl, summary').textContent.trim().split(/\s+/)[0]),
+      // As they appear, top to bottom: the remote orders them with CSS.
+      sets: Array.from(document.querySelector('#tab-control .col-controls').children).filter(vis)
+        .sort((a, b) => a.getBoundingClientRect().top - b.getBoundingClientRect().top).map(el => el.id || el.className),
+      vol: [document.getElementById('vol').textContent, document.getElementById('rp-vol').textContent],
       nav: vis(document.getElementById('sidenav')) || vis(document.querySelector('.nav-bar')),
       header: vis(document.querySelector('header')), button: vis(document.getElementById('hdr-remote')),
       cols: document.querySelectorAll('#tab-control .lcols').length,
       pointer: !document.getElementById('disc-pointer').hidden,
-      dpad: document.getElementById('disc-dpad').open, keyboard: document.getElementById('disc-keyboard').open,
       tab: localStorage.getItem('tab'), shownPanels: Array.from(document.querySelectorAll('#panels > section')).filter(s => !s.hidden).map(s => s.id)
     };
   });
@@ -4539,14 +4540,27 @@ async function visitRemoteView(browser, base, problems) {
       await page.waitForTimeout(300);
       const s = await shown(page);
       const embed = label === 'embed';
-      const want = ['control-playback', 'Volume', 'disc-dpad'].concat(s.pointer ? ['disc-pointer'] : [], ['disc-keyboard'], embed ? [] : ['remote-full']);
+      const want = ['remote-pad', 'remote-modes'].concat(embed ? [] : ['remote-full']);
       if (!s.cls) fail(label + ': no remote-view class');
       if (JSON.stringify(s.sets) !== JSON.stringify(want)) fail(label + ': shows ' + JSON.stringify(s.sets) + ', not ' + JSON.stringify(want));
       if (s.nav) fail(label + ': the tabs are shown');
       if (s.header === embed) fail(label + ': masthead shown ' + s.header);
       if (s.button) fail(label + ': the header\'s Remote shows in the remote');
       if (s.cols) fail(label + ': in columns');
-      if (!s.dpad || !s.keyboard) fail(label + ': D-pad open ' + s.dpad + ', keyboard open ' + s.keyboard);
+      if (s.vol[0] !== s.vol[1]) fail(label + ': the pad\'s volume says ' + s.vol[1] + ', the Control tab\'s ' + s.vol[0]);
+      if (label === '390') {
+        // Input: the sources in place of the buttons; Keyboard: the keyboard box; back to the buttons.
+        await page.locator('#rp-input').click();
+        const inputs = await shown(page);
+        if (JSON.stringify(inputs.sets.slice(0, 2)) !== JSON.stringify(['remote-pad', 'control-source'])) fail('Input shows ' + JSON.stringify(inputs.sets));
+        if (await page.locator('.rp-body').isVisible()) fail('Input left the buttons showing');
+        await page.locator('#remote-modes [data-mode="keys"]').click();
+        const keys = await shown(page);
+        if (keys.sets.indexOf('disc-keyboard') === -1 || keys.sets.indexOf('control-source') !== -1) fail('Keyboard shows ' + JSON.stringify(keys.sets));
+        await page.locator('#remote-modes [data-mode="buttons"]').click();
+        if (!(await page.locator('.rp-ring').isVisible())) fail('Buttons left the D-pad hidden');
+        if (await page.evaluate(() => localStorage.getItem('remoteMode')) !== 'buttons') fail('the mode is not kept');
+      }
       if (s.tab !== 'apps') fail(label + ': the remembered tab became ' + s.tab);
       if (JSON.stringify(s.shownPanels) !== JSON.stringify(['tab-control'])) fail(label + ': panels shown ' + JSON.stringify(s.shownPanels));
     } finally {
@@ -4562,7 +4576,7 @@ async function visitRemoteView(browser, base, problems) {
     const modalState = () => page.evaluate(() => {
       const m = document.getElementById('remote-modal'), f = document.getElementById('remote-frame');
       let src = '';
-      try { src = f.contentWindow.location.href; } catch (e) { src = 'unreadable'; }
+      try { src = f ? f.contentWindow.location.href : 'none'; } catch (e) { src = 'unreadable'; }
       return { hidden: m.hidden, shown: m.classList.contains('shown'), src };
     });
     for (const how of ['Escape', 'back']) {
@@ -4572,8 +4586,8 @@ async function visitRemoteView(browser, base, problems) {
       const open = await modalState();
       if (!/\?view=remote&embed=1$/.test(open.src)) fail('the modal\'s frame opens ' + JSON.stringify(open.src));
       await page.waitForFunction(() => {
-        const d = document.getElementById('remote-frame').contentDocument;
-        return d && d.documentElement.classList.contains('remote-embed') && !d.getElementById('tab-control').hidden;
+        const f = document.getElementById('remote-frame'), d = f && f.contentDocument;
+        return d && f.classList.contains('loaded') && d.documentElement.classList.contains('remote-embed') && !d.getElementById('tab-control').hidden;
       }, null, { timeout: 8000 }).catch(() => fail('the remote did not load in the modal'));
       if (how === 'Escape') {
         await page.evaluate(() => document.getElementById('hdr-remote').focus());
@@ -4584,7 +4598,7 @@ async function visitRemoteView(browser, base, problems) {
       }
       await page.waitForFunction(() => document.getElementById('remote-modal').hidden, null, { timeout: 3000 }).catch(() => {});
       const shut = await modalState();
-      if (!shut.hidden || shut.src !== 'about:blank') fail(how + ' left the modal ' + JSON.stringify(shut));
+      if (!shut.hidden || shut.src !== 'none') fail(how + ' left the modal ' + JSON.stringify(shut));
       if (!(await page.evaluate(() => !document.getElementById('tab-metrics').hidden))) fail(how + ' left the Metrics tab');
     }
     await page.goto(base + '/?open=keyboard');

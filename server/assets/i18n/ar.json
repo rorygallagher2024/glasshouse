@@ -3369,5 +3369,8 @@
  "ctl.remoteLink.full": {"text": "لوحة التحكم كاملة", "from": "Full dashboard"},
  "header.remote": {"text": "جهاز التحكم", "from": "Remote"},
  "ctl.remoteLink.page": {"text": "افتحه كصفحة", "from": "Open as a page"},
- "remote.close": {"text": "إغلاق", "from": "Close"}
+ "remote.close": {"text": "إغلاق", "from": "Close"},
+ "rp.input": {"text": "الإدخال", "from": "Input"},
+ "rp.buttons": {"text": "الأزرار", "from": "Buttons"},
+ "rp.touchpad": {"text": "لوحة اللمس", "from": "Touchpad"}
 }

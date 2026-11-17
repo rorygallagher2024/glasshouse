@@ -3383,5 +3383,8 @@
  "ctl.remoteLink.full": {"text": "Dashboard completa", "from": "Full dashboard"},
  "header.remote": {"text": "Telecomando", "from": "Remote"},
  "ctl.remoteLink.page": {"text": "Apri come pagina", "from": "Open as a page"},
- "remote.close": {"text": "Chiudi", "from": "Close"}
+ "remote.close": {"text": "Chiudi", "from": "Close"},
+ "rp.input": {"text": "Ingresso", "from": "Input"},
+ "rp.buttons": {"text": "Pulsanti", "from": "Buttons"},
+ "rp.touchpad": {"text": "Touchpad", "from": "Touchpad"}
 }

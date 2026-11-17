@@ -1008,5 +1008,8 @@
  "ctl.remoteLink.full": {"text": "Ganzes Dashboard", "from": "Full dashboard"},
  "header.remote": {"text": "Fernbedienung", "from": "Remote"},
  "ctl.remoteLink.page": {"text": "Als Seite öffnen", "from": "Open as a page"},
- "remote.close": {"text": "Schließen", "from": "Close"}
+ "remote.close": {"text": "Schließen", "from": "Close"},
+ "rp.input": {"text": "Eingang", "from": "Input"},
+ "rp.buttons": {"text": "Tasten", "from": "Buttons"},
+ "rp.touchpad": {"text": "Touchpad", "from": "Touchpad"}
 }
