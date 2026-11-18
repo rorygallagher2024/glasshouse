@@ -971,10 +971,10 @@ select.pill-sel.ss-sel{display:block;width:100%;max-width:340px;height:48px;marg
 .pv-sub a{color:var(--w80);text-decoration:underline;text-underline-offset:2px}
 .pv-sub a:hover{color:var(--w100)}
 .pv-row{display:grid;grid-template-columns:1fr auto;gap:16px;align-items:start;
-        padding:13px 0;border-bottom:1px solid var(--w06)}
+        padding:16px 0;border-bottom:1px solid var(--w06)}
 .pv-row .n{font-family:'Manrope',sans-serif;font-weight:600;font-size:var(--h-row);
-        letter-spacing:.02em;color:var(--w90)}
-.pv-row .d{font-size:14px;color:var(--w60);margin-top:3px;line-height:1.45;max-width:58ch}
+        line-height:1.5;letter-spacing:.02em;color:var(--w90)}
+.pv-row .d{font-size:14px;color:var(--w60);margin-top:4px;line-height:1.5;max-width:none}
 .pill, .pill-toggle{font-family:'Manrope';font-weight:500;font-size:12.5px;letter-spacing:.08em;text-transform:uppercase;
       display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box;
       min-width:116px;height:32px;padding:0 12px;line-height:1;
@@ -1128,13 +1128,13 @@ button.pill.flash.idle[disabled]:hover{color:var(--w60);border-color:var(--edge)
 /* Settings tables sit side by side in at most two responsive columns on wide
    screens so each switch sits beside its label, collapsing cleanly to one
    column on narrow viewports. */
-#advpane .prot-table,#serverpane .prot-table,#inputspane .prot-table,#audiopane .prot-table,#ambientpane .prot-table,#privpane .prot-table,#appspane .prot-table:not(.catalog-grid),#homepane .prot-table:not(#home-rows .prot-table):not(#home-recents .prot-table):not(#home-ch-list),#pv-consent .pv-grp,#pv-live,#pv-daemons,#pv-mic,.pv-adid-rows{
+#advpane .prot-table,#serverpane .prot-table,#inputspane .prot-table,#audiopane .prot-table,#ambientpane .prot-table,#privpane .prot-table,#appspane .prot-table:not(.catalog-grid),#homepane .prot-table:not(#home-rows .prot-table):not(#home-recents .prot-table):not(#home-ch-list),.pv-adid-rows{
   display:grid;column-gap:clamp(30px,4vw,52px);
   grid-template-columns:repeat(auto-fill,minmax(min(100%,max(340px,calc((100% - clamp(30px,4vw,52px)) / 2))),1fr))}
-.home-weather-place,#ssh-row,#backup-daily-row,#pv-consent .pv-grp>.pv-g,#pv-consent .pv-grp>.pv-gn,#appspane .prot-table:not(.catalog-grid)>.sub{grid-column:1/-1}
+.home-weather-place,#ssh-row,#backup-daily-row,#appspane .prot-table:not(.catalog-grid)>.sub{grid-column:1/-1}
 #advpane .prot-row,#serverpane .prot-row,#inputspane .prot-row,#audiopane .prot-row,#ambientpane .prot-row,#privpane .prot-row,#appspane .prot-table:not(.catalog-grid) .prot-row,.home-custom-table .prot-row{align-items:flex-start;padding:16px 0}
-#advpane .prot-title,#serverpane .prot-title,#inputspane .prot-title,#homepane .prot-title{font-size:var(--h-row);font-weight:600;letter-spacing:.02em;color:var(--w90)}
-#advpane .prot-desc,#serverpane .prot-desc,#inputspane .prot-desc,#homepane .prot-desc{font-size:14px;line-height:1.5;margin-top:4px;max-width:none}
+#advpane .prot-title,#serverpane .prot-title,#inputspane .prot-title,#privpane .prot-title,#homepane .prot-title{font-size:var(--h-row);font-weight:600;letter-spacing:.02em;color:var(--w90)}
+#advpane .prot-desc,#serverpane .prot-desc,#inputspane .prot-desc,#privpane .prot-desc,#homepane .prot-desc{font-size:14px;line-height:1.5;margin-top:4px;max-width:none}
 #advpane .prot-status,#serverpane .prot-status,#inputspane .prot-status,.home-custom-table .prot-status{padding-top:2px}
 #pv-adv{margin-top:clamp(36px,5vw,56px)}
 #pv-adv>summary{border-top:0;min-height:0;align-items:center}
@@ -1378,7 +1378,7 @@ footer{margin-top:38px;font-size:13px;letter-spacing:.08em;text-transform:upperc
 .prot-table{display:flex;flex-direction:column}
 .prot-row{
   display:flex;justify-content:space-between;align-items:center;gap:16px;
-  padding:12px 0;border-bottom:1px solid var(--w06);
+  padding:12px 0;border-bottom:1px solid var(--w06);min-width:0;
 }
 .prot-main{flex:1;min-width:0}
 .home-weather-place{padding:4px 0 16px;border-bottom:1px solid var(--w06)}
@@ -1419,11 +1419,15 @@ footer{margin-top:38px;font-size:13px;letter-spacing:.08em;text-transform:upperc
   color:var(--w60);background:transparent;border:1px solid var(--edge);border-radius:var(--r-sm);cursor:pointer}
 .timer-days button.on{color:var(--green);border-color:var(--green)}
 #st-apps-row{flex-wrap:wrap}
-.st-apps{flex-basis:100%;margin-top:-4px}
-.st-app{display:flex;align-items:center;gap:8px;padding:6px 0;border-top:1px solid var(--edge)}
+#st-apps-row>.prot-status{flex-basis:100%;padding-top:0}
+#st-add{width:100%;max-width:260px;text-overflow:ellipsis}
+.st-apps{flex-basis:100%;width:100%;min-width:0;margin-top:2px}
+.st-apps:empty{display:none}
+.st-app{display:flex;align-items:center;gap:8px;padding:6px 0;border-top:1px solid var(--edge);min-width:0}
 .st-app .st-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .st-app .st-used{color:var(--w60);font-size:13px;white-space:nowrap}
-.st-app .pill-sel{min-width:0;width:96px}
+.st-app .pill-sel{min-width:0;width:96px;flex-shrink:0}
+.st-app .link-btn{margin-top:0;flex-shrink:0}
 .st-note{color:var(--warn,#e5534b)}
 #apps-catalog-list .prot-row, #apps-others-list .prot-row, #apps-catalogs-repos .prot-row, #apps-installed-list .prot-row, #apps-services-list .prot-row, #server-health-row{flex-wrap:wrap}
 #apps-catalog-list .prot-main, #apps-others-list .prot-main, #apps-catalogs-repos .prot-main, #apps-installed-list .prot-main, #apps-services-list .prot-main, #server-health-row .prot-main{flex:1 1 160px}

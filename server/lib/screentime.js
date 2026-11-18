@@ -451,7 +451,7 @@ function status(nowMs) {
   delete keys[history.SCREEN_OFF];
   delete keys[history.SCREEN_SAVER];
   var choices = Object.keys(keys).map(function (key) {
-    return { key: key, title: titles[key] || null, today: today ? Math.round(today[key] || 0) : null };
+    return { key: key, title: titles[key] || (history.titleOf ? history.titleOf(key) : null) || null, today: today ? Math.round(today[key] || 0) : null };
   });
   return {
     settings: s,
