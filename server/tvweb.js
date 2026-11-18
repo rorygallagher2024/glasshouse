@@ -616,6 +616,8 @@ quickAccess.init({ luna: luna, inputNames: telemetry.inputNameMap });
 remoteKeys.init({ luna: luna, subscription: lunaTransport.Subscription, services: servicesModule, inputNames: telemetry.inputNameMap, stateDir: __dirname,
   // The Guide key can open Glasshouse Home's Internet TV guide.
   homeGuide: function () { return !!(glasshouseHome && iptv && glasshouseHome.enabled() && iptv.hasPlaylists()); },
+  // The compositor restarts for a change to LG's key handler: Glasshouse Home's view is opened afresh.
+  compositorRestarted: function () { if (glasshouseHome) glasshouseHome.reopenAfterCompositor(); },
   homeAssistant: function () { return !!(CONFIG.mqtt && CONFIG.mqtt.enabled && CONFIG.mqtt.host); },
   // The input bar: offered where lib/inputbar.js allows it, its app installed
   // when a key is set to it, and preloaded from then on.
@@ -632,6 +634,7 @@ inputBar.init({
   luna: luna,
   webosVersion: telemetry.detectWebosVersion(),
   wanted: remoteKeys.opensInputBar,
+  native: remoteKeys.nativeInputBar,
   tvInfo: compatTv,
   // liveState is set up further on; the bar only asks once started.
   on: function () { return !liveState || (liveState.state.snapshot().power || {}).systemOn !== false; }

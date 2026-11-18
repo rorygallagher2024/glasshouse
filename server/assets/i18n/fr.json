@@ -3373,5 +3373,6 @@
  "rp.buttons": {"text": "Boutons", "from": "Buttons"},
  "rp.touchpad": {"text": "Pavé tactile", "from": "Touchpad"},
  "rp.standby": {"text": "Le téléviseur est en veille. Allumez-le pour utiliser la télécommande.", "from": "The TV is in standby. Power on to use the remote."},
- "apps.remoteKeys.guideNative": {"text": "Sur cette TV, la touche Guide nécessite une modification du gestionnaire de touches de LG. L’activer redémarre l’écran de la TV une fois, puis à chaque démarrage de la TV.", "from": "On this TV the Guide key needs a change to LG’s key handler. Setting it restarts the TV’s screen once, and again each time the TV starts."}
+ "apps.remoteKeys.guideNative": {"text": "Sur cette TV, la touche Guide nécessite une modification du gestionnaire de touches de LG. L’activer redémarre l’écran de la TV une fois, puis à chaque démarrage de la TV.", "from": "On this TV the Guide key needs a change to LG’s key handler. Setting it restarts the TV’s screen once, and again each time the TV starts."},
+ "apps.remoteKeys.inputNative": {"text": "Sur cette TV, la touche Input nécessite une modification du gestionnaire de touches de LG. L’activer, ou revenir à la liste de LG, redémarre l’écran de la TV une fois, et la modification est refaite à chaque démarrage de la TV.", "from": "On this TV the Input key needs a change to LG’s key handler. Setting it, or setting it back to LG’s list, restarts the TV’s screen once, and the change is made again each time the TV starts."}
 }

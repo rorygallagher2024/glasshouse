@@ -3373,5 +3373,6 @@
  "rp.buttons": {"text": "Przyciski", "from": "Buttons"},
  "rp.touchpad": {"text": "Touchpad", "from": "Touchpad"},
  "rp.standby": {"text": "Telewizor jest w trybie czuwania. Włącz go, aby używać pilota.", "from": "The TV is in standby. Power on to use the remote."},
- "apps.remoteKeys.guideNative": {"text": "Na tym telewizorze przycisk Guide wymaga zmiany w obsłudze klawiszy LG. Ustawienie restartuje ekran telewizora jeden raz, a potem przy każdym uruchomieniu telewizora.", "from": "On this TV the Guide key needs a change to LG’s key handler. Setting it restarts the TV’s screen once, and again each time the TV starts."}
+ "apps.remoteKeys.guideNative": {"text": "Na tym telewizorze przycisk Guide wymaga zmiany w obsłudze klawiszy LG. Ustawienie restartuje ekran telewizora jeden raz, a potem przy każdym uruchomieniu telewizora.", "from": "On this TV the Guide key needs a change to LG’s key handler. Setting it restarts the TV’s screen once, and again each time the TV starts."},
+ "apps.remoteKeys.inputNative": {"text": "Na tym telewizorze klawisz Input wymaga zmiany w obsłudze klawiszy LG. Ustawienie go, albo przywrócenie listy LG, restartuje ekran telewizora jeden raz, a zmiana jest wykonywana ponownie przy każdym uruchomieniu telewizora.", "from": "On this TV the Input key needs a change to LG’s key handler. Setting it, or setting it back to LG’s list, restarts the TV’s screen once, and the change is made again each time the TV starts."}
 }

@@ -326,60 +326,146 @@ step('Guide opens an input through its key action, and goes back to LG\'s with t
   });
 });
 
-step('Guide opens Glasshouse Home\'s guide where LG\'s key handler can be changed, and goes back to LG\'s', function (next) {
+/*
+ * LG's library as a small stand-in the test lists as a build: the Guide's
+ * change is four bytes at 8, and the text the Input key's launches pass sits
+ * at 20, as long as LG's. The bind mount makes what is read at the library's
+ * path the copy mounted.
+ */
+function fakeLibrary(homeOn) {
   var crypto = require('crypto');
+  var util = require('../server/lib/util');
   var guidePatch = require('../server/lib/guidepatch');
   var sha = function (b) { return crypto.createHash('sha256').update(b).digest('hex'); };
-  // A library of its own for the test: one listed build, one edit.
   var lib = path.join(dir, 'libappLaunch.so.1');
-  var original = require('../server/lib/util').allocBuffer(64);
-  original.fill(7);
-  var changed = require('../server/lib/util').allocBuffer(64);
-  original.copy(changed);
-  changed.fill(0xaa, 8, 12);
-  fs.writeFileSync(lib, original);
-  guidePatch.BUILDS[sha(original)] = { tv: 'test TV', patched: sha(changed), edits: [{ at: 8, was: '07070707', now: 'aaaaaaaa' }] };
-  var execs = [];
-  var homeOn = true;
-  var guideOpts = {};
-  Object.keys(initOpts).forEach(function (k) { guideOpts[k] = initOpts[k]; });
-  guideOpts.guideLibrary = lib;
-  guideOpts.homeGuide = function () { return homeOn; };
-  guideOpts.guideExec = function (file, args, o, cb) {
-    execs.push(file);
-    // The bind mount: what is read at the library's path is now the copy.
-    if (file === 'mount') fs.writeFileSync(lib, fs.readFileSync(args[1]));
+  var picker = '{"id": "com.webos.app.quickinputpicker"}\0';
+  var make = function (guide, input) {
+    var b = util.allocBuffer(80);
+    b.fill(7);
+    if (guide) b.fill(0xaa, 8, 12);
+    var text = input ? '{"id": "' + input + '"}' : picker;
+    while (text.length < picker.length) text += '\0';
+    util.toBuffer(text, 'latin1').copy(b, 20);
+    return b;
+  };
+  fs.writeFileSync(lib, make(false, ''));
+  guidePatch.BUILDS[sha(make(false, ''))] = { tv: 'test TV',
+    guide: [{ at: 8, was: '07070707', now: 'aaaaaaaa' }],
+    picker: { at: 20, was: util.toBuffer(picker, 'latin1').toString('hex') } };
+  var lab = { execs: [], mounted: [], restarts: 0, barApp: [], barKeys: 0, homeOn: homeOn !== false, make: make, sameBytes: util.sameBytes, lib: lib };
+  var opts = {};
+  Object.keys(initOpts).forEach(function (k) { opts[k] = initOpts[k]; });
+  opts.guideLibrary = lib;
+  opts.homeGuide = function () { return lab.homeOn; };
+  // The bar's app, put on the TV when a key is set to it and taken off with the last key.
+  opts.inputBarApp = function (action, cb) { lab.barApp.push(action); cb({ ok: true }); };
+  opts.onInputBarKey = function () { lab.barKeys++; };
+  // Told at each restart of the compositor, so Glasshouse Home's view is opened afresh.
+  opts.compositorRestarted = function () { lab.restarts++; };
+  opts.guideExec = function (file, args, o, cb) {
+    lab.execs.push(file);
+    // A file a mount was made from cannot be written over: each mount has a copy of its own.
+    if (file === 'mount') {
+      assert.ok(lab.mounted.indexOf(args[1]) === -1, 'a copy already mounted is not mounted or written again');
+      lab.mounted.push(args[1]);
+      fs.writeFileSync(lib, fs.readFileSync(args[1]));
+    }
     cb(null);
   };
-  rk.init(guideOpts);
-  var finish = function () {
-    delete guidePatch.BUILDS[sha(original)];
+  rk.init(opts);
+  lab.finish = function (next) {
+    delete guidePatch.BUILDS[sha(make(false, ''))];
     rk.init(initOpts);
     next();
   };
+  return lab;
+}
+
+// The copies of LG's library Glasshouse has written, by name.
+function copies() {
+  return fs.readdirSync(stateDir).filter(function (f) { return f.indexOf('libappLaunch.so.1.glasshouse-') === 0; });
+}
+
+step('Guide opens Glasshouse Home\'s guide where LG\'s key handler can be changed, and goes back to LG\'s', function (next) {
+  var lab = fakeLibrary();
   rk.getRemoteKeys(function (r) {
     var guide = r.keys.filter(function (k) { return k.key === 'guide'; })[0];
     assert.strictEqual(guide.homeGuide, true);
-    assert.ok(r.keys.every(function (k) { return k.key === 'guide' || !k.homeGuide; }), 'only the Guide key');
+    assert.ok(r.keys.every(function (k) { return k.key === 'guide' || k.key === 'input' || !k.homeGuide; }), 'only the Guide key');
     assert.deepEqual(r.choices.filter(function (c) { return c.kind === 'guide'; }).map(function (c) { return c.id; }), ['action:homeGuide']);
     set('guide', 'open', 'action:homeGuide', function () {
       assert.deepEqual(tv.configs['com.webos.keyaction.tvGuide'],
         { action: 'launch', id: 'com.webos.app.home', fgAppIdsForByPass: TV_GUIDE.fgAppIdsForByPass });
-      assert.deepEqual(execs, ['mount', 'systemctl'], 'the library mounted and the compositor restarted once');
-      assert.ok(require('../server/lib/util').sameBytes(fs.readFileSync(path.join(stateDir, 'libappLaunch.so.1.glasshouse')), changed));
+      assert.deepEqual(lab.execs, ['mount', 'systemctl'], 'the library mounted and the compositor restarted once');
+      assert.strictEqual(lab.restarts, 1, 'and Glasshouse Home told');
+      assert.ok(lab.sameBytes(fs.readFileSync(lab.lib), lab.make(true, '')));
       set('guide', 'lg', '', function () {
         assert.deepEqual(tv.configs['com.webos.keyaction.tvGuide'], TV_GUIDE);
+        assert.ok(lab.sameBytes(fs.readFileSync(lab.lib), lab.make(false, '')), 'LG\'s handler is back');
         set('guide', 'open', 'action:homeGuide', function () {
-          assert.deepEqual(execs, ['mount', 'systemctl'], 'a changed handler is not changed or restarted again');
+          assert.deepEqual(lab.execs, ['mount', 'systemctl', 'mount', 'systemctl', 'mount', 'systemctl']);
+          assert.strictEqual(copies().length, 1, 'one copy, the others deleted');
           // Without a guide of Glasshouse Home's own, the key is LG's.
-          homeOn = false;
+          lab.homeOn = false;
           rk.getRemoteKeys(function (r2) {
             assert.strictEqual(r2.keys.filter(function (k) { return k.key === 'guide'; })[0].homeGuide, undefined);
             assert.strictEqual(r2.choices.filter(function (c) { return c.kind === 'guide'; }).length, 0);
             rk.ensure(function () {
               assert.deepEqual(tv.configs['com.webos.keyaction.tvGuide'], TV_GUIDE);
-              homeOn = true;
-              set('guide', 'lg', '', finish);
+              lab.homeOn = true;
+              set('guide', 'lg', '', function () { lab.finish(next); });
+            });
+          });
+        });
+      });
+    });
+  });
+});
+
+step('the Input key opens an app, an input or the input bar where LG\'s key handler can be changed, and goes back to LG\'s list', function (next) {
+  var lab = fakeLibrary();
+  rk.getRemoteKeys(function (r) {
+    var input = r.keys.filter(function (k) { return k.key === 'input'; })[0];
+    assert.strictEqual(input.nativeInput, true);
+    assert.strictEqual(input.noNothing, true);
+    assert.strictEqual(input.maxIdLength, 30);
+    assert.deepEqual(r.choices.filter(function (c) { return c.kind === 'inputbar'; }).map(function (c) { return c.id; }), ['com.tvweb.inputbar']);
+    rk.setRemoteKey('input', 'nothing', '', function (r1) {
+      assert.strictEqual(r1.ok, false, 'this key cannot do nothing');
+      rk.setRemoteKey('input', 'open', 'com.webos.app.quickinputpicker', function (r2) {
+        assert.strictEqual(r2.ok, false, 'LG\'s picker is As LG has it');
+        rk.setRemoteKey('input', 'open', 'not an app', function (r3) {
+          assert.strictEqual(r3.ok, false);
+          assert.deepEqual(lab.execs, []);
+          set('input', 'open', 'com.webos.app.hdmi2', function () {
+            assert.deepEqual(lab.execs, ['mount', 'systemctl']);
+            assert.ok(lab.sameBytes(fs.readFileSync(lab.lib), lab.make(false, 'com.webos.app.hdmi2')), 'only the Input key\'s text, for the input');
+            assert.deepEqual(lab.barApp, [], 'no bar app for an input');
+            set('input', 'open', 'netflix', function () {
+              assert.ok(lab.sameBytes(fs.readFileSync(lab.lib), lab.make(false, 'netflix')), 'an app, with the text made again');
+              set('input', 'open', 'com.tvweb.inputbar', function () {
+                assert.ok(lab.sameBytes(fs.readFileSync(lab.lib), lab.make(false, 'com.tvweb.inputbar')));
+                assert.deepEqual(lab.barApp, ['install'], 'its app is put on the TV first');
+                assert.strictEqual(lab.barKeys, 1, 'and kept loaded');
+                assert.deepEqual(tv.configs['com.webos.keyaction.tvGuide'], TV_GUIDE);
+                rk.getRemoteKeys(function (r4) {
+                  var again = r4.keys.filter(function (k) { return k.key === 'input'; })[0];
+                  assert.deepEqual([again.action, again.id, again.opens], ['open', 'com.tvweb.inputbar', 'Input bar']);
+                  // The Guide key on top of it keeps the Input key's change.
+                  set('guide', 'open', 'action:homeGuide', function () {
+                    assert.ok(lab.sameBytes(fs.readFileSync(lab.lib), lab.make(true, 'com.tvweb.inputbar')));
+                    set('guide', 'lg', '', function () {
+                      assert.ok(lab.sameBytes(fs.readFileSync(lab.lib), lab.make(false, 'com.tvweb.inputbar')), 'the Input key\'s change stays');
+                      set('input', 'lg', '', function () {
+                        assert.ok(lab.sameBytes(fs.readFileSync(lab.lib), lab.make(false, '')), 'LG\'s list is back');
+                        assert.strictEqual(copies().length, 1, 'a copy no longer needed is deleted');
+                        assert.deepEqual(lab.barApp, ['install', 'remove'], 'and the bar\'s app is taken off with the last key');
+                        lab.finish(next);
+                      });
+                    });
+                  });
+                });
+              });
             });
           });
         });
@@ -398,7 +484,8 @@ step('a library LG has changed, or this build does not list, is left alone and t
   guideOpts.guideExec = function () { throw new Error('nothing is to be run'); };
   rk.init(guideOpts);
   rk.getRemoteKeys(function (r) {
-    assert.strictEqual(r.choices.filter(function (c) { return c.kind === 'guide'; }).length, 0);
+    assert.strictEqual(r.choices.filter(function (c) { return c.kind === 'guide' || c.kind === 'inputbar'; }).length, 0);
+    assert.strictEqual(r.keys.filter(function (k) { return k.key === 'input'; }).length, 0);
     rk.setRemoteKey('guide', 'open', 'action:homeGuide', function (r2) {
       assert.strictEqual(r2.ok, false);
       assert.deepEqual(tv.configs['com.webos.keyaction.tvGuide'], TV_GUIDE);

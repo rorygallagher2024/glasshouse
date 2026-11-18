@@ -141,6 +141,8 @@ var WAKE_REOPEN_MS = 4000;
 // again, and how long it stays closed: the times the reporter's script used.
 var WAKE11_REOPEN_MS = 4000;
 var WAKE11_CLOSED_MS = 2000;
+// After the compositor restarted (lib/guidepatch), how long before the view is closed and opened again: the compositor is up by then.
+var COMPOSITOR_UP_MS = 8000;
 /*
  * Where giving LG's Home its place back restarts sam (webOS 5 and 6), the TV's
  * last-input handler puts the input or app back over LG's Home about 3 s later
@@ -3236,6 +3238,31 @@ function reopenAfterWake11() {
   }, WAKE11_REOPEN_MS);
 }
 
+/*
+ * The compositor was restarted under the open view (lib/guidepatch changing
+ * LG's key handler): the view's window went with it, sam still counts it as
+ * running, and a launch only brings it to the front, so the view never
+ * answers and LG's Home is given the place. It is closed and opened afresh,
+ * as after a wake.
+ */
+function reopenAfterCompositor() {
+  if (!readConfig().enabled || !takeover.mounted()) return;
+  stopBeatWatch();
+  stopOpenWatch();
+  setTimeout(function () {
+    if (!readConfig().enabled || !takeover.mounted()) return;
+    luna('com.webos.applicationManager/closeByAppId', { id: isStandalone() ? HOME_APP : LG_HOME }, function () {
+      setTimeout(function () {
+        launch(isStandalone() ? HOME_APP : LG_HOME, null, function (res) {
+          if (!res.ok) return console.error('home: could not open Glasshouse Home again after the compositor restarted');
+          stopBeatWatch();
+          watchOpen(true, FIRST_BEAT_GRACE_MS);
+        });
+      }, WAKE11_CLOSED_MS);
+    });
+  }, COMPOSITOR_UP_MS);
+}
+
 function powerChanged(active) {
   var was = powerActive;
   powerActive = active;
@@ -3559,6 +3586,7 @@ function stop() {
 module.exports = {
   LG_HOME: LG_HOME,
   viewInFront: viewInFront,
+  reopenAfterCompositor: reopenAfterCompositor,
   playChannel: playChannel,
   openInternetTv: openInternetTv,
   init: init,

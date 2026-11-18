@@ -1012,5 +1012,6 @@
  "rp.buttons": {"text": "Tasten", "from": "Buttons"},
  "rp.touchpad": {"text": "Touchpad", "from": "Touchpad"},
  "rp.standby": {"text": "Der Fernseher ist im Standby. Schalten Sie ihn ein, um die Fernbedienung zu nutzen.", "from": "The TV is in standby. Power on to use the remote."},
- "apps.remoteKeys.guideNative": {"text": "Bei diesem Fernseher braucht die Guide-Taste eine Änderung an LGs Tastenverwaltung. Beim Einstellen startet der Bildschirm einmal neu, danach bei jedem Start des Fernsehers erneut.", "from": "On this TV the Guide key needs a change to LG’s key handler. Setting it restarts the TV’s screen once, and again each time the TV starts."}
+ "apps.remoteKeys.guideNative": {"text": "Bei diesem Fernseher braucht die Guide-Taste eine Änderung an LGs Tastenverwaltung. Beim Einstellen startet der Bildschirm einmal neu, danach bei jedem Start des Fernsehers erneut.", "from": "On this TV the Guide key needs a change to LG’s key handler. Setting it restarts the TV’s screen once, and again each time the TV starts."},
+ "apps.remoteKeys.inputNative": {"text": "Bei diesem Fernseher braucht die Input-Taste eine Änderung an LGs Tastenverwaltung. Beim Einstellen und beim Zurücksetzen auf LGs Liste startet der Bildschirm einmal neu, und die Änderung wird bei jedem Start des Fernsehers erneut vorgenommen.", "from": "On this TV the Input key needs a change to LG’s key handler. Setting it, or setting it back to LG’s list, restarts the TV’s screen once, and the change is made again each time the TV starts."}
 }

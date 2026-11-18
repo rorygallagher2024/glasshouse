@@ -511,11 +511,15 @@ function toggleRemoteKey(tile) {
   const cur = k.action === 'open' ? k.id : k.action;
   const opt = (value, html, extra) => `<button type="button" class="rk-opt${value === cur ? ' on' : ''}${extra || ''}"
       data-value="${esc(value)}" aria-pressed="${value === cur}" onclick="chooseRemoteKey(this)">${html}</button>`;
+  // webOS 11's Input key opens an app, an input or Glasshouse's input bar, by an id of limited length.
+  const nativeInput = k.nativeInput === true;
+  const fits = c => !nativeInput || c.id.length <= k.maxIdLength;
   const media = rkData.choices.filter(c => c.kind === 'media');
-  const inputs = rkData.choices.filter(c => c.kind === 'input');
-  const apps = rkData.choices.filter(c => c.kind === 'app');
+  const inputs = rkData.choices.filter(c => c.kind === 'input' && fits(c));
+  const apps = rkData.choices.filter(c => c.kind === 'app' && fits(c));
+  const barChoice = nativeInput ? rkData.choices.filter(c => c.kind === 'inputbar').map(c => opt(c.id, `<span aria-hidden="true">▭</span> ${esc(c.title)}`)).join('') : '';
   // LG's input switcher and Screen off, beside As LG has it and Nothing.
-  const switchers = rkData.choices.filter(c => c.kind === 'switcher')
+  const switchers = nativeInput ? '' : rkData.choices.filter(c => c.kind === 'switcher')
     .map(c => opt(c.id, `<span aria-hidden="true">⇄</span> ${esc(t('apps.remoteKeys.inputSwitcher', 'Input switcher'))}`)).join('') +
     // On webOS 11, Screen off only on the keys whose presses the TV logs.
     (k.noScreenOff ? '' : rkData.choices.filter(c => c.kind === 'action').map(c => opt(c.id, `<span aria-hidden="true">◼</span> ${esc(c.title)}`)).join('')) +
@@ -535,8 +539,9 @@ function toggleRemoteKey(tile) {
     ${k.blocksApp ? `<div class="pv-note">${esc(t('apps.remoteKeys.blocksAlexa', 'Setting this key stops Alexa from opening until it is As LG has it again. Amazon still shows that Alexa is loading for a few seconds.'))}</div>` : ''}
     ${k.replacesVoice ? `<div class="pv-note">${esc(t('apps.remoteKeys.replacesVoice', 'Set to anything else, this button no longer starts voice control. As LG has it brings it back.'))}</div>` : ''}
     ${k.homeGuide ? `<div class="pv-note">${esc(t('apps.remoteKeys.guideNative', 'On this TV the Guide key needs a change to LG’s key handler. Setting it restarts the TV’s screen once, and again each time the TV starts.'))}</div>` : ''}
+    ${k.nativeInput ? `<div class="pv-note">${esc(t('apps.remoteKeys.inputNative', 'On this TV the Input key needs a change to LG’s key handler. Setting it, or setting it back to LG’s list, restarts the TV’s screen once, and the change is made again each time the TV starts.'))}</div>` : ''}
     ${k.turnsOffVoice ? `<div class="pv-note">${esc(t('apps.remoteKeys.turnsOffVoice', 'Setting this key switches off LG\'s voice assistant, so voice search, the AI assistant and the microphone stop working until it is As LG has it again.'))}</div>` : ''}
-    <div class="rk-opts">${opt('lg', esc(t('apps.remoteKeys.lg', 'As LG has it')))}${k.noNothing ? '' : opt('nothing', `<span aria-hidden="true">⦸</span> ${esc(t('apps.remoteKeys.nothing', 'Nothing'))}`)}${switchers}${gone}</div>
+    <div class="rk-opts">${opt('lg', esc(t('apps.remoteKeys.lg', 'As LG has it')))}${k.noNothing ? '' : opt('nothing', `<span aria-hidden="true">⦸</span> ${esc(t('apps.remoteKeys.nothing', 'Nothing'))}`)}${switchers}${barChoice}${gone}</div>
     ${media.length ? `<div class="rk-sub">${esc(t('apps.remoteKeys.buttons', 'Buttons'))}</div>
     <div class="rk-opts">${media.map(c => opt(c.id, esc(c.title))).join('')}</div>` : ''}
     ${inputs.length ? `<div class="rk-sub">${esc(t('apps.remoteKeys.inputs', 'Inputs'))}</div>

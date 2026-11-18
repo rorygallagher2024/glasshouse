@@ -3373,5 +3373,6 @@
  "rp.buttons": {"text": "Botões", "from": "Buttons"},
  "rp.touchpad": {"text": "Touchpad", "from": "Touchpad"},
  "rp.standby": {"text": "A TV está em espera. Ligue-a para usar o comando.", "from": "The TV is in standby. Power on to use the remote."},
- "apps.remoteKeys.guideNative": {"text": "Nesta TV, a tecla Guia precisa de uma alteração ao gestor de teclas da LG. Ao definir, o ecrã da TV reinicia uma vez e de novo sempre que a TV arranca.", "from": "On this TV the Guide key needs a change to LG’s key handler. Setting it restarts the TV’s screen once, and again each time the TV starts."}
+ "apps.remoteKeys.guideNative": {"text": "Nesta TV, a tecla Guia precisa de uma alteração ao gestor de teclas da LG. Ao definir, o ecrã da TV reinicia uma vez e de novo sempre que a TV arranca.", "from": "On this TV the Guide key needs a change to LG’s key handler. Setting it restarts the TV’s screen once, and again each time the TV starts."},
+ "apps.remoteKeys.inputNative": {"text": "Nesta TV, a tecla Input precisa de uma alteração ao gestor de teclas da LG. Ao defini-la, ou ao voltar à lista da LG, o ecrã da TV reinicia uma vez, e a alteração é feita de novo sempre que a TV arranca.", "from": "On this TV the Input key needs a change to LG’s key handler. Setting it, or setting it back to LG’s list, restarts the TV’s screen once, and the change is made again each time the TV starts."}
 }

@@ -288,6 +288,8 @@ var homeAssistantOn = function () { return false; };
 // Glasshouse Home on, with an IPTV playlist: its guide is a key's choice.
 /** @type {function(): boolean} */
 var homeGuideOn = function () { return false; };
+// Told when the compositor was restarted for a change to LG's key handler, so Glasshouse Home's view can be opened again.
+var compositorRestartedFn = function () {};
 var messagesPath = MESSAGES_LOG;
 var reapplyDelayMs = 1000;
 
@@ -317,6 +319,7 @@ function init(opts) {
   servicesModule = opts.services || null;
   homeAssistantOn = opts.homeAssistant || function () { return false; };
   homeGuideOn = opts.homeGuide || function () { return false; };
+  compositorRestartedFn = opts.compositorRestarted || function () {};
   messagesPath = opts.messagesPath || MESSAGES_LOG;
   if (typeof opts.reapplyDelayMs === 'number') reapplyDelayMs = opts.reapplyDelayMs;
   muteToastsMs = opts.muteToastsMs || 0;
@@ -876,6 +879,7 @@ function mappingEntry(list, name) {
  */
 function nativeKeys(tv, lg) {
   return KEYS.filter(function (k) {
+    if (k.key === 'input') return guidePatch.status().supported;
     if (NATIVE_ACTIONS[k.key]) return !!(tv.actions && tv.actions[NATIVE_ACTIONS[k.key]]);
     if (NATIVE_SETTINGS[k.key]) return !!(tv.settings && tv.settings[NATIVE_SETTINGS[k.key]]);
     if (NATIVE_SERVICE_KEYS[k.key]) return !!(servicesModule && servicesModule.available(NATIVE_SERVICE_KEYS[k.key]));
@@ -965,22 +969,22 @@ function applyNext() {
 }
 
 /*
- * A Guide key set to Glasshouse Home's guide needs LG's key handler changed
- * first (lib/guidepatch), which restarts the compositor once. Where it cannot
- * be, or Glasshouse Home has no guide, the key is left to LG.
+ * A Guide key set to Glasshouse Home's guide and an Input key set to an app,
+ * an input or the input bar need LG's key handler changed first (lib/guidepatch), which
+ * restarts the compositor once, and again when one is set back. Where it
+ * cannot be, or Glasshouse Home has no guide, the Guide key is left to LG.
  */
 function applyNativeNow(cb, mapOverride) {
   var map = mapOverride || readMap();
-  if (map.guide !== HOME_GUIDE) return applyNativeMap(cb, map);
-  var leftToLg = function () {
-    var rest = {};
-    Object.keys(map).forEach(function (k) { if (k !== 'guide') rest[k] = map[k]; });
-    return rest;
-  };
-  if (!homeGuideOn()) return applyNativeMap(cb, leftToLg());
-  guidePatch.apply(function (r) {
-    if (!r.ok) console.log('remotekeys: Guide could not be set to Glasshouse Home\'s guide: ' + r.error);
-    applyNativeMap(cb, r.ok ? map : leftToLg());
+  var wantGuide = map.guide === HOME_GUIDE && homeGuideOn();
+  var rest = {};
+  Object.keys(map).forEach(function (k) { if (map[k] !== HOME_GUIDE) rest[k] = map[k]; });
+  if (!guidePatch.status().supported) return applyNativeMap(cb, rest);
+  guidePatch.apply({ guide: wantGuide, input: guidePatch.validId(map.input) ? map.input : '' }, function (r) {
+    if (!r.ok) console.log('remotekeys: LG\'s key handler could not be changed: ' + r.error);
+    if (r.restarted) compositorRestartedFn();
+    if (r.ok && wantGuide) rest.guide = HOME_GUIDE;
+    applyNativeMap(cb, rest);
   });
 }
 
@@ -1549,17 +1553,21 @@ function getRemoteKeys(cb) {
   });
 }
 
-// webOS 11's Guide key opens Glasshouse Home's guide where lib/guidepatch knows the key handler.
-function guideChoices(def, native) {
-  if (!native || def.key !== 'guide' || !homeGuideOn() || !guidePatch.status().supported) return [];
-  return [{ id: HOME_GUIDE, title: msg('srv.remoteKeys.homeGuide', 'Glasshouse Home\'s guide'), kind: 'guide' }];
+// webOS 11's Guide key opens Glasshouse Home's guide, and its Input key the input bar, where lib/guidepatch knows the key handler.
+function nativeChoices(def, native) {
+  if (!native || !guidePatch.status().supported) return [];
+  if (def.key === 'guide' && homeGuideOn()) {
+    return [{ id: HOME_GUIDE, title: msg('srv.remoteKeys.homeGuide', 'Glasshouse Home\'s guide'), kind: 'guide' }];
+  }
+  if (def.key === 'input') return [{ id: INPUT_BAR, title: msg('srv.remoteKeys.inputBar', 'Input bar'), kind: 'inputbar' }];
+  return [];
 }
 
 function describeKeys(keys, inChain, cb, native) {
   switcherChoices(function (switchers) {
     listApps(function (apps) {
       var map = readMap();
-      var guide = guideChoices({ key: 'guide' }, native);
+      var guide = nativeChoices({ key: 'guide' }, native).concat(nativeChoices({ key: 'input' }, native));
       var titles = {};
       (apps || []).forEach(function (a) { if (a && a.id) titles[a.id] = a.title || a.id; });
       var inputs = inputChoices();
@@ -1567,6 +1575,7 @@ function describeKeys(keys, inChain, cb, native) {
       var cc = country();
       titles[HOME_ASSISTANT] = msg('srv.remoteKeys.homeAssistant', 'Home Assistant');
       titles[HOME_GUIDE] = msg('srv.remoteKeys.homeGuide', 'Glasshouse Home\'s guide');
+      titles[INPUT_BAR] = msg('srv.remoteKeys.inputBar', 'Input bar');
       switchers.concat(inputs, actionChoices(), mediaChoices(), homeChoices(false), barChoices(false)).forEach(function (c) { titles[c.id] = c.title; });
       var out = keys.map(function (k) {
         var set = Object.prototype.hasOwnProperty.call(map, k.key);
@@ -1584,7 +1593,9 @@ function describeKeys(keys, inChain, cb, native) {
         if (k.replacesVoice) key.replacesVoice = true;
         if (native && NATIVE_BLOCK_KEYS[k.key]) key.blocksApp = true;
         if (native && !SCREEN_OFF_BUTTONS[k.key]) key.noScreenOff = true;
-        if (guide.length && k.key === 'guide') key.homeGuide = true;
+        if (nativeChoices(k, native).length) key[k.key === 'guide' ? 'homeGuide' : 'nativeInput'] = true;
+        // The Input key's launch holds an id of so many characters, and cannot do nothing or send a media key.
+        if (key.nativeInput) { key.noNothing = true; key.maxIdLength = guidePatch.MAX_ID; }
         if (!native && homeAssistantOn() && reported(k.key)) key.homeAssistant = true;
         return key;
       });
@@ -1627,8 +1638,9 @@ function setOfferedKey(def, action, id, kind, cb) {
     delete map[def.key];
     return save(map, saved);
   }
+  var nativeInput = kind !== 'filter' && def.key === 'input';
   if (action === 'nothing') {
-    if (def.noNothing) return cb({ ok: false, error: msg('srv.remoteKeys.noNothing', 'This key cannot be set to do nothing') });
+    if (def.noNothing || nativeInput) return cb({ ok: false, error: msg('srv.remoteKeys.noNothing', 'This key cannot be set to do nothing') });
     map[def.key] = '';
     return save(map, saved);
   }
@@ -1637,7 +1649,13 @@ function setOfferedKey(def, action, id, kind, cb) {
     listApps(function (apps) {
       if (!apps) return cb({ ok: false, error: msg('srv.remoteKeys.noApps', 'Could not read the TV\'s apps. Try again in a moment.') });
       var media = kind === 'filter' ? actionChoices().concat(mediaChoices()) : SCREEN_OFF_BUTTONS[def.key] ? screenOffChoice() : [];
-      var allowed = switchers.concat(media, guideChoices(def, kind !== 'filter'), inputChoices(), homeChoices(kind !== 'filter'), barChoices(kind !== 'filter'), appChoices(apps))
+      // On webOS 11 the Input key opens an app, an input or the input bar, by an id its launch can hold.
+      var nativeInputOk = nativeInput && guidePatch.validId(id) &&
+        inputChoices().concat(appChoices(apps), nativeChoices(def, true)).some(function (c) { return c.id === id; });
+      if (nativeInput && !nativeInputOk) {
+        return cb({ ok: false, error: msg('srv.remoteKeys.inputOnlyApps', 'On this TV the Input key can open an app, an input or the input bar') });
+      }
+      var allowed = switchers.concat(media, nativeChoices(def, kind !== 'filter'), inputChoices(), homeChoices(kind !== 'filter'), barChoices(kind !== 'filter'), appChoices(apps))
         .some(function (c) { return c.id === id; });
       if (id === HOME_ASSISTANT && !reported(def.key)) {
         return cb({ ok: false, error: msg('srv.remoteKeys.notReported', 'Home Assistant does not receive this key\'s presses') });
@@ -1867,6 +1885,7 @@ function opensHomeBar() {
 module.exports = {
   init: init,
   opensInputBar: opensInputBar,
+  nativeInputBar: function () { return guidePatch.status().supported; },
   opensHomeBar: opensHomeBar,
   dropInputBar: dropInputBar,
   availabilityChanged: availabilityChanged,

@@ -16,8 +16,9 @@
  * Offered on webOS 4 to 10, where surface-manager loads JS key filters
  * (lib/remotekeys.js): with no warning where it has been tried, and with one,
  * and links to report how it went, elsewhere (lib/compat). webOS 11's remote
- * keys are LG's own and cannot hand it the further presses, so it is not
- * offered there or before webOS 4.
+ * keys are LG's own, so it is not offered there, or before webOS 4, apart from
+ * the Input key on a TV whose key handler lib/guidepatch can change: the key
+ * then launches the bar's app, and a further press reaches it as a relaunch.
  *
  * Strict ES5: runs on node 0.12.
  */
@@ -37,6 +38,8 @@ var MAX_FAILURES = 5;
 var lunaFn = null;
 var wantedFn = function () { return false; };
 var onFn = function () { return true; };
+// Whether the Input key can open the bar through LG's native key handler (webOS 11).
+var nativeFn = function () { return false; };
 // The TV, for lib/compat's report links.
 var tvInfoFn = null;
 var webosVersion = null;
@@ -54,7 +57,7 @@ function schedule(ms) {
 function ensure() {
   timer = null;
   if (failures >= MAX_FAILURES || running !== false) return;
-  if (!allowed() || !wantedFn() || !onFn()) return;
+  if (!offered() || !wantedFn() || !onFn()) return;
   lunaFn('com.webos.applicationManager/launch', { id: APP, preload: 'full' }, function (r) {
     if (r && r.returnValue) {
       failures = 0;
@@ -86,6 +89,7 @@ function init(opts) {
   if ('webosVersion' in opts) webosVersion = opts.webosVersion;
   if (typeof opts.wanted === 'function') wantedFn = opts.wanted;
   if (typeof opts.on === 'function') onFn = opts.on;
+  if (typeof opts.native === 'function') nativeFn = opts.native;
   if (typeof opts.tvInfo === 'function') tvInfoFn = opts.tvInfo;
 }
 
@@ -99,13 +103,18 @@ function allowed() {
   return standing() !== 'unsupported';
 }
 
+// Whether the input bar itself is offered: where it can work, and the Input key on webOS 11 where the handler can be changed.
+function offered() {
+  return allowed() || nativeFn();
+}
+
 // For the dashboards: its standing, the reason where it is not offered, and
 // the links to report how it went where it is untried.
 function summary() {
   var tv = tvInfoFn ? tvInfoFn() : {};
   tv.webos = webosVersion;
   var c = compat.info('inputBar', tv, 'The input bar');
-  c.allowed = c.standing !== 'unsupported';
+  c.allowed = offered();
   return c;
 }
 
