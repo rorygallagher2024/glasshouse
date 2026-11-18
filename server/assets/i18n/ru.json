@@ -3385,5 +3385,6 @@
  "remote.close": {"text": "Закрыть", "from": "Close"},
  "rp.input": {"text": "Вход", "from": "Input"},
  "rp.buttons": {"text": "Кнопки", "from": "Buttons"},
- "rp.touchpad": {"text": "Тачпад", "from": "Touchpad"}
+ "rp.touchpad": {"text": "Тачпад", "from": "Touchpad"},
+ "rp.standby": {"text": "Телевизор в режиме ожидания. Включите его, чтобы пользоваться пультом.", "from": "The TV is in standby. Power on to use the remote."}
 }

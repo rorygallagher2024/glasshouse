@@ -130,7 +130,8 @@ var MAX_SAVER_BYTES = 5 * 1024 * 1024;
 var MAX_SAVER_FILES = 200;
 // What a saver may ask Glasshouse to fill in, and the placeholder for each.
 // "ha" has one placeholder per entity it declares, so it carries no value here.
-var USES = { level: '__TVWEB_LEVEL__', stats: '__TVWEB_URL__', choice: '__TVWEB_CHOICE__', videos: '__TVWEB_VIDEOS__', 'home-weather': '__TVWEB_HOME_WEATHER__', ha: '', 'ha-list': '__TVWEB_HA_LIST__', 'ha-all': '__TVWEB_HA_ALL__', color: '__TVWEB_COLOR__' };
+// "video-busy" is the address of videoBusy's answer, for a saver that plays video.
+var USES = { level: '__TVWEB_LEVEL__', stats: '__TVWEB_URL__', choice: '__TVWEB_CHOICE__', videos: '__TVWEB_VIDEOS__', 'home-weather': '__TVWEB_HOME_WEATHER__', 'video-busy': '__TVWEB_VIDEO_BUSY__', ha: '', 'ha-list': '__TVWEB_HA_LIST__', 'ha-all': '__TVWEB_HA_ALL__', color: '__TVWEB_COLOR__' };
 var DEFAULT_SAVER_COLOR = 'white';
 var COLOR_PRESETS = [
   { id: 'white', label: msg('srv.saver.color.white', 'White'), bright: '#ffffff', dim: '#a8aeb6' },
@@ -1587,8 +1588,10 @@ function fillSaverWeb(e, html, level) {
   var token = configObj && configObj.token;
   var videos = JSON.stringify(homeWallpapers.videoSources()).replace(/</g, '\\u003c').replace(/\u2028/g, '\\u2028').replace(/\u2029/g, '\\u2029');
   var weather = 'http://127.0.0.1:' + port + '/api/home/weather' + (token ? '?k=' + encodeURIComponent(token) : '');
+  var busy = 'http://127.0.0.1:' + port + '/api/screensaver/video-busy' + (token ? '?k=' + encodeURIComponent(token) : '');
   html = html.replace(/__TVWEB_VIDEOS__/g, function () { return videos; });
   html = html.replace(/__TVWEB_HOME_WEATHER__/g, function () { return weather; });
+  html = html.replace(/__TVWEB_VIDEO_BUSY__/g, function () { return busy; });
   html = html.replace(/__TVWEB_LAYER_OPACITY__/g, String(layerOpacity(e, level)));
   return html;
 }
@@ -2022,6 +2025,32 @@ function adoptLaunched() {
   });
 }
 
+/*
+ * Whether an app holds the video decoder, as a screen saver that plays video
+ * starts (#1599). Kodi paused keeps its video, and LG's screen saver comes
+ * over a paused video: the Video screen saver's own video then took the TV's
+ * one decoder, failed, and left Kodi unable to resume. A pipeline holding a
+ * video decoder (VDEC) is one an app has: the TV's own inputs, HDMI and Live
+ * TV (type "tv"), are left out, as the TV takes those back as it likes, and
+ * Glasshouse Home lets its video go before the TV's screen saver can come.
+ * cb({ ok, busy, apps }): busy null where the TV would not say.
+ */
+function videoBusy(cb) {
+  if (!lunaFn) return cb({ ok: true, busy: null, apps: [] });
+  lunaFn('com.webos.media/getActivePipelines', {}, function (r) {
+    var list = Array.isArray(r) ? r : (r && Array.isArray(r.pipelines) ? r.pipelines : null);
+    if (!list) return cb({ ok: true, busy: null, apps: [] });
+    var apps = [];
+    var busy = list.some(function (p) {
+      if (!p || p.type === 'tv' || !Array.isArray(p.resource)) return false;
+      var holds = p.resource.some(function (x) { return x && /^VDEC/.test(String(x.resource || '')); });
+      if (holds) apps.push(String(p.currentAppId || p.appId || p.type || ''));
+      return holds;
+    });
+    cb({ ok: true, busy: busy, apps: apps });
+  });
+}
+
 function launchScreensaverApp(cb) {
   // tvpower's refusal also protects playback. An unavailable media service
   // is not evidence that nothing is playing, including on older firmware.
@@ -2191,6 +2220,7 @@ function screensaverEntityLabel(entityId) {
 }
 
 module.exports = {
+  videoBusy: videoBusy,
   SCREENSAVER_APP_DIR: SCREENSAVER_APP_DIR,
   SCREENSAVER_DIR: SCREENSAVER_DIR,
   USER_SAVERS_DIR: USER_SAVERS_DIR,

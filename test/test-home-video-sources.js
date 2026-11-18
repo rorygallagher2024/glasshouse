@@ -42,6 +42,9 @@ assert.deepEqual(wallpapers.videoSources(), {
     { url: 'http://homeassistant:8123/local/two.webm', title: '', pointsOfInterest: [] }
   ], shuffle: true, style: merged({}, defaultStyle, style)
 });
+// The pictures' revision goes into their addresses: with the videos in it,
+// a long list made them too long to load, and a picture background stayed black.
+assert.strictEqual(ok.wallpapers.revision.indexOf('media.example'), -1);
 assert.strictEqual(set(['file:///etc/passwd'], false).ok, false);
 assert.strictEqual(set(['https://user:password@media.example/a.mp4'], false).ok, false);
 var tooMany = [];

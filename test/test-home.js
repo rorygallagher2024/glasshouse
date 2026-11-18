@@ -515,6 +515,35 @@ step('the saved layout keeps its order, drops what has gone and appends what is 
   });
 });
 
+step('the heartbeat brings the TV\'s screen saver time, and the view at its end starts the screen saver', function (done) {
+  var triggers = 0;
+  start(null, { screensavers: { launchedShowing: function () { return false; }, trigger: function (cb) { triggers++; cb({ ok: true }); } } });
+  tv.settings.screenSaverTimer = '10';
+  assert.strictEqual(home.beat().saverIdleMs, null, 'not known until read');
+  wait(10, function () {
+    assert.strictEqual(home.beat().saverIdleMs, 600000, 'LG\'s minutes, in ms');
+    home.startIdleSaver(function (r) {
+      assert.strictEqual(r.ok, false, 'not while the view is not in front');
+      assert.strictEqual(triggers, 0);
+      home.enable(function (e) {
+        assert.ok(e.ok, e.error);
+        foreground('com.webos.app.home');
+        powerState('Screen Saver');
+        home.startIdleSaver(function (r2) {
+          assert.strictEqual(r2.ok, false, 'not over a screen saver already up, which the trigger would close');
+          powerState('Active');
+          home.startIdleSaver(function (r3) {
+            assert.strictEqual(r3.ok, true);
+            assert.strictEqual(triggers, 1, 'started as Start screen saver does');
+            delete tv.settings.screenSaverTimer;
+            home.disable(function () { done(); });
+          });
+        });
+      });
+    });
+  });
+});
+
 step('the heartbeat says when the view is covered: by the screen saver, or on webOS 4 by what is in front', function (done) {
   start(null, { webosVersion: '4.4.3' });
   foreground(OLD_APP);
