@@ -207,6 +207,23 @@ var coverTimer = null;
 // webOS 5 and 6: sam's app life events, for the app in front closing.
 var lifeSub = null;
 /*
+ * The app in front by those events, and the apps starting (launch or splash
+ * seen, not yet in front, in the background or gone), each with when it
+ * started. A preload sends "preload" and "background", never "launch".
+ */
+var lifeFront = '';
+var startingApps = {};
+var STARTING_MS = 5000;
+var SAVER_APP = 'com.webos.app.screensaver';
+/*
+ * When tvpower began switching the TV off, 0 otherwise. Its steps keep state
+ * Active, and the app in front closes 0.2 to 1.5 s after the first of them
+ * (a C1, webOS 6.5.3); state Suspend comes 1.7 s after it.
+ */
+var switchingOffAt = 0;
+var SWITCH_OFF_MS = 10000;
+var SWITCH_OFF_STEPS = ['Request Power Off', 'Request Active Standby', 'Request Suspend', 'Prepare Suspend'];
+/*
  * A short Home press has the view in front within 0.1 s (a G3, webOS 9.2.2; a
  * G5, webOS 10.3.1), and it beats as it shows. No beat this long after, and
  * WebAppMgr not running, the press opened nothing. With WebAppMgr running the
@@ -3343,6 +3360,9 @@ function init(opts) {
   }
   if (lifeSub) lifeSub.stop();
   lifeSub = null;
+  lifeFront = '';
+  startingApps = {};
+  switchingOffAt = 0;
   if (opts.Subscription && isStandalone() && lgHomeOpensOnClose()) {
     lifeSub = new opts.Subscription('com.webos.applicationManager/getAppLifeEvents', { subscribe: true }, null, {});
     lifeSub.handlers.message = appLifeEvent;
@@ -3352,19 +3372,52 @@ function init(opts) {
 
 /*
  * webOS 5 and 6: the app in front closing. sam opens LG's Home about 1 s
- * later, unless another full-screen app is starting by then, so Glasshouse
- * Home is opened at once and LG's Home is not started at all. An app sent to
- * the background, or one closed behind another, is left.
+ * later, unless another app is starting by then, so Glasshouse Home is opened
+ * at once and LG's Home is not started at all. Left to sam: an app sent to
+ * the background or closed behind another, a close while another app starts
+ * (an app opening another and exiting), the screen saver ending, and the TV
+ * switching off. The app in front is taken from these events, as
+ * getForegroundAppInfo can name the one before for a moment.
  */
 function appLifeEvent(r) {
   var id = r && r.appId;
-  if (!r || r.event !== 'close' || !id || id !== foreground) return;
-  if (id === HOME_APP || isLgHome(id)) return;
-  if (!readConfig().enabled || escaped || !powerActive) return;
-  console.log('home: ' + id + ' closed; opening Glasshouse Home before LG\'s Home');
+  if (!id) return;
+  var ev = r.event;
+  if (ev === 'launch' || ev === 'splash') startingApps[id] = nowMs();
+  else if (ev === 'foreground' || ev === 'background' || ev === 'close' || ev === 'stop') delete startingApps[id];
+  if (ev === 'foreground') lifeFront = id;
+  if (ev !== 'close' || id !== (lifeFront || foreground)) return;
+  if (id === HOME_APP || isLgHome(id) || id === SAVER_APP) return;
+  if (r.reason === 'powerOff' || switchingOff() || powerState === 'Screen Saver') return;
+  if (escaped || !powerActive || otherStarting() || !readConfig().enabled) return;
+  console.log('home: ' + id + ' closed (' + (r.reason || 'no reason') + '); opening Glasshouse Home before LG\'s Home');
   launch(HOME_APP, null, function (res) {
     if (!res || !res.ok) console.error('home: could not open Glasshouse Home after ' + id + ' closed');
   });
+}
+
+function otherStarting() {
+  var now = nowMs();
+  for (var id in startingApps) {
+    if (!startingApps.hasOwnProperty(id)) continue;
+    if (now - startingApps[id] > STARTING_MS) delete startingApps[id];
+    else if (!isLgHome(id)) return true;
+  }
+  return false;
+}
+
+function switchingOff() {
+  return switchingOffAt > 0 && nowMs() - switchingOffAt < SWITCH_OFF_MS;
+}
+
+// Every reply of tvpower's power state subscription, "processing" steps included.
+function powerReply(r) {
+  if (!r || r.state !== 'Active') return;
+  if (r.onOff === 'off' || SWITCH_OFF_STEPS.indexOf(r.processing) !== -1) {
+    if (!switchingOffAt) switchingOffAt = nowMs();
+  } else {
+    switchingOffAt = 0;
+  }
 }
 
 /*
@@ -3512,6 +3565,7 @@ module.exports = {
   init: init,
   start: start,
   stop: stop,
+  powerReply: powerReply,
   // What was opened, written now rather than after its short delay, as the server stops.
   flush: recent.flush,
   status: status,

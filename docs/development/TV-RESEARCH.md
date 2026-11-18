@@ -1045,7 +1045,21 @@ Reported on PR #910 on 27 October 2026.
   name the case `skip_launching_last_input_app`.
 - **An app left for another gets `background`, not `close`.** Opening NPO
   Start over the Glasshouse app gave the Glasshouse app `background`; `close`
-  came only from closing it.
+  came only from closing it. Switching inputs (Live TV to HDMI 1, HDMI 1 to
+  HDMI 3 and back) gave the input left `background` each time.
+- **An app opening another and exiting sends `close` while the other
+  starts.** Launching Netflix over YouTube and closing YouTube at once gave
+  `launch netflix`, then `close youtube.leanback.v4`, then
+  `foreground netflix` about 0.5 s later. A preload sends `preload` and
+  `background` (status `preload`), not `launch`.
+- **Switching off, tvpower's steps come before any close.** With the remote's
+  power key, `getPowerState` replied `Request Power Off`, `Request Active
+  Standby`, `Request Suspend` and `Prepare Suspend`, each with state `Active`
+  and `onOff: "off"`, within 0.14 s. sam's closes followed 0.2 to 0.5 s after
+  the first: `windowPolicy` for inputs behind the app in front, `powerOff`
+  for Glasshouse Home, none for AirPlay. State `Suspend` came 1.74 s after
+  the first step. LG's YouTube in front got `background`; a sideloaded
+  YouTube build got `close`, 1.5 s before `Suspend`.
 - **LG's Home takes the screen back while it starts.** Covered about 0.1 s
   after it showed, its card window went invisible and visible again about
   0.5 s later with no launch in sam, and sam named it in front. Covering it

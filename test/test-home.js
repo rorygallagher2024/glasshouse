@@ -1822,6 +1822,85 @@ step('on webOS 5 and 6, Glasshouse Home opens when the app in front closes, befo
   });
 });
 
+/*
+ * A C1 (webOS 6.5.3): an app opening another and closing sent "launch" for
+ * the new one before its own "close"; switching off, tvpower's "Request Power
+ * Off" came 0.2 s before the first close, with state still Active.
+ */
+step('on webOS 5 and 6, a close while another app starts, the TV switches off or the screen saver ends opens nothing', function (done) {
+  var subs = [];
+  var now = 1000;
+  function FakeSub(uri, payload, appId, handlers) { this.uri = uri; this.handlers = handlers || {}; subs.push(this); }
+  FakeSub.prototype.start = function () { this.started = true; };
+  FakeSub.prototype.stop = function () { this.started = false; };
+  function life(id, ev, reason) {
+    subs.filter(function (s) { return s.started && /getAppLifeEvents/.test(s.uri); })
+      .forEach(function (s) { s.handlers.message({ appId: id, event: ev, reason: reason }); });
+  }
+  function front(id) { foreground(id); life(id, 'foreground'); }
+  function closeOpens(id, reason) {
+    tv.launched = [];
+    life(id, 'close', reason);
+    var opened = tv.launched.length > 0;
+    if (opened) front(OLD_APP);
+    return opened;
+  }
+  start(null, {
+    webosVersion: '6.5.3',
+    lgHomeSettleMs: 40,
+    Subscription: FakeSub,
+    now: function () { return now; },
+    allowExperimental: function () { return true; },
+    installApp: function (action, cb) { tv.oldAppInstalled = true; cb({ ok: true }); },
+    setHomeKey: function (id, cb) { cb({ ok: true }); },
+    injectKey: function (code, cb) { if (cb) cb(true); }
+  });
+  home.enable(function (r) {
+    assert.ok(r.ok, r.error);
+    front('youtube.leanback.v4');
+    life('netflix', 'launch');
+    assert.ok(!closeOpens('youtube.leanback.v4'), 'not while another app starts');
+    // In front by sam's events before getForegroundAppInfo says so.
+    life('netflix', 'foreground');
+    assert.ok(!closeOpens('youtube.leanback.v4'), 'not for the app before the one sam put in front');
+    front('netflix');
+    life('npo', 'launch');
+    life('npo', 'stop');
+    life('ui30', 'splash');
+    life('ui30', 'background');
+    life('airplay', 'preload');
+    life('airplay', 'background');
+    assert.ok(closeOpens('netflix'), 'an app that stopped, went to the background or preloaded does not hold it');
+    front('netflix');
+    life('npo', 'launch');
+    now += 6000;
+    assert.ok(closeOpens('netflix'), 'a start never seen to end holds it for 5 s');
+
+    front('netflix');
+    home.powerReply({ state: 'Active', processing: 'Request Power Off', onOff: 'off', reason: 'remoteKey' });
+    assert.ok(!closeOpens('netflix'), 'not while the TV switches off');
+    home.powerReply({ state: 'Suspend' });
+    home.powerReply({ state: 'Suspend', processing: 'Screen On', onOff: 'on' });
+    home.powerReply({ state: 'Active' });
+    assert.ok(closeOpens('netflix'), 'again once Active');
+    front('netflix');
+    home.powerReply({ state: 'Active', processing: 'Prepare Suspend' });
+    assert.ok(!closeOpens('netflix'), 'a switch-off step without onOff, as webOS 5 may send');
+    now += 11000;
+    assert.ok(closeOpens('netflix'), 'a switch-off that never went on is let go after 10 s');
+    front('netflix');
+    assert.ok(!closeOpens('netflix', 'powerOff'), 'not for a close sam gives for switching off');
+
+    front('com.webos.app.screensaver');
+    assert.ok(!closeOpens('com.webos.app.screensaver'), 'not for the screen saver ending');
+    front('netflix');
+    powerState('Screen Saver');
+    assert.ok(!closeOpens('netflix'), 'not while the screen saver is up');
+    powerState('Active');
+    home.disable(function () { done(); });
+  });
+});
+
 step('a switch-on that cannot give the Home key to the app removes the app it installed', function (done) {
   var actions = [];
   start(null, {
