@@ -898,7 +898,7 @@ select.pill-sel.ss-sel{display:block;width:100%;max-width:340px;height:48px;marg
 .ss-pool-item input[type="checkbox"]{width:16px;height:16px;margin:0;cursor:pointer;flex-shrink:0;accent-color:var(--green)}
 .ss-pool-item.dis input[type="checkbox"]{cursor:default}
 .ss-pool-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.upd{max-width:760px;margin-top:22px}
+.upd{margin-top:22px}
 /* The update actions sit under the version, as small as the row's other
    controls. Rolling back is rarely wanted, so it is a link, not a button. */
 .upd-btns{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
