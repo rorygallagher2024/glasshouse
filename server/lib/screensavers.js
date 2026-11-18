@@ -1957,6 +1957,19 @@ function launchedShowing() {
  * remote cannot close it (G3, webOS 9.2.2). The remote's keys are watched
  * while it shows, and any of them closes it.
  */
+// Told when a screen saver launched directly opens or closes (lib/saverpoweroff).
+var launchedListeners = [];
+function onLaunchedChange(fn) { launchedListeners.push(fn); }
+
+/*
+ * Whether the screen saver launched directly is still running, asked of sam:
+ * launchedShowing answers from what was last seen.
+ */
+function launchedRunning(cb) {
+  if (!launchedDirectly || !lunaFn) return cb(false);
+  screensaverRunning(function (running) { cb(running !== false); });
+}
+
 function setLaunched(on) {
   var was = launchedDirectly;
   if (on) {
@@ -1972,6 +1985,7 @@ function setLaunched(on) {
   launchedDirectly = on;
   launchGeneration++;
   watchKeysFn(on);
+  for (var i = 0; i < launchedListeners.length; i++) launchedListeners[i](on);
 }
 
 function closeLaunched(cb) {
@@ -2225,6 +2239,8 @@ module.exports = {
   screensaverEntities: screensaverEntities,
   screensaverEntityLabel: screensaverEntityLabel,
   launchedShowing: launchedShowing,
+  launchedRunning: launchedRunning,
+  onLaunchedChange: onLaunchedChange,
   keyPressed: keyPressed,
   pointerUsed: pointerUsed,
   adoptLaunched: adoptLaunched,
