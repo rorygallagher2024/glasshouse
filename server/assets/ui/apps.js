@@ -153,25 +153,29 @@ function renderAppsPanel() {
 
   if (instList) {
     if (installed.length === 0) {
+      instList.classList.remove('catalog-grid');
       instList.innerHTML = `<div class="sub" style="padding:16px 0">${esc(t('apps.installed.none', 'No removable apps found on the TV.'))}</div>`;
     } else {
+      instList.classList.add('catalog-grid');
       instList.innerHTML = installed.map(app => {
-        const title = esc(app.title || app.id);
-        const id = esc(app.id);
+        const title = app.title || app.id;
+        const monogram = esc(String(title).trim().charAt(0).toUpperCase() || '?');
         const iconUrl = api('/api/apps/icon?id=' + encodeURIComponent(app.id));
-        const meta = [app.version ? 'v' + app.version : '', app.vendor || ''].filter(Boolean).join(' · ');
+        const meta = [app.version ? 'v' + app.version : '', app.vendor || ''].filter(Boolean).join(' · ') || t('apps.installed.app', 'Installed app');
         const sizeBadge = (app.size && typeof fmtSize === 'function') ? fmtSize(app.size) : '';
-        return `<div class="prot-row">
-          <img src="${iconUrl}" width="38" height="38" style="border-radius:8px;object-fit:contain;background:var(--w06);flex-shrink:0" onerror="this.style.display='none'">
-          <div class="prot-main">
-            <div class="prot-title">${title}</div>
-            <div class="prot-desc">${esc(meta || t('apps.installed.app', 'Installed app'))}</div>
-            ${rowErrorNote(app.id)}
+        return `<div class="catalog-card">
+          <div class="catalog-card-head">
+            <span class="catalog-card-ico-wrap"><span class="catalog-card-monogram" aria-hidden="true">${monogram}</span><img class="catalog-card-ico" src="${iconUrl}" width="46" height="46" loading="lazy" alt="" onerror="this.style.display='none'"></span>
+            <div class="catalog-card-main">
+              <div class="catalog-card-title">${esc(title)}</div>
+              <div class="catalog-card-meta">${esc(meta)}</div>
+            </div>
           </div>
+          ${sizeBadge ? `<div class="catalog-card-badges"><span class="app-badge" title="${esc(t('apps.installed.storageTooltip', 'Storage footprint'))}">${esc(sizeBadge)}</span></div>` : ''}
+          ${rowErrorNote(app.id)}
           <div class="prot-status">
-            ${sizeBadge ? `<span class="app-badge" title="${esc(t('apps.installed.storageTooltip', 'Storage footprint'))}">${esc(sizeBadge)}</span>` : ''}
             <button type="button" class="pill good" onclick="sendCommand('launchApp','${jsq(app.id)}')" ${!d.writable || uninstalling[app.id] ? 'disabled' : ''}>${esc(t('apps.launch.button', 'Launch'))}</button>
-            <button type="button" class="pill ${uninstalling[app.id] ? 'busy' : 'bad'}" onclick="confirmUninstall('${jsq(app.id)}', '${jsq(app.title || app.id)}')" ${!d.writable || uninstalling[app.id] ? 'disabled' : ''}>${esc(uninstalling[app.id] ? t('apps.uninstall.working', 'Uninstalling\u2026') : t('apps.uninstall.button', 'Uninstall'))}</button>
+            <button type="button" class="pill ${uninstalling[app.id] ? 'busy' : 'bad'}" onclick="confirmUninstall('${jsq(app.id)}', '${jsq(title)}')" ${!d.writable || uninstalling[app.id] ? 'disabled' : ''}>${esc(uninstalling[app.id] ? t('apps.uninstall.working', 'Uninstalling\u2026') : t('apps.uninstall.button', 'Uninstall'))}</button>
           </div>
         </div>`;
       }).join('');

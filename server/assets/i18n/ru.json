@@ -102,7 +102,6 @@
  "apps.group.apps.desc": {"text": "Приложения и веб-страницы на телевизоре: добавление и удаление.", "from": "The apps and web pages on the TV: adding them and removing them."},
  "apps.group.bg": {"text": "Фоновая работа", "from": "Background"},
  "apps.group.bg.desc": {"text": "Что телевизор запускает без запроса. Отключение части этого освобождает память.", "from": "What the TV runs without being asked. Switching some of it off frees memory."},
- "apps.group.launch.desc": {"text": "Что открывают кнопки пульта.", "from": "What the remote’s keys open."},
  "apps.heading": {"text": "Приложения и лаунчер главного экрана", "from": "Apps & Home Screen Launcher"},
  "apps.home": {"text": "Раскладка главного экрана", "from": "Home screen layout"},
  "apps.home.asLg": {"text": "Как задано в LG", "from": "As LG has it"},

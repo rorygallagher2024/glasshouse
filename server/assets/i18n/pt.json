@@ -108,7 +108,6 @@
  "apps.group.apps.desc": {"text": "As aplicações e páginas web na TV: adicioná-las e removê-las.", "from": "The apps and web pages on the TV: adding them and removing them."},
  "apps.group.bg": {"text": "Segundo plano", "from": "Background"},
  "apps.group.bg.desc": {"text": "O que a TV executa sem lhe ser pedido. Desligar parte disso liberta memória.", "from": "What the TV runs without being asked. Switching some of it off frees memory."},
- "apps.group.launch.desc": {"text": "O que as teclas do comando abrem.", "from": "What the remote’s keys open."},
  "apps.heading": {"text": "Aplicações e iniciador do ecrã inicial", "from": "Apps & Home Screen Launcher"},
  "apps.home": {"text": "Disposição do ecrã inicial", "from": "Home screen layout"},
  "apps.home.asLg": {"text": "Como a LG o tem", "from": "As LG has it"},

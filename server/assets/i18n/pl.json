@@ -108,7 +108,6 @@
  "apps.group.apps.desc": {"text": "Aplikacje i strony internetowe na telewizorze: dodawanie i usuwanie.", "from": "The apps and web pages on the TV: adding them and removing them."},
  "apps.group.bg": {"text": "W tle", "from": "Background"},
  "apps.group.bg.desc": {"text": "To, co telewizor uruchamia bez pytania. Wyłączenie części z tego zwalnia pamięć.", "from": "What the TV runs without being asked. Switching some of it off frees memory."},
- "apps.group.launch.desc": {"text": "Co otwierają przyciski pilota.", "from": "What the remote’s keys open."},
  "apps.heading": {"text": "Aplikacje i program uruchamiający ekranu głównego", "from": "Apps & Home Screen Launcher"},
  "apps.home": {"text": "Układ ekranu głównego", "from": "Home screen layout"},
  "apps.home.asLg": {"text": "Tak jak u LG", "from": "As LG has it"},

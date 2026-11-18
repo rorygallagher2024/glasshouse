@@ -102,7 +102,6 @@
  "apps.group.apps.desc": {"text": "A TV-n lévő alkalmazások és weboldalak: hozzáadásuk és eltávolításuk.", "from": "The apps and web pages on the TV: adding them and removing them."},
  "apps.group.bg": {"text": "Háttér", "from": "Background"},
  "apps.group.bg.desc": {"text": "A TV által automatikusan futtatott háttérfolyamatok. Egy részük kikapcsolásával memória szabadítható fel.", "from": "What the TV runs without being asked. Switching some of it off frees memory."},
- "apps.group.launch.desc": {"text": "Mit nyitnak meg a távirányító gombjai.", "from": "What the remote’s keys open."},
  "apps.heading": {"text": "Alkalmazások és kezdőképernyő", "from": "Apps & Home Screen Launcher"},
  "apps.home": {"text": "Kezdőképernyő elrendezése", "from": "Home screen layout"},
  "apps.home.asLg": {"text": "Ahogy az LG beállította", "from": "As LG has it"},

@@ -108,7 +108,6 @@
  "apps.group.apps.desc": {"text": "التطبيقات وصفحات الويب على التلفاز: إضافتها وإزالتها.", "from": "The apps and web pages on the TV: adding them and removing them."},
  "apps.group.bg": {"text": "العمليات الخلفية", "from": "Background"},
  "apps.group.bg.desc": {"text": "البرامج التي يشغلها التلفاز في الخلفية تلقائياً. إيقاف بعضها يوفر مساحة في الذاكرة العشوائية (RAM).", "from": "What the TV runs without being asked. Switching some of it off frees memory."},
- "apps.group.launch.desc": {"text": "ما تفتحه أزرار الريموت.", "from": "What the remote’s keys open."},
  "apps.heading": {"text": "التطبيقات ومشغّل الشاشة الرئيسية", "from": "Apps & Home Screen Launcher"},
  "apps.home": {"text": "تخطيط الشاشة الرئيسية", "from": "Home screen layout"},
  "apps.home.asLg": {"text": "على وضع LG الافتراضي", "from": "As LG has it"},

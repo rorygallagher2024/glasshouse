@@ -124,7 +124,6 @@
  "apps.group.apps.desc": {"from": "The apps and web pages on the TV: adding them and removing them.", "text": "Les apps et pages web sur la TV : les ajouter et les retirer."},
  "apps.group.bg": {"from": "Background", "text": "Arrière-plan"},
  "apps.group.bg.desc": {"from": "What the TV runs without being asked. Switching some of it off frees memory.", "text": "Ce que la TV exécute sans qu'on le lui demande. En désactiver une partie libère de la mémoire."},
- "apps.group.launch.desc": {"from": "What the remote’s keys open.", "text": "Ce qu'ouvrent les touches de la télécommande."},
  "apps.group.net": {"from": "Network", "text": "Réseau"},
  "apps.group.net.desc": {"from": "How apps reach the internet.", "text": "Comment les apps accèdent à internet."},
  "apps.heading": {"from": "Apps & Home Screen Launcher", "text": "Apps et lanceur d'écran d'accueil"},

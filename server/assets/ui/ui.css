@@ -1132,6 +1132,7 @@ button.pill.flash.idle[disabled]:hover{color:var(--w60);border-color:var(--edge)
 /* The Server tab and Home customisation keep one column, so every control,
    and each fold's count, lines up down the right. */
 #serverpane .prot-table,.home-custom-table{display:grid;grid-template-columns:1fr}
+.home-custom-table,#home-custom .pv-d,#home-rows,#home-recents,#home-tv .prot-table,#inputspane .prot-table,#serverpane .prot-table{max-width:760px}
 #advpane .prot-row,#serverpane .prot-row,.home-custom-table .prot-row{align-items:flex-start;padding:16px 0}
 #advpane .prot-title,#serverpane .prot-title,#homepane .prot-title{font-size:var(--h-row);font-weight:600;letter-spacing:.02em;color:var(--w90)}
 #advpane .prot-desc,#serverpane .prot-desc,#homepane .prot-desc{font-size:14px;line-height:1.5;margin-top:4px;max-width:none}

@@ -8,7 +8,7 @@ The **Apps** tab, `/?tab=apps`, has two groups: **Apps**, for installing and rem
 
 ![Manage applications, listing each installed app with its size and Launch and Uninstall buttons](../screenshots/apps-manage.png)
 
-Lists the apps downloaded from the LG store or installed by hand, with their version, vendor, and storage badge showing disk footprint. Launch opens the application on the TV, while Uninstall deletes an app completely and frees its storage. LG's built-in apps can't be removed this way; they can be [hidden](home.md#hide-home-screen-system-apps) instead.
+Lists the apps downloaded from the LG store or installed by hand in a card grid, with their version, vendor, and storage badge showing disk footprint. Launch opens the application on the TV, while Uninstall deletes an app completely and frees its storage. LG's built-in apps can't be removed this way; they can be [hidden](home.md#hide-home-screen-system-apps) instead.
 
 ### Install homebrew apps
 
