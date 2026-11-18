@@ -169,6 +169,8 @@ async function loadCpu() {
  * two passes over /proc and holds a request open for the sample itself, which
  * is not worth spending on a panel nobody is looking at.
  */
+let metricsSubView = 'overview';
+
 function startCpuPolling() {
   if (cpuTimer) return;
   loadCpu();
@@ -182,26 +184,27 @@ function stopCpuPolling() {
 }
 
 function cpuPanelOpen() {
-  const el = document.getElementById('disc-cpu');
-  return !!(el && el.open);
+  return typeof activeTab !== 'undefined' && activeTab === 'metrics' && metricsSubView === 'advanced';
 }
 
-(function wireCpuPanel() {
-  const el = document.getElementById('disc-cpu');
-  if (!el) return;
-  el.addEventListener('toggle', function () {
-    if (el.open) startCpuPolling(); else stopCpuPolling();
-  });
-  if (el.open) startCpuPolling();
-})();
-
-// Only poll while the panel is open; it costs a ps on the TV each time.
-function onProcToggle(el) {
-  /* Same as the HDMI panel: on open only. This one forks `ps`. */
-  if (el.open) loadProcesses();
+function setMetricsSubView(view) {
+  const valid = ['overview', 'watch', 'advanced'];
+  metricsSubView = valid.indexOf(view) !== -1 ? view : 'overview';
+  const pane = q('tab-metrics');
+  if (pane) pane.setAttribute('data-metrics-view', metricsSubView);
+  const nav = q('metrics-subnav');
+  if (nav) {
+    nav.querySelectorAll('.home-sub-btn').forEach(btn => {
+      const on = btn.getAttribute('data-metrics-view') === metricsSubView;
+      btn.classList.toggle('on', on);
+      btn.setAttribute('aria-pressed', String(on));
+    });
+  }
+  if (metricsSubView === 'overview' && typeof relayout === 'function') relayout(false);
+  if (cpuPanelOpen()) {
+    loadProcesses();
+    startCpuPolling();
+  } else {
+    stopCpuPolling();
+  }
 }
-
-(function wireProcPanel() {
-  const el = document.getElementById('disc-proc');
-  if (el) el.addEventListener('toggle', function () { onProcToggle(el); });
-})();

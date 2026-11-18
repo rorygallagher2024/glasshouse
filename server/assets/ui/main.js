@@ -52,9 +52,11 @@ async function waitForServer() {
 })();
 
 const openSection = new URLSearchParams(location.search).get('open');
-if ((openSection === 'metrics' || openSection === 'system') && q('disc-hwinfo')) q('disc-hwinfo').open = true;
-
-if (openSection === 'processes' && q('disc-proc')) q('disc-proc').open = true;
+if (openSection === 'metrics' || openSection === 'system' || openSection === 'processes') {
+  if (typeof setMetricsSubView === 'function') setMetricsSubView('advanced');
+} else if (openSection === 'watch') {
+  if (typeof setMetricsSubView === 'function') setMetricsSubView('watch');
+}
 
 // The Control tab's remote sections, named by ?open=, or all three in the remote view.
 ['dpad', 'pointer', 'keyboard'].forEach(name => {

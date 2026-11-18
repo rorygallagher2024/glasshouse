@@ -152,8 +152,13 @@
 </div>
 
 <main id="panels">
-<section class="panel" id="tab-metrics" role="tabpanel" hidden>
-  <div class="col-telemetry">
+<section class="panel" id="tab-metrics" role="tabpanel" data-metrics-view="overview" hidden>
+  <div class="catalog-seg home-subnav metrics-subnav" id="metrics-subnav" role="tablist">
+    <button type="button" class="home-sub-btn on" data-metrics-view="overview" aria-pressed="true" onclick="setMetricsSubView('overview')" data-t="pv.overview">Overview</button>
+    <button type="button" class="home-sub-btn" id="metrics-sub-watch" data-metrics-view="watch" aria-pressed="false" onclick="setMetricsSubView('watch')" hidden data-t="metrics.watch">Watch time</button>
+    <button type="button" class="home-sub-btn" data-metrics-view="advanced" aria-pressed="false" onclick="setMetricsSubView('advanced')" data-t="tab.advanced">Advanced</button>
+  </div>
+  <div class="col-telemetry" id="metrics-overview" data-metrics-sub="overview">
     <div class="col-sec" data-t="metrics.system">System</div>
 
     <div class="grp-sec first" id="tempblock" data-col="0">
@@ -206,7 +211,7 @@
       </div>
     </div>
 
-    <div class="grp-sec" id="remoteblock" data-col="2" hidden>
+    <div class="grp-sec" id="remoteblock" data-col="1" hidden>
       <div class="grp"><span data-t="metrics.remote">Magic remote</span><span class="pill idle" id="remote-pill" data-t="metrics.remote.standby">Standby</span></div>
       <div>
         <div class="lbl" data-t="metrics.battery">Battery</div>
@@ -226,23 +231,29 @@
       <div class="ports" id="hdmi-grid"></div>
       <div class="sub" id="hdmi-diag-row" hidden style="margin-top:12px;line-height:1.5"></div>
     </div>
+  </div>
 
-    <div class="grp-sec" id="watchblock" data-col="1" hidden>
-      <div class="grp" data-t="metrics.watch">Watch time</div>
-      <div class="watch-totals">
-        <div><div class="lbl" data-t="metrics.watch.today">Today</div><div class="uptime-val num" id="watch-today">&mdash;</div></div>
-        <div><div class="lbl" data-t="metrics.watch.week">7 days</div><div class="uptime-val num" id="watch-week">&mdash;</div></div>
-        <div><div class="lbl" data-t="metrics.watch.month">30 days</div><div class="uptime-val num" id="watch-month">&mdash;</div></div>
-      </div>
-      <div class="watch-bars" id="watch-bars" role="img" aria-label="Hours watched each day for the last 14 days" data-t-aria-label="metrics.watch.bars"></div>
-      <div id="watch-list"></div>
-      <div class="sub" id="watch-note" hidden></div>
+  <div class="metrics-watch-view" id="watchblock" data-metrics-sub="watch" hidden>
+    <div class="grp" data-t="metrics.watch">Watch time</div>
+    <div class="watch-totals">
+      <div><div class="lbl" data-t="metrics.watch.today">Today</div><div class="uptime-val num" id="watch-today">&mdash;</div></div>
+      <div><div class="lbl" data-t="metrics.watch.week">7 days</div><div class="uptime-val num" id="watch-week">&mdash;</div></div>
+      <div><div class="lbl" data-t="metrics.watch.month">30 days</div><div class="uptime-val num" id="watch-month">&mdash;</div></div>
     </div>
+    <div class="watch-split">
+      <div class="watch-chart-col">
+        <div class="watch-bars" id="watch-bars" role="img" aria-label="Hours watched each day for the last 14 days" data-t-aria-label="metrics.watch.bars"></div>
+      </div>
+      <div class="watch-list-col">
+        <div id="watch-list"></div>
+        <div class="sub" id="watch-note" hidden></div>
+      </div>
+    </div>
+  </div>
 
-    <div class="grp-sec" id="advblock" data-col="1">
-      <div class="grp" data-t="tab.advanced">Advanced</div>
-      <details class="disc" id="disc-hwinfo" hidden style="border-top:0;margin-top:0">
-      <summary data-t="metrics.systemInfo">System info</summary>
+  <div class="metrics-adv-view" id="advblock" data-metrics-sub="advanced">
+    <div class="metrics-adv-sec" id="disc-hwinfo" hidden>
+      <div class="grp" data-t="metrics.systemInfo">System info</div>
       <div class="prot-table" id="hw-specs">
         <div class="prot-row" id="spec-os-item" hidden>
           <div class="prot-main">
@@ -280,18 +291,16 @@
           <div class="prot-status"><span class="pill idle" id="spec-tcon">&mdash;</span></div>
         </div>
       </div>
-    </details>
-
-
-      <details class="disc" id="disc-proc">
-      <summary><span data-t="metrics.processMemory">Process memory</span> <span class="cur" id="proc-cur"></span></summary>
-      <div id="proc-list"></div>
-    </details>
-
-      <details class="disc" id="disc-cpu">
-      <summary><span data-t="metrics.cpuDetail">Detailed CPU usage</span> <span class="cur" id="cpu-cur"></span></summary>
-      <div id="cpu-list"></div>
-    </details>
+    </div>
+    <div class="metrics-adv-cols">
+      <div class="metrics-adv-sec" id="disc-proc">
+        <div class="grp"><span data-t="metrics.processMemory">Process memory</span><span class="cur" id="proc-cur"></span></div>
+        <div id="proc-list"></div>
+      </div>
+      <div class="metrics-adv-sec" id="disc-cpu">
+        <div class="grp"><span data-t="metrics.cpuDetail">Detailed CPU usage</span><span class="cur" id="cpu-cur"></span></div>
+        <div id="cpu-list"></div>
+      </div>
     </div>
   </div>
 

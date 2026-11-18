@@ -468,6 +468,8 @@
     if (item.detail) item.detail.open = true;
     const homeSub = item.target && item.target.closest ? item.target.closest('[data-home-sub]') : null;
     if (homeSub && typeof setHomeSubView === 'function') setHomeSubView(homeSub.getAttribute('data-home-sub'));
+    const metricsSub = item.target && item.target.closest ? item.target.closest('[data-metrics-sub]') : null;
+    if (metricsSub && typeof setMetricsSubView === 'function') setMetricsSubView(metricsSub.getAttribute('data-metrics-sub'));
     if (item.target && item.target !== document.body) {
       if (!item.target.hasAttribute('tabindex') && !/^(BUTTON|INPUT|SELECT|SUMMARY|A)$/.test(item.target.tagName)) {
         item.target.setAttribute('tabindex', '-1');

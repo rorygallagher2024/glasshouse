@@ -96,6 +96,10 @@ function showTab(name) {
   cfgPollStatus(name === 'mqtt');
   if (name === 'metrics') loadHdmiOnce();
   watchPolling(name === 'metrics');
+  if (typeof cpuPanelOpen === 'function') {
+    if (cpuPanelOpen()) { loadProcesses(); startCpuPolling(); }
+    else stopCpuPolling();
+  }
   if (name === 'apps') { loadApps(); loadCatalog(false); pollInstall(); loadRestoredApps(); }
   if (name === 'remote') loadApps();
   if (name === 'inputs') loadInputs();

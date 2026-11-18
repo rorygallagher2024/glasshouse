@@ -1128,7 +1128,7 @@ button.pill.flash.idle[disabled]:hover{color:var(--w60);border-color:var(--edge)
 /* Settings tables sit side by side in at most two responsive columns on wide
    screens so each switch sits beside its label, collapsing cleanly to one
    column on narrow viewports. */
-#advpane .prot-table,#serverpane .prot-table,#inputspane .prot-table,#audiopane .prot-table,#ambientpane .prot-table,#privpane .prot-table,#appspane .prot-table:not(.catalog-grid),#homepane .prot-table:not(#home-rows .prot-table):not(#home-recents .prot-table):not(#home-ch-list),.pv-adid-rows{
+#advpane .prot-table,#serverpane .prot-table,#inputspane .prot-table,#audiopane .prot-table,#ambientpane .prot-table,#privpane .prot-table,#appspane .prot-table:not(.catalog-grid),#homepane .prot-table:not(#home-rows .prot-table):not(#home-recents .prot-table):not(#home-ch-list),#hw-specs,.pv-adid-rows{
   display:grid;column-gap:clamp(30px,4vw,52px);
   grid-template-columns:repeat(auto-fill,minmax(min(100%,max(340px,calc((100% - clamp(30px,4vw,52px)) / 2))),1fr))}
 .home-weather-place,#ssh-row,#backup-daily-row,#appspane .prot-table:not(.catalog-grid)>.sub{grid-column:1/-1}
@@ -1271,6 +1271,21 @@ button.pill.flash.idle[disabled]:hover{color:var(--w60);border-color:var(--edge)
 .w-sw{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:9px;vertical-align:0}
 .w-sw.ws-off{border:1px solid var(--w40)}
 .w-sw.ws-saver{border:1px dashed var(--w40)}
+.metrics-subnav{margin:0 0 24px}
+#tab-metrics[data-metrics-view="overview"] [data-metrics-sub]:not([data-metrics-sub="overview"]),
+#tab-metrics[data-metrics-view="watch"] [data-metrics-sub]:not([data-metrics-sub="watch"]),
+#tab-metrics[data-metrics-view="advanced"] [data-metrics-sub]:not([data-metrics-sub="advanced"]){display:none !important}
+.metrics-watch-view .watch-totals{max-width:640px;padding-bottom:22px;border-bottom:1px solid var(--w12)}
+.metrics-watch-view .watch-totals .uptime-val{font-size:clamp(28px,3.2vw,40px)}
+.watch-split{display:grid;grid-template-columns:1fr;gap:28px clamp(30px,4vw,52px);margin-top:24px;align-items:start}
+@media (min-width:860px){.watch-split{grid-template-columns:minmax(0,1.35fr) minmax(0,1fr)}}
+.metrics-watch-view .watch-bars{height:210px;gap:8px;margin:4px 0 8px}
+.metrics-watch-view .proc{padding:11px 0}
+.metrics-adv-sec+#disc-proc,.metrics-adv-sec+.metrics-adv-cols{margin-top:clamp(30px,4.5vw,44px)}
+.metrics-adv-cols{display:grid;grid-template-columns:1fr;gap:32px clamp(30px,4vw,52px);align-items:start}
+@media (min-width:860px){.metrics-adv-cols{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.metrics-adv-sec .grp{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
+.metrics-adv-sec .grp .cur{font-size:13px;font-weight:400;letter-spacing:.02em;text-transform:none;color:var(--w60)}
 /* ---- HDMI port grid ----
    Four tiles representing the TV's physical HDMI port bay. State is
    carried by line weight, opacity, and port jack silhouette on true black. */
