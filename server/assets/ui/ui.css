@@ -1122,21 +1122,16 @@ button.pill.flash.idle[disabled]:hover{color:var(--w60);border-color:var(--edge)
 #inputs-bar-choice-note,#inputs-nosignal-desc{margin:12px 0 0}
 .apps-grp-h{font-family:'Manrope',sans-serif;font-weight:500;font-size:var(--h-grp);letter-spacing:.12em;text-transform:uppercase;color:var(--w80);margin:0 0 6px}
 .apps-grp-d{margin-bottom:6px}
-/* The Advanced tab's settings, side by side in at most two columns where
-   they fit, so a description sits beside its switch instead of running the
-   full width away from it. Text at the Privacy tab's sizes (15px names, 13px
-   descriptions): the shared 13/12px of .prot-row read small here, where the
-   descriptions carry the substance. */
-#advpane .prot-table{display:grid;column-gap:clamp(30px,4vw,52px);
+/* Settings tables sit side by side in at most two responsive columns on wide
+   screens so each switch sits beside its label, collapsing cleanly to one
+   column on narrow viewports. */
+#advpane .prot-table,#serverpane .prot-table,#inputspane .prot-table,.home-custom-table,#home-custom .pv-d .prot-table,#home-tv .prot-table{display:grid;column-gap:clamp(30px,4vw,52px);
   grid-template-columns:repeat(auto-fill,minmax(min(100%,max(340px,calc((100% - clamp(30px,4vw,52px)) / 2))),1fr))}
-/* The Server tab and Home customisation keep one column, so every control,
-   and each fold's count, lines up down the right. */
-#serverpane .prot-table,.home-custom-table{display:grid;grid-template-columns:1fr}
-.home-custom-table,#home-custom .pv-d,#home-rows,#home-recents,#home-tv .prot-table,#inputspane .prot-table,#serverpane .prot-table{max-width:760px}
-#advpane .prot-row,#serverpane .prot-row,.home-custom-table .prot-row{align-items:flex-start;padding:16px 0}
-#advpane .prot-title,#serverpane .prot-title,#homepane .prot-title{font-size:var(--h-row);font-weight:600;letter-spacing:.02em;color:var(--w90)}
-#advpane .prot-desc,#serverpane .prot-desc,#homepane .prot-desc{font-size:14px;line-height:1.5;margin-top:4px;max-width:none}
-#advpane .prot-status,#serverpane .prot-status,.home-custom-table .prot-status{padding-top:2px}
+.home-weather-place,#ssh-row,#backup-daily-row{grid-column:1/-1}
+#advpane .prot-row,#serverpane .prot-row,#inputspane .prot-row,.home-custom-table .prot-row{align-items:flex-start;padding:16px 0}
+#advpane .prot-title,#serverpane .prot-title,#inputspane .prot-title,#homepane .prot-title{font-size:var(--h-row);font-weight:600;letter-spacing:.02em;color:var(--w90)}
+#advpane .prot-desc,#serverpane .prot-desc,#inputspane .prot-desc,#homepane .prot-desc{font-size:14px;line-height:1.5;margin-top:4px;max-width:none}
+#advpane .prot-status,#serverpane .prot-status,#inputspane .prot-status,.home-custom-table .prot-status{padding-top:2px}
 #pv-adv{margin-top:clamp(36px,5vw,56px)}
 #pv-adv>summary{border-top:0;min-height:0;align-items:center}
 #pv-adv[open]>summary{margin-bottom:22px}
@@ -1857,8 +1852,6 @@ button.tools-jump:active{background:var(--w80)}
 #home-more.for-launcher .home-row-move{display:none}
 #home-custom.lg-home .home-gh-row:not(.home-bar-row),
 #home-custom.lg-home:not(.for-bar) .home-bar-row{display:none}
-/* Each group's last row draws no line, as the next group's heading follows. */
-.home-custom-table .prot-row.last{border-bottom:0}
 .home-group+.home-group .pv-g,#home-more>.pv-g{margin:34px 0 6px}
 .home-subnav{margin:6px 0 20px}
 #homepane[data-home-view="rows"] [data-home-sub]:not([data-home-sub="rows"]),
@@ -2076,6 +2069,15 @@ input.inp-name-in:disabled{border-bottom-color:transparent;cursor:default}
 #homepane input.home-app-name{flex:1;min-width:0;font-size:14px;font-weight:600;color:var(--w90)}
 .home-hidden .prot-main{opacity:.45}
 .home-tile .home-move{min-width:0;width:36px;padding:0}
+#home-rows .prot-table,#home-recents .prot-table,#home-ch-list{
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,300px),1fr));gap:10px 14px;margin-top:10px}
+#home-rows .prot-table>.prot-row:not(.home-tile),#home-rows .prot-table>.sub,#home-recents .prot-table>.sub,#home-ch-list>.sub{grid-column:1/-1}
+#home-rows .prot-row.home-tile,#home-recents .prot-row.home-tile,#home-ch-list .prot-row{
+  padding:12px 14px;border:1px solid var(--w12);border-radius:var(--r-md);background:rgba(var(--fg),.025)}
+#home-rows .prot-row.home-tile{flex-direction:column;align-items:stretch;justify-content:space-between;gap:10px}
+#home-rows .prot-row.home-tile .prot-status{justify-content:flex-end;padding-top:10px;border-top:1px solid var(--w06)}
+#home-recents .prot-row.home-tile,#home-ch-list .prot-row{align-items:center}
+#home-rows .prot-row.home-tile.home-hidden,#home-recents .prot-row.home-tile.home-hidden{border-style:dashed}
 span.pill.home-fixed-pill{min-width:116px;padding:0 12px;justify-content:center;text-align:center}
 .home-ch-add{margin-top:14px;border-top:1px dashed var(--edge)}
 /* The dashboard's own field, as the Apps tab's search is. */
