@@ -1089,8 +1089,21 @@ function remoteInputs() {
   if (q('rp-input')) q('rp-input').setAttribute('aria-expanded', String(open));
 }
 // Screen: off while it is on, on while it is off, as the header's state has it.
+/*
+ * The TV in standby, as the header has it (or finishing panel maintenance):
+ * the TV takes nothing but Power on then. Screen off was refused ("Action
+ * failed"), and the volume keys went nowhere while answering as if they had.
+ */
+function remoteAsleep() {
+  const st = q('state');
+  return !!st && (st.classList.contains('standby') || st.classList.contains('comp'));
+}
+// Power on where the dashboard offers the power buttons (allowPower).
+function remotePowerOk() { return !(q('pwset') && q('pwset').hidden); }
+// Screen: Power on in standby, on while the screen is off, otherwise off.
 function remoteScreen() {
   const st = q('state');
+  if (remoteAsleep()) { if (remotePowerOk()) sendCommand('powerOn'); return; }
   sendCommand(st && st.classList.contains('off') ? 'screenOn' : 'screenOff');
 }
 (function initRemotePad() {
@@ -1099,11 +1112,25 @@ function remoteScreen() {
   try { mode = localStorage.getItem(REMOTE_MODE_KEY) || 'buttons'; } catch (e) {}
   const mirror = () => {
     const vol = q('vol'), mute = q('mute'), st = q('state'), touch = q('rp-mode-touch'), pointer = q('disc-pointer');
-    if (vol && q('rp-vol')) q('rp-vol').textContent = vol.textContent;
+    if (vol && q('rp-vol') && q('rp-vol').textContent !== vol.textContent) q('rp-vol').textContent = vol.textContent;
     if (mute && q('rp-mute')) q('rp-mute').classList.toggle('on', mute.classList.contains('on'));
     if (st && q('rp-screen-label')) {
-      const off = st.classList.contains('off');
-      q('rp-screen-label').textContent = off ? t('ctl.screenOn', 'Screen on') : t('ctl.screenOff', 'Screen off');
+      const off = st.classList.contains('off'), asleep = remoteAsleep();
+      const label = asleep ? t('ctl.powerOn', 'Power on') : off ? t('ctl.screenOn', 'Screen on') : t('ctl.screenOff', 'Screen off');
+      if (q('rp-screen-label').textContent !== label) q('rp-screen-label').textContent = label;
+      // In standby, everything but Power on is put aside.
+      if (document.documentElement.classList.contains('remote-asleep') !== asleep) document.documentElement.classList.toggle('remote-asleep', asleep);
+      // Written only when it changes: this runs on changes under what it writes to.
+      document.querySelectorAll('#remote-pad button').forEach(b => {
+        const want = asleep && (b.id !== 'rp-screen' || !remotePowerOk());
+        if (b.disabled !== want) b.disabled = want;
+      });
+      ['disc-pointer', 'disc-keyboard'].forEach(id => {
+        if (q(id)) q(id).querySelectorAll('button, input').forEach(el => {
+          if (asleep && !el.dataset.asleep) { el.dataset.asleep = '1'; el.disabled = true; }
+          else if (!asleep && el.dataset.asleep) { delete el.dataset.asleep; el.disabled = false; }
+        });
+      });
     }
     if (touch && pointer) {
       touch.hidden = pointer.hidden;

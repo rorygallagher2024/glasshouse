@@ -3413,5 +3413,6 @@
  "remote.close": {"text": "إغلاق", "from": "Close"},
  "rp.input": {"text": "الإدخال", "from": "Input"},
  "rp.buttons": {"text": "الأزرار", "from": "Buttons"},
- "rp.touchpad": {"text": "لوحة اللمس", "from": "Touchpad"}
+ "rp.touchpad": {"text": "لوحة اللمس", "from": "Touchpad"},
+ "rp.standby": {"text": "التلفاز في وضع الاستعداد. شغّله لاستخدام جهاز التحكم.", "from": "The TV is in standby. Power on to use the remote."}
 }

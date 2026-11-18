@@ -3114,6 +3114,37 @@ function viewCovered(saverActive) {
 }
 
 /*
+ * How long the TV waits without a key before its idle screen saver, which the
+ * view's video wallpaper stops just short of. Settings option.screenSaverTimer,
+ * in minutes (3, 10, 20 or 30, set in LG's menu: a C5 and a G3, webOS 10.3).
+ * null where the TV has no such setting (a CX keeps its time in configd),
+ * and the view then keeps its own.
+ */
+var saverIdleMs = null, saverTimerReadAt = 0;
+var SAVER_TIMER_READ_MS = 60000;
+function checkSaverTimer() {
+  var now = nowMs();
+  if (saverTimerReadAt && now - saverTimerReadAt < SAVER_TIMER_READ_MS) return;
+  saverTimerReadAt = now;
+  luna(SETTINGS + 'getSystemSettings', { category: 'option', keys: ['screenSaverTimer'] }, function (r) {
+    var minutes = r && r.returnValue !== false && r.settings ? parseInt(r.settings.screenSaverTimer, 10) : NaN;
+    saverIdleMs = minutes > 0 ? minutes * 60000 : null;
+  });
+}
+
+/*
+ * The view's video wallpaper let go at the TV's screen saver time. The TV's
+ * own timer does not run while a video plays: on a G3 (webOS 10.3) with it at
+ * 10 minutes, no screen saver came in over a minute after the video stopped
+ * at 10. So it is started here, as the dashboard's Start screen saver does.
+ */
+function startIdleSaver(cb) {
+  if (!screensaversModule || !viewInFront() || powerState !== 'Active') return cb({ ok: false });
+  console.log('home: the video background stopped at the TV\'s screen saver time; starting the screen saver');
+  screensaversModule.trigger(function (r) { cb({ ok: !!(r && r.ok) }); });
+}
+
+/*
  * Whether Home's video wallpaper reaches the screen. Reloaded as the screen
  * saver closed, its <video> went on playing with nothing on the main video
  * output (G3, webOS 10.3: videooutput listed no Home client until it was
@@ -3145,7 +3176,8 @@ function beat(body) {
   // As last seen: the reply does not wait for videooutput.
   var onScreen = wallVideoOnScreen;
   checkWallVideoOutput();
-  return { ok: true, wallVideoOnScreen: onScreen, enabled: readConfig().enabled, standalone: isStandalone(), covered: viewCovered(saver), saver: saver,
+  checkSaverTimer();
+  return { ok: true, wallVideoOnScreen: onScreen, saverIdleMs: saverIdleMs, enabled: readConfig().enabled, standalone: isStandalone(), covered: viewCovered(saver), saver: saver,
            build: buildId, wallpapers: wallpapers.status(),
            layoutVersion: layoutVersion(), sleeps: sleeps, trace: fs.existsSync(traceFile()),
            // So a push shows within a heartbeat rather than at the next poll.
@@ -3614,6 +3646,8 @@ function init(opts) {
   if (opts.stateDir) stateDir = opts.stateDir;
   if (opts.homeHubMain) homeHubMain = opts.homeHubMain;
   hubGuideKnown = null;
+  saverIdleMs = null;
+  saverTimerReadAt = 0;
   wallpapers.init(stateDir);
   recent.init(stateDir, opts.now);
   recentApps.init({ luna: lunaFn, excluded: function () { return readConfig().excludedRecents; } });
@@ -3902,6 +3936,7 @@ module.exports = {
   uploadNavSound: uploadNavSound,
   removeNavSound: removeNavSound,
   ownSoundInfo: ownSoundInfo,
+  startIdleSaver: startIdleSaver,
   pageAlive: pageAlive,
   layoutVersion: layoutVersion,
   homeKey: homeKey,

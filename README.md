@@ -32,7 +32,7 @@ Use it for remote control, app installation and removal, OLED panel care, privac
 * **webOS**: 2.2 through 11 (LG's webOS 26) confirmed; tested across 2015–2026 models. Other versions likely work as well. LG names its versions two ways: [webOS version numbers](https://rorygallagher2024.github.io/glasshouse/tested-tvs/#webos-version-numbers) gives both
 * **Panels**: OLED (full panel wear telemetry and burn-in controls) and LCD (core dashboard, controls, and telemetry; OLED Care tab hides automatically)
 * **Access**: Rooted via [Homebrew Channel](https://github.com/webosbrew/webos-homebrew-channel). Telnet or SSH. No external dependencies or internet access needed on the TV
-* **Tested hardware**: 75 TVs across 51 series verified so far (LF632V, UF850T, UH600V, UH6030, UH610V, UH635V, B6, B7, SJ80, UJ63, B8, C8, LK61, UK63, LM57, UM71, UM73, C9, CX, GX, UN73, C1, G1, NANO75, NANO85, UP80, UP81, QNED82, UQ80, B2, C2, G2, C3, UR80, QNED80, B4, G3, C4, G4, QNED86, UT73, UT81, C5, G5, CS, LX3, UA73, UA75, C6, NU80, QNED84). Other rooted models should work; [see full table](https://rorygallagher2024.github.io/glasshouse/tested-tvs/)
+* **Tested hardware**: 92 TVs across 58 series verified so far (LF632V, UF850T, UH600V, UH6030, UH610V, UH635V, B6, B7, SJ80, UJ63, UJ65, UJ75, B8, C8, LK61, UK63, LM57, UM71, UM73, C9, CX, GX, UN70, UN73, A1, C1, G1, NANO75, NANO85, UP80, UP81, A2, B2, C2, G2, QNED82, UQ80, LX3, SQ700S, CS, B3, C3, G3, UR80, QNED80, B4, C4, G4, QNED86, UT73, UT81, C5, G5, UA73, UA75, C6, NU80, QNED84). Other rooted models should work; [see full table](https://rorygallagher2024.github.io/glasshouse/tested-tvs/)
 
 **[Read the documentation](https://rorygallagher2024.github.io/glasshouse/)** for the features, installation, Home Assistant and security.
 
@@ -57,19 +57,19 @@ https://github.com/user-attachments/assets/a1efd451-681d-4c3b-87d7-8358ff3d19f3
 
 This project is intended to give a rooted webOS TV a useful local control surface instead of requiring the owner to work around the TV's built-in menus, vendor services and cloud dependencies.
 
-1. **[A cleaner Home screen](https://rorygallagher2024.github.io/glasshouse/dashboard/home/).** A replacement Home app with full control over what displays, and no ads, with a row of Internet TV channels from your own IPTV playlist. Or choose Glasshouse Minimal, a plainer one that comes with it, or put a launcher of your own in its place, or a web page such as a Home Assistant dashboard. Available on webOS 4, 5, 6, 7, 9, 10 and 11
+1. **[A cleaner Home screen](https://rorygallagher2024.github.io/glasshouse/dashboard/home/).** A replacement Home app with full control over what displays, and no ads: your own pictures or videos as the background, the remote's battery after the date, and a row of Internet TV channels from your own IPTV playlist or satellite tuner. Or choose Glasshouse Minimal, Glasshouse Bar along the bottom of the picture, a launcher of your own, or a web page such as a Home Assistant dashboard. Reported working on webOS 3 to 7 and 9 to 11, and offered with a note on other versions.
 
-2. **[Controlling the TV without the cloud](https://rorygallagher2024.github.io/glasshouse/dashboard/control/).** Remote's keys, volume, inputs, power, sleep timer, comprehensive picture and sound settings, Game Optimizer, and much more.
+2. **[Controlling the TV without the cloud](https://rorygallagher2024.github.io/glasshouse/dashboard/control/).** A remote that comes up over any tab or sits on a phone's Home Screen, with a D-pad, touchpad and keyboard, plus volume, inputs, power, sleep timer, comprehensive picture and sound settings, Game Optimizer, and much more.
 
 3. **[Seeing what the TV is configured to collect, and switching it off](https://rorygallagher2024.github.io/glasshouse/dashboard/privacy/).** One button to turn ads and telemetry off, including LG's content-recognition engine. Every data agreement is recorded in the app, with most of them switchable from the dashboard.
 
 4. **[App management and debloating](https://rorygallagher2024.github.io/glasshouse/dashboard/apps/).** Install apps from the Homebrew Channel catalog, uninstall apps, disable unnecessary background system services to free up RAM and CPU cycles, stop LG keeping apps loaded in the background that are never used, and hide non-removable built-in LG system apps from LG's Home.
 
-5. **[Remapping the remote's buttons](https://rorygallagher2024.github.io/glasshouse/dashboard/apps/#remote-keys).** Point Netflix, Prime Video, Guide, the color keys and the TV's other shortcut buttons at any installed app, an HDMI input or Live TV, or turn them off, or have **Input** open a [strip of the HDMI inputs](https://rorygallagher2024.github.io/glasshouse/dashboard/apps/#input-bar) over the picture.
+5. **[Remapping the remote's buttons](https://rorygallagher2024.github.io/glasshouse/dashboard/remote/).** Point Netflix, Prime Video, Guide, the color keys and the TV's other shortcut buttons at any installed app, an HDMI input or Live TV, or turn them off, or have a key open [a strip of the HDMI inputs](https://rorygallagher2024.github.io/glasshouse/dashboard/inputs/#glasshouse-input-bar) or [Glasshouse Bar](https://rorygallagher2024.github.io/glasshouse/dashboard/home/#glasshouse-bar) over the picture.
 
 6. **[Replacing the screen saver](https://rorygallagher2024.github.io/glasshouse/dashboard/screen-savers/).** Over a dozen screensavers to choose from, and customisable brightness settings.
 
-7. **[Integrating the TV with a smart home](https://rorygallagher2024.github.io/glasshouse/HOME-ASSISTANT/).** The MQTT bridge exposes the TV as a single device with its controls and telemetry, with Home Assistant support through MQTT Discovery and the same underlying interface available to other MQTT clients. You can also send button press events to Home Assistant to control your smart home from your TV remote.
+7. **[Integrating the TV with a smart home](https://rorygallagher2024.github.io/glasshouse/HOME-ASSISTANT/).** The MQTT bridge exposes the TV as a single device with its controls and telemetry, with Home Assistant support through MQTT Discovery and the same underlying interface available to other MQTT clients. An optional media player card brings power, volume, sources, apps and Internet TV channels together, and button press events let your TV remote control your smart home.
 
 8. **[Seeing what the TV is actually doing](https://rorygallagher2024.github.io/glasshouse/dashboard/metrics/).** SoC temperature, CPU load, memory, Wi-Fi signal and throughput, storage health, watch time and much more.
 
@@ -81,7 +81,7 @@ This project is intended to give a rooted webOS TV a useful local control surfac
 
 12. **[Reading all of it on the TV itself](https://rorygallagher2024.github.io/glasshouse/apps/tv-app/).** An optional app on the home screen puts the same readings and controls on the TV, driven by the remote, for when there is no phone or laptop to hand.
 
-13. **[Managing TVs from Android](https://rorygallagher2024.github.io/glasshouse/apps/android/).** A phone app that keeps a list of TVs, shows which are online, wakes them over Wake-on-LAN, and opens each one's dashboard full screen.
+13. **[Managing TVs from Android](https://rorygallagher2024.github.io/glasshouse/apps/android/).** A phone app that keeps a list of TVs, shows which are online, wakes them over Wake-on-LAN, and opens each one's dashboard or remote full screen, with the phone's volume keys stepping the TV's volume while the remote shows.
 
 ---
 

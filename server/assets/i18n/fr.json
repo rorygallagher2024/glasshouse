@@ -3413,5 +3413,6 @@
  "remote.close": {"text": "Fermer", "from": "Close"},
  "rp.input": {"text": "Entrée", "from": "Input"},
  "rp.buttons": {"text": "Boutons", "from": "Buttons"},
- "rp.touchpad": {"text": "Pavé tactile", "from": "Touchpad"}
+ "rp.touchpad": {"text": "Pavé tactile", "from": "Touchpad"},
+ "rp.standby": {"text": "Le téléviseur est en veille. Allumez-le pour utiliser la télécommande.", "from": "The TV is in standby. Power on to use the remote."}
 }

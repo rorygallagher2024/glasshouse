@@ -3427,5 +3427,6 @@
  "remote.close": {"text": "Chiudi", "from": "Close"},
  "rp.input": {"text": "Ingresso", "from": "Input"},
  "rp.buttons": {"text": "Pulsanti", "from": "Buttons"},
- "rp.touchpad": {"text": "Touchpad", "from": "Touchpad"}
+ "rp.touchpad": {"text": "Touchpad", "from": "Touchpad"},
+ "rp.standby": {"text": "La TV è in standby. Accendila per usare il telecomando.", "from": "The TV is in standby. Power on to use the remote."}
 }

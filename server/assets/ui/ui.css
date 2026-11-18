@@ -2515,4 +2515,8 @@ html.remote-view.remote-inputs .rp-body,html.remote-view:not(.remote-mode-button
 .rp-modes button[hidden]{display:none}
 .rp-modes button[aria-selected="true"]{background:var(--w10);color:var(--w100)}
 html.remote-view #disc-pointer .pointer-pad{min-height:min(52vh,420px)}
-
+/* In standby: everything but Power on dimmed, and a line saying why. */
+.rp-asleep{display:none;margin:-8px 0 18px;text-align:center;font-size:13px;color:var(--w60)}
+html.remote-asleep .rp-asleep{display:block}
+.rp button:disabled{opacity:.32;cursor:default;transform:none;background:transparent}
+html.remote-asleep #disc-pointer,html.remote-asleep #disc-keyboard{opacity:.4;pointer-events:none}

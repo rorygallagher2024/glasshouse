@@ -130,7 +130,8 @@ var MAX_SAVER_BYTES = 5 * 1024 * 1024;
 var MAX_SAVER_FILES = 200;
 // What a saver may ask Glasshouse to fill in, and the placeholder for each.
 // "ha" has one placeholder per entity it declares, so it carries no value here.
-var USES = { level: '__TVWEB_LEVEL__', stats: '__TVWEB_URL__', choice: '__TVWEB_CHOICE__', videos: '__TVWEB_VIDEOS__', 'home-weather': '__TVWEB_HOME_WEATHER__', ha: '', 'ha-list': '__TVWEB_HA_LIST__', 'ha-all': '__TVWEB_HA_ALL__', color: '__TVWEB_COLOR__' };
+// "video-busy" is the address of videoBusy's answer, for a saver that plays video.
+var USES = { level: '__TVWEB_LEVEL__', stats: '__TVWEB_URL__', choice: '__TVWEB_CHOICE__', videos: '__TVWEB_VIDEOS__', 'home-weather': '__TVWEB_HOME_WEATHER__', 'video-busy': '__TVWEB_VIDEO_BUSY__', ha: '', 'ha-list': '__TVWEB_HA_LIST__', 'ha-all': '__TVWEB_HA_ALL__', color: '__TVWEB_COLOR__' };
 var DEFAULT_SAVER_COLOR = 'white';
 var COLOR_PRESETS = [
   { id: 'white', label: msg('srv.saver.color.white', 'White'), bright: '#ffffff', dim: '#a8aeb6' },
@@ -742,8 +743,11 @@ var homeVideoBackgroundFn = function () { return false; };
  */
 var videoModeHeld = null;
 var videoModeGeneration = 0;
+// Whether the staged screen saver plays video, whatever screenmanager made of it.
+var stagedPlaysVideo = false;
 function setVideoMode(playsVideo) {
   var mine = ++videoModeGeneration;
+  stagedPlaysVideo = !!playsVideo;
   if (!lunaFn || !slowSwitch()) return;
   var mode = playsVideo ? 'manual' : 'auto';
   var tries = 0;
@@ -878,6 +882,10 @@ function init(opts) {
   closeCallbacks = [];
   randomConfigFile = (opts && opts.randomConfigFile) ? opts.randomConfigFile : RANDOM_CONFIG_FILE;
   wasInScreenSaver = false;
+  saverStartedAt = 0;
+  saverInputAt = 0;
+  stagedPlaysVideo = false;
+  watchingVideoSaver = false;
   if (opts.videoModeRetryMs !== undefined) videoModeRetryMs = opts.videoModeRetryMs;
   maxAppEntriesSearched = opts.maxAppEntriesSearched !== undefined ? opts.maxAppEntriesSearched : MAX_APP_ENTRIES_SEARCHED;
   videoModeHeld = null;
@@ -1110,13 +1118,57 @@ function stagedRunner() {
   }
 }
 
+/*
+ * A G3 (webOS 10.3) ended a screen saver that tvpower started as soon as its
+ * video began, "manual" mode or not: tvpower went from Screen Saver back to
+ * Active 2.4 to 2.6 s after the start, at the moment the Video screen saver's
+ * first clip reached the decoder, from Home and from the Homebrew Channel
+ * alike. One launched directly, with tvpower left Active, plays on. So a
+ * screen saver that plays video and ends this soon, with no key or pointer
+ * since it started, is launched again that way. The remote's keys are watched
+ * while it shows, to tell the two apart.
+ */
+var VIDEO_SAVER_CUT_MS = 6000;
+var saverStartedAt = 0;
+var saverInputAt = 0;
+// Whether the screen saver showing is one of these, decided as it starts.
+var watchingVideoSaver = false;
+/*
+ * Read from the files in place rather than kept from staging: at the
+ * server's start the Video screen saver is staged before Home's playlist is
+ * read, and is passed over then as having no videos.
+ */
+function stagedSaverPlaysVideo() {
+  if (stagedPlaysVideo) return true;
+  var m = readTrimmed(path.join(SCREENSAVER_APP_DIR, SCREENSAVER_MARKER));
+  var e = m && m !== 'stock' ? saverById(m) : null;
+  return !!(e && e.runtime === 'web');
+}
+function videoSaverCut(now) {
+  return watchingVideoSaver && !launchedDirectly && saverStartedAt > 0 &&
+    now - saverStartedAt < VIDEO_SAVER_CUT_MS && saverInputAt < saverStartedAt;
+}
+
 function onPowerChange(rawState) {
   var raw = (rawState && typeof rawState === 'object') ? (rawState.raw || rawState.state || rawState) : rawState;
   var isSS = power.isScreenSaver(power.mapState(raw));
+  var now = Date.now();
   if (wasInScreenSaver && !isSS) {
-    if (isRandomEnabled()) {
+    var cut = videoSaverCut(now);
+    saverStartedAt = 0;
+    if (watchingVideoSaver && !launchedDirectly) watchKeysFn(false);
+    watchingVideoSaver = false;
+    if (cut) {
+      console.log('screensaver: the TV ended it as its video started, with no key pressed; launching it again directly');
+      launchScreensaverApp(function () {});
+    } else if (isRandomEnabled()) {
       advanceRandomSaver();
     }
+  }
+  if (isSS && !wasInScreenSaver) {
+    saverStartedAt = now;
+    watchingVideoSaver = slowSwitch() && !launchedDirectly && stagedSaverPlaysVideo();
+    if (watchingVideoSaver) watchKeysFn(true);
   }
   if (isSS !== wasInScreenSaver) watchPointerFn(isSS && stagedScreensaver() !== 'stock');
   wasInScreenSaver = isSS;
@@ -1124,6 +1176,7 @@ function onPowerChange(rawState) {
 
 // The pointer moved or clicked: one of these screen savers showing ends.
 function pointerUsed() {
+  saverInputAt = Date.now();
   if (!lunaFn) return;
   if (launchedDirectly) return keyPressed();
   if (!wasInScreenSaver || stagedScreensaver() === 'stock') return;
@@ -1535,8 +1588,10 @@ function fillSaverWeb(e, html, level) {
   var token = configObj && configObj.token;
   var videos = JSON.stringify(homeWallpapers.videoSources()).replace(/</g, '\\u003c').replace(/\u2028/g, '\\u2028').replace(/\u2029/g, '\\u2029');
   var weather = 'http://127.0.0.1:' + port + '/api/home/weather' + (token ? '?k=' + encodeURIComponent(token) : '');
+  var busy = 'http://127.0.0.1:' + port + '/api/screensaver/video-busy' + (token ? '?k=' + encodeURIComponent(token) : '');
   html = html.replace(/__TVWEB_VIDEOS__/g, function () { return videos; });
   html = html.replace(/__TVWEB_HOME_WEATHER__/g, function () { return weather; });
+  html = html.replace(/__TVWEB_VIDEO_BUSY__/g, function () { return busy; });
   html = html.replace(/__TVWEB_LAYER_OPACITY__/g, String(layerOpacity(e, level)));
   return html;
 }
@@ -1905,6 +1960,19 @@ function launchedShowing() {
  * remote cannot close it (G3, webOS 9.2.2). The remote's keys are watched
  * while it shows, and any of them closes it.
  */
+// Told when a screen saver launched directly opens or closes (lib/saverpoweroff).
+var launchedListeners = [];
+function onLaunchedChange(fn) { launchedListeners.push(fn); }
+
+/*
+ * Whether the screen saver launched directly is still running, asked of sam:
+ * launchedShowing answers from what was last seen.
+ */
+function launchedRunning(cb) {
+  if (!launchedDirectly || !lunaFn) return cb(false);
+  screensaverRunning(function (running) { cb(running !== false); });
+}
+
 function setLaunched(on) {
   var was = launchedDirectly;
   if (on) {
@@ -1920,6 +1988,7 @@ function setLaunched(on) {
   launchedDirectly = on;
   launchGeneration++;
   watchKeysFn(on);
+  for (var i = 0; i < launchedListeners.length; i++) launchedListeners[i](on);
 }
 
 function closeLaunched(cb) {
@@ -1935,6 +2004,7 @@ function closeLaunched(cb) {
 }
 
 function keyPressed(code) {
+  saverInputAt = Date.now();
   if (code === BTN_LEFT && !launchedDirectly) return pointerUsed();
   if (!launchedDirectly || !lunaFn) return;
   console.log('screensaver: a remote key closes the screen saver');
@@ -1952,6 +2022,32 @@ function adoptLaunched() {
     screensaverRunning(function (running) {
       if (running !== null && generation === launchGeneration) setLaunched(running);
     });
+  });
+}
+
+/*
+ * Whether an app holds the video decoder, as a screen saver that plays video
+ * starts (#1599). Kodi paused keeps its video, and LG's screen saver comes
+ * over a paused video: the Video screen saver's own video then took the TV's
+ * one decoder, failed, and left Kodi unable to resume. A pipeline holding a
+ * video decoder (VDEC) is one an app has: the TV's own inputs, HDMI and Live
+ * TV (type "tv"), are left out, as the TV takes those back as it likes, and
+ * Glasshouse Home lets its video go before the TV's screen saver can come.
+ * cb({ ok, busy, apps }): busy null where the TV would not say.
+ */
+function videoBusy(cb) {
+  if (!lunaFn) return cb({ ok: true, busy: null, apps: [] });
+  lunaFn('com.webos.media/getActivePipelines', {}, function (r) {
+    var list = Array.isArray(r) ? r : (r && Array.isArray(r.pipelines) ? r.pipelines : null);
+    if (!list) return cb({ ok: true, busy: null, apps: [] });
+    var apps = [];
+    var busy = list.some(function (p) {
+      if (!p || p.type === 'tv' || !Array.isArray(p.resource)) return false;
+      var holds = p.resource.some(function (x) { return x && /^VDEC/.test(String(x.resource || '')); });
+      if (holds) apps.push(String(p.currentAppId || p.appId || p.type || ''));
+      return holds;
+    });
+    cb({ ok: true, busy: busy, apps: apps });
   });
 }
 
@@ -2124,6 +2220,7 @@ function screensaverEntityLabel(entityId) {
 }
 
 module.exports = {
+  videoBusy: videoBusy,
   SCREENSAVER_APP_DIR: SCREENSAVER_APP_DIR,
   SCREENSAVER_DIR: SCREENSAVER_DIR,
   USER_SAVERS_DIR: USER_SAVERS_DIR,
@@ -2172,6 +2269,8 @@ module.exports = {
   screensaverEntities: screensaverEntities,
   screensaverEntityLabel: screensaverEntityLabel,
   launchedShowing: launchedShowing,
+  launchedRunning: launchedRunning,
+  onLaunchedChange: onLaunchedChange,
   keyPressed: keyPressed,
   pointerUsed: pointerUsed,
   adoptLaunched: adoptLaunched,

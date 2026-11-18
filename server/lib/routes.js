@@ -1395,6 +1395,7 @@ function handleHomeRoute(req, res, u, pathname) {
       }
       if (pathname === '/api/home/disable') return homeModule.disable(reply);
       if (pathname === '/api/home/open') return homeModule.open(body, reply);
+      if (pathname === '/api/home/idle-saver') return homeModule.startIdleSaver(reply);
       if (pathname === '/api/home/launcher' && homeLauncherModule) {
         if (typeof body.address === 'string') return homeLauncherModule.setAddress(body.address, reply);
         if (typeof body.remove === 'string') return homeLauncherModule.remove(body.remove, reply);
@@ -1780,6 +1781,12 @@ function handleRequest(req, res) {
       noSignal: nosignal.status(),
       inputBar: inputBarModule ? inputBarModule.summary() : null
     }));
+  }
+
+  // For a screen saver that plays video: whether an app holds the decoder (#1599).
+  if (pathname === '/api/screensaver/video-busy' && req.method === 'GET') {
+    if (!authed(u.query, req)) return send(res, 401, JSON.stringify({ ok: false, error: 'unauthorised' }));
+    return screensaversModule.videoBusy(function (r) { send(res, 200, JSON.stringify(r)); });
   }
 
   if (pathname === '/api/screensaver') {
