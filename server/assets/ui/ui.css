@@ -1533,18 +1533,29 @@ button.tools-jump:active{background:var(--w80)}
   .tools-buttons .pill{flex:1 1 0;min-width:0;padding:0 6px}
   .tools-toolbar-grp{flex-direction:column;align-items:flex-start;gap:6px}
 }
-/* Quick Access: the key's number before what it opens. */
-/* Quick Access: the remote's number pad, three keys to a row everywhere. */
-.rk-grid.qa-grid{grid-template-columns:repeat(3,minmax(0,1fr));margin-top:18px}
-.qa-num{font-family:'Outfit';font-weight:300;font-size:26px;line-height:1;color:var(--w100)}
-.qa-key-tile .rk-does{width:100%}
-.qa-note{font-size:12px;color:var(--w60);max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-/* Three to a row on a phone leaves no room beside the icon: the name goes
-   under it and wraps rather than being cut short. */
+/* Quick Access: 3x4 physical remote number pad (1-9 and centered 0). */
+.qa-pad-frame{max-width:620px;margin:18px auto 0;padding:14px;border:1px solid var(--w12);border-radius:18px;background:rgba(var(--fg),.02)}
+.rk-grid.qa-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:0}
+.qa-key-tile,.qa-zero-tile{min-height:112px;padding:12px 12px 11px;gap:6px;border-radius:12px;justify-content:space-between;align-items:stretch;background:rgba(var(--fg),.025);transition:border-color .15s ease,background .15s ease}
+.qa-key-tile.rk-changed{border-color:var(--edge);background:rgba(var(--fg),.045)}
+.qa-key-tile.rk-open{border-color:var(--w100);background:var(--w06)}
+.qa-zero-tile{grid-column:2;border-style:dashed;border-color:var(--w12);background:transparent;cursor:default}
+.qa-key-top{display:flex;align-items:flex-start;justify-content:space-between;gap:6px;width:100%}
+.qa-num{font-family:'Outfit';font-weight:300;font-size:22px;line-height:1;color:var(--w100);font-variant-numeric:tabular-nums}
+.qa-zero-tile .qa-num{color:var(--w60)}
+.qa-key-body{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:7px;flex:1;min-width:0;padding-top:2px}
+.qa-key-body .rk-ico{width:30px;height:30px;border-radius:7px}
+.qa-key-body .rk-ico-svg{width:32px;height:32px;border-radius:8px;padding:6px}
+.qa-title{font:500 13px/1.25 'Manrope';color:var(--w100);max-width:100%;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere}
+.qa-zero-tile .qa-title{color:var(--w60);font-weight:400}
+.qa-empty{font-size:12px;color:var(--w60)}
+.qa-note{font-size:10px;line-height:1.2;color:var(--w60);padding:2px 6px;border-radius:999px;border:1px solid var(--w12);max-width:72%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 @media (max-width:560px){
-  .qa-key-tile{padding:12px}
-  .qa-key-tile .rk-does{flex-direction:column;align-items:flex-start;gap:6px;font-size:13px}
-  .qa-key-tile .rk-does span:last-child{white-space:normal;overflow-wrap:break-word}
+  .qa-pad-frame{padding:10px;border-radius:14px}
+  .rk-grid.qa-grid{gap:8px}
+  .qa-key-tile,.qa-zero-tile{padding:10px 8px;min-height:98px;border-radius:10px}
+  .qa-num{font-size:18px}
+  .qa-title{font-size:12px}
 }
 
 /* ---- Remote keys (apps.js): a tile per key, grouped as on the remote ---- */
@@ -1569,6 +1580,8 @@ button.tools-jump:active{background:var(--w80)}
 .rk-lg{color:var(--w50)}
 .rk-none{font-size:17px;line-height:1}
 .rk-ico{width:24px;height:24px;border-radius:6px;object-fit:contain;background:var(--w06);flex:none}
+.rk-ico-svg{display:inline-grid;place-items:center;padding:4px;border:1px solid var(--w12);color:var(--w90)}
+.rk-ico-svg .dico,.rk-ico-svg svg{display:block;width:100%;height:100%}
 .rk-pick{grid-column:1/-1;position:relative;border:1px solid var(--w100);padding:16px 18px 18px;margin-top:2px}
 .rk-pick::before{content:'';position:absolute;top:-9px;left:calc(var(--rk-arrow, 40px) - 8px);
   border:8px solid transparent;border-top:0;border-bottom-color:var(--w100)}
@@ -1577,14 +1590,47 @@ button.tools-jump:active{background:var(--w80)}
 .rk-close{min-height:0;padding:6px 10px;border:0;font-size:11px;color:var(--w60)}
 .rk-sub{font:600 10px 'Manrope';letter-spacing:.14em;text-transform:uppercase;color:var(--w60);margin-top:14px}
 .rk-opts{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.rk-opts.rk-opts-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(184px,1fr))}
 .rk-opt{display:flex;align-items:center;gap:10px;min-height:42px;padding:8px 14px}
+.rk-opts-grid .rk-opt{width:100%;min-width:0;justify-content:flex-start;text-align:left;min-height:46px;padding:8px 11px;border-radius:8px;text-transform:none;letter-spacing:0;font-weight:500;font-size:13.5px}
+.rk-opt-label{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .rk-opt .rk-ico{width:22px;height:22px;border-radius:5px}
+.rk-opt .rk-ico-svg{width:24px;height:24px;border-radius:6px;padding:4px}
 .rk-opt.on{color:var(--btn-on-fg);background:var(--w100);border-color:var(--w100)}
+.rk-opt.on .rk-ico-svg{background:color-mix(in srgb,currentColor 12%,transparent);border-color:color-mix(in srgb,currentColor 28%,transparent);color:var(--btn-on-fg)}
+@media (max-width:560px){
+  .rk-opts.rk-opts-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
 /* A catalog's address is one long word. */
 .catalog-url, #apps-others-list .prot-sub{overflow-wrap:anywhere}
 #apps-catalog-list .prot-main, #apps-others-list .prot-main{overflow-wrap:anywhere}
-.catalog-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;max-width:100%}
-.catalog-source{flex:1;max-width:100%;white-space:normal;text-align:center;text-decoration:none;transition:.16s ease}
+.catalog-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:6px}
+@media (max-width:1120px){.catalog-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:640px){.catalog-grid{grid-template-columns:1fr}}
+.catalog-card{display:flex;flex-direction:column;gap:10px;padding:14px 15px;border:1px solid var(--w12);border-radius:10px;
+  background:rgba(var(--fg),.025);min-width:0;transition:border-color .15s ease,background .15s ease}
+.catalog-card:hover{border-color:var(--w25);background:rgba(var(--fg),.035)}
+.catalog-card.is-installed{border-color:color-mix(in srgb,var(--green) 38%,var(--w12))}
+.catalog-card.has-update{border-color:color-mix(in srgb,var(--cand) 45%,var(--w12))}
+.catalog-card-head{display:flex;align-items:center;gap:12px;min-width:0}
+.catalog-card-ico-wrap{position:relative;width:46px;height:46px;flex:none;border-radius:10px;background:var(--w06);
+  border:1px solid var(--w12);display:grid;place-items:center;overflow:hidden}
+.catalog-card-monogram{font-family:'Outfit';font-weight:400;font-size:20px;color:var(--w60);line-height:1}
+.catalog-card-ico{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:var(--w06)}
+.catalog-card-main{flex:1;min-width:0}
+.catalog-card-title{font:600 14.5px/1.3 'Manrope';color:var(--w100);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.catalog-card-meta{font-size:12px;color:var(--w60);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.catalog-card-badges{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.catalog-pill{display:inline-flex;align-items:center;font:500 11px/1.2 'Manrope';letter-spacing:.06em;text-transform:uppercase;
+  padding:3px 8px;border-radius:999px;border:1px solid var(--w12);color:var(--w70);background:rgba(var(--fg),.03)}
+.catalog-badge-good{color:var(--green);border-color:color-mix(in srgb,var(--green) 42%,var(--edge))}
+.catalog-badge-warn{color:var(--cand);border-color:color-mix(in srgb,var(--cand) 48%,var(--edge))}
+.catalog-card-desc{font-size:13.5px;line-height:1.45;color:var(--w70);display:-webkit-box;-webkit-line-clamp:3;
+  -webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere}
+.catalog-card .prot-status{margin-top:auto;padding-top:10px;border-top:1px solid var(--w06);display:flex;align-items:center;
+  justify-content:space-between;gap:8px;flex-wrap:wrap}
+.catalog-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;max-width:100%;margin-left:auto}
+.catalog-source{flex:0 0 auto;max-width:100%;white-space:nowrap;text-align:center;text-decoration:none;transition:.16s ease}
 .catalog-source:hover{background:rgba(var(--fg),.08)}
 .catalog-source:active{background:var(--w10)}
 .catalog-source:focus-visible{outline:2px solid var(--w80);outline-offset:2px}
