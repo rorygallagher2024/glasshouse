@@ -3195,7 +3195,7 @@
  "tv.flash.nightlyRefreshOn": {"text": "Riavvio notturno attivato", "from": "Nightly refresh reboot turned on"},
  "tv.flash.nightlyRefreshOff": {"text": "Riavvio notturno disattivato", "from": "Nightly refresh reboot turned off"},
  "ha.api": {"text": "API Home Assistant", "from": "Home Assistant API"},
- "ha.api.desc": {"text": "Mostra entità di Home Assistant in tempo reale nei salvaschermo Glasshouse (come Ambient). Si connette direttamente via HTTP/HTTPS senza usare MQTT e salva senza riavviare.", "from": "Display live Home Assistant entities inside Glasshouse screen savers (such as Ambient). Connects straight to Home Assistant over HTTP/HTTPS without using MQTT, and saves without restarting."},
+ "ha.api.desc": {"text": "Abilita i salvaschermo Home Assistant (Ambiente e Schermo dati) nella scheda Screensaver per mostrare le entità Home Assistant in tempo reale. Si connette direttamente via HTTP/HTTPS senza usare MQTT e salva senza riavviare.", "from": "Enables the Home Assistant screen savers (Ambient and Data Display) on the Screensaver tab to show live Home Assistant entities. Connects straight to Home Assistant over HTTP/HTTPS without using MQTT, and saves without restarting."},
  "ha.connected": {"text": "Connesso: {msg}", "from": "Connected: {msg}"},
  "ha.test": {"text": "Verifica connessione", "from": "Test connection"},
  "ha.testFailed": {"text": "Connessione non riuscita", "from": "Connection failed"},

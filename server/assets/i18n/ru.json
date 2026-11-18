@@ -3181,7 +3181,7 @@
  "tv.flash.nightlyRefreshOn": {"text": "Ночная перезагрузка включена", "from": "Nightly refresh reboot turned on"},
  "tv.flash.nightlyRefreshOff": {"text": "Ночная перезагрузка выключена", "from": "Nightly refresh reboot turned off"},
  "ha.api": {"text": "API Home Assistant", "from": "Home Assistant API"},
- "ha.api.desc": {"text": "Отображает сущности Home Assistant в реальном времени на заставках Glasshouse (например, Ambient). Подключается напрямую по HTTP/HTTPS без использования MQTT и сохраняется без перезапуска.", "from": "Display live Home Assistant entities inside Glasshouse screen savers (such as Ambient). Connects straight to Home Assistant over HTTP/HTTPS without using MQTT, and saves without restarting."},
+ "ha.api.desc": {"text": "Включает заставки Home Assistant (Окружение и Экран данных) на вкладке Заставка для отображения сущностей Home Assistant в реальном времени. Подключается напрямую по HTTP/HTTPS без использования MQTT и сохраняется без перезапуска.", "from": "Enables the Home Assistant screen savers (Ambient and Data Display) on the Screensaver tab to show live Home Assistant entities. Connects straight to Home Assistant over HTTP/HTTPS without using MQTT, and saves without restarting."},
  "ha.connected": {"text": "Подключено: {msg}", "from": "Connected: {msg}"},
  "ha.test": {"text": "Проверить подключение", "from": "Test connection"},
  "ha.testFailed": {"text": "Ошибка подключения", "from": "Connection failed"},

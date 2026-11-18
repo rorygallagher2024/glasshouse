@@ -986,7 +986,7 @@ function saverRows(d) {
     r.push(head(t('ss.poolTitle', 'Included in rotation')));
     var pool = (d.random && d.random.pool) || [];
     d.modes.forEach(function (m) {
-      if (m.id === 'stock' || m.id === 'random' || m.fromApp) return;
+      if (m.id === 'stock' || m.id === 'random' || m.fromApp || !m.available) return;
       var inPool = pool.indexOf(m.id) !== -1;
       r.push({
         label: m.label,

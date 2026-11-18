@@ -3195,7 +3195,7 @@
  "srv.home.wallPicture": {"text": "ismeretlen háttérkép", "from": "unknown wallpaper picture"},
  "srv.home.wallShuffleFull": {"text": "A gyűjteményben {max} kép fér el. Egy újhoz előbb távolítson el egyet.", "from": "The collection holds {max} pictures. Remove one to add another."},
  "ha.api": {"text": "Home Assistant API", "from": "Home Assistant API"},
- "ha.api.desc": {"text": "Élő Home Assistant entitásokat jelenít meg a Glasshouse képernyővédőkben (pl. Ambient). Közvetlenül HTTP/HTTPS-en kapcsolódik MQTT nélkül, és újraindítás nélkül menthető.", "from": "Display live Home Assistant entities inside Glasshouse screen savers (such as Ambient). Connects straight to Home Assistant over HTTP/HTTPS without using MQTT, and saves without restarting."},
+ "ha.api.desc": {"text": "Engedélyezi a Home Assistant képernyővédőket (Környezet és Adatkijelző) a Képernyővédő lapon az élő Home Assistant entitások megjelenítéséhez. Közvetlenül HTTP/HTTPS-en kapcsolódik MQTT nélkül, és újraindítás nélkül menthető.", "from": "Enables the Home Assistant screen savers (Ambient and Data Display) on the Screensaver tab to show live Home Assistant entities. Connects straight to Home Assistant over HTTP/HTTPS without using MQTT, and saves without restarting."},
  "ha.connected": {"text": "Csatlakozva: {msg}", "from": "Connected: {msg}"},
  "ha.test": {"text": "Kapcsolat tesztelése", "from": "Test connection"},
  "ha.testFailed": {"text": "A csatlakozás sikertelen", "from": "Connection failed"},

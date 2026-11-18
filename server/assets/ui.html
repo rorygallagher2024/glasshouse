@@ -1995,13 +1995,23 @@
     </div>
   </div>
 
-  <div class="cfg-toggles">
-    <button id="cfg-tls" onclick="cfgToggle('cfg-tls')" translate="no">TLS</button>
-    <button id="cfg-verify" onclick="cfgToggle('cfg-verify')" data-t="mqtt.verify">Verify certificate</button>
+  <div class="pv-table" style="margin-top:8px">
+    <div class="pv-row">
+      <div>
+        <div class="n" translate="no">TLS</div>
+        <div class="d" data-t="mqtt.tls.note">Without TLS the username and password cross the network in
+          cleartext. The config file is readable by anything with root on this TV, so use a
+          broker account restricted to these topics rather than a shared one.</div>
+      </div>
+      <button type="button" class="pill idle" id="cfg-tls" onclick="cfgToggle('cfg-tls')">&mdash;</button>
+    </div>
+    <div class="pv-row">
+      <div>
+        <div class="n" data-t="mqtt.verify">Verify certificate</div>
+      </div>
+      <button type="button" class="pill idle" id="cfg-verify" onclick="cfgToggle('cfg-verify')">&mdash;</button>
+    </div>
   </div>
-  <div class="pv-note" data-t="mqtt.tls.note">Without TLS the username and password cross the network in
-    cleartext. The config file is readable by anything with root on this TV, so use a
-    broker account restricted to these topics rather than a shared one.</div>
 
   <div class="pv-h" data-t="mqtt.topics">Topics &amp; identity</div>
   <div class="pv-sub" data-t="mqtt.topics.desc">Changing the device ID orphans any entities Home Assistant has
@@ -2078,7 +2088,7 @@
 
   <div class="ha-api-section" id="ha-api-section">
     <div class="pv-h" style="margin-top:0" data-t="ha.api">Home Assistant API</div>
-    <div class="pv-sub" data-t="ha.api.desc">Display live Home Assistant entities inside Glasshouse screen savers (such as Ambient). Connects straight to Home Assistant over HTTP/HTTPS without using MQTT, and saves without restarting.</div>
+    <div class="pv-sub" data-t="ha.api.desc">Enables the Home Assistant screen savers (Ambient and Data Display) on the Screensaver tab to show live Home Assistant entities. Connects straight to Home Assistant over HTTP/HTTPS without using MQTT, and saves without restarting.</div>
 
     <div class="cfg-cols">
       <div class="cfg-side">

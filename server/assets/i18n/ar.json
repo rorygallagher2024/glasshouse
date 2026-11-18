@@ -3181,7 +3181,7 @@
  "tv.flash.nightlyRefreshOn": {"text": "تم تفعيل إعادة التشغيل الليلية", "from": "Nightly refresh reboot turned on"},
  "tv.flash.nightlyRefreshOff": {"text": "تم إيقاف إعادة التشغيل الليلية", "from": "Nightly refresh reboot turned off"},
  "ha.api": {"text": "واجهة برمجة تطبيقات Home Assistant", "from": "Home Assistant API"},
- "ha.api.desc": {"text": "عرض كيانات Home Assistant المباشرة داخل شاشات التوقف في Glasshouse (مثل Ambient). يتصل مباشرة بخادم Home Assistant عبر HTTP/HTTPS دون استخدام MQTT، ويُحفظ دون إعادة تشغيل.", "from": "Display live Home Assistant entities inside Glasshouse screen savers (such as Ambient). Connects straight to Home Assistant over HTTP/HTTPS without using MQTT, and saves without restarting."},
+ "ha.api.desc": {"text": "يفعّل شاشات توقف Home Assistant (محيطي وعرض البيانات) في تبويب شاشة التوقف لعرض كيانات Home Assistant المباشرة. يتصل مباشرة بخادم Home Assistant عبر HTTP/HTTPS دون استخدام MQTT، ويُحفظ دون إعادة تشغيل.", "from": "Enables the Home Assistant screen savers (Ambient and Data Display) on the Screensaver tab to show live Home Assistant entities. Connects straight to Home Assistant over HTTP/HTTPS without using MQTT, and saves without restarting."},
  "ha.connected": {"text": "متصل: {msg}", "from": "Connected: {msg}"},
  "ha.test": {"text": "اختبار الاتصال", "from": "Test connection"},
  "ha.testFailed": {"text": "فشل الاتصال", "from": "Connection failed"},
