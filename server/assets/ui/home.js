@@ -879,6 +879,8 @@ function renderHomeCompat(st) {
     : bar
     ? homeCompatNote(t('home.compat.untriedBar', 'Glasshouse Bar has not yet been reported working on webOS {version}. If it misbehaves, choose LG Home to put everything back.', { version: (st.bar.webos || v) }), st.bar.report)
     : '';
+  // webOS 11: the Home key is LG's own, and Glasshouse changes its handler for the bar.
+  if (st.bar && st.bar.native) box.innerHTML += `<div class="pv-note">${esc(t('home.bar.native', 'On this TV the Home key needs a change to LG’s key handler for Glasshouse Bar. Choosing the bar, or any other launcher after it, restarts the TV’s screen once, and the change is made again each time the TV starts.'))}</div>`;
 }
 
 function homeBarOn() { return !!(homeStatus && homeStatus.bar && homeStatus.bar.enabled); }

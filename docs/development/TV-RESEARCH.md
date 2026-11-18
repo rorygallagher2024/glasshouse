@@ -1995,6 +1995,42 @@ manager launched only HDMI 4 in nine minutes of the same file, and set back to
   opens the bar from the key on the TV and wherever else LG's code opens it, so the
   change is made only while the Input key is set to the bar.
 
+## The Home key's launch, native key filters (OLED48C31LA, webOS 11.2.0, firmware 44.00.92)
+
+- **Settings and category do not choose the app.** `general.defaultApps.home`
+  set with `applicationManager/setDefaultApp` to another app was accepted and
+  read back, an app declaring `appCategory: ["home"]` was installed, and the
+  Home key still opened `com.webos.app.home` each time. sam keeps the default
+  apps in the system profile (`OnSystemProfileDefaultAppsChanged`), whose
+  `defaultApps.categories.home` is `com.webos.app.home` in
+  `/etc/webos-profile/platform/dynamic/senior_normal/profile.json`. A profile of
+  its own in that folder (a copy of the folder mounted over it, with
+  `debug/rescan` and `enableProfile`, which answered true) was not found by
+  `getProfiles` and changed nothing.
+- **The id is not in the library.** `libsystemUI.so`'s `handleHomeKeys` calls
+  `launchHomeApp`, which builds `{"launchType":"homeKey","activateType":...,
+  "category":"home","params":...}` and passes it to the launcher's
+  `launchDefaultApp`, slot 0x5c of an object's table. No text there names
+  `com.webos.app.home`, and `ls-monitor` on the public bus shows nothing of the
+  call.
+- **A call that launches by id sits next to it.** The function after
+  `launchHomeApp` launches LG's settings for an always-on display, through slot
+  0xc0 with an id (`com.palm.app.settings`, 21 characters) and parameters
+  (`{"target":"LightingSettings"}`, 29) it builds from literals. With the id and
+  parameters made `com.tvweb.homebar` and `{"glasshouse":"bar"}` (their lengths
+  set in the code and the literals pointed at padding after `.eh_frame`) and
+  `launchHomeApp` made to call it and return, the Home key opened Glasshouse
+  Bar from an app, and LG's Home showed when the app closed.
+- **With the home app in front the key is not launched.** `handleHomeKeys`
+  compares the id of the app in front with the home app's, and where they are
+  the same sends the key to that app (LG's Home scrolled to the top) and does
+  not call `launchHomeApp`. The branch is a `beq.w` after a `memcmp`, 4 bytes
+  that a `nop.w` makes fall through, and then the Home key from LG's Home opens
+  the bar too, 57 bytes changed in all. With Glasshouse Home in front the bar's
+  own check closes it unseen.
+- **The compositor's restart leaves no app.** With Glasshouse Home off nothing
+  opens LG's Home after it, and the screen stays black until an app is launched.
+
 ## Promoted stub apps (G3, webOS 9.2.2)
 
 On 18 October 2026, with a network-wide ad blocker in the house switched off,

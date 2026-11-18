@@ -7,6 +7,9 @@
 *{margin:0;padding:0;box-sizing:border-box}
 /* The window is an overlay: whatever is on screen shows through above the bar. */
 html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font-family:sans-serif;color:#fff;cursor:default}
+/* Over LG's Home, which webOS 11 keeps drawn under an overlay: black, as webOS 5 leaves behind it. */
+#backdrop{display:none;position:absolute;left:0;top:0;width:1920px;height:1080px;background:#000}
+#backdrop.on{display:block}
 #shade{position:absolute;left:0;right:0;bottom:0;height:460px;opacity:0;
   background:-webkit-linear-gradient(top,rgba(0,0,0,0),rgba(0,0,0,.78));background:linear-gradient(to bottom,rgba(0,0,0,0),rgba(0,0,0,.78));
   -webkit-transition:opacity .18s ease-out;transition:opacity .18s ease-out}
@@ -60,6 +63,7 @@ img.ico{background:none;object-fit:contain}
 </style>
 </head>
 <body>
+<div id="backdrop"></div>
 <div id="shade"></div>
 <div id="clock"></div>
 <div id="bar"><div id="row"></div></div>
@@ -137,7 +141,7 @@ img.ico{background:none;object-fit:contain}
     visibleSince = 0;
     clearInterval(clockTimer);
     document.body.className = '';
-    closeTimer = setTimeout(function () { closeTimer = null; window.close(); }, 160);
+    closeTimer = setTimeout(function () { closeTimer = null; $('backdrop').className = ''; window.close(); }, 160);
   }
 
   function pad(n) { return n < 10 ? '0' + n : String(n); }
@@ -444,6 +448,8 @@ img.ico{background:none;object-fit:contain}
     if (labelsChanged) scrollTo();
   }
   function openWindow() {
+    // Where LG's Home stays drawn under the bar (webOS 11), the server says so and the bar covers it.
+    if (document.body.className !== 'on') getJson(BASE + '/api/home/bar-open', function (j) { if (j && j.lgHomeUnder === true) $('backdrop').className = 'on'; });
     tick();
     clearInterval(clockTimer);
     clockTimer = setInterval(tick, 10000);

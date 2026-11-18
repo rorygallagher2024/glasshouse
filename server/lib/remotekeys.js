@@ -306,7 +306,7 @@ function init(opts) {
   homeBarLauncherFn = typeof opts.homeBarLauncher === 'function' ? opts.homeBarLauncher : function () { return false; };
   inputNames = opts.inputNames || {};
   if (opts.stateDir) stateDir = opts.stateDir;
-  guidePatch.init({ stateDir: stateDir, library: opts.guideLibrary, exec: opts.guideExec, mounts: opts.guideMounts });
+  guidePatch.init({ stateDir: stateDir, library: opts.guideLibrary, systemUiLibrary: opts.systemUiLibrary, exec: opts.guideExec, mounts: opts.guideMounts });
   filtersDir = opts.filtersDir || LG_FILTERS_DIR;
   tvKeys = null;
   nativeFilters = null;
@@ -979,11 +979,14 @@ function applyNativeNow(cb, mapOverride) {
   var wantGuide = map.guide === HOME_GUIDE && homeGuideOn();
   var rest = {};
   Object.keys(map).forEach(function (k) { if (map[k] !== HOME_GUIDE) rest[k] = map[k]; });
-  if (!guidePatch.status().supported) return applyNativeMap(cb, rest);
-  guidePatch.apply({ guide: wantGuide, input: guidePatch.validId(map.input) ? map.input : '' }, function (r) {
+  var st = guidePatch.status();
+  if (!st.supported && !st.bar) return applyNativeMap(cb, rest);
+  var want = { guide: st.supported && wantGuide, input: st.supported && guidePatch.validId(map.input) ? map.input : '',
+    bar: st.bar && !mapOverride && homeBarLauncherFn() };
+  guidePatch.apply(want, function (r) {
     if (!r.ok) console.log('remotekeys: LG\'s key handler could not be changed: ' + r.error);
     if (r.restarted) compositorRestartedFn();
-    if (r.ok && wantGuide) rest.guide = HOME_GUIDE;
+    if (r.ok && want.guide) rest.guide = HOME_GUIDE;
     applyNativeMap(cb, rest);
   });
 }
@@ -1886,6 +1889,9 @@ module.exports = {
   init: init,
   opensInputBar: opensInputBar,
   nativeInputBar: function () { return guidePatch.status().supported; },
+  // Glasshouse Bar through the Home key of webOS 11, where the library is one lib/guidepatch lists.
+  nativeHomeBar: function () { return guidePatch.status().bar; },
+  nativeHomeBarOn: function () { return guidePatch.status().applied.bar; },
   opensHomeBar: opensHomeBar,
   dropInputBar: dropInputBar,
   availabilityChanged: availabilityChanged,

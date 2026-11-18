@@ -2911,9 +2911,29 @@ function remoteBatteryAvailable() {
   return !!b && b.status !== 'unsupported';
 }
 
+/*
+ * Glasshouse Bar opened over LG's Home on webOS 11: the compositor keeps LG's
+ * Home drawn under the bar's transparent window, where webOS 5 sends it behind.
+ * Closing it does not hold, sam opens it again within a second, so the bar
+ * draws a black backdrop over it.
+ */
+var BAR_APP = 'com.tvweb.homebar';
+var lgHomeUnderBarFn = function () { return false; };
+var barFromLgHome = false;
+/*
+ * Whether LG's Home is under the bar that has opened, and stays drawn there.
+ * An overlay window may not take the front from LG's Home in sam's view, so
+ * the front is not relied on alone.
+ */
+function barOpened() {
+  if (!lgHomeUnderBarFn() || viewInFront()) return false;
+  return foreground === LG_HOME || (foreground === BAR_APP && barFromLgHome);
+}
+
 function foregroundChanged(id) {
   var was = foreground;
   foreground = id;
+  if (id === BAR_APP) barFromLgHome = was === LG_HOME || (was === BAR_APP && barFromLgHome);
   var homeId = isStandalone() ? HOME_APP : LG_HOME;
   if (wakeReopen) reopenAfterWake(was, id);
   if (id && id !== homeId && id !== was) otherOpenedAt = nowMs();
@@ -3278,7 +3298,15 @@ function reopenAfterWake11() {
  * as after a wake.
  */
 function reopenAfterCompositor() {
-  if (!readConfig().enabled || !takeover.mounted()) return;
+  // LG's Home is the launcher (Glasshouse Home off, or Glasshouse Bar chosen): the restart left no app, so it is opened.
+  if (!readConfig().enabled || !takeover.mounted()) {
+    return setTimeout(function () {
+      if (readConfig().enabled && takeover.mounted()) return;
+      launch(LG_HOME, null, function (res) {
+        if (!res.ok) console.error('home: could not open LG\'s Home after the compositor restarted');
+      });
+    }, COMPOSITOR_UP_MS);
+  }
   stopBeatWatch();
   stopOpenWatch();
   setTimeout(function () {
@@ -3415,6 +3443,7 @@ function init(opts) {
   pageLoadMs = opts.pageLoadMs || PAGE_LOAD_MS;
   pageSeenAt = 0;
   execFn = opts.exec || execFile;
+  if (typeof opts.lgHomeUnderBar === 'function') lgHomeUnderBarFn = opts.lgHomeUnderBar;
   systemctlPath = opts.systemctl !== undefined ? opts.systemctl
     : SYSTEMCTLS.filter(function (p) { return fs.existsSync(p); })[0] || '';
   if (typeof opts.tvInfo === 'function') tvInfoFn = opts.tvInfo;
@@ -3620,6 +3649,7 @@ function stop() {
 module.exports = {
   LG_HOME: LG_HOME,
   viewInFront: viewInFront,
+  barOpened: barOpened,
   reopenAfterCompositor: reopenAfterCompositor,
   playChannel: playChannel,
   openInternetTv: openInternetTv,
