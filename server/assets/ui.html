@@ -863,7 +863,7 @@
       </div>
       <div class="prot-status"><button type="button" class="pill idle" id="st-enabled" onclick="toggleScreenTime()">&mdash;</button></div>
     </div>
-    <div class="prot-row">
+    <div class="prot-row" id="st-daily-row" hidden>
       <div class="prot-main">
         <div class="prot-title" data-t="adv.screenTime.daily">Daily limit</div>
         <div class="prot-desc" data-t="adv.screenTime.daily.desc">The screen time allowed each day, counted from midnight on the TV’s clock.</div>
@@ -872,7 +872,7 @@
       <div class="prot-status"><select class="pill-sel" id="st-daily" aria-label="Daily limit" data-t-aria-label="adv.screenTime.daily"
         onchange="saveScreenTime({ dailyMinutes: Number(this.value) })"></select></div>
     </div>
-    <div class="prot-row">
+    <div class="prot-row" id="st-bed-row" hidden>
       <div class="prot-main">
         <div class="prot-title" data-t="adv.screenTime.bedtime">Bedtime</div>
         <div class="prot-desc" data-t="adv.screenTime.bedtime.desc">Between these two times, the TV does what is chosen below. Clearing either time turns bedtime off.</div>
@@ -882,16 +882,17 @@
           onchange="saveScreenTime({ bedtimeStart: this.value })">
         <input type="time" class="pill-sel" id="st-bed-to" aria-label="Bedtime ends" data-t-aria-label="adv.screenTime.bedtime.to"
           onchange="saveScreenTime({ bedtimeEnd: this.value })">
+        <button type="button" class="link-btn st-bed-clear" id="st-bed-clear" hidden onclick="clearBedtime()" data-t="adv.screenTime.remove">Remove</button>
       </div>
     </div>
-    <div class="prot-row">
+    <div class="prot-row" id="st-action-row" hidden>
       <div class="prot-main">
         <div class="prot-title" data-t="adv.screenTime.action">At the daily limit or bedtime</div>
       </div>
       <div class="prot-status"><select class="pill-sel" id="st-action" aria-label="At the daily limit or bedtime" data-t-aria-label="adv.screenTime.action"
         onchange="saveScreenTime({ action: this.value })"></select></div>
     </div>
-    <div class="prot-row" id="st-apps-row">
+    <div class="prot-row" id="st-apps-row" hidden>
       <div class="prot-main">
         <div class="prot-title" data-t="adv.screenTime.apps">App and input limits</div>
         <div class="prot-desc" data-t="adv.screenTime.apps.desc">Minutes a day for one app or input. Those watched in the last 30 days can be picked.</div>
@@ -900,7 +901,7 @@
         onchange="addScreenTimeApp(this.value)"></select></div>
       <div class="st-apps" id="st-apps"></div>
     </div>
-    <div class="prot-row">
+    <div class="prot-row" id="st-app-action-row" hidden>
       <div class="prot-main">
         <div class="prot-title" data-t="adv.screenTime.appAction">At an app or input’s limit</div>
       </div>
