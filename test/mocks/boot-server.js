@@ -1,7 +1,7 @@
 /*
  * Starts the real server with the TV's file system moved into FAKE_ROOT, for
  * the start-up test. Every path the server uses under /var, /mnt, /media,
- * /proc, /sys, /etc or /home/root is read and written under FAKE_ROOT
+ * /proc, /sys, /etc, /usr, /tmp or /home/root is read and written under FAKE_ROOT
  * instead, which the test seeds with mock-env's files. Node 0.12 has no -r,
  * so this runs first and then loads tvweb.js itself.
  *
@@ -12,20 +12,22 @@ var path = require('path');
 
 var ROOT = process.env.FAKE_ROOT;
 if (!ROOT) { console.error('FAKE_ROOT not set'); process.exit(2); }
+if (!fs.existsSync(path.join(ROOT, 'tmp'))) fs.mkdirSync(path.join(ROOT, 'tmp'));
 
 var SERVER_DIR = path.resolve(__dirname, '..', '..', 'server');
 
-var MOVED = /^\/(var|mnt|media|proc|sys|etc|usr|home\/root)(\/|$)/;
+var MOVED = /^\/(var|mnt|media|proc|sys|etc|usr|tmp|home\/root)(\/|$)/;
 function moved(p) {
   if (typeof p !== 'string' || p.indexOf(ROOT) === 0) return p;
-  if (MOVED.test(p)) return path.join(ROOT, p);
   if (p.indexOf(SERVER_DIR) === 0) {
     var rel = path.relative(SERVER_DIR, p);
     if (rel.indexOf('assets') !== 0 && rel.indexOf('lib') !== 0 &&
         !/(\.js|\.sh)$/.test(rel) && rel !== 'tvwebctl') {
       return path.join(ROOT, 'var/lib/tvweb', rel);
     }
+    return p;
   }
+  if (MOVED.test(p)) return path.join(ROOT, p);
   return p;
 }
 

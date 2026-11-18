@@ -142,6 +142,7 @@ var backupParts = require('./lib/backup-parts');
 var resettime = require('./lib/resettime');
 var power = require('./lib/power');
 var names = require('./lib/names');
+var screenshots = require('./lib/screenshots');
 var msg = say.msg;
 var luna = lunaTransport.call;
 
@@ -386,7 +387,10 @@ var CONFIG = {
      * in the usual places. Set it when a rooted client lives somewhere else.
      */
     client: ''
-  }
+  },
+
+  // Screenshot retention target in MiB; the newest capture is always kept.
+  screenshots: { maxMiB: 32 }
 };
 
 /* Scanned before loadConfig so --config can point at an alternative file:
@@ -1069,6 +1073,7 @@ function appsChanged() {
 pointer.init({ luna: luna, hasService: lunaTransport.hasService, config: CONFIG,
   onActivity: function () { screensavers.pointerUsed(); },
   authed: function (req) { return routes.authed(url.parse(req.url || '/', true).query, req); } });
+screenshots.init({ maxMiB: CONFIG.screenshots && CONFIG.screenshots.maxMiB });
 routes.init({
   config: CONFIG,
   pointer: pointer,
@@ -1131,7 +1136,8 @@ routes.init({
   appsChanged: appsChanged,
   logs: logsModule,
   version: TVWEB_VERSION,
-  displayVersion: TVWEB_DISPLAY_VERSION
+  displayVersion: TVWEB_DISPLAY_VERSION,
+  screenshots: screenshots
 });
 
 backupParts.init({
@@ -2162,6 +2168,7 @@ var BEAT_FILE = '/var/run/tvweb.beat';
    32-bit, and a 13-digit millisecond stamp overflows it into nonsense. */
 function heartbeat() {
   fs.writeFile(BEAT_FILE, String(Math.floor(Date.now() / 1000)), function () {});
+  screenshots.cleanup();
 }
 
 /*

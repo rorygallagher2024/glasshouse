@@ -1307,7 +1307,7 @@
 
   <details class="pv-d" id="disc-remotekeys" open hidden>
     <summary><span data-t="apps.remoteKeys">Remote keys</span> <span class="cur" id="apps-rk-summary"></span></summary>
-    <div class="pv-sub" data-t="apps.remoteKeys.desc">What a key on the remote does: as LG has it, nothing, or opening an app or input instead. A change applies straight away and lasts across reboots. A key set here is taken before any app sees it, so an app that uses the key itself, such as YouTube with Guide, no longer gets it. The keys listed are the ones this TV handles; a given remote may not have them all.</div>
+    <div class="pv-sub" data-t="apps.remoteKeys.desc">What a key on the remote does: as LG has it, nothing, a media control, a screenshot, or opening an app or input instead. A change applies straight away and lasts across reboots. A key set here is taken before any app sees it, so an app that uses the key itself, such as YouTube with Guide, no longer gets it. The keys listed are the ones this TV handles; a given remote may not have them all.</div>
     <div id="apps-rk-list"></div>
   </details>
 </section>
@@ -2344,7 +2344,22 @@
 </section>
 
 <section class="panel" id="toolspane" role="tabpanel" hidden>
-  <div class="pv-sec" data-t="tools.title">System logs</div>
+  <details class="pv-d" id="disc-screenshots">
+    <summary><span data-t="tools.screenshots.title">Screenshots</span> <span class="cur" id="screenshots-summary">&mdash;</span></summary>
+    <div class="pv-sub" data-t="tools.screenshots.desc">Oldest images are removed automatically to free memory. Images also disappear when the TV restarts.</div>
+    <div class="tools-toolbar">
+      <button type="button" class="pill" id="screenshots-refresh" onclick="loadScreenshots(true)" data-t="tools.screenshots.refresh">Refresh</button>
+      <div class="screenshot-storage">
+        <button type="button" class="pill bad" id="screenshots-clear" data-id="*" onclick="deleteScreenshot(this)" disabled hidden>&mdash;</button>
+        <span class="sub" id="screenshots-storage" dir="ltr">&mdash;</span>
+      </div>
+    </div>
+    <div class="pv-note" id="screenshots-readonly" hidden data-t="tools.screenshots.readonly">Controls must be enabled to delete screenshots.</div>
+    <div class="sub" id="screenshots-message" role="status" aria-live="polite"></div>
+    <div class="screenshot-gallery" id="screenshots-gallery"></div>
+  </details>
+
+  <div class="pv-sec adv-sec" data-t="tools.title">System logs</div>
   <div class="pv-sub" data-t="tools.desc">Logs from the TV, Glasshouse and the TV's hardware, for troubleshooting.</div>
   <div class="pv-sub" id="tools-fwd" hidden></div>
 
@@ -2443,6 +2458,13 @@
   <span class="foot-end"><span id="activity-txrx" class="activity-txrx" aria-hidden="true"><span id="act-tx" class="txrx-pip"></span><span id="act-rx" class="txrx-pip"></span></span><span id="tv-name" hidden></span><a id="version" hidden target="_blank" rel="noopener noreferrer"></a><a id="version-new" hidden target="_blank" rel="noopener noreferrer"></a><button type="button" class="theme-toggle" id="theme-toggle">☾</button></span>
 </footer>
 
+<div id="screenshot-viewer" class="modal-backdrop" hidden onclick="if(event.target!==q('screenshot-viewer-image'))closeScreenshotViewer()">
+  <div class="modal-card" role="dialog" aria-modal="true" aria-label="Screenshot preview" data-t-aria-label="tools.screenshots.previewTitle">
+    <button type="button" class="pill" id="screenshot-viewer-close" aria-label="Close screenshot" data-t-aria-label="tools.screenshots.close">&times;</button>
+    <img id="screenshot-viewer-image" alt="">
+  </div>
+</div>
+
 <!-- Offered on load when "Update pop-up" is on in the Server tab; see offerUpdatePopup in ui/update.js. -->
 <div id="updpop" class="modal-backdrop" hidden>
   <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="updpop-title">
@@ -2530,6 +2552,7 @@
 <script src="/assets/ui/screensavers.js"></script>
 <script src="/assets/ui/mqtt.js"></script>
 <script src="/assets/ui/tools.js"></script>
+<script src="/assets/ui/screenshots.js"></script>
 <script src="/assets/ui/search-aliases.js"></script>
 <script src="/assets/ui/search.js"></script>
 <script src="/assets/ui/tabs.js"></script>

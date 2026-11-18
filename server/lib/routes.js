@@ -128,6 +128,8 @@ var sshKeysModule = null;
 var screentimeModule = null;
 /** @type {typeof import('./backup')} */
 var backupModule = null;
+/** @type {typeof import('./screenshots')} */
+var screenshotsModule = null;
 var fromHbcFn = null;
 var tileHidingOffMsg = '';
 var assetPathFn = null;
@@ -1921,6 +1923,43 @@ function handleRequest(req, res) {
     });
   }
 
+  if (pathname === '/api/screenshots' || pathname === '/api/screenshots/image') {
+    if (!screenshotsModule) return send(res, 503, JSON.stringify({ ok: false, error: 'screenshots module unavailable' }));
+    if (pathname === '/api/screenshots/image' && (req.method === 'GET' || req.method === 'HEAD')) {
+      return screenshotsModule.openImage(u.query.id, function (image) {
+        if (!image.ok) return send(res, 404, JSON.stringify(image));
+        if (res.finished || (req.connection && req.connection.destroyed)) return fs.close(image.fd, function () {});
+        var headers = {
+          'Content-Type': 'image/png', 'Content-Length': image.size,
+          'Cache-Control': 'private, no-store', 'X-Content-Type-Options': 'nosniff',
+          'Referrer-Policy': 'no-referrer'
+        };
+        if (req.method === 'HEAD') return fs.close(image.fd, function () { res.writeHead(200, headers); res.end(); });
+        var stream = fs.createReadStream(image.path, { fd: image.fd, autoClose: true });
+        stream.on('error', function () { res.destroy(); });
+        res.on('close', function () { stream.destroy(); });
+        res.writeHead(200, headers);
+        stream.pipe(res);
+      });
+    }
+    if (pathname === '/api/screenshots' && req.method === 'GET') {
+      return screenshotsModule.list(function (r) {
+        r.writable = !!config.allowControl;
+        send(res, r.ok ? 200 : 500, JSON.stringify(r));
+      });
+    }
+    if (pathname === '/api/screenshots' && req.method === 'POST') {
+      if (!config.allowControl) return send(res, 403, JSON.stringify({ ok: false, error: msg('srv.controlsOff', 'controls disabled in config') }));
+      return readJsonBody(req, res, function (body) {
+        function done(r) { send(res, r.ok ? 200 : 400, JSON.stringify(r)); }
+        if (body.action === 'delete') return screenshotsModule.remove(body.id, done);
+        if (body.action === 'clear') return screenshotsModule.clear(done);
+        done({ ok: false, error: 'delete or clear expected' });
+      });
+    }
+    return send(res, 405, JSON.stringify({ ok: false, error: 'method not allowed' }));
+  }
+
   // First-run setup and the TV's own settings. The TV only: see fromTV.
   if (pathname === '/api/setup') {
     var isDemo = isSetupEmulated(u.query);
@@ -2713,6 +2752,7 @@ function init(opts) {
   if (opts.appsChanged) appsChangedFn = opts.appsChanged;
   if (opts.version) versionStr = displayVersionStr = opts.version;
   if (opts.displayVersion) displayVersionStr = opts.displayVersion;
+  if (opts.screenshots) screenshotsModule = opts.screenshots;
 
   return {
     handleRequest: handleRequest,
