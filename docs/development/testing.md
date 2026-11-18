@@ -228,6 +228,8 @@ before its first read.
 
 `test-home.js` also checks that a port whose tile changes once a CEC device on it is listed has the view draw its tiles again, and that the tile drawn before still opens that port, and only that port.
 
+`test-home-video-idle.js` checks that Home's video background fades out and lets the video go after two minutes without a key, that a key plays it again, and that with the TV's screen saver time known it plays until that time and then asks for the screen saver; `test-home.js` that the heartbeat brings that time from LG's settings and that the screen saver is started only with the view in front and the TV awake.
+
 `test-home.js` also checks that an input keeps its hiding, place and custom name whether the TV lists the device on its port or not, and that with two devices on a port neither takes a setting kept for the port.
 
 `test-nosignal.js` checks that the No Signal screen is patched for both plain and disconnected cable icon modes only where the expected QML lines are there exactly once, that switching it on mounts the copy and restarts the input app only once no input is in front or the one in front has nothing coming in, that switching modes while mounted updates `Screensaver.qml` in place from LG's saved copy, that a server start leaves a mounted copy alone, and that switching it off unmounts it.

@@ -3174,6 +3174,43 @@ async function visitHomeReadiness(browser, base, problems) {
   } finally { await page.close(); }
 }
 
+// The key that ends the screen saver reaches Home before its heartbeat hears
+// the screen saver has gone: it only wakes the screen. Back then opened Recents.
+async function visitHomeSaverWake(browser, base, problems) {
+  const page = await browser.newPage({ viewport: { width: 1920, height: 1080 } });
+  page.on('pageerror', e => problems.push('Home saver wake: ' + e.message));
+  let saver = true, beats = 0;
+  const reply = (route, body) => route.fulfill({ contentType: 'application/json', body: JSON.stringify(body) });
+  await page.route('**/api/home/**', route => {
+    const pathname = new URL(route.request().url()).pathname;
+    if (pathname === '/api/home/catalogue') return reply(route, {
+      ok: true, apps: [], devices: [], channels: [], sources: {}, order: { app: ['lg-home'], dev: [], ch: [] },
+      layout: { rows: ['app', 'dev', 'ch'], hidden: { app: [], dev: [], ch: [] }, channels: [], hintSeen: true, searchHintSeen: true }
+    });
+    if (pathname === '/api/home/beat') { beats++; return reply(route, { ok: true, covered: saver, saver, build: 'one' }); }
+    if (pathname === '/api/home/recents') return reply(route, { ok: true, apps: [] });
+    return reply(route, { ok: true, kind: null, build: 'one' });
+  });
+  const back = () => page.evaluate(() => {
+    for (const type of ['keydown', 'keyup']) document.dispatchEvent(new KeyboardEvent(type, { keyCode: 461 }));
+  });
+  try {
+    await page.goto(base + '/assets/home.html');
+    await page.waitForSelector('#rows .tile');
+    await page.waitForFunction(() => document.documentElement.classList.contains('resting'));
+    saver = false;
+    const heard = beats;
+    await back();
+    await waitUntil(page, () => beats > heard, 300);
+    if (beats === heard) problems.push('Home saver wake: the waking key did not ask at once whether the screen saver had gone');
+    await page.waitForFunction(() => !document.documentElement.classList.contains('resting'));
+    if (await page.locator('#stage.recents').count()) problems.push('Home saver wake: Back ending the screen saver opened Recents');
+    await back();
+    try { await page.waitForSelector('#stage.recents', { timeout: 5000 }); }
+    catch (e) { problems.push('Home saver wake: Back after the screen saver did not open Recents'); }
+  } finally { await page.close(); }
+}
+
 async function visitHomeRecents(browser, base, problems) {
   const page = await browser.newPage({ viewport: { width: 1920, height: 1080 } });
   page.on('pageerror', e => problems.push('Home recents: ' + e.message));
@@ -4660,7 +4697,7 @@ function groups(web, tv) {
       visits: [visitTvDashboard, visitTvAudio, visitTvPictureWrites, visitPictureUnavailable, visitTvNonOled, visitTvHuesync] },
     { job: 'home', tabs: [], visits: [visitHomePicture, visitHomePreview, visitHomePreviewOptions, visitHomePreviewWebos4, visitHomePreviewSize, visitHomePreviewSizeDetails, visitInputBarBehindHome, visitInputBarSwitchOnOk, visitHomeBarPrewarm, visitHomeBarIconsReady, visitHomeBarTiles, visitHomeBarBesideHome, visitHomeBarScroll, visitHomeUpDown, visitHomePointerOff, visitHomeOrder, visitHomeAvailability, visitHomeSearch, visitHomeWeather, visitHomeWeatherSetting, visitHomeRemoteBattery, visitHomeRemoteBatterySetting] },
     { job: 'home', tabs: [], visits: [visitHomeArrangement, visitHomeVisibility, visitHomeColours, visitHomeInputsEditor, visitHomeEditor,
-      visitHomeRecentsHidden, visitHomeUploads, visitHomeShuffle, visitHomeLauncher, visitHomeReadiness, visitAudioOverride, visitHomeRecents, visitHomeGuide,
+      visitHomeRecentsHidden, visitHomeSaverWake, visitHomeUploads, visitHomeShuffle, visitHomeLauncher, visitHomeReadiness, visitAudioOverride, visitHomeRecents, visitHomeGuide,
       visitHomeFadeAndInputs] },
     { job: 'home', tabs: [], visits: [visitHomeInternetTv, visitIptvChannels] },
     /*
