@@ -2261,6 +2261,13 @@ about:blank`) in front.
   brought no screen saver in the minute after: the timer had not run while
   the video played. Started from Home at that time instead, the screen saver
   came at once.
+- **G3 (webOS 10.3): a video screen saver started by tvpower is ended as
+  its video starts.** tvpower went from Screen Saver back to Active 2.4 to
+  2.6 s after `turnOnScreenSaver`, in the same millisecond as the Video
+  screen saver's first clip (4K Dolby Vision) reached the media pipeline,
+  from Home and from the Homebrew Channel alike, and with screenmanager's
+  `setScreenSaverMode` `manual` sent just before. The same app launched
+  through sam, with tvpower left Active, played on until a key.
 
 ## sam losing the screen saver app (webOS 9.2.2, C2)
 

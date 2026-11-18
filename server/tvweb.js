@@ -2305,7 +2305,9 @@ if (!CLI_MODE) {
   history.start();
   screentime.init({ config: CONFIG, liveState: liveState, control: controls.doControl, injectKey: controls.injectKey, keyBack: controls.KEY_BACK });
   screentime.start();
-  saverPowerOff.init({ config: CONFIG, liveState: liveState, control: controls.doControl });
+  saverPowerOff.init({ config: CONFIG, liveState: liveState, control: controls.doControl,
+    launchedShowing: screensavers.launchedShowing, launchedRunning: screensavers.launchedRunning });
+  screensavers.onLaunchedChange(saverPowerOff.launchedChanged);
   saverPowerOff.start();
 
   if (glasshouseHome && homePicture) startGlasshouseHome();
