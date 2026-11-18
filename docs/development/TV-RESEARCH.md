@@ -1971,7 +1971,7 @@ manager launched only HDMI 4 in nine minutes of the same file, and set back to
   guide. A change to the file on disk is not needed: the library is read when
   `surface-manager` starts, and a copy bind mounted over it, with the service
   restarted, was in use after, and was gone after a restart of the TV.
-- **The rootfs is read only.** `/` is squashfs `ro` and `/usr` an `ro` overlay;
+- **The rootfs is read only.** `/` is squashfs `ro` and `/usr` an `ro` overlay.
   `mount --bind` of a file over `/usr/lib/libappLaunch.so.1` (a link to
   `libappLaunch.so.1.0.0`) worked, and a second one over the first, while an
   `umount` of the first answered "target is busy".

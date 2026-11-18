@@ -366,7 +366,7 @@ step('Guide opens Glasshouse Home\'s guide where LG\'s key handler can be change
       assert.deepEqual(tv.configs['com.webos.keyaction.tvGuide'],
         { action: 'launch', id: 'com.webos.app.home', fgAppIdsForByPass: TV_GUIDE.fgAppIdsForByPass });
       assert.deepEqual(execs, ['mount', 'systemctl'], 'the library mounted and the compositor restarted once');
-      assert.ok(fs.readFileSync(path.join(stateDir, 'libappLaunch.so.1.glasshouse')).equals(changed));
+      assert.ok(require('../server/lib/util').sameBytes(fs.readFileSync(path.join(stateDir, 'libappLaunch.so.1.glasshouse')), changed));
       set('guide', 'lg', '', function () {
         assert.deepEqual(tv.configs['com.webos.keyaction.tvGuide'], TV_GUIDE);
         set('guide', 'open', 'action:homeGuide', function () {
