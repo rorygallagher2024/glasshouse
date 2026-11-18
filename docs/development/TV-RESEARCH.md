@@ -1813,13 +1813,13 @@ app in front. Remote Keys puts its own filter first.
 - **LG's filters can check the input source.** The inspected compositor passes
   a fourth `deviceId` argument. LG's `preProcess.js` calls
   `global.getDeviceType(deviceId)` and permits long-press handling only for
-  `RCU` and `MRCU`, rejecting device ID `-1`. Physical Blue presses reported
-  `MRCU` (device ID `2`); paired WebSocket presses reported an empty type
-  (device ID `10`). The deployed screenshot filter produced two complete
-  960×540 PNGs from two physical presses and none from four paired presses,
-  sent before and after the physical presses. All six reached the TV's button
-  listener. Device IDs are observations, not constants to match. IR remotes
-  and older compositor versions remain untested.
+  `RCU` and `MRCU`, rejecting device ID `-1`. IR Blue presses reported `RCU`
+  (device ID `1`); Magic Remote presses reported `MRCU` (device ID `2`). Each
+  of two IR and two Magic Remote Blue presses produced a complete 960×540 PNG
+  through the deployed filter. Four paired WebSocket presses (empty device
+  type, device ID `10`) reached the TV's button listener but produced no
+  screenshots. Device IDs are observations, not constants to match. Older
+  compositor versions remain untested.
 - **A filter can send keys over the network.** On a C3 (webOS 10.2.2) the
   filter's own `lunaCall.send` to `networkinput/test/sendKeyCode` with play
   207, pause 119, stop 128, rewind 168, fast forward 208, volume up 115, volume
