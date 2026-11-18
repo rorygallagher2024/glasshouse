@@ -1219,7 +1219,9 @@ async function loadHomeCardIcons() {
     const r = await (await fetch(api('/api/home/card-icons'))).json();
     homeCardIcons = (r && r.names) || [];
   } catch (e) { homeCardIcons = []; }
-  if (homeCat) renderHomeRows();
+  // Only the dialog's search offers them; the rows are left as drawn, so an
+  // owner's open section stays open.
+  if (homeCardIconTarget) renderHomeCardIconModal();
 }
 
 // An app title as a card icon is named, as lib/home cardIconKey: "YouTube Music" is youtube_music.
