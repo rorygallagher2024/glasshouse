@@ -1125,10 +1125,12 @@ button.pill.flash.idle[disabled]:hover{color:var(--w60);border-color:var(--edge)
 /* Settings tables sit side by side in at most two responsive columns on wide
    screens so each switch sits beside its label, collapsing cleanly to one
    column on narrow viewports. */
-#advpane .prot-table,#serverpane .prot-table,#inputspane .prot-table,.home-custom-table,#home-custom .pv-d .prot-table,#home-tv .prot-table{display:grid;column-gap:clamp(30px,4vw,52px);
+#advpane .prot-table,#serverpane .prot-table,#inputspane .prot-table,#audiopane .prot-table,#ambientpane .prot-table,#privpane .prot-table,#appspane .prot-table:not(.catalog-grid),#homepane .prot-table:not(#home-rows .prot-table):not(#home-recents .prot-table):not(#home-ch-list),#svc-rows,#pv-consent .pv-grp,#pv-live,#pv-daemons,#pv-mic,.pv-adid-rows{
+  display:grid;column-gap:clamp(30px,4vw,52px);
   grid-template-columns:repeat(auto-fill,minmax(min(100%,max(340px,calc((100% - clamp(30px,4vw,52px)) / 2))),1fr))}
-.home-weather-place,#ssh-row,#backup-daily-row{grid-column:1/-1}
-#advpane .prot-row,#serverpane .prot-row,#inputspane .prot-row,.home-custom-table .prot-row{align-items:flex-start;padding:16px 0}
+.home-weather-place,#ssh-row,#backup-daily-row,#pv-consent .pv-grp>.pv-g,#pv-consent .pv-grp>.pv-gn,#appspane .prot-table:not(.catalog-grid)>.sub{grid-column:1/-1}
+#svc-rows .oled-row:last-child{border-bottom:1px solid var(--w12)}
+#advpane .prot-row,#serverpane .prot-row,#inputspane .prot-row,#audiopane .prot-row,#ambientpane .prot-row,#privpane .prot-row,#appspane .prot-table:not(.catalog-grid) .prot-row,.home-custom-table .prot-row{align-items:flex-start;padding:16px 0}
 #advpane .prot-title,#serverpane .prot-title,#inputspane .prot-title,#homepane .prot-title{font-size:var(--h-row);font-weight:600;letter-spacing:.02em;color:var(--w90)}
 #advpane .prot-desc,#serverpane .prot-desc,#inputspane .prot-desc,#homepane .prot-desc{font-size:14px;line-height:1.5;margin-top:4px;max-width:none}
 #advpane .prot-status,#serverpane .prot-status,#inputspane .prot-status,.home-custom-table .prot-status{padding-top:2px}
@@ -1585,7 +1587,8 @@ button.tools-jump:active{background:var(--w80)}
   .tools-toolbar-grp{flex-direction:column;align-items:flex-start;gap:6px}
 }
 /* Quick Access: 3x4 physical remote number pad (1-9 and centered 0). */
-.qa-pad-frame{max-width:780px;margin:18px auto 0;padding:16px;border:1px solid var(--w12);border-radius:var(--r-lg);background:rgba(var(--fg),.02)}
+.qa-pad-frame{max-width:780px;margin:18px auto 26px;padding:16px;border:1px solid var(--w12);border-radius:var(--r-lg);background:rgba(var(--fg),.02)}
+#remotepane .pv-d[open]{padding-bottom:22px}
 .rk-grid.qa-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:0}
 .rk-key.qa-key-tile,.rk-key.qa-zero-tile{min-height:128px;padding:14px 16px;gap:8px;border-radius:var(--r-md);justify-content:space-between;align-items:stretch;text-align:center;background:rgba(var(--fg),.025);transition:border-color .15s ease,background .15s ease}
 .rk-key.qa-key-tile.rk-changed{border-color:var(--edge);background:rgba(var(--fg),.045)}
@@ -1708,8 +1711,6 @@ button.tools-jump:active{background:var(--w80)}
 .audio-more[open]>summary{margin-bottom:6px}
 .audio-head{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;margin:0 0 18px}
 .audio-head .pill{flex-shrink:0;min-height:36px}
-/* The fold below draws the line that closes the list. */
-#audio-bt-list .prot-row:last-child,#audio-bt-found .prot-row:last-child{border-bottom:0}
 .audio-bt-btns{display:flex;gap:8px;flex-shrink:0}
 .audio-bt-btns .pill{min-height:36px}
 #audio-bt-scan{border-top:1px solid var(--w06);margin-top:0;padding-top:14px}
@@ -2072,6 +2073,7 @@ input.inp-name-in:disabled{border-bottom-color:transparent;cursor:default}
 #home-rows .prot-table,#home-recents .prot-table,#home-ch-list{
   display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,300px),1fr));gap:10px 14px;margin-top:10px}
 #home-rows .prot-table>.prot-row:not(.home-tile),#home-rows .prot-table>.sub,#home-recents .prot-table>.sub,#home-ch-list>.sub{grid-column:1/-1}
+#home-rows .prot-table>.prot-row:not(.home-tile),.home-ch-add>.prot-row,.home-dark .vol-row{max-width:540px}
 #home-rows .prot-row.home-tile,#home-recents .prot-row.home-tile,#home-ch-list .prot-row{
   padding:12px 14px;border:1px solid var(--w12);border-radius:var(--r-md);background:rgba(var(--fg),.025)}
 #home-rows .prot-row.home-tile{flex-direction:column;align-items:stretch;justify-content:space-between;gap:10px}

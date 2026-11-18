@@ -1735,19 +1735,21 @@
       <div class="wall-foot-btns"><button type="button" class="pill idle" id="home-video-save" onclick="homeVideoSave()">&mdash;</button></div>
     </div>
     <div class="sub" id="home-video-note" role="status"></div>
-    <div class="prot-row">
-      <div class="prot-main">
-        <div class="prot-title" data-t="home.video.shuffle">Random order</div>
-        <div class="prot-desc" data-t="home.video.shuffleHelp">Every video plays once before any plays again.</div>
+    <div class="prot-table">
+      <div class="prot-row">
+        <div class="prot-main">
+          <div class="prot-title" data-t="home.video.shuffle">Random order</div>
+          <div class="prot-desc" data-t="home.video.shuffleHelp">Every video plays once before any plays again.</div>
+        </div>
+        <div class="prot-status"><button type="button" class="pill idle" id="home-video-shuffle" onclick="homeVideoShuffle()">&mdash;</button></div>
       </div>
-      <div class="prot-status"><button type="button" class="pill idle" id="home-video-shuffle" onclick="homeVideoShuffle()">&mdash;</button></div>
-    </div>
-    <div class="prot-row">
-      <div class="prot-main">
-        <div class="prot-title" data-t="home.video.captions">Captions</div>
-        <div class="prot-desc" data-t="home.video.captionsDesc">Each scene’s name, and what is in view as it plays, where a playlist gives them; a plain video link has none. Shown on Glasshouse Home in its text colour, and on the Video screen saver, where its clock and weather are set.</div>
+      <div class="prot-row">
+        <div class="prot-main">
+          <div class="prot-title" data-t="home.video.captions">Captions</div>
+          <div class="prot-desc" data-t="home.video.captionsDesc">Each scene’s name, and what is in view as it plays, where a playlist gives them; a plain video link has none. Shown on Glasshouse Home in its text colour, and on the Video screen saver, where its clock and weather are set.</div>
+        </div>
+        <div class="prot-status"><button type="button" class="pill idle" id="home-video-show-captions" onclick="homeVideoShow('showCaptions')">&mdash;</button></div>
       </div>
-      <div class="prot-status"><button type="button" class="pill idle" id="home-video-show-captions" onclick="homeVideoShow('showCaptions')">&mdash;</button></div>
     </div>
     <div class="set"><div class="lbl" data-t="home.video.captionPosition">Captions</div>
       <div class="btns wall-choice" id="home-video-caption-position"></div>
@@ -1814,8 +1816,10 @@
     <div class="pv-h" data-t="pv.adid">Advertising identifier</div>
     <div class="pv-sub" data-t="pv.adid.desc">A unique ID your TV hands to advertisers so they can recognise it and
       target ads at you. Resetting it breaks the link to any profile built from past activity.</div>
-    <div id="pv-adid"></div>
-    <div id="pv-lmt"></div>
+    <div class="pv-adid-rows">
+      <div id="pv-adid"></div>
+      <div id="pv-lmt"></div>
+    </div>
     <div class="sub" id="pv-adnote" style="margin-top:8px"></div>
     <div class="btns" style="margin-top:14px;max-width:520px">
       <button id="adid-reset" onclick="privAction('resetAdId')" data-t="pv.adid.reset">Reset advertising ID</button>
