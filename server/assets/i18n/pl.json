@@ -215,7 +215,7 @@
  "apps.quickAccess": {"text": "Szybki dostęp", "from": "Quick Access"},
  "apps.quickAccess.apps": {"text": "Aplikacje", "from": "Apps"},
  "apps.quickAccess.count": {"text": "Ustawione: {n} z 9", "from": "{n} of 9 set"},
- "apps.quickAccess.desc": {"text": "Przytrzymanie przycisku z cyfrą na pilocie otwiera przypisaną do niego aplikację lub wejście. Zmiana wprowadzona tutaj od razu działa na telewizorze.", "from": "Holding a number key on the remote opens the app or input set for it. A change here applies on the TV straight away."},
+ "apps.quickAccess.desc": {"text": "Przytrzymanie przycisku z cyfrą na pilocie otwiera przypisaną do niego aplikację lub wejście.", "from": "Holding a number key on the remote opens the app or input set for it."},
  "apps.quickAccess.failed": {"text": "Nie udało się zmienić: {error}", "from": "Could not change it: {error}"},
  "apps.quickAccess.inputs": {"text": "Wejścia", "from": "Inputs"},
  "apps.quickAccess.keyLabel": {"text": "Przycisk {key}", "from": "Key {key}"},
@@ -230,7 +230,7 @@
  "apps.remoteKeys.close": {"text": "Zamknij", "from": "Close"},
  "apps.remoteKeys.colour": {"text": "Kolorowe przyciski", "from": "Color keys"},
  "apps.remoteKeys.count": {"text": "Zmienione: {n}", "from": "{n} changed"},
- "apps.remoteKeys.desc": {"text": "Co robi przycisk na pilocie: to, co u LG, nic albo zamiast tego otwiera aplikację lub wejście. Zmiana działa od razu i przetrwa ponowne uruchomienie. Przycisk ustawiony tutaj jest przechwytywany, zanim zobaczy go jakakolwiek aplikacja, więc aplikacja, która sama go używa, jak YouTube z Guide, już go nie dostaje. Wymienione przyciski to te, które obsługuje ten telewizor; dany pilot może nie mieć ich wszystkich.", "from": "What a key on the remote does: as LG has it, nothing, or opening an app or input instead. A change applies straight away and lasts across reboots. A key set here is taken before any app sees it, so an app that uses the key itself, such as YouTube with Guide, no longer gets it. The keys listed are the ones this TV handles; a given remote may not have them all."},
+ "apps.remoteKeys.desc": {"text": "Co robi przycisk na pilocie: to, co u LG, nic albo zamiast tego otwiera aplikację lub wejście.", "from": "What a key on the remote does: as LG has it, nothing, or opening an app or input instead."},
  "apps.remoteKeys.doesNothing": {"text": "Nic nie robi", "from": "Does nothing"},
  "apps.remoteKeys.elsewhere": {"text": "Przyciski na pilotach sprzedawanych gdzie indziej ({n})", "from": "Buttons on remotes sold elsewhere ({n})"},
  "apps.remoteKeys.failed": {"text": "Nie udało się zmienić: {error}", "from": "Could not change it: {error}"},
@@ -3372,5 +3372,13 @@
  "rp.input": {"text": "Wejście", "from": "Input"},
  "rp.buttons": {"text": "Przyciski", "from": "Buttons"},
  "rp.touchpad": {"text": "Touchpad", "from": "Touchpad"},
- "rp.standby": {"text": "Telewizor jest w trybie czuwania. Włącz go, aby używać pilota.", "from": "The TV is in standby. Power on to use the remote."}
+ "rp.standby": {"text": "Telewizor jest w trybie czuwania. Włącz go, aby używać pilota.", "from": "The TV is in standby. Power on to use the remote."},
+ "apps.install.hbcBadge": {"text": "Homebrew Channel", "from": "Homebrew Channel"},
+ "apps.quickAccess.zeroOpens": {"text": "Lista Szybkiego dostępu", "from": "Quick Access list"},
+ "header.switchInput": {"text": "Zmień wejście", "from": "Switch input"},
+ "home.sub.label": {"text": "Sekcje ekranu głównego", "from": "Home sections"},
+ "home.sub.rows": {"text": "Rzędy i kafelki", "from": "Rows & tiles"},
+ "home.sub.appearance": {"text": "Wygląd i tapeta", "from": "Appearance & wallpaper"},
+ "home.sub.behavior": {"text": "Zachowanie i uruchamianie", "from": "Behavior & startup"},
+ "home.sub.iptv": {"text": "Telewizja internetowa", "from": "Internet TV"}
 }

@@ -96,10 +96,10 @@ function renderHomeTv() {
     : homeTv.waiting === 'memory' ? homeTvWaitMemory() : '';
   box.innerHTML = `<div class="prot-table">${rows || `<div class="sub">${esc(t('home.tv.none', 'No playlists yet.'))}</div>`}</div>
     ${waiting ? `<div class="pv-note">${esc(waiting)}</div>` : ''}
-    ${homeTvForm ? homeTvFormHtml() : `<div class="btns" style="max-width:420px">
-      <button type="button" ${usable ? '' : 'disabled'} onclick="homeTvOpenForm('xtream')">${esc(t('home.tv.addXtream', 'Add an Xtream login'))}</button>
-      <button type="button" ${usable ? '' : 'disabled'} onclick="homeTvOpenForm('m3u')">${esc(t('home.tv.addM3u', 'Add an M3U link'))}</button>
-      <button type="button" ${usable ? '' : 'disabled'} onclick="homeTvOpenForm('enigma2')">${esc(t('home.tv.addEnigma2', 'Add a satellite tuner'))}</button></div>`}
+    ${homeTvForm ? homeTvFormHtml() : `<div class="wall-foot-btns" style="margin-top:12px">
+      <button type="button" class="pill idle" ${usable ? '' : 'disabled'} onclick="homeTvOpenForm('xtream')">${esc(t('home.tv.addXtream', 'Add an Xtream login'))}</button>
+      <button type="button" class="pill idle" ${usable ? '' : 'disabled'} onclick="homeTvOpenForm('m3u')">${esc(t('home.tv.addM3u', 'Add an M3U link'))}</button>
+      <button type="button" class="pill idle" ${usable ? '' : 'disabled'} onclick="homeTvOpenForm('enigma2')">${esc(t('home.tv.addEnigma2', 'Add a satellite tuner'))}</button></div>`}
     ${homeGuideKeyHtml()}
     ${homeTv.playlists.some(p => p.ready) ? homeTvManageHtml() + homeTvPauseHtml() : ''}`;
 }
@@ -118,7 +118,7 @@ function homeTvPauseHtml() {
     <div class="prot-main"><div class="prot-title">${esc(t('home.tv.pauseTitle', 'Pause live Internet TV'))}</div>
       <div class="prot-desc">${esc(t('home.tv.pauseDesc', 'Pause on the remote pauses a channel played full screen. Left and right go back and forward 30 seconds, and Back goes to live again. While a channel plays, the TV records it to a USB stick, up to about half an hour, and deletes it when the channel stops. MPEG-TS channels only.'))}</div>
       <div class="prot-desc">${esc(stick)}</div></div>
-    <div class="prot-status"><button type="button" class="pill ${p.on ? 'good' : 'idle'}" ${homeWritable() ? '' : 'disabled'} onclick="homeTvSetPause(${p.on ? 'false' : 'true'})">${esc(p.on ? t('common.on', 'On') : t('common.off', 'Off'))}</button></div>
+    <div class="prot-status"><button type="button" class="pill pill-toggle ${p.on ? 'good' : 'idle'}" ${homeWritable() ? '' : 'disabled'} onclick="homeTvSetPause(${p.on ? 'false' : 'true'})">${esc(p.on ? t('common.on', 'On') : t('common.off', 'Off'))}</button></div>
   </div></div>`;
 }
 
@@ -179,8 +179,8 @@ function homeTvFormHtml() {
       : field('home-tv-url', t('home.tv.url', 'Playlist link'), 'url', keep || 'http://example.host/get.php?…')}
     ${f.kind === 'enigma2' ? '' : field('home-tv-guide', t('home.tv.guideLink', 'Guide link (optional)'), 'url', p && p.hasGuideLink ? keep : f.kind === 'xtream' ? t('home.tv.guidePhX', 'Not needed: the guide comes from the login') : t('home.tv.guidePh', 'XMLTV link, if the playlist has none'))}
     <div class="sub">${esc(t('home.tv.private', 'Kept on the TV only, readable by Glasshouse alone. It is never sent to Home Assistant, the logs or this page.'))}</div>
-    <div class="btns" style="max-width:360px">
-      <button type="button" onclick="homeTvSave()">${esc(editing ? t('home.tv.saveEdit', 'Save and read it again') : t('home.tv.saveAdd', 'Add and read it'))}</button>
+    <div class="wall-foot-btns" style="margin-top:12px">
+      <button type="button" class="pill idle" onclick="homeTvSave()">${esc(editing ? t('home.tv.saveEdit', 'Save and read it again') : t('home.tv.saveAdd', 'Add and read it'))}</button>
       <button type="button" class="pill idle" onclick="homeTvForm = null; renderHomeTv()">${esc(t('common.cancel', 'Cancel'))}</button></div>
   </div>`;
 }
@@ -191,13 +191,13 @@ function homeTvSwitchHtml(name, title, desc) {
   const on = !!homeTvForm[name];
   return `<div class="prot-table"><div class="prot-row">
     <div class="prot-main"><div class="prot-title">${esc(title)}</div><div class="prot-desc">${esc(desc)}</div></div>
-    <div class="prot-status"><button type="button" class="pill ${on ? 'good' : 'idle'}" onclick="homeTvSwitch('${name}', this)">${esc(on ? t('common.on', 'On') : t('common.off', 'Off'))}</button></div>
+    <div class="prot-status"><button type="button" class="pill pill-toggle ${on ? 'good' : 'idle'}" onclick="homeTvSwitch('${name}', this)">${esc(on ? t('common.on', 'On') : t('common.off', 'Off'))}</button></div>
   </div></div>`;
 }
 
 function homeTvSwitch(name, btn) {
   homeTvForm[name] = !homeTvForm[name];
-  btn.className = 'pill ' + (homeTvForm[name] ? 'good' : 'idle');
+  btn.className = 'pill pill-toggle ' + (homeTvForm[name] ? 'good' : 'idle');
   btn.textContent = homeTvForm[name] ? t('common.on', 'On') : t('common.off', 'Off');
 }
 

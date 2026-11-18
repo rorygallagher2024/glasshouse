@@ -98,6 +98,31 @@ function homeLauncherChosen() {
   return homeLaunchersAll().filter(l => l.id === id)[0] || null;
 }
 
+let homeSubView = 'rows';
+
+function setHomeSubView(view) {
+  homeSubView = view || 'rows';
+  syncHomeSubView();
+}
+
+function syncHomeSubView() {
+  const pane = q('homepane');
+  const nav = q('home-subnav');
+  const box = q('home-custom');
+  const useSubnav = !!(box && !box.classList.contains('lg-home') && !homeBarOn());
+  if (nav) {
+    nav.hidden = !useSubnav;
+    const btns = nav.querySelectorAll('button[data-home-view]');
+    for (let i = 0; i < btns.length; i++) {
+      btns[i].classList.toggle('on', btns[i].getAttribute('data-home-view') === homeSubView);
+    }
+  }
+  if (pane) {
+    if (useSubnav) pane.setAttribute('data-home-view', homeSubView);
+    else pane.removeAttribute('data-home-view');
+  }
+}
+
 function renderHomeCustom(autoVal) {
   const st = homeStatus;
   const lg = st.lgHome;
@@ -118,6 +143,7 @@ function renderHomeCustom(autoVal) {
   if (layout && (!lg || inPlace)) layout.hidden = true;
   const more = q('home-more');
   if (box) box.hidden = !(glasshouseOn || (more && !more.hidden) || autoVal !== undefined || (layout && !layout.hidden) || (tiles && !tiles.hidden));
+  syncHomeSubView();
 }
 
 function homePreviewTiles(count) {

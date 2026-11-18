@@ -15,17 +15,25 @@
 <header>
   <div class="src now">
     <div class="st" id="state"><i></i><span>&mdash;</span></div>
-    <div class="t" id="source">&mdash;</div>
+    <button type="button" class="t src-btn" id="source" aria-haspopup="true" aria-expanded="false" onclick="toggleSourceMenu(event)">&mdash;</button>
+    <div class="src-menu" id="source-menu" role="menu" aria-label="Switch input" data-t-aria-label="header.switchInput" hidden></div>
     <div class="stream-info">
       <div class="stream-primary num" id="stream-primary">&mdash;</div>
     </div>
   </div>
   <div class="hdr-status">
-    <!-- The remote at any time (#1586). The volume is on the Control tab and in the remote itself. -->
-    <button type="button" class="hdr-remote" id="hdr-remote" onclick="openRemote()">
-      <svg class="hdr-remote-ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="2.5" width="8" height="19" rx="3"/><circle cx="12" cy="8" r="1.6"/><path d="M10.5 13h3M10.5 16h3"/></svg>
-      <span class="hdr-remote-label" data-t="header.remote">Remote</span>
-    </button>
+    <!-- The remote at any time (#1586), with a live volume/mute badge beside it. -->
+    <div class="hdr-actions">
+      <button type="button" class="hdr-vol num" id="hdr-vol" aria-label="Mute" data-t-aria-label="ctl.mute" hidden>
+        <span class="hdr-vol-fill" id="hdr-vol-fill"></span>
+        <svg class="hdr-vol-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path class="vol-waves" d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11"/><path class="vol-x" d="M16 9.5l5 5M21 9.5l-5 5"/></svg>
+        <span class="hdr-vol-val" id="hdr-vol-val">&mdash;</span>
+      </button>
+      <button type="button" class="hdr-remote" id="hdr-remote" onclick="openRemote()">
+        <svg class="hdr-remote-ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="2.5" width="8" height="19" rx="3"/><circle cx="12" cy="8" r="1.6"/><path d="M10.5 13h3M10.5 16h3"/></svg>
+        <span class="hdr-remote-label" data-t="header.remote">Remote</span>
+      </button>
+    </div>
     <div class="hdr-line" id="hdr-sleep" hidden></div>
   </div>
 </header>
@@ -648,6 +656,10 @@
 
 <section class="priv panel" id="audiopane" role="tabpanel" hidden>
   <div class="lbl" data-t="tab.audio">Audio</div>
+  <div class="err-note audio-error" id="audio-error" role="alert" hidden></div>
+  <div class="audio-now" id="audio-now" hidden>
+    <ol class="audio-path" id="audio-path"></ol>
+  </div>
   <div class="pv-sec" id="audio-sound-head" data-t="adv.sound">Sound</div>
   <div class="prot-table" id="audio-settings" data-reload="loadAudio"></div>
 
@@ -669,7 +681,6 @@
     <div class="err-note audio-error" id="audio-bt-error" role="alert" hidden></div>
   </div>
 
-  <div class="err-note audio-error" id="audio-error" role="alert" hidden></div>
   <details class="pv-d audio-more" id="audio-more">
   <summary><span class="audio-fold"><span data-t="audio.pathTitle">Soundbar and receiver</span><span class="pv-sub" data-t="audio.pathDesc">Whether a soundbar or receiver is connected over HDMI ARC or eARC, and which audio formats the TV and the receiver say they support. Useful when Dolby Atmos or DTS doesn’t come through.</span></span></summary>
   <div class="audio-head">
@@ -677,7 +688,6 @@
     <button type="button" class="pill idle" id="audio-refresh" onclick="loadAudio()" data-t="audio.refresh">Refresh</button>
   </div>
   <div id="audio-readings" aria-busy="true">
-    <ol class="audio-path" id="audio-path"></ol>
     <div class="audio-formats-wrap">
       <table class="audio-formats">
         <caption class="sub" data-t="audio.tableCaption">Supported formats</caption>
@@ -1301,13 +1311,13 @@
 
   <details class="pv-d" id="disc-quickaccess" open hidden>
     <summary><span data-t="apps.quickAccess">Quick Access</span> <span class="cur" id="apps-qa-summary"></span></summary>
-    <div class="pv-sub" data-t="apps.quickAccess.desc">Holding a number key on the remote opens the app or input set for it. A change here applies on the TV straight away.</div>
+    <div class="pv-sub" data-t="apps.quickAccess.desc">Holding a number key on the remote opens the app or input set for it.</div>
     <div id="apps-qa-list"></div>
   </details>
 
   <details class="pv-d" id="disc-remotekeys" open hidden>
     <summary><span data-t="apps.remoteKeys">Remote keys</span> <span class="cur" id="apps-rk-summary"></span></summary>
-    <div class="pv-sub" data-t="apps.remoteKeys.desc">What a key on the remote does: as LG has it, nothing, or opening an app or input instead. A change applies straight away and lasts across reboots. A key set here is taken before any app sees it, so an app that uses the key itself, such as YouTube with Guide, no longer gets it. The keys listed are the ones this TV handles; a given remote may not have them all.</div>
+    <div class="pv-sub" data-t="apps.remoteKeys.desc">What a key on the remote does: as LG has it, nothing, or opening an app or input instead.</div>
     <div id="apps-rk-list"></div>
   </details>
 </section>
@@ -1371,7 +1381,13 @@
        own options while it is on, LG's Home's layout while that is, and system apps -->
   <div id="home-custom" hidden>
   <div class="pv-sec" data-t="home.customisation">Home customisation</div>
-  <div class="home-group" id="home-g-start">
+  <div class="catalog-seg home-subnav" id="home-subnav" role="group" aria-label="Home sections" data-t-aria-label="home.sub.label" hidden>
+    <button type="button" class="on" data-home-view="rows" onclick="setHomeSubView('rows')" data-t="home.sub.rows">Rows &amp; tiles</button>
+    <button type="button" data-home-view="appearance" onclick="setHomeSubView('appearance')" data-t="home.sub.appearance">Appearance &amp; wallpaper</button>
+    <button type="button" data-home-view="behavior" onclick="setHomeSubView('behavior')" data-t="home.sub.behavior">Behavior &amp; startup</button>
+    <button type="button" data-home-view="iptv" onclick="setHomeSubView('iptv')" data-t="home.sub.iptv">Internet TV</button>
+  </div>
+  <div class="home-group" id="home-g-start" data-home-sub="behavior">
   <div class="pv-g" data-t="home.group.start">Starting up</div>
   <div class="prot-table home-custom-table">
     <div class="prot-row" id="home-autolaunch-row" hidden>
@@ -1391,7 +1407,7 @@
     </div>
   </div>
   </div>
-  <div class="home-group" id="home-g-layout">
+  <div class="home-group" id="home-g-layout" data-home-sub="rows">
   <div class="pv-g" data-t="home.group.layout">Layout</div>
   <div class="prot-table home-custom-table">
     <div class="prot-row home-gh-row" id="home-alternative-row" hidden>
@@ -1410,7 +1426,7 @@
     </div>
   </div>
   </div>
-  <div class="home-group" id="home-g-shown">
+  <div class="home-group" id="home-g-shown" data-home-sub="behavior">
   <div class="pv-g" data-t="home.group.shown">Shown on Home</div>
   <div class="prot-table home-custom-table">
     <div class="prot-row home-gh-row home-show-row" hidden>
@@ -1504,7 +1520,7 @@
     </div>
   </div>
   </div>
-  <div class="home-group" id="home-g-preview">
+  <div class="home-group" id="home-g-preview" data-home-sub="behavior">
   <div class="pv-g" data-t="home.group.preview">Live preview</div>
   <div class="prot-table home-custom-table">
     <div class="prot-row home-gh-row" id="home-preview-row" hidden>
@@ -1548,7 +1564,7 @@
     </div>
   </div>
   </div>
-  <div class="home-group" id="home-g-search">
+  <div class="home-group" id="home-g-search" data-home-sub="behavior">
   <div class="pv-g" data-t="home.group.search">Search</div>
   <div class="prot-table home-custom-table">
     <div class="prot-row home-gh-row" id="home-search-row" hidden>
@@ -1562,7 +1578,7 @@
     </div>
   </div>
   </div>
-  <div class="home-group" id="home-g-motion">
+  <div class="home-group" id="home-g-motion" data-home-sub="appearance">
   <div class="pv-g" data-t="home.group.motion">Animations</div>
   <div class="prot-table home-custom-table">
     <div class="prot-row home-gh-row" id="home-fade-row" hidden>
@@ -1650,34 +1666,34 @@
   <div id="home-more">
 
   <!-- .home-arrange: also shown while a custom launcher is the TV's Home, whose apps and inputs it orders and hides -->
-  <div class="pv-g home-arrange" id="home-layout-title" data-t="home.layout">Rows and tiles</div>
-  <div class="sub home-arrange home-gh-only" data-t="home.layoutDesc">Apps and inputs come from the TV: hide the ones not wanted. Channels are only the ones added here. Holding OK on Glasshouse Home arranges the same layout on the TV.</div>
-  <div class="sub home-arrange home-bar-only" data-t="home.layoutDescBar">Which of the TV&rsquo;s apps and inputs Glasshouse Bar shows, and in what order. Apps in More apps are left out of it.</div>
-  <div class="sub home-arrange home-launcher-only" data-t="home.layoutDescLaunchers">Which of the TV&rsquo;s apps and inputs Minimal shows, and in what order. A launcher of your own follows this where it was written to.</div>
-  <div class="pv-note home-arrange" id="home-history-note" hidden data-t="home.historyNote">Apps are in LG's order. With History switched on in Advanced, new apps are placed by how much each is used.</div>
-  <div class="home-arrange" id="home-rows"></div>
-  <div id="home-recents"></div>
-  <div class="btns home-arrange" style="max-width:240px"><button type="button" id="home-reset" onclick="homeResetLayout()" data-t="home.reset">Reset the layout</button></div>
-  <div class="sub home-arrange" data-t="home.resetDesc">The rows, apps and inputs go back to their first order, with LG’s promotions hidden again. Channels stay as they are.</div>
+  <div class="pv-g home-arrange" id="home-layout-title" data-home-sub="rows" data-t="home.layout">Rows and tiles</div>
+  <div class="sub home-arrange home-gh-only" data-home-sub="rows" data-t="home.layoutDesc">Apps and inputs come from the TV: hide the ones not wanted. Channels are only the ones added here. Holding OK on Glasshouse Home arranges the same layout on the TV.</div>
+  <div class="sub home-arrange home-bar-only" data-home-sub="rows" data-t="home.layoutDescBar">Which of the TV&rsquo;s apps and inputs Glasshouse Bar shows, and in what order. Apps in More apps are left out of it.</div>
+  <div class="sub home-arrange home-launcher-only" data-home-sub="rows" data-t="home.layoutDescLaunchers">Which of the TV&rsquo;s apps and inputs Minimal shows, and in what order. A launcher of your own follows this where it was written to.</div>
+  <div class="pv-note home-arrange" id="home-history-note" data-home-sub="rows" hidden data-t="home.historyNote">Apps are in LG's order. With History switched on in Advanced, new apps are placed by how much each is used.</div>
+  <div class="home-arrange" id="home-rows" data-home-sub="rows"></div>
+  <div id="home-recents" data-home-sub="rows"></div>
+  <div class="btns home-arrange" data-home-sub="rows" style="max-width:240px"><button type="button" class="pill idle" id="home-reset" onclick="homeResetLayout()" data-t="home.reset">Reset the layout</button></div>
+  <div class="sub home-arrange" data-home-sub="rows" data-t="home.resetDesc">The rows, apps and inputs go back to their first order, with LG’s promotions hidden again. Channels stay as they are.</div>
 
-  <div class="pv-g" data-t="home.tv.title">Internet TV</div>
-  <div class="sub" data-t="home.tv.intro">Channels from your IPTV provider, in a row of their own on Glasshouse Home. Add the same M3U link or Xtream login your IPTV app uses, It is kept on the TV and never shown here again.</div>
-  <div id="home-tv"></div>
+  <div class="pv-g" data-home-sub="iptv" data-t="home.tv.title">Internet TV</div>
+  <div class="sub" data-home-sub="iptv" data-t="home.tv.intro">Channels from your IPTV provider, in a row of their own on Glasshouse Home. Add the same M3U link or Xtream login your IPTV app uses, It is kept on the TV and never shown here again.</div>
+  <div id="home-tv" data-home-sub="iptv"></div>
 
-  <div class="pv-g" data-t="home.colours.title">Colours</div>
-  <div class="sub" data-t="home.colours.desc">The text on Glasshouse Home, the highlight behind the chosen tile, and the accent that frames it and marks what was last on. The quieter text is a shade of the text colour.</div>
-  <div class="home-looks" id="home-looks"></div>
-  <div class="home-custom">
+  <div class="pv-g" data-home-sub="appearance" data-t="home.colours.title">Colours</div>
+  <div class="sub" data-home-sub="appearance" data-t="home.colours.desc">The text on Glasshouse Home, the highlight behind the chosen tile, and the accent that frames it and marks what was last on. The quieter text is a shade of the text colour.</div>
+  <div class="home-looks" id="home-looks" data-home-sub="appearance"></div>
+  <div class="home-custom" data-home-sub="appearance">
     <label><input type="color" id="home-col-text" onchange="homeCustomColours()"> <span data-t="home.colours.text">Text</span></label>
     <label><input type="color" id="home-col-accent" onchange="homeCustomColours()"> <span data-t="home.colours.accent">Accent</span></label>
     <label><input type="color" id="home-col-highlight" onchange="homeCustomHighlight()"> <span data-t="home.colours.highlight">Tile highlight</span></label>
-    <button type="button" id="home-col-reset" onclick="homeSaveLayout({ colours: homeDefaultLook(), tileHighlight: null })" data-t="home.colours.reset">Use the default colours</button>
+    <button type="button" class="pill idle" id="home-col-reset" onclick="homeSaveLayout({ colours: homeDefaultLook(), tileHighlight: null })" data-t="home.colours.reset">Use the default colours</button>
   </div>
 
-  <div class="pv-g" data-t="home.bg.title">Background</div>
-  <div class="sub" data-t="home.bg.intro">What is behind Glasshouse Home: nothing, pictures that change with the part of the day, or a moving background.</div>
-  <div class="btns wall-choice" id="home-bg-kind"></div>
-  <div id="home-bg-pictures">
+  <div class="pv-g" data-home-sub="appearance" data-t="home.bg.title">Background</div>
+  <div class="sub" data-home-sub="appearance" data-t="home.bg.intro">What is behind Glasshouse Home: nothing, pictures that change with the part of the day, or a moving background.</div>
+  <div class="btns wall-choice" id="home-bg-kind" data-home-sub="appearance"></div>
+  <div id="home-bg-pictures" data-home-sub="appearance">
     <div class="sub" id="home-wall-intro"></div>
     <div class="btns wall-choice" id="home-wall-choice"></div>
     <!-- Your own, shuffled: any number of pictures, one at a time in a random order -->
@@ -1700,7 +1716,7 @@
     </div>
     <div class="sub" id="home-wall-upload-note" role="status"></div>
   </div>
-  <div id="home-bg-animated">
+  <div id="home-bg-animated" data-home-sub="appearance">
     <div class="sub" data-t="home.animDesc">Light that moves slowly behind Glasshouse Home. It stops whenever Home is not on screen.</div>
     <div class="btns wall-choice scenes" id="home-anim-scenes"></div>
     <div id="home-anim-colours">
@@ -1712,7 +1728,7 @@
       </div>
     </div>
   </div>
-  <div id="home-bg-video" hidden>
+  <div id="home-bg-video" data-home-sub="appearance" hidden>
     <div class="sub"><span data-t="home.video.help">Links to video files, one per line, such as https://example.com/beach.mp4, or to a playlist of them. The TV streams them itself, from the internet or your own network.</span> <a href="https://rorygallagher2024.github.io/glasshouse/dashboard/home/#which-video-links-work" target="_blank" rel="noopener" data-t="home.video.docs">Which links work</a></div>
     <textarea id="home-video-urls" class="home-video-urls" rows="5" spellcheck="false" aria-label="Video URLs, one per line" data-t-aria-label="home.video.urlsLabel" oninput="homeVideoCount()"></textarea>
     <div class="wall-foot">
@@ -1740,7 +1756,7 @@
       <div class="btns wall-choice" id="home-video-caption-font"></div>
     </div>
   </div>
-  <div class="set home-dark"><div class="lbl"><span data-t="home.darkening">Darkening</span> &middot; <span id="home-dark-lbl" class="num">&mdash;</span></div>
+  <div class="set home-dark" data-home-sub="appearance"><div class="lbl"><span data-t="home.darkening">Darkening</span> &middot; <span id="home-dark-lbl" class="num">&mdash;</span></div>
     <div class="sub" data-t="home.darkeningDesc">How much the wallpaper is darkened behind the clock and the rows, to keep them easy to read. Off shows the picture as it is.</div>
     <div class="vol-row">
       <div class="vol-wrap full" id="home-dark-wrap" role="group" aria-label="Darkening" data-t-aria-label="home.darkening">

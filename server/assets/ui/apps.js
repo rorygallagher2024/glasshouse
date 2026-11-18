@@ -8,9 +8,10 @@ let appsData = null;
  */
 const tilePending = {};
 let appsLoading = false;
+let appsAgain = false;
 
 async function loadApps() {
-  if (appsLoading) return;
+  if (appsLoading) { appsAgain = true; return; }
   appsLoading = true;
   try {
     const r = await fetch(api('/api/apps'), { cache: 'no-store' });
@@ -25,6 +26,7 @@ async function loadApps() {
   } finally {
     appsLoading = false;
   }
+  if (appsAgain) { appsAgain = false; loadApps(); }
 }
 
 // The address without its scheme, as a reminder of which page a tile opens.
@@ -957,7 +959,7 @@ function renderBackgroundServices(d) {
         ${badge ? `<span class="app-badge">${badge}</span>` : ''}
         ${renderToggle({
           id: 'btn-svc-' + id,
-          cls: isDisabled ? 'warn' : 'good',
+          cls: stillRunning ? 'warn' : isDisabled ? 'idle' : 'good',
           label: stillRunning ? t('apps.service.stillRunning', 'Disabled, still running') : isDisabled ? t('apps.service.disabled', 'Disabled') : t('apps.service.active', 'Active'),
           disabled: !d.writable,
           onclick: "toggleService('" + id + "', " + (!isDisabled) + ")",

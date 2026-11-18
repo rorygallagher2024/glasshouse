@@ -11,22 +11,28 @@ let uploading = false;
 const INSTALL_BUSY = { downloading: 1, verifying: 1, installing: 1, elevating: 1 };
 
 let catalogAgain = false;
+let catalogSeq = 0;
 async function loadCatalog(force) {
   // Asked again while a load is out: once more after it, so a change made
   // meanwhile is not lost with the dropped request.
   if (catalogLoading) { catalogAgain = true; return; }
   catalogLoading = true;
+  const seq = ++catalogSeq;
   try {
     const r = await fetch(api('/api/apps/catalog' + (force ? '?force=1' : '')), { cache: 'no-store' });
     const d = await r.json().catch(() => ({}));
-    catalogData = d;
-    if (!r.ok && d.error) showErr(d.error);
+    if (seq !== catalogSeq) {
+      catalogAgain = true;
+    } else {
+      catalogData = d;
+      if (!r.ok && d.error) showErr(d.error);
+    }
   } catch (e) {
-    catalogData = { ok: false, apps: [], error: e.message };
+    if (seq === catalogSeq) catalogData = { ok: false, apps: [], error: e.message };
   } finally {
     catalogLoading = false;
   }
-  renderCatalog();
+  if (seq === catalogSeq) renderCatalog();
   if (catalogAgain) { catalogAgain = false; loadCatalog(); }
 }
 
@@ -202,10 +208,8 @@ function catalogRow(a, writable, from) {
     ${rowErrorNote(a.id)}
     <div class="prot-status">
       ${launchBtn}
-      <div class="catalog-actions">
-        ${a.sourceUrl ? `<a class="pill idle catalog-source" href="${esc(a.sourceUrl)}" target="_blank" rel="noopener noreferrer">${esc(t('apps.install.viewSource', 'View source'))}</a>` : ''}
-        <button type="button" class="pill ${cls}" data-app="${esc(a.id)}" data-repo="${esc(a.repo || '')}" onclick="${clickFn}"${fill} ${off ? 'disabled' : ''}>${esc(label)}</button>
-      </div>
+      ${a.sourceUrl ? `<a class="pill idle catalog-source" href="${esc(a.sourceUrl)}" target="_blank" rel="noopener noreferrer">${esc(t('apps.install.viewSource', 'View source'))}</a>` : ''}
+      <button type="button" class="pill ${cls}" data-app="${esc(a.id)}" data-repo="${esc(a.repo || '')}" onclick="${clickFn}"${fill} ${off ? 'disabled' : ''}>${esc(label)}</button>
     </div>
   </div>`;
 }
@@ -285,6 +289,7 @@ function rowFlashing(id) {
 // The catalog's own copy says what the TV now has, before the reload confirms
 // it, in every list the app is in.
 function setCatalogState(id, version) {
+  catalogSeq++;
   if (!catalogData) return;
   (catalogData.apps || []).concat(catalogData.others || []).forEach(a => {
     if (a.id !== id || a.state === 'hbc') return;

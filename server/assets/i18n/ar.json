@@ -215,7 +215,7 @@
  "apps.quickAccess": {"text": "الوصول السريع (Quick Access)", "from": "Quick Access"},
  "apps.quickAccess.apps": {"text": "التطبيقات", "from": "Apps"},
  "apps.quickAccess.count": {"text": "{n} من 9 مضبوط", "from": "{n} of 9 set"},
- "apps.quickAccess.desc": {"text": "الضغط المطول على زر رقم في الريموت يفتح التطبيق أو المدخل المخصص له. أي تغيير هنا يُطبق على التلفاز فوراً.", "from": "Holding a number key on the remote opens the app or input set for it. A change here applies on the TV straight away."},
+ "apps.quickAccess.desc": {"text": "الضغط المطول على زر رقم في الريموت يفتح التطبيق أو المدخل المخصص له.", "from": "Holding a number key on the remote opens the app or input set for it."},
  "apps.quickAccess.failed": {"text": "تعذر التعديل: {error}", "from": "Could not change it: {error}"},
  "apps.quickAccess.inputs": {"text": "المداخل", "from": "Inputs"},
  "apps.quickAccess.keyLabel": {"text": "الزر {key}", "from": "Key {key}"},
@@ -230,7 +230,7 @@
  "apps.remoteKeys.close": {"text": "إغلاق", "from": "Close"},
  "apps.remoteKeys.colour": {"text": "الأزرار الملونة", "from": "Color keys"},
  "apps.remoteKeys.count": {"text": "تم تعديل {n}", "from": "{n} changed"},
- "apps.remoteKeys.desc": {"text": "تحديد وظيفة كل زر في الريموت: إما وضعه الافتراضي من LG، أو تعطيله، أو فتح تطبيق أو مدخل بدلاً من ذلك. يُطبق التغيير فوراً ويبقى بعد إعادة التشغيل. الزر المخصص هنا يتم التقاطه قبل وصوله للتطبيقات.", "from": "What a key on the remote does: as LG has it, nothing, or opening an app or input instead. A change applies straight away and lasts across reboots. A key set here is taken before any app sees it, so an app that uses the key itself, such as YouTube with Guide, no longer gets it. The keys listed are the ones this TV handles; a given remote may not have them all."},
+ "apps.remoteKeys.desc": {"text": "تحديد وظيفة كل زر في الريموت: إما وضعه الافتراضي من LG، أو تعطيله، أو فتح تطبيق أو مدخل بدلاً من ذلك.", "from": "What a key on the remote does: as LG has it, nothing, or opening an app or input instead."},
  "apps.remoteKeys.doesNothing": {"text": "بلا وظيفة", "from": "Does nothing"},
  "apps.remoteKeys.elsewhere": {"text": "أزرار في ريموتات لمناطق أخرى ({n})", "from": "Buttons on remotes sold elsewhere ({n})"},
  "apps.remoteKeys.failed": {"text": "تعذر التعديل: {error}", "from": "Could not change it: {error}"},
@@ -3372,5 +3372,13 @@
  "rp.input": {"text": "الإدخال", "from": "Input"},
  "rp.buttons": {"text": "الأزرار", "from": "Buttons"},
  "rp.touchpad": {"text": "لوحة اللمس", "from": "Touchpad"},
- "rp.standby": {"text": "التلفاز في وضع الاستعداد. شغّله لاستخدام جهاز التحكم.", "from": "The TV is in standby. Power on to use the remote."}
+ "rp.standby": {"text": "التلفاز في وضع الاستعداد. شغّله لاستخدام جهاز التحكم.", "from": "The TV is in standby. Power on to use the remote."},
+ "apps.install.hbcBadge": {"text": "Homebrew Channel", "from": "Homebrew Channel"},
+ "apps.quickAccess.zeroOpens": {"text": "قائمة الوصول السريع", "from": "Quick Access list"},
+ "header.switchInput": {"text": "تبديل المدخل", "from": "Switch input"},
+ "home.sub.label": {"text": "أقسام الشاشة الرئيسية", "from": "Home sections"},
+ "home.sub.rows": {"text": "الصفوف والأيقونات", "from": "Rows & tiles"},
+ "home.sub.appearance": {"text": "المظهر والخلفية", "from": "Appearance & wallpaper"},
+ "home.sub.behavior": {"text": "السلوك وبدء التشغيل", "from": "Behavior & startup"},
+ "home.sub.iptv": {"text": "تلفزيون الإنترنت", "from": "Internet TV"}
 }

@@ -209,7 +209,7 @@
  "apps.quickAccess": {"text": "Быстрый доступ", "from": "Quick Access"},
  "apps.quickAccess.apps": {"text": "Приложения", "from": "Apps"},
  "apps.quickAccess.count": {"text": "Задано: {n} из 9", "from": "{n} of 9 set"},
- "apps.quickAccess.desc": {"text": "Удержание цифровой кнопки на пульте открывает приложение или вход, заданные для нее. Изменение сразу действует на телевизоре.", "from": "Holding a number key on the remote opens the app or input set for it. A change here applies on the TV straight away."},
+ "apps.quickAccess.desc": {"text": "Удержание цифровой кнопки на пульте открывает приложение или вход, заданные для нее.", "from": "Holding a number key on the remote opens the app or input set for it."},
  "apps.quickAccess.failed": {"text": "Не удалось изменить: {error}", "from": "Could not change it: {error}"},
  "apps.quickAccess.inputs": {"text": "Входы", "from": "Inputs"},
  "apps.quickAccess.keyLabel": {"text": "Кнопка {key}", "from": "Key {key}"},
@@ -224,7 +224,7 @@
  "apps.remoteKeys.close": {"text": "Закрыть", "from": "Close"},
  "apps.remoteKeys.colour": {"text": "Цветные кнопки", "from": "Color keys"},
  "apps.remoteKeys.count": {"text": "Изменено: {n}", "from": "{n} changed"},
- "apps.remoteKeys.desc": {"text": "Что делает кнопка пульта: как задано в LG, ничего или открывает приложение либо вход. Изменение действует сразу и сохраняется после перезагрузки. Заданная здесь кнопка перехватывается раньше, чем ее увидит приложение, поэтому приложение, которое использует кнопку само, например YouTube с кнопкой Guide, ее больше не получает. В списке кнопки, которые обрабатывает этот телевизор; на конкретном пульте их может быть не все.", "from": "What a key on the remote does: as LG has it, nothing, or opening an app or input instead. A change applies straight away and lasts across reboots. A key set here is taken before any app sees it, so an app that uses the key itself, such as YouTube with Guide, no longer gets it. The keys listed are the ones this TV handles; a given remote may not have them all."},
+ "apps.remoteKeys.desc": {"text": "Что делает кнопка пульта: как задано в LG, ничего или открывает приложение либо вход.", "from": "What a key on the remote does: as LG has it, nothing, or opening an app or input instead."},
  "apps.remoteKeys.doesNothing": {"text": "Ничего не делает", "from": "Does nothing"},
  "apps.remoteKeys.elsewhere": {"text": "Кнопки пультов из других регионов ({n})", "from": "Buttons on remotes sold elsewhere ({n})"},
  "apps.remoteKeys.failed": {"text": "Не удалось изменить: {error}", "from": "Could not change it: {error}"},
@@ -3386,5 +3386,13 @@
  "rp.input": {"text": "Вход", "from": "Input"},
  "rp.buttons": {"text": "Кнопки", "from": "Buttons"},
  "rp.touchpad": {"text": "Тачпад", "from": "Touchpad"},
- "rp.standby": {"text": "Телевизор в режиме ожидания. Включите его, чтобы пользоваться пультом.", "from": "The TV is in standby. Power on to use the remote."}
+ "rp.standby": {"text": "Телевизор в режиме ожидания. Включите его, чтобы пользоваться пультом.", "from": "The TV is in standby. Power on to use the remote."},
+ "apps.install.hbcBadge": {"text": "Homebrew Channel", "from": "Homebrew Channel"},
+ "apps.quickAccess.zeroOpens": {"text": "Список быстрого доступа", "from": "Quick Access list"},
+ "header.switchInput": {"text": "Переключить вход", "from": "Switch input"},
+ "home.sub.label": {"text": "Разделы главного экрана", "from": "Home sections"},
+ "home.sub.rows": {"text": "Ряды и плитки", "from": "Rows & tiles"},
+ "home.sub.appearance": {"text": "Оформление и обои", "from": "Appearance & wallpaper"},
+ "home.sub.behavior": {"text": "Поведение и запуск", "from": "Behavior & startup"},
+ "home.sub.iptv": {"text": "Интернет-ТВ", "from": "Internet TV"}
 }
