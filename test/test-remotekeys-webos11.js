@@ -345,13 +345,13 @@ function fakeLibrary(homeOn) {
     if (guide) b.fill(0xaa, 8, 12);
     var text = input ? '{"id": "' + input + '"}' : picker;
     while (text.length < picker.length) text += '\0';
-    util.toBuffer(text, 'latin1').copy(b, 20);
+    util.toBuffer(text, 'binary').copy(b, 20);
     return b;
   };
   fs.writeFileSync(lib, make(false, ''));
   guidePatch.BUILDS[sha(make(false, ''))] = { tv: 'test TV',
     guide: [{ at: 8, was: '07070707', now: 'aaaaaaaa' }],
-    picker: { at: 20, was: util.toBuffer(picker, 'latin1').toString('hex') } };
+    picker: { at: 20, was: util.toBuffer(picker, 'binary').toString('hex') } };
   var lab = { execs: [], mounted: [], restarts: 0, barApp: [], barKeys: 0, homeOn: homeOn !== false, make: make, sameBytes: util.sameBytes, lib: lib };
   var opts = {};
   Object.keys(initOpts).forEach(function (k) { opts[k] = initOpts[k]; });

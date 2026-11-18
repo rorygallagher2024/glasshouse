@@ -90,12 +90,12 @@ function copyOf(buf) {
 
 function put(buf, at, hexText) { util.toBuffer(hexText, 'hex').copy(buf, at); }
 
-// The text the Input key's launches pass for an app or input, padded with zeros to the length of LG's.
+// The text the Input key's launches pass for an app or input, padded with zeros to the length of LG's. 'binary' as node 0.12 has no 'latin1'.
 function pickerText(build, id) {
   var size = build.picker.was.length / 2;
   var text = '{"id": "' + id + '"}';
   while (text.length < size) text += '\0';
-  return util.toBuffer(text, 'latin1');
+  return util.toBuffer(text, 'binary');
 }
 
 // Which of the guide's changes a library has: true, false, or null where it has some of them or other bytes.
@@ -115,8 +115,15 @@ function guideState(buf, build) {
 function pickerState(buf, build) {
   var size = build.picker.was.length / 2;
   if (hex(buf, build.picker.at, size) === build.picker.was) return '';
-  var m = PICKER_TEXT_RE.exec(buf.slice(build.picker.at, build.picker.at + size).toString('latin1'));
+  var m = PICKER_TEXT_RE.exec(buf.slice(build.picker.at, build.picker.at + size).toString('binary'));
   return m ? m[1] : null;
+}
+
+// Whether every place a build changes is inside the library: a shorter one is another build, and node 0.10 refuses a copy past its end.
+function reaches(buf, build) {
+  var ends = build.guide.map(function (e) { return e.at + e.was.length / 2; });
+  ends.push(build.picker.at + build.picker.was.length / 2);
+  return Math.max.apply(null, ends) <= buf.length;
 }
 
 /*
@@ -127,6 +134,7 @@ function buildOf(buf) {
   for (var id in BUILDS) {
     if (!BUILDS.hasOwnProperty(id)) continue;
     var build = BUILDS[id];
+    if (!reaches(buf, build)) continue;
     var plain = copyOf(buf);
     build.guide.forEach(function (e) { put(plain, e.at, e.was); });
     put(plain, build.picker.at, build.picker.was);
