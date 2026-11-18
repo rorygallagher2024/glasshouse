@@ -1,6 +1,6 @@
 # Service menu access
 
-The **Service menu** tab, `/?tab=servicemenu`, opens LG's engineering menu on the TV — EZ Adjust or In Start — without a service remote; the TV still asks for its PIN.
+The **Service menu** section at the bottom of the [System](advanced.md) tab (`/?tab=advanced`; `/?tab=servicemenu` redirects there) opens LG's engineering menu on the TV — **In Start** or **EZ Adjust** — without a service remote. The TV asks for its four-digit PIN (usually `0413`), and **Send 0413** enters it directly from the dashboard once the prompt is on screen.
 
 Newer firmware shows a cut-down version until it is unlocked, and the dashboard can unlock it. The TV has to be switched off and on again before that takes effect. TVs old enough not to lock it say so.
 

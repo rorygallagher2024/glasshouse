@@ -90,13 +90,13 @@ The top of every tab shows what the TV is doing: its state (On, Screen off, Scre
 
     ---
 
-    Power and standby, HDMI, auto device detection and front lights.
+    Power and standby, HDMI, auto device detection, front lights and the service menu.
 
 -   **[Service menu](service-menu.md)**
 
     ---
 
-    Open and unlock LG's engineering menu from a browser.
+    Open and unlock LG's engineering menu under System.
 
 -   **[Server](server.md)**
 

@@ -725,9 +725,12 @@ button.key-hit{background:var(--w10)}
 .oled-ctl{flex:0 0 auto;display:flex;gap:8px;align-items:center}
 /* The service-menu ones are set apart: they are the reason the warning below
    the list is there. */
-.oled-row.guarded .oled-name{color:var(--cand)}
+.oled-row.guarded .oled-name,.prot-row.guarded .prot-title{color:var(--cand)}
 .oled-warn{margin-top:24px;border-left:2px solid var(--cand);padding:12px 0 12px 14px;
            font-size:14px;color:var(--w60);max-width:64ch;line-height:1.55}
+.svc-warn{margin:6px 0 14px;max-width:none}
+.prot-title .oled-sub{font-weight:500}
+.prot-row.silent .prot-title,.prot-row.silent .prot-desc{color:var(--w60)}
 /* The wear figures and the switches that decide how hard the panel is worked,
    side by side - they are two halves of the same question. */
 .oled-split{display:grid;grid-template-columns:1fr;gap:38px}
@@ -1125,11 +1128,10 @@ button.pill.flash.idle[disabled]:hover{color:var(--w60);border-color:var(--edge)
 /* Settings tables sit side by side in at most two responsive columns on wide
    screens so each switch sits beside its label, collapsing cleanly to one
    column on narrow viewports. */
-#advpane .prot-table,#serverpane .prot-table,#inputspane .prot-table,#audiopane .prot-table,#ambientpane .prot-table,#privpane .prot-table,#appspane .prot-table:not(.catalog-grid),#homepane .prot-table:not(#home-rows .prot-table):not(#home-recents .prot-table):not(#home-ch-list),#svc-rows,#pv-consent .pv-grp,#pv-live,#pv-daemons,#pv-mic,.pv-adid-rows{
+#advpane .prot-table,#serverpane .prot-table,#inputspane .prot-table,#audiopane .prot-table,#ambientpane .prot-table,#privpane .prot-table,#appspane .prot-table:not(.catalog-grid),#homepane .prot-table:not(#home-rows .prot-table):not(#home-recents .prot-table):not(#home-ch-list),#pv-consent .pv-grp,#pv-live,#pv-daemons,#pv-mic,.pv-adid-rows{
   display:grid;column-gap:clamp(30px,4vw,52px);
   grid-template-columns:repeat(auto-fill,minmax(min(100%,max(340px,calc((100% - clamp(30px,4vw,52px)) / 2))),1fr))}
 .home-weather-place,#ssh-row,#backup-daily-row,#pv-consent .pv-grp>.pv-g,#pv-consent .pv-grp>.pv-gn,#appspane .prot-table:not(.catalog-grid)>.sub{grid-column:1/-1}
-#svc-rows .oled-row:last-child{border-bottom:1px solid var(--w12)}
 #advpane .prot-row,#serverpane .prot-row,#inputspane .prot-row,#audiopane .prot-row,#ambientpane .prot-row,#privpane .prot-row,#appspane .prot-table:not(.catalog-grid) .prot-row,.home-custom-table .prot-row{align-items:flex-start;padding:16px 0}
 #advpane .prot-title,#serverpane .prot-title,#inputspane .prot-title,#homepane .prot-title{font-size:var(--h-row);font-weight:600;letter-spacing:.02em;color:var(--w90)}
 #advpane .prot-desc,#serverpane .prot-desc,#inputspane .prot-desc,#homepane .prot-desc{font-size:14px;line-height:1.5;margin-top:4px;max-width:none}
