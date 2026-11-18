@@ -3026,6 +3026,11 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
           gotData = true;
           // mpegts.js reads H.264 and HEVC only: MPEG-2 video (DVB SD channels) is passed over without an error.
           if (gen === tvStream.gen && tvStream.mse === m && info && info.hasVideo === false) toNative('novideo');
+          /*
+           * MPEG sound (MP2 on DVB channels, read as mp3): a G3 (webOS 10.3) took the
+           * sound's SourceBuffer and then showed no picture, so the TV's player plays it.
+           */
+          else if (gen === tvStream.gen && tvStream.mse === m && info && info.audioCodec === 'mp3') toNative('mp3');
         });
         m.on(window.mpegts.Events.ERROR, function (type, detail, info) {
           if (gen !== tvStream.gen || tvStream.mse !== m) return;

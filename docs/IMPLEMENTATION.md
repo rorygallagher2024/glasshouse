@@ -147,8 +147,9 @@ its own, `lib/iptv-worker.js` with its readers in `lib/iptv-parse.js`:
   second buffered is stepped on (`currentTime + 0.1`, at most once in 30 s)
   after 1.5 s and reopened after 4 s. It keeps 12 to 24 s behind the picture:
   a browser removes video up to the next keyframe after the end it is given.
-  A channel with no H.264 or HEVC video, or two decoding errors in a visit
-  without 30 s of playing between them, goes to the TV's player. HLS, paused
+  A channel with no H.264 or HEVC video, with MPEG sound (MP2, read as mp3:
+  a G3 on webOS 10.3 showed no picture with it), or with two decoding errors
+  in a visit without 30 s of playing between them, goes to the TV's player. HLS, paused
   live TV, satellite tuners, and an https link on node before 12 (no usable CA
   bundle) use the TV's player.
 - **The relay rejoins**: for Home's player, `relayStream` follows up to 4
