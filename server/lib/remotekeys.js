@@ -73,6 +73,7 @@ var fs = require('fs');
 var path = require('path');
 var msg = require('./say').msg;
 var allocBuffer = require('./util').allocBuffer;
+var guidePatch = require('./guidepatch');
 
 var CONFIG_KEY = 'com.webos.surfacemanager.keyFilters';
 // What each key does, read by the filter; see the header.
@@ -303,6 +304,7 @@ function init(opts) {
   homeBarLauncherFn = typeof opts.homeBarLauncher === 'function' ? opts.homeBarLauncher : function () { return false; };
   inputNames = opts.inputNames || {};
   if (opts.stateDir) stateDir = opts.stateDir;
+  guidePatch.init({ stateDir: stateDir, library: opts.guideLibrary, exec: opts.guideExec });
   filtersDir = opts.filtersDir || LG_FILTERS_DIR;
   tvKeys = null;
   nativeFilters = null;
@@ -899,8 +901,14 @@ function mappingWanted(map, key, lgEntry) {
   return { launch_param: null, app_id: map[key], isActive: true };
 }
 
-function actionWanted(map, key) {
+function actionWanted(map, key, lgValue) {
   if (!Object.prototype.hasOwnProperty.call(map, key)) return undefined;
+  if (map[key] === HOME_GUIDE) {
+    // Home with the guide asked for (lib/guidepatch), the inputs that take Guide for their own kept as LG has them.
+    var open = { action: 'launch', id: HOME_APP };
+    if (lgValue && lgValue.fgAppIdsForByPass) open.fgAppIdsForByPass = copyValue(lgValue.fgAppIdsForByPass);
+    return open;
+  }
   return map[key] && map[key] !== SCREEN_OFF ? { action: 'launch', id: map[key] } : { action: 'ignore', accept: true };
 }
 
@@ -956,8 +964,27 @@ function applyNext() {
   }, job.map);
 }
 
+/*
+ * A Guide key set to Glasshouse Home's guide needs LG's key handler changed
+ * first (lib/guidepatch), which restarts the compositor once. Where it cannot
+ * be, or Glasshouse Home has no guide, the key is left to LG.
+ */
 function applyNativeNow(cb, mapOverride) {
   var map = mapOverride || readMap();
+  if (map.guide !== HOME_GUIDE) return applyNativeMap(cb, map);
+  var leftToLg = function () {
+    var rest = {};
+    Object.keys(map).forEach(function (k) { if (k !== 'guide') rest[k] = map[k]; });
+    return rest;
+  };
+  if (!homeGuideOn()) return applyNativeMap(cb, leftToLg());
+  guidePatch.apply(function (r) {
+    if (!r.ok) console.log('remotekeys: Guide could not be set to Glasshouse Home\'s guide: ' + r.error);
+    applyNativeMap(cb, r.ok ? map : leftToLg());
+  });
+}
+
+function applyNativeMap(cb, map) {
   var lg = readLg();
   if (!Object.keys(map).length && !lgHolds(lg)) {
     watchLg(false);
@@ -990,7 +1017,7 @@ function applyNativeNow(cb, mapOverride) {
     Object.keys(NATIVE_ACTIONS).forEach(function (key) {
       var name = NATIVE_ACTIONS[key];
       if (!tv.actions || !tv.actions[name]) return;
-      var v = reconcile(name, tv.actions[name], function () { return actionWanted(map, key); },
+      var v = reconcile(name, tv.actions[name], function (lgValue) { return actionWanted(map, key, lgValue); },
         lg.actions, lg.actionsWritten);
       if (v !== undefined) configs[KEY_ACTION_PREFIX + name] = v;
     });
@@ -1522,10 +1549,17 @@ function getRemoteKeys(cb) {
   });
 }
 
+// webOS 11's Guide key opens Glasshouse Home's guide where lib/guidepatch knows the key handler.
+function guideChoices(def, native) {
+  if (!native || def.key !== 'guide' || !homeGuideOn() || !guidePatch.status().supported) return [];
+  return [{ id: HOME_GUIDE, title: msg('srv.remoteKeys.homeGuide', 'Glasshouse Home\'s guide'), kind: 'guide' }];
+}
+
 function describeKeys(keys, inChain, cb, native) {
   switcherChoices(function (switchers) {
     listApps(function (apps) {
       var map = readMap();
+      var guide = guideChoices({ key: 'guide' }, native);
       var titles = {};
       (apps || []).forEach(function (a) { if (a && a.id) titles[a.id] = a.title || a.id; });
       var inputs = inputChoices();
@@ -1550,12 +1584,13 @@ function describeKeys(keys, inChain, cb, native) {
         if (k.replacesVoice) key.replacesVoice = true;
         if (native && NATIVE_BLOCK_KEYS[k.key]) key.blocksApp = true;
         if (native && !SCREEN_OFF_BUTTONS[k.key]) key.noScreenOff = true;
+        if (guide.length && k.key === 'guide') key.homeGuide = true;
         if (!native && homeAssistantOn() && reported(k.key)) key.homeAssistant = true;
         return key;
       });
       cb({
         ok: true, supported: true, keys: out,
-        choices: switchers.concat(media, inputs, homeChoices(native), barChoices(native), appChoices(apps)),
+        choices: switchers.concat(media, guide, inputs, homeChoices(native), barChoices(native), appChoices(apps)),
         inChain: inChain
       });
     });
@@ -1602,7 +1637,7 @@ function setOfferedKey(def, action, id, kind, cb) {
     listApps(function (apps) {
       if (!apps) return cb({ ok: false, error: msg('srv.remoteKeys.noApps', 'Could not read the TV\'s apps. Try again in a moment.') });
       var media = kind === 'filter' ? actionChoices().concat(mediaChoices()) : SCREEN_OFF_BUTTONS[def.key] ? screenOffChoice() : [];
-      var allowed = switchers.concat(media, inputChoices(), homeChoices(kind !== 'filter'), barChoices(kind !== 'filter'), appChoices(apps))
+      var allowed = switchers.concat(media, guideChoices(def, kind !== 'filter'), inputChoices(), homeChoices(kind !== 'filter'), barChoices(kind !== 'filter'), appChoices(apps))
         .some(function (c) { return c.id === id; });
       if (id === HOME_ASSISTANT && !reported(def.key)) {
         return cb({ ok: false, error: msg('srv.remoteKeys.notReported', 'Home Assistant does not receive this key\'s presses') });

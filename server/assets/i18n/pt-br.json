@@ -3372,5 +3372,6 @@
  "rp.input": {"text": "Entrada", "from": "Input"},
  "rp.buttons": {"text": "Botões", "from": "Buttons"},
  "rp.touchpad": {"text": "Touchpad", "from": "Touchpad"},
- "rp.standby": {"text": "A TV está em espera. Ligue-a para usar o controle.", "from": "The TV is in standby. Power on to use the remote."}
+ "rp.standby": {"text": "A TV está em espera. Ligue-a para usar o controle.", "from": "The TV is in standby. Power on to use the remote."},
+ "apps.remoteKeys.guideNative": {"text": "Nesta TV, a tecla Guia precisa de uma alteração no gerenciador de teclas da LG. Ao definir, a tela da TV reinicia uma vez e de novo toda vez que a TV liga.", "from": "On this TV the Guide key needs a change to LG’s key handler. Setting it restarts the TV’s screen once, and again each time the TV starts."}
 }

@@ -3372,5 +3372,6 @@
  "rp.input": {"text": "الإدخال", "from": "Input"},
  "rp.buttons": {"text": "الأزرار", "from": "Buttons"},
  "rp.touchpad": {"text": "لوحة اللمس", "from": "Touchpad"},
- "rp.standby": {"text": "التلفاز في وضع الاستعداد. شغّله لاستخدام جهاز التحكم.", "from": "The TV is in standby. Power on to use the remote."}
+ "rp.standby": {"text": "التلفاز في وضع الاستعداد. شغّله لاستخدام جهاز التحكم.", "from": "The TV is in standby. Power on to use the remote."},
+ "apps.remoteKeys.guideNative": {"text": "في هذا التلفزيون يحتاج زر الدليل إلى تعديل في معالج مفاتيح LG. عند ضبطه تُعاد تشغيل شاشة التلفزيون مرة واحدة، ثم مع كل تشغيل للتلفزيون.", "from": "On this TV the Guide key needs a change to LG’s key handler. Setting it restarts the TV’s screen once, and again each time the TV starts."}
 }

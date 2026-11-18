@@ -3386,5 +3386,6 @@
  "rp.input": {"text": "Bemenet", "from": "Input"},
  "rp.buttons": {"text": "Gombok", "from": "Buttons"},
  "rp.touchpad": {"text": "Érintőpad", "from": "Touchpad"},
- "rp.standby": {"text": "A TV készenlétben van. Kapcsolja be a távirányító használatához.", "from": "The TV is in standby. Power on to use the remote."}
+ "rp.standby": {"text": "A TV készenlétben van. Kapcsolja be a távirányító használatához.", "from": "The TV is in standby. Power on to use the remote."},
+ "apps.remoteKeys.guideNative": {"text": "Ezen a TV-n a Guide gombhoz módosítani kell az LG gombkezelőjét. A beállítása egyszer újraindítja a TV képernyőjét, majd a TV minden indításakor újra.", "from": "On this TV the Guide key needs a change to LG’s key handler. Setting it restarts the TV’s screen once, and again each time the TV starts."}
 }

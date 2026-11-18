@@ -326,6 +326,89 @@ step('Guide opens an input through its key action, and goes back to LG\'s with t
   });
 });
 
+step('Guide opens Glasshouse Home\'s guide where LG\'s key handler can be changed, and goes back to LG\'s', function (next) {
+  var crypto = require('crypto');
+  var guidePatch = require('../server/lib/guidepatch');
+  var sha = function (b) { return crypto.createHash('sha256').update(b).digest('hex'); };
+  // A library of its own for the test: one listed build, one edit.
+  var lib = path.join(dir, 'libappLaunch.so.1');
+  var original = require('../server/lib/util').allocBuffer(64);
+  original.fill(7);
+  var changed = require('../server/lib/util').allocBuffer(64);
+  original.copy(changed);
+  changed.fill(0xaa, 8, 12);
+  fs.writeFileSync(lib, original);
+  guidePatch.BUILDS[sha(original)] = { tv: 'test TV', patched: sha(changed), edits: [{ at: 8, was: '07070707', now: 'aaaaaaaa' }] };
+  var execs = [];
+  var homeOn = true;
+  var guideOpts = {};
+  Object.keys(initOpts).forEach(function (k) { guideOpts[k] = initOpts[k]; });
+  guideOpts.guideLibrary = lib;
+  guideOpts.homeGuide = function () { return homeOn; };
+  guideOpts.guideExec = function (file, args, o, cb) {
+    execs.push(file);
+    // The bind mount: what is read at the library's path is now the copy.
+    if (file === 'mount') fs.writeFileSync(lib, fs.readFileSync(args[1]));
+    cb(null);
+  };
+  rk.init(guideOpts);
+  var finish = function () {
+    delete guidePatch.BUILDS[sha(original)];
+    rk.init(initOpts);
+    next();
+  };
+  rk.getRemoteKeys(function (r) {
+    var guide = r.keys.filter(function (k) { return k.key === 'guide'; })[0];
+    assert.strictEqual(guide.homeGuide, true);
+    assert.ok(r.keys.every(function (k) { return k.key === 'guide' || !k.homeGuide; }), 'only the Guide key');
+    assert.deepEqual(r.choices.filter(function (c) { return c.kind === 'guide'; }).map(function (c) { return c.id; }), ['action:homeGuide']);
+    set('guide', 'open', 'action:homeGuide', function () {
+      assert.deepEqual(tv.configs['com.webos.keyaction.tvGuide'],
+        { action: 'launch', id: 'com.webos.app.home', fgAppIdsForByPass: TV_GUIDE.fgAppIdsForByPass });
+      assert.deepEqual(execs, ['mount', 'systemctl'], 'the library mounted and the compositor restarted once');
+      assert.ok(fs.readFileSync(path.join(stateDir, 'libappLaunch.so.1.glasshouse')).equals(changed));
+      set('guide', 'lg', '', function () {
+        assert.deepEqual(tv.configs['com.webos.keyaction.tvGuide'], TV_GUIDE);
+        set('guide', 'open', 'action:homeGuide', function () {
+          assert.deepEqual(execs, ['mount', 'systemctl'], 'a changed handler is not changed or restarted again');
+          // Without a guide of Glasshouse Home's own, the key is LG's.
+          homeOn = false;
+          rk.getRemoteKeys(function (r2) {
+            assert.strictEqual(r2.keys.filter(function (k) { return k.key === 'guide'; })[0].homeGuide, undefined);
+            assert.strictEqual(r2.choices.filter(function (c) { return c.kind === 'guide'; }).length, 0);
+            rk.ensure(function () {
+              assert.deepEqual(tv.configs['com.webos.keyaction.tvGuide'], TV_GUIDE);
+              homeOn = true;
+              set('guide', 'lg', '', finish);
+            });
+          });
+        });
+      });
+    });
+  });
+});
+
+step('a library LG has changed, or this build does not list, is left alone and the choice is not offered', function (next) {
+  var lib = path.join(dir, 'libappLaunch-unlisted.so.1');
+  fs.writeFileSync(lib, 'not a library this server knows');
+  var guideOpts = {};
+  Object.keys(initOpts).forEach(function (k) { guideOpts[k] = initOpts[k]; });
+  guideOpts.guideLibrary = lib;
+  guideOpts.homeGuide = function () { return true; };
+  guideOpts.guideExec = function () { throw new Error('nothing is to be run'); };
+  rk.init(guideOpts);
+  rk.getRemoteKeys(function (r) {
+    assert.strictEqual(r.choices.filter(function (c) { return c.kind === 'guide'; }).length, 0);
+    rk.setRemoteKey('guide', 'open', 'action:homeGuide', function (r2) {
+      assert.strictEqual(r2.ok, false);
+      assert.deepEqual(tv.configs['com.webos.keyaction.tvGuide'], TV_GUIDE);
+      try { fs.unlinkSync(lib); } catch (e) {}
+      rk.init(initOpts);
+      next();
+    });
+  });
+});
+
 step('a key this TV does not have, or LG has switched off, is refused', function (next) {
   rk.setRemoteKey('red', 'nothing', '', function (r) {
     assert.ok(!r.ok);
