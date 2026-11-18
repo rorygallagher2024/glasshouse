@@ -1664,7 +1664,10 @@ function cpuProcessRows(first, second, elapsed) {
 function collectProcesses(all, cb) {
   execFile('/bin/ps', ['-eo', 'pid,rss,comm,args'], { timeout: 4000, maxBuffer: 1024 * 1024 }, function (err, stdout) {
     if (err) return cb({ ok: false, error: msg('srv.processes.failed', 'could not read process list') });
-    cb(parseProcesses(stdout, all));
+    var res = parseProcesses(stdout, all);
+    var memTotalKb = meminfo().MemTotal || 0;
+    if (memTotalKb > 0) res.ramMb = Math.round(memTotalKb / 1024 * 10) / 10;
+    cb(res);
   });
 }
 

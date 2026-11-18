@@ -12,7 +12,7 @@ The **Metrics** tab (`/?tab=metrics`) exposes live hardware and software telemet
 
     ---
 
-    SoC temperature, overall and per-core CPU load, GPU clock, memory, and swap. Includes an on-demand breakdown of resident memory and top CPU processes with their PIDs.
+    SoC temperature, overall and per-core CPU load, GPU clock, memory, and swap. Includes an on-demand breakdown of resident memory (with RAM percentage) and top CPU processes with their PIDs, both colour-coded by usage level.
 
 -   **Network & storage**
 

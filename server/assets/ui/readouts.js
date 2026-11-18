@@ -80,7 +80,7 @@ q('readouts').innerHTML = ROWS.map(r =>
      <div class="sub" id="sub-addr"></div>
    </div>`;
 
-let hist = [], lastOk = 0, muted = false, installedApps = [], lastAppId = '';
+let hist = [], lastOk = 0, muted = false, installedApps = [], lastAppId = '', lastMemTotalMb = 0;
 
 const POPULAR_APPS = [
   'youtube.leanback.v4', 'netflix', 'amazon', 'com.apple.appletv',
@@ -509,6 +509,7 @@ async function tick() {
       (parked ? '  ·  ' + t('metrics.cpu.parked', '{n} parked', { n: parked }) : '');
     row('cpu', d.load + '<small>%</small>', d.load, cores, 85);
 
+    lastMemTotalMb = d.mem.total ? d.mem.total / 1024 : 0;
     const mu = d.mem.total ? 100 * (d.mem.total - d.mem.avail) / d.mem.total : 0;
     row('mem', mu.toFixed(0) + '<small>%</small>', mu,
         mb(d.mem.total - d.mem.avail) + ' / ' + mb(d.mem.total) + ' MB', 90);

@@ -49,6 +49,8 @@
   /* Lighter violet for TEXT: #8F30FF is only 4.03:1 on black, under the
      4.5:1 AA floor for small text. The solid tone stays for fills. */
   --purple-t:#B57BFF;
+  /* Watch time chart palette: top 5 sources plus muted Other. */
+  --wt0:#4B8BFF; --wt1:#30DE61; --wt2:#FFB04F; --wt3:#B57BFF; --wt4:#FF5454; --wt5:var(--w35);
   --gut:clamp(20px,5vw,64px);
   /* The masthead's type and the gap under it, shared with the sidebar so its
      head and first tab line up with them at every width. */
@@ -76,6 +78,7 @@
   --cool:#3a6fcf; --warm:#b8860b; --cand:#9c6218;
   --red:#d42020; --blue:#2050cc; --green:#157f37; --purple:#6b20cc;
   --purple-t:#6b20cc;
+  --wt0:#2050CC; --wt1:#157F37; --wt2:#C2700A; --wt3:#7028D4; --wt4:#D42020; --wt5:var(--w35);
   --btn-on-fg:#fff;
 }
 *{box-sizing:border-box;margin:0;padding:0}
@@ -1255,18 +1258,22 @@ button.pill.flash.idle[disabled]:hover{color:var(--w60);border-color:var(--edge)
   border-bottom:1px solid var(--w06);font-size:14px}
 .proc .p-name{color:var(--w80);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .proc .p-mb{color:var(--w100);font-variant-numeric:tabular-nums}
+.proc .p-mb.good,.proc .p-pct.good{color:var(--green)}
+.proc .p-mb.warn,.proc .p-pct.warn{color:var(--cand)}
+.proc .p-mb.bad,.proc .p-pct.bad{color:var(--red)}
+.proc .p-pct{margin-left:8px;font-weight:500}
 .proc .p-pid{color:var(--w50);margin-left:6px;font-size:13px;font-variant-numeric:tabular-nums}
 /* ---- Watch time ----
-   Shades of the foreground rather than colours: the five most watched over
-   30 days, then Other. Each day's bar stacks them from the bottom. */
+   Distinct palette for the five most watched over 30 days, plus muted Other.
+   Each day's bar stacks them from the bottom. */
 .watch-totals{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
 .watch-totals .uptime-val{font-size:clamp(22px,2.4vw,30px);white-space:nowrap}
 .watch-bars{display:grid;grid-template-columns:repeat(14,1fr);gap:4px;height:96px;margin:22px 0 8px}
 .wb{display:flex;flex-direction:column;min-width:0}
-.wb-stack{flex:1;display:flex;flex-direction:column-reverse;background:var(--w06);border-radius:2px;overflow:hidden}
+.wb-stack{flex:1;display:flex;flex-direction:column-reverse;gap:1px;background:var(--w06);border-radius:2px;overflow:hidden}
 .wb-day{font-size:12px;color:var(--w50);text-align:center;margin-top:5px}
-.ws0{background:var(--w90)} .ws1{background:var(--w70)} .ws2{background:var(--w50)}
-.ws3{background:var(--w35)} .ws4{background:var(--w25)} .ws5{background:var(--w12)}
+.ws0{background:var(--wt0)} .ws1{background:var(--wt1)} .ws2{background:var(--wt2)}
+.ws3{background:var(--wt3)} .ws4{background:var(--wt4)} .ws5{background:var(--wt5)}
 .wb-stack b{display:block;flex:none}
 .w-sw{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:9px;vertical-align:0}
 .w-sw.ws-off{border:1px solid var(--w40)}
