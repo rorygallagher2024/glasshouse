@@ -3030,7 +3030,9 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
    * numbers reach the same channels however the row would reorder itself.
    */
   var player = { open: false, okDown: false, list: false, items: [], idx: 0, bandTimer: null, listTimer: null, group: 0, groups: [], lcol: 0,
-    digits: '', digitTimer: null, failed: false, askLive: false, askTimer: null, askZap: null };
+    digits: '', digitTimer: null, failed: false, askLive: false, askTimer: null, askZap: null,
+    // Opened from the guide: where it was, for Back to put it back (guideReturn).
+    fromGuide: null };
   var BAND_MS = 5000, LIST_IDLE_MS = 10000, DIGIT_MS = 2000, ZAP_DWELL_MS = 600, EXPAND_MS = 280;
   var zapTimer = null;
 
@@ -3072,6 +3074,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
   function sectionOf(it) { return tvLineup && it.sid ? it.sid : it.group || ''; }
 
   function openPlayer(it) {
+    player.fromGuide = null;
     var adopt = tilePreview.target && tilePreview.target.tv && tilePreview.target.item.id === it.id && tilePreview.playing && !tilePreview.blank &&
       // An MPEG-TS preview opens again full screen when live TV may pause: from the recording, which can.
       !(data && data.iptvStatus && data.iptvStatus.timeshift && tvStream.format === 'MPEG-TS' && !tvStream.timeshift);
@@ -3189,9 +3192,11 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
 
   // Back to Home, the tile in focus. With Live preview on, the picture
   // shrinks back to the preview and goes on playing there.
-  function closePlayer() {
+  function closePlayer(toGuide) {
     if (!player.open) return;
     var it = playerChannel();
+    var back = toGuide ? player.fromGuide : null;
+    player.fromGuide = null;
     player.open = false;
     player.list = false;
     clearTimeout(player.bandTimer);
@@ -3212,7 +3217,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
       }
     }
     // A paused picture is not left playing on the row.
-    var keep = layout.livePreview === true && tvStream.playing && !tvStream.paused && !document.hidden && it;
+    var keep = !back && layout.livePreview === true && tvStream.playing && !tvStream.paused && !document.hidden && it;
     if (keep) {
       tvStream.muted = previewMuted();
       $('pvVideo').muted = tvStream.muted;
@@ -3231,6 +3236,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     stageClass();
     render();
     renderNow();
+    if (back) guideReturn(back, it);
   }
 
   function showBand(stay) {
@@ -3541,7 +3547,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
       if (player.digits) return clearDigits();
       if (player.list) return closeList();
       if (tsBehindLive()) return askLive();
-      return closePlayer();
+      return closePlayer(true);
     }
     if (k >= 48 && k <= 57) return digit(k - 48);
     if (k >= 96 && k <= 105) return digit(k - 96);
@@ -3640,7 +3646,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     return all.filter(function (x) { return sectionOf(x) === key; });
   }
 
-  function openGuide(fromId) {
+  function openGuide(fromId, keepRead) {
     var all = guideAll();
     if (!all.length) return;
     stopPreview();
@@ -3656,7 +3662,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     guide.start = Math.floor(Date.now() / HALF_HOUR) * HALF_HOUR;
     guide.at = Date.now();
     // Read afresh each time it opens: the server refreshes the guide meanwhile.
-    clearGuideCache();
+    if (!keepRead) clearGuideCache();
     stageClass();
     renderGuide();
   }
@@ -3867,9 +3873,34 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     var p = guideFocus(it), now = Date.now();
     if (p && p.start > now) return toast(p.title, t('home.tv.startsAt', 'Starts at {time}', { time: hm(new Date(p.start)) }));
     if (p && p.end <= now) return toast(p.title, t('home.tv.finished', 'That has finished'));
+    var back = { group: guide.groups[guide.group], fromTop: guide.row - guide.top, start: guide.start };
     guide.open = false;
     stageClass();
     openPlayer(it);
+    player.fromGuide = back;
+  }
+
+  /*
+   * Back from a channel picked in the guide: the guide as it was left, its
+   * tab, place and hours, on the channel now playing, which may have been
+   * changed meanwhile. What it has read is kept unless it is getting old.
+   */
+  var GUIDE_KEEP_MS = 10 * 60000;
+  function guideReturn(back, it) {
+    if (!it) return;
+    openGuide(it.id, Date.now() - guide.loadedAt < GUIDE_KEEP_MS);
+    if (!guide.open) return;
+    var g = guide.groups.indexOf(back.group), list = g === -1 ? null : guideTabList(back.group);
+    var row = list ? indexIn(list, it.id) : -1;
+    if (row !== -1) {
+      guide.group = g;
+      guide.list = list;
+      guide.row = row;
+    }
+    guide.top = Math.max(0, guide.row - back.fromTop);
+    // Hours ahead stay as they were; ones gone by move on to now.
+    guide.start = Math.max(back.start, guide.start);
+    renderGuide();
   }
 
   // The row under the pointer, and the programme in it, are the focus.

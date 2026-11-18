@@ -3819,6 +3819,17 @@ async function visitHomeInternetTv(browser, base, problems) {
     await key(33);
     await waitUntil(page, async () => await guideRow() === '0');
     if (await guideRow() !== '0') fail('Channel up did not turn the guide back a page');
+    // A channel picked in the guide: Back goes back to the guide, on it.
+    await key(40);
+    await waitUntil(page, async () => await guideRow() === '1');
+    const picked = streams.length;
+    await key(13);
+    await waitUntil(page, () => streams.length > picked);
+    if (streams[streams.length - 1] !== 'x2') fail('OK in the guide did not play the channel');
+    await key(461);
+    try { await page.waitForSelector('#stage.guiding #gBody .gr.focus', { timeout: 3000 }); }
+    catch (e) { fail('Back from a channel picked in the guide did not go back to the guide'); }
+    if (await guideRow() !== '1') fail('Back to the guide was not on the channel picked there');
     await key(461);
     await page.waitForTimeout(200);
     if (/guiding/.test(await page.locator('#stage').getAttribute('class'))) fail('Back did not close the guide');
