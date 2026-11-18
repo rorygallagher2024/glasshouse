@@ -808,6 +808,12 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
   var beatTimer = null;
   var CLOSE_BEHIND_MS = 120000;
   var coveredSince = 0;
+  /*
+   * The screen saver up at the last beat. The key that ends it reaches the
+   * page too, before the next beat says it has gone: Back there opened
+   * Recents and OK the app in focus. That key only wakes the screen.
+   */
+  var saverUp = false;
   function rest(on) {
     var cl = document.documentElement.classList;
     if (on === cl.contains('resting')) return;
@@ -4864,6 +4870,14 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
   // ---------------------------------------------------------------- input
 
   function onKeyDown(e) {
+    if (saverUp) {
+      e.preventDefault();
+      saverUp = false;
+      if (e.keyCode === KEY.back) backDown = true;
+      // Heard now rather than at the next beat, so Home's background comes back at once.
+      scheduleBeat(0);
+      return;
+    }
     stopPointing();
     landAll();
     if (!data || !layout) return;
@@ -6399,6 +6413,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
         // webOS 4: switched off, the standalone view closes itself, as Back does.
         if (r.enabled === false && standalone) return window.close();
         rest(!!r.covered);
+        saverUp = !!(r.covered && r.saver);
         if (r.saver) scheduleBeat(SAVER_BEAT_MS);
         renderWeather(r.weather || null);
         renderRemoteBattery(r.remoteBattery || null);
@@ -6450,6 +6465,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     initialEscape = false;
     clearTimeout(okTimer);
     okDownAt = 0; backDown = false;
+    saverUp = false;
     closeRecents();
     closeFolder();
     if (adder.open) closeAdder();
