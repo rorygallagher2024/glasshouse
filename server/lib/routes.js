@@ -423,6 +423,11 @@ function lanOrigin() {
   return ip4 ? 'http://' + hostPort(ip4, config.port) : null;
 }
 
+// Off only where switched off on the Server tab.
+function screenGlowAllowed() {
+  return !(config.screenGlow && config.screenGlow.allowed === false);
+}
+
 function prometheusEnabled() {
   return !!(config.prometheus && config.prometheus.enabled === true);
 }
@@ -755,6 +760,7 @@ function updateSummary() {
   s.isWebos10 = !!(screensaversModule && screensaversModule.experimental && screensaversModule.experimental());
   s.homeLayout = homeScreenModule ? homeScreenModule.experimental() : null;
   s.prometheusEnabled = prometheusEnabled();
+  s.screenGlowAllowed = screenGlowAllowed();
   s.clockHour12 = clockHour12();
   s.watchHistory = historyModule ? historyModule.status() : null;
   s.backupDaily = backupModule ? backupModule.dailyStatus() : null;
@@ -2241,6 +2247,7 @@ function handleRequest(req, res) {
   }
   // The colours on screen, for the dashboard's glow: colours only, no picture.
   if (pathname === '/api/screen-colour' && screenColourModule) {
+    if (!screenGlowAllowed()) return send(res, 200, JSON.stringify({ ok: false, off: true }));
     return screenColourModule.read(function (c) { send(res, 200, JSON.stringify(c)); });
   }
   if (pathname === '/api/storage' && storageScanModule) {

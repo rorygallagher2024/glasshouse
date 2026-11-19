@@ -1700,6 +1700,8 @@
  "server.watch.clearConfirm": {"from": "Delete all watch time kept on the TV?", "text": "Supprimer tout le temps de visionnage conservé sur la TV ?"},
  "server.watch.desc": {"from": "Counts how long the screen is on, per app and input, for the Metrics tab and Home Assistant. Kept on the TV for 13 months. It records what the household watches, so it stays off until turned on here.", "text": "Compte la durée pendant laquelle l'écran est allumé, par app et entrée, pour l'onglet Métriques et Home Assistant. Conservé sur la TV pendant 13 mois. Cela enregistre ce que le foyer regarde, donc cela reste désactivé jusqu'à son activation ici."},
  "server.watch.title": {"from": "Watch time", "text": "Temps de visionnage"},
+ "server.glow.title": {"from": "Screen glow", "text": "Halo de l'écran"},
+ "server.glow.desc": {"from": "Lets a dashboard light the top of its page with the colours on the TV's screen, read every few seconds while it shows. Only the colours leave the TV, never a picture. Each browser switches the glow on with the button beside the light and dark switch, at the foot of the page.", "text": "Permet à un tableau de bord d'éclairer le haut de sa page avec les couleurs de l'écran de la TV, lues toutes les quelques secondes tant qu'il est affiché. Seules les couleurs quittent la TV, jamais une image. Chaque navigateur active le halo avec le bouton à côté du sélecteur clair et sombre, en bas de la page."},
  "server.whatsNew": {"from": "What’s new", "text": "Nouveautés"},
  "server.whatsNew.more": {"from": "And {n} more releases", "text": "Et {n} versions de plus"},
  "server.whatsNew.moreOne": {"from": "And 1 more release", "text": "Et 1 version de plus"},
@@ -3637,5 +3639,7 @@
  "metrics.sys.wifi": {"from": "Wi-Fi network", "text": "Réseau Wi-Fi"},
  "metrics.sys.wifiMac": {"from": "Wi-Fi MAC", "text": "MAC Wi-Fi"},
  "metrics.sys.wiredMac": {"from": "Wired MAC", "text": "MAC filaire"},
- "pic.offNote": {"from": "Greyed out: not available in the current picture mode, or for what is on screen.", "text": "Grisé : non disponible dans le mode d'image actuel, ou pour ce qui est à l'écran."}
+ "pic.offNote": {"from": "Greyed out: not available in the current picture mode, or for what is on screen.", "text": "Grisé : non disponible dans le mode d'image actuel, ou pour ce qui est à l'écran."},
+ "glow.toggleOn": {"from": "Screen glow: off (click to light the page from the TV’s screen)", "text": "Halo de l'écran : désactivé (cliquez pour éclairer la page depuis l'écran de la TV)"},
+ "glow.toggleOff": {"from": "Screen glow: on (click to switch off)", "text": "Halo de l'écran : activé (cliquez pour le désactiver)"}
 }

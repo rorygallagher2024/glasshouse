@@ -1,42 +1,95 @@
 /*
- * The screen's glow (a proof of concept): the top of the dashboard takes a
- * soft light from the colours on the TV's screen, left and right, as a room
- * does from the TV. Off unless switched on with ?glow=1 (?glow=0 switches it
- * off again); kept per browser. Read every few seconds from /api/screen-colour,
- * only while the page shows and the screen is on, and given up for the visit
- * where the TV gives no capture.
+ * Screen glow: the top of the dashboard takes a soft light from the colours
+ * on the TV's screen, left and right, as a room does from the TV. Off until
+ * switched on with the footer's button, kept per browser, and offered only
+ * where the Server tab allows it. Read from /api/screen-colour every few
+ * seconds, only while the page shows and the screen is on, and not while the
+ * source says a game is playing (ALLM), so a game's frames are left alone.
+ * LG's Game picture mode alone does not stop it: a computer is often shown
+ * in it for its low latency. Given up for the visit where the TV gives no
+ * capture.
  */
 const GLOW_KEY = 'glasshouse.glow';
 const GLOW_MS = 3000;
-let glowOn = false;
+let glowWanted = false;   // this browser's choice
+let glowAllowedHere = false;   // the Server tab's
 let glowTimer = null;
 let glowFails = 0;
+let glowGame = false;
+let glowReady = false;
 
-(function glowSetup() {
-  try {
-    const p = new URLSearchParams(location.search).get('glow');
-    if (p === '1') localStorage.setItem(GLOW_KEY, '1');
-    if (p === '0') localStorage.removeItem(GLOW_KEY);
-    glowOn = localStorage.getItem(GLOW_KEY) === '1';
-  } catch (e) { glowOn = false; }
-  if (!glowOn || !window.CSS || !CSS.registerProperty) return;
+try {
+  // ?glow=1 and ?glow=0 still switch it, for a link or a kiosk.
+  const p = new URLSearchParams(location.search).get('glow');
+  if (p === '1') localStorage.setItem(GLOW_KEY, '1');
+  if (p === '0') localStorage.removeItem(GLOW_KEY);
+  glowWanted = localStorage.getItem(GLOW_KEY) === '1';
+} catch (e) { glowWanted = false; }
+
+function glowSetup() {
+  if (glowReady) return true;
+  if (!window.CSS || !CSS.registerProperty) return false;
   // Registered as colours, so a change of colour fades rather than jumps.
   ['--glow-l', '--glow-r'].forEach(name => {
     try { CSS.registerProperty({ name, syntax: '<color>', inherits: true, initialValue: 'transparent' }); } catch (e) {}
   });
-  document.documentElement.classList.add('glow');
   const el = document.createElement('div');
   el.id = 'screen-glow';
   el.setAttribute('aria-hidden', 'true');
   document.body.prepend(el);
   document.addEventListener('visibilitychange', glowSchedule);
-  glowSchedule();
-})();
+  glowReady = true;
+  return true;
+}
 
-function glowSchedule() {
+function glowActive() { return glowWanted && glowAllowedHere && glowFails < 3; }
+
+function glowRender() {
+  const btn = q('glow-toggle');
+  if (btn) {
+    btn.hidden = !glowAllowedHere || !(window.CSS && CSS.registerProperty);
+    btn.setAttribute('aria-pressed', glowWanted ? 'true' : 'false');
+    const label = glowWanted ? t('glow.toggleOff', 'Screen glow: on (click to switch off)') : t('glow.toggleOn', 'Screen glow: off (click to light the page from the TV’s screen)');
+    btn.title = label;
+    btn.setAttribute('aria-label', label);
+  }
+  if (glowActive() && glowSetup()) document.documentElement.classList.add('glow');
+  else glowFade();
+}
+
+// From the Server tab's summary (update.js renderUpdate).
+function glowAllowed(on) {
+  glowAllowedHere = !!on;
+  glowRender();
+  glowSchedule();
+}
+
+function toggleGlow() {
+  glowWanted = !glowWanted;
+  glowFails = 0;
+  try {
+    if (glowWanted) localStorage.setItem(GLOW_KEY, '1'); else localStorage.removeItem(GLOW_KEY);
+  } catch (e) {}
+  glowRender();
+  glowSchedule(true);
+}
+
+// From each reading of the stats (readouts.js tick): whether the source says a game is playing.
+function glowNoteStats(d) {
+  glowGame = !!(d.signal_format && d.signal_format.game_mode);
+}
+
+function glowFade() {
+  const root = document.documentElement;
+  root.style.setProperty('--glow-l', 'transparent');
+  root.style.setProperty('--glow-r', 'transparent');
+}
+
+function glowSchedule(now) {
   clearTimeout(glowTimer);
-  if (!glowOn || document.hidden || glowFails >= 3) return;
-  glowTimer = setTimeout(glowTick, glowTimer === null ? 0 : GLOW_MS);
+  glowTimer = null;
+  if (!glowActive() || document.hidden) return;
+  glowTimer = setTimeout(glowTick, now ? 0 : GLOW_MS);
 }
 
 /*
@@ -58,23 +111,23 @@ function glowRgb(c, a) {
 
 async function glowTick() {
   const st = q('state');
-  const on = st && st.classList.contains('on');
-  const root = document.documentElement;
-  if (!on) {
-    root.style.setProperty('--glow-l', 'transparent');
-    root.style.setProperty('--glow-r', 'transparent');
+  if (!st || !st.classList.contains('on') || glowGame) {
+    glowFade();
     return glowSchedule();
   }
   try {
     const d = await (await fetch(api('/api/screen-colour'), { cache: 'no-store' })).json();
+    if (d && d.off) { glowAllowed(false); return; }
     if (!d || !d.ok) glowFails++;
     else {
       glowFails = 0;
-      // Brighter on a bright picture, and nothing from a dark one.
+      // Stronger on a bright picture, and nothing from a dark one.
       const a = Math.min(0.9, 0.35 + d.light);
+      const root = document.documentElement;
       root.style.setProperty('--glow-l', glowRgb(d.left, a));
       root.style.setProperty('--glow-r', glowRgb(d.right, a));
     }
   } catch (e) { glowFails++; }
+  if (!glowActive()) glowFade();
   glowSchedule();
 }

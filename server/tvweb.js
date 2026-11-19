@@ -343,6 +343,15 @@ var CONFIG = {
   },
 
   /*
+   * The dashboard's screen glow: whether a dashboard may read the colours on
+   * screen (lib/screencolour.js) to light its page. Each browser switches the
+   * glow on for itself; off here, none can.
+   */
+  screenGlow: {
+    allowed: true
+  },
+
+  /*
    * A backup of the settings each day, as the Server tab's Download backup
    * makes, kept in /var/lib/tvweb/backups for the last 7 days. Off by default.
    */

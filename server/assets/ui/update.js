@@ -114,6 +114,15 @@ function renderUpdate(d) {
       disabled: !d.writable
     });
   }
+  if (typeof d.screenGlowAllowed === 'boolean') {
+    updateToggle('srv-glow', {
+      cls: d.screenGlowAllowed ? 'good' : 'idle',
+      label: d.screenGlowAllowed ? t('common.on', 'On') : t('common.off', 'Off'),
+      on: d.screenGlowAllowed,
+      disabled: !d.writable
+    });
+    glowAllowed(d.screenGlowAllowed);
+  }
   if (d.watchHistory) {
     updateToggle('srv-watch', {
       cls: d.watchHistory.enabled ? 'good' : 'idle',
@@ -746,6 +755,13 @@ async function toggleWatchTime() {
   const b = q('srv-watch');
   b.disabled = true;
   const r = await sendCommand('setHistoryEnabled', !b.dataset.on);
+  if (r && r.ok) renderUpdate(r); else loadUpdate();
+}
+
+async function toggleScreenGlowAllowed() {
+  const b = q('srv-glow');
+  b.disabled = true;
+  const r = await sendCommand('setScreenGlowAllowed', !b.dataset.on);
   if (r && r.ok) renderUpdate(r); else loadUpdate();
 }
 

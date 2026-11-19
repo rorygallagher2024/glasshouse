@@ -1155,6 +1155,8 @@
  "server.watch.clearConfirm": {"text": "Eliminare tutto il tempo di visione conservato sulla TV?", "from": "Delete all watch time kept on the TV?"},
  "server.watch.desc": {"text": "Conta per quanto tempo lo schermo è acceso, per app e ingresso, per la scheda Metriche e Home Assistant. Conservato sulla TV per 13 mesi. Registra cosa guarda la famiglia, quindi resta spento finché non lo si attiva qui.", "from": "Counts how long the screen is on, per app and input, for the Metrics tab and Home Assistant. Kept on the TV for 13 months. It records what the household watches, so it stays off until turned on here."},
  "server.watch.title": {"text": "Tempo di visione", "from": "Watch time"},
+ "server.glow.title": {"text": "Bagliore dello schermo", "from": "Screen glow"},
+ "server.glow.desc": {"text": "Permette a una dashboard di illuminare la parte alta della pagina con i colori dello schermo del televisore, letti ogni pochi secondi mentre è visibile. Escono dal televisore solo i colori, mai un'immagine. Ogni browser attiva il bagliore con il pulsante accanto al selettore chiaro e scuro, in fondo alla pagina.", "from": "Lets a dashboard light the top of its page with the colours on the TV's screen, read every few seconds while it shows. Only the colours leave the TV, never a picture. Each browser switches the glow on with the button beside the light and dark switch, at the foot of the page."},
  "server.whatsNew": {"text": "Novità", "from": "What’s new"},
  "server.whatsNew.more": {"text": "E altre {n} versioni", "from": "And {n} more releases"},
  "server.whatsNew.moreOne": {"text": "E un'altra versione", "from": "And 1 more release"},
@@ -3651,5 +3653,7 @@
  "metrics.sys.wifi": {"from": "Wi-Fi network", "text": "Rete Wi-Fi"},
  "metrics.sys.wifiMac": {"from": "Wi-Fi MAC", "text": "MAC Wi-Fi"},
  "metrics.sys.wiredMac": {"from": "Wired MAC", "text": "MAC cablato"},
- "pic.offNote": {"text": "In grigio: non disponibile nella modalità immagine attuale o per ciò che è sullo schermo.", "from": "Greyed out: not available in the current picture mode, or for what is on screen."}
+ "pic.offNote": {"text": "In grigio: non disponibile nella modalità immagine attuale o per ciò che è sullo schermo.", "from": "Greyed out: not available in the current picture mode, or for what is on screen."},
+ "glow.toggleOn": {"text": "Bagliore dello schermo: disattivato (clic per illuminare la pagina dallo schermo del televisore)", "from": "Screen glow: off (click to light the page from the TV’s screen)"},
+ "glow.toggleOff": {"text": "Bagliore dello schermo: attivato (clic per disattivarlo)", "from": "Screen glow: on (click to switch off)"}
 }

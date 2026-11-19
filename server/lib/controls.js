@@ -1508,6 +1508,19 @@ function doControl(action, value, cb) {
         cb(getUpdateSummary());
       });
 
+    // Whether dashboards may light their page from the colours on screen.
+    case 'setScreenGlowAllowed':
+      if (!writeSettingsFn) return cb({ ok: false, error: 'settings cannot be saved' });
+      var glowOn = (value === true || value === 'on' || value === 'true');
+      return writeSettingsFn({ screenGlow: { allowed: glowOn } }, function (err) {
+        if (err) return cb({ ok: false, error: 'could not save setting: ' + err.message });
+        if (config) {
+          config.screenGlow = config.screenGlow || {};
+          config.screenGlow.allowed = glowOn;
+        }
+        cb(getUpdateSummary());
+      });
+
     // Daily backups. Those already kept stay when it is switched off.
     case 'setBackupDaily':
       if (!writeSettingsFn || !backupModule) return cb({ ok: false, error: 'no backup configured' });

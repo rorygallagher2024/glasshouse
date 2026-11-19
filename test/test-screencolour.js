@@ -8,7 +8,13 @@
  */
 
 var assert = require('assert');
+var events = require('events');
+var fs = require('fs');
+var os = require('os');
+var path = require('path');
 var sc = require('../server/lib/screencolour');
+var controls = require('../server/lib/controls');
+var routes = require('../server/lib/routes');
 
 console.log('Running test-screencolour.js ...');
 
@@ -90,5 +96,51 @@ assert.strictEqual(file, null, 'the picture is deleted');
 sc.init({ luna: function (uri, payload, cb) { cb(null); }, readFile: function () { throw new Error('none'); }, removeFile: function () {} });
 sc.read(function (r) { assert.strictEqual(r.ok, false); });
 console.log('  ✓ one capture for close requests, the service that answers kept, the picture deleted');
+
+// The Server tab's switch: on unless switched off, saved, and the route
+// refuses at once while it is off, without a capture.
+(function testSwitch() {
+  var cfgPath = path.join(os.tmpdir(), 'tvweb-screenglow-' + process.pid + '.json');
+  fs.writeFileSync(cfgPath, JSON.stringify({ port: 8080 }), 'utf8');
+  var config = { web: { enabled: false }, token: '', allowControl: true };
+  var captures = 0;
+  sc.init({
+    luna: function (uri, payload, cb) { captures++; cb({ returnValue: false }); },
+    readFile: function () { throw new Error('none'); },
+    removeFile: function () {}
+  });
+  routes.init({
+    config: config,
+    configFile: cfgPath,
+    version: '0.157.1',
+    screenColour: sc,
+    updater: { updateSummary: function () { return { ok: true, writable: true }; } },
+    privacy: { tvUpdatesBlocked: function () { return false; } }
+  });
+  controls.init({ config: config, writeSettings: routes.writeSettings, updateSummary: routes.updateSummary });
+  function get(url, cb) {
+    var req = new events.EventEmitter();
+    req.url = url; req.method = 'GET'; req.headers = {}; req.connection = { remoteAddress: '192.168.1.50' };
+    var res = { writeHead: function (code) { res.statusCode = code; }, end: function (body) { cb(JSON.parse(body)); } };
+    routes.handleRequest(req, res);
+  }
+  var checks = 0;
+  assert.strictEqual(routes.updateSummary().screenGlowAllowed, true, 'on unless switched off');
+  controls.doControl('setScreenGlowAllowed', false, function (r) {
+    checks++;
+    assert.strictEqual(r.screenGlowAllowed, false);
+    assert.deepEqual(JSON.parse(fs.readFileSync(cfgPath, 'utf8')).screenGlow, { allowed: false });
+  });
+  get('/api/screen-colour', function (r) {
+    checks++;
+    assert.deepEqual(r, { ok: false, off: true });
+    assert.strictEqual(captures, 0, 'no capture while it is off');
+  });
+  controls.doControl('setScreenGlowAllowed', true, function (r) { checks++; assert.strictEqual(r.screenGlowAllowed, true); });
+  get('/api/screen-colour', function (r) { checks++; assert.strictEqual(r.off, undefined); assert.ok(captures > 0); });
+  try { fs.unlinkSync(cfgPath); } catch (e) {}
+  assert.strictEqual(checks, 4, 'every callback ran');
+  console.log('  ✓ the Server tab switch saves the setting, and while it is off nothing is captured');
+})();
 
 console.log('ALL test-screencolour.js assertions passed!');

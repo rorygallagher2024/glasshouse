@@ -22,6 +22,8 @@ Shows the installed version and whether a newer release is out. **Check now** lo
 
 **Watch time** counts how long the screen is on, per app and input, for [the Metrics tab](metrics.md#watch-time) and Home Assistant. It is off by default, as it records what the household watches. **Clear history** deletes what has been kept, whether counting is on or off.
 
+**Screen glow** lets a dashboard light the top of its page with the colours on the TV's screen, the left and right halves each lighting their side, as a room takes its light from the TV. Each browser switches it on with the glow button beside the light and dark switch at the foot of the page, and it is off until then. While it is on and the page shows, the dashboard reads the colours every 3 seconds: the TV captures its screen at 64 by 36 pixels, works out the colours and deletes the capture, so only the colours leave the TV. It pauses while the source says a game is playing, and gives nothing over protected video, such as Netflix's, which the TV captures as black. Switched off here, no dashboard can turn the glow on.
+
 **Settings backup** saves the TV's settings to a file, and restores one, on the same TV or another. A restore sets only the settings the TV has and offers, each the way its switch on the dashboard would, skips those LG greys out at the moment, such as an HDMI input's settings while another input is on screen, and says how many it changed and skipped. Glasshouse restarts if its own settings changed. A backup also lists the apps installed from the Homebrew Channel or by hand. A restore installs none of them itself: those the TV lacks and the Homebrew Channel catalog has are offered on the [Apps tab](apps.md) with **Install all**, each through its usual preview, which stops for a choice such as root, and those not in the catalog are named to install by hand.
 
 | In a backup | Left out, and why |
@@ -33,7 +35,7 @@ Shows the installed version and whether a newer release is out. **Check now** lo
 | The screen saver and how long before the TV switches off | LG's On and Off Timers |
 | — | Hue Sync app settings, which belong to Hue Sync, and Hue Sync/PicCap streaming actions |
 | Glasshouse Home's layout | Whether Glasshouse Home is on, a custom launcher, wallpaper pictures and Internet TV playlists, which can hold logins |
-| Logging, the log server, the time server, watch time and daily backups being on, Prometheus, the daily update check | Who can reach the dashboard (port, host, token, controls), MQTT, Home Assistant API, per-screen-saver entity, colour and random pool choices, the TV's name, the experimental switches, and watch time itself |
+| Logging, the log server, the time server, watch time and daily backups being on, screen glow being allowed, Prometheus, the daily update check | Who can reach the dashboard (port, host, token, controls), MQTT, Home Assistant API, per-screen-saver entity, colour and random pool choices, the TV's name, the experimental switches, and watch time itself |
 
 A remote key or Quick Access key set to an app the TV doesn't have is named as not set. A key, input or service only one TV has is left as it is.
 

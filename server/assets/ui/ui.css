@@ -233,6 +233,12 @@ html.remote-view .hdr-remote,html.remote-view .hdr-vol{display:none}
   margin-left:12px;flex-shrink:0;vertical-align:middle;line-height:1;
 }
 .theme-toggle:hover{color:var(--w100);border-color:var(--w35)}
+.glow-toggle svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.glow-toggle[aria-pressed="true"]{color:var(--w100);border-color:var(--w60)}
+/* A light behind the screen's top edge: faint while off, fuller while on. */
+.glow-toggle .glow-halo{fill:currentColor;stroke:none;opacity:.22}
+.glow-toggle rect{fill:var(--bg)}
+.glow-toggle[aria-pressed="true"] .glow-halo{opacity:.5}
 
 /* Remote peripheral badge */
 

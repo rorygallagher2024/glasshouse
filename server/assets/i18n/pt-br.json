@@ -1311,6 +1311,8 @@
  "server.watch.clearConfirm": {"text": "Excluir todo o tempo assistido guardado na TV?", "from": "Delete all watch time kept on the TV?"},
  "server.watch.desc": {"text": "Conta por quanto tempo a tela fica ligada, por app e entrada, para a aba Métricas e o Home Assistant. Guardado na TV por 13 meses. Registra o que a casa assiste, então fica desligado até ser ativado aqui.", "from": "Counts how long the screen is on, per app and input, for the Metrics tab and Home Assistant. Kept on the TV for 13 months. It records what the household watches, so it stays off until turned on here."},
  "server.watch.title": {"text": "Tempo assistido", "from": "Watch time"},
+ "server.glow.title": {"text": "Brilho da tela", "from": "Screen glow"},
+ "server.glow.desc": {"text": "Permite que um painel ilumine o topo da página com as cores da tela da TV, lidas a cada poucos segundos enquanto ele está aberto. Só as cores saem da TV, nunca uma imagem. Cada navegador liga o brilho com o botão ao lado do seletor claro e escuro, no rodapé da página.", "from": "Lets a dashboard light the top of its page with the colours on the TV's screen, read every few seconds while it shows. Only the colours leave the TV, never a picture. Each browser switches the glow on with the button beside the light and dark switch, at the foot of the page."},
  "server.whatsNew": {"text": "Novidades", "from": "What’s new"},
  "server.whatsNew.more": {"text": "E mais {n} versões", "from": "And {n} more releases"},
  "server.whatsNew.moreOne": {"text": "E mais 1 versão", "from": "And 1 more release"},
@@ -3637,5 +3639,7 @@
  "metrics.sys.wifi": {"from": "Wi-Fi network", "text": "Rede Wi-Fi"},
  "metrics.sys.wifiMac": {"from": "Wi-Fi MAC", "text": "MAC Wi-Fi"},
  "metrics.sys.wiredMac": {"from": "Wired MAC", "text": "MAC cabeado"},
- "pic.offNote": {"text": "Em cinza: não disponível no modo de imagem atual ou para o que está na tela.", "from": "Greyed out: not available in the current picture mode, or for what is on screen."}
+ "pic.offNote": {"text": "Em cinza: não disponível no modo de imagem atual ou para o que está na tela.", "from": "Greyed out: not available in the current picture mode, or for what is on screen."},
+ "glow.toggleOn": {"text": "Brilho da tela: desligado (clique para iluminar a página com a tela da TV)", "from": "Screen glow: off (click to light the page from the TV’s screen)"},
+ "glow.toggleOff": {"text": "Brilho da tela: ligado (clique para desligar)", "from": "Screen glow: on (click to switch off)"}
 }
