@@ -2387,6 +2387,53 @@ async function visitHomeUpDown(browser, base, problems) {
   }
 }
 
+// The More apps grid holds fewer cards than icons a line; the keys follow the lines it shows.
+async function visitHomeFolderKeys(browser, base, problems) {
+  const page = await browser.newPage({ viewport: { width: 1920, height: 1080 } });
+  page.on('pageerror', e => problems.push('Home More apps keys: ' + e.message));
+  const apps = [];
+  for (let i = 0; i < 8; i++) apps.push({ id: 'app' + i, title: 'App ' + i });
+  const layout = { rows: ['app'], order: { app: [] }, hidden: { app: [] }, channels: [], appCards: true,
+    folder: apps.map(a => a.id), hintSeen: true, searchHintSeen: true };
+  await page.route('**/api/home/**', route => {
+    const url = new URL(route.request().url());
+    const reply = body => route.fulfill({ json: body });
+    if (url.pathname.endsWith('/catalogue')) return reply({ ok: true, layout, layoutVersion: 1, apps, channels: [], devices: [],
+      order: { app: apps.map(a => a.id) } });
+    if (url.pathname.endsWith('/now')) return reply({});
+    return reply({ ok: true, build: 'folderkeys', layoutVersion: 1 });
+  });
+  const focused = () => page.evaluate(() => {
+    const t = document.querySelector('#folderGrid .tile.focus');
+    if (!t) return null;
+    const r = t.getBoundingClientRect();
+    return { f: +t.getAttribute('data-f'), top: r.top, left: r.left, right: r.right };
+  });
+  const press = async key => { await page.keyboard.press(key); await page.waitForTimeout(400); };
+  try {
+    await page.goto(base + '/assets/home.html');
+    await page.waitForSelector('#rows .tile.focus');
+    await press('Enter');
+    await page.waitForSelector('#folderGrid .tile.focus');
+    await press('ArrowRight');
+    const above = await focused();
+    await press('ArrowDown');
+    const below = await focused();
+    if (!above || !below || below.top <= above.top) problems.push('Home More apps keys: Down did not reach the next line of cards');
+    else if (Math.min(above.right, below.right) - Math.max(above.left, below.left) <= 0) {
+      problems.push('Home More apps keys: Down went to app ' + below.f + ', not the one under app ' + above.f);
+    }
+    await press('ArrowUp');
+    const back = await focused();
+    if (!back || !above || back.f !== above.f) problems.push('Home More apps keys: Up did not return to app ' + (above && above.f));
+    for (let i = 0; i < 9; i++) await press('ArrowRight');
+    const end = await focused(), first = await page.evaluate(() => document.querySelector('#folderGrid .tile').getBoundingClientRect().top);
+    if (!end || end.top !== first) problems.push('Home More apps keys: Right went past the end of the first line');
+  } finally {
+    await page.close();
+  }
+}
+
 async function visitHomeOrder(browser, base, problems) {
   const page = await browser.newPage({ viewport: { width: 1920, height: 1080 } });
   page.on('pageerror', e => problems.push('Home order: ' + e.message));
@@ -4715,7 +4762,7 @@ function groups(web, tv) {
     { job: 'tabs', tabs: web.map(t => ({ path: '/?tab=' + t, label: 'web ' + t })), visits: [visitHomeAnimations, visitHuesyncSettings, visitInputsAndRemote, visitAdblockCards, visitSaverEntitySlots, visitRemoteView] },
     { job: 'tabs', tabs: tv.map(t => ({ path: '/assets/dashboard.html?tab=' + t, label: 'TV ' + t })),
       visits: [visitTvDashboard, visitTvAudio, visitTvPictureWrites, visitPictureUnavailable, visitTvNonOled, visitTvHuesync] },
-    { job: 'home', tabs: [], visits: [visitHomePicture, visitHomePreview, visitHomePreviewOptions, visitHomePreviewWebos4, visitHomePreviewSize, visitHomePreviewSizeDetails, visitInputBarBehindHome, visitInputBarSwitchOnOk, visitHomeBarPrewarm, visitHomeBarIconsReady, visitHomeBarTiles, visitHomeBarBesideHome, visitHomeBarScroll, visitHomeUpDown, visitHomePointerOff, visitHomeOrder, visitHomeAvailability, visitHomeSearch, visitHomeWeather, visitHomeWeatherSetting, visitHomeRemoteBattery, visitHomeRemoteBatterySetting] },
+    { job: 'home', tabs: [], visits: [visitHomePicture, visitHomePreview, visitHomePreviewOptions, visitHomePreviewWebos4, visitHomePreviewSize, visitHomePreviewSizeDetails, visitInputBarBehindHome, visitInputBarSwitchOnOk, visitHomeBarPrewarm, visitHomeBarIconsReady, visitHomeBarTiles, visitHomeBarBesideHome, visitHomeBarScroll, visitHomeUpDown, visitHomeFolderKeys, visitHomePointerOff, visitHomeOrder, visitHomeAvailability, visitHomeSearch, visitHomeWeather, visitHomeWeatherSetting, visitHomeRemoteBattery, visitHomeRemoteBatterySetting] },
     { job: 'home', tabs: [], visits: [visitHomeArrangement, visitHomeVisibility, visitHomeColours, visitHomeInputsEditor, visitHomeEditor,
       visitHomeRecentsHidden, visitHomeSaverWake, visitHomeUploads, visitHomeShuffle, visitHomeLauncher, visitHomeReadiness, visitAudioOverride, visitHomeRecents, visitHomeGuide,
       visitHomeFadeAndInputs] },
