@@ -94,8 +94,12 @@ Per-port settings for HDMI Deep Colour (extended bandwidth for 4K HDR). Each inp
 
 * **Standby light:** Toggles the red standby indicator LED located on the front bezel of the TV.
 
+## Service menu
+
+Opens LG's engineering menus (**In Start** and **EZ Adjust**), unlocks the full menu on firmware that restricts it, and sends the default `0413` PIN to the TV without picking up the remote. See [Service menu access](service-menu.md).
+
 ![System tab: Quick Boot, Stay connected when off, Always Ready, nightly power-down and Wake-on-LAN, the On and Off Timers, screen-time limits, system updates, LG logo, sound, HDMI inputs, devices and the standby light](../screenshots/advanced.png)
 
-*The TV's own settings, grouped as Power & standby, Timers, Screen time, System updates, Display, Sound, HDMI inputs, Devices and Front lights.*
+*The TV's own settings, grouped as Power & standby, Timers, Screen time, System updates, Display, Sound, HDMI inputs, Devices, Front lights and Service menu.*
 
 PicCap and Hue Sync have their own [Ambient Light](ambient-light.md) page.

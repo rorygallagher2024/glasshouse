@@ -136,7 +136,7 @@ Node-RED, Telegraf into InfluxDB, or scripts subscribing to that topic work the 
 
 ![Home Assistant API settings showing the toggle, address, saved token, and the Connection box with Home Assistant reachable](screenshots/ha-api.png)
 
-Once enabled and connected, two Home Assistant screen savers unlock on the **Screensaver** tab (while off or unconfigured, both stay greyed out so non-Home-Assistant setups cannot pick them by mistake):
+Once enabled and connected, two Home Assistant screen savers appear on the **Screensaver** tab (while off or unconfigured, they stay hidden):
 
 * [**Home Assistant: Ambient**](dashboard/screen-savers.md#home-assistant-ambient) — shows the TV clock, date, and up to three configurable entities with optional custom display labels.
 * [**Home Assistant: Data Display**](dashboard/screen-savers.md#home-assistant-data-display) — cycles sequentially through 2 to 100 entities one at a time on black.
