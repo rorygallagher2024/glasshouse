@@ -323,11 +323,6 @@ async function tick() {
     if (nothingSeen) q('source').textContent = deviceName || '—';
     q('source').parentElement.classList.toggle('last', asleep && !nothingSeen);
     q('source').parentElement.classList.toggle('blank', nothingSeen);
-    const vol = q('hdr-volume');
-    if (vol) {
-      vol.hidden = asleep || typeof d.volume !== 'number';
-      vol.textContent = d.muted ? t('header.muted', 'Muted') : t('header.volume', 'Volume {n}', { n: d.volume });
-    }
     const sleepEl = q('hdr-sleep');
     if (sleepEl) {
       const sl = d.sleepTimer && d.sleepTimer !== 'off' ? d.sleepTimer : '';

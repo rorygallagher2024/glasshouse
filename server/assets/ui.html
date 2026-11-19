@@ -21,7 +21,11 @@
     </div>
   </div>
   <div class="hdr-status">
-    <div class="hdr-line num" id="hdr-volume" hidden></div>
+    <!-- The remote at any time (#1586). The volume is on the Control tab and in the remote itself. -->
+    <button type="button" class="hdr-remote" id="hdr-remote" onclick="openRemote()">
+      <svg class="hdr-remote-ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="2.5" width="8" height="19" rx="3"/><circle cx="12" cy="8" r="1.6"/><path d="M10.5 13h3M10.5 16h3"/></svg>
+      <span class="hdr-remote-label" data-t="header.remote">Remote</span>
+    </button>
     <div class="hdr-line" id="hdr-sleep" hidden></div>
   </div>
 </header>
@@ -300,7 +304,7 @@
       </div>
     </div>
 
-    <div class="set"><div class="lbl" data-t="ctl.source">Source</div>
+    <div class="set" id="control-source"><div class="lbl" data-t="ctl.source">Source</div>
       <div class="btns" id="inputs"></div>
     </div>
 
@@ -335,6 +339,43 @@
       </div>
     </div>
 
+    <!-- The remote's own layout (?view=remote, #1586): shown only there. data-remote
+         marks what the remote view shows; the rest of the Control tab is hidden. -->
+    <div class="rp" id="remote-pad" data-col="0" data-remote>
+      <div class="rp-top">
+        <button type="button" class="rp-pill" id="rp-screen" onclick="remoteScreen()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v8"/><path d="M6.3 6.3a8 8 0 1 0 11.4 0"/></svg><span id="rp-screen-label"></span></button>
+        <button type="button" class="rp-pill" id="rp-input" onclick="remoteInputs()" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h13l-3-3"/><path d="M20 17H7l3 3"/></svg><span data-t="rp.input">Input</span></button>
+        <button type="button" class="rp-pill rp-icon" data-rcu="settings" onclick="sendCommand('rcu','settings')" aria-label="Settings" data-t-aria-label="ctl.settings"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18.10 9.48 L20.89 10.59 L20.89 13.41 L18.10 14.52 L18.09 14.54 L19.28 17.29 L17.29 19.28 L14.54 18.09 L14.52 18.10 L13.41 20.89 L10.59 20.89 L9.48 18.10 L9.46 18.09 L6.71 19.28 L4.72 17.29 L5.91 14.54 L5.90 14.52 L3.11 13.41 L3.11 10.59 L5.90 9.48 L5.91 9.46 L4.72 6.71 L6.71 4.72 L9.46 5.91 L9.48 5.90 L10.59 3.11 L13.41 3.11 L14.52 5.90 L14.54 5.91 L17.29 4.72 L19.28 6.71 L18.09 9.46Z"/><circle cx="12" cy="12" r="2.8"/></svg></button>
+      </div>
+      <p class="rp-asleep" data-t="rp.standby">The TV is in standby. Power on to use the remote.</p>
+      <div class="rp-body">
+        <div class="rp-ring" role="group" aria-label="D-pad" data-t-aria-label="ctl.dpad">
+          <button type="button" class="rp-dir rp-up" data-rcu="up" onclick="sendCommand('rcu','up')" aria-label="Up" data-t-aria-label="ctl.up"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg></button>
+          <button type="button" class="rp-dir rp-left" data-rcu="left" onclick="sendCommand('rcu','left')" aria-label="Left" data-t-aria-label="ctl.left"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg></button>
+          <button type="button" class="rp-ok" data-rcu="ok" onclick="sendCommand('rcu','ok')" translate="no">OK</button>
+          <button type="button" class="rp-dir rp-right" data-rcu="right" onclick="sendCommand('rcu','right')" aria-label="Right" data-t-aria-label="ctl.right"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>
+          <button type="button" class="rp-dir rp-down" data-rcu="down" onclick="sendCommand('rcu','down')" aria-label="Down" data-t-aria-label="ctl.down"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>
+        </div>
+        <div class="rp-row">
+          <div class="rp-rocker" role="group" aria-label="Volume" data-t-aria-label="ctl.volume">
+            <button type="button" onclick="sendCommand('volumeStep',1)" aria-label="Volume up" data-t-aria-label="ctl.volumeUp"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 6v12M6 12h12"/></svg></button>
+            <span class="rp-vol num" id="rp-vol" aria-live="polite">&mdash;</span>
+            <button type="button" onclick="sendCommand('volumeStep',-1)" aria-label="Volume down" data-t-aria-label="ctl.volumeDown"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 12h12"/></svg></button>
+          </div>
+          <div class="rp-mid">
+            <button type="button" class="rp-key" data-rcu="back" onclick="sendCommand('rcu','back')"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 14L4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/></svg><span data-t="ctl.back">Back</span></button>
+            <button type="button" class="rp-key" data-rcu="home" onclick="sendCommand('rcu','home')"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11l8-7 8 7"/><path d="M6 10v10h12V10"/></svg><span data-t="ctl.home">Home</span></button>
+            <button type="button" class="rp-key rp-wide" id="rp-mute" onclick="toggleMute()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 9h3l5-4v14l-5-4H5z"/><path d="M17 9l4 6M21 9l-4 6"/></svg><span data-t="ctl.mute">Mute</span></button>
+          </div>
+          <div class="rp-rocker" role="group" aria-label="Playback" data-t-aria-label="ctl.playback">
+            <button type="button" onclick="sendCommand('media','playPause')" aria-label="Play / Pause" data-t-aria-label="ctl.playPause"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5v14l7-7z"/><path d="M16 6v12M20 6v12"/></svg></button>
+            <button type="button" onclick="sendCommand('media','rewind')" aria-label="Rewind" data-t-aria-label="ctl.rewind"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 6l-7 6 7 6z"/><path d="M20 6l-7 6 7 6z"/></svg></button>
+            <button type="button" onclick="sendCommand('media','fastForward')" aria-label="Fast Fwd" data-t-aria-label="ctl.fastForward"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6l7 6-7 6z"/><path d="M12 6l7 6-7 6z"/></svg></button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Pinned to the first column: it is the one control here that people
          reach for repeatedly, so it should not move about as the others grow. -->
     <details class="disc" id="disc-dpad" data-col="0">
@@ -357,7 +398,7 @@
       </div>
     </details>
 
-    <details class="disc" id="disc-pointer" data-col="0" hidden>
+    <details class="disc" id="disc-pointer" data-col="0" data-remote hidden>
       <summary><span data-t="ctl.pointer">Pointer</span> <span class="cur" data-t="ctl.pointer.sub">Move the TV cursor</span></summary>
 
       <div class="set">
@@ -370,7 +411,7 @@
       </div>
     </details>
 
-    <details class="disc" id="disc-keyboard" data-col="0">
+    <details class="disc" id="disc-keyboard" data-col="0" data-remote>
       <summary><span data-t="ctl.keyboard">Keyboard</span> <span class="cur" data-t="ctl.keyboard.sub">Type into a focused field</span></summary>
 
       <div class="set">
@@ -384,6 +425,18 @@
         <p class="sub" id="kb-via"></p>
       </div>
     </details>
+
+    <!-- The remote's modes: its buttons, the pointer's touchpad, or the keyboard. -->
+    <div class="rp-modes" id="remote-modes" role="tablist" data-remote>
+      <button type="button" role="tab" data-mode="buttons" onclick="remoteMode('buttons')" data-t="rp.buttons">Buttons</button>
+      <button type="button" role="tab" data-mode="touch" id="rp-mode-touch" onclick="remoteMode('touch')" data-t="rp.touchpad">Touchpad</button>
+      <button type="button" role="tab" data-mode="keys" onclick="remoteMode('keys')" data-t="ctl.keyboard">Keyboard</button>
+    </div>
+
+    <!-- The remote as a page of its own: the way back, at its foot. -->
+    <div class="set" id="remote-full" data-remote>
+      <p class="sub"><a class="link-btn" href="./" data-t="ctl.remoteLink.full">Full dashboard</a></p>
+    </div>
 
     <details class="disc" id="disc-timers">
       <summary><span data-t="ctl.sleep">Sleep timer</span> <span class="cur" id="tl-cur"></span></summary>
@@ -1391,6 +1444,89 @@
     </div>
     <div class="prot-row home-gh-row home-show-row" hidden>
       <div class="prot-main">
+        <div class="prot-title" data-t="home.appCards">Apps as cards</div>
+        <div class="prot-desc" data-t="home.appCardsDesc">Wide black cards with a logo on each, rather than square icons. To add or change an app’s logo, click its card under Rows and tiles; an app without one shows its own icon on the card.</div>
+      </div>
+      <div class="prot-status"><button type="button" class="pill idle" id="home-app-cards" onclick="homeOptIn('appCards')">&mdash;</button></div>
+    </div>
+    <div class="prot-row home-gh-row home-show-row" hidden>
+      <div class="prot-main">
+        <div class="prot-title" data-t="home.cardFade">Card transparency</div>
+        <div class="prot-desc" data-t="home.cardFadeDesc">How see-through the cards not in focus are. Solid shows them all at full strength.</div>
+      </div>
+      <div class="prot-status"><select class="pill-sel" id="home-card-fade-sel" onchange="homeCardFade(this.value)" aria-label="Card transparency" data-t-aria-label="home.cardFade">
+        <option value="0" data-t="home.cardFade.solid">Solid</option>
+        <option value="10">10%</option>
+        <option value="20">20%</option>
+        <option value="30">30%</option>
+        <option value="40">40%</option>
+        <option value="50">50%</option>
+        <option value="60">60%</option>
+        <option value="70">70%</option>
+        <option value="80">80%</option>
+        <option value="90">90%</option>
+      </select></div>
+    </div>
+    <div class="prot-row home-gh-row home-show-row" hidden>
+      <div class="prot-main">
+        <div class="prot-title" data-t="home.focusPulse">Pulse on the app in focus</div>
+        <div class="prot-desc" data-t="home.focusPulseDesc">The ring around the app you are on breathes, with a soft glow, in Home’s accent colour.</div>
+      </div>
+      <div class="prot-status"><button type="button" class="pill idle" id="home-focus-pulse" onclick="homeOptIn('focusPulse')">&mdash;</button></div>
+    </div>
+    <div class="prot-row home-gh-row home-show-row" hidden>
+      <div class="prot-main">
+        <div class="prot-title" data-t="home.navSound">Sound when moving</div>
+        <div class="prot-desc" data-t="home.navSoundDesc">A sound each time you move between tiles: a click, a softer rollover, or a sound of your own.</div>
+        <div class="prot-desc home-sound-own" id="home-nav-sound-own" hidden>
+          <span id="home-nav-sound-note" role="status"></span>
+          <button type="button" class="pill idle" id="home-nav-sound-upload" onclick="q('home-nav-sound-file').click()" data-t="home.navSound.upload">Upload a sound</button>
+          <button type="button" class="pill idle" id="home-nav-sound-remove" onclick="homeNavSoundRemove()" data-t="home.cardIconRemove">Remove</button>
+        </div>
+        <input type="file" id="home-nav-sound-file" accept=".ogg,.wav,.mp3,audio/ogg,audio/wav,audio/mpeg" hidden onchange="homeNavSoundPicked(this)">
+      </div>
+      <div class="prot-status home-sound-ctl">
+        <button type="button" class="pill idle home-sound-play" id="home-nav-sound-play" onclick="homeNavSoundPlay()" aria-label="Play" data-t-aria-label="home.navSound.play" title="Play" data-t-title="home.navSound.play">&#9654;</button>
+        <select class="pill-sel" id="home-nav-sound-sel" onchange="homeNavSound(this.value)" aria-label="Sound when moving" data-t-aria-label="home.navSound">
+        <option value="off" data-t="home.navSound.off">Off</option>
+        <option value="click" data-t="home.navSound.click">Click</option>
+        <option value="rollover" data-t="home.navSound.rollover">Rollover</option>
+        <option value="own" data-t="home.navSound.own">Your own</option>
+      </select></div>
+    </div>
+    <input type="file" id="home-card-icon-file" accept="image/png,image/jpeg,image/webp,image/svg+xml" hidden onchange="homeCardIconPicked(this)">
+    <div id="home-card-modal" class="modal-backdrop" hidden onclick="if(event.target===this)homeCardIconClose()" onkeydown="if(event.key==='Escape')homeCardIconClose()">
+      <div class="modal-card home-card-modal" role="dialog" aria-modal="true" aria-labelledby="home-card-modal-title">
+        <div class="home-card-modal-head">
+          <div class="home-card-modal-title" id="home-card-modal-title">&mdash;</div>
+          <button type="button" class="pill idle" id="home-card-modal-close" onclick="homeCardIconClose()" data-t="home.cardIconDoneBtn">Done</button>
+        </div>
+        <div class="home-card-modal-preview" id="home-card-modal-preview" onclick="homeCardIconUpload()"
+          ondragover="event.preventDefault();this.classList.add('drag')" ondragleave="this.classList.remove('drag')" ondrop="homeCardIconDrop(event)"></div>
+        <div class="sub" id="home-card-modal-state"></div>
+        <div class="btns home-card-modal-btns">
+          <button type="button" class="on" id="home-card-modal-upload" onclick="homeCardIconUpload()"></button>
+          <button type="button" id="home-card-modal-remove" onclick="homeCardIconRemove()" data-t="home.cardIconRemove">Remove</button>
+        </div>
+        <div class="sub" id="home-card-modal-note" role="status" aria-live="polite"></div>
+        <ul class="home-card-specs">
+          <li data-t="home.cardIconSpec.shape">16:9, like the card. 640 × 360 suits it; up to 1280 × 720.</li>
+          <li data-t="home.cardIconSpec.look">The card is black: a white or full-colour logo on a transparent background looks best.</li>
+          <li data-t="home.cardIconSpec.files">PNG, JPEG, WebP or SVG up to 10 MB, or drop one on the card. Another shape is fitted whole, never cropped.</li>
+        </ul>
+        <div class="home-card-modal-pick" id="home-card-modal-pickrow">
+          <label class="sub" for="home-card-modal-pick" data-t="home.cardIconOther">Or use an icon already on the TV</label>
+          <div class="home-card-modal-pickline">
+            <input type="search" class="home-card-search" id="home-card-modal-pick" translate="no" list="home-card-icon-list" autocomplete="off"
+              aria-label="Card icon" data-t-aria-label="home.cardIconLabel" onchange="homeSetCardIcon(this)">
+            <button type="button" class="pill idle" id="home-card-modal-auto" onclick="homeSetCardIcon(null)" data-t="home.cardIconMatchBtn">Match by name</button>
+          </div>
+          <datalist id="home-card-icon-list"></datalist>
+        </div>
+      </div>
+    </div>
+    <div class="prot-row home-gh-row home-show-row" hidden>
+      <div class="prot-main">
         <div class="prot-title" data-t="home.showCec">CEC addresses</div>
         <div class="prot-desc" data-t="home.showCecDesc">On each input’s tile: the HDMI-CEC address of the device behind it.</div>
       </div>
@@ -2370,6 +2506,20 @@
   </div>
 </section>
 </main>
+
+<!-- The remote over any tab (#1586): the remote view in a frame, the page faded behind
+     it. A sheet from the foot on a phone, a panel in the middle on a computer. -->
+<div class="remote-modal" id="remote-modal" hidden>
+  <div class="remote-backdrop" onclick="closeRemote()"></div>
+  <div class="remote-sheet" role="dialog" aria-modal="true" aria-labelledby="remote-modal-title">
+    <div class="remote-sheet-head">
+      <span class="remote-sheet-title" id="remote-modal-title" data-t="header.remote">Remote</span>
+      <button type="button" class="remote-close" onclick="closeRemote()" aria-label="Close" data-t-aria-label="remote.close">&times;</button>
+    </div>
+    <!-- The remote's frame: made on opening, removed on closing (controls.js). -->
+    <div class="remote-frame-slot" id="remote-frame-slot"></div>
+  </div>
+</div>
 
 <footer>
   <span class="foot-tv" id="foot-tv" translate="no"></span>

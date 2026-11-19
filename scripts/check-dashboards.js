@@ -3174,6 +3174,43 @@ async function visitHomeReadiness(browser, base, problems) {
   } finally { await page.close(); }
 }
 
+// The key that ends the screen saver reaches Home before its heartbeat hears
+// the screen saver has gone: it only wakes the screen. Back then opened Recents.
+async function visitHomeSaverWake(browser, base, problems) {
+  const page = await browser.newPage({ viewport: { width: 1920, height: 1080 } });
+  page.on('pageerror', e => problems.push('Home saver wake: ' + e.message));
+  let saver = true, beats = 0;
+  const reply = (route, body) => route.fulfill({ contentType: 'application/json', body: JSON.stringify(body) });
+  await page.route('**/api/home/**', route => {
+    const pathname = new URL(route.request().url()).pathname;
+    if (pathname === '/api/home/catalogue') return reply(route, {
+      ok: true, apps: [], devices: [], channels: [], sources: {}, order: { app: ['lg-home'], dev: [], ch: [] },
+      layout: { rows: ['app', 'dev', 'ch'], hidden: { app: [], dev: [], ch: [] }, channels: [], hintSeen: true, searchHintSeen: true }
+    });
+    if (pathname === '/api/home/beat') { beats++; return reply(route, { ok: true, covered: saver, saver, build: 'one' }); }
+    if (pathname === '/api/home/recents') return reply(route, { ok: true, apps: [] });
+    return reply(route, { ok: true, kind: null, build: 'one' });
+  });
+  const back = () => page.evaluate(() => {
+    for (const type of ['keydown', 'keyup']) document.dispatchEvent(new KeyboardEvent(type, { keyCode: 461 }));
+  });
+  try {
+    await page.goto(base + '/assets/home.html');
+    await page.waitForSelector('#rows .tile');
+    await page.waitForFunction(() => document.documentElement.classList.contains('resting'));
+    saver = false;
+    const heard = beats;
+    await back();
+    await waitUntil(page, () => beats > heard, 300);
+    if (beats === heard) problems.push('Home saver wake: the waking key did not ask at once whether the screen saver had gone');
+    await page.waitForFunction(() => !document.documentElement.classList.contains('resting'));
+    if (await page.locator('#stage.recents').count()) problems.push('Home saver wake: Back ending the screen saver opened Recents');
+    await back();
+    try { await page.waitForSelector('#stage.recents', { timeout: 5000 }); }
+    catch (e) { problems.push('Home saver wake: Back after the screen saver did not open Recents'); }
+  } finally { await page.close(); }
+}
+
 async function visitHomeRecents(browser, base, problems) {
   const page = await browser.newPage({ viewport: { width: 1920, height: 1080 } });
   page.on('pageerror', e => problems.push('Home recents: ' + e.message));
@@ -3782,6 +3819,17 @@ async function visitHomeInternetTv(browser, base, problems) {
     await key(33);
     await waitUntil(page, async () => await guideRow() === '0');
     if (await guideRow() !== '0') fail('Channel up did not turn the guide back a page');
+    // A channel picked in the guide: Back goes back to the guide, on it.
+    await key(40);
+    await waitUntil(page, async () => await guideRow() === '1');
+    const picked = streams.length;
+    await key(13);
+    await waitUntil(page, () => streams.length > picked);
+    if (streams[streams.length - 1] !== 'x2') fail('OK in the guide did not play the channel');
+    await key(461);
+    try { await page.waitForSelector('#stage.guiding #gBody .gr.focus', { timeout: 3000 }); }
+    catch (e) { fail('Back from a channel picked in the guide did not go back to the guide'); }
+    if (await guideRow() !== '1') fail('Back to the guide was not on the channel picked there');
     await key(461);
     await page.waitForTimeout(200);
     if (/guiding/.test(await page.locator('#stage').getAttribute('class'))) fail('Back did not close the guide');
@@ -4503,14 +4551,164 @@ async function visitAdblockCards(browser, base, problems) {
   } finally { await page.unrouteAll({ behavior: 'wait' }); await page.close(); }
 }
 
+/*
+ * The remote on its own (?view=remote, #1586): on a phone and in a wide
+ * window, only playback, volume, the D-pad, the pointer where its
+ * switch is on (Server, Advanced), the keyboard and the way back, in one column,
+ * the D-pad and keyboard open, and the full dashboard's remembered tab left
+ * alone; in the header's modal (embed=1), no masthead and no way back. The
+ * header's Remote opens the modal over any tab with the page faded, Esc and
+ * Back close it and empty its frame, and ?open= opens the keyboard.
+ */
+async function visitRemoteView(browser, base, problems) {
+  const fail = what => problems.push('Remote view: ' + what);
+  const shown = page => page.evaluate(() => {
+    const vis = el => !!el && el.getBoundingClientRect().height > 0 && getComputedStyle(el).display !== 'none';
+    return {
+      cls: document.documentElement.classList.contains('remote-view'),
+      // As they appear, top to bottom: the remote orders them with CSS.
+      sets: Array.from(document.querySelector('#tab-control .col-controls').children).filter(vis)
+        .sort((a, b) => a.getBoundingClientRect().top - b.getBoundingClientRect().top).map(el => el.id || el.className),
+      vol: [document.getElementById('vol').textContent, document.getElementById('rp-vol').textContent],
+      nav: vis(document.getElementById('sidenav')) || vis(document.querySelector('.nav-bar')),
+      header: vis(document.querySelector('header')), button: vis(document.getElementById('hdr-remote')),
+      cols: document.querySelectorAll('#tab-control .lcols').length,
+      pointer: !document.getElementById('disc-pointer').hidden,
+      tab: localStorage.getItem('tab'), shownPanels: Array.from(document.querySelectorAll('#panels > section')).filter(s => !s.hidden).map(s => s.id)
+    };
+  });
+  for (const [label, path, viewport] of [['390', '/?view=remote', { width: 390, height: 844 }], ['1400', '/?view=remote', { width: 1400, height: 900 }],
+                                         ['embed', '/?view=remote&embed=1', { width: 440, height: 880 }]]) {
+    const page = await browser.newPage({ viewport });
+    page.on('pageerror', e => fail(label + ': ' + e.message));
+    try {
+      await page.addInitScript(() => { try { if (!localStorage.getItem('tab')) localStorage.setItem('tab', 'apps'); } catch (e) {} });
+      await page.goto(base + path);
+      await page.waitForFunction(() => !document.getElementById('tab-control').hidden);
+      await page.waitForTimeout(300);
+      const s = await shown(page);
+      const embed = label === 'embed';
+      const want = ['remote-pad', 'remote-modes'].concat(embed ? [] : ['remote-full']);
+      if (!s.cls) fail(label + ': no remote-view class');
+      if (JSON.stringify(s.sets) !== JSON.stringify(want)) fail(label + ': shows ' + JSON.stringify(s.sets) + ', not ' + JSON.stringify(want));
+      if (s.nav) fail(label + ': the tabs are shown');
+      if (s.header === embed) fail(label + ': masthead shown ' + s.header);
+      if (s.button) fail(label + ': the header\'s Remote shows in the remote');
+      if (s.cols) fail(label + ': in columns');
+      if (s.vol[0] !== s.vol[1]) fail(label + ': the pad\'s volume says ' + s.vol[1] + ', the Control tab\'s ' + s.vol[0]);
+      if (label === '390') {
+        // Input: the sources in place of the buttons; Keyboard: the keyboard box; back to the buttons.
+        await page.locator('#rp-input').click();
+        const inputs = await shown(page);
+        if (JSON.stringify(inputs.sets.slice(0, 2)) !== JSON.stringify(['remote-pad', 'control-source'])) fail('Input shows ' + JSON.stringify(inputs.sets));
+        if (await page.locator('.rp-body').isVisible()) fail('Input left the buttons showing');
+        await page.locator('#remote-modes [data-mode="keys"]').click();
+        const keys = await shown(page);
+        if (keys.sets.indexOf('disc-keyboard') === -1 || keys.sets.indexOf('control-source') !== -1) fail('Keyboard shows ' + JSON.stringify(keys.sets));
+        await page.locator('#remote-modes [data-mode="buttons"]').click();
+        if (!(await page.locator('.rp-ring').isVisible())) fail('Buttons left the D-pad hidden');
+        if (await page.evaluate(() => localStorage.getItem('remoteMode')) !== 'buttons') fail('the mode is not kept');
+        // In standby: Power on, everything else put aside, a line saying why; back on, as it was.
+        const asleep = async on => page.evaluate(on => {
+          const st = document.getElementById('state');
+          st.classList.toggle('standby', on);
+          st.classList.toggle('on', !on);
+          return new Promise(r => setTimeout(() => r({
+            label: document.getElementById('rp-screen-label').textContent,
+            screen: document.getElementById('rp-screen').disabled,
+            others: Array.from(document.querySelectorAll('#remote-pad button')).filter(b => b.id !== 'rp-screen' && !b.disabled).length,
+            note: getComputedStyle(document.querySelector('.rp-asleep')).display !== 'none'
+          }), 50));
+        }, on);
+        const off = await asleep(true);
+        if (off.label !== 'Power on' || off.screen || off.others || !off.note) fail('in standby: ' + JSON.stringify(off));
+        const back = await asleep(false);
+        if (back.label !== 'Screen off' || back.others === 0 || back.note) fail('out of standby: ' + JSON.stringify(back));
+        // The touchpad with fingers: a tap clicks, a drag moves further than a mouse would, two fingers scroll.
+        const pad = await page.evaluate(() => {
+          const sent = [], moves = [];
+          window.sendPointer = body => sent.push(body);
+          window.queuePointerMove = (dx, dy) => moves.push([dx, dy]);
+          const el = document.getElementById('pointer-pad');
+          const fire = (type, id, x, y) => el.dispatchEvent(new PointerEvent(type, { pointerId: id, pointerType: 'touch', isPrimary: id === 1,
+            clientX: x, clientY: y, button: 0, buttons: type === 'pointerup' ? 0 : 1, bubbles: true, cancelable: true }));
+          fire('pointerdown', 1, 100, 100); fire('pointerup', 1, 100, 100);
+          const clicks = sent.filter(b => b.click).length;
+          fire('pointerdown', 1, 100, 100);
+          for (let i = 1; i <= 10; i++) fire('pointermove', 1, 100 + i * 10, 100);
+          fire('pointerup', 1, 200, 100);
+          const moved = moves.reduce((n, m) => n + m[0], 0);
+          sent.length = 0;
+          fire('pointerdown', 1, 100, 200); fire('pointerdown', 2, 160, 200);
+          for (let i = 1; i <= 6; i++) { fire('pointermove', 1, 100, 200 - i * 10); fire('pointermove', 2, 160, 200 - i * 10); }
+          fire('pointerup', 1, 100, 140); fire('pointerup', 2, 160, 140);
+          const scrolled = sent.filter(b => b.scroll).reduce((n, b) => n + b.scroll.dy, 0);
+          return { clicks, moved, scrolled, clicked: sent.filter(b => b.click).length };
+        });
+        if (pad.clicks !== 1) fail('a tap on the touchpad sent ' + pad.clicks + ' clicks');
+        if (pad.moved <= 150) fail('a 100 px finger drag moved the cursor only ' + pad.moved + ' px');
+        if (pad.scrolled < 2 || pad.clicked) fail('two fingers up 60 px scrolled ' + pad.scrolled + ' and clicked ' + pad.clicked);
+      }
+      if (s.tab !== 'apps') fail(label + ': the remembered tab became ' + s.tab);
+      if (JSON.stringify(s.shownPanels) !== JSON.stringify(['tab-control'])) fail(label + ': panels shown ' + JSON.stringify(s.shownPanels));
+    } finally {
+      await page.close();
+    }
+  }
+  const page = await browser.newPage({ viewport: { width: 1400, height: 900 } });
+  page.on('pageerror', e => fail('dashboard: ' + e.message));
+  try {
+    // The Android app's bridge, told while the remote shows.
+    await page.addInitScript(() => { window.__app = []; window.GlasshouseApp = { remoteState: v => window.__app.push(v) }; });
+    await page.goto(base + '/?tab=metrics');
+    await page.waitForFunction(() => !document.getElementById('tab-metrics').hidden);
+    if (await page.locator('#remote-full').isVisible()) fail('the remote\'s way back shows on the full dashboard');
+    const modalState = () => page.evaluate(() => {
+      const m = document.getElementById('remote-modal'), f = document.getElementById('remote-frame');
+      let src = '';
+      try { src = f ? f.contentWindow.location.href : 'none'; } catch (e) { src = 'unreadable'; }
+      return { hidden: m.hidden, shown: m.classList.contains('shown'), src };
+    });
+    for (const how of ['Escape', 'back']) {
+      await page.locator('#hdr-remote').click();
+      await page.waitForFunction(() => document.getElementById('remote-modal').classList.contains('shown'));
+      await page.waitForFunction(() => /view=remote/.test(document.getElementById('remote-frame').contentWindow.location.href));
+      const open = await modalState();
+      if (!/\?view=remote&embed=1$/.test(open.src)) fail('the modal\'s frame opens ' + JSON.stringify(open.src));
+      await page.waitForFunction(() => {
+        const f = document.getElementById('remote-frame'), d = f && f.contentDocument;
+        return d && f.classList.contains('loaded') && d.documentElement.classList.contains('remote-embed') && !d.getElementById('tab-control').hidden;
+      }, null, { timeout: 8000 }).catch(() => fail('the remote did not load in the modal'));
+      if (how === 'Escape') {
+        await page.evaluate(() => document.getElementById('hdr-remote').focus());
+        await page.keyboard.press('Escape');
+      } else {
+        // The phone's or the browser's Back: one step through the history.
+        await page.evaluate(() => history.back());
+      }
+      await page.waitForFunction(() => document.getElementById('remote-modal').hidden, null, { timeout: 3000 }).catch(() => {});
+      const shut = await modalState();
+      if (!shut.hidden || shut.src !== 'none') fail(how + ' left the modal ' + JSON.stringify(shut));
+      if (!(await page.evaluate(() => !document.getElementById('tab-metrics').hidden))) fail(how + ' left the Metrics tab');
+    }
+    const told = await page.evaluate(() => window.__app.join(','));
+    if (told !== 'true,false,true,false') fail('the app was told ' + JSON.stringify(told));
+    await page.goto(base + '/?open=keyboard');
+    await page.waitForFunction(() => !document.getElementById('tab-control').hidden);
+    if (!(await page.evaluate(() => document.getElementById('disc-keyboard').open))) fail('?open=keyboard left the keyboard shut');
+  } finally {
+    await page.close();
+  }
+}
+
 function groups(web, tv) {
   return [
-    { job: 'tabs', tabs: web.map(t => ({ path: '/?tab=' + t, label: 'web ' + t })), visits: [visitHomeAnimations, visitHuesyncSettings, visitInputsAndRemote, visitAdblockCards, visitSaverEntitySlots] },
+    { job: 'tabs', tabs: web.map(t => ({ path: '/?tab=' + t, label: 'web ' + t })), visits: [visitHomeAnimations, visitHuesyncSettings, visitInputsAndRemote, visitAdblockCards, visitSaverEntitySlots, visitRemoteView] },
     { job: 'tabs', tabs: tv.map(t => ({ path: '/assets/dashboard.html?tab=' + t, label: 'TV ' + t })),
       visits: [visitTvDashboard, visitTvAudio, visitTvPictureWrites, visitPictureUnavailable, visitTvNonOled, visitTvHuesync] },
     { job: 'home', tabs: [], visits: [visitHomePicture, visitHomePreview, visitHomePreviewOptions, visitHomePreviewWebos4, visitHomePreviewSize, visitHomePreviewSizeDetails, visitInputBarBehindHome, visitInputBarSwitchOnOk, visitHomeBarPrewarm, visitHomeBarIconsReady, visitHomeBarTiles, visitHomeBarBesideHome, visitHomeBarScroll, visitHomeUpDown, visitHomePointerOff, visitHomeOrder, visitHomeAvailability, visitHomeSearch, visitHomeWeather, visitHomeWeatherSetting, visitHomeRemoteBattery, visitHomeRemoteBatterySetting] },
     { job: 'home', tabs: [], visits: [visitHomeArrangement, visitHomeVisibility, visitHomeColours, visitHomeInputsEditor, visitHomeEditor,
-      visitHomeRecentsHidden, visitHomeUploads, visitHomeShuffle, visitHomeLauncher, visitHomeReadiness, visitAudioOverride, visitHomeRecents, visitHomeGuide,
+      visitHomeRecentsHidden, visitHomeSaverWake, visitHomeUploads, visitHomeShuffle, visitHomeLauncher, visitHomeReadiness, visitAudioOverride, visitHomeRecents, visitHomeGuide,
       visitHomeFadeAndInputs] },
     { job: 'home', tabs: [], visits: [visitHomeInternetTv, visitIptvChannels] },
     /*

@@ -1272,6 +1272,8 @@ function handleHomeRoute(req, res, u, pathname) {
         reply(r);
       });
     }
+    // Glasshouse Bar's page, as it opens: whether LG's Home is drawn under it, to be covered.
+    if (pathname === '/api/home/bar-open') return reply({ ok: true, lgHomeUnder: homeModule.barOpened() });
     if (pathname === '/api/home/weather') return homeModule.weather(reply);
     if (pathname === '/api/home/weather/places') {
       return homeModule.weatherPlaces(String(u.query && u.query.q || ''), String(u.query && u.query.lang || ''), reply);
@@ -1296,6 +1298,23 @@ function handleHomeRoute(req, res, u, pathname) {
         send(res, status, JSON.stringify({ ok: false, error: error }));
       }, /\.png$/i.test(snapshot) ? 'image/png' : 'image/jpeg', 'private, no-cache');
     }
+    if (pathname === '/api/home/card-icon') {
+      var cardPath = homeModule.cardIconPath(u.query && u.query.name);
+      if (!cardPath) return send(res, 404, JSON.stringify({ ok: false, error: 'icon not found' }));
+      return sendIconFile(req, res, cardPath, function (status, error) {
+        send(res, status, JSON.stringify({ ok: false, error: error }));
+      }, 'image/png');
+    }
+    if (pathname === '/api/home/nav-sound') {
+      var navSound = homeModule.navSoundFile(u.query && u.query.name);
+      if (!navSound) return send(res, 404, JSON.stringify({ ok: false, error: 'no sound' }));
+      return sendIconFile(req, res, navSound.path, function (status, error) {
+        send(res, status, JSON.stringify({ ok: false, error: error }));
+      }, navSound.type, 'no-cache');
+    }
+    if (pathname === '/api/home/card-icons') {
+      return reply({ ok: true, names: homeModule.cardIconNames() });
+    }
     if (pathname === '/api/home/icon') {
       return homeModule.iconPath(u.query && u.query.id, function (iconPath) {
         if (!iconPath) return send(res, 404, JSON.stringify({ ok: false, error: 'icon not found' }));
@@ -1315,6 +1334,28 @@ function handleHomeRoute(req, res, u, pathname) {
         if (!r.ok) return refuseUpload(req, res, r.error, r.status || 400);
         reply(r);
       });
+    }
+    if (pathname === '/api/home/card-icons/upload') {
+      if (!postGuard(req, res, 'image/png', true)) return;
+      return homeModule.uploadCardIcon(String(u.query && u.query.name || ''), req, function (r) {
+        if (!r.ok) return refuseUpload(req, res, r.error, r.status || 400);
+        reply(r);
+      });
+    }
+    if (pathname === '/api/home/card-icons/remove') {
+      return readJsonBody(req, res, function (body) {
+        homeModule.removeCardIcon(String(body && body.name || ''), function (r) { send(res, r.ok ? 200 : 400, JSON.stringify(r)); });
+      }, 1024);
+    }
+    if (pathname === '/api/home/nav-sound/upload') {
+      if (!postGuard(req, res, 'application/octet-stream', true)) return;
+      return homeModule.uploadNavSound(req, function (r) {
+        if (!r.ok) return refuseUpload(req, res, r.error, r.status || 400);
+        reply(r);
+      });
+    }
+    if (pathname === '/api/home/nav-sound/remove') {
+      return readJsonBody(req, res, function () { homeModule.removeNavSound(reply); }, 1024);
     }
     if (pathname === '/api/home/launcher/upload' && homeLauncherModule) {
       // It runs as the TV's Home app, so it is held to what a sideloaded package is.
@@ -1356,6 +1397,7 @@ function handleHomeRoute(req, res, u, pathname) {
       }
       if (pathname === '/api/home/disable') return homeModule.disable(reply);
       if (pathname === '/api/home/open') return homeModule.open(body, reply);
+      if (pathname === '/api/home/idle-saver') return homeModule.startIdleSaver(reply);
       if (pathname === '/api/home/launcher' && homeLauncherModule) {
         if (typeof body.address === 'string') return homeLauncherModule.setAddress(body.address, reply);
         if (typeof body.remove === 'string') return homeLauncherModule.remove(body.remove, reply);
@@ -1741,6 +1783,12 @@ function handleRequest(req, res) {
       noSignal: nosignal.status(),
       inputBar: inputBarModule ? inputBarModule.summary() : null
     }));
+  }
+
+  // For a screen saver that plays video: whether an app holds the decoder (#1599).
+  if (pathname === '/api/screensaver/video-busy' && req.method === 'GET') {
+    if (!authed(u.query, req)) return send(res, 401, JSON.stringify({ ok: false, error: 'unauthorised' }));
+    return screensaversModule.videoBusy(function (r) { send(res, 200, JSON.stringify(r)); });
   }
 
   if (pathname === '/api/screensaver') {
