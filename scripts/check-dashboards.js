@@ -802,7 +802,7 @@ async function visitHomeWeather(browser, base, problems) {
     weather = { condition: 'rainy', temp: 9.6, city: 'Glasgow' };
     await beat();
     const w = await shown();
-    if (!w || !w.svg || w.temp !== '10°' || w.city !== 'Glasgow' || w.cond !== 'Rainy') fail('a push was shown as ' + JSON.stringify(w));
+    if (!w || !w.svg || w.temp !== '10°' || w.city !== 'Glasgow' || w.cond !== 'Rain') fail('a push was shown as ' + JSON.stringify(w));
     weather = { condition: 'volcanic', temp: -2.4, city: null };
     await beat();
     const odd = await shown();
