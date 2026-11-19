@@ -252,7 +252,7 @@ Whenever the lineup contains channels, an **IPTV Guide** tile remains accessible
 
 * **EPG grid view:** Selecting **IPTV Guide** (or pressing **Info** while on the Internet TV row) displays a 2.5-hour programme timeline starting 30 minutes before the current time, marked with an amber vertical line at the current time.
 * **Navigation:**
-    * **Up / Down:** Moves through channels at the current time slot.
+    * **Up / Down:** Moves through channels at the current time slot. The Magic Remote's wheel does the same, a row a notch.
     * **Left / Right:** Scrolls horizontally through time (from 2 hours in the past up to 24 hours ahead).
     * **Channel Up / Channel Down:** Pages through channels a full screen at a time.
     * **Top section tabs:** Moving **Up** from the first channel highlights section and favourites tabs; use **Left** and **Right** to switch sections, or point at a tab with the Magic Remote and click it.

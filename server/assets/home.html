@@ -1744,7 +1744,8 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
 
   /*
    * The Magic Remote's wheel scrolls the row under the pointer, or the row in
-   * focus, a tile a notch. Older engines only fire mousewheel, whose
+   * focus, a tile a notch. In the guide and the player's channel list it moves
+   * the focus a row a notch. Older engines only fire mousewheel, whose
    * wheelDelta has the opposite sign to deltaY.
    */
   function onWheel(e) {
@@ -1753,6 +1754,9 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     var d = e.deltaY !== undefined ? e.deltaY : -e.wheelDelta;
     if (e.deltaX && Math.abs(e.deltaX) > Math.abs(d || 0)) d = e.deltaX;
     if (!d) return;
+    // In the guide and the player's channel list a notch is Down or Up.
+    if (guide.open) return guideKey(d > 0 ? KEY.down : KEY.up);
+    if (player.open) return player.list ? playerKey(d > 0 ? KEY.down : KEY.up) : undefined;
     var key = hoverKey || (recents.open ? 'recents' : rowKey());
     var m = measure(key), tile = m && m.track.querySelector('.tile');
     if (!tile) return;
