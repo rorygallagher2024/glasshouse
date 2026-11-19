@@ -12,9 +12,9 @@ Sets what each number key on the remote opens when it is held: an installed app,
 
 # Remote keys
 
-![Remote keys as tiles in streaming buttons, color keys and other keys, each showing what the key does, with buttons on remotes sold elsewhere folded at the end](../screenshots/apps-remote-keys.png)
+![Remote keys as tiles in streaming buttons, voice assistant buttons, color keys and other keys, each showing what the key does, with buttons on remotes sold elsewhere folded at the end](../screenshots/apps-remote-keys.png)
 
-Configures what individual remote buttons do when pressed. Each key appears as a tile showing its active assignment, grouped under **Streaming buttons**, **Color keys**, and **Other keys**. Selecting a tile opens its available choices beneath the row.
+Configures what individual remote buttons do when pressed. Each key appears as a tile showing its active assignment, grouped under **Streaming buttons**, **Voice assistant buttons**, **Color keys**, and **Other keys**. Selecting a tile opens its available choices beneath the row.
 
 On webOS 11, **Ivi**, **Okko**, **Kinopoisk** and **LG Shop** are also offered under Streaming buttons when LG enables their assignments. They can open an app or input, do nothing, or return to **As LG has it**. A listed button may be absent from the physical remote.
 
@@ -25,6 +25,7 @@ Core keys (**Home**, **Back**, volume, mute, channel, and power) are reserved an
 * **As LG has it:** Keeps the TV's default behavior for that key.
 * **Open an app, an HDMI input, or Live TV:** Launches the selected target directly.
 * **Input bar:** Opens Glasshouse's [input bar](inputs.md#glasshouse-input-bar) overlay instead of LG's inputs list.
+* **Glasshouse Bar:** Opens [Glasshouse Bar](home.md#glasshouse-bar) over whatever is playing, while Glasshouse Home or LG's Home keeps the Home button. Offered on webOS 4 to 10, as the Bar is.
 * **Input switcher:** Opens LG's quick input picker on TVs that support it (such as a C5 on webOS 11).
 * **Screen off:** Blanks the display while audio continues playing; pressing any key turns the screen back on.
 * **Brightness up** and **Brightness down:** Raises or lowers the panel brightness (OLED Light, or Backlight on an LCD) by the **Brightness step** per press, 10 points unless changed (5 to 25 on the Remote tab, out of 100), for the current picture mode and input, within 0 to 100. A held key repeats. Set one key to each.
@@ -55,8 +56,8 @@ Glasshouse intercepts keys in the compositor filter chain before apps see them. 
 
 On webOS 11 (LG's webOS 26), LG manages button assignments natively:
 
-* **Supported keys:** Streaming buttons, Apps, Guide, Home Hub (on MR25 remotes), **AI**, **Alexa**, and the **?** button (configurable separately for press and hold). Color keys, Input, Search, Info, Home, and **123** cannot be reassigned.
-* **Action limits:** LG only permits opening apps on webOS 11. **OK** and the media controls, **Power off**, **Home Assistant**, and **Glasshouse Home's guide** are unavailable. A streaming button set to **Nothing** displays LG's "This function is not supported" notice, and the **?** button cannot be set to **Nothing**.
+* **Supported keys:** Streaming buttons, Apps, Guide, Home Hub (on MR25 remotes), **AI**, **Alexa**, and the **?** button (configurable separately for press and hold). Color keys, Search, Info, Home, and **123** cannot be reassigned, and **Input** only as below.
+* **Action limits:** LG only permits opening apps on webOS 11. **OK** and the media controls, **Power off**, **Home Assistant**, are unavailable. **Glasshouse Home's guide** is offered on the **Guide** key alone, on TVs whose key handler Glasshouse knows how to change (an OLED48C31LA on firmware 44.00.92 so far): setting it changes a few bytes of LG's `libappLaunch.so.1` in a copy mounted over it and restarts the TV's screen once, which takes about 35 s, and again each time the TV starts. The **Input** key is offered on the same TVs and can open an app, an HDMI input, **Live TV** or the **Glasshouse Input bar**, or stay as LG has it, with the same change to LG's library and the same restart of the screen. It cannot do nothing, and no media key or action can be set on it, and an app whose id is longer than 30 characters is not offered. Where the TV's build is not known, neither choice is offered. A streaming button set to **Nothing** displays LG's "This function is not supported" notice, and the **?** button cannot be set to **Nothing**.
 * **Screen off:** Available on Netflix, Prime Video, and Home Hub buttons. A streaming button displays LG's "This function is not supported" notice, and Glasshouse turns the screen off ~0.5 s after press. LG restores its streaming button assignments when the screen goes off, and Glasshouse reapplies them moments later.
 * **Brightness up and Brightness down:** Offered on the same buttons as Screen off, and answered from the system log in the same way, so a press changes the brightness by one step and holding the button does not repeat.
 * **AI button:** Reassigning the AI button disables LG's voice assistant entirely (voice search, the AI assistant, and the microphone stop working until restored to **As LG has it**). Glasshouse opens the chosen target ~1 s after press.

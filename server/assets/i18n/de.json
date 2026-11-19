@@ -805,7 +805,7 @@
     "from": "Nightly refresh reboot turned off"
   },
  "ha.api": {"text": "Home Assistant-API", "from": "Home Assistant API"},
- "ha.api.desc": {"text": "Zeigt Live-Entitäten von Home Assistant in Glasshouse-Bildschirmschonern (wie Ambient) an. Verbindet sich direkt per HTTP/HTTPS ohne MQTT und speichert ohne Neustart.", "from": "Display live Home Assistant entities inside Glasshouse screen savers (such as Ambient). Connects straight to Home Assistant over HTTP/HTTPS without using MQTT, and saves without restarting."},
+ "ha.api.desc": {"text": "Aktiviert die Home Assistant-Bildschirmschoner (Ambient und Datenanzeige) auf dem Tab Bildschirmschoner zur Anzeige von Live-Entitäten aus Home Assistant. Verbindet sich direkt per HTTP/HTTPS ohne MQTT und speichert ohne Neustart.", "from": "Enables the Home Assistant screen savers (Ambient and Data Display) on the Screensaver tab to show live Home Assistant entities. Connects straight to Home Assistant over HTTP/HTTPS without using MQTT, and saves without restarting."},
  "ha.connected": {"text": "Verbunden: {msg}", "from": "Connected: {msg}"},
  "ha.test": {"text": "Verbindung testen", "from": "Test connection"},
  "ha.testFailed": {"text": "Verbindung fehlgeschlagen", "from": "Connection failed"},
@@ -1002,5 +1002,17 @@
  "home.tv.streamPort": {"text": "Stream-Port (optional)", "from": "Stream port (optional)"},
  "home.tv.streamPortNote": {"text": "Nur nötig, wenn der Kanal von einem anderen Port als der Adresse des Tuners kommen soll, etwa einem Transcoding-Profil auf Port 8002.", "from": "Only needed when the channel is to come from a different port than the tuner’s own address, such as a transcoding profile on 8002."},
  "home.tv.streamPortPh": {"text": "Leer: der des Tuners, meist 8001", "from": "Empty: the tuner’s own, usually 8001"},
- "home.tv.bad.streamPort": {"text": "Der Stream-Port muss eine Zahl von 1 bis 65535 sein.", "from": "The stream port must be a number from 1 to 65535."}
+ "home.tv.bad.streamPort": {"text": "Der Stream-Port muss eine Zahl von 1 bis 65535 sein.", "from": "The stream port must be a number from 1 to 65535."},
+ "srv.remoteKeys.homeBar": {"text": "Glasshouse Bar", "from": "Glasshouse Bar"},
+ "srv.remoteKeys.homeBarInstall": {"text": "Glasshouse Bar konnte nicht auf dem Fernseher installiert werden. Versuchen Sie es gleich noch einmal.", "from": "Glasshouse Bar could not be put on the TV. Try again in a moment."},
+ "ctl.remoteLink.full": {"text": "Ganzes Dashboard", "from": "Full dashboard"},
+ "header.remote": {"text": "Fernbedienung", "from": "Remote"},
+ "remote.close": {"text": "Schließen", "from": "Close"},
+ "rp.input": {"text": "Eingang", "from": "Input"},
+ "rp.buttons": {"text": "Tasten", "from": "Buttons"},
+ "rp.touchpad": {"text": "Touchpad", "from": "Touchpad"},
+ "rp.standby": {"text": "Der Fernseher ist im Standby. Schalten Sie ihn ein, um die Fernbedienung zu nutzen.", "from": "The TV is in standby. Power on to use the remote."},
+ "apps.remoteKeys.guideNative": {"text": "Bei diesem Fernseher braucht die Guide-Taste eine Änderung an LGs Tastenverwaltung. Beim Einstellen startet der Bildschirm einmal neu, danach bei jedem Start des Fernsehers erneut.", "from": "On this TV the Guide key needs a change to LG’s key handler. Setting it restarts the TV’s screen once, and again each time the TV starts."},
+ "apps.remoteKeys.inputNative": {"text": "Bei diesem Fernseher braucht die Input-Taste eine Änderung an LGs Tastenverwaltung. Beim Einstellen und beim Zurücksetzen auf LGs Liste startet der Bildschirm einmal neu, und die Änderung wird bei jedem Start des Fernsehers erneut vorgenommen.", "from": "On this TV the Input key needs a change to LG’s key handler. Setting it, or setting it back to LG’s list, restarts the TV’s screen once, and the change is made again each time the TV starts."},
+ "home.bar.native": {"text": "Bei diesem Fernseher braucht die Home-Taste für Glasshouse Bar eine Änderung an LGs Tastenverwaltung. Das Wählen der Leiste, oder danach eines anderen Launchers, startet den Bildschirm einmal neu, und die Änderung wird bei jedem Start des Fernsehers erneut vorgenommen.", "from": "On this TV the Home key needs a change to LG’s key handler for Glasshouse Bar. Choosing the bar, or any other launcher after it, restarts the TV’s screen once, and the change is made again each time the TV starts."}
 }

@@ -62,7 +62,7 @@ STAGE=/var/lib/tvweb/.deploy     # on the TV; beside the install so moves are re
 FILES="tvweb.js tvwebctl assets/ui.html assets/dashboard.html assets/favicon.svg \
 assets/ui/ui.css assets/ui/core.js assets/ui/theme.js assets/ui/format.js assets/ui/readouts.js \
 assets/ui/update.js assets/ui/controls.js assets/ui/privacy.js assets/ui/lgsettings.js assets/ui/game.js \
-assets/ui/system.js assets/ui/history.js assets/ui/ssh.js assets/ui/screentime.js assets/ui/apps.js assets/ui/inputs.js assets/ui/install.js assets/ui/home.js assets/ui/iptv.js assets/ui/tvchannels.js assets/ui/tabs.js assets/ui/servicemenu.js \
+assets/ui/system.js assets/ui/history.js assets/ui/ssh.js assets/ui/screentime.js assets/ui/apps.js assets/ui/inputs.js assets/ui/install.js assets/ui/home.js assets/ui/iptv.js assets/ui/tvchannels.js assets/ui/tabs.js assets/ui/servicemenu.js assets/ui/perf.js assets/ui/storage.js assets/ui/hdmi.js \
 assets/ui/oled.js assets/ui/screensavers.js assets/ui/mqtt.js assets/ui/tools.js assets/ui/search-aliases.js assets/ui/search.js assets/ui/main.js assets/ui/audio.js assets/ui/bluetooth.js assets/ui/picture.js \
 assets/qr.js assets/i18n.js assets/video-order.js assets/i18n/es.json assets/i18n/de.json assets/i18n/ru.json assets/i18n/hu.json assets/i18n/it.json assets/i18n/ar.json assets/i18n/pt.json assets/i18n/pt-br.json assets/i18n/pl.json assets/i18n/fr.json assets/setup.html assets/setup-phone.html \
 assets/dashboard-app/appinfo.json assets/dashboard-app/index.html \
@@ -79,6 +79,7 @@ assets/fonts/Outfit.ttf assets/fonts/Manrope.ttf \
 assets/fonts/Outfit-Light.ttf assets/fonts/Outfit-Regular.ttf \
 assets/fonts/Manrope-Regular.ttf assets/fonts/Manrope-SemiBold.ttf \
 assets/fonts/OFL-Outfit.txt assets/fonts/OFL-Manrope.txt \
+assets/sounds/click.wav assets/sounds/rollover.wav assets/sounds/LICENSE-Kenney.txt \
 assets/screensavers/ambient/main.qml assets/screensavers/ambient/saver.json \
 assets/screensavers/bokeh/bokeh.png assets/screensavers/bokeh/main.qml \
 assets/screensavers/bokeh/saver.json assets/screensavers/clock/main.qml \
@@ -101,7 +102,7 @@ assets/screensavers/vitals/saver.json assets/screensavers/vortex/main.qml \
 assets/screensavers/vortex/saver.json \
 screensavers/pigs/main.qml screensavers/pigs/saver.json \
 lib/mqtt.js lib/ha.js lib/updater.js lib/fetch.js lib/repo.js lib/installer.js lib/privacy.js lib/devtools.js lib/oled.js lib/screensavers.js lib/qmlcheck.js lib/haentity.js lib/saverpoweroff.js lib/idlesaver.js lib/nosignal.js lib/typing.js lib/pointer.js lib/telemetry.js \
-lib/apps.js lib/samrescan.js lib/children.js lib/luna.js lib/piccap.js lib/huesync.js lib/state.js lib/mqtt-state.js lib/reconnect-status.js lib/notifications.js lib/screentime.js lib/services.js lib/preload.js lib/appdns.js lib/apphosts.js lib/doh.js lib/quickaccess.js lib/remotekeys.js lib/homescreen.js lib/homescreen-webos9.js lib/homescreen-webos10.js lib/say.js lib/controls.js lib/routes.js lib/lgsettings.js lib/game.js lib/topics.js lib/timers.js lib/util.js lib/names.js lib/prometheus.js lib/remotebuttons.js lib/remotebuttons.py lib/logs.js lib/syslog.js lib/ntp.js lib/power.js lib/resettime.js lib/history.js lib/sshkeys.js lib/remotebattery.js lib/backup.js lib/backup-parts.js lib/iconserver.js lib/home.js lib/weather.js lib/home-picture.js lib/home-launcher.js lib/home-takeover.js lib/home-wallpapers.js lib/home-recent.js lib/clock.js lib/inputbar.js lib/homebar.js lib/compat.js lib/home-recent-apps.js lib/home-recommended.js lib/home-search.js lib/audio.js lib/btaudio.js lib/iptv.js lib/iptv-lineup.js lib/iptv-memory.js lib/iptv-worker.js lib/iptv-parse.js lib/iptv-timeshift.js lib/iptv-timeshift-worker.js"
+lib/apps.js lib/samrescan.js lib/children.js lib/luna.js lib/piccap.js lib/huesync.js lib/state.js lib/mqtt-state.js lib/reconnect-status.js lib/notifications.js lib/screentime.js lib/services.js lib/preload.js lib/appdns.js lib/apphosts.js lib/doh.js lib/quickaccess.js lib/remotekeys.js lib/guidepatch.js lib/homescreen.js lib/homescreen-webos9.js lib/homescreen-webos10.js lib/say.js lib/controls.js lib/routes.js lib/lgsettings.js lib/game.js lib/topics.js lib/timers.js lib/util.js lib/names.js lib/prometheus.js lib/remotebuttons.js lib/remotebuttons.py lib/logs.js lib/syslog.js lib/ntp.js lib/power.js lib/resettime.js lib/history.js lib/perfhistory.js lib/storagescan.js lib/hdmilink.js lib/sshkeys.js lib/remotebattery.js lib/backup.js lib/backup-parts.js lib/iconserver.js lib/home.js lib/weather.js lib/home-picture.js lib/home-launcher.js lib/home-takeover.js lib/bootwake.js lib/home-wallpapers.js lib/home-recent.js lib/clock.js lib/inputbar.js lib/homebar.js lib/compat.js lib/home-recent-apps.js lib/home-recommended.js lib/home-search.js lib/audio.js lib/btaudio.js lib/iptv.js lib/iptv-lineup.js lib/iptv-memory.js lib/iptv-worker.js lib/iptv-parse.js lib/iptv-timeshift.js lib/iptv-timeshift-worker.js"
 
 for t in tar base64 fold; do
   command -v "$t" >/dev/null 2>&1 && continue

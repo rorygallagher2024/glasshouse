@@ -986,7 +986,7 @@ function saverRows(d) {
     r.push(head(t('ss.poolTitle', 'Included in rotation')));
     var pool = (d.random && d.random.pool) || [];
     d.modes.forEach(function (m) {
-      if (m.id === 'stock' || m.id === 'random' || m.fromApp) return;
+      if (m.id === 'stock' || m.id === 'random' || m.fromApp || !m.available) return;
       var inPool = pool.indexOf(m.id) !== -1;
       r.push({
         label: m.label,
@@ -1955,7 +1955,7 @@ function appsRows(d) {
         label: String(key.key),
         value: key.id ? key.title : t('apps.quickAccess.none', 'Nothing set'),
         cls: key.id ? 'on' : 'off',
-        hint: t('apps.quickAccess.desc', 'Holding a number key on the remote opens the app or input set for it. A change here applies on the TV straight away.') + ' ' +
+        hint: t('apps.quickAccess.desc', 'Holding a number key on the remote opens the app or input set for it.') + ' ' +
               t('tv.apps.quickAccess.browser', 'Change them from the dashboard in a browser.')
       });
     }

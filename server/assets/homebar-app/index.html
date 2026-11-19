@@ -7,6 +7,9 @@
 *{margin:0;padding:0;box-sizing:border-box}
 /* The window is an overlay: whatever is on screen shows through above the bar. */
 html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font-family:sans-serif;color:#fff;cursor:default}
+/* Over LG's Home, which webOS 11 keeps drawn under an overlay: black, as webOS 5 leaves behind it. */
+#backdrop{display:none;position:absolute;left:0;top:0;width:1920px;height:1080px;background:#000}
+#backdrop.on{display:block}
 #shade{position:absolute;left:0;right:0;bottom:0;height:460px;opacity:0;
   background:-webkit-linear-gradient(top,rgba(0,0,0,0),rgba(0,0,0,.78));background:linear-gradient(to bottom,rgba(0,0,0,0),rgba(0,0,0,.78));
   -webkit-transition:opacity .18s ease-out;transition:opacity .18s ease-out}
@@ -60,6 +63,7 @@ img.ico{background:none;object-fit:contain}
 </style>
 </head>
 <body>
+<div id="backdrop"></div>
 <div id="shade"></div>
 <div id="clock"></div>
 <div id="bar"><div id="row"></div></div>
@@ -137,7 +141,7 @@ img.ico{background:none;object-fit:contain}
     visibleSince = 0;
     clearInterval(clockTimer);
     document.body.className = '';
-    closeTimer = setTimeout(function () { closeTimer = null; window.close(); }, 160);
+    closeTimer = setTimeout(function () { closeTimer = null; $('backdrop').className = ''; window.close(); }, 160);
   }
 
   function pad(n) { return n < 10 ? '0' + n : String(n); }
@@ -160,6 +164,9 @@ img.ico{background:none;object-fit:contain}
     order.forEach(function (id) {
       if (hiddenApps.indexOf(id) !== -1 || folder.indexOf(id) !== -1) return;
       if (id === LG_HOME_TILE) {
+        // Beside Glasshouse Home (opened by a remote key, #1499), Home opens it
+        // and a held Home LG's, and launching LG's Home would open Glasshouse Home.
+        if (cat.enabled) return;
         var lgName = (layout.appNames && layout.appNames[id]) || 'LG Home';
         return out.push({ kind: 'lg', id: id, name: lgName, letter: lgName.slice(0, 2).toUpperCase() || 'LG' });
       }
@@ -441,6 +448,8 @@ img.ico{background:none;object-fit:contain}
     if (labelsChanged) scrollTo();
   }
   function openWindow() {
+    // Where LG's Home stays drawn under the bar (webOS 11), the server says so and the bar covers it.
+    if (document.body.className !== 'on') getJson(BASE + '/api/home/bar-open', function (j) { if (j && j.lgHomeUnder === true) $('backdrop').className = 'on'; });
     tick();
     clearInterval(clockTimer);
     clockTimer = setInterval(tick, 10000);
@@ -464,6 +473,38 @@ img.ico{background:none;object-fit:contain}
   }
 
   /*
+   * Whether Glasshouse Home is on, so a remote key pressed over it does
+   * nothing (#1499). Kept, as a press is answered before the catalogue is
+   * read. The server says whether it is in front: this app may not ask the
+   * TV's app manager (getForegroundAppInfo is denied it on a B8, webOS 4.4.3).
+   */
+  var HOME_KEPT = 'glasshouse.homebar.home';
+  function keepHome(c) {
+    if (!c) return;
+    try { window.localStorage.setItem(HOME_KEPT, c.enabled ? '1' : ''); } catch (e) {}
+  }
+  function keptHome() {
+    try { return window.localStorage.getItem(HOME_KEPT) === '1'; } catch (e) { return false; }
+  }
+  // cb(true) where Glasshouse Home is in front.
+  function overHome(cb) {
+    if (!keptHome()) return cb(false);
+    var answered = false;
+    var done = function (yes) { if (!answered) { answered = true; cb(yes); } };
+    // Never held up for long: a press with no answer opens the Bar.
+    setTimeout(function () { done(false); }, 500);
+    getJson(BASE + '/api/home/now', function (j) { done(!!(j && j.homeInFront === true)); });
+  }
+  // A press: the Bar opened, unless Glasshouse Home is in front, where it closes unseen.
+  function pressed() {
+    overHome(function (yes) {
+      if (!yes) return start();
+      idleUntilOpened = false;
+      window.close();
+    });
+  }
+
+  /*
    * Prewarming while hidden: renders the cached row and fetches the catalogue
    * and app icons ahead of the Home press without showing the window, so the
    * press only switches body.on and updates the active input dot in place.
@@ -483,7 +524,7 @@ img.ico{background:none;object-fit:contain}
       applyRow(fresh, onPort, nextLabelsOff);
     }
     ensureDevIcons(donePrewarm);
-    getJson(BASE + '/api/home/catalogue', function (j) { preCat = j; donePrewarm(); });
+    getJson(BASE + '/api/home/catalogue', function (j) { preCat = j; keepHome(j); donePrewarm(); });
   }
 
   /*
@@ -531,6 +572,7 @@ img.ico{background:none;object-fit:contain}
       readyFor();
     });
     getJson(BASE + '/api/home/catalogue', function (j) {
+      keepHome(j);
       if (mySeq !== seq || closing) return;
       cat = j;
       readyFor();
@@ -587,13 +629,13 @@ img.ico{background:none;object-fit:contain}
     if (idleUntilOpened || closing || document.body.className !== 'on') {
       idleUntilOpened = false;
       visibleSince = visibleSince || at;
-      start();
+      pressed();
     } else {
       close();
     }
   });
   if (idleUntilOpened) prewarm();
-  else start();
+  else pressed();
 })();
 </script>
 </body>

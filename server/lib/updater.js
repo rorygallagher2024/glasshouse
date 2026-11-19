@@ -421,7 +421,7 @@ function installUpdate(opts, cb) {
       try { mkdirp(stageDir); } catch (e) { return fail('could not create ' + stageDir + ': ' + e.message); }
       var gz = path.join(stageDir, 'release.tar.gz');
       console.log('update: downloading v' + ver);
-      probeFetch(UPDATE_TARBALL + ver, gz, function (e2) {
+      fetch.download(UPDATE_TARBALL + ver, gz, {}, function (e2) {
         if (e2) return fail(e2.message);
 
         var gzBuf;

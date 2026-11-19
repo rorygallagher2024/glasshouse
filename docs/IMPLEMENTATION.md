@@ -1454,6 +1454,81 @@ answer from the read-back, the set counts as done.
 
 ---
 
+## Performance history
+
+`server/lib/perfhistory.js` keeps the Metrics tab's Performance charts. Every
+5 seconds from server start it reads `/proc/stat`, `/proc/meminfo`,
+`/proc/net/dev` and the SoC temperature and clock, and nothing else: no luna
+call and no process. The processor is split into user and nice, system (with
+irq, softirq and steal) and iowait, each against every core in
+`/sys/devices/system/cpu/present`, so a parked core counts as idle as the
+Overview's figure does; per core, a parked one is null. Memory in use is
+`MemTotal` less `MemAvailable` (free, cached and buffers on kernels without
+it), and cache is cached and buffers less shared memory.
+
+Two rings in memory: an hour of 5-second samples and a day of minutes, each
+the average of its samples. Nothing is written to flash, so a restart starts
+afresh. It follows the live state's `application` and `power` changes as
+events (app, TV off, screen off, TV on), the last 400 within a day, but does
+not start the `application` subscription itself: the events come while
+something else has (Watch time, Glasshouse Home, the MQTT bridge) or from a
+dashboard's polls, which reconcile it.
+
+`GET /api/perf?range=5m|1h|24h` returns the range as columns (`t`, `cpu`,
+`user`, `sys`, `io`, `mem`, `cache`, `rx`, `tx`, `temp`, `mhz`), the latest
+per-core loads, the events in the range and the one before it.
+
+---
+
+## Storage scan
+
+`server/lib/storagescan.js` serves the Metrics tab's Storage view. It reads
+`df -k` and keeps one entry per writable device, named by its best mount
+(`/mnt/lg/appstore`, `/mnt/lg/cmn_data`, `/mnt/lg/db8`, a USB drive under
+`/tmp/usb`). Read-only images (the root filesystem, fonts, certificates show
+as full with nothing free), memory filesystems, loop images and stores under
+16 MB are left out. Each is walked with `du -kx`, which stays on that device;
+a non-zero exit from one unreadable folder keeps the rest, and only a timeout
+(30 s, for a large USB drive) marks the partition as not looked through.
+
+The folders come back as a tree. Each folder below 1/4000 of its partition's
+used space (at least 64 KiB) is folded into one block with its parent's own
+files, and a folder that holds only one other is merged with it, so
+`cryptofs/apps/usr/palm` is one step. Every folder is grouped as `app`
+(`cryptofs`, `developer`, Glasshouse's `var/lib/tvweb`, and anything named
+after a removable app), `lg` (`preload` and `system` on the app partition)
+or `sys`. Folders named after an app from `applicationManager/listApps`
+are totalled per app, a folder inside one already counted for that app not
+counted again.
+
+`GET /api/storage` returns the last scan, starting a new one in the
+background when it is over ten minutes old; the first waits for it.
+`POST /api/storage` scans again. Nothing is deleted.
+
+---
+
+## HDMI link detail
+
+`server/lib/hdmilink.js` reads one receiver's status file from LG's HDMI
+driver (`/proc/lg/hdmi20/port<n>/status`) for the Metrics tab's HDMI view, and
+`GET /api/hdmi` adds it to each input as `link`. Size, refresh and pixel clock
+come from telemetry's `parseTiming` of the same file, which corrects the
+driver's off-by-one heights and, on TMDS, deep colour's inflated totals. The
+rate a mode takes is the pixel clock by the bits a pixel takes on the wire
+(4:2:2 is always 24, 4:2:0 half of 4:4:4) and the link's coding (18/16 on FRL,
+10/8 on TMDS), against the link's rated speed, as HDMI's own tables state
+it. The driver's times are milliseconds since boot and become clock times by
+`/proc/uptime`. Without a lock, a sleeping source's last mode and counts are
+still in the file and are cleared.
+
+The FRL and TMDS character error counters cover a short interval and start
+again, so every 5 seconds each locked receiver's counts are added up from when
+the cable was connected (`Cable Connected Time`); a new connection, or losing
+the lock, starts again. The driver's `PHY Error Count` climbs on a clean link
+too and is not used.
+
+---
+
 ## Counting watch time
 
 `server/lib/history.js` counts, while it is switched on, how long the screen
@@ -1583,7 +1658,7 @@ log shows, while a parse error leaves no process to log anything.
 
 The in-place updater (`server/lib/updater.js`) downloads the release tarball from GitHub directly onto the TV and unpacks it over `/var/lib/tvweb/` without needing a computer or `deploy.sh`.
 
-On a Homebrew Channel install, server files unpacked over `/var/lib/tvweb/` would be taken back to the app's copy, so the updater installs the release's package instead: it reads `<id>.manifest.json` from the release, downloads the `.ipk` it names to `/media/developer/temp/glasshouse-update`, checks the sha256, installs it with `appInstallService/dev/install` (`installer.installOwnPackage`), and runs the new `payload/install.sh` detached, which moves the server over and restarts it. The package carries no services, so `dev/install` costs it no root, and the server keeps running from `/var/lib/tvweb/` until that script restarts it. `dev/install` closes the app while it is open. Package downloads use the same stall limits as other app installs rather than a 30-second total limit. No rollback copy is kept for package updates. `--force` still takes the tarball path.
+On a Homebrew Channel install, server files unpacked over `/var/lib/tvweb/` would be taken back to the app's copy, so the updater installs the release's package instead: it reads `<id>.manifest.json` from the release, downloads the `.ipk` it names to `/media/developer/temp/glasshouse-update`, checks the sha256, installs it with `appInstallService/dev/install` (`installer.installOwnPackage`), and runs the new `payload/install.sh` detached, which moves the server over and restarts it. The package carries no services, so `dev/install` costs it no root, and the server keeps running from `/var/lib/tvweb/` until that script restarts it. `dev/install` closes the app while it is open. Release downloads, the package or the tarball, use the same stall limits as other app installs rather than a 30-second total limit: the tarball is over 22 MB, which GitHub has taken more than 50 seconds to send. No rollback copy is kept for package updates. `--force` still takes the tarball path.
 
 ### Download Client Probing
 The download requires `curl` or `wget` on the TV. LG's stock `/usr/bin/curl` reaches GitHub on tested TVs, but third-party tools or stripped setups might place modern clients in non-standard paths. To ensure reliable downloads across webOS generations, the updater probes executable binaries in prioritized order:
@@ -2088,7 +2163,7 @@ Custom QML screensavers are staged in `/var/lib/tvweb/screensaver` and bind-moun
 
 * **Homebrew apps' screen savers**: an installed app in `/media/developer/apps/usr/palm/applications` with `assets/screensaver-main.qml` (Custom Screensaver, both Aerial apps) or `assets/screensaver.qml` (Idlegif) is listed as `app-` and its app id, named after the app, its QML checked like an added one's. These apps bind-mount that file over LG's `qml/main.qml` themselves, which does nothing where LG's screen saver is Flutter (webOS 10 and later), and picking anything here unmounts it (#1067). Picked here, only the QML is staged: each loads its other files by their full path in its own folder or `/var/lib/webosbrew`. A marker naming one whose app has gone puts LG's back at the next restage, at start or after an app is removed from the Apps tab.
 
-* **Screen savers that play video**: where LG's screen saver is Flutter (webOS 10 and later), screenmanager ends a screen saver as soon as it sees full-screen video, within a second of an Aerial video starting on a G5 (webOS 11.2), unless the app is in its manual mode. Each staging, which includes the one at the server's start, sends `com.webos.service.screenmanager/setScreenSaverMode` for `com.webos.app.screensaver`: `manual` where a QML file of the screen saver imports `QtMultimedia`, `auto` otherwise and for LG's own. An app's other QML files are read for this, though only its main one is staged: not its `node_modules`, and no further than 1000 entries of its folder, which is the app's to fill (Aerial's 552 are listed in 13 ms on a G5). Every staging rather than once, as Aerial's own page for these TVs sends it at every start, its source saying that screenmanager keeps it in memory until it restarts. screenmanager may not be up when the server starts at boot, so `manual` is asked for up to six times, 10 seconds apart.
+* **Screen savers that play video**: where LG's screen saver is Flutter (webOS 10 and later), screenmanager ends a screen saver as soon as it sees full-screen video, within a second of an Aerial video starting on a G5 (webOS 11.2), unless the app is in its manual mode. Each staging, which includes the one at the server's start, sends `com.webos.service.screenmanager/setScreenSaverMode` for `com.webos.app.screensaver`: `manual` where a QML file of the screen saver imports `QtMultimedia`, `auto` otherwise and for LG's own. An app's other QML files are read for this, though only its main one is staged: not its `node_modules`, and no further than 1000 entries of its folder, which is the app's to fill (Aerial's 552 are listed in 13 ms on a G5). Every staging rather than once, as Aerial's own page for these TVs sends it at every start, its source saying that screenmanager keeps it in memory until it restarts. screenmanager may not be up when the server starts at boot, so `manual` is asked for up to six times, 10 seconds apart. A G3 (webOS 10.3) ended one tvpower started all the same, 2.4 to 2.6 s after the start, as its first clip reached the decoder, with `manual` set just before. So where LG's screen saver is Flutter, while a screen saver that plays video shows (a web one, or a QML one that plays video), the remote's keys are watched, and if tvpower leaves Screen Saver within 6 s with no key or pointer since it started, the app is launched again directly, as for a refused request: tvpower stays Active under it, so nothing ends it, and a key closes it.
 
 * **Cold Boot vs Quick Start+**: On Quick Start+ suspend-to-RAM, active bind-mounts persist in memory. On a cold boot (such as after the 4-hour OLED Pixel Cleaning cycle or extended standby on webOS 9 and 10), `/var/lib/webosbrew/init.d/50-tvweb` re-applies the bind-mount if `/var/lib/tvweb/screensaver/.tvweb-screensaver` is present.
 * **Making sam read the new manifest**: sam reads an `appinfo.json` only when it scans, and where LG's screen saver is Flutter (webOS 10 and later) ours changes the app's `type`, so sam has to read it again or the launch goes to the wrong runner. `ensureScreensaverRunner` in `lib/screensavers.js` and the boot hook try two things in turn: `applicationManager/blockSystemApp` followed by `releaseBlockSystemApp` for the one app (`samrescan.rereadApp`; the block adds `"forceBlockSystemApp": false` where the TV's `applicationManager.blockSystemApp.schema` names it, as webOS 11.2 requires; on a C5 on webOS 10.3.1 sam reported the new type within the second and kept its pid), then the configd nudge below (webOS 9). They never restart sam, the restart behind the black-picture reports in #366, which they used to fall back to. A switch to one of ours that sam has not taken is undone (unmounted, staged files cleared) and answered with an error, and a switch back to LG's is answered as taking effect from the next restart; the boot hook unmounts ours likewise. A running screen saver is relaunched after either, since neither stops it. The release goes out even when the block got no answer, which may still have been a block sam made, and on a TV whose stock screen saver is not QML the boot hook releases it once at every boot, so a run cut short between the two calls cannot leave it blocked. Custom screen savers are on by default on webOS 10 and 11 (#768) and stay held back on webOS 12 and later unless `allowExperimentalScreensavers` is set; the version is read from `/etc/issue`.

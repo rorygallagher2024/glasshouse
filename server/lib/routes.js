@@ -122,6 +122,21 @@ var syslogModule = null;
 var ntpModule = null;
 /** @type {typeof import('./history')} */
 var historyModule = null;
+var perfHistoryModule = null;
+var storageScanModule = null;
+
+// HDMI inputs the TV's input service calls plugged in, with no powered source
+// on the cable and no picture, as the HDMI view sees them (telemetry).
+function markNoSignal(c, done) {
+  if (!c || !Array.isArray(c.devices) || !telemetryModule || typeof telemetryModule.hdmiSignalByInput !== 'function') return done();
+  telemetryModule.hdmiSignalByInput(function (byInput) {
+    c.devices.forEach(function (d) {
+      var sig = d && !d.unused && !d.kind && d.port ? byInput[d.port] : null;
+      if (sig && !sig.powered && !sig.locked) d.noSignal = true;
+    });
+    done();
+  });
+}
 /** @type {typeof import('./sshkeys')} */
 var sshKeysModule = null;
 /** @type {typeof import('./screentime')} */
@@ -1249,14 +1264,19 @@ function handleHomeRoute(req, res, u, pathname) {
     }
     if (pathname === '/api/home/catalogue') {
       return homeModule.catalogue(function (c) {
-        var st = homeModule.viewStatus();
-        c.ok = true;
-        c.layout = st.layout;
-        c.enabled = st.enabled;
-        c.supported = st.supported;
-        c.wallpapers = st.wallpapers;
-        c.layoutVersion = homeModule.layoutVersion();
-        reply(c);
+        // The Inputs tab's state for each HDMI input agrees with the HDMI
+        // view: plugged in by the TV's input service, but with no powered
+        // source on the cable and no picture, it is no signal, not connected.
+        markNoSignal(c, function () {
+          var st = homeModule.viewStatus();
+          c.ok = true;
+          c.layout = st.layout;
+          c.enabled = st.enabled;
+          c.supported = st.supported;
+          c.wallpapers = st.wallpapers;
+          c.layoutVersion = homeModule.layoutVersion();
+          reply(c);
+        });
       });
     }
     if (pathname === '/api/home/channels') {
@@ -1265,7 +1285,15 @@ function handleHomeRoute(req, res, u, pathname) {
     // A custom launcher's own saved values (Glasshouse.storage).
     if (pathname === '/api/home/store' && homeLauncherModule) return homeLauncherModule.store(reply);
     if (pathname === '/api/home/guide') return homeModule.guide(function (g) { reply({ ok: true, guide: g }); });
-    if (pathname === '/api/home/now') return homeModule.now(reply);
+    if (pathname === '/api/home/now') {
+      // homeInFront: Glasshouse Bar, opened by a remote key, does nothing over Glasshouse Home (#1499).
+      return homeModule.now(function (r) {
+        if (r && typeof r === 'object' && typeof homeModule.viewInFront === 'function') r.homeInFront = homeModule.viewInFront();
+        reply(r);
+      });
+    }
+    // Glasshouse Bar's page, as it opens: whether LG's Home is drawn under it, to be covered.
+    if (pathname === '/api/home/bar-open') return reply({ ok: true, lgHomeUnder: homeModule.barOpened() });
     if (pathname === '/api/home/weather') return homeModule.weather(reply);
     if (pathname === '/api/home/weather/places') {
       return homeModule.weatherPlaces(String(u.query && u.query.q || ''), String(u.query && u.query.lang || ''), reply);
@@ -1290,6 +1318,23 @@ function handleHomeRoute(req, res, u, pathname) {
         send(res, status, JSON.stringify({ ok: false, error: error }));
       }, /\.png$/i.test(snapshot) ? 'image/png' : 'image/jpeg', 'private, no-cache');
     }
+    if (pathname === '/api/home/card-icon') {
+      var cardPath = homeModule.cardIconPath(u.query && u.query.name);
+      if (!cardPath) return send(res, 404, JSON.stringify({ ok: false, error: 'icon not found' }));
+      return sendIconFile(req, res, cardPath, function (status, error) {
+        send(res, status, JSON.stringify({ ok: false, error: error }));
+      }, 'image/png');
+    }
+    if (pathname === '/api/home/nav-sound') {
+      var navSound = homeModule.navSoundFile(u.query && u.query.name);
+      if (!navSound) return send(res, 404, JSON.stringify({ ok: false, error: 'no sound' }));
+      return sendIconFile(req, res, navSound.path, function (status, error) {
+        send(res, status, JSON.stringify({ ok: false, error: error }));
+      }, navSound.type, 'no-cache');
+    }
+    if (pathname === '/api/home/card-icons') {
+      return reply({ ok: true, names: homeModule.cardIconNames() });
+    }
     if (pathname === '/api/home/icon') {
       return homeModule.iconPath(u.query && u.query.id, function (iconPath) {
         if (!iconPath) return send(res, 404, JSON.stringify({ ok: false, error: 'icon not found' }));
@@ -1309,6 +1354,28 @@ function handleHomeRoute(req, res, u, pathname) {
         if (!r.ok) return refuseUpload(req, res, r.error, r.status || 400);
         reply(r);
       });
+    }
+    if (pathname === '/api/home/card-icons/upload') {
+      if (!postGuard(req, res, 'image/png', true)) return;
+      return homeModule.uploadCardIcon(String(u.query && u.query.name || ''), req, function (r) {
+        if (!r.ok) return refuseUpload(req, res, r.error, r.status || 400);
+        reply(r);
+      });
+    }
+    if (pathname === '/api/home/card-icons/remove') {
+      return readJsonBody(req, res, function (body) {
+        homeModule.removeCardIcon(String(body && body.name || ''), function (r) { send(res, r.ok ? 200 : 400, JSON.stringify(r)); });
+      }, 1024);
+    }
+    if (pathname === '/api/home/nav-sound/upload') {
+      if (!postGuard(req, res, 'application/octet-stream', true)) return;
+      return homeModule.uploadNavSound(req, function (r) {
+        if (!r.ok) return refuseUpload(req, res, r.error, r.status || 400);
+        reply(r);
+      });
+    }
+    if (pathname === '/api/home/nav-sound/remove') {
+      return readJsonBody(req, res, function () { homeModule.removeNavSound(reply); }, 1024);
     }
     if (pathname === '/api/home/launcher/upload' && homeLauncherModule) {
       // It runs as the TV's Home app, so it is held to what a sideloaded package is.
@@ -1350,6 +1417,7 @@ function handleHomeRoute(req, res, u, pathname) {
       }
       if (pathname === '/api/home/disable') return homeModule.disable(reply);
       if (pathname === '/api/home/open') return homeModule.open(body, reply);
+      if (pathname === '/api/home/idle-saver') return homeModule.startIdleSaver(reply);
       if (pathname === '/api/home/launcher' && homeLauncherModule) {
         if (typeof body.address === 'string') return homeLauncherModule.setAddress(body.address, reply);
         if (typeof body.remove === 'string') return homeLauncherModule.remove(body.remove, reply);
@@ -1735,6 +1803,12 @@ function handleRequest(req, res) {
       noSignal: nosignal.status(),
       inputBar: inputBarModule ? inputBarModule.summary() : null
     }));
+  }
+
+  // For a screen saver that plays video: whether an app holds the decoder (#1599).
+  if (pathname === '/api/screensaver/video-busy' && req.method === 'GET') {
+    if (!authed(u.query, req)) return send(res, 401, JSON.stringify({ ok: false, error: 'unauthorised' }));
+    return screensaversModule.videoBusy(function (r) { send(res, 200, JSON.stringify(r)); });
   }
 
   if (pathname === '/api/screensaver') {
@@ -2128,6 +2202,16 @@ function handleRequest(req, res) {
         send(res, 200, JSON.stringify(stSaved));
       });
     });
+  }
+
+  // The Performance view's charts: the processor, memory, network and
+  // temperature over the last 5 minutes, hour or day.
+  if (pathname === '/api/storage' && storageScanModule) {
+    // A rescan only by POST, so a page load never forces one.
+    return storageScanModule.query(req.method === 'POST', function (d) { send(res, 200, JSON.stringify(d)); });
+  }
+  if (pathname === '/api/perf' && perfHistoryModule) {
+    return send(res, 200, JSON.stringify(perfHistoryModule.query(String(u.query.range || '5m'))));
   }
 
   if (pathname === '/api/cpu') {
@@ -2700,6 +2784,8 @@ function init(opts) {
   if (opts.syslog) syslogModule = opts.syslog;
   if (opts.ntp) ntpModule = opts.ntp;
   if (opts.history) historyModule = opts.history;
+  if (opts.perfHistory) perfHistoryModule = opts.perfHistory;
+  if (opts.storageScan) storageScanModule = opts.storageScan;
   if (opts.sshKeys) sshKeysModule = opts.sshKeys;
   if (opts.screentime) screentimeModule = opts.screentime;
   if (opts.backup) backupModule = opts.backup;

@@ -98,6 +98,31 @@ function homeLauncherChosen() {
   return homeLaunchersAll().filter(l => l.id === id)[0] || null;
 }
 
+let homeSubView = 'rows';
+
+function setHomeSubView(view) {
+  homeSubView = view || 'rows';
+  syncHomeSubView();
+}
+
+function syncHomeSubView() {
+  const pane = q('homepane');
+  const nav = q('home-subnav');
+  const box = q('home-custom');
+  const useSubnav = !!(box && !box.classList.contains('lg-home') && !homeBarOn());
+  if (nav) {
+    nav.hidden = !useSubnav;
+    const btns = nav.querySelectorAll('button[data-home-view]');
+    for (let i = 0; i < btns.length; i++) {
+      btns[i].classList.toggle('on', btns[i].getAttribute('data-home-view') === homeSubView);
+    }
+  }
+  if (pane) {
+    if (useSubnav) pane.setAttribute('data-home-view', homeSubView);
+    else pane.removeAttribute('data-home-view');
+  }
+}
+
 function renderHomeCustom(autoVal) {
   const st = homeStatus;
   const lg = st.lgHome;
@@ -118,6 +143,7 @@ function renderHomeCustom(autoVal) {
   if (layout && (!lg || inPlace)) layout.hidden = true;
   const more = q('home-more');
   if (box) box.hidden = !(glasshouseOn || (more && !more.hidden) || autoVal !== undefined || (layout && !layout.hidden) || (tiles && !tiles.hidden));
+  syncHomeSubView();
 }
 
 function homePreviewTiles(count) {
@@ -339,6 +365,25 @@ function renderHome() {
     updateToggle(el, { cls: on && !unused ? 'good' : 'idle', label: on ? t('common.on', 'On') : t('common.off', 'Off') });
     el.disabled = !homeWritable() || unused;
   });
+  HOME_OPT_IN.forEach(([key, id]) => {
+    const el = q(id);
+    if (!el) return;
+    const on = !!st.layout && st.layout[key] === true;
+    updateToggle(el, { cls: on ? 'good' : 'idle', label: on ? t('common.on', 'On') : t('common.off', 'Off') });
+    el.disabled = !homeWritable();
+  });
+  const soundSel = q('home-nav-sound-sel');
+  if (soundSel) {
+    soundSel.value = (st.layout && st.layout.navSound) || 'off';
+    soundSel.disabled = !homeWritable();
+    renderHomeNavSound(st);
+  }
+  const fadeSel = q('home-card-fade-sel');
+  if (fadeSel) {
+    fadeSel.value = String(st.layout && typeof st.layout.cardFade === 'number' ? st.layout.cardFade : 20);
+    fadeSel.disabled = !homeWritable() || !(st.layout && st.layout.appCards === true);
+  }
+  loadHomeCardIcons();
   renderHomeWeather(st);
   const countAlt = q('home-show-count-alt');
   if (countAlt) countAlt.hidden = !altView;
@@ -632,7 +677,9 @@ function renderHomeRows() {
       if (id === 'lg-home' && homeLauncherOn()) return '';
       const hidden = kind !== 'ch' && homeLayout.hidden[kind].includes(id);
       const folded = kind === 'app' && (homeLayout.folder || []).includes(id);
-      const icon = it.icon ? `<img class="rk-ico" src="${esc(api(it.icon))}" alt="">` : '';
+      const cardButton = kind === 'app' && it.lg !== true && homeLayout.appCards === true;
+      const icon = cardButton ? homeCardIconButton(id, it, editable)
+        : it.icon ? `<img class="rk-ico" src="${esc(api(it.icon))}" alt="">` : '';
       const titleHtml = kind === 'app'
         ? `<input type="text" class="inp-name inp-name-in home-app-name" translate="no" maxlength="60" value="${esc(it.title)}" placeholder="${esc(it.defTitle)}" data-app-name="${esc(id)}" data-cur="${esc(it.title)}" data-def="${esc(it.defTitle)}" aria-label="${esc(t('home.appNameLabel', 'App name'))}" ${editable ? '' : 'disabled'} onkeydown="homeAppNameKey(event, this)" onblur="homeRenameApp(this)">`
         : `<span translate="no">${esc(it.title)}</span>`;
@@ -879,6 +926,8 @@ function renderHomeCompat(st) {
     : bar
     ? homeCompatNote(t('home.compat.untriedBar', 'Glasshouse Bar has not yet been reported working on webOS {version}. If it misbehaves, choose LG Home to put everything back.', { version: (st.bar.webos || v) }), st.bar.report)
     : '';
+  // webOS 11: the Home key is LG's own, and Glasshouse changes its handler for the bar.
+  if (st.bar && st.bar.native) box.innerHTML += `<div class="pv-note">${esc(t('home.bar.native', 'On this TV the Home key needs a change to LG’s key handler for Glasshouse Bar. Choosing the bar, or any other launcher after it, restarts the TV’s screen once, and the change is made again each time the TV starts.'))}</div>`;
 }
 
 function homeBarOn() { return !!(homeStatus && homeStatus.bar && homeStatus.bar.enabled); }
@@ -1169,6 +1218,258 @@ function homeWeatherPick(i) {
 
 function homeShow(key) {
   homeSaveLayout({ [key]: homeLayout[key] === false });
+}
+
+// Off until switched on: apps as cards and the pulse on the one in focus.
+const HOME_OPT_IN = [['appCards', 'home-app-cards'], ['focusPulse', 'home-focus-pulse']];
+function homeOptIn(key) {
+  homeSaveLayout({ [key]: homeLayout[key] !== true });
+}
+
+function homeCardFade(v) {
+  homeSaveLayout({ cardFade: Number(v) });
+}
+
+function homeNavSound(v) {
+  homeSaveLayout({ navSound: v });
+}
+
+/*
+ * The card icons on the TV (lib/home cardIconNames), read once a visit: each
+ * app's row picks one of them, or uploads one under its title's name.
+ */
+let homeCardIcons = null;
+let homeCardIconTarget = null;
+let homeCardIconNote = null;
+async function loadHomeCardIcons() {
+  if (homeCardIcons) return;
+  try {
+    const r = await (await fetch(api('/api/home/card-icons'))).json();
+    homeCardIcons = (r && r.names) || [];
+  } catch (e) { homeCardIcons = []; }
+  // Only the dialog's search offers them; the rows are left as drawn, so an
+  // owner's open section stays open.
+  if (homeCardIconTarget) renderHomeCardIconModal();
+}
+
+// An app title as a card icon is named, as lib/home cardIconKey: "YouTube Music" is youtube_music.
+function homeCardIconKey(title) {
+  return String(title || '').toLowerCase().replace(/&/g, ' and ').replace(/\+/g, ' plus ')
+    .replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '').slice(0, 80);
+}
+
+// An app's card in its row: what Home shows on it, opening the icon dialog.
+function homeCardIconButton(id, it, editable) {
+  const app = ((homeCat && homeCat.apps) || []).find(a => a.id === id);
+  const inner = app && app.card ? `<img src="${esc(api(app.card))}" alt="">`
+    : it.icon ? `<img class="home-card-own" src="${esc(api(it.icon))}" alt="">` : '';
+  return `<button type="button" class="home-card-btn" data-card-app="${esc(id)}" ${editable ? '' : 'disabled'}
+    onclick="homeCardIconOpen(this.dataset.cardApp)" title="${esc(t('home.cardIconEdit', 'Change the card icon'))}"
+    aria-label="${esc(t('home.cardIconEditFor', 'Card icon for {app}', { app: it.title }))}">${inner}</button>`;
+}
+
+function homeCardIconApp(id) {
+  return ((homeCat && homeCat.apps) || []).find(a => a.id === id) || { id, title: '' };
+}
+
+function homeCardIconOpen(id) {
+  homeCardIconTarget = id;
+  homeCardIconNote = null;
+  renderHomeCardIconModal();
+  const box = q('home-card-modal');
+  box.hidden = false;
+  q('home-card-modal-close').focus();
+}
+
+function homeCardIconClose() {
+  q('home-card-modal').hidden = true;
+  homeCardIconTarget = null;
+}
+
+// The dialog for the app it is open for, drawn again after each change.
+function renderHomeCardIconModal() {
+  const id = homeCardIconTarget;
+  if (!id || !q('home-card-modal')) return;
+  const app = homeCardIconApp(id);
+  const chosen = (homeLayout && homeLayout.appIcons && homeLayout.appIcons[id]) || '';
+  const shown = app.card ? (/[?&]name=([a-z0-9_]+)/.exec(app.card) || [])[1] : '';
+  q('home-card-modal-title').textContent = t('home.cardIconEditFor', 'Card icon for {app}', { app: app.title });
+  q('home-card-modal-preview').innerHTML = app.card ? `<img src="${esc(api(app.card))}" alt="">`
+    : app.icon ? `<img class="home-card-own" src="${esc(api(app.icon))}" alt="">` : '';
+  q('home-card-modal-state').textContent = shown
+    ? t('home.cardIconShowing', 'Showing {name}.png', { name: shown })
+    : t('home.cardIconNone', 'No card icon yet: Home shows the app’s own icon on the card.');
+  q('home-card-modal-upload').textContent = shown ? t('home.cardIconReplace', 'Replace') : t('home.cardIconUpload', 'Upload');
+  q('home-card-modal-remove').hidden = !shown;
+  const names = homeCardIcons || [];
+  const list = q('home-card-icon-list');
+  if (list.dataset.count !== String(names.length)) {
+    list.innerHTML = names.map(n => `<option value="${esc(n)}">`).join('');
+    list.dataset.count = String(names.length);
+  }
+  const pick = q('home-card-modal-pick');
+  pick.value = chosen;
+  pick.placeholder = t('home.cardIconSearch', 'Search {count} icons by name', { count: names.length });
+  q('home-card-modal-auto').hidden = !chosen;
+  q('home-card-modal-pickrow').hidden = !names.length;
+  const note = q('home-card-modal-note');
+  note.textContent = homeCardIconNote ? homeCardIconNote.text : '';
+  const busy = !!(homeCardIconNote && homeCardIconNote.busy);
+  ['home-card-modal-upload', 'home-card-modal-remove', 'home-card-modal-pick', 'home-card-modal-auto'].forEach(k => { q(k).disabled = busy || !homeWritable(); });
+}
+
+// One of the icons on the TV by name, or with none (Match by name), the one its title matches.
+function homeSetCardIcon(el) {
+  const id = homeCardIconTarget;
+  if (!id) return;
+  const name = el ? el.value.trim().toLowerCase() : '';
+  if (name && !(homeCardIcons || []).includes(name)) {
+    homeCardIconNote = { id, text: t('home.cardIconUnknown', 'There is no icon named {name} on the TV.', { name }) };
+    return renderHomeCardIconModal();
+  }
+  homeCardIconNote = null;
+  homeLayout.appIcons = Object.assign({}, homeLayout.appIcons);
+  if (name) homeLayout.appIcons[id] = name; else delete homeLayout.appIcons[id];
+  homeSaveLayout({ appIcons: { [id]: name } }).then(() => renderHomeCardIconModal());
+}
+
+function homeCardIconUpload() {
+  const input = q('home-card-icon-file');
+  input.value = '';
+  input.click();
+}
+
+function homeCardIconDrop(e) {
+  e.preventDefault();
+  q('home-card-modal-preview').classList.remove('drag');
+  const file = e.dataTransfer && e.dataTransfer.files[0];
+  if (file) homeCardIconSend(file);
+}
+
+// Any picture, drawn whole on a clear 640 x 360 PNG: the card's 16:9 at over
+// twice the size it is shown, which the server holds icons to.
+async function homePrepareCardIcon(file) {
+  if (!/^image\/(jpeg|png|webp|svg\+xml)$/.test(file.type) || file.size > 10 * 1024 * 1024) {
+    throw new Error(t('home.cardIconChoose', 'Choose a PNG, JPEG, WebP or SVG image up to 10 MB.'));
+  }
+  const url = URL.createObjectURL(file);
+  try {
+    const img = new Image();
+    await new Promise((resolve, reject) => {
+      img.onload = resolve;
+      img.onerror = () => reject(new Error(t('home.wall.unreadable', 'The image could not be opened.')));
+      img.src = url;
+    });
+    const W = 640, H = 360;
+    const w = img.naturalWidth || W, h = img.naturalHeight || H;
+    const scale = Math.min(W / w, H / h);
+    const canvas = document.createElement('canvas');
+    canvas.width = W;
+    canvas.height = H;
+    canvas.getContext('2d').drawImage(img, (W - w * scale) / 2, (H - h * scale) / 2, w * scale, h * scale);
+    const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+    if (!blob || blob.size > 1024 * 1024) throw new Error(t('home.wall.tooLarge', 'The prepared image is too large. Choose a smaller image.'));
+    return blob;
+  } finally { URL.revokeObjectURL(url); }
+}
+
+function homeCardIconPicked(input) {
+  if (input.files[0]) homeCardIconSend(input.files[0]);
+}
+
+async function homeCardIconSend(file) {
+  const id = homeCardIconTarget;
+  if (!file || !id || !homeWritable()) return;
+  const app = homeCardIconApp(id);
+  const chosen = (homeLayout.appIcons || {})[id];
+  // Its chosen icon is replaced; otherwise it is named for its title, which it
+  // then takes by name, or for its app id where the title has no letters for one.
+  const byTitle = homeCardIconKey(app.title);
+  const name = chosen || byTitle || ('app_' + homeCardIconKey(id)).slice(0, 80);
+  homeCardIconNote = { id, text: t('home.cardIconUploading', 'Uploading…'), busy: true };
+  renderHomeCardIconModal();
+  try {
+    const blob = await homePrepareCardIcon(file);
+    const res = await fetch(api('/api/home/card-icons/upload?name=' + encodeURIComponent(name)), {
+      method: 'POST', headers: { 'Content-Type': 'image/png' }, body: blob
+    });
+    const r = await res.json();
+    if (!res.ok || !r.ok) throw new Error(r.error || t('home.wall.uploadFailed', 'The image could not be uploaded.'));
+    homeCardIcons = r.names || homeCardIcons;
+    if (!chosen && !byTitle) await homeSaveLayout({ appIcons: { [id]: name } });
+    homeCardIconNote = { id, text: t('home.cardIconDone', 'Uploaded. Home shows it within a few seconds.') };
+  } catch (e) { homeCardIconNote = { id, text: e.message }; }
+  await loadHome();
+  renderHomeCardIconModal();
+}
+
+async function homeCardIconRemove() {
+  const id = homeCardIconTarget;
+  const app = homeCardIconApp(id);
+  const name = app.card ? (/[?&]name=([a-z0-9_]+)/.exec(app.card) || [])[1] : '';
+  if (!id || !name || !homeWritable()) return;
+  homeCardIconNote = null;
+  try {
+    const r = await homePost('/api/home/card-icons/remove', { name });
+    homeCardIcons = r.names || [];
+  } catch (e) { homeCardIconNote = { id, text: e.message }; }
+  await loadHome();
+  renderHomeCardIconModal();
+}
+
+// The own sound: its file on the TV, shown with Upload and Remove while it is chosen.
+function renderHomeNavSound(st) {
+  const name = (st.layout && st.layout.navSound) || 'off';
+  const own = st.layout && st.layout.ownSound;
+  const box = q('home-nav-sound-own');
+  if (!box) return;
+  const usable = homeWritable();
+  q('home-nav-sound-play').disabled = name === 'off' || (name === 'own' && !own);
+  box.hidden = name !== 'own';
+  q('home-nav-sound-upload').disabled = !usable;
+  q('home-nav-sound-remove').hidden = !own;
+  q('home-nav-sound-remove').disabled = !usable;
+  const note = q('home-nav-sound-note');
+  if (!note.dataset.busy) {
+    note.textContent = own
+      ? t('home.navSound.ownFile', '{type}, {size} KB', { type: own.type.replace('audio/', '').replace('mpeg', 'mp3').toUpperCase(), size: Math.max(1, Math.round(own.size / 1024)) })
+      : t('home.navSound.ownNone', 'No sound uploaded yet.');
+  }
+}
+
+let homeNavPreview = null;
+function homeNavSoundPlay() {
+  const name = q('home-nav-sound-sel').value;
+  if (name === 'off') return;
+  if (homeNavPreview) homeNavPreview.pause();
+  homeNavPreview = new Audio(api('/api/home/nav-sound?name=' + encodeURIComponent(name) + '&t=' + Date.now()));
+  homeNavPreview.play().catch(() => {});
+}
+
+async function homeNavSoundPicked(input) {
+  const file = input.files[0];
+  input.value = '';
+  if (!file || !homeWritable()) return;
+  const note = q('home-nav-sound-note');
+  note.dataset.busy = '1';
+  note.textContent = t('home.cardIconUploading', 'Uploading…');
+  try {
+    if (file.size > 512 * 1024) throw new Error(t('home.navSound.tooLarge', 'Choose an OGG, WAV or MP3 file of up to 512 KB.'));
+    const res = await fetch(api('/api/home/nav-sound/upload'), {
+      method: 'POST', headers: { 'Content-Type': 'application/octet-stream' }, body: file
+    });
+    const r = await res.json();
+    if (!res.ok || !r.ok) throw new Error(r.error || t('home.navSound.uploadFailed', 'The sound could not be uploaded.'));
+    delete note.dataset.busy;
+  } catch (e) { note.textContent = e.message; setTimeout(() => { delete note.dataset.busy; }, 8000); }
+  await loadHome();
+}
+
+async function homeNavSoundRemove() {
+  if (!homeWritable()) return;
+  try { await homePost('/api/home/nav-sound/remove', {}); }
+  catch (e) { q('home-nav-sound-note').textContent = e.message; }
+  await loadHome();
 }
 
 function homeSearch() {

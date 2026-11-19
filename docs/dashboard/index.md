@@ -4,7 +4,7 @@ Each of these has a tab of its own in the dashboard, and a deep link to it. OLED
 
 On a wide screen the tabs are listed down the left, under the TV's name. On a phone, or wherever Preferences is set to hide the sidebar, they open from the menu button at the top of the page. In the Android app that button is in the app's bottom bar, beside its back button.
 
-The top of every tab shows what the TV is doing: its state (On, Screen off, Screen saver or Standby), what is on screen in large type, and the picture's resolution, dynamic range and picture mode under it, with the volume and any sleep timer opposite. In standby it shows the last source, faded.
+The top of every tab shows what the TV is doing: its state (On, Screen off, Screen saver or Standby), what is on screen in large type, and the picture's resolution, dynamic range and picture mode under it. Opposite them, **Remote** brings up [the remote](control.md#the-remote-on-its-own) over the tab, with any sleep timer under it. In standby it shows the last source, faded.
 
 <div class="grid cards" markdown>
 
@@ -12,7 +12,7 @@ The top of every tab shows what the TV is doing: its state (On, Screen off, Scre
 
     ---
 
-    The remote, inputs, volume, playback, picture presets and screen blanking.
+    The remote, a D-pad, touchpad and keyboard, inputs, volume, playback, picture presets and screen blanking.
 
 -   **[Metrics](metrics.md)**
 
@@ -90,13 +90,13 @@ The top of every tab shows what the TV is doing: its state (On, Screen off, Scre
 
     ---
 
-    Power and standby, HDMI, auto device detection and front lights.
+    Power and standby, HDMI, auto device detection, front lights and the service menu.
 
 -   **[Service menu](service-menu.md)**
 
     ---
 
-    Open and unlock LG's engineering menu from a browser.
+    Open and unlock LG's engineering menu under System.
 
 -   **[Server](server.md)**
 

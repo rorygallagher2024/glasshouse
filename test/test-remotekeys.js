@@ -951,6 +951,91 @@ step(function (next) {
   }));
 });
 
+// ---------------------------------------------------------------- Glasshouse Bar on a key
+// Beside Glasshouse Home, which keeps the Home key (#1499).
+var hb = { calls: [], installs: true, allowed: true, launcher: false, pokes: 0 };
+step(function (next) {
+  rk.init({ luna: luna, inputNames: { hdmi1: 'HDMI 1', hdmi2: 'Apple TV' }, stateDir: stateDir, filtersDir: filtersDir,
+    homeBarAllowed: function () { return hb.allowed; },
+    homeBarApp: function (action, cb) {
+      hb.calls.push(action);
+      process.nextTick(function () { cb({ ok: action !== 'install' || hb.installs }); });
+    },
+    homeBarLauncher: function () { return hb.launcher; },
+    onHomeBarKey: function () { hb.pokes++; } });
+  rk.getRemoteKeys(guard(function (r) {
+    assert.ok(r.choices.some(function (c) { return c.id === 'com.tvweb.homebar' && c.title === 'Glasshouse Bar'; }), 'Glasshouse Bar is offered');
+    hb.allowed = false;
+    rk.getRemoteKeys(guard(function (r2) {
+      assert.ok(!r2.choices.some(function (c) { return c.id === 'com.tvweb.homebar'; }), 'not offered where the bars are not');
+      hb.allowed = true;
+      hb.installs = false;
+      rk.setRemoteKey('input', 'open', 'com.tvweb.homebar', guard(function (s) {
+        assert.strictEqual(s.ok, false, 'refused when its app cannot be installed');
+        assert.strictEqual(rk.opensHomeBar(), false, 'the key is left as it was');
+        hb.installs = true;
+        rk.setRemoteKey('input', 'open', 'com.tvweb.homebar', guard(function (s2) {
+          assert.ok(s2.ok, s2.error);
+          assert.deepEqual(hb.calls, ['install', 'install']);
+          assert.strictEqual(rk.opensHomeBar(), true);
+          assert.strictEqual(hb.pokes, 1, 'lib/homebar is told, to keep it loaded');
+          console.log('  ✓ Glasshouse Bar is offered for a key where the bars are, and choosing it installs its app first');
+          next();
+        }));
+      }));
+    }));
+  }));
+});
+
+step(function (next) {
+  var f = loadFilter(null, {
+    WebOS: { Key_webOS_Netflix: 1001, Key_webOS_Amazon: 1002, Key_webOS_TVGuide: 1003, Key_webOS_Red: 1004,
+             Key_webOS_USP: 1005, Key_webOS_InputSource: 1006 },
+    Qt: { Key_Super_L: 2001, Key_Right: 3001 },
+    global: { isForegroundApp: function () { return false; }, sendKeyToFocusWindow: function () {} }
+  });
+  f.handle(1006, true, false);
+  f.handle(1006, false, false);
+  f.handle(1006, true, false);
+  assert.deepEqual(f.launched.map(function (l) { return l.id; }), ['com.tvweb.homebar', 'com.tvweb.homebar']);
+  var p1 = JSON.parse(f.launched[0].params), p2 = JSON.parse(f.launched[1].params);
+  assert.strictEqual(p1.glasshouse, 'bar');
+  assert.ok(p2.press > p1.press, 'each press numbered, as the Home key opens it, so a second press closes it');
+  console.log('  ✓ the key opens Glasshouse Bar as the Home key does, a number for each press');
+  next();
+});
+
+step(function (next) {
+  hb.launcher = true;
+  rk.setRemoteKey('input', 'lg', '', guard(function (s) {
+    assert.ok(s.ok, s.error);
+    setImmediate(guard(function () {
+      assert.deepEqual(hb.calls, ['install', 'install'], 'its app stays while the Bar is the launcher');
+      hb.calls = [];
+      rk.setRemoteKey('input', 'open', 'com.tvweb.homebar', guard(function (s2) {
+        assert.ok(s2.ok, s2.error);
+        assert.deepEqual(hb.calls, [], 'nothing to install while the Bar is the launcher');
+        hb.launcher = false;
+        rk.setRemoteKey('input', 'nothing', '', guard(function (s3) {
+          assert.ok(s3.ok, s3.error);
+          setImmediate(guard(function () {
+            assert.deepEqual(hb.calls, ['remove'], 'the last key leaving it removes its app');
+            rk.setRemoteKey('input', 'open', 'com.tvweb.homebar', guard(function () {
+              tv.removed = [];
+              rk.restore(guard(function (ok) {
+                assert.ok(ok);
+                assert.deepEqual(tv.removed, ['com.tvweb.homebar'], 'restore() removes its app with the keys');
+                console.log('  ✓ Glasshouse Bar\'s app is removed when no key opens it, unless it is the launcher, and by restore()');
+                next();
+              }));
+            }));
+          }));
+        }));
+      }));
+    }));
+  }));
+});
+
 function done() {
   fs.readdirSync(filtersDir).forEach(function (f) { fs.unlinkSync(path.join(filtersDir, f)); });
   fs.rmdirSync(filtersDir);

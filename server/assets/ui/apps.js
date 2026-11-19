@@ -8,9 +8,10 @@ let appsData = null;
  */
 const tilePending = {};
 let appsLoading = false;
+let appsAgain = false;
 
 async function loadApps() {
-  if (appsLoading) return;
+  if (appsLoading) { appsAgain = true; return; }
   appsLoading = true;
   try {
     const r = await fetch(api('/api/apps'), { cache: 'no-store' });
@@ -25,6 +26,7 @@ async function loadApps() {
   } finally {
     appsLoading = false;
   }
+  if (appsAgain) { appsAgain = false; loadApps(); }
 }
 
 // The address without its scheme, as a reminder of which page a tile opens.
@@ -151,25 +153,29 @@ function renderAppsPanel() {
 
   if (instList) {
     if (installed.length === 0) {
+      instList.classList.remove('catalog-grid');
       instList.innerHTML = `<div class="sub" style="padding:16px 0">${esc(t('apps.installed.none', 'No removable apps found on the TV.'))}</div>`;
     } else {
+      instList.classList.add('catalog-grid');
       instList.innerHTML = installed.map(app => {
-        const title = esc(app.title || app.id);
-        const id = esc(app.id);
+        const title = app.title || app.id;
+        const monogram = esc(String(title).trim().charAt(0).toUpperCase() || '?');
         const iconUrl = api('/api/apps/icon?id=' + encodeURIComponent(app.id));
-        const meta = [app.version ? 'v' + app.version : '', app.vendor || ''].filter(Boolean).join(' · ');
+        const meta = [app.version ? 'v' + app.version : '', app.vendor || ''].filter(Boolean).join(' · ') || t('apps.installed.app', 'Installed app');
         const sizeBadge = (app.size && typeof fmtSize === 'function') ? fmtSize(app.size) : '';
-        return `<div class="prot-row">
-          <img src="${iconUrl}" width="38" height="38" style="border-radius:8px;object-fit:contain;background:var(--w06);flex-shrink:0" onerror="this.style.display='none'">
-          <div class="prot-main">
-            <div class="prot-title">${title}</div>
-            <div class="prot-desc">${esc(meta || t('apps.installed.app', 'Installed app'))}</div>
-            ${rowErrorNote(app.id)}
+        return `<div class="catalog-card">
+          <div class="catalog-card-head">
+            <span class="catalog-card-ico-wrap"><span class="catalog-card-monogram" aria-hidden="true">${monogram}</span><img class="catalog-card-ico" src="${iconUrl}" width="46" height="46" loading="lazy" alt="" onerror="this.style.display='none'"></span>
+            <div class="catalog-card-main">
+              <div class="catalog-card-title">${esc(title)}</div>
+              <div class="catalog-card-meta">${esc(meta)}</div>
+            </div>
           </div>
+          ${sizeBadge ? `<div class="catalog-card-badges"><span class="app-badge" title="${esc(t('apps.installed.storageTooltip', 'Storage footprint'))}">${esc(sizeBadge)}</span></div>` : ''}
+          ${rowErrorNote(app.id)}
           <div class="prot-status">
-            ${sizeBadge ? `<span class="app-badge" title="${esc(t('apps.installed.storageTooltip', 'Storage footprint'))}">${esc(sizeBadge)}</span>` : ''}
             <button type="button" class="pill good" onclick="sendCommand('launchApp','${jsq(app.id)}')" ${!d.writable || uninstalling[app.id] ? 'disabled' : ''}>${esc(t('apps.launch.button', 'Launch'))}</button>
-            <button type="button" class="pill ${uninstalling[app.id] ? 'busy' : 'bad'}" onclick="confirmUninstall('${jsq(app.id)}', '${jsq(app.title || app.id)}')" ${!d.writable || uninstalling[app.id] ? 'disabled' : ''}>${esc(uninstalling[app.id] ? t('apps.uninstall.working', 'Uninstalling\u2026') : t('apps.uninstall.button', 'Uninstall'))}</button>
+            <button type="button" class="pill ${uninstalling[app.id] ? 'busy' : 'bad'}" onclick="confirmUninstall('${jsq(app.id)}', '${jsq(title)}')" ${!d.writable || uninstalling[app.id] ? 'disabled' : ''}>${esc(uninstalling[app.id] ? t('apps.uninstall.working', 'Uninstalling\u2026') : t('apps.uninstall.button', 'Uninstall'))}</button>
           </div>
         </div>`;
       }).join('');
@@ -179,64 +185,75 @@ function renderAppsPanel() {
   renderSavedPages(d);
 
   renderPreload(d);
+  renderBackgroundServices(d);
   renderAppDns(d);
   renderQuickAccess(d);
   renderRemoteKeys(d);
   showRemoteTab();
+}
 
-  // Render Background Services
-  const svcsList = q('apps-services-list');
-  const svcsDisc = q('disc-system-services');
-  const svcsSummary = q('apps-services-summary');
-  const svcs = d.services || [];
+// Monochrome 24x24 vector glyphs matching devicons.js stroke weight for remote
+// actions and media controls; inputs reuse window.glasshouseDevIcon.
+const RK_PICK_SVGS = {
+  'action:screenOff': '<rect x="3" y="5" width="18" height="12" rx="2"/><path d="M8 20h8M4 4l16 16"/>',
+  'action:powerOff': '<path d="M12 3v8"/><path d="M17.5 6.8a7.5 7.5 0 1 1-11 0"/>',
+  ha: '<path d="M4 11l8-7 8 7"/><path d="M6 10v9h12v-9"/><circle cx="12" cy="14" r="2"/>',
+  'media:ok': '<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3" fill="currentColor"/>',
+  'media:play': '<polygon points="7,5 19,12 7,19"/>',
+  'media:pause': '<rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/>',
+  'media:stop': '<rect x="6" y="6" width="12" height="12" rx="2"/>',
+  'media:rewind': '<polygon points="11,6 4,12 11,18"/><polygon points="20,6 13,12 20,18"/>',
+  'media:fastForward': '<polygon points="4,6 11,12 4,18"/><polygon points="13,6 20,12 13,18"/>',
+  'media:volumeUp': '<polygon points="3,9 7,9 12,5 12,19 7,15 3,15"/><path d="M16 9a4.5 4.5 0 0 1 0 6M19 6.5a8 8 0 0 1 0 11"/>',
+  'media:volumeDown': '<polygon points="4,9 8,9 13,5 13,19 8,15 4,15"/><path d="M17 9.5a4 4 0 0 1 0 5"/>',
+  'media:mute': '<polygon points="3,9 7,9 12,5 12,19 7,15 3,15"/><path d="M16 9.5l5 5M21 9.5l-5 5"/>',
+  // webOS 11: Glasshouse Home's guide on the Guide key, and the input bar on the Input key.
+  guide: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18M9 10v9"/>',
+  inputbar: '<rect x="3" y="14" width="18" height="6" rx="2"/><path d="M7 17h2M11 17h2M15 17h2"/>'
+};
 
-  if (svcsDisc) {
-    if (!svcs.length) {
-      svcsDisc.hidden = true;
-    } else {
-      svcsDisc.hidden = false;
-      const numDisabled = svcs.filter(s => s.disabled).length;
-      if (svcsSummary) {
-        svcsSummary.textContent = numDisabled > 0
-          ? t('apps.services.disabledOf', '{disabled} disabled of {n}', { disabled: numDisabled, n: svcs.length })
-          : svcs.length === 1 ? t('apps.services.one', '1 service') : t('apps.services.count', '{n} services', { n: svcs.length });
-      }
-      if (svcsList) {
-        svcsList.innerHTML = svcs.map(svc => {
-          const id = esc(svc.id);
-          const title = esc(svc.title);
-          const badge = esc(svc.badge || '');
-          const desc = esc(svc.desc || '');
-          const unit = esc(svc.unit || '');
-          const isDisabled = !!svc.disabled;
-          const stillRunning = isDisabled && svc.running;
-          return `<div class="prot-row">
-            <div class="prot-main">
-              <div class="prot-title">${title} <span class="prot-sub">&middot; ${unit}</span></div>
-              <div class="prot-desc">${desc}</div>
-            </div>
-            <div class="prot-status">
-              ${badge ? `<span class="app-badge">${badge}</span>` : ''}
-              ${renderToggle({
-                id: 'btn-svc-' + id,
-                cls: isDisabled ? 'warn' : 'good',
-                label: stillRunning ? t('apps.service.stillRunning', 'Disabled, still running') : isDisabled ? t('apps.service.disabled', 'Disabled') : t('apps.service.active', 'Active'),
-                disabled: !d.writable,
-                onclick: "toggleService('" + id + "', " + (!isDisabled) + ")",
-                attrs: stillRunning ? `title="${esc(t('apps.service.restarted', 'Switched off, but something on the TV has started it again.'))}"` : ''
-              })}
-            </div>
-          </div>`;
-        }).join('');
-      }
+function qaChoiceKind(id, choices) {
+  const c = Array.isArray(choices) && choices.find(x => x.id === id);
+  if (c && c.kind) return c.kind;
+  if (id === 'com.webos.app.livetv' || /^com\.webos\.app\.hdmi\d+$/.test(id || '')) return 'input';
+  return 'app';
+}
+
+function qaInputDevice(id, title) {
+  const devs = typeof inputsCat !== 'undefined' && inputsCat && Array.isArray(inputsCat.devices) ? inputsCat.devices : null;
+  if (devs) {
+    if (id === 'com.webos.app.livetv') {
+      const tv = devs.find(d => d && d.tuner);
+      if (tv) return tv;
+    }
+    const m = /^com\.webos\.app\.hdmi(\d+)$/.exec(id || '');
+    if (m) {
+      const dev = devs.find(d => d && String(d.port) === m[1]);
+      if (dev) return dev;
     }
   }
+  return { id, name: title || id, tuner: id === 'com.webos.app.livetv' };
+}
+
+function qaDevSvg(dev) {
+  if (typeof window.glasshouseDevIcon === 'function') return window.glasshouseDevIcon(dev);
+  return '<i class="dico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 9h14v3l-2 3H7l-2-3z"/><path d="M8 15v3h8v-3"/></svg></i>';
+}
+
+function rkChoiceIcon(id, kind, title) {
+  const k = kind || qaChoiceKind(id, null);
+  if (k === 'input') return `<span class="rk-ico rk-ico-svg" aria-hidden="true">${qaDevSvg(qaInputDevice(id, title))}</span>`;
+  if (k === 'switcher') return `<span class="rk-ico rk-ico-svg" aria-hidden="true">${qaDevSvg({ kind: 'allinputs' })}</span>`;
+  const svg = RK_PICK_SVGS[id] || RK_PICK_SVGS[k];
+  if (svg) {
+    return `<span class="rk-ico rk-ico-svg" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">${svg}</svg></span>`;
+  }
+  return rkIcon(id);
 }
 
 // The remote's Quick Access keys: holding 1 to 9 opens what is set here.
-// Quick Access (lib/quickaccess.js): a tile per number key, laid out as the
-// remote's number pad, each showing what holding it opens. Choosing a tile
-// opens a picker under its row, as Remote keys does.
+// Quick Access (lib/quickaccess.js): rendered as a 3x4 physical remote keypad
+// (1-9 plus 0 for the list), each showing its icon/input badge and label.
 let qaData = null;      // the last quickAccess answer, for the picker
 let qaOpen = null;      // the key whose picker is open
 let qaCols = 0;
@@ -257,20 +274,25 @@ function renderQuickAccess(d) {
   qaWritable = !!d.writable;
   // Left alone while a choice is being made in it.
   if (!list || (qaOpen && list.contains(document.activeElement))) return;
-  list.innerHTML = `<div class="rk-grid qa-grid">${qa.keys.map(k => {
+  const keysHtml = qa.keys.map(k => {
+    const kind = qaChoiceKind(k.id, qa.choices);
     const does = k.id
-      ? `${rkIcon(k.id)}<span translate="no">${esc(k.title)}</span>`
-      : `<span class="rk-lg">${esc(t('apps.quickAccess.none', 'Nothing set'))}</span>`;
+      ? `${rkChoiceIcon(k.id, kind, k.title)}<span class="qa-title" translate="no">${esc(k.title)}</span>`
+      : `<span class="rk-lg qa-empty">${esc(t('apps.quickAccess.none', 'Nothing set'))}</span>`;
     const note = !k.installed && k.id ? `<span class="qa-note" translate="no">${esc(k.id)}</span>`
       : k.lgDefault ? `<span class="qa-note">${esc(t('apps.quickAccess.lgDefault', 'Set by LG'))}</span>` : '';
     return `<button type="button" class="rk-key qa-key-tile${k.id ? ' rk-changed' : ''}" data-key="${k.key}"
         aria-expanded="false" aria-label="${esc(t('apps.quickAccess.keyLabel', 'Key {key}', { key: k.key }) + ': ' + (k.id ? k.title : t('apps.quickAccess.none', 'Nothing set')))}"
         ${qaWritable ? '' : 'disabled'} onclick="toggleQuickAccessKey(this)">
-      <span class="qa-num">${k.key}</span>
-      <span class="rk-does">${does}</span>
-      ${note}
+      <span class="qa-key-top"><span class="qa-num">${k.key}</span>${note}</span>
+      <span class="qa-key-body">${does}</span>
     </button>`;
-  }).join('')}</div>`;
+  }).join('');
+  const zeroTile = `<div class="rk-key qa-zero-tile" aria-label="${esc(t('apps.quickAccess.keyLabel', 'Key {key}', { key: 0 }) + ': ' + t('apps.quickAccess.zeroOpens', 'Quick Access list'))}">
+    <span class="qa-key-top"><span class="qa-num">0</span></span>
+    <span class="qa-key-body">${rkChoiceIcon('switcher', 'switcher', '')}<span class="qa-title rk-lg">${esc(t('apps.quickAccess.zeroOpens', 'Quick Access list'))}</span></span>
+  </div>`;
+  list.innerHTML = `<div class="qa-pad-frame"><div class="rk-grid qa-grid">${keysHtml}${zeroTile}</div></div>`;
   if (qaOpen) {
     const tile = list.querySelector(`.qa-key-tile[data-key="${qaOpen}"]`);
     qaOpen = null;
@@ -300,10 +322,12 @@ function toggleQuickAccessKey(tile) {
   const isOn = value => value === QA_LG ? !k.changed : k.changed && value === (k.id || '');
   const opt = (value, html) => `<button type="button" class="rk-opt${isOn(value) ? ' on' : ''}"
       data-value="${esc(value)}" aria-pressed="${isOn(value)}" onclick="chooseQuickAccessKey(this)">${html}</button>`;
+  const optLabel = text => `<span class="rk-opt-label" translate="no">${esc(text)}</span>`;
   const inputs = qaData.choices.filter(c => c.kind === 'input');
   const apps = qaData.choices.filter(c => c.kind === 'app');
   // A key set to something not offered here (a channel, a hidden LG app) still shows it.
-  const gone = k.id && !qaData.choices.some(c => c.id === k.id) ? opt(k.id, `<span translate="no">${esc(k.title)}</span>`) : '';
+  const gone = k.id && !qaData.choices.some(c => c.id === k.id)
+    ? opt(k.id, `${rkChoiceIcon(k.id, qaChoiceKind(k.id, qaData.choices), k.title)}${optLabel(k.title)}`) : '';
   const label = t('apps.quickAccess.keyLabel', 'Key {key}', { key: k.key });
   const pick = document.createElement('div');
   pick.className = 'rk-pick';
@@ -313,9 +337,9 @@ function toggleQuickAccessKey(tile) {
       <button type="button" class="rk-close" onclick="closeQuickAccessPicker(true)">${esc(t('apps.remoteKeys.close', 'Close'))}</button></div>
     <div class="rk-opts">${opt(QA_LG, esc(t('apps.remoteKeys.lg', 'As LG has it')))}${opt('', esc(t('apps.quickAccess.reset', 'None')))}${gone}</div>
     ${inputs.length ? `<div class="rk-sub">${esc(t('apps.quickAccess.inputs', 'Inputs'))}</div>
-    <div class="rk-opts">${inputs.map(c => opt(c.id, `<span translate="no">${esc(c.title)}</span>`)).join('')}</div>` : ''}
+    <div class="rk-opts rk-opts-grid">${inputs.map(c => opt(c.id, `${rkChoiceIcon(c.id, 'input', c.title)}${optLabel(c.title)}`)).join('')}</div>` : ''}
     ${apps.length ? `<div class="rk-sub">${esc(t('apps.quickAccess.apps', 'Apps'))}</div>
-    <div class="rk-opts">${apps.map(c => opt(c.id, `${rkIcon(c.id)}<span translate="no">${esc(c.title)}</span>`)).join('')}</div>` : ''}`;
+    <div class="rk-opts rk-opts-grid">${apps.map(c => opt(c.id, `${rkChoiceIcon(c.id, 'app', c.title)}${optLabel(c.title)}`)).join('')}</div>` : ''}`;
   after.after(pick);
   rkAimArrow(tile, pick);
   const on = pick.querySelector('.rk-opt.on') || pick.querySelector('.rk-opt');
@@ -387,8 +411,6 @@ const RK_GROUPS = [
 ];
 // The colour keys' own colours, the one place colour is the key's name.
 const RK_COLOURS = { red: 'var(--red)', green: 'var(--green)', yellow: '#f2c230', blue: 'var(--blue)' };
-// The volume controls' own glyphs; the rest share the play/pause one.
-const RK_MEDIA_GLYPHS = { 'media:ok': '◉', 'media:volumeUp': '🔊', 'media:volumeDown': '🔉', 'media:mute': '🔇' };
 let rkData = null;     // the last remoteKeys answer, for the picker
 let rkOpen = null;     // the key whose picker is open
 let rkCols = 0;        // the columns its grid had when it opened
@@ -403,12 +425,11 @@ function rkIcon(id) {
 function rkDoes(k, kindOf) {
   if (k.action === 'lg') return `<span class="rk-lg">${esc(t('apps.remoteKeys.lg', 'As LG has it'))}</span>`;
   if (k.action === 'nothing') return `<span class="rk-none" aria-hidden="true">⦸</span>${esc(t('apps.remoteKeys.doesNothing', 'Does nothing'))}`;
-  if (kindOf(k.id) === 'switcher') return `<span class="rk-none" aria-hidden="true">⇄</span>${esc(t('apps.remoteKeys.inputSwitcher', 'Input switcher'))}`;
-  if (kindOf(k.id) === 'action') return `<span class="rk-none" aria-hidden="true">◼</span>${esc(k.opens)}`;
-  if (kindOf(k.id) === 'ha') return `<span class="rk-none" aria-hidden="true">⌂</span>${esc(t('apps.remoteKeys.toHomeAssistant', 'To Home Assistant'))}`;
-  if (kindOf(k.id) === 'media') return `<span class="rk-none" aria-hidden="true">${RK_MEDIA_GLYPHS[k.id] || '⏯'}</span>${esc(k.opens)}`;
-  const icon = kindOf(k.id) === 'app' ? rkIcon(k.id) : '';
-  return `${icon}<span translate="no">${esc(k.opens)}</span>`;
+  const kind = kindOf(k.id);
+  if (kind === 'switcher') return `${rkChoiceIcon(k.id, 'switcher', '')}${esc(t('apps.remoteKeys.inputSwitcher', 'Input switcher'))}`;
+  if (kind === 'ha') return `${rkChoiceIcon(k.id, 'ha', '')}${esc(t('apps.remoteKeys.toHomeAssistant', 'To Home Assistant'))}`;
+  if (kind === 'action' || kind === 'media' || kind === 'guide') return `${rkChoiceIcon(k.id, kind, k.opens)}${esc(k.opens)}`;
+  return `${rkChoiceIcon(k.id, kind, k.opens)}<span translate="no">${esc(k.opens)}</span>`;
 }
 
 // The Remote tab: there where the TV has Quick Access or remote keys to set.
@@ -455,7 +476,7 @@ function renderRemoteKeys(d) {
   const tile = k => {
     const dot = RK_COLOURS[k.key] ? `<i class="rk-dot" style="background:${RK_COLOURS[k.key]}"></i>` : '';
     const label = k.action === 'open' && kindOf(k.id) === 'ha' ? t('apps.remoteKeys.toHomeAssistant', 'To Home Assistant')
-      : k.action === 'open' && (kindOf(k.id) === 'media' || kindOf(k.id) === 'action') ? k.opens
+      : k.action === 'open' && (kindOf(k.id) === 'media' || kindOf(k.id) === 'action' || kindOf(k.id) === 'guide') ? k.opens
       : k.action === 'open' ? t('apps.remoteKeys.opens', 'Opens {app}', { app: k.opens })
       : k.action === 'nothing' ? t('apps.remoteKeys.doesNothing', 'Does nothing') : t('apps.remoteKeys.lg', 'As LG has it');
     return `<button type="button" class="rk-key${k.action !== 'lg' ? ' rk-changed' : ''}" data-key="${esc(k.key)}"
@@ -523,19 +544,27 @@ function toggleRemoteKey(tile) {
   const cur = k.action === 'open' ? k.id : k.action;
   const opt = (value, html, extra) => `<button type="button" class="rk-opt${value === cur ? ' on' : ''}${extra || ''}"
       data-value="${esc(value)}" aria-pressed="${value === cur}" onclick="chooseRemoteKey(this)">${html}</button>`;
+  // webOS 11's Input key opens an app, an input or Glasshouse's input bar, by an id of limited length.
+  const nativeInput = k.nativeInput === true;
+  const fits = c => !nativeInput || c.id.length <= k.maxIdLength;
   const media = rkData.choices.filter(c => c.kind === 'media');
-  const inputs = rkData.choices.filter(c => c.kind === 'input');
-  const apps = rkData.choices.filter(c => c.kind === 'app');
+  const inputs = rkData.choices.filter(c => c.kind === 'input' && fits(c));
+  const apps = rkData.choices.filter(c => c.kind === 'app' && fits(c));
+  const optLabel = text => `<span class="rk-opt-label" translate="no">${esc(text)}</span>`;
+  // webOS 11's Input key: Glasshouse's input bar among its choices.
+  const barChoice = nativeInput ? rkData.choices.filter(c => c.kind === 'inputbar').map(c => opt(c.id, `${rkChoiceIcon(c.id, 'inputbar', c.title)}<span>${esc(c.title)}</span>`)).join('') : '';
   // LG's input switcher and Screen off, beside As LG has it and Nothing.
-  const switchers = rkData.choices.filter(c => c.kind === 'switcher')
-    .map(c => opt(c.id, `<span aria-hidden="true">⇄</span> ${esc(t('apps.remoteKeys.inputSwitcher', 'Input switcher'))}`)).join('') +
+  const switchers = nativeInput ? '' : rkData.choices.filter(c => c.kind === 'switcher')
+    .map(c => opt(c.id, `${rkChoiceIcon(c.id, 'switcher', '')}<span>${esc(t('apps.remoteKeys.inputSwitcher', 'Input switcher'))}</span>`)).join('') +
     // On webOS 11, Screen off only on the keys whose presses the TV logs.
-    (k.noScreenOff ? '' : rkData.choices.filter(c => c.kind === 'action').map(c => opt(c.id, `<span aria-hidden="true">◼</span> ${esc(c.title)}`)).join('')) +
+    (k.noScreenOff ? '' : rkData.choices.filter(c => c.kind === 'action').map(c => opt(c.id, `${rkChoiceIcon(c.id, 'action', c.title)}<span>${esc(c.title)}</span>`)).join('')) +
+    // webOS 11: the Guide key, where Glasshouse can change LG's key handler for it.
+    (k.homeGuide ? rkData.choices.filter(c => c.kind === 'guide').map(c => opt(c.id, `${rkChoiceIcon(c.id, 'guide', c.title)}<span>${esc(c.title)}</span>`)).join('') : '') +
     // Only on a key whose presses Home Assistant receives.
-    (k.homeAssistant ? rkData.choices.filter(c => c.kind === 'ha').map(c => opt(c.id, `<span aria-hidden="true">⌂</span> ${esc(c.title)}`)).join('') : '');
+    (k.homeAssistant ? rkData.choices.filter(c => c.kind === 'ha').map(c => opt(c.id, `${rkChoiceIcon(c.id, 'ha', c.title)}<span>${esc(c.title)}</span>`)).join('') : '');
   // A key set to something no longer offered (an app since removed) still shows it.
   const gone = k.action === 'open' && !rkData.choices.some(c => c.id === k.id)
-    ? opt(k.id, `<span translate="no">${esc(k.opens)}</span>`) : '';
+    ? opt(k.id, `${rkChoiceIcon(k.id, qaChoiceKind(k.id, rkData.choices), k.opens)}${optLabel(k.opens)}`) : '';
   const pick = document.createElement('div');
   pick.className = 'rk-pick';
   pick.setAttribute('role', 'group');
@@ -544,14 +573,16 @@ function toggleRemoteKey(tile) {
       <button type="button" class="rk-close" onclick="closeRemoteKeyPicker(true)">${esc(t('apps.remoteKeys.close', 'Close'))}</button></div>
     ${k.blocksApp ? `<div class="pv-note">${esc(t('apps.remoteKeys.blocksAlexa', 'Setting this key stops Alexa from opening until it is As LG has it again. Amazon still shows that Alexa is loading for a few seconds.'))}</div>` : ''}
     ${k.replacesVoice ? `<div class="pv-note">${esc(t('apps.remoteKeys.replacesVoice', 'Set to anything else, this button no longer starts voice control. As LG has it brings it back.'))}</div>` : ''}
+    ${k.homeGuide ? `<div class="pv-note">${esc(t('apps.remoteKeys.guideNative', 'On this TV the Guide key needs a change to LG’s key handler. Setting it restarts the TV’s screen once, and again each time the TV starts.'))}</div>` : ''}
+    ${k.nativeInput ? `<div class="pv-note">${esc(t('apps.remoteKeys.inputNative', 'On this TV the Input key needs a change to LG’s key handler. Setting it, or setting it back to LG’s list, restarts the TV’s screen once, and the change is made again each time the TV starts.'))}</div>` : ''}
     ${k.turnsOffVoice ? `<div class="pv-note">${esc(t('apps.remoteKeys.turnsOffVoice', 'Setting this key switches off LG\'s voice assistant, so voice search, the AI assistant and the microphone stop working until it is As LG has it again.'))}</div>` : ''}
-    <div class="rk-opts">${opt('lg', esc(t('apps.remoteKeys.lg', 'As LG has it')))}${k.noNothing ? '' : opt('nothing', `<span aria-hidden="true">⦸</span> ${esc(t('apps.remoteKeys.nothing', 'Nothing'))}`)}${switchers}${gone}</div>
+    <div class="rk-opts">${opt('lg', esc(t('apps.remoteKeys.lg', 'As LG has it')))}${k.noNothing ? '' : opt('nothing', `<span aria-hidden="true">⦸</span> ${esc(t('apps.remoteKeys.nothing', 'Nothing'))}`)}${switchers}${barChoice}${gone}</div>
     ${media.length ? `<div class="rk-sub">${esc(t('apps.remoteKeys.buttons', 'Buttons'))}</div>
-    <div class="rk-opts">${media.map(c => opt(c.id, esc(c.title))).join('')}</div>` : ''}
+    <div class="rk-opts rk-opts-grid">${media.map(c => opt(c.id, `${rkChoiceIcon(c.id, 'media', c.title)}<span class="rk-opt-label">${esc(c.title)}</span>`)).join('')}</div>` : ''}
     ${inputs.length ? `<div class="rk-sub">${esc(t('apps.remoteKeys.inputs', 'Inputs'))}</div>
-    <div class="rk-opts">${inputs.map(c => opt(c.id, `<span translate="no">${esc(c.title)}</span>`)).join('')}</div>` : ''}
+    <div class="rk-opts rk-opts-grid">${inputs.map(c => opt(c.id, `${rkChoiceIcon(c.id, 'input', c.title)}${optLabel(c.title)}`)).join('')}</div>` : ''}
     ${apps.length ? `<div class="rk-sub">${esc(t('apps.remoteKeys.apps', 'Apps'))}</div>
-    <div class="rk-opts">${apps.map(c => opt(c.id, `${rkIcon(c.id)}<span translate="no">${esc(c.title)}</span>`)).join('')}</div>` : ''}`;
+    <div class="rk-opts rk-opts-grid">${apps.map(c => opt(c.id, `${rkChoiceIcon(c.id, 'app', c.title)}${optLabel(c.title)}`)).join('')}</div>` : ''}`;
   after.after(pick);
   rkAimArrow(tile, pick);
   const on = pick.querySelector('.rk-opt.on') || pick.querySelector('.rk-opt');
@@ -937,9 +968,52 @@ function restoreHome() { return postHomeScreen('btn-home-restore', { restore: tr
 async function toggleHomeLayoutAllowed(btnId) {
   const b = q(btnId);
   const turnOn = !(b && b.dataset.on);
-  if (turnOn && !confirm(t('apps.home.exp.confirm', 'Switch on Home screen layout?\n\nOn webOS 10 Glasshouse lays its own Home screen layout over LG\u2019s each time the TV starts, so LG\u2019s can show for a moment first, and it has been tried on only a few TVs. Put back LG\u2019s Home screen, or switching this off, undoes it.'))) return;
+  if (turnOn && !confirm(t('apps.home.exp.confirm', 'Switch on Home screen layout?\n\nOn webOS 10 Glasshouse lays its own Home screen layout over LG’s each time the TV starts, so LG’s can show for a moment first, and it has been tried on only a few TVs. Put back LG’s Home screen, or switching this off, undoes it.'))) return;
   await postHomeScreen(btnId, { allow: turnOn });
   if (typeof loadUpdate === 'function') loadUpdate();
+}
+
+function renderBackgroundServices(d) {
+  const svcsList = q('apps-services-list');
+  const svcsDisc = q('disc-system-services');
+  const svcsSummary = q('apps-services-summary');
+  const svcs = d.services || [];
+  if (!svcsDisc) return;
+  if (!svcs.length) { svcsDisc.hidden = true; return; }
+  svcsDisc.hidden = false;
+  const numDisabled = svcs.filter(s => s.disabled).length;
+  if (svcsSummary) {
+    svcsSummary.textContent = numDisabled > 0
+      ? t('apps.services.disabledOf', '{disabled} disabled of {n}', { disabled: numDisabled, n: svcs.length })
+      : svcs.length === 1 ? t('apps.services.one', '1 service') : t('apps.services.count', '{n} services', { n: svcs.length });
+  }
+  if (!svcsList) return;
+  svcsList.innerHTML = svcs.map(svc => {
+    const id = esc(svc.id);
+    const title = esc(svc.title);
+    const badge = esc(svc.badge || '');
+    const desc = esc(svc.desc || '');
+    const unit = esc(svc.unit || '');
+    const isDisabled = !!svc.disabled;
+    const stillRunning = isDisabled && svc.running;
+    return `<div class="prot-row">
+      <div class="prot-main">
+        <div class="prot-title">${title} <span class="prot-sub">&middot; ${unit}</span></div>
+        <div class="prot-desc">${desc}</div>
+      </div>
+      <div class="prot-status">
+        ${badge ? `<span class="app-badge">${badge}</span>` : ''}
+        ${renderToggle({
+          id: 'btn-svc-' + id,
+          cls: stillRunning ? 'warn' : isDisabled ? 'idle' : 'good',
+          label: stillRunning ? t('apps.service.stillRunning', 'Disabled, still running') : isDisabled ? t('apps.service.disabled', 'Disabled') : t('apps.service.active', 'Active'),
+          disabled: !d.writable,
+          onclick: "toggleService('" + id + "', " + (!isDisabled) + ")",
+          attrs: stillRunning ? `title="${esc(t('apps.service.restarted', 'Switched off, but something on the TV has started it again.'))}"` : ''
+        })}
+      </div>
+    </div>`;
+  }).join('');
 }
 
 function renderPreload(d) {

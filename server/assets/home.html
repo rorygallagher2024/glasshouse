@@ -80,7 +80,8 @@ html.resting #wall .layer{-webkit-animation-play-state:paused;animation-play-sta
 #source{-webkit-flex:1 1 auto;flex:1 1 auto;min-width:0;padding-left:24px;border-left:1px solid #2a2825;padding-bottom:2px}
 #source.none{visibility:hidden}
 #srcKind{font-size:23px;color:#e9ad55}
-#srcTitle{font-family:'Outfit',sans-serif;font-size:70px;line-height:1;font-weight:400;letter-spacing:-1px;margin:8px 0 12px;
+/* Room below the line for descenders, which overflow:hidden cut at line-height 1 ("g" in "Logik"); the margin gives it back. */
+#srcTitle{font-family:'Outfit',sans-serif;font-size:70px;line-height:1;font-weight:400;letter-spacing:-1px;margin:8px 0 4px;padding-bottom:8px;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #srcVia{font-size:26px;color:#a39d93}
 
@@ -279,6 +280,45 @@ html.resting #wall .layer{-webkit-animation-play-state:paused;animation-play-sta
 /* Dark monochrome icons on transparent (AirPlay on webOS 4) sit on warm white
    so a black background never swallows them. */
 .app img.dark-ico,.chip img.dark-ico{background:#ece7df}
+
+/* Apps as wide cards (layout appCards): a dark 16:9 card with the app's logo
+   from the card icon folder, or its own icon centred where it has none. The
+   ring and the lift are on the card; the name shows under the one in focus. */
+.cards .app{width:300px;padding:12px 12px 10px}
+.cards .tile.app,.cards .tile.app.focus{background:none;outline-color:transparent}
+.cards .app .card{position:relative;width:276px;height:155px;margin:0 auto;border-radius:18px;background:#000;
+  display:-webkit-flex;display:flex;-webkit-align-items:center;align-items:center;-webkit-justify-content:center;justify-content:center;
+  -webkit-transition:-webkit-transform .15s;transition:transform .15s}
+/* The ring is a rounded border on a layer just outside the card, not an
+   outline: an outline's offset corner is tighter than the card's and drew
+   rough on a G3 (webOS 10.3). 24px is the card's 18px plus the 6px gap. */
+.cards .app .card:after{content:'';position:absolute;top:-6px;left:-6px;right:-6px;bottom:-6px;border:3px solid transparent;
+  border-radius:24px;pointer-events:none;-webkit-transition:border-color .12s;transition:border-color .12s}
+.cards .app .card img.logo{width:100%;height:100%;margin:0;border-radius:18px;object-fit:contain}
+.cards .app .card img,.cards .app .card .mono{width:92px;height:92px;line-height:92px;font-size:38px}
+.cards .app.focus .card{-webkit-transform:scale(1.06);transform:scale(1.06)}
+.cards .app.focus .card:after{border-color:#ece7df}
+/* Room for the focus glow above and below the cards: the row's box hides what
+   is outside it, which cut the glow off square. The negative margin keeps the
+   rows where they were. The sides stay as they are, as scrolling counts on
+   their 22px; the glow is kept within them. */
+.cards .row[data-key="app"] .wrap{padding-top:36px;padding-bottom:36px;margin-top:-30px;margin-bottom:-30px}
+/* The shading where the cards run on: a soft oval behind the arrow, clear
+   well inside every side. The row is taller than the cards, for the glow, and
+   stops short of the screen's edge, so a shade still dark at its sides showed
+   as a straight line above and below the cards. */
+.cards .row[data-key="app"] .wrap .edge{width:200px}
+.cards .row[data-key="app"] .wrap .edge.l{background:radial-gradient(ellipse 50% 40% at 50% 50%,rgba(0,0,0,.6),rgba(0,0,0,.3) 50%,rgba(0,0,0,.08) 80%,rgba(0,0,0,0))}
+.cards .row[data-key="app"] .wrap .edge.r{background:radial-gradient(ellipse 50% 40% at 50% 50%,rgba(0,0,0,.6),rgba(0,0,0,.3) 50%,rgba(0,0,0,.08) 80%,rgba(0,0,0,0))}
+.cards .row[data-key="app"] .wrap .edge.l:after{left:76px}
+.cards .row[data-key="app"] .wrap .edge.r:after{right:76px}
+.cards .app .nm{font-size:24px;margin-top:14px;opacity:0;-webkit-transition:opacity .12s;transition:opacity .12s}
+.cards .app.focus .nm,.arranging.cards .app .nm{opacity:1}
+.no-app-labels.cards .app{width:300px}
+.alternative.cards .app{width:268px}
+.alternative.cards .app .card{width:244px;height:137px}
+/* The pulse on the app in focus (layout focusPulse) and how see-through the
+   cards are (layout cardFade) follow the owner's choices: see applyCardLook. */
 
 .dev{width:470px;min-height:142px;display:-webkit-flex;display:flex;-webkit-flex-direction:column;flex-direction:column;
   -webkit-justify-content:space-between;justify-content:space-between}
@@ -808,6 +848,12 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
   var beatTimer = null;
   var CLOSE_BEHIND_MS = 120000;
   var coveredSince = 0;
+  /*
+   * The screen saver up at the last beat. The key that ends it reaches the
+   * page too, before the next beat says it has gone: Back there opened
+   * Recents and OK the app in focus. That key only wakes the screen.
+   */
+  var saverUp = false;
   function rest(on) {
     var cl = document.documentElement.classList;
     if (on === cl.contains('resting')) return;
@@ -1209,6 +1255,12 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     return a.icon ? appImgTag(a.icon) :
       '<span class="mono">' + esc(a.lg ? 'LG' : String(a.title).charAt(0)) + '</span>';
   }
+  function cardsOn() { return !!(layout && layout.appCards === true); }
+  // As a card, its logo from the card icon folder, or its own icon on the card.
+  function appArt(a) {
+    if (!cardsOn()) return appIcon(a);
+    return '<div class="card">' + (a.card ? '<img class="logo" src="' + esc(a.card) + '" alt="">' : appIcon(a)) + '</div>';
+  }
   // The first four of the folder's icons, as the tile that opens it.
   function folderIcon(inside) {
     var html = '';
@@ -1231,10 +1283,12 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
   var TILE = {
     app: function (a, i) {
       if (a.folder) {
-        return '<div class="tile app" data-c="' + i + '">' + folderIcon(a.folder) + '<div class="nm">' + esc(a.title) + '</div></div>';
+        var fold = folderIcon(a.folder);
+        return '<div class="tile app" data-c="' + i + '">' + (cardsOn() ? '<div class="card">' + fold + '</div>' : fold) +
+          '<div class="nm">' + esc(a.title) + '</div></div>';
       }
       var cls = 'tile app' + (hidden('app', a.id) ? ' hidden' : inFolder('app', a.id) ? ' folded' : '');
-      return '<div class="' + cls + '" data-c="' + i + '">' + appIcon(a) + '<div class="nm">' + esc(a.title) + '</div>' +
+      return '<div class="' + cls + '" data-c="' + i + '">' + appArt(a) + '<div class="nm">' + esc(a.title) + '</div>' +
         hiddenLabel + folderLabel + '</div>';
     },
     dev: function (d, i) {
@@ -2131,7 +2185,56 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
       if (outside) state.col[kind] = dc > 0 ? span[0] : span[1];
       else state.col[kind] = Math.max(state.arranging ? -1 : 0, Math.min(items(kind).length - 1, c + dc));
     }
+    if (state.row !== fromRow || colOf(rowKey()) !== fromCol) navTick();
     applyFocus();
+  }
+
+  /*
+   * The sound as focus moves (layout navSound, lib/home navSoundFile), loaded
+   * at the first move after it is chosen. The context is made then too, as
+   * that follows a key.
+   */
+  var navAudio = null, navBuffer = null, navBufferFor = '';
+  // key: the sound's name, and for the own sound its revision, so one replaced is loaded again.
+  function loadNavSound(name, key) {
+    navBufferFor = key;
+    navBuffer = null;
+    var x = new XMLHttpRequest();
+    x.open('GET', '/api/home/nav-sound?name=' + encodeURIComponent(name) + '&v=' + encodeURIComponent(key));
+    x.responseType = 'arraybuffer';
+    x.onload = function () {
+      if (x.status !== 200 || !navAudio) return;
+      try {
+        navAudio.decodeAudioData(x.response, function (b) { if (navBufferFor === key) navBuffer = b; }, function () {});
+      } catch (e) {}
+    };
+    x.send();
+  }
+  function navTick() {
+    var name = layout && layout.navSound;
+    if (name !== 'click' && name !== 'rollover' && name !== 'own') return;
+    try {
+      var Ctx = window.AudioContext || window.webkitAudioContext;
+      if (!Ctx) return;
+      if (!navAudio) navAudio = new Ctx();
+      if (navAudio.state === 'suspended' && navAudio.resume) navAudio.resume();
+      var key = name === 'own' ? 'own@' + (layout.ownSound ? layout.ownSound.rev : '') : name;
+      if (name === 'own' && !layout.ownSound) return;
+      if (navBufferFor !== key) loadNavSound(name, key);
+      if (!navBuffer) return;
+      var src = navAudio.createBufferSource();
+      src.buffer = navBuffer;
+      // The bundled sounds at half volume (-6 dB): at full, every move cut
+      // through what was playing. An owner's own file plays as they made it.
+      if (name === 'own' || !navAudio.createGain) src.connect(navAudio.destination);
+      else {
+        var gain = navAudio.createGain();
+        gain.gain.value = 0.5;
+        src.connect(gain);
+        gain.connect(navAudio.destination);
+      }
+      src.start(0);
+    } catch (e) {}
   }
 
   // Medium or Large beside the clock; in the tile, the tile sets its size.
@@ -2145,6 +2248,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
       (finder.open ? ' finding' : '') + (finder.typing ? ' typing' : '') + (searchOn() ? '' : ' no-search') + (folder.open ? ' folder' : '') +
       (!layout || layout.showClock === false ? ' no-clock' : '') + (layout && layout.rowsBottom === true ? ' rows-bottom' : '') +
       (layout && layout.view === 'alternative' ? ' alternative' : '') + (layout && layout.showAppLabels === false ? ' no-app-labels' : '') +
+      (cardsOn() ? ' cards' : '') + (layout && layout.focusPulse === true ? ' pulse' : '') +
       (player.open ? ' playing' : '') + (adder.open ? ' adding' : '') +
       (adder.open && adder.typing ? ' adtyping' : '') + (guide.open ? ' guiding' : '') + previewSizeClass();
     // Home Assistant's media player shows IPTV while the guide or a player is up: told at once, not at the next heartbeat.
@@ -3024,7 +3128,9 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
    * numbers reach the same channels however the row would reorder itself.
    */
   var player = { open: false, okDown: false, list: false, items: [], idx: 0, bandTimer: null, listTimer: null, group: 0, groups: [], lcol: 0,
-    digits: '', digitTimer: null, failed: false, askLive: false, askTimer: null, askZap: null };
+    digits: '', digitTimer: null, failed: false, askLive: false, askTimer: null, askZap: null,
+    // Opened from the guide: where it was, for Back to put it back (guideReturn).
+    fromGuide: null };
   var BAND_MS = 5000, LIST_IDLE_MS = 10000, DIGIT_MS = 2000, ZAP_DWELL_MS = 600, EXPAND_MS = 280;
   var zapTimer = null;
 
@@ -3066,6 +3172,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
   function sectionOf(it) { return tvLineup && it.sid ? it.sid : it.group || ''; }
 
   function openPlayer(it) {
+    player.fromGuide = null;
     var adopt = tilePreview.target && tilePreview.target.tv && tilePreview.target.item.id === it.id && tilePreview.playing && !tilePreview.blank &&
       // An MPEG-TS preview opens again full screen when live TV may pause: from the recording, which can.
       !(data && data.iptvStatus && data.iptvStatus.timeshift && tvStream.format === 'MPEG-TS' && !tvStream.timeshift);
@@ -3183,9 +3290,11 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
 
   // Back to Home, the tile in focus. With Live preview on, the picture
   // shrinks back to the preview and goes on playing there.
-  function closePlayer() {
+  function closePlayer(toGuide) {
     if (!player.open) return;
     var it = playerChannel();
+    var back = toGuide ? player.fromGuide : null;
+    player.fromGuide = null;
     player.open = false;
     player.list = false;
     clearTimeout(player.bandTimer);
@@ -3206,7 +3315,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
       }
     }
     // A paused picture is not left playing on the row.
-    var keep = layout.livePreview === true && tvStream.playing && !tvStream.paused && !document.hidden && it;
+    var keep = !back && layout.livePreview === true && tvStream.playing && !tvStream.paused && !document.hidden && it;
     if (keep) {
       tvStream.muted = previewMuted();
       $('pvVideo').muted = tvStream.muted;
@@ -3225,6 +3334,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     stageClass();
     render();
     renderNow();
+    if (back) guideReturn(back, it);
   }
 
   function showBand(stay) {
@@ -3535,7 +3645,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
       if (player.digits) return clearDigits();
       if (player.list) return closeList();
       if (tsBehindLive()) return askLive();
-      return closePlayer();
+      return closePlayer(true);
     }
     if (k >= 48 && k <= 57) return digit(k - 48);
     if (k >= 96 && k <= 105) return digit(k - 96);
@@ -3634,7 +3744,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     return all.filter(function (x) { return sectionOf(x) === key; });
   }
 
-  function openGuide(fromId) {
+  function openGuide(fromId, keepRead) {
     var all = guideAll();
     if (!all.length) return;
     stopPreview();
@@ -3650,7 +3760,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     guide.start = Math.floor(Date.now() / HALF_HOUR) * HALF_HOUR;
     guide.at = Date.now();
     // Read afresh each time it opens: the server refreshes the guide meanwhile.
-    clearGuideCache();
+    if (!keepRead) clearGuideCache();
     stageClass();
     renderGuide();
   }
@@ -3861,9 +3971,34 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     var p = guideFocus(it), now = Date.now();
     if (p && p.start > now) return toast(p.title, t('home.tv.startsAt', 'Starts at {time}', { time: hm(new Date(p.start)) }));
     if (p && p.end <= now) return toast(p.title, t('home.tv.finished', 'That has finished'));
+    var back = { group: guide.groups[guide.group], fromTop: guide.row - guide.top, start: guide.start };
     guide.open = false;
     stageClass();
     openPlayer(it);
+    player.fromGuide = back;
+  }
+
+  /*
+   * Back from a channel picked in the guide: the guide as it was left, its
+   * tab, place and hours, on the channel now playing, which may have been
+   * changed meanwhile. What it has read is kept unless it is getting old.
+   */
+  var GUIDE_KEEP_MS = 10 * 60000;
+  function guideReturn(back, it) {
+    if (!it) return;
+    openGuide(it.id, Date.now() - guide.loadedAt < GUIDE_KEEP_MS);
+    if (!guide.open) return;
+    var g = guide.groups.indexOf(back.group), list = g === -1 ? null : guideTabList(back.group);
+    var row = list ? indexIn(list, it.id) : -1;
+    if (row !== -1) {
+      guide.group = g;
+      guide.list = list;
+      guide.row = row;
+    }
+    guide.top = Math.max(0, guide.row - back.fromTop);
+    // Hours ahead stay as they were; ones gone by move on to now.
+    guide.start = Math.max(back.start, guide.start);
+    renderGuide();
   }
 
   // The row under the pointer, and the programme in it, are the focus.
@@ -4864,6 +4999,14 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
   // ---------------------------------------------------------------- input
 
   function onKeyDown(e) {
+    if (saverUp) {
+      e.preventDefault();
+      saverUp = false;
+      if (e.keyCode === KEY.back) backDown = true;
+      // Heard now rather than at the next beat, so Home's background comes back at once.
+      scheduleBeat(0);
+      return;
+    }
     stopPointing();
     landAll();
     if (!data || !layout) return;
@@ -4928,7 +5071,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
       if (recents.open || recents.loading) return closeRecents();
       if (state.arranging && state.held) { state.held = false; return toggleHidden(); }
       if (state.arranging) return setArranging(false);
-      if (data && data.supported && data.supported.standalone) {
+      if (data && data.supported && data.supported.standalone && !data.supported.lgHomeOnClose) {
         return window.close();
       }
       return openRecents();
@@ -5393,13 +5536,32 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
    * LG's screen saver never comes over a playing video: while the wallpaper
    * plays, a B8 (webOS 4.4) and a C2 (webOS 9.2) refused turnOnScreenSaver
    * and asked for no idle screen saver in over 6 minutes, leaving Home's
-   * clock and tiles on an OLED panel. So after this long without a key or
-   * the pointer, the video fades out and lets the decoder go, and the TV's
-   * own screen saver comes as it does over a still background. A key, the
-   * pointer or Home coming back plays it again.
+   * clock and tiles on an OLED panel. Where the TV's screen saver time is
+   * known (the heartbeat's saverIdleMs, LG's setting), the video fades out
+   * as it runs out, lets the decoder go and asks the server to start the
+   * screen saver: the TV's own timer does not run while a video plays, so it
+   * would only start then. Where it is not known, the video fades out after 2
+   * minutes without a key or the pointer, and the TV's own screen saver comes
+   * as it does over a still background. A key, the pointer or Home coming
+   * back plays it again.
    */
   var WALL_VIDEO_IDLE_MS = 120000;
-  function wallVideoIdle() { return Date.now() - wallVideoInputAt >= WALL_VIDEO_IDLE_MS; }
+  // The fade (WALL_VIDEO_FADE_S), so the screen saver starts at the TV's time.
+  var WALL_VIDEO_SAVER_LEAD_MS = 3000;
+  var saverIdleMs = null;
+  function wallVideoIdleMs() {
+    return saverIdleMs ? Math.max(WALL_VIDEO_IDLE_MS, saverIdleMs - WALL_VIDEO_SAVER_LEAD_MS) : WALL_VIDEO_IDLE_MS;
+  }
+  function noteSaverIdleMs(ms) {
+    var next = typeof ms === 'number' && ms > 0 ? ms : null;
+    if (next === saverIdleMs) return;
+    var wasIdle = wallVideoIdle();
+    saverIdleMs = next;
+    scheduleWallVideoIdle();
+    // A longer time can bring back a video already let go.
+    if (wasIdle && !wallVideoIdle() && wallChoice === 'video') updateWall();
+  }
+  function wallVideoIdle() { return Date.now() - wallVideoInputAt >= wallVideoIdleMs(); }
   function scheduleWallVideoIdle() {
     clearTimeout(wallVideoIdleTimer);
     wallVideoIdleTimer = null;
@@ -5411,8 +5573,12 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
       // Faded out first, as at a clip's end, rather than cut to black.
       wallVideoShow(0);
       if ($('wall-caption')) $('wall-caption').textContent = '';
-      setTimeout(function () { if (wallVideoIdle()) updateWall(); }, WALL_VIDEO_FADE_S * 1000);
-    }, Math.max(0, WALL_VIDEO_IDLE_MS - (Date.now() - wallVideoInputAt)) + 50);
+      setTimeout(function () {
+        if (!wallVideoIdle()) return;
+        updateWall();
+        if (saverIdleMs) postJson('/api/home/idle-saver', {}, function () {});
+      }, WALL_VIDEO_FADE_S * 1000);
+    }, Math.max(0, wallVideoIdleMs() - (Date.now() - wallVideoInputAt)) + 50);
   }
   function noteWallVideoInput() {
     var wasIdle = wallVideoIdle();
@@ -6159,6 +6325,40 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     $('scrim').style.opacity = String(n / 100 * (anim.style === 'off' ? 1 : ANIM_SCRIM));
   }
 
+  /*
+   * The cards' fade and the pulse, in the accent colour: the ring itself
+   * breathes between the accent and a dimmer one, with a glow around it.
+   */
+  var cardLookShown = null;
+  function applyCardLook(l) {
+    var accent = (l.colours && l.colours.accent) || '#ece7df';
+    var fade = typeof l.cardFade === 'number' ? l.cardFade : 20;
+    var key = accent + '|' + fade;
+    if (key === cardLookShown) return;
+    cardLookShown = key;
+    var rgb = hexRgb(accent), shown = (100 - fade) / 100;
+    // The card's ring is a border (see .card:after), a square tile's an outline.
+    function frames(prop) {
+      return '{0%,100%{' + prop + ':' + rgbaStr(rgb, 1, '.55') + ';box-shadow:0 0 6px 0 ' + rgbaStr(rgb, 1, '.15') + '}' +
+        '50%{' + prop + ':' + accent + ';box-shadow:0 0 12px 1px ' + rgbaStr(rgb, 1, '.35') + '}}';
+    }
+    var cardFrames = frames('border-color'), tileFrames = frames('outline-color');
+    var breathe = ' 1.8s ease-in-out infinite;';
+    var el = $('card-look');
+    if (!el) {
+      el = document.createElement('style');
+      el.id = 'card-look';
+      document.head.appendChild(el);
+    }
+    el.textContent = '.cards .tile.app,.cards .row:not(.active) .tile.app{opacity:' + shown + '}' +
+      '.cards .tile.app.focus{opacity:1}' +
+      '.cards .app.focus .card:after{border-color:' + accent + '}' +
+      '@-webkit-keyframes cardPulse' + cardFrames + '@keyframes cardPulse' + cardFrames +
+      '@-webkit-keyframes tilePulse' + tileFrames + '@keyframes tilePulse' + tileFrames +
+      '.pulse.cards .app.focus .card:after{-webkit-animation:cardPulse' + breathe + 'animation:cardPulse' + breathe + '}' +
+      '.pulse:not(.cards) .tile.app.focus{-webkit-animation:tilePulse' + breathe + 'animation:tilePulse' + breathe + '}';
+  }
+
   function applyColours(c, highlight) {
     var key = (c ? c.text + c.accent : '') + '|' + (highlight || '');
     if (key === lookShown) return;
@@ -6219,6 +6419,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
       setFadeOn(layout.fade === true);
       applyMotion(layout);
       applyColours(layout.colours, layout.tileHighlight);
+      applyCardLook(layout);
       applyDarkening(layout.darkening);
       stageClass();
       renderNow();
@@ -6376,6 +6577,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
         // webOS 4: switched off, the standalone view closes itself, as Back does.
         if (r.enabled === false && standalone) return window.close();
         rest(!!r.covered);
+        saverUp = !!(r.covered && r.saver);
         if (r.saver) scheduleBeat(SAVER_BEAT_MS);
         renderWeather(r.weather || null);
         renderRemoteBattery(r.remoteBattery || null);
@@ -6386,6 +6588,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
         readWallpapers(r.wallpapers);
         renderPicture();
         noteWallVideoOutput(r.wallVideoOnScreen);
+        noteSaverIdleMs(r.saverIdleMs);
         updateWall();
         $('fault').className = '';
         // The TV's setting can change while the view is open, so the heartbeat
@@ -6426,6 +6629,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     initialEscape = false;
     clearTimeout(okTimer);
     okDownAt = 0; backDown = false;
+    saverUp = false;
     closeRecents();
     closeFolder();
     if (adder.open) closeAdder();
