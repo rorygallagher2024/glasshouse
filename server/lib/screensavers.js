@@ -2071,14 +2071,41 @@ function launchScreensaverApp(cb) {
         var fgId = fg && fg.returnValue !== false && fg.appId ? inputKeyFn(fg.appId) : '';
         if (!fgId || names.isHdmiKey(fgId) || fgId === 'livetv') return cb(false);
         console.log('screensaver: launching the screen saver app after a refused request');
-        lunaFn('com.webos.applicationManager/launch', { id: SCREENSAVER_APP_ID }, function (r) {
-          var ok = !!(r && r.returnValue);
-          if (ok) setLaunched(true);
-          cb(ok);
-        });
+        launchApp(cb);
       });
     });
   }, true);
+}
+
+// The app itself, with the remote's keys watched to close it (setLaunched).
+function launchApp(cb) {
+  lunaFn('com.webos.applicationManager/launch', { id: SCREENSAVER_APP_ID }, function (r) {
+    var ok = !!(r && r.returnValue);
+    if (ok) setLaunched(true);
+    cb(ok);
+  });
+}
+
+/*
+ * Over an HDMI input with no signal, for lib/nosignalsaver.js. There LG's
+ * idle timer starts no screen saver, and tvpower answers turnOnScreenSaver
+ * true and then drops it ("Request Screen Saver", then "Screen On" within
+ * milliseconds) (G2, webOS 7.3.1), so the app is launched as after a refused
+ * request. cb(true) once one this server launched shows.
+ */
+function launchOverNoSignal(cb) {
+  if (!lunaFn || switching()) return cb(false);
+  if (launchedDirectly) return cb(true);
+  lunaFn('com.webos.service.tvpower/power/getPowerState', {}, function (pw) {
+    var currentPower = power.mapState(pw && pw.state);
+    if (!pw || pw.returnValue === false || power.isScreenSaver(currentPower) || !currentPower.screenOn ||
+        (pw.processing && pw.processing !== 'Screen On')) return cb(false);
+    ensureScreensaverKnown(function (known) {
+      if (!known) return cb(false);
+      console.log('screensaver: launching the screen saver app over an input with no signal');
+      launchApp(cb);
+    });
+  });
 }
 
 /*
@@ -2273,6 +2300,7 @@ module.exports = {
   onLaunchedChange: onLaunchedChange,
   keyPressed: keyPressed,
   pointerUsed: pointerUsed,
+  launchOverNoSignal: launchOverNoSignal,
   adoptLaunched: adoptLaunched,
   trigger: trigger
 };

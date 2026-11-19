@@ -139,6 +139,7 @@ var sysinfo = require('./lib/sysinfo');
 var sshKeys = require('./lib/sshkeys');
 var screentime = require('./lib/screentime');
 var saverPowerOff = require('./lib/saverpoweroff');
+var noSignalSaver = require('./lib/nosignalsaver');
 var remoteBattery = require('./lib/remotebattery');
 var backup = require('./lib/backup');
 var backupParts = require('./lib/backup-parts');
@@ -787,9 +788,11 @@ remotebuttons.init({
   },
   onAnyKey: function (code) {
     screensavers.keyPressed(code);
+    noSignalSaver.keyPressed();
   },
   onPointer: function () {
     screensavers.pointerUsed();
+    noSignalSaver.keyPressed();
   }
 });
 
@@ -2339,6 +2342,14 @@ if (!CLI_MODE) {
     launchedShowing: screensavers.launchedShowing, launchedRunning: screensavers.launchedRunning });
   screensavers.onLaunchedChange(saverPowerOff.launchedChanged);
   saverPowerOff.start();
+  noSignalSaver.init({
+    luna: luna,
+    telemetry: telemetry,
+    screensavers: screensavers,
+    minutes: function () { return CONFIG.screensaverNoSignalMinutes; },
+    watchKeys: function (on) { if (!on || remotebuttons.isSupported()) remotebuttons.want('nosignal', on); }
+  });
+  noSignalSaver.start();
 
   if (glasshouseHome && homePicture) startGlasshouseHome();
   else releaseUnloadedHome();
