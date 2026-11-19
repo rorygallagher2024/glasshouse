@@ -100,6 +100,8 @@ function showTab(name) {
     if (cpuPanelOpen()) { loadProcesses(); startCpuPolling(); }
     else stopCpuPolling();
     if (typeof perfViewChanged === 'function') perfViewChanged();
+    if (typeof storageViewChanged === 'function') storageViewChanged();
+    if (typeof hdmiViewChanged === 'function') hdmiViewChanged();
   }
   if (name === 'apps') { loadApps(); loadCatalog(false); pollInstall(); loadRestoredApps(); }
   if (name === 'remote') loadApps();

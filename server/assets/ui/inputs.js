@@ -92,8 +92,12 @@ function renderInputList() {
         ? `<span class="pill idle">${esc(t('home.leftOut', 'Left out'))}</span>`
         : d.unused
           ? `<span class="inp-status"><i></i>${esc(t('home.dev.unused', 'Nothing connected'))}</span>`
-          : `<span class="inp-status conn"><i></i>${esc(t('home.dev.connected', 'Connected'))}</span>`;
-    return `<div class="inp-card home-tile${!isShown || leftOut ? ' home-hidden' : ''}${d.unused ? ' inp-unused' : isActionTile ? '' : ' inp-conn'}">
+          // Plugged in by the TV's count, but nothing powered on the cable,
+          // as the Metrics tab's HDMI view shows it.
+          : d.noSignal
+            ? `<span class="inp-status nosig"><i></i>${esc(t('home.dev.noSignal', 'No signal'))}</span>`
+            : `<span class="inp-status conn"><i></i>${esc(t('home.dev.connected', 'Connected'))}</span>`;
+    return `<div class="inp-card home-tile${!isShown || leftOut ? ' home-hidden' : ''}${d.unused ? ' inp-unused' : isActionTile || d.noSignal ? '' : ' inp-conn'}">
       <div class="inp-head">
         <div class="inp-ico">${ico}</div>
         <div class="inp-txt">
