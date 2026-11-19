@@ -944,6 +944,24 @@ function hdmiSources(status, map) {
 }
 
 /*
+ * Whether each HDMI input has a powered source on its cable and a picture,
+ * by the input number, from the receivers' own files: the same reading the
+ * HDMI view uses. cb({ 1: { powered, locked } }); an input whose driver has
+ * no +5V field (the HDMI 2.0 driver of webOS 4) is left out.
+ */
+function hdmiSignalByInput(cb) {
+  hdmiReceiverMap(function (map) {
+    var status = readHdmiStatus();
+    var out = {};
+    hdmiSources(status, map).forEach(function (src) {
+      var raw = status[src.receiver] || '';
+      out[src.input] = { powered: src.powered, locked: /PHY\s+Lock\[1\]/i.test(raw) || realtekField(raw, 'phy_lock_status') === '1' };
+    });
+    cb(out);
+  });
+}
+
+/*
  * The receiver, /proc/lg/hdmi20/port<n>, behind each HDMI input, from the
  * input map LG's input service loads from configd. The TV chooses among
  * numbered tables by an index it does not expose; table 0 matched every input
@@ -2619,6 +2637,7 @@ module.exports = {
   hdmiReceiverMap: hdmiReceiverMap,
   hdmiLinks: hdmiLinks,
   hdmiSources: hdmiSources,
+  hdmiSignalByInput: hdmiSignalByInput,
   readHdmiStatus: readHdmiStatus,
   getPictureEngineInfo: getPictureEngineInfo,
   signalFormat: signalFormat,

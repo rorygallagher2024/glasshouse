@@ -154,7 +154,8 @@ function relayout(force) {
   if (typeof updateDpadMobileDefault === 'function') updateDpadMobileDefault();
   // The remote view is one column, however wide its window.
   layoutHost(document.querySelector('.col-controls'), !remoteView && w >= 820 ? 2 : 1, force);
-  layoutHost(document.querySelector('.col-telemetry'), w >= 1280 ? 3 : (w >= 820 ? 2 : 1), force);
+  // Two columns at most: the third held the HDMI ports, now a view of their own.
+  layoutHost(document.querySelector('.col-telemetry'), w >= 820 ? 2 : 1, force);
 }
 
 let resizeTimer = null;

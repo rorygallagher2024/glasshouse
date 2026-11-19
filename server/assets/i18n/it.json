@@ -3588,5 +3588,6 @@
  "metrics.hdmiv.tech": {"from": "Technical details", "text": "Dettagli tecnici"},
  "metrics.hdmiv.none": {"from": "No device on any HDMI input is switched on.", "text": "Nessun dispositivo acceso sugli ingressi HDMI."},
  "metrics.hdmiv.ports": {"from": "Ports", "text": "Porte"},
- "metrics.hdmiv.modeOnly": {"from": "This TV reports only the mode each input sends, shown on its port above.", "text": "Questa TV indica solo la modalità inviata da ogni ingresso, mostrata sulla sua porta qui sopra."}
+ "metrics.hdmiv.modeOnly": {"from": "This TV reports only the mode each input sends, shown on its port above.", "text": "Questa TV indica solo la modalità inviata da ogni ingresso, mostrata sulla sua porta qui sopra."},
+ "home.dev.noSignal": {"from": "No signal", "text": "Nessun segnale"}
 }

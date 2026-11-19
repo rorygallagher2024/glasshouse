@@ -124,6 +124,19 @@ var ntpModule = null;
 var historyModule = null;
 var perfHistoryModule = null;
 var storageScanModule = null;
+
+// HDMI inputs the TV's input service calls plugged in, with no powered source
+// on the cable and no picture, as the HDMI view sees them (telemetry).
+function markNoSignal(c, done) {
+  if (!c || !Array.isArray(c.devices) || !telemetryModule || typeof telemetryModule.hdmiSignalByInput !== 'function') return done();
+  telemetryModule.hdmiSignalByInput(function (byInput) {
+    c.devices.forEach(function (d) {
+      var sig = d && !d.unused && !d.kind && d.port ? byInput[d.port] : null;
+      if (sig && !sig.powered && !sig.locked) d.noSignal = true;
+    });
+    done();
+  });
+}
 /** @type {typeof import('./sshkeys')} */
 var sshKeysModule = null;
 /** @type {typeof import('./screentime')} */
@@ -1251,14 +1264,19 @@ function handleHomeRoute(req, res, u, pathname) {
     }
     if (pathname === '/api/home/catalogue') {
       return homeModule.catalogue(function (c) {
-        var st = homeModule.viewStatus();
-        c.ok = true;
-        c.layout = st.layout;
-        c.enabled = st.enabled;
-        c.supported = st.supported;
-        c.wallpapers = st.wallpapers;
-        c.layoutVersion = homeModule.layoutVersion();
-        reply(c);
+        // The Inputs tab's state for each HDMI input agrees with the HDMI
+        // view: plugged in by the TV's input service, but with no powered
+        // source on the cable and no picture, it is no signal, not connected.
+        markNoSignal(c, function () {
+          var st = homeModule.viewStatus();
+          c.ok = true;
+          c.layout = st.layout;
+          c.enabled = st.enabled;
+          c.supported = st.supported;
+          c.wallpapers = st.wallpapers;
+          c.layoutVersion = homeModule.layoutVersion();
+          reply(c);
+        });
       });
     }
     if (pathname === '/api/home/channels') {

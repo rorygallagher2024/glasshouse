@@ -3588,5 +3588,6 @@
  "metrics.hdmiv.tech": {"from": "Technical details", "text": "Műszaki részletek"},
  "metrics.hdmiv.none": {"from": "No device on any HDMI input is switched on.", "text": "A HDMI-bemeneteken egy eszköz sincs bekapcsolva."},
  "metrics.hdmiv.ports": {"from": "Ports", "text": "Portok"},
- "metrics.hdmiv.modeOnly": {"from": "This TV reports only the mode each input sends, shown on its port above.", "text": "Ez a TV csak az egyes bemenetek által küldött módot jelzi, a fenti portjánál látható."}
+ "metrics.hdmiv.modeOnly": {"from": "This TV reports only the mode each input sends, shown on its port above.", "text": "Ez a TV csak az egyes bemenetek által küldött módot jelzi, a fenti portjánál látható."},
+ "home.dev.noSignal": {"from": "No signal", "text": "Nincs jel"}
 }
