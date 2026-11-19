@@ -2825,6 +2825,35 @@ Measured on 26 October 2026 on a 50QNED72B6B (43.11.85), Quick Start+ off.
 - **With Quick Start+ on**, a wake by the remote from Active Standby or
   Suspend had Glasshouse Home in front with no Live TV before it.
 
+## What the TV opens after Wake-on-LAN (G3, webOS 10.3.0)
+
+Measured on 19 November 2026 on an OLED65G39LA (firmware 33.31.24) on
+Wi-Fi, Quick Start+ on, `homeAutoLaunch` `on`, a PS5 on HDMI 2 with
+SIMPLINK on.
+
+- **Woken from Suspend by a magic packet the reason is `wakeOnWiFi`.**
+  bootd launched `com.webos.app.home` as its first app and, 0.03 s later,
+  the last input (`com.webos.app.hdmi2`, caller `com.webos.bootManager`),
+  which was in front 0.2 s in; the PS5 woke over HDMI-CEC. Its `Input App`
+  action ran because `Last App Booting` stayed off. With the remote
+  (`remoteKey`) the same TV woke on Home with no input launched.
+- **`Last App Booting` follows `firstAppByPowerOnReason`.** With
+  `/var/luna/preferences/bootd.json`, a copy of `/etc/palm/bootd.json` with
+  `wakeOnWiFi` and `wakeOnLan` mapped to `com.webos.app.home`, read after a
+  reboot, a wake from Suspend logged `Trigger 'Last App Booting'` and
+  `doExtAppLaunching`, had `com.webos.app.home` in front 1.1 s in and
+  launched no input.
+- **bootd reads `fullHomeBootingPowerOnReasons` once, about 10 s into a
+  boot.** `com.webos.service.config/setConfigs` adding `wakeOnWiFi` returned
+  true and `getConfigs` gave the new list, but a wake still launched the
+  input; after a reboot bootd's own request at 10.2 s still got LG's list,
+  though `getConfigs` gave the new one later.
+- **A magic packet sent to the TV's IP address does not wake it** from
+  Suspend: the sender has no ARP answer for it. Sent to the network's
+  broadcast address it woke in about 3 s.
+- **Auto Power Sync (`simplinkAutoPowerOn`) is not what wakes the device.**
+  The input put in front does.
+
 ## What the TV opens as it starts (C9, webOS 4.10.0)
 
 Measured on 27 October 2026 on an OLED65C97LA, Quick Start+ on.

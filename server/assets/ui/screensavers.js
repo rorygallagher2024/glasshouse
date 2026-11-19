@@ -62,6 +62,13 @@ function ssMeta(m) {
     (cautions ? `<div class="ss-meta warn">${esc(cautions)}</div>` : '');
 }
 
+function ssModeVisible(m, d) {
+  if (m.active) return true;
+  if (m.needsHa && !d.haConfigured) return false;
+  if (m.id === 'video' && (!m.available || m.note)) return false;
+  return true;
+}
+
 async function loadScreensavers() {
   const box = q('ss-list');
   if (!box) return;
@@ -75,7 +82,7 @@ async function loadScreensavers() {
   renderSsExperimental(d);
   const locked = !d.writable || ssSwitching;
 
-  box.innerHTML = d.modes.map(m => `
+  box.innerHTML = d.modes.filter(m => ssModeVisible(m, d)).map(m => `
     <button class="ss-card${m.active ? ' on' : ''}" data-ss="${esc(m.id)}"
             ${(!m.available || locked) ? 'disabled' : ''}>
       <div class="ss-name"><span>${esc(m.label)}</span>${m.active ? `<span class="ss-tag">${t('ss.inUse', 'In use')}</span>` : ''}</div>
@@ -708,7 +715,7 @@ function renderSsPool(d, locked) {
   const countEl = q('ss-pool-count');
   if (!box) return;
   const pool = (d.random && d.random.pool) || [];
-  const candidates = (d.modes || []).filter(m => m.id !== 'stock' && m.id !== 'random' && !m.fromApp);
+  const candidates = (d.modes || []).filter(m => m.id !== 'stock' && m.id !== 'random' && !m.fromApp && ssModeVisible(m, d));
   if (countEl) countEl.textContent = t('ss.poolCount', '{n} of {total} selected', { n: pool.length, total: candidates.length });
   const allBtn = q('ss-pool-all'), noneBtn = q('ss-pool-none');
   if (allBtn) allBtn.disabled = locked;

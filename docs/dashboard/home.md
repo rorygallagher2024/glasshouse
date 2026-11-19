@@ -475,7 +475,7 @@ rows are labelled **Hidden**.
 
 ## Home customisation
 
-The Home tab's **Home customisation** section holds what applies to whichever Home is the TV's, grouped under headings:
+The Home tab's **Home customisation** section holds what applies to whichever Home is the TV's, grouped under headings. While Glasshouse Home is active, a bar underneath switches between **Rows & tiles**, **Appearance & wallpaper**, **Behavior & startup** and **Internet TV**:
 
 ![Home customisation on a C2, grouped under Starting up, Layout, Shown on Home, Live preview, Search and Animations](../screenshots/home-customisation.png)
 
@@ -493,6 +493,8 @@ Each appears where the TV has it. A TV Glasshouse Home is not offered on, such a
 ### Open Home at power-on
 
 Opens the Home screen when the TV is switched on, rather than staying on the last input. LG calls this Home Auto Launch (`general.homeAutoLaunch`). While Glasshouse Home is on, the Home it opens is Glasshouse Home (see [Switching it on and off](#switching-it-on-and-off)).
+
+While Glasshouse Home is on with this set, a TV switched on with Wake-on-LAN, from Home Assistant say, opens Home as the remote's power button does. LG's software otherwise starts the last input under it, and a console or set-top box on that input can wake with the TV over HDMI-CEC. This applies from the TV's next start.
 
 ### Layout options
 

@@ -805,7 +805,7 @@
     "from": "Nightly refresh reboot turned off"
   },
  "ha.api": {"text": "Home Assistant-API", "from": "Home Assistant API"},
- "ha.api.desc": {"text": "Zeigt Live-Entitäten von Home Assistant in Glasshouse-Bildschirmschonern (wie Ambient) an. Verbindet sich direkt per HTTP/HTTPS ohne MQTT und speichert ohne Neustart.", "from": "Display live Home Assistant entities inside Glasshouse screen savers (such as Ambient). Connects straight to Home Assistant over HTTP/HTTPS without using MQTT, and saves without restarting."},
+ "ha.api.desc": {"text": "Aktiviert die Home Assistant-Bildschirmschoner (Ambient und Datenanzeige) auf dem Tab Bildschirmschoner zur Anzeige von Live-Entitäten aus Home Assistant. Verbindet sich direkt per HTTP/HTTPS ohne MQTT und speichert ohne Neustart.", "from": "Enables the Home Assistant screen savers (Ambient and Data Display) on the Screensaver tab to show live Home Assistant entities. Connects straight to Home Assistant over HTTP/HTTPS without using MQTT, and saves without restarting."},
  "ha.connected": {"text": "Verbunden: {msg}", "from": "Connected: {msg}"},
  "ha.test": {"text": "Verbindung testen", "from": "Test connection"},
  "ha.testFailed": {"text": "Verbindung fehlgeschlagen", "from": "Connection failed"},

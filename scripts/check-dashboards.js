@@ -914,6 +914,7 @@ async function visitHomeRemoteBatterySetting(browser, base, problems) {
     });
     try {
       await page.goto(base + '/?tab=home');
+      await page.locator('#home-subnav button[data-home-view="behavior"]').click();
       // Weather's row, beside it, shows once the tab has drawn.
       await page.waitForFunction(() => { const s = document.getElementById('home-weather-sel'); return s && s.offsetParent; });
       const sel = page.locator('#home-remote-battery-sel');
@@ -962,6 +963,7 @@ async function visitHomeWeatherSetting(browser, base, problems) {
   });
   try {
     await page.goto(base + '/?tab=home');
+    await page.locator('#home-subnav button[data-home-view="behavior"]').click();
     const sel = page.locator('#home-weather-sel');
     await page.waitForFunction(() => { const s = document.getElementById('home-weather-sel'); return s && !s.disabled && s.offsetParent; });
     if (await sel.inputValue() !== 'ha') fail('the source read ' + await sel.inputValue() + ' for Home Assistant');
@@ -2601,6 +2603,7 @@ async function visitHomeEditor(browser, base, problems) {
     if (JSON.stringify(saves[saves.length - 1]) !== JSON.stringify({ appNames: { one: 'Custom One' } })) {
       problems.push('Home editor: renaming an app did not save appNames: ' + JSON.stringify(saves[saves.length - 1]));
     }
+    await page.locator('#home-subnav button[data-home-view="behavior"]').click();
     const labelSave = page.waitForResponse(r => new URL(r.url()).pathname === '/api/home/layout');
     await page.locator('#home-show-app-labels').click();
     await labelSave;
@@ -2667,6 +2670,7 @@ async function visitHomeUploads(browser, base, problems) {
   try {
     await page.goto(base + '/?tab=home');
     await page.waitForFunction(() => typeof homeStatus !== 'undefined' && homeStatus && homeCat);
+    await page.locator('#home-subnav button[data-home-view="appearance"]').click();
     // With None chosen, the pictures' settings are not shown; Pictures shows
     // the sets, without Black, which None is.
     await page.waitForSelector('#home-bg-kind button');
@@ -2684,6 +2688,7 @@ async function visitHomeUploads(browser, base, problems) {
     await (await chooser).setFiles(path.join(ASSETS, 'dashboard-app/assets/icon130.png'));
     await sent;
     await observer.goto(base + '/?tab=home');
+    await observer.locator('#home-subnav button[data-home-view="appearance"]').click();
     await card(observer, 'morning').locator('.wall-sending').waitFor();
     if (!await card(observer, 'evening').locator('.wall-screen').isDisabled()) problems.push('Home uploads: another tab did not show the pending upload');
     release();
@@ -2767,6 +2772,7 @@ async function visitHomeShuffle(browser, base, problems) {
   try {
     await page.goto(base + '/?tab=home');
     await page.waitForFunction(() => typeof homeStatus !== 'undefined' && homeStatus && homeCat);
+    await page.locator('#home-subnav button[data-home-view="appearance"]').click();
     await page.locator('#home-wall-choice button', { hasText: 'Your own, shuffled' }).click();
     await page.waitForSelector('#home-shuffle-add:not(:disabled)');
     if (await page.locator('#home-walls').isVisible()) problems.push('Home shuffle: the times of day showed with the collection chosen');
@@ -3039,6 +3045,9 @@ async function visitHomeAvailability(browser, base, problems) {
       }
       if (c.glasshouse && !st.enabled && await page.locator('#home-state-desc').isVisible()) {
         fail('the state description showed with LG Home selected');
+      }
+      if (c.glasshouse && st.enabled && (c.previewOptions !== undefined || st.homeAutoLaunch !== undefined)) {
+        await page.locator('#home-subnav button[data-home-view="behavior"]').click();
       }
       if (c.previewOptions !== undefined) {
         for (const id of ['#home-preview-sound-row', '#home-preview-always-row', '#home-preview-tile-row']) {

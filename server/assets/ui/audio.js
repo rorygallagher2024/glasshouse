@@ -46,6 +46,7 @@ async function loadAudio(fromPoll) {
     const st = await audioRequest();
     if (revision !== audioRevision) return;
     audioState = st;
+    if (q('audio-now')) q('audio-now').hidden = false;
     q('audio-readings').hidden = false;
     renderAudio();
     renderAudioSettings(st.lgSettings || []);
@@ -59,6 +60,7 @@ async function loadAudio(fromPoll) {
       audioArmed = false;
       clearTimeout(audioArmTimer);
       q('audio-override').disabled = true;
+      if (q('audio-now')) q('audio-now').hidden = true;
       q('audio-readings').hidden = true;
       q('audio-sound-head').hidden = true;
       q('audio-settings').innerHTML = '';
@@ -169,7 +171,7 @@ function renderAudioOverride() {
   const dts = st.tv.formats.find(f => f.id === 'dts');
   btn.disabled = audioChanging || helper.busy || !st.writable || !(helper.available || helper.canDisable);
   btn.setAttribute('aria-pressed', String(on));
-  btn.className = 'pill ' + (audioArmed ? 'warn' : on ? 'good' : 'idle');
+  btn.className = 'pill pill-toggle ' + (audioArmed ? 'warn' : on ? 'good' : 'idle');
   btn.textContent = audioChanging || helper.busy ? t('audio.changing', 'Changing…') : audioArmed ? t('audio.confirm', 'Press again to enable') :
     on ? t('audio.disable', 'Disable override') : helper.available ? t('audio.enable', 'Enable override') : t('audio.unavailable', 'Unavailable');
   q('audio-override-desc').textContent = on && !helper.verified ? helper.reason : helper.needsRestore

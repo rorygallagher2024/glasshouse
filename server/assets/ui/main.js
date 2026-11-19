@@ -52,9 +52,17 @@ async function waitForServer() {
 })();
 
 const openSection = new URLSearchParams(location.search).get('open');
-if ((openSection === 'metrics' || openSection === 'system') && q('disc-hwinfo')) q('disc-hwinfo').open = true;
-
-if (openSection === 'processes' && q('disc-proc')) q('disc-proc').open = true;
+if (openSection === 'metrics' || openSection === 'system' || openSection === 'info') {
+  if (typeof setMetricsSubView === 'function') setMetricsSubView('advanced');
+} else if (openSection === 'hdmi') {
+  if (typeof setMetricsSubView === 'function') setMetricsSubView('hdmi');
+} else if (openSection === 'storage' || openSection === 'disk') {
+  if (typeof setMetricsSubView === 'function') setMetricsSubView('storage');
+} else if (openSection === 'processes' || openSection === 'performance') {
+  if (typeof setMetricsSubView === 'function') setMetricsSubView('performance');
+} else if (openSection === 'watch') {
+  if (typeof setMetricsSubView === 'function') setMetricsSubView('watch');
+}
 
 // The Control tab's remote sections, named by ?open=, or all three in the remote view.
 ['dpad', 'pointer', 'keyboard'].forEach(name => {
@@ -146,7 +154,8 @@ function relayout(force) {
   if (typeof updateDpadMobileDefault === 'function') updateDpadMobileDefault();
   // The remote view is one column, however wide its window.
   layoutHost(document.querySelector('.col-controls'), !remoteView && w >= 820 ? 2 : 1, force);
-  layoutHost(document.querySelector('.col-telemetry'), w >= 1280 ? 3 : (w >= 820 ? 2 : 1), force);
+  // Two columns at most: the third held the HDMI ports, now a view of their own.
+  layoutHost(document.querySelector('.col-telemetry'), w >= 820 ? 2 : 1, force);
 }
 
 let resizeTimer = null;

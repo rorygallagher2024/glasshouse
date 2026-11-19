@@ -1483,6 +1483,81 @@ answer from the read-back, the set counts as done.
 
 ---
 
+## Performance history
+
+`server/lib/perfhistory.js` keeps the Metrics tab's Performance charts. Every
+5 seconds from server start it reads `/proc/stat`, `/proc/meminfo`,
+`/proc/net/dev` and the SoC temperature and clock, and nothing else: no luna
+call and no process. The processor is split into user and nice, system (with
+irq, softirq and steal) and iowait, each against every core in
+`/sys/devices/system/cpu/present`, so a parked core counts as idle as the
+Overview's figure does; per core, a parked one is null. Memory in use is
+`MemTotal` less `MemAvailable` (free, cached and buffers on kernels without
+it), and cache is cached and buffers less shared memory.
+
+Two rings in memory: an hour of 5-second samples and a day of minutes, each
+the average of its samples. Nothing is written to flash, so a restart starts
+afresh. It follows the live state's `application` and `power` changes as
+events (app, TV off, screen off, TV on), the last 400 within a day, but does
+not start the `application` subscription itself: the events come while
+something else has (Watch time, Glasshouse Home, the MQTT bridge) or from a
+dashboard's polls, which reconcile it.
+
+`GET /api/perf?range=5m|1h|24h` returns the range as columns (`t`, `cpu`,
+`user`, `sys`, `io`, `mem`, `cache`, `rx`, `tx`, `temp`, `mhz`), the latest
+per-core loads, the events in the range and the one before it.
+
+---
+
+## Storage scan
+
+`server/lib/storagescan.js` serves the Metrics tab's Storage view. It reads
+`df -k` and keeps one entry per writable device, named by its best mount
+(`/mnt/lg/appstore`, `/mnt/lg/cmn_data`, `/mnt/lg/db8`, a USB drive under
+`/tmp/usb`). Read-only images (the root filesystem, fonts, certificates show
+as full with nothing free), memory filesystems, loop images and stores under
+16 MB are left out. Each is walked with `du -kx`, which stays on that device;
+a non-zero exit from one unreadable folder keeps the rest, and only a timeout
+(30 s, for a large USB drive) marks the partition as not looked through.
+
+The folders come back as a tree. Each folder below 1/4000 of its partition's
+used space (at least 64 KiB) is folded into one block with its parent's own
+files, and a folder that holds only one other is merged with it, so
+`cryptofs/apps/usr/palm` is one step. Every folder is grouped as `app`
+(`cryptofs`, `developer`, Glasshouse's `var/lib/tvweb`, and anything named
+after a removable app), `lg` (`preload` and `system` on the app partition)
+or `sys`. Folders named after an app from `applicationManager/listApps`
+are totalled per app, a folder inside one already counted for that app not
+counted again.
+
+`GET /api/storage` returns the last scan, starting a new one in the
+background when it is over ten minutes old; the first waits for it.
+`POST /api/storage` scans again. Nothing is deleted.
+
+---
+
+## HDMI link detail
+
+`server/lib/hdmilink.js` reads one receiver's status file from LG's HDMI
+driver (`/proc/lg/hdmi20/port<n>/status`) for the Metrics tab's HDMI view, and
+`GET /api/hdmi` adds it to each input as `link`. Size, refresh and pixel clock
+come from telemetry's `parseTiming` of the same file, which corrects the
+driver's off-by-one heights and, on TMDS, deep colour's inflated totals. The
+rate a mode takes is the pixel clock by the bits a pixel takes on the wire
+(4:2:2 is always 24, 4:2:0 half of 4:4:4) and the link's coding (18/16 on FRL,
+10/8 on TMDS), against the link's rated speed, as HDMI's own tables state
+it. The driver's times are milliseconds since boot and become clock times by
+`/proc/uptime`. Without a lock, a sleeping source's last mode and counts are
+still in the file and are cleared.
+
+The FRL and TMDS character error counters cover a short interval and start
+again, so every 5 seconds each locked receiver's counts are added up from when
+the cable was connected (`Cable Connected Time`); a new connection, or losing
+the lock, starts again. The driver's `PHY Error Count` climbs on a clean link
+too and is not used.
+
+---
+
 ## Counting watch time
 
 `server/lib/history.js` counts, while it is switched on, how long the screen
