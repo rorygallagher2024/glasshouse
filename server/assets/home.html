@@ -2192,7 +2192,8 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
   /*
    * The sound as focus moves (layout navSound, lib/home navSoundFile), loaded
    * at the first move after it is chosen. The context is made then too, as
-   * that follows a key.
+   * that follows a key. It plays whenever focus lands on another tile, from a
+   * key or from the Magic Remote's pointer.
    */
   var navAudio = null, navBuffer = null, navBufferFor = '';
   // key: the sound's name, and for the own sound its revision, so one replaced is loaded again.
@@ -3659,7 +3660,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     if (k === KEY.yellow && !player.list && tvStream.switchable && tvStream.item === playerChannel()) return switchFormat();
     if (player.list) {
       listIdle();
-      var list = groupItems();
+      var list = groupItems(), listAt = player.group + '|' + player.lcol;
       if (k === KEY.up) player.lcol = Math.max(0, player.lcol - 1);
       else if (k === KEY.down) player.lcol = Math.min(list.length - 1, player.lcol + 1);
       else if ((k === KEY.left || k === KEY.right) && player.groups.length > 1) {
@@ -3670,6 +3671,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
         if (pick && pick.id !== playerChannel().id) { closeList(); return zapTo(indexIn(player.items, pick.id)); }
         return closeList();
       }
+      if (player.group + '|' + player.lcol !== listAt) navTick();
       return renderList();
     }
     if (k === KEY.ok) {
@@ -3702,6 +3704,21 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
       renderPmsg(t('home.tv.saveFailed', 'That didn’t save'), t('home.tv.tryAgainPlain', 'OK tries again.'));
       showBand(true);
     });
+  }
+
+  // The channel list's row under the pointer is the focus.
+  function playerPointer(target) {
+    if (!player.list) return;
+    var row = target;
+    while (row && row !== document.body && !(row.className && /\bcl\b/.test(row.className))) row = row.parentNode;
+    if (!row || row === document.body || +row.getAttribute('data-l') === player.lcol) return;
+    // Only the focus mark moves: drawing the list again would scroll it from under the pointer.
+    var rows = $('clItems').children;
+    for (var i = 0; i < rows.length; i++) rows[i].className = rows[i].className.replace(/ ?\bfocus\b/, '');
+    row.className += ' focus';
+    player.lcol = +row.getAttribute('data-l');
+    navTick();
+    listIdle();
   }
 
   function playerClick(target) {
@@ -3927,11 +3944,16 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     guide.start = Math.max(min, Math.min(max, guide.start + ms));
   }
 
+  // The sound as the guide's focus moves: a row, a programme, a tab or the hours shown.
+  function guidePlace() { return [guide.row, guide.at, guide.group, guide.tabs, guide.start].join('|'); }
+
   function guideKey(k) {
     if (k === KEY.back) return closeGuide();
+    var placed = guidePlace();
     if (k === KEY.chUp || k === KEY.chDown) {
       if (!guide.list.length) return;
       guidePage(k === KEY.chUp ? -1 : 1);
+      if (guidePlace() !== placed) navTick();
       return renderGuide();
     }
     var it = guide.list[guide.row];
@@ -3942,6 +3964,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
         guide.row = 0;
         guide.top = 0;
       } else if (k === KEY.down || k === KEY.ok) guide.tabs = false;
+      if (guidePlace() !== placed) navTick();
       return renderGuide();
     }
     if (k === KEY.up) {
@@ -3962,6 +3985,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     } else if (k === KEY.ok) return guideOpen(it);
     else if (k === KEY.info) return closeGuide();
     else return;
+    if (guidePlace() !== placed) navTick();
     renderGuide();
   }
 
@@ -4011,6 +4035,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     if (!target || target === document.body) return;
     var r = +target.getAttribute('data-g');
     if (r !== guide.row || guide.tabs || (at !== null && at !== guide.at)) {
+      navTick();
       guide.row = r;
       guide.tabs = false;
       if (at !== null) guide.at = at;
@@ -5121,7 +5146,8 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
   }
   // Focuses the tile under the pointer, without moving its row.
   function hoverTile(target) {
-    if (layoutBusy || !data || !layout || player.open) return;
+    if (layoutBusy || !data || !layout) return;
+    if (player.open) return playerPointer(target);
     if (guide.open) return guidePointer(target);
     if (adder.open) {
       var adRow = target;
@@ -5137,18 +5163,20 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
       var inFolder = tileAt(target);
       if (inFolder && inFolder.hasAttribute('data-f') && +inFolder.getAttribute('data-f') !== folder.col) {
         folder.col = +inFolder.getAttribute('data-f');
+        navTick();
         focusFolder();
       }
       return;
     }
     if (!state.arranging && searchOn() && within(target, 'rail')) {
-      if (!state.rail) { state.rail = true; state.bar = -1; applyFocus(false, true); }
+      if (!state.rail) { state.rail = true; state.bar = -1; navTick(); applyFocus(false, true); }
       return;
     }
     var tile = tileAt(target);
     if (recents.open) {
       if (tile && /\brc\b/.test(tile.className) && (+tile.getAttribute('data-c') !== recents.col || recents.onAll)) {
         recents.col = +tile.getAttribute('data-c'); recents.onAll = false; recents.onX = false;
+        navTick();
         focusRecents(false, true);
       }
       return;
@@ -5160,6 +5188,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     var r = +rowEl.getAttribute('data-row'), c = +tile.getAttribute('data-c'), kind = layout.rows[r];
     if (state.row !== r || colOf(kind) !== c || state.bar >= 0 || state.rail) {
       state.row = r; state.col[kind] = c; state.bar = -1; state.rail = false;
+      navTick();
       applyFocus(false, true);
     }
   }
