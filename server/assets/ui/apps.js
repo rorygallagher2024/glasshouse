@@ -405,6 +405,7 @@ function rkDoes(k, kindOf) {
   if (k.action === 'nothing') return `<span class="rk-none" aria-hidden="true">⦸</span>${esc(t('apps.remoteKeys.doesNothing', 'Does nothing'))}`;
   if (kindOf(k.id) === 'switcher') return `<span class="rk-none" aria-hidden="true">⇄</span>${esc(t('apps.remoteKeys.inputSwitcher', 'Input switcher'))}`;
   if (kindOf(k.id) === 'action') return `<span class="rk-none" aria-hidden="true">◼</span>${esc(k.opens)}`;
+  if (kindOf(k.id) === 'guide') return `<span class="rk-none" aria-hidden="true">▤</span>${esc(k.opens)}`;
   if (kindOf(k.id) === 'ha') return `<span class="rk-none" aria-hidden="true">⌂</span>${esc(t('apps.remoteKeys.toHomeAssistant', 'To Home Assistant'))}`;
   if (kindOf(k.id) === 'media') return `<span class="rk-none" aria-hidden="true">${RK_MEDIA_GLYPHS[k.id] || '⏯'}</span>${esc(k.opens)}`;
   const icon = kindOf(k.id) === 'app' ? rkIcon(k.id) : '';
@@ -455,7 +456,7 @@ function renderRemoteKeys(d) {
   const tile = k => {
     const dot = RK_COLOURS[k.key] ? `<i class="rk-dot" style="background:${RK_COLOURS[k.key]}"></i>` : '';
     const label = k.action === 'open' && kindOf(k.id) === 'ha' ? t('apps.remoteKeys.toHomeAssistant', 'To Home Assistant')
-      : k.action === 'open' && (kindOf(k.id) === 'media' || kindOf(k.id) === 'action') ? k.opens
+      : k.action === 'open' && (kindOf(k.id) === 'media' || kindOf(k.id) === 'action' || kindOf(k.id) === 'guide') ? k.opens
       : k.action === 'open' ? t('apps.remoteKeys.opens', 'Opens {app}', { app: k.opens })
       : k.action === 'nothing' ? t('apps.remoteKeys.doesNothing', 'Does nothing') : t('apps.remoteKeys.lg', 'As LG has it');
     return `<button type="button" class="rk-key${k.action !== 'lg' ? ' rk-changed' : ''}" data-key="${esc(k.key)}"
@@ -510,14 +511,20 @@ function toggleRemoteKey(tile) {
   const cur = k.action === 'open' ? k.id : k.action;
   const opt = (value, html, extra) => `<button type="button" class="rk-opt${value === cur ? ' on' : ''}${extra || ''}"
       data-value="${esc(value)}" aria-pressed="${value === cur}" onclick="chooseRemoteKey(this)">${html}</button>`;
+  // webOS 11's Input key opens an app, an input or Glasshouse's input bar, by an id of limited length.
+  const nativeInput = k.nativeInput === true;
+  const fits = c => !nativeInput || c.id.length <= k.maxIdLength;
   const media = rkData.choices.filter(c => c.kind === 'media');
-  const inputs = rkData.choices.filter(c => c.kind === 'input');
-  const apps = rkData.choices.filter(c => c.kind === 'app');
+  const inputs = rkData.choices.filter(c => c.kind === 'input' && fits(c));
+  const apps = rkData.choices.filter(c => c.kind === 'app' && fits(c));
+  const barChoice = nativeInput ? rkData.choices.filter(c => c.kind === 'inputbar').map(c => opt(c.id, `<span aria-hidden="true">▭</span> ${esc(c.title)}`)).join('') : '';
   // LG's input switcher and Screen off, beside As LG has it and Nothing.
-  const switchers = rkData.choices.filter(c => c.kind === 'switcher')
+  const switchers = nativeInput ? '' : rkData.choices.filter(c => c.kind === 'switcher')
     .map(c => opt(c.id, `<span aria-hidden="true">⇄</span> ${esc(t('apps.remoteKeys.inputSwitcher', 'Input switcher'))}`)).join('') +
     // On webOS 11, Screen off only on the keys whose presses the TV logs.
     (k.noScreenOff ? '' : rkData.choices.filter(c => c.kind === 'action').map(c => opt(c.id, `<span aria-hidden="true">◼</span> ${esc(c.title)}`)).join('')) +
+    // webOS 11: the Guide key, where Glasshouse can change LG's key handler for it.
+    (k.homeGuide ? rkData.choices.filter(c => c.kind === 'guide').map(c => opt(c.id, `<span aria-hidden="true">▤</span> ${esc(c.title)}`)).join('') : '') +
     // Only on a key whose presses Home Assistant receives.
     (k.homeAssistant ? rkData.choices.filter(c => c.kind === 'ha').map(c => opt(c.id, `<span aria-hidden="true">⌂</span> ${esc(c.title)}`)).join('') : '');
   // A key set to something no longer offered (an app since removed) still shows it.
@@ -531,8 +538,10 @@ function toggleRemoteKey(tile) {
       <button type="button" class="rk-close" onclick="closeRemoteKeyPicker(true)">${esc(t('apps.remoteKeys.close', 'Close'))}</button></div>
     ${k.blocksApp ? `<div class="pv-note">${esc(t('apps.remoteKeys.blocksAlexa', 'Setting this key stops Alexa from opening until it is As LG has it again. Amazon still shows that Alexa is loading for a few seconds.'))}</div>` : ''}
     ${k.replacesVoice ? `<div class="pv-note">${esc(t('apps.remoteKeys.replacesVoice', 'Set to anything else, this button no longer starts voice control. As LG has it brings it back.'))}</div>` : ''}
+    ${k.homeGuide ? `<div class="pv-note">${esc(t('apps.remoteKeys.guideNative', 'On this TV the Guide key needs a change to LG’s key handler. Setting it restarts the TV’s screen once, and again each time the TV starts.'))}</div>` : ''}
+    ${k.nativeInput ? `<div class="pv-note">${esc(t('apps.remoteKeys.inputNative', 'On this TV the Input key needs a change to LG’s key handler. Setting it, or setting it back to LG’s list, restarts the TV’s screen once, and the change is made again each time the TV starts.'))}</div>` : ''}
     ${k.turnsOffVoice ? `<div class="pv-note">${esc(t('apps.remoteKeys.turnsOffVoice', 'Setting this key switches off LG\'s voice assistant, so voice search, the AI assistant and the microphone stop working until it is As LG has it again.'))}</div>` : ''}
-    <div class="rk-opts">${opt('lg', esc(t('apps.remoteKeys.lg', 'As LG has it')))}${k.noNothing ? '' : opt('nothing', `<span aria-hidden="true">⦸</span> ${esc(t('apps.remoteKeys.nothing', 'Nothing'))}`)}${switchers}${gone}</div>
+    <div class="rk-opts">${opt('lg', esc(t('apps.remoteKeys.lg', 'As LG has it')))}${k.noNothing ? '' : opt('nothing', `<span aria-hidden="true">⦸</span> ${esc(t('apps.remoteKeys.nothing', 'Nothing'))}`)}${switchers}${barChoice}${gone}</div>
     ${media.length ? `<div class="rk-sub">${esc(t('apps.remoteKeys.buttons', 'Buttons'))}</div>
     <div class="rk-opts">${media.map(c => opt(c.id, esc(c.title))).join('')}</div>` : ''}
     ${inputs.length ? `<div class="rk-sub">${esc(t('apps.remoteKeys.inputs', 'Inputs'))}</div>
@@ -907,7 +916,7 @@ function restoreHome() { return postHomeScreen('btn-home-restore', { restore: tr
 async function toggleHomeLayoutAllowed(btnId) {
   const b = q(btnId);
   const turnOn = !(b && b.dataset.on);
-  if (turnOn && !confirm(t('apps.home.exp.confirm', 'Switch on Home screen layout?\n\nOn webOS 10 Glasshouse lays its own Home screen layout over LG\u2019s each time the TV starts, so LG\u2019s can show for a moment first, and it has been tried on only a few TVs. Put back LG\u2019s Home screen, or switching this off, undoes it.'))) return;
+  if (turnOn && !confirm(t('apps.home.exp.confirm', 'Switch on Home screen layout?\n\nOn webOS 10 Glasshouse lays its own Home screen layout over LG’s each time the TV starts, so LG’s can show for a moment first, and it has been tried on only a few TVs. Put back LG’s Home screen, or switching this off, undoes it.'))) return;
   await postHomeScreen(btnId, { allow: turnOn });
   if (typeof loadUpdate === 'function') loadUpdate();
 }

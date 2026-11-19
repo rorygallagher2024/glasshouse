@@ -1946,6 +1946,55 @@ manager launched only HDMI 4 in nine minutes of the same file, and set back to
   back nine times, five of them with no message to the subscriber, the last
   60 s after power-on.
 
+## The Guide key's launch, native key filters (OLED48C31LA, webOS 11.2.0, firmware 44.00.92)
+
+- **The key's value is read for `id` and `fgAppIdsForByPass` alone.** With
+  `com.webos.keyaction.tvGuide` set to `com.webos.app.livetv` the key opened Live
+  TV at once, with no restart of anything. Set to `com.webos.app.home` with
+  `params` `{ glasshouse: "guide" }`, or to `com.webos.app.tvhotkey` with
+  `params` `{ activateType: "sleep" }` (the form LG's own entries for `sleep`,
+  `aspectRatio` and `muteX3` take, whose handlers do read `params`), it opened the
+  app and nothing of the parameters reached it.
+- **The launch passes a fixed `{}`.** In `libappLaunch.so` (388,132 bytes, 32-bit
+  ARM, Thumb-2, run by `surface-manager` as `surface-manager-daemon.service`) the
+  Guide branch of `handleHotkeys`, which logs "handle TVGUide", reads `action` and
+  `id` from the value kept for `tvGuide` and calls the launcher with the launch
+  parameters as a literal `{}`, a string 57 places share, each through a literal
+  of its own.
+- **An app already in front is not launched again.** The same branch asks
+  `isForegroundApp` for the app it opens and ends the key if it is in front, so
+  with Glasshouse Home in front the key did nothing at all.
+- **Two changes make the key work.** The literal of the Guide branch pointing at
+  `{"glasshouse":"guide"}` in padding at the end of `.rodata` instead of `{}`, and
+  the `bne` after `isForegroundApp` a `nop`. Glasshouse Home reads the parameter
+  from `PalmSystem.launchParams` at a relaunch, closes its player, and opens its
+  guide. A change to the file on disk is not needed: the library is read when
+  `surface-manager` starts, and a copy bind mounted over it, with the service
+  restarted, was in use after, and was gone after a restart of the TV.
+- **The rootfs is read only.** `/` is squashfs `ro` and `/usr` an `ro` overlay.
+  `mount --bind` of a file over `/usr/lib/libappLaunch.so.1` (a link to
+  `libappLaunch.so.1.0.0`) worked, and a second one over the first, while an
+  `umount` of the first answered "target is busy".
+- **After the restart the screen shows LG's Home first.** Glasshouse Home had the
+  place again 33 to 37 s after each of two restarts of the service.
+
+## The Input key's launch, native key filters (OLED48C31LA, webOS 11.2.0, firmware 44.00.92)
+
+- **The Input key reads no value.** In `libappLaunch.so` its handler
+  (`IR_KEY_INPUT_HUB`, then `showInputPicker`, and `IR_FRONTKEY_INPUT_SELECT` for
+  the key on the TV) launches `com.webos.app.quickinputpicker` through
+  `applicationManager/launch` with a text kept in `.rodata`,
+  `{"id": "com.webos.app.quickinputpicker"}`, which only two places in
+  `handleHotkeys` use. Nothing in configd or `other.mapping_info` names the key.
+- **One text, both launches.** The text replaced, in a copy of the library, by
+  `{"id": "com.tvweb.inputbar"}` (shorter, with zeros after it) made the Input key
+  open Glasshouse's input bar, with the bar's app installed and nothing else
+  changed. The text is 41 bytes with its end, so an id of up to 30 characters
+  fits, which takes all but two of the 30 apps and inputs a C5 offers.
+- **It is the picker's id, not the key's.** With the text changed the picker also
+  opens the bar from the key on the TV and wherever else LG's code opens it, so the
+  change is made only while the Input key is set to the bar.
+
 ## Promoted stub apps (G3, webOS 9.2.2)
 
 On 18 October 2026, with a network-wide ad blocker in the house switched off,
