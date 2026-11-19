@@ -1461,6 +1461,12 @@ button.pill.flash.idle[disabled]:hover{color:var(--w60);border-color:var(--edge)
 @media (min-width:860px){.metrics-adv-cols{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .metrics-adv-sec .grp{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
 .metrics-adv-sec .grp .cur{font-size:13px;font-weight:400;letter-spacing:.02em;text-transform:none;color:var(--w60)}
+/* System info: values as plain text, which a long address or MAC needs;
+   pills only for the settings that are on or off. */
+.si-cols .grp{margin-top:0}
+.si-val{flex-shrink:1;min-width:0;max-width:60%;text-align:right;font-size:15px;color:var(--w90);
+  font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.si-cols .si-reveal{text-transform:none;letter-spacing:.02em;min-height:0;height:auto;padding:5px 14px;font-size:13px}
 /* ---- HDMI port grid ----
    Four tiles representing the TV's physical HDMI port bay. State is
    carried by line weight, opacity, and port jack silhouette on true black. */

@@ -750,6 +750,19 @@ forwarder](#forwarding-the-logs-to-syslog) polls at once rather than at its next
 5-second tick, which a C4 (webOS 9.2) powering off beat. The kernel log keeps
 its 30-second schedule.
 
+The System info view counts the power-ons by reason, in
+`/var/lib/tvweb/power-ons.json`. tvpower gives only the last reason, and
+Glasshouse reads it again at every start, so a power-on is known by the boot
+(`/proc/sys/kernel/random/boot_id`) and the second after boot it came on
+(`uptime - ontime`); a reading within 10 seconds of the last in the same boot
+is the same power-on. An `ontime` of 0 is standby and counts nothing. When
+there is no file, the counts start from Glasshouse's log (`tvweb.log.1`, then
+`tvweb.log`): each transition line ending `on by`, and each start line just
+after a boot (up 300 s or less); a start later than that is Glasshouse
+restarting. The power-on in progress is then the log's last, and not counted
+again. The first counted time is kept as `since`, unless the clock had not yet
+been set (before 2024).
+
 ## The thermal sensor lags boot
 
 `/proc/lg/pm/temperature` reads a literal `0` for roughly the first 80 seconds
@@ -1526,6 +1539,20 @@ again, so every 5 seconds each locked receiver's counts are added up from when
 the cable was connected (`Cable Connected Time`); a new connection, or losing
 the lock, starts again. The driver's `PHY Error Count` climbs on a clean link
 too and is not used.
+
+---
+
+## System info
+
+`server/lib/sysinfo.js` reads what the System info view shows beyond
+`/api/stats`, once, at the first `GET /api/sysinfo`: nyx's
+`/var/run/nyx/device_info.json` (board, storage and memory size, serial
+number, Wi-Fi and wired MAC addresses), the Homebrew Channel's
+`appinfo.json`, `cpuinfo_max_freq`, the kernel release and Node.js version.
+Each is null where the TV does not give it, or gives a placeholder. nyx's
+`nduid`, the id LG's servers know the TV by, is not read. The route adds the
+power-on counts (see [Why the TV powered on](#why-the-tv-powered-on)). The
+view shows a row only for a value it has, as models and webOS releases differ.
 
 ---
 

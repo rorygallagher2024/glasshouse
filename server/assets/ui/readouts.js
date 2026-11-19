@@ -538,47 +538,8 @@ async function tick() {
     q('row-addr').hidden = !d.address;
     q('sub-addr').innerHTML = [d.hostname, d.address, d.address6].filter(Boolean).map(esc).join('<br>');
 
-    // Hardware & System Specifications
-    let hasHw = false;
-    const osVer = (d.system && d.system.webos) || (d.hardware && d.hardware.webos);
-    if (osVer) {
-      q('spec-os-item').hidden = false;
-      q('spec-os').textContent = osVer;
-      hasHw = true;
-    } else {
-      q('spec-os-item').hidden = true;
-    }
-    const fwVer = (d.system && d.system.firmware) || (d.device && d.device.firmware);
-    if (fwVer) {
-      q('spec-fw-item').hidden = false;
-      q('spec-fw').textContent = fwVer;
-      hasHw = true;
-    } else {
-      q('spec-fw-item').hidden = true;
-    }
-    if (d.hardware && d.hardware.soc_arch) {
-      q('spec-arch-item').hidden = false;
-      q('spec-arch').textContent = d.hardware.soc_arch;
-      hasHw = true;
-    } else {
-      q('spec-arch-item').hidden = true;
-    }
-    if (d.panel_silicon && d.panel_silicon.cell && /[1-9a-zA-Z]/.test(d.panel_silicon.cell)) {
-      q('spec-silicon-item').hidden = false;
-      q('spec-silicon').textContent = d.panel_silicon.cell;
-      hasHw = true;
-    } else {
-      q('spec-silicon-item').hidden = true;
-    }
-    if (d.panel_silicon && d.panel_silicon.tcon_firmware) {
-      q('spec-tcon-item').hidden = false;
-      q('spec-tcon').textContent = d.panel_silicon.tcon_firmware;
-      hasHw = true;
-    } else {
-      q('spec-tcon-item').hidden = true;
-    }
-    // The remote has its own section now, so System info stands on its own.
-    if (q('disc-hwinfo')) q('disc-hwinfo').hidden = !hasHw;
+    // System info: what the TV is, what it runs and how it is connected.
+    if (typeof sysinfoStats === 'function') sysinfoStats(d);
 
     /* The ambient sensor is a reading rather than panel wear, so it stays on
        the System tab while the panel figures live with the protections. */
