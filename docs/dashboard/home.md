@@ -234,12 +234,13 @@ Multiple channels and groups can be selected across searches and filters:
 When opening a channel from the Internet TV row or live preview, playback opens full screen:
 
 * **Remote navigation:**
-    * **OK:** Opens the channel list one section at a time. Use **Left** / **Right** to switch sections, **OK** to tune a channel, and **Back** to close the list.
-    * **Up / Down / CH+ / CH−:** Steps through channels across the entire lineup.
+    * **OK:** Shows the programme band at the bottom, and hides it again.
+    * **Left:** Opens the channel list, seven channels of one section running down the left side of the screen with the focus on the middle one. The programme band is hidden while the list is open. **Up** / **Down** scroll the list under the focus, which moves only when the list reaches the first or last channel. **OK** tunes the focused channel, **Right** or **Back** closes the list, and **CH+** / **CH−** switch sections.
+    * **Up / Down / CH+ / CH−:** Steps through channels across the entire lineup (with the channel list open, CH+ and CH− switch sections).
     * **Number keys:** Directly jumps to a channel by its lineup number.
     * **Info:** Displays the programme banner showing what is on now and next (also appears automatically for 5 seconds on each channel change).
     * **Yellow button:** Switches between **HLS** and **MPEG-TS** stream formats for provider accounts. The TV remembers the selected stream format for each channel.
-    * **Back or Home:** Returns to Glasshouse Home. If [Live preview](#live-preview) is enabled, the channel continues playing in the preview, silently unless **Preview sound** is on.
+    * **Back or Home:** With the band or the channel list open, **Back** closes it first. With neither open, Back or Home returns to Glasshouse Home. If [Live preview](#live-preview) is enabled, the channel continues playing in the preview, silently unless **Preview sound** is on.
 * **Preview in the tile:** With **Preview in the tile** enabled under Live preview settings, channels play directly inside their Home tile. Pressing **OK** smoothly expands the video to full screen, and pressing **Back** returns it to the tile without opening a new stream.
 
 ![An IPTV channel previewing in its tile on a G3](../screenshots/iptv-preview-in-tile.jpg)
@@ -269,7 +270,7 @@ Whenever the lineup contains channels, an **IPTV Guide** tile remains accessible
 * **Screen saver protection:** Screen savers stay suppressed while watching full screen.
 * **Pause live Internet TV:** With the switch of that name on in the **Internet TV** section of the Home tab (off by default) and a USB stick in the TV, **Pause** on the remote pauses a channel played full screen, and **Play** or Pause again goes on from the same picture. The stick must be formatted FAT32 or exFAT, with at least 512 MB free. Only MPEG-TS channels can pause (**Yellow** switches a provider's channel to MPEG-TS); previews on the row and HLS channels are never recorded.
     * **Recording:** While a channel plays full screen, the TV records it to the stick, up to 2 GB (about half an hour of an HD channel), and deletes the recording when the channel stops, changes or the TV goes to standby. The stick is written for as long as a channel plays, about 3 GB an hour, which wears a cheap stick sooner.
-    * **Left / Right:** Go 30 seconds back or forward in what was recorded, back as far as the stick holds and forward as far as live, with a moment's reconnect at each jump. The channel list is on **OK** for such a channel.
+    * **Left / Right:** Go 30 seconds back or forward in what was recorded, back as far as the stick holds and forward as far as live, with a moment's reconnect at each jump. The channel list is on **OK** for such a channel, and **Right** closes it.
     * **Back:** Behind live, asks "Back to live?": **OK** goes to the live point and Back again stays. At the live point Back closes the player as ever. A remote's **Stop** asks the same, and changing channel from behind live asks "Change channel?" the same way, as the recording goes with the channel.
     * **Band:** Shows how long the pause can last and how far behind live the channel is. A pause that reaches the start of what the stick holds plays on by itself.
 * **Security & privacy:** Playlist URLs and Xtream login credentials remain stored strictly on the TV (`/var/lib/tvweb`). They are never displayed on the dashboard again, never transmitted to Home Assistant, and never written to debug logs. See [Security](../SECURITY.md#internet-tv).
