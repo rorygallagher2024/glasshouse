@@ -1287,6 +1287,7 @@ button.pill.flash.idle[disabled]:hover{color:var(--w60);border-color:var(--edge)
 #tab-metrics[data-metrics-view="overview"] [data-metrics-sub]:not([data-metrics-sub="overview"]),
 #tab-metrics[data-metrics-view="watch"] [data-metrics-sub]:not([data-metrics-sub="watch"]),
 #tab-metrics[data-metrics-view="performance"] [data-metrics-sub]:not([data-metrics-sub="performance"]),
+#tab-metrics[data-metrics-view="storage"] [data-metrics-sub]:not([data-metrics-sub="storage"]),
 #tab-metrics[data-metrics-view="advanced"] [data-metrics-sub]:not([data-metrics-sub="advanced"]){display:none !important}
 /* Performance: Stats-style history charts. */
 .perf-head{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px 20px;margin:0 0 18px}
@@ -1343,6 +1344,66 @@ button.pill.flash.idle[disabled]:hover{color:var(--w60);border-color:var(--edge)
 .perf-core-bar b{position:absolute;left:0;right:0;bottom:0;border-radius:4px 4px 0 0;background:var(--pf-a);transition:height .4s ease}
 .perf-core.parked .perf-core-bar{background:none;border:1px dashed var(--w25)}
 .perf-core-n{font-size:11px;color:var(--w60)}
+
+/* Storage view: the partitions, a treemap of what fills one, and apps by size. */
+.stor-vols{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px;margin:0 0 18px}
+.stor-vol{display:flex;flex-direction:column;gap:8px;text-align:left;padding:16px 18px 14px;border:1px solid var(--w12);border-radius:var(--r-md,14px);
+  background:transparent;color:var(--w100);font:inherit;cursor:pointer;transition:border-color .15s ease}
+.stor-vol:hover:not(:disabled){border-color:var(--w40)}
+.stor-vol,.stor-tile,.stor-crumb{text-transform:none;letter-spacing:0;min-height:0;font-weight:400}
+.stor-vol.on,.stor-vol.on:hover{border-color:var(--w100);background:transparent;color:var(--w100);font-weight:400}
+.stor-vol:disabled{cursor:default;opacity:.7}
+.stor-vol-name{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--w70)}
+.stor-vol-big{font-family:'Outfit',sans-serif;font-weight:300;font-size:26px;line-height:1.1}
+.stor-vol-big small{font-size:13px;color:var(--w60);margin-left:6px;font-family:'Manrope',sans-serif}
+.stor-vol-sub{font-size:12px;color:var(--w60)}
+.stor-bar{display:flex;gap:2px;height:8px;border-radius:4px;background:var(--w06);overflow:hidden}
+.stor-seg{display:block;height:100%;flex:none}
+.stor-seg.app{background:var(--pf-a)} .stor-seg.lg{background:var(--pf-b)} .stor-seg.sys{background:var(--w35)}
+.stor-crumbs{display:flex;flex-wrap:wrap;align-items:center;gap:2px 4px;font-size:13px;color:var(--w60);min-height:22px}
+.stor-crumb{font:inherit;color:var(--w70);background:none;border:0;padding:2px 4px;border-radius:6px;cursor:pointer}
+.stor-crumb:hover{color:var(--w100);background:var(--w06)}
+.stor-crumb.now{color:var(--w100);padding:2px 4px}
+.stor-crumb-sep{color:var(--w40)}
+.stor-map{position:relative;height:440px;border-radius:10px;overflow:hidden}
+.stor-tile{position:absolute;display:flex;flex-direction:column;justify-content:flex-end;align-items:flex-start;gap:2px;padding:8px 10px;
+  border:0;border-radius:6px;overflow:hidden;text-align:left;font:inherit;color:var(--w100);cursor:default;background:transparent;isolation:isolate}
+.stor-tile::before{content:"";position:absolute;inset:0;z-index:-1;border-radius:inherit;background:var(--w25)}
+.stor-tile::after{content:"";position:absolute;inset:0;z-index:-1;border-radius:inherit;border:1px solid var(--w35);pointer-events:none}
+.stor-tile.app::before{background:var(--pf-a);opacity:.4} .stor-tile.app::after{border-color:var(--pf-a)}
+.stor-tile.lg::before{background:var(--pf-b);opacity:.4} .stor-tile.lg::after{border-color:var(--pf-b)}
+.stor-tile.sys::before{background:var(--w12)}
+.stor-tile.rest::before{opacity:.5} .stor-tile.rest::after{border-style:dashed}
+.stor-tile.zoom{cursor:zoom-in}
+.stor-tile.thin{padding:0;min-width:0}
+.stor-tile.thin,.stor-tile.thin::before,.stor-tile.thin::after{border-radius:3px}
+.stor-tile:hover::before,.stor-tile:focus-visible::before{opacity:.62}
+.stor-tile.sys:hover::before,.stor-tile.sys:focus-visible::before{background:var(--w25);opacity:1}
+.stor-tile:focus-visible{outline:2px solid var(--w100);outline-offset:-2px}
+.stor-tile-ico{position:absolute;top:10px;left:10px;width:32px;height:32px;border-radius:8px;object-fit:contain}
+.stor-tile-name{max-width:100%;font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-shadow:0 1px 2px rgba(0,0,0,.35)}
+.stor-tile-size{font-size:12px;color:var(--w80);text-shadow:0 1px 2px rgba(0,0,0,.35)}
+[data-theme="light"] .stor-tile-name,[data-theme="light"] .stor-tile-size{text-shadow:none}
+.stor-tip{top:auto;max-width:300px}
+.stor-tip .stor-tip-path{display:block;margin-top:6px;font-size:11px;color:var(--w50);overflow-wrap:anywhere}
+.stor-tip .stor-tip-note{display:block;margin-top:6px;color:var(--w80)}
+.stor-hint{margin-top:10px;font-size:12px;color:var(--w50)}
+.stor-apps{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:1fr;gap:4px 28px}
+@media (min-width:980px){.stor-apps{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.stor-app{display:flex;align-items:center;gap:12px;padding:8px 0;min-width:0}
+.stor-app-ico{width:36px;height:36px;flex:none;border-radius:9px;object-fit:contain;background:var(--w06)}
+.stor-app-ico.own{padding:7px}
+.stor-app-main{flex:1;min-width:0}
+.stor-app-top{display:flex;align-items:baseline;gap:8px}
+.stor-app-name{font-size:14px;color:var(--w100);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.stor-app-tag{flex:none;font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--w60);padding:1px 6px;border:1px solid var(--w12);border-radius:999px}
+.stor-app-size{margin-left:auto;flex:none;font-size:13px;color:var(--w90)}
+.stor-app-bar{height:5px;margin:7px 0 5px;border-radius:3px;background:var(--w06);overflow:hidden}
+.stor-app-bar .stor-seg{border-radius:3px}
+.stor-app-sub{font-size:12px;color:var(--w50);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.stor-apps-more{margin-top:10px}
+@media (max-width:560px){.stor-map{height:340px}.stor-vols{grid-template-columns:1fr}}
+@media (prefers-reduced-motion:reduce){.stor-vol{transition:none}}
 .perf-cores-cap{font-size:11px;color:var(--w60);letter-spacing:.06em;text-transform:uppercase}
 @media (max-width:560px){
   .perf-card{padding:16px 14px 18px}

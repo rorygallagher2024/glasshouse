@@ -200,7 +200,7 @@ function cpuPanelOpen() {
 }
 
 function setMetricsSubView(view) {
-  const valid = ['overview', 'performance', 'watch', 'advanced'];
+  const valid = ['overview', 'performance', 'storage', 'watch', 'advanced'];
   // System info was called Advanced, and held the process lists.
   if (view === 'info') view = 'advanced';
   metricsSubView = valid.indexOf(view) !== -1 ? view : 'overview';
@@ -222,4 +222,5 @@ function setMetricsSubView(view) {
     stopCpuPolling();
   }
   if (typeof perfViewChanged === 'function') perfViewChanged();
+  if (typeof storageViewChanged === 'function') storageViewChanged();
 }
