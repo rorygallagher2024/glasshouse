@@ -3192,6 +3192,16 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
         // Held for a refill (Home's own player): played on once the buffer is back, reopened if it never comes.
         if (refillSince) {
           buf = bufferedAhead(v);
+          /*
+           * A stream that comes back after a silence resumes at the live point, so its
+           * picture lands past a hole: stepped over, and the hold goes on from there.
+           */
+          if (buf.next > ct && buf.ahead < 0.3 && buf.next !== skippedTo) {
+            skippedTo = buf.next;
+            streamEvent('skipped', { gap: Math.round((buf.next - ct) * 10) / 10 });
+            try { v.currentTime = buf.next + 0.1; } catch (e) {}
+            return;
+          }
           if (buf.ahead >= refillTo) {
             streamEvent('refilled', { held: now - refillSince, to: refillTo });
             refillSince = 0;
