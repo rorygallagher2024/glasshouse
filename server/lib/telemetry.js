@@ -19,6 +19,7 @@ var hexColor = require('./util').hexColor;
 var path = require('path');
 var execFile = require('child_process').execFile;
 var names = require('./names');
+var hdmiLink = require('./hdmilink');
 var power = require('./power');
 var timers = require('./timers');
 
@@ -943,6 +944,24 @@ function hdmiSources(status, map) {
 }
 
 /*
+ * Whether each HDMI input has a powered source on its cable and a picture,
+ * by the input number, from the receivers' own files: the same reading the
+ * HDMI view uses. cb({ 1: { powered, locked } }); an input whose driver has
+ * no +5V field (the HDMI 2.0 driver of webOS 4) is left out.
+ */
+function hdmiSignalByInput(cb) {
+  hdmiReceiverMap(function (map) {
+    var status = readHdmiStatus();
+    var out = {};
+    hdmiSources(status, map).forEach(function (src) {
+      var raw = status[src.receiver] || '';
+      out[src.input] = { powered: src.powered, locked: /PHY\s+Lock\[1\]/i.test(raw) || realtekField(raw, 'phy_lock_status') === '1' };
+    });
+    cb(out);
+  });
+}
+
+/*
  * The receiver, /proc/lg/hdmi20/port<n>, behind each HDMI input, from the
  * input map LG's input service loads from configd. The TV chooses among
  * numbered tables by an index it does not expose; table 0 matched every input
@@ -1550,13 +1569,30 @@ function hdmiInputs(cb) {
             // A cable in the port with no device on it, where the TV tells them apart.
             cableOnly: !seen && cableTold && devs[d].connected === true,
             signal: null,
+            // The receiver's link in detail (lib/hdmilink.js), for the HDMI view.
+            link: /** @type {?Object} */ (null),
             earc: portNum === earcPort || devs[d].port === earcPort
           });
         }
+        var up = parseFloat(String(readTrimmed('/proc/uptime') || '').split(' ')[0]);
+        var linkOpts = { now: Date.now(), uptimeMs: isFinite(up) ? Math.round(up * 1000) : null };
         for (var k = 0; k < inputs.length; k++) {
           var receiver = receiverMap[names.hdmiPort(names.hdmiKeyForPortId(inputs[k].id))];
           for (var r = 0; r < signalling.length; r++) {
             if (signalling[r].port === receiver) inputs[k].signal = signalling[r];
+          }
+          // The link in detail, for the HDMI view: the receiver's own file.
+          if (typeof receiver === 'number') {
+            var rawStatus = readHdmiReceiverStatus(receiver);
+            linkOpts.timing = rawStatus ? parseTiming(rawStatus) : null;
+            inputs[k].link = hdmiLink.detail(rawStatus, linkOpts);
+            // Errors as counted since the link came up, not one reading's.
+            var tl = inputs[k].link && inputs[k].link.locked ? hdmiLink.tally(receiver) : null;
+            if (inputs[k].link) {
+              inputs[k].link.errors = tl ? tl.errors : null;
+              inputs[k].link.corrected = tl ? tl.corrected : null;
+              inputs[k].link.errorsSince = tl ? tl.since : null;
+            }
           }
         }
         cb({ ok: true, inputs: inputs, ports: ports, earcPort: earcPort });
@@ -2601,6 +2637,7 @@ module.exports = {
   hdmiReceiverMap: hdmiReceiverMap,
   hdmiLinks: hdmiLinks,
   hdmiSources: hdmiSources,
+  hdmiSignalByInput: hdmiSignalByInput,
   readHdmiStatus: readHdmiStatus,
   getPictureEngineInfo: getPictureEngineInfo,
   signalFormat: signalFormat,
@@ -2626,6 +2663,8 @@ module.exports = {
   appStorage: appStorage,
   hdmiPorts: hdmiPorts,
   hdmiInputs: hdmiInputs,
+  parseTiming: parseTiming,
+  readHdmiReceiverStatus: readHdmiReceiverStatus,
   hdmiEarcPort: hdmiEarcPort,
   collectProcesses: collectProcesses,
   parseProcesses: parseProcesses,

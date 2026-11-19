@@ -293,7 +293,7 @@ function perfEventsStrip(d) {
   el.innerHTML = marks.map(e => {
     const f = (e.t - d.from) / span;
     const px = f * width;
-    const room = px - lastPx > 110 && px < width - 30;
+    const room = px - lastPx > 130 && px < width - 30;
     if (room) lastPx = px;
     const name = perfEventName(e);
     return `<span class="perf-ev${room ? '' : ' tick'}${e.kind !== 'app' ? ' power' : ''}" style="left:${(f * 100).toFixed(2)}%" title="${esc(perfClock(e.t, false) + ' · ' + name)}">` +
