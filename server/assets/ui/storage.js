@@ -271,7 +271,7 @@ function renderStorMap() {
     const name = storNodeName(n, childRel, v.kind);
     const w = Math.max(0, r.w - GAP), h = Math.max(0, r.h - GAP);
     const zoom = n !== node && n.n && n.c && n.c.length;
-    const big = w >= 84 && h >= 40, mid = w >= 46 && h >= 22;
+    const big = w >= 90 && h >= 46, mid = w >= 50 && h >= 24;
     const icon = n.a && w >= 110 && h >= 76
       ? '<img class="stor-tile-ico" src="' + api('/api/apps/icon?id=' + encodeURIComponent(n.a)) + '" alt="" loading="lazy">' : '';
     const label = big ? icon + '<span class="stor-tile-name">' + esc(name) + '</span><span class="stor-tile-size">' + esc(storSize(n.s)) + '</span>'
