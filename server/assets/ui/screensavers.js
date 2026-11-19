@@ -62,6 +62,13 @@ function ssMeta(m) {
     (cautions ? `<div class="ss-meta warn">${esc(cautions)}</div>` : '');
 }
 
+function ssModeVisible(m, d) {
+  if (m.active) return true;
+  if (m.needsHa && !d.haConfigured) return false;
+  if (m.id === 'video' && (!m.available || m.note)) return false;
+  return true;
+}
+
 async function loadScreensavers() {
   const box = q('ss-list');
   if (!box) return;
@@ -75,7 +82,7 @@ async function loadScreensavers() {
   renderSsExperimental(d);
   const locked = !d.writable || ssSwitching;
 
-  box.innerHTML = d.modes.map(m => `
+  box.innerHTML = d.modes.filter(m => ssModeVisible(m, d)).map(m => `
     <button class="ss-card${m.active ? ' on' : ''}" data-ss="${esc(m.id)}"
             ${(!m.available || locked) ? 'disabled' : ''}>
       <div class="ss-name"><span>${esc(m.label)}</span>${m.active ? `<span class="ss-tag">${t('ss.inUse', 'In use')}</span>` : ''}</div>
@@ -112,6 +119,9 @@ async function loadScreensavers() {
     q('ss-color-row').hidden = !(colors && colors.length);
     if (colors && colors.length) renderSsColorPick(colors, active.color, locked);
   }
+
+  q('ss-video-row').hidden = !(active && active.videoStyle);
+  if (active && active.videoStyle) renderSsVideo(active.videoStyle, locked);
 
   // Entities or ordered entity list declared by the active screen saver:
   const entities = active && active.entities;
@@ -642,6 +652,52 @@ async function pickSsChoice(id) {
   loadScreensavers();
 }
 
+/*
+ * The Video saver's clock, date, weather and text, saved with Home's video
+ * playlist (lib/home-wallpapers), which restages the saver with them.
+ */
+function renderSsVideo(style, locked) {
+  const show = [['showClock', t('home.video.clock', 'Clock')], ['showDate', t('home.video.date', 'Date')],
+    ['showWeather', t('home.video.weather', 'Weather')], ['showCaptions', t('home.video.captions', 'Captions')]];
+  q('ss-video-show').innerHTML = show.map(([key, label]) => `<label class="ss-pool-item${locked ? ' dis' : ''}">
+      <input type="checkbox" ${style[key] !== false ? 'checked' : ''} ${locked ? 'disabled' : ''} onchange="ssVideoStyle('${key}', this.checked)">
+      <span class="ss-pool-name">${esc(label)}</span>
+    </label>`).join('');
+  const { corners, sizes, fonts } = homeVideoChoices();
+  const fill = (id, options, value) => {
+    const sel = q(id);
+    if (document.activeElement !== sel) {
+      sel.innerHTML = options.map(([v, label]) => `<option value="${esc(String(v))}">${esc(label)}</option>`).join('');
+      sel.value = String(value);
+    }
+    sel.disabled = locked;
+  };
+  fill('ss-video-info-position', corners, style.infoPosition);
+  fill('ss-video-info-size', HOME_VIDEO_SIZES.infoSize.map((size, i) => [size, sizes[i]]), style.infoSize);
+  fill('ss-video-clock-font', fonts.map(([v, name]) => [v, t('ss.video.clockFont', 'Clock in {font}', { font: name })]), style.clockFont);
+  fill('ss-video-text-font', fonts.map(([v, name]) => [v, t('ss.video.textFont', 'Text in {font}', { font: name })]), style.textFont);
+  const colour = q('ss-video-text-color');
+  if (document.activeElement !== colour) colour.value = style.textColor;
+  colour.disabled = locked;
+  q('ss-video-reset').disabled = locked;
+}
+
+async function ssVideoSave(videoStyle) {
+  try { await homePost('/api/home/wallpapers', { videoStyle }); }
+  catch (e) { showErr(e.message); }
+  loadScreensavers();
+}
+
+function ssVideoStyle(key, value) {
+  ssVideoSave({ [key]: value });
+}
+
+// Its own part of the look; the captions' place, size and face stay as the Home tab set them.
+function ssVideoReset() {
+  const { showClock, showDate, showWeather, infoPosition, infoSize, clockFont, textFont, textColor } = HOME_VIDEO_STYLE;
+  ssVideoSave({ showClock, showDate, showWeather, infoPosition, infoSize, clockFont, textFont, textColor });
+}
+
 async function pickSsColor(id) {
   const sel = q('ss-color');
   if (sel) sel.disabled = true;
@@ -659,7 +715,7 @@ function renderSsPool(d, locked) {
   const countEl = q('ss-pool-count');
   if (!box) return;
   const pool = (d.random && d.random.pool) || [];
-  const candidates = (d.modes || []).filter(m => m.id !== 'stock' && m.id !== 'random' && !m.fromApp);
+  const candidates = (d.modes || []).filter(m => m.id !== 'stock' && m.id !== 'random' && !m.fromApp && ssModeVisible(m, d));
   if (countEl) countEl.textContent = t('ss.poolCount', '{n} of {total} selected', { n: pool.length, total: candidates.length });
   const allBtn = q('ss-pool-all'), noneBtn = q('ss-pool-none');
   if (allBtn) allBtn.disabled = locked;

@@ -92,8 +92,12 @@ function renderInputList() {
         ? `<span class="pill idle">${esc(t('home.leftOut', 'Left out'))}</span>`
         : d.unused
           ? `<span class="inp-status"><i></i>${esc(t('home.dev.unused', 'Nothing connected'))}</span>`
-          : `<span class="inp-status conn"><i></i>${esc(t('home.dev.connected', 'Connected'))}</span>`;
-    return `<div class="inp-card home-tile${!isShown || leftOut ? ' home-hidden' : ''}${d.unused ? ' inp-unused' : isActionTile ? '' : ' inp-conn'}">
+          // Plugged in by the TV's count, but nothing powered on the cable,
+          // as the Metrics tab's HDMI view shows it.
+          : d.noSignal
+            ? `<span class="inp-status nosig"><i></i>${esc(t('home.dev.noSignal', 'No signal'))}</span>`
+            : `<span class="inp-status conn"><i></i>${esc(t('home.dev.connected', 'Connected'))}</span>`;
+    return `<div class="inp-card home-tile${!isShown || leftOut ? ' home-hidden' : ''}${d.unused ? ' inp-unused' : isActionTile || d.noSignal ? '' : ' inp-conn'}">
       <div class="inp-head">
         <div class="inp-ico">${ico}</div>
         <div class="inp-txt">
@@ -236,9 +240,9 @@ function renderInputBar() {
   if (!offered) return false;
   const writable = !!(appsData.writable && inputsData.writable);
   // Not yet reported working on this webOS (lib/compat): said so, with links to report how it went.
-  q('inputs-bar-compat').innerHTML = bar.standing === 'untried' && bar.report
+  q('inputs-bar-compat').innerHTML = (bar.standing === 'untried' && bar.report
     ? homeCompatNote(t('inputs.compat.untried', 'The input bar has not yet been reported working on webOS {version}. If it misbehaves, set the Input key back to LG\u2019s list.', { version: bar.webos || '?' }), bar.report)
-    : '';
+    : '') + (input.nativeInput ? `<div class="pv-note">${esc(t('apps.remoteKeys.inputNative', 'On this TV the Input key needs a change to LG’s key handler. Setting it, or setting it back to LG’s list, restarts the TV’s screen once, and the change is made again each time the TV starts.'))}</div>` : '');
   const ours = opens(input), lg = input.action === 'lg';
   setInputsCard(q('inputs-bar-lg'), 'inplg', t('inputs.bar.lg', 'LG\u2019s list'),
     t('inputs.bar.isLg', 'LG\u2019s own list of inputs, as the TV came.'), lg, !writable);
@@ -250,7 +254,13 @@ function renderInputBar() {
     : t('inputs.bar.isOther', 'Set to something else on the Remote tab: {opens}.', { opens: input.opens || t('apps.remoteKeys.doesNothing', 'Does nothing') });
   const layout = (inputsCat && inputsCat.layout) || {};
   const transparent = layout.inputBarTransparent === true;
+  const onOk = layout.inputBarSwitchOnOk === true;
   q('inputs-bar-opts').innerHTML = `<div class="prot-row">
+    <div class="prot-main"><div class="prot-title">${esc(t('inputs.bar.switchOnOk', 'Switch only on OK'))}</div>
+      <div class="prot-desc">${esc(t('inputs.bar.switchOnOkDesc', 'Moving along the bar only picks an input, and OK switches to it. Off, the TV switches a second after the last press.'))}</div></div>
+    <div class="prot-status">${renderToggle({ id: 'inputs-bar-switch-on-ok', cls: onOk ? 'good' : 'idle', label: onOk ? t('common.on', 'On') : t('common.off', 'Off'),
+      on: onOk, disabled: !writable, onclick: `inputsSave({ inputBarSwitchOnOk: ${onOk ? 'false' : 'true'} })` })}</div></div>
+    <div class="prot-row">
     <div class="prot-main"><div class="prot-title">${esc(t('inputs.bar.transparent', 'Transparent tiles'))}</div>
       <div class="prot-desc">${esc(t('inputs.bar.transparentDesc', 'Lets the picture show through the bar\u2019s tiles.'))}</div></div>
     <div class="prot-status">${renderToggle({ id: 'inputs-bar-transparent', cls: transparent ? 'good' : 'idle', label: transparent ? t('common.on', 'On') : t('common.off', 'Off'),

@@ -12,7 +12,9 @@ var SCREENSAVER_APP_DIR = '/usr/palm/applications/com.webos.app.screensaver';
 // Build a mock env that includes screensaver marker files
 var env = mockEnv.createMockEnv({
   files: {
-    // no marker => stock mode
+    // no marker => stock mode; the system app's stock manifest is QML
+    '/usr/palm/applications/com.webos.app.screensaver/appinfo.json':
+      '{"type":"qml","main":"qml/main.qml"}'
   }
 });
 env.install();
@@ -148,16 +150,21 @@ console.log('Running test-screensavers.js ...');
   assert.ok(ids.indexOf('currents') !== -1, 'catalog must include currents');
   assert.ok(ids.indexOf('veils') !== -1, 'catalog must include veils');
   assert.ok(ids.indexOf('tesseract') !== -1, 'catalog must include tesseract');
-  assert.strictEqual(ids.length, 17, 'catalog must have exactly 17 entries');
+  assert.strictEqual(ids.length, 18, 'catalog must have exactly 18 entries');
+  assert.ok(ids.indexOf('video') !== -1, 'catalog must include the Video screen saver');
+  var video = all.filter(function (s) { return s.id === 'video'; })[0];
+  assert.strictEqual(video.runtime, 'web', 'Video uses the browser playback runtime');
+  assert.strictEqual(video.main, 'web/index.html', 'Video starts its web page');
+  assert.ok(video.problem, 'Video needs a configured playlist');
   assert.ok(ids.indexOf('ha-display') !== -1, 'ha-display must be in catalog');
 
   // Each of Glasshouse's own reads cleanly from its folder
   for (var i = 0; i < all.length; i++) {
-    assert.ok(!all[i].problem, all[i].id + ': ' + all[i].problem);
+    if (all[i].id !== 'video') assert.ok(!all[i].problem, all[i].id + ': ' + all[i].problem);
     assert.strictEqual(all[i].builtin, true);
   }
 
-  console.log('  ✓ the catalog has Glasshouse\'s 15 screen savers and LG\'s, each read from its folder');
+  console.log('  ✓ the catalog has Glasshouse\'s screen savers and LG\'s, each read from its folder');
 })();
 
 // 8. trigger returns error when luna is not available
@@ -210,11 +217,12 @@ console.log('Running test-screensavers.js ...');
     (function testHaOffersEveryScreensaver() {
       var ha = require('../server/lib/ha');
       var sel = ha.buildEntities({}).filter(function (e) { return e.id === 'screensaver_mode'; })[0];
-      screensavers.catalog().forEach(function (e) {
+      screensavers.catalog().filter(function (e) { return !e.problem; }).forEach(function (e) {
         var k = e.id, label = e.label;
         assert.ok(sel.payload.options.indexOf(label) !== -1, label + ' missing from Home Assistant');
         assert.ok(sel.payload.value_template.indexOf('"' + k + '":"' + label + '"') !== -1, k + ' not mapped');
       });
+      assert.strictEqual(sel.payload.options.indexOf('Video'), -1, 'Video is not offered until its playlist is configured');
       // Clock with date stays offered, sent by its old id and shown for Clock's date option.
       assert.ok(sel.payload.options.indexOf('Clock with date') !== -1, 'Clock with date kept');
       assert.ok(sel.payload.command_template.indexOf('"Clock with date":"clock-date"') !== -1);
@@ -313,10 +321,17 @@ console.log('Running test-screensavers.js ...');
               var next2 = screensavers.pickNextRandomSaver('starfield');
               assert.strictEqual(next2.id, 'clock');
 
-              // advanceRandomSaver stages the selected saver
+              // advanceRandomSaver stages the selected saver, and leaves the
+              // record of LG's stock type alone: the manifest it reads is our mounted copy.
+              var stockType = '/var/lib/tvweb/screensaver-stock-type';
+              env.files[stockType] = 'flutter';
+              env.files['/proc/self/mountinfo'] = '1 2 0:1 /var/lib/tvweb/screensaver ' + SCREENSAVER_APP_DIR + ' rw\n';
               screensavers.advanceRandomSaver();
+              env.files['/proc/self/mountinfo'] = null;
               var staged = screensavers.stagedScreensaver();
               assert.ok(staged === 'clock' || staged === 'starfield');
+              assert.strictEqual(env.files[stockType], 'flutter', 'the stock type is not overwritten from the mounted manifest');
+              env.files[stockType] = null;
 
               // onPowerChange: transition from Screen Saver to Active advances random saver
               var curStaged = screensavers.stagedScreensaver();

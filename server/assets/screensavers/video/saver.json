@@ -1,0 +1,41 @@
+{
+  "manifest": 1,
+  "version": "1.2.0",
+  "runtime": "web",
+  "main": "web/index.html",
+  "requires": { "webos": 10 },
+  "name": {
+    "ar": "فيديو",
+    "de": "Video",
+    "es": "Vídeo",
+    "fr": "Vidéo",
+    "hu": "Videó",
+    "it": "Video",
+    "pl": "Wideo",
+    "pt": "Vídeo",
+    "pt-br": "Vídeo",
+    "ru": "Видео",
+    "en": "Video"
+  },
+  "description": {
+    "ar": "مقاطع فيديو بلا صوت من قائمة Home، مع عرض التعليقات الزمنية عند توفرها.",
+    "de": "Stumme Videos aus der Home-Playlist mit zeitgesteuerten Untertiteln, sofern vorhanden.",
+    "es": "Vídeos sin sonido de la lista de Home, con subtítulos sincronizados cuando estén disponibles.",
+    "fr": "Vidéos sans son de la liste Home, avec sous-titres synchronisés lorsqu’ils sont disponibles.",
+    "hu": "Némított videók a Home lejátszási listájából, időzített feliratokkal, ha vannak.",
+    "it": "Video senza audio dalla playlist di Home, con sottotitoli temporizzati quando disponibili.",
+    "pl": "Filmy bez dźwięku z playlisty Home, z napisami czasowymi, jeśli są dostępne.",
+    "pt": "Vídeos sem som da lista do Home, com legendas sincronizadas quando disponíveis.",
+    "pt-br": "Vídeos sem som da playlist do Home, com legendas sincronizadas quando disponíveis.",
+    "ru": "Видео без звука из списка Home с временными подписями, если они доступны.",
+    "en": "Muted videos from the Home playlist, with timed captions where available."
+  },
+  "license": "MIT",
+  "uses": [
+    "level",
+    "videos",
+    "home-weather",
+    "video-busy"
+  ],
+  "order": 60
+}

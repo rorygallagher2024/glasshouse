@@ -110,6 +110,7 @@ function hdmiTable(rows, dims, inputs) {
   const on = /^hdmi(\d)$/.exec((dims.other && dims.other.gameInput) || '');
   const onPort = on ? Number(on[1]) : 0;
   const ports = [1, 2, 3, 4].filter(n => rows.some(r => r.port === n) || (single && n === onPort));
+  if (!ports.length) return '';
   const cell = (n, col) => {
     const r = rows.find(x => x.port === n && x.column === col) || (col === 'deepColor' && n === onPort ? single : null);
     return '<div>' + (r ? lgsControl(r) : '<span class="na">&mdash;</span>') + '</div>';
@@ -154,8 +155,9 @@ async function loadAdvSettings() {
   try { d = await (await fetch(api('/api/lgsettings?section=hdmi,devices'), { cache: 'no-store' })).json(); } catch (e) { return; }
   const devices = (d.rows || []).filter(r => r.section === 'devices');
   const hdmi = (d.rows || []).filter(r => r.section === 'hdmi' && r.column !== 'audioFormat');
-  q('adv-hdmi').hidden = !hdmi.length;
-  q('adv-lgs-hdmi').innerHTML = hdmi.length ? hdmiTable(hdmi, d.dimensions || {}, d.inputs) : '';
+  const hdmiHtml = hdmi.length ? hdmiTable(hdmi, d.dimensions || {}, d.inputs) : '';
+  q('adv-hdmi').hidden = !hdmiHtml;
+  q('adv-lgs-hdmi').innerHTML = hdmiHtml;
   advLgsDevices = devices.length > 0;
   if (advLgsDevices) q('adv-devices').hidden = false;
   q('adv-lgs-devices').innerHTML = devices.map(lgsRow).join('');

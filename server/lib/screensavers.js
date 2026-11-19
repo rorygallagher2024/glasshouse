@@ -23,6 +23,7 @@ var idlesaver = require('./idlesaver');
 var names = require('./names');
 var saverPowerOff = require('./saverpoweroff');
 var qmlcheck = require('./qmlcheck');
+var homeWallpapers = require('./home-wallpapers');
 
 var SCREENSAVER_APP_ID = 'com.webos.app.screensaver';
 var SCREENSAVER_APP_DIR = '/usr/palm/applications/' + SCREENSAVER_APP_ID;
@@ -64,6 +65,10 @@ var SWITCH_TIMEOUT_MS = 150000;
 var CLOSE_LOOKS = 16;
 // After a switch, before the new one is asked for in place of one closed for it.
 var SHOW_AGAIN_MS = 3000;
+// screenmanager may not be up yet when the server starts at boot.
+var VIDEO_MODE_TRIES = 6;
+var videoModeRetryMs = 10000;
+var VIDEO_IMPORT = /^\s*import\s+QtMultimedia\b/m;
 // How long tvpower may sit at "Screen Saver Ready" before it counts as stuck.
 var STUCK_CHECK_MS = 3000;
 var SWITCHING_ERROR = msg('srv.saver.switching', 'The TV is still switching screen savers. Try again in a minute.');
@@ -125,7 +130,8 @@ var MAX_SAVER_BYTES = 5 * 1024 * 1024;
 var MAX_SAVER_FILES = 200;
 // What a saver may ask Glasshouse to fill in, and the placeholder for each.
 // "ha" has one placeholder per entity it declares, so it carries no value here.
-var USES = { level: '__TVWEB_LEVEL__', stats: '__TVWEB_URL__', choice: '__TVWEB_CHOICE__', ha: '', 'ha-list': '__TVWEB_HA_LIST__', 'ha-all': '__TVWEB_HA_ALL__', color: '__TVWEB_COLOR__' };
+// "video-busy" is the address of videoBusy's answer, for a saver that plays video.
+var USES = { level: '__TVWEB_LEVEL__', stats: '__TVWEB_URL__', choice: '__TVWEB_CHOICE__', videos: '__TVWEB_VIDEOS__', 'home-weather': '__TVWEB_HOME_WEATHER__', 'video-busy': '__TVWEB_VIDEO_BUSY__', ha: '', 'ha-list': '__TVWEB_HA_LIST__', 'ha-all': '__TVWEB_HA_ALL__', color: '__TVWEB_COLOR__' };
 var DEFAULT_SAVER_COLOR = 'white';
 var COLOR_PRESETS = [
   { id: 'white', label: msg('srv.saver.color.white', 'White'), bright: '#ffffff', dim: '#a8aeb6' },
@@ -159,6 +165,11 @@ var APPS_DIR = '/media/developer/apps/usr/palm/applications';
 var APP_PREFIX = 'app-';
 var APP_SAVER_FILES = ['assets/screensaver-main.qml', 'assets/screensaver.qml'];
 var MAX_APP_QML_BYTES = 512 * 1024;
+// An app's folder is the app's to fill, so the look through it for QML that
+// plays video stops after this many entries. Aerial's has 552, with its
+// node_modules, and a G5 lists those in 13 ms.
+var MAX_APP_ENTRIES_SEARCHED = 1000;
+var maxAppEntriesSearched = MAX_APP_ENTRIES_SEARCHED;
 var DEFAULT_ROOTS = [
   { dir: path.join(__dirname, '..', 'assets', 'screensavers'), builtin: true },
   { dir: USER_SAVERS_DIR, builtin: false },
@@ -218,6 +229,8 @@ function readSaver(root, name) {
   if (name_) e.label = say.define('saver.' + id + '.name', name_.en, name_);
   if (desc) e.description = say.define('saver.' + id + '.desc', desc.en, desc);
   e.version = typeof m.version === 'string' ? m.version : '';
+  e.runtime = m.runtime === undefined ? 'qml' : m.runtime;
+  if (e.runtime !== 'qml' && e.runtime !== 'web') return problem(msg('srv.saver.badRuntime', '{file}: runtime must be "qml" or "web".', { file: MANIFEST }));
   e.author = typeof m.author === 'string' ? m.author : '';
   e.license = typeof m.license === 'string' ? m.license : '';
   e.homepage = typeof m.homepage === 'string' ? m.homepage : '';
@@ -229,9 +242,9 @@ function readSaver(root, name) {
   if (!name_ || !desc || !e.version) {
     return problem(msg('srv.saver.missing', '{file} needs a name, a description and a version.', { file: MANIFEST }));
   }
-  e.main = m.main === undefined ? 'main.qml' : m.main;
-  if (typeof e.main !== 'string' || !/^[\w.-]+\.qml$/.test(e.main)) {
-    return problem(msg('srv.saver.badMain', '{file}: main must name a .qml file in the folder.', { file: MANIFEST }));
+  e.main = m.main === undefined ? (e.runtime === 'web' ? 'web/index.html' : 'main.qml') : m.main;
+  if (typeof e.main !== 'string' || (e.runtime === 'qml' ? !/^[\w.-]+\.qml$/.test(e.main) : e.main !== 'web/index.html')) {
+    return problem(msg('srv.saver.badMain', '{file}: main must name a .qml file, or web/index.html for a web saver.', { file: MANIFEST }));
   }
   var uses = m.uses === undefined ? [] : m.uses;
   if (!Array.isArray(uses)) return problem(msg('srv.saver.badUses', '{file}: uses must be a list.', { file: MANIFEST }));
@@ -286,16 +299,19 @@ function readSaver(root, name) {
     if (files[j].rel === e.main) hasMain = true;
   }
   if (!hasMain) return problem(msg('srv.saver.noMain', '{main} is missing from its folder.', { main: e.main }));
+  if (e.uses.indexOf('videos') !== -1 && !homeWallpapers.videoSources().urls.length) {
+    return problem(msg('srv.saver.videoSources', 'Add video URLs in Home background settings before choosing this screen saver.'));
+  }
   if (files.length > MAX_SAVER_FILES || bytes > MAX_SAVER_BYTES) {
     return problem(msg('srv.saver.tooBig', 'Its folder is over the limit of {files} files and {mb} MB.',
                        { files: String(MAX_SAVER_FILES), mb: String(MAX_SAVER_BYTES / 1048576) }));
   }
-  // A placeholder it did not ask for would be left in, and the QML fail.
-  var qml;
-  try { qml = fs.readFileSync(path.join(dir, e.main), 'utf8'); }
+  // A placeholder it did not ask for would be left in the staged page.
+  var mainSource;
+  try { mainSource = fs.readFileSync(path.join(dir, e.main), 'utf8'); }
   catch (err3) { return problem(msg('srv.saver.unreadable', 'Its folder could not be read: {error}', { error: err3.message })); }
   for (var u in USES) {
-    if (USES[u] && qml.indexOf(USES[u]) !== -1 && uses.indexOf(u) === -1) {
+    if (USES[u] && mainSource.indexOf(USES[u]) !== -1 && uses.indexOf(u) === -1) {
       return problem(msg('srv.saver.undeclared', '{main} uses {placeholder} without "{use}" in uses.',
                          { main: e.main, placeholder: USES[u], use: u }));
     }
@@ -304,7 +320,7 @@ function readSaver(root, name) {
   // other, since a name it did not declare would be left in and draw nothing.
   var haPlaceholder = /__TVWEB_HA_([a-z0-9_]*)__/g;
   var found;
-  while ((found = haPlaceholder.exec(qml)) !== null) {
+  while ((found = haPlaceholder.exec(mainSource)) !== null) {
     if (!e.entities || !Object.prototype.hasOwnProperty.call(e.entities, found[1])) {
       return problem(msg('srv.saver.undeclaredHa', '{main} uses {placeholder}, and saver.json does not name that entity under entities.', { main: e.main, placeholder: found[0] }));
     }
@@ -677,9 +693,11 @@ function scanSavers() {
     });
     list = list.concat(found);
   }
-  catalogCache = { list: [STOCK].concat(list), byId: byId };
+  catalogCache = { list: [STOCK].concat(list), byId: byId, hasVideos: hasHomeVideos() };
   return catalogCache;
 }
+
+function hasHomeVideos() { return homeWallpapers.videoSources().urls.length > 0; }
 
 function savers() { return catalogCache || scanSavers(); }
 
@@ -688,7 +706,9 @@ function savers() { return catalogCache || scanSavers(); }
 function catalog() { return scanSavers().list; }
 
 function saverById(id) {
-  var byId = savers().byId;
+  // The Video saver is available, or not, with Home's playlist.
+  var cached = savers();
+  var byId = (cached.hasVideos === hasHomeVideos() ? cached : scanSavers()).byId;
   return Object.prototype.hasOwnProperty.call(byId, id) ? byId[id] : null;
 }
 
@@ -710,6 +730,81 @@ var closeCallbacks = [];
 var watchKeysFn = function () {};
 /** @type {function(function(?{state: string, fullScreen: boolean}): void, boolean=): void} */
 var mediaStateFn = function (cb) { cb(null); };
+var homeVideoBackgroundFn = function () { return false; };
+
+/*
+ * Where LG's screen saver is Flutter (webOS 10 and later), screenmanager ends
+ * the screen saver when it sees full-screen video, on a G5 (webOS 11.2)
+ * within a second of the video starting, unless the app is in its "manual"
+ * mode. An Aerial screen saver's QML plays video and does not ask for it, as
+ * its own web page for these TVs does, at every start: its source has
+ * screenmanager keep the mode in memory until it restarts. So it is sent at
+ * every staging, which includes the server's start.
+ */
+var videoModeHeld = null;
+var videoModeGeneration = 0;
+// Whether the staged screen saver plays video, whatever screenmanager made of it.
+var stagedPlaysVideo = false;
+function setVideoMode(playsVideo) {
+  var mine = ++videoModeGeneration;
+  stagedPlaysVideo = !!playsVideo;
+  if (!lunaFn || !slowSwitch()) return;
+  var mode = playsVideo ? 'manual' : 'auto';
+  var tries = 0;
+  (function send() {
+    lunaFn('com.webos.service.screenmanager/setScreenSaverMode', { appId: SCREENSAVER_APP_ID, mode: mode }, function (r) {
+      if (mine !== videoModeGeneration) return;
+      if (r && r.returnValue) {
+        if (playsVideo && videoModeHeld !== mode) console.log('screensaver: plays video, so screenmanager is told not to end it for that');
+        videoModeHeld = mode;
+        return;
+      }
+      // "auto" is what screenmanager starts with, so only "manual" is worth trying again.
+      if (!playsVideo) return;
+      if (++tries < VIDEO_MODE_TRIES) return setTimeout(send, videoModeRetryMs);
+      console.log('screensaver: screenmanager did not take the manual mode (' + ((r && r.errorText) || 'no answer') +
+                  '), so it may end this screen saver when its video starts');
+    });
+  })();
+}
+
+// An app's QML files other than its main one, as paths in its folder. Not
+// node_modules, which holds a web page's or a service's libraries.
+function appQmlFiles(e) {
+  var out = [];
+  var seen = 0;
+  (function walk(rel) {
+    var entries;
+    try { entries = fs.readdirSync(path.join(e.dir, rel)); } catch (err) { return; }
+    for (var i = 0; i < entries.length && seen < maxAppEntriesSearched; i++) {
+      if (entries[i] === 'node_modules') continue;
+      var r = rel ? rel + '/' + entries[i] : entries[i];
+      var st;
+      try { st = fs.lstatSync(path.join(e.dir, r)); } catch (err2) { continue; }
+      seen++;
+      if (st.isDirectory()) walk(r);
+      else if (st.isFile() && /\.qml$/.test(r) && r !== e.main && st.size <= MAX_APP_QML_BYTES) out.push(r);
+    }
+  })('');
+  return out;
+}
+
+// Whether a screen saver's main QML, or another QML file in its folder,
+// imports QtMultimedia. An app's other files are read for this though they
+// are not staged: its QML loads them from the app's own folder. `files` is
+// the folder's listing for one that is not an app's.
+function saverPlaysVideo(e, mainSource, files) {
+  if (VIDEO_IMPORT.test(mainSource)) return true;
+  var others = e.fromApp ? appQmlFiles(e) : files.map(function (f) { return f.rel; }).filter(function (rel) {
+    return rel !== e.main && /\.qml$/.test(rel);
+  });
+  for (var i = 0; i < others.length; i++) {
+    try {
+      if (VIDEO_IMPORT.test(fs.readFileSync(path.join(e.dir, others[i]), 'utf8'))) return true;
+    } catch (err) {}
+  }
+  return false;
+}
 
 function clearStagedScreensaver() {
   stagedEntities = null;
@@ -781,11 +876,20 @@ function init(opts) {
   watchPointerFn = opts.watchPointer || function () {};
   lastPointerEnd = 0;
   mediaStateFn = opts.mediaState || function (cb) { cb(null); };
+  homeVideoBackgroundFn = opts.homeVideoBackground || function () { return false; };
   launchedDirectly = false;
   launchGeneration++;
   closeCallbacks = [];
   randomConfigFile = (opts && opts.randomConfigFile) ? opts.randomConfigFile : RANDOM_CONFIG_FILE;
   wasInScreenSaver = false;
+  saverStartedAt = 0;
+  saverInputAt = 0;
+  stagedPlaysVideo = false;
+  watchingVideoSaver = false;
+  if (opts.videoModeRetryMs !== undefined) videoModeRetryMs = opts.videoModeRetryMs;
+  maxAppEntriesSearched = opts.maxAppEntriesSearched !== undefined ? opts.maxAppEntriesSearched : MAX_APP_ENTRIES_SEARCHED;
+  videoModeHeld = null;
+  videoModeGeneration++;
 
   // Auto-heal: If the screensaver is currently stock (no active bind-mount on SCREENSAVER_APP_DIR),
   // but an orphaned marker remains in SCREENSAVER_DIR, remove it so the boot hook does not
@@ -988,7 +1092,15 @@ function advanceRandomSaver() {
   var curStaged = stagedScreensaver();
   var nextSaver = pickNextRandomSaver(curStaged);
   if (!nextSaver || nextSaver.problem) return;
+  // Runtime changes must go through switchTo(), which closes a saver that
+  // might still be on screen before changing the system app manifest.
+  if (stagedRunner() !== (nextSaver.runtime === 'web' ? 'web' : 'qml')) {
+    return switchTo(nextSaver, 'random', screensaverBrightness(), screensaverChoice(nextSaver), function (r) {
+      if (!r.ok) console.error('screensaver: could not switch random saver: ' + (r.error || 'unknown error'));
+    });
+  }
   try {
+    stageScreensaverAppinfo(nextSaver);
     stageSaverFiles(nextSaver, screensaverBrightness(), screensaverChoice(nextSaver));
     fs.writeFileSync(path.join(SCREENSAVER_DIR, SCREENSAVER_MARKER), nextSaver.id);
     try { fs.writeFileSync(path.join(SCREENSAVER_APP_DIR, SCREENSAVER_MARKER), nextSaver.id); } catch (errApp) {}
@@ -998,13 +1110,65 @@ function advanceRandomSaver() {
   }
 }
 
+function stagedRunner() {
+  try {
+    return JSON.parse(fs.readFileSync(path.join(SCREENSAVER_APP_DIR, 'appinfo.json'), 'utf8')).type;
+  } catch (e) {
+    return null;
+  }
+}
+
+/*
+ * A G3 (webOS 10.3) ended a screen saver that tvpower started as soon as its
+ * video began, "manual" mode or not: tvpower went from Screen Saver back to
+ * Active 2.4 to 2.6 s after the start, at the moment the Video screen saver's
+ * first clip reached the decoder, from Home and from the Homebrew Channel
+ * alike. One launched directly, with tvpower left Active, plays on. So a
+ * screen saver that plays video and ends this soon, with no key or pointer
+ * since it started, is launched again that way. The remote's keys are watched
+ * while it shows, to tell the two apart.
+ */
+var VIDEO_SAVER_CUT_MS = 6000;
+var saverStartedAt = 0;
+var saverInputAt = 0;
+// Whether the screen saver showing is one of these, decided as it starts.
+var watchingVideoSaver = false;
+/*
+ * Read from the files in place rather than kept from staging: at the
+ * server's start the Video screen saver is staged before Home's playlist is
+ * read, and is passed over then as having no videos.
+ */
+function stagedSaverPlaysVideo() {
+  if (stagedPlaysVideo) return true;
+  var m = readTrimmed(path.join(SCREENSAVER_APP_DIR, SCREENSAVER_MARKER));
+  var e = m && m !== 'stock' ? saverById(m) : null;
+  return !!(e && e.runtime === 'web');
+}
+function videoSaverCut(now) {
+  return watchingVideoSaver && !launchedDirectly && saverStartedAt > 0 &&
+    now - saverStartedAt < VIDEO_SAVER_CUT_MS && saverInputAt < saverStartedAt;
+}
+
 function onPowerChange(rawState) {
   var raw = (rawState && typeof rawState === 'object') ? (rawState.raw || rawState.state || rawState) : rawState;
   var isSS = power.isScreenSaver(power.mapState(raw));
+  var now = Date.now();
   if (wasInScreenSaver && !isSS) {
-    if (isRandomEnabled()) {
+    var cut = videoSaverCut(now);
+    saverStartedAt = 0;
+    if (watchingVideoSaver && !launchedDirectly) watchKeysFn(false);
+    watchingVideoSaver = false;
+    if (cut) {
+      console.log('screensaver: the TV ended it as its video started, with no key pressed; launching it again directly');
+      launchScreensaverApp(function () {});
+    } else if (isRandomEnabled()) {
       advanceRandomSaver();
     }
+  }
+  if (isSS && !wasInScreenSaver) {
+    saverStartedAt = now;
+    watchingVideoSaver = slowSwitch() && !launchedDirectly && stagedSaverPlaysVideo();
+    if (watchingVideoSaver) watchKeysFn(true);
   }
   if (isSS !== wasInScreenSaver) watchPointerFn(isSS && stagedScreensaver() !== 'stock');
   wasInScreenSaver = isSS;
@@ -1012,6 +1176,7 @@ function onPowerChange(rawState) {
 
 // The pointer moved or clicked: one of these screen savers showing ends.
 function pointerUsed() {
+  saverInputAt = Date.now();
   if (!lunaFn) return;
   if (launchedDirectly) return keyPressed();
   if (!wasInScreenSaver || stagedScreensaver() === 'stock') return;
@@ -1160,6 +1325,8 @@ function screensaverList() {
       // Optional value color selection for savers declaring "color" in uses.
       color: hasColor ? screensaverColor(e) : undefined,
       colors: hasColor ? screensaverColorOptions() : undefined,
+      // The Video saver's clock, weather and captions, kept with Home's playlist.
+      videoStyle: e.id === 'video' ? homeWallpapers.videoSources().style : undefined,
       // Home Assistant entities declared by the saver, with effective overrides.
       entities: e.entities ? Object.keys(e.entities).map(function (k) {
         var lbl = k.replace(/_/g, ' ').replace(/\b\w/g, function (c) { return c.toUpperCase(); });
@@ -1222,14 +1389,16 @@ function screensaverList() {
   return res;
 }
 
-function stageScreensaverAppinfo() {
+function stageScreensaverAppinfo(e) {
   var stock = fs.readFileSync(path.join(SCREENSAVER_APP_DIR, 'appinfo.json'), 'utf8');
-  rememberStockType(stock);
+  // With a saver mounted, the app's manifest is the staged copy, not LG's,
+  // whose type must not be overwritten with ours.
+  if (!stagedCopyMounted()) rememberStockType(stock);
   var out = stock;
   try {
     var info = JSON.parse(stock);
-    info.type = 'qml';
-    info.main = 'qml/main.qml';
+    info.type = e && e.runtime === 'web' ? 'web' : 'qml';
+    info.main = e && e.runtime === 'web' ? 'web/index.html' : 'qml/main.qml';
     out = JSON.stringify(info, null, 2);
   } catch (e) {
     console.error('screensaver: stock appinfo.json did not parse, staging it unchanged: ' + e.message);
@@ -1295,19 +1464,46 @@ function stageSaverFiles(e, level, choice) {
   if (e.choices) choice = pickChoice(e, choice);
   var qmlDir = path.join(SCREENSAVER_DIR, 'qml');
   removeTree(qmlDir);
-  mkdirp(qmlDir);
+  removeTree(path.join(SCREENSAVER_DIR, 'web'));
+  var targetDir = e.runtime === 'web' ? SCREENSAVER_DIR : qmlDir;
+  mkdirp(targetDir);
   // An app's screen saver loads the rest from its own folder.
   var files = e.fromApp ? [] : saverFiles(e.dir);
+  var mainSource = fs.readFileSync(path.join(e.dir, e.main), 'utf8');
   for (var i = 0; i < files.length; i++) {
     var rel = files[i].rel;
     if (rel === MANIFEST || rel === e.main) continue;
-    mkdirp(path.dirname(path.join(qmlDir, rel)));
-    fs.writeFileSync(path.join(qmlDir, rel), fs.readFileSync(path.join(e.dir, rel)));
+    // A Web saver is staged at the app's root, beside its manifest and marker:
+    // only its web folder goes there.
+    if (e.runtime === 'web' && rel.indexOf('web/') !== 0) continue;
+    mkdirp(path.dirname(path.join(targetDir, rel)));
+    fs.writeFileSync(path.join(targetDir, rel), fs.readFileSync(path.join(e.dir, rel)));
+  }
+  // The Video saver uses the same faces and playlist order as Home. Stage
+  // them inside its Web app: webOS may refuse file:// loads from outside the
+  // mounted app.
+  if (e.id === 'video' && e.runtime === 'web') {
+    mkdirp(path.join(SCREENSAVER_DIR, 'web'));
+    fs.writeFileSync(path.join(SCREENSAVER_DIR, 'web', 'video-order.js'), fs.readFileSync(path.join(__dirname, '..', 'assets', 'video-order.js')));
+    var fontNames = ['Outfit-Light.ttf', 'Outfit-Regular.ttf', 'Manrope-Regular.ttf', 'Manrope-SemiBold.ttf'];
+    var sourceFonts = path.join(__dirname, '..', 'assets', 'fonts');
+    var stagedFonts = path.join(SCREENSAVER_DIR, 'web', 'fonts');
+    mkdirp(stagedFonts);
+    for (var f = 0; f < fontNames.length; f++) {
+      fs.writeFileSync(path.join(stagedFonts, fontNames[f]), fs.readFileSync(path.join(sourceFonts, fontNames[f])));
+    }
   }
   var specs = effectiveSaverEntitySpecs(e);
   var effEnts = effectiveFromSpecs(specs);
   var entityList = effectiveSaverEntityList(e);
-  fs.writeFileSync(path.join(qmlDir, 'main.qml'), fillSaverQml(e, fs.readFileSync(path.join(e.dir, e.main), 'utf8'), level, choice, effEnts, entityList));
+  if (e.runtime === 'web') {
+    var webMain = path.join(SCREENSAVER_DIR, e.main);
+    mkdirp(path.dirname(webMain));
+    fs.writeFileSync(webMain, fillSaverWeb(e, mainSource, level));
+  }
+  else fs.writeFileSync(path.join(qmlDir, 'main.qml'), fillSaverQml(e, mainSource, level, choice, effEnts, entityList));
+  // The web screen saver plays video, as a QML one importing QtMultimedia does.
+  setVideoMode(e.runtime === 'web' || saverPlaysVideo(e, mainSource, files));
   fs.writeFileSync(path.join(SCREENSAVER_DIR, SCREENSAVER_LEVEL_MARKER), String(level));
   stagedEntities = mergeActiveEntities(activeSaverEntities(effEnts), entityList);
   stagedEntityLabels = mergeActiveLabels(activeSaverLabels(specs), entityList);
@@ -1387,6 +1583,19 @@ function withLayer(qml, opacity) {
     qml.slice(end);
 }
 
+function fillSaverWeb(e, html, level) {
+  var port = (configObj && configObj.port) || 8080;
+  var token = configObj && configObj.token;
+  var videos = JSON.stringify(homeWallpapers.videoSources()).replace(/</g, '\\u003c').replace(/\u2028/g, '\\u2028').replace(/\u2029/g, '\\u2029');
+  var weather = 'http://127.0.0.1:' + port + '/api/home/weather' + (token ? '?k=' + encodeURIComponent(token) : '');
+  var busy = 'http://127.0.0.1:' + port + '/api/screensaver/video-busy' + (token ? '?k=' + encodeURIComponent(token) : '');
+  html = html.replace(/__TVWEB_VIDEOS__/g, function () { return videos; });
+  html = html.replace(/__TVWEB_HOME_WEATHER__/g, function () { return weather; });
+  html = html.replace(/__TVWEB_VIDEO_BUSY__/g, function () { return busy; });
+  html = html.replace(/__TVWEB_LAYER_OPACITY__/g, String(layerOpacity(e, level)));
+  return html;
+}
+
 function fillSaverQml(e, qml, level, choice, effEnts, entityList) {
   var port = (configObj && configObj.port) || 8080;
   var token = configObj && configObj.token;
@@ -1426,6 +1635,14 @@ function fillSaverQml(e, qml, level, choice, effEnts, entityList) {
     qml = qml.replace(/__TVWEB_HA_LIST__/g, function () { return listJson; });
   }
   if (e.uses.indexOf('level') !== -1) qml = qml.replace(/__TVWEB_LEVEL__/g, String(tunedLevel(level)));
+  if (e.uses.indexOf('videos') !== -1) {
+    var videoJson = JSON.stringify(homeWallpapers.videoSources()).replace(/\u2028/g, '\\u2028').replace(/\u2029/g, '\\u2029');
+    qml = qml.replace(/__TVWEB_VIDEOS__/g, function () { return videoJson; });
+  }
+  if (e.uses.indexOf('home-weather') !== -1) {
+    var weatherUrl = 'http://127.0.0.1:' + port + '/api/home/weather' + (token ? '?k=' + encodeURIComponent(token) : '');
+    qml = qml.replace(/__TVWEB_HOME_WEATHER__/g, function () { return weatherUrl; });
+  }
   if (e.uses.indexOf('color') !== -1) {
     var preset = findColorPreset(screensaverColor(e));
     var hex = tunedLevel(level) ? preset.bright : preset.dim;
@@ -1460,8 +1677,13 @@ function setScreensaver(mode, level, cb, choice) {
     if (!nextSaver || nextSaver.problem) {
       nextSaver = pickNextRandomSaver() || saverById('starfield') || catalog()[1];
     }
+    if (stagedScreensaver() !== 'stock' &&
+        stagedRunner() !== (nextSaver.runtime === 'web' ? 'web' : 'qml')) {
+      return switchTo(nextSaver, 'random', level, choice, cb);
+    }
     if (stagedScreensaver() !== 'stock') {
       try {
+        stageScreensaverAppinfo(nextSaver);
         stageSaverFiles(nextSaver, level, screensaverChoice(nextSaver));
         fs.writeFileSync(path.join(SCREENSAVER_DIR, SCREENSAVER_MARKER), nextSaver.id);
         try { fs.writeFileSync(path.join(SCREENSAVER_APP_DIR, SCREENSAVER_MARKER), nextSaver.id); } catch (errApp) {}
@@ -1560,6 +1782,7 @@ function swapScreensaver(saver, mode, level, choice, cb) {
   unmountScreensaver(function () {
     if (mode === 'stock') {
       clearStagedScreensaver();
+      setVideoMode(false);
       return settleScreensaverApp(function (notTaken) {
         cb({ ok: !notTaken && screensaverMode() === 'stock', current: screensaverMode(), level: screensaverLevel(), brightness: screensaverBrightness(),
              switching: switching(), error: notTaken ? STOCK_LATER_ERROR : undefined });
@@ -1568,7 +1791,7 @@ function swapScreensaver(saver, mode, level, choice, cb) {
 
     try {
       mkdirp(path.join(SCREENSAVER_DIR, 'qml'));
-      stageScreensaverAppinfo();
+      stageScreensaverAppinfo(saver);
       stageSaverFiles(saver, level, choice);
       fs.writeFileSync(path.join(SCREENSAVER_DIR, SCREENSAVER_MARKER), saver.id);
     } catch (e) {
@@ -1581,6 +1804,7 @@ function swapScreensaver(saver, mode, level, choice, cb) {
           // sam still runs LG's: put LG's files back under it, so they agree.
           return unmountScreensaver(function () {
             clearStagedScreensaver();
+            setVideoMode(false);
             cb({ ok: false, current: screensaverMode(), level: screensaverLevel(), brightness: screensaverBrightness(), switching: switching(), error: NOT_TAKEN_ERROR });
           });
         }
@@ -1599,22 +1823,29 @@ function swapScreensaver(saver, mode, level, choice, cb) {
 /*
  * An installed app's screen saver in use whose app has gone, or no longer has
  * it: LG's back, as the staged copy may need files that went with the app.
+ * The same for the Video saver once Home's playlist is emptied, whose staged
+ * page would go on playing the old one (in random mode, the next saver).
  */
-function appSaverGone() {
+function appSaverGone(playlistChanged) {
   var m = readTrimmed(path.join(SCREENSAVER_APP_DIR, SCREENSAVER_MARKER));
-  if (!m || m.indexOf(APP_PREFIX) !== 0 || saverById(m)) return;
-  console.log('screensaver: "' + m + '" is no longer installed; putting LG\'s back');
+  var e = m ? saverById(m) : null;
+  // Only on a change saved from Home: at start, the playlist may not be read yet.
+  var emptied = !!(playlistChanged && e && e.problem && e.uses.indexOf('videos') !== -1);
+  if (emptied && isRandomEnabled()) return advanceRandomSaver();
+  if (!emptied && (!m || m.indexOf(APP_PREFIX) !== 0 || e)) return;
+  console.log('screensaver: "' + m + '" ' + (emptied ? 'has no videos' : 'is no longer installed') + '; putting LG\'s back');
   setScreensaver('stock', 'dim', function (r) {
     if (!r.ok) console.error('screensaver: could not put LG\'s back: ' + (r.error || 'unknown error'));
   });
 }
 
 // At start, when the clock's format changes, and after an app is removed.
-function restageScreensaver() {
+// playlistChanged: Home's video playlist was just saved.
+function restageScreensaver(playlistChanged) {
   // Read again, as an app with a screen saver may have been removed.
   scanSavers();
   var mode = screensaverMode();
-  if (mode === 'stock') { stagedEntities = null; stagedEntityLabels = null; return appSaverGone(); }
+  if (mode === 'stock') { stagedEntities = null; stagedEntityLabels = null; return appSaverGone(playlistChanged === true); }
   var stagedId = stagedScreensaver();
   var saver = saverById(stagedId);
   if (!saver || saver.problem) {
@@ -1624,8 +1855,22 @@ function restageScreensaver() {
   if (isRandomEnabled() && (saverMissingHa(saver) || saverMinEntitiesError(saver))) {
     return advanceRandomSaver();
   }
+  // A webOS update may add a web-runtime saver while LG's app manager still
+  // has the old QML runner cached. Do not remove its working QML files or
+  // change the app manifest during startup: the saver could still be showing.
+  // Re-selecting the saver goes through switchTo(), which closes it before
+  // changing runners and staging the new files.
   try {
-    var staged = path.join(SCREENSAVER_DIR, 'qml', 'main.qml');
+    var appInfo = JSON.parse(fs.readFileSync(path.join(SCREENSAVER_APP_DIR, 'appinfo.json'), 'utf8'));
+    if ((appInfo.type === 'web') !== (saver.runtime === 'web')) {
+      console.log('screensaver: "' + saver.id + '" needs to be re-selected to change its runner safely');
+      return;
+    }
+  } catch (eInfo) {}
+  try {
+    var staged = saver.runtime === 'web'
+      ? path.join(SCREENSAVER_DIR, saver.main)
+      : path.join(SCREENSAVER_DIR, 'qml', 'main.qml');
     var before = fs.existsSync(staged) ? fs.readFileSync(staged, 'utf8') : '';
     stageSaverFiles(saver, screensaverBrightness(), screensaverChoice(saver));
     // An old id stored is written again as the one it now is.
@@ -1715,6 +1960,19 @@ function launchedShowing() {
  * remote cannot close it (G3, webOS 9.2.2). The remote's keys are watched
  * while it shows, and any of them closes it.
  */
+// Told when a screen saver launched directly opens or closes (lib/saverpoweroff).
+var launchedListeners = [];
+function onLaunchedChange(fn) { launchedListeners.push(fn); }
+
+/*
+ * Whether the screen saver launched directly is still running, asked of sam:
+ * launchedShowing answers from what was last seen.
+ */
+function launchedRunning(cb) {
+  if (!launchedDirectly || !lunaFn) return cb(false);
+  screensaverRunning(function (running) { cb(running !== false); });
+}
+
 function setLaunched(on) {
   var was = launchedDirectly;
   if (on) {
@@ -1730,6 +1988,7 @@ function setLaunched(on) {
   launchedDirectly = on;
   launchGeneration++;
   watchKeysFn(on);
+  for (var i = 0; i < launchedListeners.length; i++) launchedListeners[i](on);
 }
 
 function closeLaunched(cb) {
@@ -1745,6 +2004,7 @@ function closeLaunched(cb) {
 }
 
 function keyPressed(code) {
+  saverInputAt = Date.now();
   if (code === BTN_LEFT && !launchedDirectly) return pointerUsed();
   if (!launchedDirectly || !lunaFn) return;
   console.log('screensaver: a remote key closes the screen saver');
@@ -1765,12 +2025,39 @@ function adoptLaunched() {
   });
 }
 
+/*
+ * Whether an app holds the video decoder, as a screen saver that plays video
+ * starts (#1599). Kodi paused keeps its video, and LG's screen saver comes
+ * over a paused video: the Video screen saver's own video then took the TV's
+ * one decoder, failed, and left Kodi unable to resume. A pipeline holding a
+ * video decoder (VDEC) is one an app has: the TV's own inputs, HDMI and Live
+ * TV (type "tv"), are left out, as the TV takes those back as it likes, and
+ * Glasshouse Home lets its video go before the TV's screen saver can come.
+ * cb({ ok, busy, apps }): busy null where the TV would not say.
+ */
+function videoBusy(cb) {
+  if (!lunaFn) return cb({ ok: true, busy: null, apps: [] });
+  lunaFn('com.webos.media/getActivePipelines', {}, function (r) {
+    var list = Array.isArray(r) ? r : (r && Array.isArray(r.pipelines) ? r.pipelines : null);
+    if (!list) return cb({ ok: true, busy: null, apps: [] });
+    var apps = [];
+    var busy = list.some(function (p) {
+      if (!p || p.type === 'tv' || !Array.isArray(p.resource)) return false;
+      var holds = p.resource.some(function (x) { return x && /^VDEC/.test(String(x.resource || '')); });
+      if (holds) apps.push(String(p.currentAppId || p.appId || p.type || ''));
+      return holds;
+    });
+    cb({ ok: true, busy: busy, apps: apps });
+  });
+}
+
 function launchScreensaverApp(cb) {
   // tvpower's refusal also protects playback. An unavailable media service
   // is not evidence that nothing is playing, including on older firmware.
   mediaStateFn(function (media) {
-    if (!media) return cb(false, msg('srv.saver.unknownPlayback', 'the TV could not check whether anything is playing'));
-    if (media.state === 'playing' && media.fullScreen) {
+    var homeVideo = homeVideoBackgroundFn();
+    if (!media && !homeVideo) return cb(false, msg('srv.saver.unknownPlayback', 'the TV could not check whether anything is playing'));
+    if (media && media.state === 'playing' && media.fullScreen && !homeVideo) {
       return cb(false, msg('srv.saver.playing', 'the TV does not start a screen saver while something is playing'));
     }
     // The request and media checks can take seconds. Do not cover an input
@@ -1933,6 +2220,7 @@ function screensaverEntityLabel(entityId) {
 }
 
 module.exports = {
+  videoBusy: videoBusy,
   SCREENSAVER_APP_DIR: SCREENSAVER_APP_DIR,
   SCREENSAVER_DIR: SCREENSAVER_DIR,
   USER_SAVERS_DIR: USER_SAVERS_DIR,
@@ -1981,6 +2269,8 @@ module.exports = {
   screensaverEntities: screensaverEntities,
   screensaverEntityLabel: screensaverEntityLabel,
   launchedShowing: launchedShowing,
+  launchedRunning: launchedRunning,
+  onLaunchedChange: onLaunchedChange,
   keyPressed: keyPressed,
   pointerUsed: pointerUsed,
   adoptLaunched: adoptLaunched,

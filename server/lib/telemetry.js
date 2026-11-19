@@ -19,6 +19,7 @@ var hexColor = require('./util').hexColor;
 var path = require('path');
 var execFile = require('child_process').execFile;
 var names = require('./names');
+var hdmiLink = require('./hdmilink');
 var power = require('./power');
 var timers = require('./timers');
 
@@ -208,6 +209,13 @@ var installedApps = [];
 // Every app's title by id, hidden ones included: the app list leaves out apps
 // hidden from the home screen, but one can still be the app on screen.
 var appTitles = {};
+var BUILTIN_APP_TITLES = {
+  'com.tvweb.dashboard': 'Glasshouse',
+  'io.github.rorygallagher2024.lg-webos-dashboard': 'Glasshouse',
+  'org.webosbrew.hbchannel': 'Homebrew Channel',
+  'com.webos.app.factorywin': 'Service Menu',
+  'com.open.hidden.menu': 'Service Menu'
+};
 var lastAppsScan = 0;
 
 var SOC_ARCH = {
@@ -779,6 +787,8 @@ function remoteInfo() {
     battery: level !== null ? level : file.battery,
     batteryUpdatedAt: batteryDetails.batteryUpdatedAt || null,
     batterySource: level !== null ? batteryDetails.batterySource : file.battery !== null ? 'pairing' : null,
+    // 'high', 'mid' or 'low' where the remote gave only a step, which battery stands in for.
+    batteryStep: level !== null ? batteryDetails.batteryStep || null : null,
     batteryStatus: file.battery !== null ? 'available' : batteryDetails.batteryStatus || 'waiting',
     model: file.model,
     mac: file.mac,
@@ -931,6 +941,24 @@ function hdmiSources(status, map) {
     if (powered !== null) sources.push({ input: n, receiver: map[n], powered: powered });
   }
   return sources;
+}
+
+/*
+ * Whether each HDMI input has a powered source on its cable and a picture,
+ * by the input number, from the receivers' own files: the same reading the
+ * HDMI view uses. cb({ 1: { powered, locked } }); an input whose driver has
+ * no +5V field (the HDMI 2.0 driver of webOS 4) is left out.
+ */
+function hdmiSignalByInput(cb) {
+  hdmiReceiverMap(function (map) {
+    var status = readHdmiStatus();
+    var out = {};
+    hdmiSources(status, map).forEach(function (src) {
+      var raw = status[src.receiver] || '';
+      out[src.input] = { powered: src.powered, locked: /PHY\s+Lock\[1\]/i.test(raw) || realtekField(raw, 'phy_lock_status') === '1' };
+    });
+    cb(out);
+  });
 }
 
 /*
@@ -1541,13 +1569,30 @@ function hdmiInputs(cb) {
             // A cable in the port with no device on it, where the TV tells them apart.
             cableOnly: !seen && cableTold && devs[d].connected === true,
             signal: null,
+            // The receiver's link in detail (lib/hdmilink.js), for the HDMI view.
+            link: /** @type {?Object} */ (null),
             earc: portNum === earcPort || devs[d].port === earcPort
           });
         }
+        var up = parseFloat(String(readTrimmed('/proc/uptime') || '').split(' ')[0]);
+        var linkOpts = { now: Date.now(), uptimeMs: isFinite(up) ? Math.round(up * 1000) : null };
         for (var k = 0; k < inputs.length; k++) {
           var receiver = receiverMap[names.hdmiPort(names.hdmiKeyForPortId(inputs[k].id))];
           for (var r = 0; r < signalling.length; r++) {
             if (signalling[r].port === receiver) inputs[k].signal = signalling[r];
+          }
+          // The link in detail, for the HDMI view: the receiver's own file.
+          if (typeof receiver === 'number') {
+            var rawStatus = readHdmiReceiverStatus(receiver);
+            linkOpts.timing = rawStatus ? parseTiming(rawStatus) : null;
+            inputs[k].link = hdmiLink.detail(rawStatus, linkOpts);
+            // Errors as counted since the link came up, not one reading's.
+            var tl = inputs[k].link && inputs[k].link.locked ? hdmiLink.tally(receiver) : null;
+            if (inputs[k].link) {
+              inputs[k].link.errors = tl ? tl.errors : null;
+              inputs[k].link.corrected = tl ? tl.corrected : null;
+              inputs[k].link.errorsSince = tl ? tl.since : null;
+            }
           }
         }
         cb({ ok: true, inputs: inputs, ports: ports, earcPort: earcPort });
@@ -1655,7 +1700,10 @@ function cpuProcessRows(first, second, elapsed) {
 function collectProcesses(all, cb) {
   execFile('/bin/ps', ['-eo', 'pid,rss,comm,args'], { timeout: 4000, maxBuffer: 1024 * 1024 }, function (err, stdout) {
     if (err) return cb({ ok: false, error: msg('srv.processes.failed', 'could not read process list') });
-    cb(parseProcesses(stdout, all));
+    var res = parseProcesses(stdout, all);
+    var memTotalKb = meminfo().MemTotal || 0;
+    if (memTotalKb > 0) res.ramMb = Math.round(memTotalKb / 1024 * 10) / 10;
+    cb(res);
   });
 }
 
@@ -2324,7 +2372,7 @@ function applyForegroundApp(out, app, receiverMap, hdmiStatus) {
     // Inputs by the names given them in the TV's settings, apps by
     // their titles; the id only when neither is known.
     var isInput = inputNameMap[shortApp] && inputNameMap[shortApp] !== shortApp;
-    out.app_name = inputNameMap[shortApp] || appTitles[app.appId] || shortApp;
+    out.app_name = inputNameMap[shortApp] || appTitles[app.appId] || BUILTIN_APP_TITLES[app.appId] || shortApp;
     out.display_title = isInput ? names.inputTitle(shortApp, inputNameMap[shortApp]) : out.app_name;
 
     var hdmiOnScreen = names.hdmiPort(shortApp);
@@ -2523,7 +2571,7 @@ function getCapabilities(extra) {
 
 // An app's title, by its full id, once the installed apps have been read.
 function appTitle(appId) {
-  return appTitles[appId] || null;
+  return appTitles[appId] || BUILTIN_APP_TITLES[appId] || null;
 }
 
 function getInstalledApps() {
@@ -2564,6 +2612,8 @@ module.exports = {
   meminfo: meminfo,
   emmcInfo: emmcInfo,
   onlineCpus: onlineCpus,
+  presentCpus: presentCpus,
+  socTemp: socTemp,
   statCpu: statCpu,
   alwaysOnSupported: alwaysOnSupported,
   cpuSincePublish: cpuSincePublish,
@@ -2580,12 +2630,14 @@ module.exports = {
   netBytes: netBytes,
   getVideoSignal: getVideoSignal,
   readRemoteInfo: readRemoteInfo,
+  remoteInfo: remoteInfo,
   parseRemoteInfo: parseRemoteInfo,
   getActiveHdmiDiagnostics: getActiveHdmiDiagnostics,
   getHdmiSignal: getHdmiSignal,
   hdmiReceiverMap: hdmiReceiverMap,
   hdmiLinks: hdmiLinks,
   hdmiSources: hdmiSources,
+  hdmiSignalByInput: hdmiSignalByInput,
   readHdmiStatus: readHdmiStatus,
   getPictureEngineInfo: getPictureEngineInfo,
   signalFormat: signalFormat,
@@ -2611,6 +2663,8 @@ module.exports = {
   appStorage: appStorage,
   hdmiPorts: hdmiPorts,
   hdmiInputs: hdmiInputs,
+  parseTiming: parseTiming,
+  readHdmiReceiverStatus: readHdmiReceiverStatus,
   hdmiEarcPort: hdmiEarcPort,
   collectProcesses: collectProcesses,
   parseProcesses: parseProcesses,

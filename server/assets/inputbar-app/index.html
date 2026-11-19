@@ -72,7 +72,7 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
   // A press landing on another input switches to it this long after, as
   // LG's input bar does, unless another press moves on first.
   var SWITCH_MS = 1000;
-  var list = [], focus = 0, onPort = null, onDevs = null, underHome = false, isTransparent = false, idle = null, switchTimer = null, closing = false;
+  var list = [], focus = 0, onPort = null, onDevs = null, underHome = false, isTransparent = false, switchOnOk = false, idle = null, switchTimer = null, closing = false;
 
   function $(id) { return document.getElementById(id); }
   function bodyClass(on) {
@@ -212,7 +212,8 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
       tiles[k].className = 'tile' + (k === focus ? ' focus' : '') + (isOn(list[k]) ? ' now' : '');
     }
     stillThere();
-    if (byKey && !isSoleOn(list[focus])) switchTimer = setTimeout(choose, SWITCH_MS);
+    // Switch on OK (Inputs tab): stepping only picks an input (#1532).
+    if (byKey && !switchOnOk && !isSoleOn(list[focus])) switchTimer = setTimeout(choose, SWITCH_MS);
   }
   function choose() {
     clearTimeout(switchTimer);
@@ -269,8 +270,9 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
     var devs = now && now.kind === 'input' && Array.isArray(now.devices) ? now.devices : null;
     var under = !!now && now.behindHome === true;
     var trans = !!(cat.layout && cat.layout.inputBarTransparent);
+    switchOnOk = !!(cat.layout && cat.layout.inputBarSwitchOnOk);
     var same = JSON.stringify(fresh) === JSON.stringify(list) && port === onPort && JSON.stringify(devs) === JSON.stringify(onDevs) && under === underHome && trans === isTransparent;
-    try { window.localStorage.setItem(CACHE, JSON.stringify({ list: fresh, onPort: port, onDevs: devs, underHome: under, transparent: trans })); } catch (e) {}
+    try { window.localStorage.setItem(CACHE, JSON.stringify({ list: fresh, onPort: port, onDevs: devs, underHome: under, transparent: trans, switchOnOk: switchOnOk })); } catch (e) {}
     if (same && /\bon\b/.test(document.body.className)) return;
     // Moved already: the focus stays on the same input where it is still there.
     var keepId = moved && list[focus] ? list[focus].id : null;
@@ -301,6 +303,7 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
         onDevs = Array.isArray(kept.onDevs) ? kept.onDevs : null;
         underHome = kept.underHome === true;
         isTransparent = kept.transparent === true;
+        switchOnOk = kept.switchOnOk === true;
         focusOn();
         show();
       }

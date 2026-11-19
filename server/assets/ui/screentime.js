@@ -56,7 +56,13 @@ function renderScreenTime(d) {
   stOptions(q('st-daily'), ST_DAILY_MINUTES, s.dailyMinutes, stMinutesLabel);
   for (const [id, v] of [['st-bed-from', s.bedtimeStart], ['st-bed-to', s.bedtimeEnd]]) {
     const el = q(id);
-    if (document.activeElement !== el) el.value = v;
+    if (!v || document.activeElement !== el) el.value = v;
+  }
+  const hasBedAny = Boolean(s.bedtimeStart || s.bedtimeEnd);
+  const hasBedBoth = Boolean(s.bedtimeStart && s.bedtimeEnd);
+  if (q('st-bed-clear')) {
+    q('st-bed-clear').hidden = !hasBedAny;
+    q('st-bed-clear').disabled = off;
   }
   const actions = (sel, list, v) => {
     sel.innerHTML = list.map(a => `<option value="${a}">${esc(stActionLabel(a))}</option>`).join('');
@@ -97,6 +103,12 @@ function renderScreenTime(d) {
     free.map(c => `<option value="${esc(c.key)}">${esc(stName(c))}</option>`).join('');
   q('st-add').disabled = off || !free.length;
 
+  q('st-daily-row').hidden = !s.enabled;
+  q('st-bed-row').hidden = !s.enabled;
+  q('st-apps-row').hidden = !s.enabled;
+  q('st-action-row').hidden = !s.enabled || (!s.dailyMinutes && !hasBedBoth);
+  q('st-app-action-row').hidden = !s.enabled || !limited.length;
+
   for (const id of ['st-daily', 'st-bed-from', 'st-bed-to', 'st-action', 'st-app-action']) q(id).disabled = off;
 }
 
@@ -130,4 +142,10 @@ function toggleScreenTime() {
 function addScreenTimeApp(key) {
   if (!key || !screenTime) return;
   saveScreenTime({ apps: Object.assign({}, screenTime.settings.apps, { [key]: 60 }) });
+}
+
+function clearBedtime() {
+  if (q('st-bed-from')) q('st-bed-from').value = '';
+  if (q('st-bed-to')) q('st-bed-to').value = '';
+  saveScreenTime({ bedtimeStart: '', bedtimeEnd: '' });
 }

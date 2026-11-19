@@ -502,5 +502,116 @@ console.log('Running test-ha.js ...');
   console.log('  ✓ Input Source shows the names the TV gives its inputs, sends the port key, lists input_ids, and holds a chosen input');
 })();
 
+(function () {
+  var pub = { app: 'home', app_id: 'com.webos.app.home', app_name: 'Home', media: { state: 'playing' }, lgs: { soundMode: 'standard' } };
+  var idle = ha.mediaPlayerState(pub, '');
+  assert.strictEqual(idle.media_title, null);
+  assert.strictEqual(idle.media_channel, null);
+  var live = ha.mediaPlayerState(pub, 'http://tv:8082/icons/', { id: 'p1:ab', name: 'TVP 1', logoUrl: 'http://tv:8082/logos/p1/0123456789abcdef' });
+  assert.strictEqual(live.media_title, 'TVP 1');
+  assert.strictEqual(live.media_channel, 'TVP 1');
+  assert.strictEqual(live.state, 'playing');
+  assert.strictEqual(live.source, 'IPTV');
+  assert.strictEqual(live.sound_mode_list, 'channels');
+  assert.strictEqual(live.sound_mode, 'p1:ab', 'the current channel, for the selector');
+  assert.strictEqual(idle.sound_mode_list, null);
+  assert.strictEqual(live.sound_mode_current, 'standard', 'the sound mode in use, for the second line');
+  assert.strictEqual(idle.sound_mode, 'standard');
+  assert.strictEqual(live.pausable, false, 'no pausing without the live TV pause setting');
+  assert.strictEqual(ha.mediaPlayerState(pub, '', { name: 'TVP 1', pausable: true }).pausable, true);
+  assert.strictEqual(idle.pausable, null, 'nothing to say without a channel');
+  assert.strictEqual(live.stoppable, false, 'Internet TV has no stop');
+  assert.strictEqual(idle.stoppable, null);
+  assert.strictEqual(live.app_name, 'IPTV');
+  assert.strictEqual(idle.source, 'home', 'the app, when no channel plays');
+  assert.strictEqual(live.media_image_url, 'http://tv:8082/logos/p1/0123456789abcdef');
+  ['media_content_type', 'media_series_title', 'media_duration', 'media_position', 'media_position_updated_at'].forEach(function (k) {
+    assert.ok(Object.prototype.hasOwnProperty.call(live, k) && live[k] === null, k + ' is sent as null without a programme, so none is left from the last channel');
+  });
+  var start = new Date(2026, 10, 13, 20, 15).getTime(), end = new Date(2026, 10, 13, 21, 5).getTime();
+  var show = ha.mediaPlayerState(pub, '', { name: 'TVP 1', logoUrl: null, at: start + 600000, programme: { title: 'Wiadomosci', start: start, end: end } });
+  assert.strictEqual(show.media_content_type, 'tvshow');
+  assert.strictEqual(show.media_series_title, 'Wiadomosci (20:15-21:05)');
+  assert.strictEqual(show.media_duration, 3000);
+  assert.strictEqual(show.media_position, 600);
+  assert.strictEqual(show.media_position_updated_at, Math.round((start + 600000) / 1000));
+  assert.strictEqual(ha.mediaPlayerState(pub, 'http://tv:8082/icons/', { name: 'TVP 1', logoUrl: null }).media_image_url, 'http://tv:8082/icons/com.webos.app.home.png');
+  console.log('  ✓ The media player state carries the Internet TV channel as its title, and none without one');
+})();
+
+(function () {
+  function player(channels) {
+    var list = ha.buildEntities({ pfx: 'test/tv', universalMediaPlayer: true, channels: channels });
+    return list.filter(function (e) { return e.type === 'media_player'; })[0].payload;
+  }
+  var without = player([]);
+  assert.strictEqual(without.commands.play_media, undefined, 'no play_media without channels');
+  assert.deepEqual(without.browse.map(function (f) { return f.type; }), ['source', 'app']);
+  assert.deepEqual([without.commands.next, without.commands.previous], [{ key: 'channel', value: 'up' }, { key: 'channel', value: 'down' }]);
+  var withList = player([{ id: 'p1:ab', name: 'TVP 1', image: 'http://tv:8082/logos/p1/0123456789abcdef' }]);
+  assert.deepEqual(withList.commands.play_media, { key: 'playMedia' });
+  var folder = withList.browse[withList.browse.length - 1];
+  assert.strictEqual(folder.type, 'channel');
+  assert.strictEqual(folder.name, 'Channels');
+  assert.strictEqual(folder.items[0].id, 'p1:ab');
+  console.log('  ✓ the media browser lists the channels, picked through play_media, and next and previous change the channel');
+})();
+
+(function () {
+  var withRow = ha.buildEntities({
+    pfx: 'test/tv', universalMediaPlayer: true,
+    lgRows: [{ id: 'soundMode', type: 'choice', choices: [
+      { value: 'standard', label: 'Standard' },
+      { value: 'movie', label: 'Cinema' }
+    ] }]
+  }).filter(function (e) { return e.type === 'media_player'; })[0].payload;
+  assert.deepEqual(withRow.commands.sound_mode, { key: 'soundMode' });
+  assert.deepEqual(withRow.sound_modes, [{ id: 'standard', name: 'Standard' }, { id: 'movie', name: 'Cinema' }]);
+  var withoutRow = ha.buildEntities({ pfx: 'test/tv', universalMediaPlayer: true }).filter(function (e) { return e.type === 'media_player'; })[0].payload;
+  assert.deepEqual(withoutRow.sound_modes, [], 'no Sound Mode row on the TV means no list to offer');
+  console.log('  ✓ the Sound Mode selector lists the TV\'s own sound mode row');
+})();
+
+// Internet TV is one more source of the card where there is a lineup, and opens
+// its guide on Glasshouse Home through its own key, as a channel opens through play_media
+(function () {
+  function sources(channels) {
+    return ha.buildEntities({ pfx: 'test/tv', universalMediaPlayer: true, channels: channels })
+      .filter(function (e) { return e.type === 'media_player'; })[0].payload.sources;
+  }
+  assert.ok(!sources([]).some(function (s) { return s.name === 'IPTV'; }), 'no IPTV source without a lineup');
+  var iptv = sources([{ id: 'p1:ab', name: 'TVP 1' }]).filter(function (s) { return s.name === 'IPTV'; });
+  assert.deepEqual(iptv, [{ id: 'iptv', name: 'IPTV', key: 'openInternetTv' }]);
+  console.log('  ✓ IPTV is a source of the media player where there is an Internet TV lineup');
+})();
+
+// Internet TV in front with no channel on, its guide open: the source is IPTV and
+// the selector lists the channels, with none picked
+(function () {
+  var pub = { app: 'com.webos.app.home', lgs: { soundMode: 'standard' } };
+  var guideOpen = ha.mediaPlayerState(pub, '', { id: null, name: null, logoUrl: null, programme: null, at: 0, pausable: false });
+  assert.strictEqual(guideOpen.source, 'IPTV');
+  assert.strictEqual(guideOpen.sound_mode_list, 'channels');
+  assert.strictEqual(guideOpen.sound_mode, null, 'no channel is picked');
+  assert.strictEqual(guideOpen.sound_mode_current, 'standard');
+  assert.strictEqual(guideOpen.media_title, null);
+  assert.strictEqual(ha.mediaPlayerState(pub, '', null).sound_mode_list, null);
+  console.log('  \u2713 with the guide open, IPTV is the source and the selector lists the channels');
+})();
+
+// The integration reads availability payloads literally: off and asleep must
+// both be readings it takes as unreachable, so the card shows off at once
+(function () {
+  var item = ha.buildEntities({ pfx: 'test/tv', universalMediaPlayer: true })
+    .filter(function (e) { return e.type === 'media_player'; })[0];
+  var conf = ha.withAvailability(item, 'test/tv/status');
+  assert.strictEqual(conf.availability_topic, 'test/tv/status');
+  assert.strictEqual(conf.payload_available, 'online');
+  assert.deepEqual(conf.payload_not_available, ['off', 'asleep', 'offline']);
+  assert.strictEqual(conf.availability_template, undefined, 'the integration has no template support');
+  assert.strictEqual(conf.availability, undefined);
+  console.log('  ✓ the media player reads off and asleep as not available, and online as available');
+})();
+
 console.log('ALL test-ha.js assertions passed!\n');
 

@@ -19,7 +19,7 @@
 
   const TAB_NAMES = {
     control: 'Control', metrics: 'Metrics', apps: 'Apps', home: 'Home', inputs: 'Inputs', remote: 'Remote', ambient: 'Ambient Light',
-    oledcare: 'OLED Care', game: 'Game', servicemenu: 'Service menu',
+    oledcare: 'OLED Care', game: 'Game',
     screensaver: 'Screensaver', privacy: 'Privacy', advanced: 'System',
     mqtt: 'MQTT', server: 'Server', tools: 'Tools'
   };
@@ -65,6 +65,26 @@
       searchText: 'Logo Dimming Local dimming Dims only the static logos and banners',
       selector: '[data-oled="logoDimming"]',
       fallbackId: 'oled-rows'
+    },
+    {
+      key: 'svc:inStart',
+      title: 'In Start',
+      tab: 'advanced',
+      kind: 'action',
+      aliases: ['instart', 'in start', 'service menu', 'utt', 'power-on hours', 'tpc', 'gsr'],
+      searchText: 'In Start Service menu Diagnostics panel system status total power-on hours UTT error logs OLED panel protections TPC GSR',
+      selector: '[data-svc="open"][data-menu="inStart"]',
+      fallbackId: 'adv-servicemenu'
+    },
+    {
+      key: 'svc:ezAdjust',
+      title: 'EZ Adjust',
+      tab: 'advanced',
+      kind: 'action',
+      aliases: ['ezadjust', 'ez adjust', 'service menu', 'tool options', 'area option', 'white balance'],
+      searchText: 'EZ Adjust Service menu Hardware configuration Tool Options model regional options white balance calibration',
+      selector: '[data-svc="open"][data-menu="ezAdjust"]',
+      fallbackId: 'adv-servicemenu'
     }
   ];
 
@@ -85,7 +105,7 @@
     const tabMap = {
       'tab-control': 'control', 'tab-metrics': 'metrics', 'appspane': 'apps',
       'homepane': 'home', 'inputspane': 'inputs', 'remotepane': 'remote', 'ambientpane': 'ambient', 'oledpane': 'oledcare', 'gamepane': 'game', 'audiopane': 'audio', 'picpane': 'picture',
-      'svcpane': 'servicemenu', 'sspane': 'screensaver', 'privpane': 'privacy',
+      'sspane': 'screensaver', 'privpane': 'privacy',
       'advpane': 'advanced', 'mqttpane': 'mqtt', 'serverpane': 'server', 'toolspane': 'tools'
     };
     return tabMap[panel.id] || null;
@@ -446,6 +466,10 @@
     if (!item) return;
     if (item.tab && typeof showTab === 'function') showTab(item.tab);
     if (item.detail) item.detail.open = true;
+    const homeSub = item.target && item.target.closest ? item.target.closest('[data-home-sub]') : null;
+    if (homeSub && typeof setHomeSubView === 'function') setHomeSubView(homeSub.getAttribute('data-home-sub'));
+    const metricsSub = item.target && item.target.closest ? item.target.closest('[data-metrics-sub]') : null;
+    if (metricsSub && typeof setMetricsSubView === 'function') setMetricsSubView(metricsSub.getAttribute('data-metrics-sub'));
     if (item.target && item.target !== document.body) {
       if (!item.target.hasAttribute('tabindex') && !/^(BUTTON|INPUT|SELECT|SUMMARY|A)$/.test(item.target.tagName)) {
         item.target.setAttribute('tabindex', '-1');

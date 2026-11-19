@@ -18,6 +18,7 @@ function tv(options) {
     closeOK: true, closeReply: null, runningReply: null, watches: [], pointerWatches: [], screenOns: 0,
     power: 'Active', foreground: 'com.webos.app.home', media: { state: 'idle', fullScreen: false }
   };
+  state.homeVideo = !!options.homeVideo;
   state.luna = function (uri, params, cb) {
     if (/getPowerState$/.test(uri)) {
       return cb({ returnValue: true, state: options.startsItself && state.requested ? 'Screen Saver' : state.power });
@@ -47,6 +48,7 @@ function tv(options) {
       inputKey: require('../server/lib/names').shortAppId,
       watchKeys: function (on) { state.watches.push(on); },
       watchPointer: function (on) { state.pointerWatches.push(on); },
+      homeVideoBackground: function () { return state.homeVideo; },
       mediaState: function (cb, fresh) {
         assert.strictEqual(fresh, true, 'playback is read afresh before a fallback');
         if (state.onMedia) state.onMedia();
@@ -210,6 +212,16 @@ test('the pointer ends a Glasshouse screen saver tvpower started, and not LG\'s 
   });
 });
 
+test('a Home video wallpaper may hand over to its selected screen saver', function (done) {
+  var state = tv({ invalidState: true, homeVideo: true });
+  state.media = { state: 'playing', fullScreen: true };
+  screensavers.trigger(function (r) {
+    assert.strictEqual(r.ok, true, r.error);
+    assert.strictEqual(state.launched, 1);
+    done();
+  });
+});
+
 ['ScreenOff', 'ActiveStandby', 'com.webos.app.hdmi2', 'com.webos.app.livetv'].forEach(function (changed) {
   test('a delayed fallback respects a change to ' + changed, function (done) {
     var state = tv();
@@ -223,6 +235,65 @@ test('the pointer ends a Glasshouse screen saver tvpower started, and not LG\'s 
       done();
     });
   });
+});
+
+// A video screen saver tvpower started, ended by the TV as its video begins.
+var MARKER = screensavers.SCREENSAVER_APP_DIR + '/.tvweb-screensaver';
+var STOCK_TYPE = '/var/lib/tvweb/screensaver-stock-type';
+function videoSaverTv(saver, stockType) {
+  env.files[STOCK_TYPE] = stockType || 'flutter';
+  env.files[MARKER] = saver || 'video';
+  return tv();
+}
+function forgetVideoSaver() { delete env.files[STOCK_TYPE]; delete env.files[MARKER]; }
+
+test('a video screen saver the TV ends at once, with no key, is launched again directly', function (done) {
+  var state = videoSaverTv();
+  screensavers.onPowerChange('Screen Saver');
+  assert.strictEqual(state.watches[state.watches.length - 1], true, 'the keys are watched while it shows');
+  screensavers.onPowerChange('Active');
+  assert.strictEqual(state.launched, 1);
+  assert.strictEqual(screensavers.launchedShowing(), true, 'and a key closes it from then on');
+  screensavers.keyPressed();
+  assert.strictEqual(state.running, false);
+  forgetVideoSaver();
+  done();
+});
+
+test('a video screen saver closed by a key is not launched again', function (done) {
+  var state = videoSaverTv();
+  screensavers.onPowerChange('Screen Saver');
+  screensavers.keyPressed();
+  screensavers.onPowerChange('Active');
+  assert.strictEqual(state.launched, 0);
+  assert.strictEqual(state.watches[state.watches.length - 1], false, 'the keys are no longer watched');
+  forgetVideoSaver();
+  done();
+});
+
+test('a video screen saver that ends after a while, or a saver without video, or on LG\'s QML runner, is left closed', function (done) {
+  var realNow = Date.now, now = realNow();
+  Date.now = function () { return now; };
+  try {
+    var state = videoSaverTv();
+    screensavers.onPowerChange('Screen Saver');
+    now += 7000;
+    screensavers.onPowerChange('Active');
+    assert.strictEqual(state.launched, 0, 'ended after 7 s');
+    state = videoSaverTv('clock');
+    screensavers.onPowerChange('Screen Saver');
+    screensavers.onPowerChange('Active');
+    assert.strictEqual(state.launched, 0, 'the clock plays no video');
+    assert.deepEqual(state.watches, [], 'and its keys are left to tvpower');
+    state = videoSaverTv('video', 'qml');
+    screensavers.onPowerChange('Screen Saver');
+    screensavers.onPowerChange('Active');
+    assert.strictEqual(state.launched, 0, 'webOS 9 and earlier do not end it');
+  } finally {
+    Date.now = realNow;
+    forgetVideoSaver();
+  }
+  done();
 });
 
 var index = 0;

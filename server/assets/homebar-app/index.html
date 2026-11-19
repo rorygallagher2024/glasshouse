@@ -7,6 +7,9 @@
 *{margin:0;padding:0;box-sizing:border-box}
 /* The window is an overlay: whatever is on screen shows through above the bar. */
 html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font-family:sans-serif;color:#fff;cursor:default}
+/* Over LG's Home, which webOS 11 keeps drawn under an overlay: black, as webOS 5 leaves behind it. */
+#backdrop{display:none;position:absolute;left:0;top:0;width:1920px;height:1080px;background:#000}
+#backdrop.on{display:block}
 #shade{position:absolute;left:0;right:0;bottom:0;height:460px;opacity:0;
   background:-webkit-linear-gradient(top,rgba(0,0,0,0),rgba(0,0,0,.78));background:linear-gradient(to bottom,rgba(0,0,0,0),rgba(0,0,0,.78));
   -webkit-transition:opacity .18s ease-out;transition:opacity .18s ease-out}
@@ -25,8 +28,14 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
  * again (a shadow, a blur, opacity over the picture) changes as it moves,
  * which on a C2 (webOS 9.2.2) made each step visibly slower.
  */
+/*
+ * The row glides as Glasshouse Home's rows do: this curve follows Home's spring
+ * (SPRING in home.html) to within 2%, 90% of the way in 195 ms. At .12s, Smooth
+ * scrolling on looked no different from off (#1558). A key pressed again
+ * mid-glide starts the next from where the row is.
+ */
 #row{position:absolute;left:96px;top:18px;white-space:nowrap;font-size:0;will-change:transform;
-  -webkit-transition:-webkit-transform .12s ease-out;transition:transform .12s ease-out}
+  -webkit-transition:-webkit-transform .36s cubic-bezier(.25,.25,.15,1);transition:transform .36s cubic-bezier(.25,.25,.15,1)}
 /* Opaque, so a bright picture behind never shows through or hides a name. */
 .tile{display:inline-block;vertical-align:top;position:relative;width:180px;height:200px;margin-right:24px;padding-top:22px;border-radius:24px;
   text-align:center;background:#1e1e1e;color:#c8c8c8;border:2px solid #2e2e2e;
@@ -34,6 +43,7 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
 .tile.input{width:300px;padding:0 22px;text-align:left}
 .tile.focus{background:#fff;color:#111;border-color:#fff;-webkit-transform:scale(1.07);transform:scale(1.07)}
 .ico{display:block;width:112px;height:112px;margin:0 auto 14px;border-radius:20px;background:#333 center/contain no-repeat}
+img.ico{background:none;object-fit:contain}
 .ico.letter{line-height:112px;font-size:52px;font-weight:600;color:#fff;background:#3a3a3a}
 .nm{font-size:24px;padding:0 12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .no-app-labels .tile:not(.input){width:156px;height:156px;margin-top:22px;padding-top:20px}
@@ -53,6 +63,7 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
 </style>
 </head>
 <body>
+<div id="backdrop"></div>
 <div id="shade"></div>
 <div id="clock"></div>
 <div id="bar"><div id="row"></div></div>
@@ -130,7 +141,7 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
     visibleSince = 0;
     clearInterval(clockTimer);
     document.body.className = '';
-    closeTimer = setTimeout(function () { closeTimer = null; window.close(); }, 160);
+    closeTimer = setTimeout(function () { closeTimer = null; $('backdrop').className = ''; window.close(); }, 160);
   }
 
   function pad(n) { return n < 10 ? '0' + n : String(n); }
@@ -153,6 +164,9 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
     order.forEach(function (id) {
       if (hiddenApps.indexOf(id) !== -1 || folder.indexOf(id) !== -1) return;
       if (id === LG_HOME_TILE) {
+        // Beside Glasshouse Home (opened by a remote key, #1499), Home opens it
+        // and a held Home LG's, and launching LG's Home would open Glasshouse Home.
+        if (cat.enabled) return;
         var lgName = (layout.appNames && layout.appNames[id]) || 'LG Home';
         return out.push({ kind: 'lg', id: id, name: lgName, letter: lgName.slice(0, 2).toUpperCase() || 'LG' });
       }
@@ -195,7 +209,10 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
         '<div class="txt"><div class="nm">' + esc(e.name) + '</div>' +
         (sub ? '<div class="path">' + esc(sub) + '</div>' : '') + '</div></div></div>';
     }
-    var ico = e.icon ? '<span class="ico" style="background-image:url(\'' + esc(e.icon) + '\')"></span>'
+    // An image, decoded in the frame that draws it: a CSS background is decoded
+    // after, so a C2 (webOS 9.2.2) showed the tiles first and the icons a
+    // moment later.
+    var ico = e.icon ? '<img class="ico" src="' + esc(iconSrc(e.icon)) + '" decoding="sync" alt="">'
       : '<span class="ico letter">' + esc(e.letter) + '</span>';
     return '<div class="' + cls + '" data-i="' + i + '">' + ico + '<div class="nm">' + esc(e.name) + '</div></div>';
   }
@@ -321,8 +338,53 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
   var moved = false, waiting = 0, now = null, cat = null, labelsOff = false;
   var renderedJson = '', warmed = {}, iconScript = null, iconCallbacks = [], seq = 0;
 
+  /*
+   * The row's icons, kept beside it as data: URLs, so a Bar opened before
+   * anything has loaded (not preloaded, or after a restart) has every icon
+   * from its first frame, with no request to wait on. Fetched again each time
+   * the row is warmed, from the browser's cache, so a changed icon is kept;
+   * only the row's own are kept, ICON_CACHE_MAX at most.
+   */
+  var ICON_CACHE = 'glasshouse.homebar.icons', ICON_CACHE_MAX = 400000;
+  var iconData = {};
+  try { iconData = JSON.parse(window.localStorage.getItem(ICON_CACHE) || '{}') || {}; } catch (e) { iconData = {}; }
+  function iconSrc(url) { return iconData[url] || url; }
+  function saveIcons() {
+    try {
+      var text = JSON.stringify(iconData);
+      if (text.length <= ICON_CACHE_MAX) window.localStorage.setItem(ICON_CACHE, text);
+    } catch (e) {}
+  }
+  function keepIcon(url) {
+    if (!window.FileReader) return;
+    var x = new XMLHttpRequest();
+    x.open('GET', url, true);
+    x.responseType = 'blob';
+    x.onload = function () {
+      if (x.status !== 200 || !x.response) return;
+      var r = new FileReader();
+      r.onload = function () {
+        if (typeof r.result !== 'string' || r.result.indexOf('data:image/') !== 0 || iconData[url] === r.result) return;
+        iconData[url] = r.result;
+        saveIcons();
+      };
+      r.readAsDataURL(x.response);
+    };
+    x.send();
+  }
+
   // Keep decoded app icons in memory while hidden so opening does not paint blank boxes first.
   function warmIcons(items) {
+    var used = {};
+    items.forEach(function (e) { if (e.icon) used[e.icon] = true; });
+    var dropped = false;
+    for (var url in iconData) {
+      if (iconData.hasOwnProperty(url) && !used[url]) { delete iconData[url]; dropped = true; }
+    }
+    if (dropped) saveIcons();
+    items.forEach(function (e) {
+      if (e.icon && !warmed[e.icon + '#kept']) { warmed[e.icon + '#kept'] = true; keepIcon(e.icon); }
+    });
     items.forEach(function (e) {
       if (!e.icon || warmed[e.icon]) return;
       var img = new Image();
@@ -386,6 +448,8 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
     if (labelsChanged) scrollTo();
   }
   function openWindow() {
+    // Where LG's Home stays drawn under the bar (webOS 11), the server says so and the bar covers it.
+    if (document.body.className !== 'on') getJson(BASE + '/api/home/bar-open', function (j) { if (j && j.lgHomeUnder === true) $('backdrop').className = 'on'; });
     tick();
     clearInterval(clockTimer);
     clockTimer = setInterval(tick, 10000);
@@ -409,6 +473,38 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
   }
 
   /*
+   * Whether Glasshouse Home is on, so a remote key pressed over it does
+   * nothing (#1499). Kept, as a press is answered before the catalogue is
+   * read. The server says whether it is in front: this app may not ask the
+   * TV's app manager (getForegroundAppInfo is denied it on a B8, webOS 4.4.3).
+   */
+  var HOME_KEPT = 'glasshouse.homebar.home';
+  function keepHome(c) {
+    if (!c) return;
+    try { window.localStorage.setItem(HOME_KEPT, c.enabled ? '1' : ''); } catch (e) {}
+  }
+  function keptHome() {
+    try { return window.localStorage.getItem(HOME_KEPT) === '1'; } catch (e) { return false; }
+  }
+  // cb(true) where Glasshouse Home is in front.
+  function overHome(cb) {
+    if (!keptHome()) return cb(false);
+    var answered = false;
+    var done = function (yes) { if (!answered) { answered = true; cb(yes); } };
+    // Never held up for long: a press with no answer opens the Bar.
+    setTimeout(function () { done(false); }, 500);
+    getJson(BASE + '/api/home/now', function (j) { done(!!(j && j.homeInFront === true)); });
+  }
+  // A press: the Bar opened, unless Glasshouse Home is in front, where it closes unseen.
+  function pressed() {
+    overHome(function (yes) {
+      if (!yes) return start();
+      idleUntilOpened = false;
+      window.close();
+    });
+  }
+
+  /*
    * Prewarming while hidden: renders the cached row and fetches the catalogue
    * and app icons ahead of the Home press without showing the window, so the
    * press only switches body.on and updates the active input dot in place.
@@ -428,7 +524,7 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
       applyRow(fresh, onPort, nextLabelsOff);
     }
     ensureDevIcons(donePrewarm);
-    getJson(BASE + '/api/home/catalogue', function (j) { preCat = j; donePrewarm(); });
+    getJson(BASE + '/api/home/catalogue', function (j) { preCat = j; keepHome(j); donePrewarm(); });
   }
 
   /*
@@ -476,6 +572,7 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
       readyFor();
     });
     getJson(BASE + '/api/home/catalogue', function (j) {
+      keepHome(j);
       if (mySeq !== seq || closing) return;
       cat = j;
       readyFor();
@@ -532,13 +629,13 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
     if (idleUntilOpened || closing || document.body.className !== 'on') {
       idleUntilOpened = false;
       visibleSince = visibleSince || at;
-      start();
+      pressed();
     } else {
       close();
     }
   });
   if (idleUntilOpened) prewarm();
-  else start();
+  else pressed();
 })();
 </script>
 </body>

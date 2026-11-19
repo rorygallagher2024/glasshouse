@@ -15,7 +15,9 @@ console.log('Running test-homebar.js ...');
 
 var dir = path.join(os.tmpdir(), 'homebar-' + process.pid);
 fs.mkdirSync(dir);
-var events = [], homeKey = '', allowed = true, keyRefused = false, homeOn = true, preloads = 0;
+var events = [], homeKey = '', allowed = true, keyRefused = false, homeOn = true, preloads = 0, byKey = false;
+// webOS 11: the Home key's library changed by lib/guidepatch, which applyKeys does as the choice stands.
+var native = false, libraryOn = false, libraryRefused = false;
 function FakeSub() { this.handlers = {}; }
 FakeSub.prototype.start = function () { events.push('watch running'); sub = this; };
 var sub = null;
@@ -35,8 +37,16 @@ homebar.init({
     setImmediate(function () { cb({ ok: true }); });
   },
   allowed: function () { return allowed; },
+  native: function () { return native; },
+  nativeOn: function () { return libraryOn; },
+  applyKeys: function (cb) {
+    events.push('keys ' + (homebar.enabled() ? 'bar' : 'LG'));
+    if (!libraryRefused) libraryOn = homebar.enabled();
+    setImmediate(function () { cb(true); });
+  },
   standing: function () { return 'tried'; },
-  homeOff: function (cb) { events.push(homeOn ? 'Glasshouse Home off' : 'LG Home already'); homeOn = false; setImmediate(function () { cb({ ok: true }); }); }
+  homeOff: function (cb) { events.push(homeOn ? 'Glasshouse Home off' : 'LG Home already'); homeOn = false; setImmediate(function () { cb({ ok: true }); }); },
+  byKey: function () { return byKey; }
 });
 
 var steps = [
@@ -96,6 +106,65 @@ var steps = [
         next();
       }, 100);
     });
+  },
+  // webOS 11: the remote key filter is LG's own, the Home key's library is changed instead.
+  function (next) {
+    allowed = false; native = true; events = [];
+    assert.deepEqual(homebar.status(), { enabled: false, offered: true, standing: 'tried', native: true });
+    homebar.enable(function (r) {
+      assert.strictEqual(r.ok, true, r.error);
+      assert.deepEqual(events, ['LG Home already', 'install app', 'keys bar']);
+      assert.strictEqual(homebar.enabled(), true);
+      assert.strictEqual(libraryOn, true, 'the Home key\'s library is changed');
+      assert.strictEqual(homeKey, '', 'and no key filter is touched');
+      events = [];
+      homebar.disable(function (r2) {
+        assert.strictEqual(r2.ok, true, r2.error);
+        assert.deepEqual(events, ['keys LG', 'remove app']);
+        assert.strictEqual(libraryOn, false, 'LG\'s library is back');
+        assert.strictEqual(homebar.enabled(), false);
+        console.log('  ✓ on webOS 11 chosen, the Home key\'s library is changed, and switched off it is put back');
+        next();
+      });
+    });
+  },
+  function (next) {
+    libraryRefused = true; events = [];
+    homebar.enable(function (r) {
+      assert.strictEqual(r.ok, false, 'a change the TV did not take is a failure');
+      assert.deepEqual(events, ['LG Home already', 'install app', 'keys bar', 'keys LG', 'remove app'], 'the app taken away again');
+      assert.strictEqual(homebar.enabled(), false);
+      libraryRefused = false; native = false; allowed = true; events = [];
+      console.log('  ✓ on webOS 11 a change the TV did not take leaves the TV as it was');
+      next();
+    });
+  },
+  // A remote key set to open it, beside Glasshouse Home (#1499).
+  function (next) {
+    byKey = true;
+    var before = preloads;
+    homebar.keySet();
+    assert.deepEqual(homebar.status(), { enabled: false, offered: true, standing: 'tried', byKey: true });
+    sub.handlers.message({ running: [{ id: 'com.tvweb.homebar' }] });
+    sub.handlers.message({ running: [] });
+    waitFor(function () { return preloads > before; }, function () {
+      homebar.enable(function (r) {
+        assert.strictEqual(r.ok, true, r.error);
+        events = [];
+        homebar.disable(function (r2) {
+          assert.strictEqual(r2.ok, true, r2.error);
+          assert.deepEqual(events, ['Home key LG'], 'its app stays while a key opens it');
+          var after = preloads;
+          sub.handlers.message({ running: [{ id: 'com.tvweb.homebar' }] });
+          sub.handlers.message({ running: [] });
+          waitFor(function () { return preloads > after; }, function () {
+            byKey = false;
+            console.log('  ✓ opened by a remote key, it is kept loaded, and its app stays when it stops being the launcher');
+            next();
+          }, 'a preload for the key after the launcher is switched off', 3000);
+        });
+      });
+    }, 'a preload for the key', 3000);
   }
 ];
 (function run(i) {

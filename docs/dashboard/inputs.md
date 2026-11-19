@@ -9,6 +9,7 @@ The **Inputs** tab (`/?tab=inputs`) controls how the remote's **Input** key beha
 ### Choosing the input bar
 
 * **When you press Input on the remote:** Preview cards choose between **LG's list** and **Glasshouse Input bar**. This is the same setting as the **Input** key under [Remote keys](remote.md#remote-keys), where you can also assign the bar to any other remote key.
+* **Switch only on OK:** Off by default, so the TV switches a second after your last press. Switched on, moving along the bar only picks an input, and **OK** switches to it.
 * **Transparent tiles:** Off by default so the bar's tiles stay opaque and stepping through inputs does not repaint translucent tiles or shadows over the picture. Switch it on if you prefer the picture to show subtly through the bar.
 
 ### How it works
@@ -30,7 +31,7 @@ Each tile shows its name, subtitle (such as HDMI port or source type), and an au
 
 ### Supported TVs & background preloading
 
-* **Supported versions:** Offered without any experimental switch on **webOS 4 to 10**, where the compositor filter can hand further **Input** presses to the bar. Not offered on webOS 11 (whose remote keys are compiled inside LG's compositor) or before webOS 4.
+* **Supported versions:** Offered without any experimental switch on **webOS 4 to 10**, where the compositor filter can hand further **Input** presses to the bar. Not offered before webOS 4. On webOS 11, whose remote keys are compiled inside LG's compositor, it is offered only on a TV whose key handler Glasshouse knows how to change (an OLED48C31LA on firmware 44.00.92 so far): choosing the bar changes a few bytes of LG's `libappLaunch.so.1` in a copy mounted over it and restarts the TV's screen once, which takes about 35 s, and again each time the TV starts, and choosing **LG's list** puts it back with another restart.
 * **Fast opening:** Choosing the bar installs a hidden companion app (`com.tvweb.inputbar`) with no Home tile and keeps it preloaded in the background while the TV is on so it appears in roughly 0.4 s. Setting the last key that used it back to LG's (or uninstalling Glasshouse) removes the app.
 
 ## Your inputs
@@ -57,11 +58,11 @@ Switching modes takes effect immediately when an idle input is already on screen
 
 ## webOS versions
 
-**Glasshouse Input bar** is offered on webOS 4 to 10; [why not elsewhere](../tested-tvs.md#why-some-versions-are-not-offered). Where no one has yet reported it working on the TV's version, a note above the choice says so, with links to report a problem or that it works; see [Launchers and overlays by webOS version](../tested-tvs.md#launchers-and-overlays-by-webos-version).
+**Glasshouse Input bar** is offered on webOS 4 to 10, and on webOS 11 for the TVs described above; [why not elsewhere](../tested-tvs.md#why-some-versions-are-not-offered). Where no one has yet reported it working on the TV's version, a note above the choice says so, with links to report a problem or that it works; see [Launchers and overlays by webOS version](../tested-tvs.md#launchers-and-overlays-by-webos-version).
 
 ## TVs without the Input bar
 
-On TVs where **Glasshouse Input bar** cannot be offered (for example, **webOS 11** and **webOS 3**):
+On TVs where **Glasshouse Input bar** cannot be offered (for example, **webOS 3**, or a **webOS 11** TV whose key handler Glasshouse does not know):
 
 * **When you press Input on the remote** is hidden automatically.
 * **Your inputs** still appears if you have enabled [Glasshouse Home](home.md), [Glasshouse Minimal](home.md#glasshouse-minimal), or a [Custom](home.md#custom-launcher) launcher on the **Home** tab, so you can rename, reorder, and hide inputs there.

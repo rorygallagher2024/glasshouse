@@ -1259,15 +1259,15 @@ function uninstallApp(appId, cb) {
     var start = Date.now();
     var poll = function () {
       lunaFn('com.webos.applicationManager/listApps', {}, function (res) {
-        var apps = (res && res.apps) || [];
-        var stillThere = false;
+        var stillThere = !res || Object.prototype.toString.call(res.apps) !== '[object Array]';
+        var apps = stillThere ? [] : res.apps;
         for (var i = 0; i < apps.length; i++) {
           if (apps[i] && apps[i].id === appId) {
             stillThere = true;
             break;
           }
         }
-        if (!stillThere || (Date.now() - start) >= 3000) {
+        if (!stillThere || (Date.now() - start) >= 15000) {
           // Its screen saver, if it was the one in use, goes with it.
           screensavers.restageScreensaver();
           return refreshLauncher(function () {

@@ -48,6 +48,10 @@ env.install();
 
 var screensavers = require('../server/lib/screensavers');
 var samrescan = require('../server/lib/samrescan');
+var wallpapers = require('../server/lib/home-wallpapers');
+var wallpaperDir = '/var/lib/tvweb/test-video-' + process.pid;
+wallpapers.init(wallpaperDir);
+wallpapers.setVideoSources(['https://media.example/aerial.mov'], false, function () {});
 
 console.log('Running test-screensaver-choices.js ...');
 
@@ -56,7 +60,10 @@ screensavers.init({
   luna: env.mockLuna,
   config: { port: 8080, allowControl: true },
   webosVersion: '10.3.1',
-  saverRoots: [{ dir: path.join(__dirname, 'fixtures', 'savers-builtin'), builtin: true }]
+  saverRoots: [
+    { dir: path.join(__dirname, 'fixtures', 'savers-builtin'), builtin: true },
+    { dir: path.join(__dirname, '..', 'server', 'assets', 'screensavers'), builtin: true }
+  ]
 });
 
 function byId(id) { return screensavers.screensaverList().modes.filter(function (m) { return m.id === id; })[0]; }
@@ -91,7 +98,42 @@ process.nextTick(checked(function () {
       assert.strictEqual(r2.ok, true, r2.error);
       assert.ok(env.files[path.join(STAGE, 'qml', 'main.qml')].indexOf('"vis=one"') !== -1);
       console.log('  ✓ an option it does not have is its default');
-      done();
+      // On the TV a file cannot be written into web/ before the folder is made.
+      var fs = require('fs'), made = {}, mkdir = fs.mkdirSync, write = fs.writeFileSync;
+      fs.mkdirSync = function (dir) { made[dir] = true; return mkdir.apply(fs, arguments); };
+      fs.writeFileSync = function (file) {
+        var dir = path.dirname(String(file));
+        if (dir.indexOf(path.join(STAGE, 'web')) === 0 && !made[dir]) throw new Error('ENOENT: no such file or directory, open \'' + file + '\'');
+        return write.apply(fs, arguments);
+      };
+      screensavers.setScreensaver('video', 'dim', checked(function (r3) {
+        fs.mkdirSync = mkdir;
+        fs.writeFileSync = write;
+        assert.strictEqual(r3.ok, true, r3.error);
+        // webOS 10 runs the Video saver as a web page, beside the script that orders its playlist.
+        var videoPage = env.files[path.join(STAGE, 'web', 'index.html')];
+        assert.ok(videoPage.indexOf('https://media.example/aerial.mov') !== -1, 'playlist URL is filled into the screen saver');
+        assert.ok(videoPage.indexOf('pointsOfInterest') !== -1, 'playlist metadata is filled into the page');
+        assert.ok(String(env.files[path.join(STAGE, 'web', 'video-order.js')]).indexOf('shuffled') !== -1, 'the playlist order script is staged beside it');
+        console.log('  ✓ the Video screen saver receives the configured playlist');
+        // Home's playlist emptied: LG's screen saver comes back rather than the old playlist.
+        var marker = path.join('/usr/palm/applications/com.webos.app.screensaver', '.tvweb-screensaver');
+        assert.strictEqual(String(env.files[marker]).trim(), 'video');
+        wallpapers.setVideoSources([], false, function () {});
+        // At start, before Home has read its playlist, it stays.
+        screensavers.restageScreensaver();
+        assert.strictEqual(String(env.files[marker]).trim(), 'video', 'a restage at start leaves the Video saver');
+        screensavers.restageScreensaver(true);
+        var tries = 0;
+        (function wait() {
+          if (String(env.files[marker] || '').trim() !== 'video') {
+            console.log('  ✓ emptying the playlist puts LG\'s screen saver back');
+            return done();
+          }
+          if (++tries > 200) throw new Error('the Video saver stayed staged with no videos');
+          setImmediate(wait);
+        })();
+      }));
     }), 'nonsense');
   }), 'two');
 }));

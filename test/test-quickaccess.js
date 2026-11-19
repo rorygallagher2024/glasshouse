@@ -7,6 +7,13 @@
  */
 var assert = require('assert');
 var qa = require('../server/lib/quickaccess');
+var fs = require('fs');
+var os = require('os');
+var path = require('path');
+// LG's kept values go here, not beside the server in the checkout.
+// fs.mkdtempSync is newer than node 0.12.
+var QA_DIR = path.join(os.tmpdir(), 'quickaccess-' + process.pid);
+fs.mkdirSync(QA_DIR);
 
 console.log('Running test-quickaccess.js ...');
 
@@ -42,7 +49,7 @@ function luna(uri, params, cb) {
   else if (uri === 'com.webos.applicationManager/listApps') r.apps = APPS;
   process.nextTick(function () { cb(r); });
 }
-qa.init({ luna: luna, inputNames: { hdmi1: 'HDMI 1', hdmi2: 'Apple TV' } });
+qa.init({ stateDir: QA_DIR,  luna: luna, inputNames: { hdmi1: 'HDMI 1', hdmi2: 'Apple TV' } });
 freshTv();
 
 function checked(fn) {
@@ -97,14 +104,14 @@ qa.getQuickAccess(checked(function (r) {
             assert.ok(tv.calls.slice(before).every(function (c) { return !/^(set|reset)SystemSettings$/.test(c.uri.split('/')[1]); }), 'nothing written');
             console.log('  ✓ keys outside 1 to 9, and apps not offered, are refused without writing');
 
-            qa.init({ luna: function (u, p, cb) { process.nextTick(function () { cb({ returnValue: true, settings: {} }); }); } });
+            qa.init({ stateDir: QA_DIR,  luna: function (u, p, cb) { process.nextTick(function () { cb({ returnValue: true, settings: {} }); }); } });
             qa.getQuickAccess(checked(function (r2) {
               assert.strictEqual(r2.supported, false);
               console.log('  ✓ a TV without the keys has no Quick Access');
 
               // The same names stored another way: left alone, never written.
               var writes = 0;
-              qa.init({ luna: function (u, p, cb) {
+              qa.init({ stateDir: QA_DIR,  luna: function (u, p, cb) {
                 if (/^(set|reset)SystemSettings$/.test(u.split('/')[1])) writes++;
                 var s = {};
                 for (var n = 1; n <= 9; n++) s['magicNum' + n] = 'netflix';
@@ -119,7 +126,7 @@ qa.getQuickAccess(checked(function (r) {
 
                   // No app list: ids shown as they are, and nothing set.
                   freshTv();
-                  qa.init({ inputNames: {}, luna: function (u, p, cb) {
+                  qa.init({ stateDir: QA_DIR,  inputNames: {}, luna: function (u, p, cb) {
                     tv.calls.push({ uri: u, params: p });
                     var r = { returnValue: true };
                     if (u === 'com.webos.settingsservice/getSystemSettings') r.settings = tv.settings;

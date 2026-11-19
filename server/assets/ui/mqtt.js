@@ -2,6 +2,8 @@
 
 // ---- MQTT & Home Assistant settings ----
 let cfgPasswordSet = false;
+let cfgTls = false;
+let cfgVerify = false;
 let cfgHaEnabled = true;
 let cfgHaUrl = '';
 let cfgHaTokenSet = false;
@@ -10,9 +12,20 @@ let cfgHaWritable = true;
 function toggleMqtt() { showTab(activeTab === 'mqtt' ? 'control' : 'mqtt'); }
 
 function cfgToggle(id) {
-  const b = q(id);
-  b.classList.toggle('on');
-  if (id === 'cfg-tls') cfgSyncTls();
+  if (id === 'cfg-tls') {
+    cfgTls = !cfgTls;
+    cfgSyncTls();
+    renderCfgStatus(cfgLastStatus);
+    return;
+  }
+  if (id === 'cfg-verify') {
+    if (!cfgTls) return;
+    cfgVerify = !cfgVerify;
+    cfgSyncTls();
+    renderCfgStatus(cfgLastStatus);
+    return;
+  }
+  q(id).classList.toggle('on');
   if (id === 'cfg-enabled') {
     cfgSyncEnabled();
     renderCfgStatus(cfgLastStatus);
@@ -30,8 +43,19 @@ function cfgSyncEnabled() {
 
 // Certificate verification is meaningless without TLS, so it follows it.
 function cfgSyncTls() {
-  const on = q('cfg-tls').classList.contains('on');
-  q('cfg-verify').disabled = !on;
+  const tlsOn = !!cfgTls;
+  const verOn = !!cfgVerify;
+  updateToggle('cfg-tls', {
+    cls: tlsOn ? 'good' : 'idle',
+    label: tlsOn ? t('mqtt.cat.enabled', 'Enabled') : t('mqtt.cat.disabled', 'Disabled'),
+    on: tlsOn
+  });
+  updateToggle('cfg-verify', {
+    cls: tlsOn && verOn ? 'good' : 'idle',
+    label: verOn ? t('mqtt.cat.enabled', 'Enabled') : t('mqtt.cat.disabled', 'Disabled'),
+    on: verOn,
+    disabled: !tlsOn
+  });
 }
 
 const CFG_STATE = {
@@ -86,8 +110,7 @@ function resolveBrokerAddress(st) {
   const hostInput = q('cfg-host');
   if (!hostInput || !hostInput.value) return '';
   const port = q('cfg-port') && q('cfg-port').value;
-  const tls = q('cfg-tls') && q('cfg-tls').classList.contains('on');
-  return hostPort(hostInput.value, port || (tls ? '8883' : '1883'));
+  return hostPort(hostInput.value, port || (cfgTls ? '8883' : '1883'));
 }
 
 function updateMqttPublishPulse(st, isEnabled) {
@@ -124,7 +147,7 @@ function renderMqttBrokerNode(st, isEnabled) {
   }
   const tlsTag = q('mqtt-node-broker-tls');
   if (tlsTag) {
-    const isTls = !!(st.tls || (q('cfg-tls') && q('cfg-tls').classList.contains('on')));
+    const isTls = !!(st.tls || cfgTls);
     tlsTag.hidden = !isTls;
   }
   const dotEl = q('mqtt-dot-broker');
@@ -275,6 +298,21 @@ function cfgToggleIcons() {
   renderCfgIcons();
 }
 
+// The media_player entity (lib/ha.js mediaPlayerConfig): part of the form too.
+let cfgMediaPlayer = false;
+
+function renderCfgMediaPlayer() {
+  updateToggle('cfg-mediaplayer', {
+    cls: cfgMediaPlayer ? 'good' : 'idle',
+    label: cfgMediaPlayer ? t('mqtt.cat.enabled', 'Enabled') : t('mqtt.cat.disabled', 'Disabled')
+  });
+}
+
+function cfgToggleMediaPlayer() {
+  cfgMediaPlayer = !cfgMediaPlayer;
+  renderCfgMediaPlayer();
+}
+
 function cfgToggleCat(catId) {
   cfgEntities[catId] = !(cfgEntities[catId] !== false);
   renderEntitiesUI();
@@ -318,8 +356,10 @@ async function loadSettings(keepMsg) {
     cfgSyncEnabled();
     cfgIcons = !!j.iconServer;
     renderCfgIcons();
-    q('cfg-tls').classList.toggle('on', m.tls);
-    q('cfg-verify').classList.toggle('on', m.tlsRejectUnauthorized);
+    cfgMediaPlayer = !!m.universalMediaPlayer;
+    renderCfgMediaPlayer();
+    cfgTls = !!m.tls;
+    cfgVerify = !!m.tlsRejectUnauthorized;
     cfgSyncTls();
 
     const ha = j.homeAssistant || {};
@@ -392,12 +432,13 @@ async function saveSettings() {
       enabled: q('cfg-enabled').classList.contains('on'),
       host: q('cfg-host').value,
       port: q('cfg-port').value === '' ? null : q('cfg-port').value,
-      tls: q('cfg-tls').classList.contains('on'),
-      tlsRejectUnauthorized: q('cfg-verify').classList.contains('on'),
+      tls: cfgTls,
+      tlsRejectUnauthorized: cfgVerify,
       username: q('cfg-user').value,
       topicPrefix: q('cfg-prefix').value,
       discoveryPrefix: q('cfg-disc').value,
       telemetryIntervalMs: q('cfg-interval').value || 10000,
+      universalMediaPlayer: cfgMediaPlayer,
       entities: {
         controls: cfgEntities.controls !== false,
         oled: cfgEntities.oled !== false,

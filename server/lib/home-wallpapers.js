@@ -1,12 +1,13 @@
 /* Home wallpapers: black, one of the sets fetched when chosen, the owner's
- * own images uploaded from the browser, one for each time of day, or a
- * collection of the owner's own that Home shows in turn, in a random order.
+ * own images uploaded from the browser, one for each time of day, a shuffled
+ * collection, or a video playlist with optional Aerial captions.
  * None are packaged; with the owner's own, a time of day without one is black.
  * Kept outside assets so updates do not carry them into the rollback copy.
  * Strict ES5 for the TV's Node 0.10/0.12. */
 var fs = require('fs');
 var path = require('path');
 var crypto = require('crypto');
+var url = require('url');
 var execFile = require('child_process').execFile;
 var util = require('./util');
 var installer = require('./installer');
@@ -27,6 +28,9 @@ var MAX_UPLOAD = 5 * 1024 * 1024;
 // How many pictures the shuffled collection holds: at 1920 x 1080 one is
 // usually well under a megabyte.
 var MAX_SHUFFLE = 50;
+// A TV can stream a small playlist without keeping media on its own storage.
+var MAX_VIDEO_SOURCES = 50;
+var MAX_VIDEO_URL_LENGTH = 2048;
 // A shuffled picture's name, made here at upload: never from the browser.
 var PICTURE_ID = /^[0-9a-z]{8,24}$/;
 /*
@@ -47,17 +51,134 @@ var SETS = {
     night: '189e934db4b5aff8608110e3cd4562cb70d50c32a044a1f8c441ac924baa84a7' } }
 };
 // own is the owner's uploads by time of day, shuffle their collection; black, no picture at all.
-var CHOICES = ['black', 'landscape', 'abstract', 'own', 'shuffle'];
+var CHOICES = ['black', 'landscape', 'abstract', 'own', 'shuffle', 'video'];
 var choice = 'black';
+var videoUrls = [];
+var videoItems = [];
+var videoInputs = [];
+var videoShuffle = false;
+var videoStyle = null;
+var VIDEO_POSITIONS = ['top-left', 'top-right', 'bottom-left', 'bottom-right'];
+var VIDEO_FONTS = ['Outfit', 'Manrope'];
+var VIDEO_HEX = /^#[0-9a-f]{6}$/i;
+
+function defaultVideoStyle() {
+  return { showClock: true, showDate: true, showWeather: true, showCaptions: true,
+    infoPosition: 'top-right', captionPosition: 'top-left', clockFont: 'Outfit', textFont: 'Manrope', captionFont: 'Manrope',
+    textColor: '#ece7df', infoSize: 100, captionSize: 32 };
+}
+
+// Each valid value in value over base (the defaults unless given); anything else keeps base's.
+function readVideoStyle(value, base) {
+  var out = base || defaultVideoStyle();
+  if (!value || typeof value !== 'object') return out;
+  ['showClock', 'showDate', 'showWeather', 'showCaptions'].forEach(function (key) {
+    if (typeof value[key] === 'boolean') out[key] = value[key];
+  });
+  if (VIDEO_POSITIONS.indexOf(value.infoPosition) !== -1) out.infoPosition = value.infoPosition;
+  if (VIDEO_POSITIONS.indexOf(value.captionPosition) !== -1) out.captionPosition = value.captionPosition;
+  if (VIDEO_FONTS.indexOf(value.clockFont) !== -1) out.clockFont = value.clockFont;
+  if (VIDEO_FONTS.indexOf(value.textFont) !== -1) out.textFont = value.textFont;
+  if (VIDEO_FONTS.indexOf(value.captionFont) !== -1) out.captionFont = value.captionFont;
+  if (typeof value.textColor === 'string' && VIDEO_HEX.test(value.textColor)) out.textColor = value.textColor;
+  if (typeof value.infoSize === 'number' && isFinite(value.infoSize)) out.infoSize = Math.max(48, Math.min(144, Math.round(value.infoSize)));
+  if (typeof value.captionSize === 'number' && isFinite(value.captionSize)) out.captionSize = Math.max(18, Math.min(56, Math.round(value.captionSize)));
+  return out;
+}
+
+function copyVideoStyle() {
+  var out = {};
+  Object.keys(videoStyle || defaultVideoStyle()).forEach(function (key) { out[key] = (videoStyle || defaultVideoStyle())[key]; });
+  return out;
+}
 
 function init(stateDir) {
   uploadsDir = path.join(stateDir, 'home-wallpaper-uploads');
   setsDir = path.join(stateDir, 'home-wallpaper-sets');
   shuffleDir = path.join(stateDir, 'home-wallpaper-shuffle');
   choiceFile = path.join(stateDir, 'home-wallpaper.json');
+  choice = 'black';
+  videoUrls = [];
+  videoItems = [];
+  videoInputs = [];
+  videoShuffle = false;
+  videoStyle = defaultVideoStyle();
   var saved = util.readJson(choiceFile, null);
-  if (saved && CHOICES.indexOf(saved.choice) !== -1) choice = saved.choice;
+  if (saved && CHOICES.indexOf(saved.choice) !== -1) {
+    choice = saved.choice;
+    videoUrls = readVideoUrls(saved.videoUrls);
+    videoItems = readVideoItems(saved.videoItems, videoUrls);
+    videoInputs = readVideoUrls(saved.videoInputs || videoUrls);
+    videoShuffle = saved.videoShuffle === true;
+    videoStyle = readVideoStyle(saved.videoStyle);
+    if (choice === 'video' && !videoUrls.length) choice = 'black';
+  }
   else migrate();
+}
+
+function validVideoUrl(value) {
+  if (typeof value !== 'string') return false;
+  value = value.trim();
+  if (!value || value.length > MAX_VIDEO_URL_LENGTH || /[\u0000-\u0020"'<>\\]/.test(value)) return false;
+  var parsed;
+  try { parsed = url.parse(value); } catch (e) { return false; }
+  return !!(parsed && (parsed.protocol === 'http:' || parsed.protocol === 'https:') && parsed.hostname && !parsed.auth);
+}
+
+function readVideoUrls(values) {
+  if (!Array.isArray(values)) return [];
+  var out = [];
+  for (var i = 0; i < values.length && out.length < MAX_VIDEO_SOURCES; i++) {
+    var value = typeof values[i] === 'string' ? values[i].trim() : '';
+    if (validVideoUrl(value) && out.indexOf(value) === -1) out.push(value);
+  }
+  return out;
+}
+
+function readVideoItems(values, urls) {
+  var out = [];
+  if (Array.isArray(values)) {
+    for (var i = 0; i < values.length && out.length < MAX_VIDEO_SOURCES; i++) {
+      var item = values[i];
+      if (!item || !validVideoUrl(item.url)) continue;
+      var captions = [], points = item.pointsOfInterest || [];
+      if (Array.isArray(points)) {
+        for (var p = 0; p < points.length && captions.length < 200; p++) {
+          var at = Number(points[p] && points[p].at), caption = points[p] && points[p].text;
+          if (isFinite(at) && at >= 0 && typeof caption === 'string' && caption.trim()) captions.push({ at: at, text: caption.trim().slice(0, 300) });
+        }
+      }
+      captions.sort(function (a, b) { return a.at - b.at; });
+      out.push({ url: item.url.trim(), title: typeof item.title === 'string' ? item.title.trim().slice(0, 160) : '', pointsOfInterest: captions });
+    }
+  }
+  if (!out.length) return (urls || []).map(function (source) { return { url: source, title: '', pointsOfInterest: [] }; });
+  return out;
+}
+
+function parseVideoEntries(document) {
+  var assets = document && (document.assets || document.entries);
+  if (!Array.isArray(assets) || !assets.length) return [];
+  var fields = ['url-1080-H264', 'url-1080-SDR', 'url-1080-HDR', 'url-4K-SDR', 'url-4K-HDR', 'url'];
+  var out = [];
+  for (var i = 0; i < assets.length && out.length < MAX_VIDEO_SOURCES; i++) {
+    var asset = assets[i], source = '';
+    if (!asset || typeof asset !== 'object') continue;
+    for (var f = 0; f < fields.length; f++) {
+      if (validVideoUrl(asset[fields[f]])) { source = asset[fields[f]].trim(); break; }
+    }
+    if (!source) continue;
+    var poi = [], map = asset.pointsOfInterest || {};
+    if (map && typeof map === 'object' && !Array.isArray(map)) {
+      Object.keys(map).forEach(function (second) {
+        var caption = map[second], at = Number(second);
+        if (isFinite(at) && at >= 0 && typeof caption === 'string' && caption.trim()) poi.push({ at: at, text: caption.trim().slice(0, 300) });
+      });
+    }
+    poi.sort(function (a, b) { return a.at - b.at; });
+    out.push({ url: source, title: String(asset.accessibilityLabel || asset.title || '').trim().slice(0, 160), pointsOfInterest: poi.slice(0, 200) });
+  }
+  return out;
 }
 
 function sha256(file) {
@@ -85,7 +206,7 @@ function migrate() {
 }
 
 function saveChoice() {
-  try { fs.writeFileSync(choiceFile, JSON.stringify({ choice: choice }) + '\n'); }
+  try { fs.writeFileSync(choiceFile, JSON.stringify({ choice: choice, videoUrls: videoUrls, videoItems: videoItems, videoInputs: videoInputs, videoShuffle: videoShuffle, videoStyle: videoStyle }) + '\n'); }
   catch (e) { console.error('home: could not save the wallpaper choice: ' + e.message); }
 }
 
@@ -118,10 +239,65 @@ function status() {
     revision.push(st ? String(Number(st.mtime)) + '-' + st.size : '0');
   });
   if (choice === 'shuffle') revision.push(pictures.length + '-' + (pictures[pictures.length - 1] || ''));
-  return { available: choice === 'shuffle' ? pictures.length > 0 : SLOTS.some(function (key) { return slots[key]; }),
+  return { available: choice === 'video' ? videoUrls.length > 0 : choice === 'shuffle' ? pictures.length > 0 : SLOTS.some(function (key) { return slots[key]; }),
     choice: choice, choices: CHOICES, fetching: fetching,
     uploading: uploading || !!fetching, slots: slots, pictures: pictures, maxPictures: MAX_SHUFFLE,
+    videoUrls: videoUrls.slice(), videoItems: videoItems.slice(), videoInputs: videoInputs.slice(), videoShuffle: videoShuffle, videoStyle: copyVideoStyle(), maxVideoSources: MAX_VIDEO_SOURCES,
+    videoRevision: JSON.stringify([videoItems, videoShuffle]),
     revision: revision.join('.') };
+}
+
+function videoSources() { return { urls: videoUrls.slice(), items: videoItems.slice(), shuffle: videoShuffle, style: copyVideoStyle() }; }
+
+function setVideoSources(values, shuffle, cb, style) {
+  cb = cb || function () {};
+  if (!Array.isArray(values) || values.length > MAX_VIDEO_SOURCES) {
+    return cb({ ok: false, error: msg('srv.home.videoCount', 'Add up to {max} video URLs.', { max: String(MAX_VIDEO_SOURCES) }) });
+  }
+  var next = [], feeds = [];
+  for (var i = 0; i < values.length; i++) {
+    if (typeof values[i] !== 'string') return cb({ ok: false, error: msg('srv.home.videoUrl', 'Use an HTTP or HTTPS video URL without a user name or password.') });
+    if (!values[i].trim()) continue;
+    var value = values[i].trim();
+    if (!validVideoUrl(value)) return cb({ ok: false, error: msg('srv.home.videoUrl', 'Use an HTTP or HTTPS video URL without a user name or password.') });
+    if (next.indexOf(value) === -1) {
+      if (/\/entries\.json(?:[?#].*)?$/i.test(value)) feeds.push(value);
+      else next.push(value);
+    }
+  }
+  function commit(items) {
+    videoItems = items.slice(0, MAX_VIDEO_SOURCES);
+    videoUrls = videoItems.map(function (item) { return item.url; });
+    videoInputs = values.map(function (value) { return String(value).trim(); }).filter(Boolean);
+    videoShuffle = shuffle === true;
+    if (style && typeof style === 'object') videoStyle = readVideoStyle(style);
+    if (videoUrls.length) choice = 'video';
+    else if (choice === 'video') choice = 'black';
+    saveChoice();
+    cb({ ok: true, wallpapers: status() });
+  }
+  if (!feeds.length) return commit(next.map(function (source) { return { url: source, title: '', pointsOfInterest: [] }; }));
+  (function readFeed(feedIndex, items) {
+    if (feedIndex >= feeds.length || items.length >= MAX_VIDEO_SOURCES) return commit(items);
+    fetchMod.probeFetch(feeds[feedIndex], null, function (err, body) {
+      if (err) return cb({ ok: false, error: err.message });
+      var parsed;
+      try { parsed = JSON.parse(body); } catch (e) { return cb({ ok: false, error: msg('srv.home.videoManifest', 'The video playlist did not contain valid JSON.') }); }
+      var found = parseVideoEntries(parsed);
+      if (!found.length) return cb({ ok: false, error: msg('srv.home.videoManifestEmpty', 'The video playlist contained no usable video entries.') });
+      readFeed(feedIndex + 1, items.concat(found).slice(0, MAX_VIDEO_SOURCES));
+    });
+  })(0, next.map(function (source) { return { url: source, title: '', pointsOfInterest: [] }; }));
+}
+
+// The playlist's order and on-screen details, changed without reading the playlist again.
+function setVideoOptions(options, cb) {
+  cb = cb || function () {};
+  if (!options || typeof options !== 'object') return cb({ ok: false, error: 'videoShuffle or videoStyle expected' });
+  if (typeof options.shuffle === 'boolean') videoShuffle = options.shuffle;
+  if (options.style && typeof options.style === 'object') videoStyle = readVideoStyle(options.style, copyVideoStyle());
+  saveChoice();
+  cb({ ok: true, wallpapers: status() });
 }
 
 function setFile(name, key) { return path.join(setsDir, name, key + '.jpg'); }
@@ -314,6 +490,7 @@ function upload(key, req, cb) {
 function choose(name, cb) {
   if (CHOICES.indexOf(name) === -1) return cb({ ok: false, error: msg('srv.home.wallChoice', 'unknown wallpaper choice') });
   if (uploading || fetching) return cb({ ok: false, error: msg('srv.home.wallUploading', 'Wait for the wallpaper upload to finish.'), status: 409 });
+  if (name === 'video' && !videoUrls.length) return cb({ ok: false, error: msg('srv.home.videoEmpty', 'Add at least one video URL first.') });
   function chosen() {
     choice = name;
     saveChoice();
@@ -370,4 +547,5 @@ function removeSet(name) {
 }
 
 module.exports = { init: init, status: status, image: image, upload: upload, removeUploads: removeUploads,
-  removePictures: removePictures, choose: choose, receiveJpeg: receiveJpeg, SETS: SETS, MAX_SHUFFLE: MAX_SHUFFLE };
+  removePictures: removePictures, choose: choose, setVideoSources: setVideoSources, setVideoOptions: setVideoOptions, videoSources: videoSources,
+  parseVideoEntries: parseVideoEntries, receiveJpeg: receiveJpeg, SETS: SETS, MAX_SHUFFLE: MAX_SHUFFLE, MAX_VIDEO_SOURCES: MAX_VIDEO_SOURCES };

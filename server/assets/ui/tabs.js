@@ -17,7 +17,6 @@ const TABS = {
   game:        'gamepane',
   picture:     'picpane',
   audio:       'audiopane',
-  servicemenu: 'svcpane',
   screensaver: 'sspane',
   privacy:     'privpane',
   advanced:    'advpane',
@@ -31,7 +30,7 @@ const TAB_DOCS = {
   control: 'dashboard/control/', metrics: 'dashboard/metrics/', apps: 'dashboard/apps/', home: 'dashboard/home/',
   inputs: 'dashboard/inputs/', remote: 'dashboard/remote/',
   ambient: 'dashboard/ambient-light/',
-  oledcare: 'dashboard/oled-care/', game: 'dashboard/game/', picture: 'dashboard/picture/', audio: 'dashboard/audio/', servicemenu: 'dashboard/service-menu/',
+  oledcare: 'dashboard/oled-care/', game: 'dashboard/game/', picture: 'dashboard/picture/', audio: 'dashboard/audio/',
   screensaver: 'dashboard/screen-savers/', privacy: 'dashboard/privacy/', advanced: 'dashboard/advanced/',
   mqtt: 'HOME-ASSISTANT/', server: 'dashboard/server/', tools: 'dashboard/tools/'
 };
@@ -62,7 +61,9 @@ function showTab(name) {
   clearErr();
   // The tab was System for a while, and links and remembered tabs still say so.
   if (name === 'system') name = 'metrics';
-  if (!TABS[name]) name = 'control';
+  // Service menu moved under System; deep links and remembered tabs follow.
+  if (name === 'servicemenu') name = 'advanced';
+  if (!TABS[name] || remoteView) name = 'control';
   /*
    * The panel is about the OLED panel, so an LCD set has no tab for it - but a
    * deep link or a remembered choice can still ask for it.
@@ -89,11 +90,19 @@ function showTab(name) {
   const help = q('nav-help');
   if (help) help.href = DOCS + (TAB_DOCS[name] || 'dashboard/');
   closeNav();
-  try { localStorage.setItem('tab', name); } catch (e) { /* private window */ }
+  // The remote view leaves the full dashboard's remembered tab as it was.
+  if (!remoteView) { try { localStorage.setItem('tab', name); } catch (e) { /* private window */ } }
   relayout(false);   // the panel just became measurable
   cfgPollStatus(name === 'mqtt');
   if (name === 'metrics') loadHdmiOnce();
   watchPolling(name === 'metrics');
+  if (typeof cpuPanelOpen === 'function') {
+    if (cpuPanelOpen()) { loadProcesses(); startCpuPolling(); }
+    else stopCpuPolling();
+    if (typeof perfViewChanged === 'function') perfViewChanged();
+    if (typeof storageViewChanged === 'function') storageViewChanged();
+    if (typeof hdmiViewChanged === 'function') hdmiViewChanged();
+  }
   if (name === 'apps') { loadApps(); loadCatalog(false); pollInstall(); loadRestoredApps(); }
   if (name === 'remote') loadApps();
   if (name === 'inputs') loadInputs();
@@ -108,8 +117,7 @@ function showTab(name) {
   if (name === 'picture') loadPicture();
   picturePolling(name === 'picture');
   gamePolling(name === 'game');
-  if (name === 'advanced') { loadAdvSettings(); loadUpdate(); loadScreenTime(); }
-  if (name === 'servicemenu') loadServiceMenu();
+  if (name === 'advanced') { loadAdvSettings(); loadUpdate(); loadScreenTime(); loadServiceMenu(); }
   if (name === 'screensaver') loadScreensavers();
   if (name === 'privacy') loadPrivacy();
   if (name === 'mqtt') loadSettings();
