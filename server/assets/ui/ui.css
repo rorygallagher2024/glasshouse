@@ -1294,7 +1294,7 @@ button.pill.flash.idle[disabled]:hover{color:var(--w60);border-color:var(--edge)
 .perf-note{font-size:13px;color:var(--w60)}
 .perf-grid{display:grid;grid-template-columns:1fr;gap:18px}
 @media (min-width:980px){.perf-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.perf-wide{grid-column:1 / -1}}
-.perf-card{background:var(--w06);border:1px solid var(--w10);border-radius:var(--r-md,14px);padding:18px 20px 20px;min-width:0}
+.perf-card{background:transparent;border:1px solid var(--w12);border-radius:var(--r-md,14px);padding:18px 20px 20px;min-width:0}
 .perf-card[hidden]{display:none}
 .perf-top{display:flex;flex-wrap:wrap;align-items:flex-start;justify-content:space-between;gap:8px 18px;margin-bottom:14px}
 .perf-top .grp{margin:0 0 6px}
@@ -1308,7 +1308,7 @@ button.pill.flash.idle[disabled]:hover{color:var(--w60);border-color:var(--edge)
 .perf-sw.sa{background:var(--pf-a)} .perf-sw.sb{background:var(--pf-b)} .perf-sw.sn{background:var(--w35)} .perf-sw.st{background:var(--w80)}
 .perf-cpu-body{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:18px;align-items:start}
 .perf-chart-wrap{min-width:0}
-.perf-chart{position:relative;height:150px;border-radius:10px;background:var(--w06);touch-action:pan-y}
+.perf-chart{position:relative;height:150px;border-radius:10px;background:rgba(var(--fg),.03);touch-action:pan-y}
 #perf-cpu-chart{height:190px}
 .perf-chart svg{position:absolute;inset:0;width:100%;height:100%;display:block;border-radius:10px}
 .perf-area{stroke:none}
