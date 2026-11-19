@@ -3769,6 +3769,118 @@ step('the input bar\'s Switch only on OK is off until switched on, and kept (#15
   })();
 });
 
+step('apps take card icons from the folder by title, or the one chosen, and the switches are kept', function (done) {
+  start(null);
+  var icons = path.join(dir, 'home-icons');
+  fs.mkdirSync(icons);
+  ['netflix', 'plex', 'youtube_music', 'shahid', 'lgapp'].forEach(function (n) { fs.writeFileSync(path.join(icons, n + '.png'), 'png'); });
+  fs.writeFileSync(path.join(icons, 'Not An Icon.png'), 'png');
+  assert.deepEqual(home.cardIconNames(), ['lgapp', 'netflix', 'plex', 'shahid', 'youtube_music'], 'only names an app title can match');
+  assert.strictEqual(home.cardIconFor('net.mbc.shahid-lgapp', ['MBC Shahid']), 'shahid', 'a part of its id its title has');
+  assert.strictEqual(home.cardIconFor('com.example.lgapp', ['Other']), null, 'not a part of its id its title lacks');
+  assert.strictEqual(home.cardIconPath('plex'), path.join(icons, 'plex.png'));
+  assert.strictEqual(home.cardIconPath('../plex'), null, 'nothing outside the folder');
+  assert.strictEqual(home.cardIconPath('youtube'), null);
+  function cards(c) {
+    var out = {};
+    c.apps.forEach(function (a) {
+      if (a.card) assert.ok(/&v=\d+-\d+$/.test(a.card), 'a replaced icon is fetched again: ' + a.card);
+      out[a.id] = a.card ? a.card.replace(/&v=.*$/, '') : null;
+    });
+    return out;
+  }
+  home.catalogue(function (c) {
+    var by = cards(c);
+    assert.strictEqual(by.netflix, '/api/home/card-icon?name=netflix', 'by its title');
+    assert.strictEqual(by['cdp-30'], '/api/home/card-icon?name=plex', 'by its title, not its id');
+    assert.strictEqual(by['youtube.leanback.v4'], null, 'none where no name fits');
+    home.setLayout({ appCards: true, focusPulse: true, navSound: 'yes', appIcons: { 'youtube.leanback.v4': 'youtube_music', netflix: 'Bad Name' } }, function (r) {
+      assert.ok(r.ok, r.error);
+      assert.strictEqual(r.layout.appCards, true);
+      assert.strictEqual(r.layout.focusPulse, true);
+      assert.strictEqual(r.layout.navSound, 'off', 'only a sound Home has');
+      assert.strictEqual(fs.existsSync(home.navSoundFile('click').path), true, 'the click ships with Glasshouse');
+      assert.strictEqual(fs.existsSync(home.navSoundFile('rollover').path), true);
+      assert.strictEqual(home.navSoundFile('own'), null, 'no own sound until one is put on the TV');
+      assert.strictEqual(home.navSoundFile('../click'), null);
+      assert.strictEqual(r.layout.cardFade, 20, 'the cards fade a fifth by default');
+      assert.deepEqual(r.layout.appIcons, { 'youtube.leanback.v4': 'youtube_music' }, 'a name no pack uses is dropped');
+      home.catalogue(function (c2) {
+        assert.strictEqual(cards(c2)['youtube.leanback.v4'], '/api/home/card-icon?name=youtube_music', 'the one chosen');
+        home.setLayout({ appIcons: { 'youtube.leanback.v4': '' }, cardFade: 0 }, function (r2) {
+          assert.deepEqual(r2.layout.appIcons, {}, 'an empty choice goes back to matching by name');
+          assert.strictEqual(r2.layout.cardFade, 0, 'solid');
+          fs.readdirSync(icons).forEach(function (f) { fs.unlinkSync(path.join(icons, f)); });
+          fs.rmdirSync(icons);
+          done();
+        });
+      });
+    });
+  });
+});
+
+step('card icons and the own sound are uploaded and removed from a dashboard', function (done) {
+  start(null);
+  var EventEmitter = require('events').EventEmitter;
+  function bytes(list) { return Buffer.from ? Buffer.from(list) : new Buffer(list); }
+  function upload(body, length) {
+    var req = new EventEmitter();
+    req.headers = { 'content-length': String(length === undefined ? body.length : length) };
+    setTimeout(function () { req.emit('data', body); req.emit('end'); }, 0);
+    return req;
+  }
+  // A PNG's signature and IHDR: enough for the header check, which is all the server reads.
+  function png(w, h) {
+    var b = bytes([137, 80, 78, 71, 13, 10, 26, 10, 0, 0, 0, 13, 73, 72, 68, 82, 0, 0, 0, 0, 0, 0, 0, 0, 8, 6, 0, 0, 0, 0, 0, 0, 0, 0]);
+    b.writeUInt32BE(w, 16);
+    b.writeUInt32BE(h, 20);
+    return b;
+  }
+  var wav = Buffer.concat([bytes([82, 73, 70, 70, 36, 0, 0, 0, 87, 65, 86, 69]), bytes([0, 0, 0, 0])]);
+  var ogg = Buffer.concat([bytes([79, 103, 103, 83]), bytes([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])]);
+  var before = home.layoutVersion();
+  home.uploadCardIcon('../evil', upload(png(640, 360)), function (bad) {
+    assert.strictEqual(bad.ok, false, 'only a card icon name');
+    home.uploadCardIcon('netflix', upload(png(4000, 360)), function (big) {
+      assert.strictEqual(big.ok, false, 'held to 1280 x 720');
+      home.uploadCardIcon('netflix', upload(bytes([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33])), function (notPng) {
+        assert.strictEqual(notPng.ok, false, 'only a PNG');
+        home.uploadCardIcon('netflix', upload(png(640, 360)), function (r) {
+          assert.ok(r.ok, r.error);
+          assert.deepEqual(r.names, ['netflix']);
+          assert.notStrictEqual(home.layoutVersion(), before, 'Home loads again with it');
+          home.setLayout({ appIcons: { youtube: 'netflix' } }, function () {
+            home.removeCardIcon('netflix', function (gone) {
+              assert.ok(gone.ok, gone.error);
+              assert.deepEqual(gone.names, []);
+              assert.deepEqual(home.layout().appIcons, {}, 'an app that chose it goes back to matching by name');
+              home.uploadNavSound(upload(bytes([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12])), function (noSound) {
+                assert.strictEqual(noSound.ok, false, 'only OGG, WAV or MP3');
+                home.uploadNavSound(upload(wav), function (w) {
+                  assert.ok(w.ok, w.error);
+                  assert.strictEqual(w.ownSound.type, 'audio/wav');
+                  assert.strictEqual(home.navSoundFile('own').type, 'audio/wav');
+                  home.uploadNavSound(upload(ogg), function (o) {
+                    assert.strictEqual(o.ownSound.type, 'audio/ogg', 'a new one replaces the last whatever its kind');
+                    assert.strictEqual(fs.existsSync(path.join(dir, 'home-sounds', 'nav.wav')), false);
+                    assert.strictEqual(home.layout().ownSound.type, 'audio/ogg', 'Home and the dashboard see it');
+                    home.removeNavSound(function (rm) {
+                      assert.ok(rm.ok);
+                      assert.strictEqual(home.navSoundFile('own'), null);
+                      assert.strictEqual(home.layout().ownSound, null);
+                      done();
+                    });
+                  });
+                });
+              });
+            });
+          });
+        });
+      });
+    });
+  });
+});
+
 step('custom appNames rename apps in the catalogue and last opened, and clear back to default', function (done) {
   start({ enabled: true });
   foreground('netflix');

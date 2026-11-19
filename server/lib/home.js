@@ -520,6 +520,18 @@ function defaults() {
     deviceNames: {},
     // Custom app labels keyed by app id.
     appNames: {},
+    // Apps as wide cards with a logo from the card icon folder (CARD_ICON_DIR)
+    // rather than square icons, the card in focus pulsing, and a click as
+    // focus moves: each off until switched on.
+    appCards: false,
+    focusPulse: false,
+    // The sound as focus moves: off, click, rollover or own (lib navSoundFile).
+    navSound: 'off',
+    // How see-through the cards not in focus are, in percent: 0 is solid.
+    cardFade: 20,
+    // The card icon chosen for an app, by name, keyed by app id: in place of
+    // the one matched by its title.
+    appIcons: {},
     // Transparent tiles on the Glasshouse Input bar: off by default so stepping
     // through inputs does not repaint translucent tiles over the picture.
     inputBarTransparent: false,
@@ -621,6 +633,12 @@ function normalise(raw) {
   d.showMediaServers = raw.showMediaServers === true;
   d.deviceNames = validDeviceNames(raw.deviceNames);
   d.appNames = validAppNames(raw.appNames);
+  d.appCards = raw.appCards === true;
+  d.focusPulse = raw.focusPulse === true;
+  // true, from before there was a choice, is the click.
+  d.navSound = NAV_SOUNDS.indexOf(raw.navSound) !== -1 ? raw.navSound : raw.navSound === true ? 'click' : 'off';
+  d.cardFade = validCardFade(raw.cardFade);
+  d.appIcons = validAppIcons(raw.appIcons);
   d.inputBarTransparent = raw.inputBarTransparent === true;
   d.inputBarSwitchOnOk = raw.inputBarSwitchOnOk === true;
   // null, saved, is the view's own look; none saved keeps the default.
@@ -637,6 +655,11 @@ function normalise(raw) {
 function validDarkening(v) {
   var n = typeof v === 'number' ? Math.round(v) : NaN;
   return n >= 0 && n <= 100 ? n : 100;
+}
+
+// 0 to 90 in steps of 10; anything else is the default, 20.
+function validCardFade(v) {
+  return typeof v === 'number' && v >= 0 && v <= 90 && v % 10 === 0 ? v : 20;
 }
 
 function validHexColour(v) {
@@ -675,6 +698,22 @@ function validCustomNames(v, base, maxKeys) {
 }
 
 function validDeviceNames(v, base) { return validCustomNames(v, base, 32); }
+
+// Card icon names keyed by app id; null or '' removes one.
+var CARD_ICON_NAME = /^[a-z0-9_]{1,80}$/;
+function validAppIcons(v, base) {
+  var out = {};
+  if (base && typeof base === 'object') Object.keys(base).forEach(function (k) { out[k] = base[k]; });
+  if (!v || typeof v !== 'object' || isArray(v)) return out;
+  Object.keys(v).forEach(function (k) {
+    if (!k || k.length > 200) return;
+    var val = v[k];
+    if (val === null || val === '') return delete out[k];
+    if (typeof val === 'string' && CARD_ICON_NAME.test(val) &&
+        (Object.keys(out).length < 200 || Object.prototype.hasOwnProperty.call(out, k))) out[k] = val;
+  });
+  return out;
+}
 function validAppNames(v, base) { return validCustomNames(v, base, 200); }
 
 function validSnapshot(s) {
@@ -715,11 +754,13 @@ function readConfig() {
 // The view reloads when this changes, so it also follows the ad blocker
 // blocking or freeing LG's search, which is not saved in the layout.
 // Internet TV's revision too: a playlist read, a guide or a channel added.
+// And card icons or the own sound added or removed (mediaRevision).
 function layoutVersion() {
   readConfig();
   return String(configMtime) + (search.blocked() ? '-search-blocked' : '') +
     (iptvModule ? '-tv' + iptvModule.revision() : '') +
-    (listsRevision ? '-lists' + listsRevision : '');
+    (listsRevision ? '-lists' + listsRevision : '') +
+    (mediaRevision ? '-media' + mediaRevision : '');
 }
 
 function saveConfig() {
@@ -821,6 +862,11 @@ function setLayout(body, cb) {
     showMediaServers: typeof body.showMediaServers === 'boolean' ? body.showMediaServers : c.showMediaServers,
     deviceNames: body.deviceNames !== undefined ? oneNamePerPort(validDeviceNames(body.deviceNames, c.deviceNames), body.deviceNames) : c.deviceNames,
     appNames: body.appNames !== undefined ? validAppNames(body.appNames, c.appNames) : c.appNames,
+    appCards: typeof body.appCards === 'boolean' ? body.appCards : c.appCards,
+    focusPulse: typeof body.focusPulse === 'boolean' ? body.focusPulse : c.focusPulse,
+    navSound: body.navSound !== undefined ? body.navSound : c.navSound,
+    cardFade: body.cardFade !== undefined ? body.cardFade : c.cardFade,
+    appIcons: body.appIcons !== undefined ? validAppIcons(body.appIcons, c.appIcons) : c.appIcons,
     inputBarTransparent: typeof body.inputBarTransparent === 'boolean' ? body.inputBarTransparent : c.inputBarTransparent,
     inputBarSwitchOnOk: typeof body.inputBarSwitchOnOk === 'boolean' ? body.inputBarSwitchOnOk : c.inputBarSwitchOnOk,
     // null puts the view's own colours back.
@@ -939,7 +985,7 @@ function layoutOf(c) {
     excludedRecents: c.excludedRecents,
     searchHintSeen: c.searchHintSeen, picture: c.picture, livePreview: c.livePreview, search: c.search, recommended: c.recommended,
     fade: c.fade, wallDrift: c.wallDrift, wallCrossfade: c.wallCrossfade, smoothScroll: c.smoothScroll, slidePanels: c.slidePanels,
-    darkening: c.darkening, hideUnused: c.hideUnused, showMediaServers: c.showMediaServers, deviceNames: devNamesNow(c.deviceNames), appNames: c.appNames, inputBarTransparent: c.inputBarTransparent, inputBarSwitchOnOk: c.inputBarSwitchOnOk, showClock: c.showClock, rowsBottom: c.rowsBottom, view: c.view,
+    darkening: c.darkening, hideUnused: c.hideUnused, showMediaServers: c.showMediaServers, deviceNames: devNamesNow(c.deviceNames), appNames: c.appNames, appCards: c.appCards, focusPulse: c.focusPulse, navSound: c.navSound, ownSound: ownSoundInfo(), cardFade: c.cardFade, appIcons: c.appIcons, inputBarTransparent: c.inputBarTransparent, inputBarSwitchOnOk: c.inputBarSwitchOnOk, showClock: c.showClock, rowsBottom: c.rowsBottom, view: c.view,
     showLastOn: c.showLastOn, showAppCount: c.showAppCount, showAppLabels: c.showAppLabels, showCec: c.showCec, showTvLogos: c.showTvLogos, showPointer: c.showPointer, weather: c.weather, weatherPlace: c.weatherPlace, previewAlways: c.previewAlways, previewInTile: c.previewInTile, previewSize: c.previewSize, previewSound: c.previewSound, wallAnim: c.wallAnim,
     remoteBattery: c.remoteBattery,
     animTheme: c.animTheme, animSky: c.animSky, animLight: c.animLight, animThemes: ANIM_THEMES,
@@ -947,6 +993,258 @@ function layoutOf(c) {
     tileHighlight: c.tileHighlight,
     // Not saved: { host, by } while the ad blocker blocks LG's search (lib/home-search).
     searchBlocked: search.blocked() };
+}
+
+// ---------------------------------------------------------------- card icons
+
+/*
+ * Wide logos for the apps as cards: PNGs the owner puts in this folder, named
+ * for the app (netflix.png, youtube_music.png). Drawn on a dark 16:9 card, so
+ * 320 by 180 with a light logo on a clear background suits them best.
+ */
+function cardIconDir() { return path.join(stateDir, 'home-icons'); }
+var cardIconCache = { mtime: -1, names: [] };
+function cardIconNames() {
+  var mtime = 0;
+  try { mtime = fs.statSync(cardIconDir()).mtime.getTime(); } catch (e) { mtime = 0; }
+  if (mtime === cardIconCache.mtime) return cardIconCache.names;
+  var names = [];
+  if (mtime) {
+    try {
+      names = fs.readdirSync(cardIconDir()).map(function (f) {
+        var m = /^([a-z0-9_]{1,80})\.png$/.exec(f);
+        return m ? m[1] : null;
+      }).filter(Boolean).sort();
+    } catch (e2) { names = []; }
+  }
+  cardIconCache = { mtime: mtime, names: names };
+  return names;
+}
+
+// An app's title as its card icon is named: "YouTube Music" is youtube_music, "A&E" a_and_e.
+function cardIconKey(title) {
+  return String(title || '').toLowerCase().replace(/&/g, ' and ').replace(/\+/g, ' plus ')
+    .replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
+}
+
+/*
+ * The card icon for an app: the one chosen for it, else the first of its
+ * titles (as renamed, then its own) found by name, then a part of its app
+ * id where a title has that word, then a title's first word of four
+ * letters or more ("Spotify - Music and Podcasts" as spotify). null where
+ * none is found.
+ */
+function cardIconFor(appId, titles, chosen) {
+  var available = cardIconNames();
+  if (!available.length) return null;
+  function has(n) { return !!n && available.indexOf(n) !== -1; }
+  if (has(chosen)) return chosen;
+  var keys = [];
+  (titles || []).forEach(function (t) { var k = cardIconKey(t); if (k) keys.push(k); });
+  // A part of its app id, only where a title has that word too: LG's Apps is
+  // com.webos.app.discovery, and "MBC Shahid" is net.mbc.shahid-lgapp.
+  var titleWords = '_' + keys.join('_') + '_';
+  cardIconKey(appId).split('_').forEach(function (part) {
+    if (part.length >= 3 && titleWords.indexOf('_' + part + '_') !== -1 && keys.indexOf(part) === -1) keys.push(part);
+  });
+  (titles || []).forEach(function (t) {
+    var first = cardIconKey(t).split('_')[0];
+    if (first && first.length >= 4) keys.push(first);
+  });
+  for (var i = 0; i < keys.length; i++) if (has(keys[i])) return keys[i];
+  return null;
+}
+
+/*
+ * The sound as focus moves: Glasshouse's click or rollover (assets/sounds,
+ * Kenney's CC0 UI Audio), or the owner's own, nav.ogg, nav.wav or nav.mp3 in
+ * the home-sounds folder. null for off, or an own sound not there.
+ */
+var NAV_SOUNDS = ['off', 'click', 'rollover', 'own'];
+var NAV_SOUND_TYPES = [['ogg', 'audio/ogg'], ['wav', 'audio/wav'], ['mp3', 'audio/mpeg']];
+function navSoundFile(name) {
+  if (name === 'click' || name === 'rollover') {
+    return { path: path.join(__dirname, '..', 'assets', 'sounds', name + '.wav'), type: 'audio/wav' };
+  }
+  if (name !== 'own') return null;
+  for (var i = 0; i < NAV_SOUND_TYPES.length; i++) {
+    var file = path.join(stateDir, 'home-sounds', 'nav.' + NAV_SOUND_TYPES[i][0]);
+    if (fs.existsSync(file)) return { path: file, type: NAV_SOUND_TYPES[i][1] };
+  }
+  return null;
+}
+
+// The file for a card icon by name, or null.
+function cardIconPath(name) {
+  name = String(name || '');
+  if (!CARD_ICON_NAME.test(name) || cardIconNames().indexOf(name) === -1) return null;
+  return path.join(cardIconDir(), name + '.png');
+}
+
+// A card icon's address, with its file's time and size so a replaced one is fetched again.
+function cardIconUrl(name) {
+  var st = null;
+  try { st = fs.statSync(path.join(cardIconDir(), name + '.png')); } catch (e) {}
+  return '/api/home/card-icon?name=' + name + (st ? '&v=' + Number(st.mtime) + '-' + st.size : '');
+}
+
+/*
+ * Card icons and the own sound added or removed from a dashboard. Counted into
+ * layoutVersion, so Home loads again with them.
+ */
+var mediaRevision = 0;
+
+// A pack of a thousand wide logos is about 16 MB.
+var MAX_CARD_ICONS_BYTES = 64 * 1024 * 1024;
+var MAX_CARD_ICON_BYTES = 1024 * 1024;
+var MAX_NAV_SOUND_BYTES = 512 * 1024;
+
+// A whole upload of at most max bytes that states its size, or an error kind.
+function receiveUpload(req, max, cb) {
+  var length = String(req.headers['content-length'] || '');
+  if (req.headers['transfer-encoding'] || !/^\d{1,8}$/.test(length) || +length < 1 || +length > max) return cb('size');
+  var chunks = [], got = 0, done = false;
+  var timer = setTimeout(function () { finish('timeout'); }, 30000);
+  function finish(kind, buf) {
+    if (done) return;
+    done = true;
+    clearTimeout(timer);
+    cb(kind, buf);
+  }
+  req.on('aborted', function () { finish('aborted'); });
+  req.on('error', function () { finish('aborted'); });
+  req.on('data', function (chunk) {
+    if (done) return;
+    got += chunk.length;
+    if (got > +length) return finish('size');
+    chunks.push(chunk);
+  });
+  req.on('end', function () { if (got === +length) finish(null, Buffer.concat(chunks)); else finish('size'); });
+}
+
+// Written beside its place first, then moved there: a half-written file is never served.
+function writeUpload(dir, file, buf, cb) {
+  try { if (!fs.existsSync(dir)) fs.mkdirSync(dir); } catch (e) { return cb(e); }
+  var staging = file + '.part';
+  fs.writeFile(staging, buf, { mode: parseInt('644', 8) }, function (err) {
+    if (err) { try { fs.unlinkSync(staging); } catch (e2) {} return cb(err); }
+    fs.rename(staging, file, function (err2) {
+      if (err2) { try { fs.unlinkSync(staging); } catch (e3) {} }
+      cb(err2);
+    });
+  });
+}
+
+// The card icons' size on the TV, less the one an upload of that name replaces.
+function cardIconBytes(except) {
+  var total = 0;
+  cardIconNames().forEach(function (n) {
+    if (n === except) return;
+    try { total += fs.statSync(path.join(cardIconDir(), n + '.png')).size; } catch (e) {}
+  });
+  return total;
+}
+
+// A PNG whose header says 1 to 1280 by 1 to 720 pixels.
+function validCardPng(buf) {
+  if (buf.length < 33) return false;
+  var sig = [137, 80, 78, 71, 13, 10, 26, 10];
+  for (var i = 0; i < 8; i++) if (buf[i] !== sig[i]) return false;
+  if (buf.toString('ascii', 12, 16) !== 'IHDR') return false;
+  var w = buf.readUInt32BE(16), h = buf.readUInt32BE(20);
+  return w >= 1 && w <= 1280 && h >= 1 && h <= 720;
+}
+
+/*
+ * A card icon from a dashboard, under the name given (its app's title as a
+ * card icon name), replacing one of that name. The dashboard draws it on a
+ * clear 16:9 PNG first.
+ */
+function uploadCardIcon(name, req, cb) {
+  name = String(name || '');
+  if (!CARD_ICON_NAME.test(name)) return cb({ ok: false, error: 'invalid card icon name' });
+  receiveUpload(req, MAX_CARD_ICON_BYTES, function (kind, buf) {
+    if (kind === 'aborted') return;
+    if (kind === 'timeout') return cb({ ok: false, status: 408, error: msg('srv.home.uploadTimeout', 'The upload timed out.') });
+    if (kind || !validCardPng(buf)) {
+      return cb({ ok: false, status: kind ? 413 : 400, error: msg('srv.home.cardIconImage', 'A card icon must be a PNG of at most 1280 × 720 pixels and 1 MB.') });
+    }
+    if (cardIconBytes(name) + buf.length > MAX_CARD_ICONS_BYTES) {
+      return cb({ ok: false, status: 409, error: msg('srv.home.cardIconsFull', 'The card icons take {max} MB, all there is room for. Remove some to add another.', { max: MAX_CARD_ICONS_BYTES / 1048576 }) });
+    }
+    writeUpload(cardIconDir(), path.join(cardIconDir(), name + '.png'), buf, function (err) {
+      if (err) return cb({ ok: false, status: 500, error: err.message });
+      mediaRevision++;
+      cardIconCache.mtime = -1;
+      cb({ ok: true, name: name, names: cardIconNames() });
+    });
+  });
+}
+
+// A card icon removed, and any app's choice of it with it.
+function removeCardIcon(name, cb) {
+  var file = cardIconPath(name);
+  if (!file) return cb({ ok: false, error: 'icon not found' });
+  try { fs.unlinkSync(file); } catch (e) { return cb({ ok: false, error: e.message }); }
+  mediaRevision++;
+  // The folder's time can stay the same within a millisecond of the upload.
+  cardIconCache.mtime = -1;
+  var c = readConfig(), icons = {}, changed = false;
+  Object.keys(c.appIcons || {}).forEach(function (id) {
+    if (c.appIcons[id] === name) changed = true; else icons[id] = c.appIcons[id];
+  });
+  if (changed) { c.appIcons = icons; saveConfig(); }
+  cb({ ok: true, names: cardIconNames() });
+}
+
+// The kind of sound file by its first bytes: an Ogg page, a RIFF WAVE, or MP3 (a tag or a frame).
+function navSoundKind(buf) {
+  if (buf.length < 12) return null;
+  if (buf.toString('ascii', 0, 4) === 'OggS') return 'ogg';
+  if (buf.toString('ascii', 0, 4) === 'RIFF' && buf.toString('ascii', 8, 12) === 'WAVE') return 'wav';
+  if (buf.toString('ascii', 0, 3) === 'ID3' || (buf[0] === 255 && (buf[1] & 224) === 224)) return 'mp3';
+  return null;
+}
+
+function removeNavSoundFiles() {
+  NAV_SOUND_TYPES.forEach(function (t) {
+    try { fs.unlinkSync(path.join(stateDir, 'home-sounds', 'nav.' + t[0])); } catch (e) {}
+  });
+}
+
+// The own sound from a dashboard, in place of the last, whichever its kind.
+function uploadNavSound(req, cb) {
+  receiveUpload(req, MAX_NAV_SOUND_BYTES, function (kind, buf) {
+    if (kind === 'aborted') return;
+    if (kind === 'timeout') return cb({ ok: false, status: 408, error: msg('srv.home.uploadTimeout', 'The upload timed out.') });
+    var ext = kind ? null : navSoundKind(buf);
+    if (!ext) return cb({ ok: false, status: kind ? 413 : 400, error: msg('srv.home.navSoundFile', 'The sound must be an OGG, WAV or MP3 file of at most 512 KB.') });
+    var dir = path.join(stateDir, 'home-sounds');
+    writeUpload(dir, path.join(dir, 'nav.' + ext + '.new'), buf, function (err) {
+      if (err) return cb({ ok: false, status: 500, error: err.message });
+      removeNavSoundFiles();
+      fs.rename(path.join(dir, 'nav.' + ext + '.new'), path.join(dir, 'nav.' + ext), function (err2) {
+        if (err2) return cb({ ok: false, status: 500, error: err2.message });
+        mediaRevision++;
+        cb({ ok: true, ownSound: ownSoundInfo() });
+      });
+    });
+  });
+}
+
+function removeNavSound(cb) {
+  removeNavSoundFiles();
+  mediaRevision++;
+  cb({ ok: true, ownSound: null });
+}
+
+// The own sound as Home and the dashboard see it: its kind, size and a revision, or null.
+function ownSoundInfo() {
+  var f = navSoundFile('own');
+  if (!f) return null;
+  var st = null;
+  try { st = fs.statSync(f.path); } catch (e) { return null; }
+  return { type: f.type, size: st.size, rev: Number(st.mtime) + '-' + st.size };
 }
 
 // ---------------------------------------------------------------- what it shows
@@ -1376,6 +1674,8 @@ function build(c, apps, devs, chans, recs, tv) {
     apps: appList.map(function (a) {
       var custom = c.appNames && c.appNames[a.id];
       var app = { id: a.id, title: custom || a.title, icon: a.icon ? '/api/home/icon?id=' + encodeURIComponent(a.id) : null };
+      var card = cardIconFor(a.id, [custom, a.title], c.appIcons && c.appIcons[a.id]);
+      if (card) app.card = cardIconUrl(card);
       if (custom && custom !== a.title) {
         app.defaultTitle = a.title;
         app.renamed = true;
@@ -3655,6 +3955,15 @@ module.exports = {
   disable: function (cb) { change(function (done) { disable(function (r) { homeKeysFn(false); done(r); }); }, cb); },
   uninstall: function (cb) { change(uninstall, cb); },
   beat: beat,
+  cardIconNames: cardIconNames,
+  cardIconFor: cardIconFor,
+  cardIconPath: cardIconPath,
+  uploadCardIcon: uploadCardIcon,
+  removeCardIcon: removeCardIcon,
+  navSoundFile: navSoundFile,
+  uploadNavSound: uploadNavSound,
+  removeNavSound: removeNavSound,
+  ownSoundInfo: ownSoundInfo,
   startIdleSaver: startIdleSaver,
   pageAlive: pageAlive,
   layoutVersion: layoutVersion,

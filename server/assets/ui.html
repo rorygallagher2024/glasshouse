@@ -1444,6 +1444,89 @@
     </div>
     <div class="prot-row home-gh-row home-show-row" hidden>
       <div class="prot-main">
+        <div class="prot-title" data-t="home.appCards">Apps as cards</div>
+        <div class="prot-desc" data-t="home.appCardsDesc">Wide black cards with a logo on each, rather than square icons. To add or change an app’s logo, click its card under Rows and tiles; an app without one shows its own icon on the card.</div>
+      </div>
+      <div class="prot-status"><button type="button" class="pill idle" id="home-app-cards" onclick="homeOptIn('appCards')">&mdash;</button></div>
+    </div>
+    <div class="prot-row home-gh-row home-show-row" hidden>
+      <div class="prot-main">
+        <div class="prot-title" data-t="home.cardFade">Card transparency</div>
+        <div class="prot-desc" data-t="home.cardFadeDesc">How see-through the cards not in focus are. Solid shows them all at full strength.</div>
+      </div>
+      <div class="prot-status"><select class="pill-sel" id="home-card-fade-sel" onchange="homeCardFade(this.value)" aria-label="Card transparency" data-t-aria-label="home.cardFade">
+        <option value="0" data-t="home.cardFade.solid">Solid</option>
+        <option value="10">10%</option>
+        <option value="20">20%</option>
+        <option value="30">30%</option>
+        <option value="40">40%</option>
+        <option value="50">50%</option>
+        <option value="60">60%</option>
+        <option value="70">70%</option>
+        <option value="80">80%</option>
+        <option value="90">90%</option>
+      </select></div>
+    </div>
+    <div class="prot-row home-gh-row home-show-row" hidden>
+      <div class="prot-main">
+        <div class="prot-title" data-t="home.focusPulse">Pulse on the app in focus</div>
+        <div class="prot-desc" data-t="home.focusPulseDesc">The ring around the app you are on breathes, with a soft glow, in Home’s accent colour.</div>
+      </div>
+      <div class="prot-status"><button type="button" class="pill idle" id="home-focus-pulse" onclick="homeOptIn('focusPulse')">&mdash;</button></div>
+    </div>
+    <div class="prot-row home-gh-row home-show-row" hidden>
+      <div class="prot-main">
+        <div class="prot-title" data-t="home.navSound">Sound when moving</div>
+        <div class="prot-desc" data-t="home.navSoundDesc">A sound each time you move between tiles: a click, a softer rollover, or a sound of your own.</div>
+        <div class="prot-desc home-sound-own" id="home-nav-sound-own" hidden>
+          <span id="home-nav-sound-note" role="status"></span>
+          <button type="button" class="pill idle" id="home-nav-sound-upload" onclick="q('home-nav-sound-file').click()" data-t="home.navSound.upload">Upload a sound</button>
+          <button type="button" class="pill idle" id="home-nav-sound-remove" onclick="homeNavSoundRemove()" data-t="home.cardIconRemove">Remove</button>
+        </div>
+        <input type="file" id="home-nav-sound-file" accept=".ogg,.wav,.mp3,audio/ogg,audio/wav,audio/mpeg" hidden onchange="homeNavSoundPicked(this)">
+      </div>
+      <div class="prot-status home-sound-ctl">
+        <button type="button" class="pill idle home-sound-play" id="home-nav-sound-play" onclick="homeNavSoundPlay()" aria-label="Play" data-t-aria-label="home.navSound.play" title="Play" data-t-title="home.navSound.play">&#9654;</button>
+        <select class="pill-sel" id="home-nav-sound-sel" onchange="homeNavSound(this.value)" aria-label="Sound when moving" data-t-aria-label="home.navSound">
+        <option value="off" data-t="home.navSound.off">Off</option>
+        <option value="click" data-t="home.navSound.click">Click</option>
+        <option value="rollover" data-t="home.navSound.rollover">Rollover</option>
+        <option value="own" data-t="home.navSound.own">Your own</option>
+      </select></div>
+    </div>
+    <input type="file" id="home-card-icon-file" accept="image/png,image/jpeg,image/webp,image/svg+xml" hidden onchange="homeCardIconPicked(this)">
+    <div id="home-card-modal" class="modal-backdrop" hidden onclick="if(event.target===this)homeCardIconClose()" onkeydown="if(event.key==='Escape')homeCardIconClose()">
+      <div class="modal-card home-card-modal" role="dialog" aria-modal="true" aria-labelledby="home-card-modal-title">
+        <div class="home-card-modal-head">
+          <div class="home-card-modal-title" id="home-card-modal-title">&mdash;</div>
+          <button type="button" class="pill idle" id="home-card-modal-close" onclick="homeCardIconClose()" data-t="home.cardIconDoneBtn">Done</button>
+        </div>
+        <div class="home-card-modal-preview" id="home-card-modal-preview" onclick="homeCardIconUpload()"
+          ondragover="event.preventDefault();this.classList.add('drag')" ondragleave="this.classList.remove('drag')" ondrop="homeCardIconDrop(event)"></div>
+        <div class="sub" id="home-card-modal-state"></div>
+        <div class="btns home-card-modal-btns">
+          <button type="button" class="on" id="home-card-modal-upload" onclick="homeCardIconUpload()"></button>
+          <button type="button" id="home-card-modal-remove" onclick="homeCardIconRemove()" data-t="home.cardIconRemove">Remove</button>
+        </div>
+        <div class="sub" id="home-card-modal-note" role="status" aria-live="polite"></div>
+        <ul class="home-card-specs">
+          <li data-t="home.cardIconSpec.shape">16:9, like the card. 640 × 360 suits it; up to 1280 × 720.</li>
+          <li data-t="home.cardIconSpec.look">The card is black: a white or full-colour logo on a transparent background looks best.</li>
+          <li data-t="home.cardIconSpec.files">PNG, JPEG, WebP or SVG up to 10 MB, or drop one on the card. Another shape is fitted whole, never cropped.</li>
+        </ul>
+        <div class="home-card-modal-pick" id="home-card-modal-pickrow">
+          <label class="sub" for="home-card-modal-pick" data-t="home.cardIconOther">Or use an icon already on the TV</label>
+          <div class="home-card-modal-pickline">
+            <input type="search" class="home-card-search" id="home-card-modal-pick" translate="no" list="home-card-icon-list" autocomplete="off"
+              aria-label="Card icon" data-t-aria-label="home.cardIconLabel" onchange="homeSetCardIcon(this)">
+            <button type="button" class="pill idle" id="home-card-modal-auto" onclick="homeSetCardIcon(null)" data-t="home.cardIconMatchBtn">Match by name</button>
+          </div>
+          <datalist id="home-card-icon-list"></datalist>
+        </div>
+      </div>
+    </div>
+    <div class="prot-row home-gh-row home-show-row" hidden>
+      <div class="prot-main">
         <div class="prot-title" data-t="home.showCec">CEC addresses</div>
         <div class="prot-desc" data-t="home.showCecDesc">On each input’s tile: the HDMI-CEC address of the device behind it.</div>
       </div>
