@@ -21,9 +21,11 @@
  * mounted over LG's, which stays as it is on the read-only rootfs, and the
  * compositor (surface-manager), the only process that loads it, is restarted
  * once to read the copy. A key's change is made only while it is set: setting
- * it back changes the copy again. A restart of the TV puts LG's library back
- * until the next start of Glasshouse. A build not listed here, or one changed
- * anywhere else, is left alone.
+ * it back mounts a copy without it in place of the last, and with both keys
+ * as LG has them nothing is mounted at all. Where the compositor does not
+ * restart, the copy is taken off and it is restarted on LG's own. A restart
+ * of the TV puts LG's library back until the next start of Glasshouse. A build
+ * not listed here, or one changed anywhere else, is left alone.
  *
  * Strict ES5: runs on node 0.12.
  */
@@ -67,6 +69,8 @@ var BUILDS = {
 var library = LIBRARY;
 var stateDir = '/var/lib/tvweb';
 var execFn = execFile;
+// How many bind mounts sit on the library's path, from /proc/mounts (a test passes its own).
+var mountsFn = mountsOnLibrary;
 var cached = null;
 var copyNumber = 0;
 
@@ -75,7 +79,16 @@ function init(opts) {
   library = opts.library || LIBRARY;
   if (opts.stateDir) stateDir = opts.stateDir;
   execFn = opts.exec || execFile;
+  mountsFn = opts.mounts || mountsOnLibrary;
   cached = null;
+}
+
+function mountsOnLibrary() {
+  try {
+    return fs.readFileSync('/proc/mounts', 'utf8').split('\n').filter(function (line) {
+      return line.split(' ')[1] === library;
+    }).length;
+  } catch (e) { return 0; }
 }
 
 function sha256(buf) { return crypto.createHash('sha256').update(buf).digest('hex'); }
@@ -168,6 +181,26 @@ function run(file, args, cb) {
   execFn(file, args, { timeout: EXEC_MS }, function (err) { cb(err || null); });
 }
 
+/*
+ * Every copy mounted over LG's library taken off, so they do not pile up
+ * one on another. Lazily: the compositor still has the copy open until it
+ * restarts. cb(err), with the copies left where one would not come off.
+ */
+function unmountAll(cb) {
+  var left = mountsFn();
+  (function next(n) {
+    if (n <= 0) { cached = null; return cb(null); }
+    run('umount', ['-l', library], function (err) {
+      if (err) { cached = null; return cb(err); }
+      next(n - 1);
+    });
+  })(left);
+}
+
+function restartCompositor(cb) {
+  run('systemctl', ['restart', COMPOSITOR], cb);
+}
+
 // The copies of an earlier change, which nothing needs once another is mounted over them. One still mounted stays until the TV restarts.
 function dropOldCopies(keep) {
   try {
@@ -192,7 +225,22 @@ function apply(want, cb) {
   try { buf = fs.readFileSync(library); } catch (e) { return cb({ ok: false, error: 'read' }); }
   var found = buildOf(buf);
   if (!found) return cb({ ok: false, error: 'mismatch' });
-  var copy = copyOf(buf), build = found.build;
+  var build = found.build;
+  // Both keys as LG has them: no copy at all, LG's own library again.
+  if (!want.guide && !input) {
+    return unmountAll(function (offErr) {
+      if (offErr) return cb({ ok: false, error: 'mount' });
+      var back = status();
+      if (!back.supported || back.applied.guide || back.applied.input) return cb({ ok: false, error: 'mount' });
+      dropOldCopies(null);
+      console.log('guidepatch: LG\'s key handler is back on ' + build.tv + ', restarting the compositor');
+      restartCompositor(function (restartErr) {
+        if (restartErr) console.log('guidepatch: the compositor did not restart: ' + restartErr.message);
+        cb({ ok: !restartErr, restarted: true, error: restartErr ? 'restart' : undefined });
+      });
+    });
+  }
+  var copy = copyOf(buf);
   build.guide.forEach(function (e) { put(copy, e.at, want.guide ? e.now : e.was); });
   (input ? pickerText(build, input) : util.toBuffer(build.picker.was, 'hex')).copy(copy, build.picker.at);
   // A name of its own each time: a copy mounted earlier cannot be written over, and one of the same set may be.
@@ -205,16 +253,27 @@ function apply(want, cb) {
   } catch (e) {
     return cb({ ok: false, error: 'write' });
   }
-  run('mount', ['--bind', file, library], function (mountErr) {
-    if (mountErr) return cb({ ok: false, error: 'mount' });
-    cached = null;
-    var after = status();
-    if (!after.supported || !!after.applied.guide !== !!want.guide || after.applied.input !== input) return cb({ ok: false, error: 'mount' });
-    dropOldCopies(name);
-    console.log('guidepatch: the key handler is changed on ' + build.tv + ' (' + setKey(want) + '), restarting the compositor');
-    run('systemctl', ['restart', COMPOSITOR], function (restartErr) {
-      if (restartErr) console.log('guidepatch: the compositor did not restart: ' + restartErr.message);
-      cb({ ok: !restartErr, restarted: true, error: restartErr ? 'restart' : undefined });
+  // The copy before taken off first: mounts would otherwise pile up one on another.
+  unmountAll(function (offErr) {
+    if (offErr) return cb({ ok: false, error: 'mount' });
+    run('mount', ['--bind', file, library], function (mountErr) {
+      if (mountErr) return cb({ ok: false, error: 'mount' });
+      cached = null;
+      var after = status();
+      if (!after.supported || !!after.applied.guide !== !!want.guide || after.applied.input !== input) return cb({ ok: false, error: 'mount' });
+      dropOldCopies(name);
+      console.log('guidepatch: the key handler is changed on ' + build.tv + ' (' + setKey(want) + '), restarting the compositor');
+      restartCompositor(function (restartErr) {
+        if (!restartErr) return cb({ ok: true, restarted: true });
+        // Not restarted on the copy: it is taken off, and the compositor restarted on LG's own.
+        console.log('guidepatch: the compositor did not restart (' + restartErr.message + '); putting LG\'s key handler back');
+        unmountAll(function () {
+          restartCompositor(function (againErr) {
+            if (againErr) console.log('guidepatch: the compositor did not restart on LG\'s key handler either: ' + againErr.message);
+            cb({ ok: false, restarted: true, error: 'restart' });
+          });
+        });
+      });
     });
   });
 }

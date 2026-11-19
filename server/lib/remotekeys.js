@@ -306,7 +306,7 @@ function init(opts) {
   homeBarLauncherFn = typeof opts.homeBarLauncher === 'function' ? opts.homeBarLauncher : function () { return false; };
   inputNames = opts.inputNames || {};
   if (opts.stateDir) stateDir = opts.stateDir;
-  guidePatch.init({ stateDir: stateDir, library: opts.guideLibrary, exec: opts.guideExec });
+  guidePatch.init({ stateDir: stateDir, library: opts.guideLibrary, exec: opts.guideExec, mounts: opts.guideMounts });
   filtersDir = opts.filtersDir || LG_FILTERS_DIR;
   tvKeys = null;
   nativeFilters = null;
