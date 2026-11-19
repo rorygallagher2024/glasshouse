@@ -126,6 +126,8 @@ var perfHistoryModule = null;
 var storageScanModule = null;
 /** @type {typeof import('./sysinfo')} */
 var sysinfoModule = null;
+/** @type {typeof import('./screencolour')} */
+var screenColourModule = null;
 /** @type {typeof import('./power')} */
 var powerModule = null;
 
@@ -2237,6 +2239,10 @@ function handleRequest(req, res) {
     si.powerOns = powerModule && typeof powerModule.powerOns === 'function' ? powerModule.powerOns() : null;
     return send(res, 200, JSON.stringify(si));
   }
+  // The colours on screen, for the dashboard's glow: colours only, no picture.
+  if (pathname === '/api/screen-colour' && screenColourModule) {
+    return screenColourModule.read(function (c) { send(res, 200, JSON.stringify(c)); });
+  }
   if (pathname === '/api/storage' && storageScanModule) {
     // A rescan only by POST, so a page load never forces one.
     return storageScanModule.query(req.method === 'POST', function (d) { send(res, 200, JSON.stringify(d)); });
@@ -2818,6 +2824,7 @@ function init(opts) {
   if (opts.perfHistory) perfHistoryModule = opts.perfHistory;
   if (opts.storageScan) storageScanModule = opts.storageScan;
   if (opts.sysinfo) sysinfoModule = opts.sysinfo;
+  if (opts.screenColour) screenColourModule = opts.screenColour;
   if (opts.power) powerModule = opts.power;
   if (opts.sshKeys) sshKeysModule = opts.sshKeys;
   if (opts.screentime) screentimeModule = opts.screentime;

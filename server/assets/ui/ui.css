@@ -2877,3 +2877,15 @@ html.remote-asleep #disc-pointer,html.remote-asleep #disc-keyboard{opacity:.4;po
   .src.now .t{font-size:20px}
   #tv-name{display:none}
 }
+
+/* The screen's glow (glow.js): light from the colours on the TV's screen,
+   from the top corners, behind everything. */
+#screen-glow{position:fixed;left:0;right:0;top:0;height:min(70vh,640px);z-index:-1;pointer-events:none;
+  opacity:var(--glow-opacity,.38);
+  background:radial-gradient(55% 90% at 28% 0%,var(--glow-l),transparent 70%),
+             radial-gradient(60% 90% at 88% 0%,var(--glow-r),transparent 70%);
+  transition:--glow-l 2.4s ease,--glow-r 2.4s ease}
+[data-theme="light"] #screen-glow{--glow-opacity:.22}
+/* The page's own background would cover it: the root's shows instead. */
+html.glow body{background:transparent}
+@media (prefers-reduced-motion:reduce){#screen-glow{transition:none}}
