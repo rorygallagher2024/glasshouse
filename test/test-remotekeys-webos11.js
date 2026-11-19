@@ -551,6 +551,29 @@ step('Glasshouse Bar as the launcher changes the Home key\'s library, and a rest
   });
 });
 
+step('a copy still mounted is not removed when the other library changes', function (next) {
+  var lab = fakeLibrary();
+  var info = path.join(dir, 'mountinfo');
+  lab.opts.guideMountInfo = info;
+  rk.init(lab.opts);
+  lab.homeOn = true;
+  // The Guide change is mounted, as an earlier start did.
+  set('guide', 'open', 'action:homeGuide', function () {
+    var guideCopy = copies()[0];
+    assert.ok(guideCopy, 'a copy for the key handler');
+    // mountinfo names the real file the copy is mounted on.
+    fs.writeFileSync(info, '899 50 179:56 /var/lib/tvweb/' + guideCopy + ' ' + fs.realpathSync(lab.lib) + ' rw - ext4 /dev/x rw\n');
+    lab.launcher = true;
+    // The bar is chosen: only the Home key's library changes, and the handler's copy stays.
+    rk.ensure(function () {
+      assert.ok(copies().indexOf(guideCopy) !== -1, 'the copy still mounted is not removed');
+      fs.writeFileSync(info, '');
+      lab.launcher = false;
+      set('guide', 'lg', '', function () { rk.ensure(function () { lab.finish(next); }); });
+    });
+  });
+});
+
 step('a library LG has changed, or this build does not list, is left alone and the choice is not offered', function (next) {
   var lib = path.join(dir, 'libappLaunch-unlisted.so.1');
   fs.writeFileSync(lib, 'not a library this server knows');

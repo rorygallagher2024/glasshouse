@@ -110,8 +110,9 @@ var LIBRARIES = {
 var files = {};
 var stateDir = '/var/lib/tvweb';
 var execFn = execFile;
-// How many bind mounts sit on the library's path, from /proc/mounts (a test passes its own).
-var mountsFn = mountsOnLibrary;
+// Where the mounts are read from, and how many of our mounts sit on a library where a test passes its own count.
+var mountInfoFile = '/proc/self/mountinfo';
+var mountsFn = null;
 var cached = null;
 var copyNumber = 0;
 
@@ -120,18 +121,12 @@ function init(opts) {
   files = { appLaunch: opts.library || LIBRARIES.appLaunch.file, systemUI: opts.systemUiLibrary || LIBRARIES.systemUI.file };
   if (opts.stateDir) stateDir = opts.stateDir;
   execFn = opts.exec || execFile;
-  mountsFn = opts.mounts || mountsOnLibrary;
+  mountInfoFile = opts.mountInfo || '/proc/self/mountinfo';
+  mountsFn = opts.mounts || null;
   cached = null;
 }
 init();
 
-function mountsOnLibrary() {
-  try {
-    return fs.readFileSync('/proc/mounts', 'utf8').split('\n').filter(function (line) {
-      return line.split(' ')[1] === library;
-    }).length;
-  } catch (e) { return 0; }
-}
 
 function sha256(buf) { return crypto.createHash('sha256').update(buf).digest('hex'); }
 
