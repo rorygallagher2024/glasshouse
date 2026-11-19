@@ -1507,6 +1507,28 @@ background when it is over ten minutes old; the first waits for it.
 
 ---
 
+## HDMI link detail
+
+`server/lib/hdmilink.js` reads one receiver's status file from LG's HDMI
+driver (`/proc/lg/hdmi20/port<n>/status`) for the Metrics tab's HDMI view, and
+`GET /api/hdmi` adds it to each input as `link`. Size, refresh and pixel clock
+come from telemetry's `parseTiming` of the same file, which corrects the
+driver's off-by-one heights and, on TMDS, deep colour's inflated totals. The
+rate a mode takes is the pixel clock by the bits a pixel takes on the wire
+(4:2:2 is always 24, 4:2:0 half of 4:4:4) and the link's coding (18/16 on FRL,
+10/8 on TMDS), against the link's rated speed, as HDMI's own tables state
+it. The driver's times are milliseconds since boot and become clock times by
+`/proc/uptime`. Without a lock, a sleeping source's last mode and counts are
+still in the file and are cleared.
+
+The FRL and TMDS character error counters cover a short interval and start
+again, so every 5 seconds each locked receiver's counts are added up from when
+the cable was connected (`Cable Connected Time`); a new connection, or losing
+the lock, starts again. The driver's `PHY Error Count` climbs on a clean link
+too and is not used.
+
+---
+
 ## Counting watch time
 
 `server/lib/history.js` counts, while it is switched on, how long the screen

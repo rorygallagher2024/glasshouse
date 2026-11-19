@@ -471,6 +471,7 @@ async function tick() {
     const primList = [resStr, drBadge, modeBadge].filter(Boolean);
     q('stream-primary').innerHTML = primList.length ? primList.join('  ') : '&mdash;';
 
+    if (typeof hdmiStats === 'function') hdmiStats(d);
     renderHdmiDiag(d.hdmi_diag, d.colorimetry || (d.picture_engine && d.picture_engine.colorimetry) || '');
 
     // temp is null in two different situations: the sensor is warming up

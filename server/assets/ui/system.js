@@ -103,6 +103,7 @@ async function loadHdmi() {
     const act = d.inputs.find(i => i.active);
     q('hdmi-cur').textContent = ': ' + (act ? act.label : t('metrics.hdmi.noInput', 'no active input'));
     renderHdmiGrid();
+    if (typeof renderHdmiLinks === 'function') renderHdmiLinks(d);
   } catch (e) {
     q('hdmi-grid').innerHTML = `<div class="sub">${esc(t('metrics.hdmi.failed', 'Could not read HDMI state \u2014 {error}', { error: e.message }))}</div>`;
   }
@@ -200,7 +201,7 @@ function cpuPanelOpen() {
 }
 
 function setMetricsSubView(view) {
-  const valid = ['overview', 'performance', 'storage', 'watch', 'advanced'];
+  const valid = ['overview', 'performance', 'storage', 'hdmi', 'watch', 'advanced'];
   // System info was called Advanced, and held the process lists.
   if (view === 'info') view = 'advanced';
   metricsSubView = valid.indexOf(view) !== -1 ? view : 'overview';
@@ -223,4 +224,5 @@ function setMetricsSubView(view) {
   }
   if (typeof perfViewChanged === 'function') perfViewChanged();
   if (typeof storageViewChanged === 'function') storageViewChanged();
+  if (typeof hdmiViewChanged === 'function') hdmiViewChanged();
 }

@@ -19,6 +19,7 @@ var hexColor = require('./util').hexColor;
 var path = require('path');
 var execFile = require('child_process').execFile;
 var names = require('./names');
+var hdmiLink = require('./hdmilink');
 var power = require('./power');
 var timers = require('./timers');
 
@@ -1550,13 +1551,30 @@ function hdmiInputs(cb) {
             // A cable in the port with no device on it, where the TV tells them apart.
             cableOnly: !seen && cableTold && devs[d].connected === true,
             signal: null,
+            // The receiver's link in detail (lib/hdmilink.js), for the HDMI view.
+            link: /** @type {?Object} */ (null),
             earc: portNum === earcPort || devs[d].port === earcPort
           });
         }
+        var up = parseFloat(String(readTrimmed('/proc/uptime') || '').split(' ')[0]);
+        var linkOpts = { now: Date.now(), uptimeMs: isFinite(up) ? Math.round(up * 1000) : null };
         for (var k = 0; k < inputs.length; k++) {
           var receiver = receiverMap[names.hdmiPort(names.hdmiKeyForPortId(inputs[k].id))];
           for (var r = 0; r < signalling.length; r++) {
             if (signalling[r].port === receiver) inputs[k].signal = signalling[r];
+          }
+          // The link in detail, for the HDMI view: the receiver's own file.
+          if (typeof receiver === 'number') {
+            var rawStatus = readHdmiReceiverStatus(receiver);
+            linkOpts.timing = rawStatus ? parseTiming(rawStatus) : null;
+            inputs[k].link = hdmiLink.detail(rawStatus, linkOpts);
+            // Errors as counted since the link came up, not one reading's.
+            var tl = inputs[k].link && inputs[k].link.locked ? hdmiLink.tally(receiver) : null;
+            if (inputs[k].link) {
+              inputs[k].link.errors = tl ? tl.errors : null;
+              inputs[k].link.corrected = tl ? tl.corrected : null;
+              inputs[k].link.errorsSince = tl ? tl.since : null;
+            }
           }
         }
         cb({ ok: true, inputs: inputs, ports: ports, earcPort: earcPort });
@@ -2626,6 +2644,8 @@ module.exports = {
   appStorage: appStorage,
   hdmiPorts: hdmiPorts,
   hdmiInputs: hdmiInputs,
+  parseTiming: parseTiming,
+  readHdmiReceiverStatus: readHdmiReceiverStatus,
   hdmiEarcPort: hdmiEarcPort,
   collectProcesses: collectProcesses,
   parseProcesses: parseProcesses,

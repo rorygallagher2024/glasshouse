@@ -2322,6 +2322,8 @@ if (!CLI_MODE) {
   history.start();
   perfHistory.init({ liveState: liveState, presentCpus: telemetry.presentCpus, socTemp: telemetry.socTemp, socMhz: telemetry.socMhz });
   perfHistory.start();
+  // The HDMI view's link error counts, kept from when a link comes up.
+  require('./lib/hdmilink').startTally(telemetry.readHdmiReceiverStatus);
   storageScan.init({
     listApps: function (cb) {
       luna('com.webos.applicationManager/listApps', {}, function (res) { cb((res && res.apps) || []); });

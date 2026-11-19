@@ -1,6 +1,6 @@
 # Telemetry and diagnostics
 
-The **Metrics** tab (`/?tab=metrics`) exposes live hardware and software telemetry from the TV, most of which is absent from LG's own settings menus. Its views are split into **Overview** (live telemetry), **[Performance](#performance)** (the processor, memory, network and temperature over time, with the process lists), **[Storage](#storage)** (what fills the TV's storage, and which apps take the most), **Watch time** (when enabled), and **System info** (webOS, firmware and hardware versions).
+The **Metrics** tab (`/?tab=metrics`) exposes live hardware and software telemetry from the TV, most of which is absent from LG's own settings menus. Its views are split into **Overview** (live telemetry), **[Performance](#performance)** (the processor, memory, network and temperature over time, with the process lists), **[Storage](#storage)** (what fills the TV's storage, and which apps take the most), **[HDMI](#hdmi)** (each input's link in detail), **Watch time** (when enabled), and **System info** (webOS, firmware and hardware versions).
 
 ![Metrics tab: processor, memory, swap and network readouts](../screenshots/metrics-system.png)
 
@@ -24,7 +24,7 @@ The **Metrics** tab (`/?tab=metrics`) exposes live hardware and software telemet
 
     ---
 
-    Visual port status showing whether a device is on each port (or, where the TV can tell, only a cable with nothing on its other end), eARC port, connected device name, resolution and refresh rate, link speed (FRL 48 Gbps or TMDS), chroma, color depth, HDCP version, and gaming flags (VRR, ALLM, QMS).
+    On the [HDMI](#hdmi) view: visual port status showing whether a device is on each port (or, where the TV can tell, only a cable with nothing on its other end), eARC port, connected device name, resolution and refresh rate, link speed (FRL 48 Gbps or TMDS), chroma, color depth, HDCP version, and gaming flags (VRR, ALLM, QMS).
 
 -   **Active picture & sound**
 
@@ -74,6 +74,20 @@ The **Storage** view (`/?tab=metrics&open=storage`) shows what is using the TV's
 * **Apps by space used:** every app with its files totalled wherever they are kept: the app itself, its artwork, its sandbox and its saved state. Built-in apps and the ones you installed are marked, and Glasshouse is listed too.
 
 Glasshouse looks through the storage when you open the view, at most every ten minutes, or when you select **Look again**. On a C2 this takes under a second. The view only shows: apps you installed can be removed from the [Apps](apps.md) tab.
+
+## HDMI
+
+![HDMI: the four ports, then a Mac at 4K 120 Hz using 32.1 of the link's 48 Gbps](../screenshots/metrics-hdmi.png)
+
+The **HDMI** view (`/?tab=metrics&open=hdmi`) shows the four ports, then each input with a device switched on in detail, the one on screen first:
+
+* **The mode:** resolution, refresh rate, chroma, bit depth, and for the input on screen its dynamic range and colour space.
+* **Bandwidth:** how much of the link the picture takes, against the link's rated speed (FRL 48 Gbps, or TMDS up to 18 Gbps), with marks for what the same mode would take at 10-bit and 12-bit colour, and whether they would fit. The figures include the link's coding, as HDMI's own tables give them: 4K 120 Hz RGB is 32.1 Gbps at 8-bit, 40.1 at 10-bit and 48.1 at 12-bit.
+* **What the two ends agreed:** HDCP version, VRR (with its range), ALLM, QMS, DSC and Dolby Vision, each shown on or off.
+* **Link health:** errors the TV counted on the link since Glasshouse first saw it connected, with the rate (such as "about 1 bit in 400 billion"); how long the cable has been connected; how long the picture has been steady; and how many times the mode has changed.
+* **Technical details:** the video code (VIC), total timing, pixel clock and link mode.
+
+A device that is switched on but not sending a picture (asleep, or waiting to be chosen) is listed as such. The detail comes from the status files of LG's HDMI driver. Older TVs, such as a C9 on webOS 4, report only the mode each input sends, which shows on its port.
 
 ## Watch time
 
