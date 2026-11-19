@@ -278,7 +278,7 @@ function renderQuickAccess(d) {
     const kind = qaChoiceKind(k.id, qa.choices);
     const does = k.id
       ? `${rkChoiceIcon(k.id, kind, k.title)}<span class="qa-title" translate="no">${esc(k.title)}</span>`
-      : `<span class="rk-lg qa-empty">${esc(t('apps.quickAccess.none', 'Nothing set'))}</span>`;
+      : '<span class="qa-empty" aria-hidden="true">+</span>';
     const note = !k.installed && k.id ? `<span class="qa-note" translate="no">${esc(k.id)}</span>`
       : k.lgDefault ? `<span class="qa-note">${esc(t('apps.quickAccess.lgDefault', 'Set by LG'))}</span>` : '';
     return `<button type="button" class="rk-key qa-key-tile${k.id ? ' rk-changed' : ''}" data-key="${k.key}"
@@ -803,7 +803,7 @@ function toggleTile(o) {
   return `<button type="button" class="rk-key sys-tile${o.dim ? ' sys-hidden' : ''}${o.changed ? ' sys-changed' : ''}" id="${esc(o.id)}"
       aria-pressed="${!o.dim}" aria-label="${esc(o.name + ': ' + o.state)}" ${o.disabled ? 'disabled' : ''}
       onclick="${o.onclick}">
-    <span class="rk-does">${rkIcon(o.appId)}<span translate="no">${esc(o.name)}</span></span>
+    <span class="rk-does">${o.noIcon ? '<span class="rk-ico" aria-hidden="true"></span>' : rkIcon(o.appId)}<span translate="no">${esc(o.name)}</span></span>
     ${o.note ? `<span class="qa-note">${esc(o.note)}</span>` : ''}
     <span class="rk-name">${esc(o.state)}</span>
   </button>`;
@@ -1003,10 +1003,11 @@ function renderPreload(d) {
   if (!list) return;
   // A tile per app: choosing one switches it off or keeps it ready. Some of
   // LG's apps have no icon (Yandex Alice on a C2); the space stays, so the
-  // names line up.
+  // names line up, and none is asked for.
   list.innerHTML = `<div class="rk-grid">${apps.map(a => toggleTile({
     id: 'btn-preload-' + a.id,
     appId: a.id,
+    noIcon: a.noIcon,
     name: a.title,
     note: [a.memoryMb ? t('apps.preload.size', 'about {mb} MB when loaded', { mb: a.memoryMb }) : '',
       a.loaded ? t('apps.preload.loaded', 'loaded now') : ''].filter(Boolean).join(' · '),

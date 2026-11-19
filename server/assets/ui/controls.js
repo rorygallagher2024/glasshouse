@@ -149,7 +149,7 @@ function applyOptimistic(action, value) {
     for (let b of inBtns) {
       const matches = b.id === 'in_' + inp;
       b.classList.toggle('on', matches);
-      if (matches && q('currapp-lbl')) q('currapp-lbl').textContent = b.textContent.toUpperCase();
+      if (matches && q('currapp-lbl')) q('currapp-lbl').textContent = b.textContent;
     }
     if (q('source-menu')) {
       for (const b of q('source-menu').querySelectorAll('button[data-src-in]')) {
@@ -165,7 +165,7 @@ function applyOptimistic(action, value) {
     for (let b of appBtns) {
       const matches = b.id === 'app_' + appId.replace(/[^a-zA-Z0-9_-]/g, '_') || b.id === 'app_com_webos_app_' + appId;
       b.classList.toggle('on', matches);
-      if (matches && q('currapp-lbl')) q('currapp-lbl').textContent = b.textContent.toUpperCase();
+      if (matches && q('currapp-lbl')) q('currapp-lbl').textContent = b.textContent;
     }
   } else if (action === 'quickBoot') {
     const on = value === 'on' || value === true;

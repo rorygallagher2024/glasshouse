@@ -658,16 +658,16 @@ async function tick() {
         const isCur = b.id === 'in_' + activeApp;
         b.classList.toggle('on', isCur);
         if (isCur) {
-          if (q('currapp-lbl')) q('currapp-lbl').textContent = b.textContent.toUpperCase();
+          if (q('currapp-lbl')) q('currapp-lbl').textContent = b.textContent;
           foundInBtn = true;
         }
       }
       if (!foundInBtn && q('currapp-lbl')) {
-        q('currapp-lbl').textContent = (d.app_name || d.display_title || activeApp).toUpperCase();
+        q('currapp-lbl').textContent = (d.app_name || d.display_title || activeApp);
       }
     } else {
-      if (q('currapp-lbl')) q('currapp-lbl').textContent = isComp ? t('ctl.app.maintenance', 'MAINTENANCE')
-        : (ps.label ? ps.label.toUpperCase() : t('ctl.app.standby', 'STANDBY'));
+      if (q('currapp-lbl')) q('currapp-lbl').textContent = isComp ? t('ctl.app.maintenance', 'Maintenance')
+        : (ps.label || t('ctl.app.standby', 'Standby'));
       const inBtns = q('inputs') ? q('inputs').querySelectorAll('button') : [];
       for (let b of inBtns) {
         b.classList.toggle('on', false);
