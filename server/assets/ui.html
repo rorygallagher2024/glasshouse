@@ -352,46 +352,7 @@
     <div class="perf-grid hdmi-links" id="hdmi-links"></div>
   </div>
   <div class="metrics-adv-view" id="advblock" data-metrics-sub="advanced">
-    <div class="metrics-adv-sec" id="disc-hwinfo" hidden>
-      <div class="grp" data-t="metrics.systemInfo">System info</div>
-      <div class="prot-table" id="hw-specs">
-        <div class="prot-row" id="spec-os-item" hidden>
-          <div class="prot-main">
-            <div class="prot-title" translate="no">webOS</div>
-            <div class="prot-desc" data-t="metrics.webos.desc">Operating system release version</div>
-          </div>
-          <div class="prot-status"><span class="pill idle" id="spec-os">&mdash;</span></div>
-        </div>
-        <div class="prot-row" id="spec-fw-item" hidden>
-          <div class="prot-main">
-            <div class="prot-title" data-t="metrics.firmware">Firmware</div>
-            <div class="prot-desc" data-t="metrics.firmware.desc">TV software build version</div>
-          </div>
-          <div class="prot-status"><span class="pill idle" id="spec-fw">&mdash;</span></div>
-        </div>
-        <div class="prot-row" id="spec-arch-item" hidden>
-          <div class="prot-main">
-            <div class="prot-title" data-t="metrics.processor">Processor</div>
-            <div class="prot-desc" data-t="metrics.processor.desc">SoC platform and generation</div>
-          </div>
-          <div class="prot-status"><span class="pill idle" id="spec-arch">&mdash;</span></div>
-        </div>
-        <div class="prot-row" id="spec-silicon-item" hidden>
-          <div class="prot-main">
-            <div class="prot-title" data-t="metrics.oledCell">OLED Cell</div>
-            <div class="prot-desc" data-t="metrics.oledCell.desc">Panel silicon cell identifier</div>
-          </div>
-          <div class="prot-status"><span class="pill idle" id="spec-silicon">&mdash;</span></div>
-        </div>
-        <div class="prot-row" id="spec-tcon-item" hidden>
-          <div class="prot-main">
-            <div class="prot-title" data-t="metrics.tcon">TCON Firmware</div>
-            <div class="prot-desc" data-t="metrics.tcon.desc">Timing controller driving the panel</div>
-          </div>
-          <div class="prot-status"><span class="pill idle" id="spec-tcon">&mdash;</span></div>
-        </div>
-      </div>
-    </div>
+    <div class="metrics-adv-cols si-cols" id="sysinfo"></div>
   </div>
 
 </section>
@@ -2738,6 +2699,7 @@
 <script src="/assets/ui/perf.js"></script>
 <script src="/assets/ui/storage.js"></script>
 <script src="/assets/ui/hdmi.js"></script>
+<script src="/assets/ui/sysinfo.js"></script>
 <script src="/assets/ui/oled.js"></script>
 <script src="/assets/ui/screensavers.js"></script>
 <script src="/assets/ui/mqtt.js"></script>

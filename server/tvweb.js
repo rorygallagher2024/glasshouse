@@ -135,6 +135,7 @@ var ntpClient = require('./lib/ntp');
 var history = require('./lib/history');
 var perfHistory = require('./lib/perfhistory');
 var storageScan = require('./lib/storagescan');
+var sysinfo = require('./lib/sysinfo');
 var sshKeys = require('./lib/sshkeys');
 var screentime = require('./lib/screentime');
 var saverPowerOff = require('./lib/saverpoweroff');
@@ -1098,6 +1099,8 @@ routes.init({
   history: history,
   perfHistory: perfHistory,
   storageScan: storageScan,
+  sysinfo: sysinfo,
+  power: power,
   sshKeys: sshKeys,
   screentime: screentime,
   backup: backup,
@@ -2291,7 +2294,8 @@ if (!CLI_MODE) {
   // config it sends nothing until it has the device name to send as.
   syslogForwarder.init({ config: CONFIG });
   syslogForwarder.start();
-  power.init({ luna: luna, syslog: syslogForwarder });
+  power.init({ luna: luna, syslog: syslogForwarder, historyFile: '/var/lib/tvweb/power-ons.json',
+    seedFrom: ['/var/lib/tvweb/tvweb.log.1', '/var/lib/tvweb/tvweb.log'] });
   power.start();
   liveState.state.onChange(function (ev) {
     if (ev.group === 'power' && ev.key === 'state') {

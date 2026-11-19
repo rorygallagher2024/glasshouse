@@ -124,6 +124,10 @@ var ntpModule = null;
 var historyModule = null;
 var perfHistoryModule = null;
 var storageScanModule = null;
+/** @type {typeof import('./sysinfo')} */
+var sysinfoModule = null;
+/** @type {typeof import('./power')} */
+var powerModule = null;
 
 // HDMI inputs the TV's input service calls plugged in, with no powered source
 // on the cable and no picture, as the HDMI view sees them (telemetry).
@@ -2206,6 +2210,15 @@ function handleRequest(req, res) {
 
   // The Performance view's charts: the processor, memory, network and
   // temperature over the last 5 minutes, hour or day.
+  // The System info view's fixed facts, and how the TV has been powered on.
+  if (pathname === '/api/sysinfo' && sysinfoModule) {
+    var si = {};
+    var facts = sysinfoModule.read();
+    for (var sk in facts) si[sk] = facts[sk];
+    si.ok = true;
+    si.powerOns = powerModule && typeof powerModule.powerOns === 'function' ? powerModule.powerOns() : null;
+    return send(res, 200, JSON.stringify(si));
+  }
   if (pathname === '/api/storage' && storageScanModule) {
     // A rescan only by POST, so a page load never forces one.
     return storageScanModule.query(req.method === 'POST', function (d) { send(res, 200, JSON.stringify(d)); });
@@ -2781,6 +2794,8 @@ function init(opts) {
   if (opts.history) historyModule = opts.history;
   if (opts.perfHistory) perfHistoryModule = opts.perfHistory;
   if (opts.storageScan) storageScanModule = opts.storageScan;
+  if (opts.sysinfo) sysinfoModule = opts.sysinfo;
+  if (opts.power) powerModule = opts.power;
   if (opts.sshKeys) sshKeysModule = opts.sshKeys;
   if (opts.screentime) screentimeModule = opts.screentime;
   if (opts.backup) backupModule = opts.backup;
