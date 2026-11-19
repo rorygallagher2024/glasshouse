@@ -647,6 +647,24 @@ function missingAssetsPage() {
 }
 
 /*
+ * The apps LG keeps ready, each marked noIcon where it has none to show, such
+ * as Yandex Alice on a C2, so the page does not ask for one and get a 404.
+ */
+function preloadWithIcons(cb) {
+  preloadModule.getPreload(function (pRes) {
+    var apps = (pRes && pRes.apps) || [];
+    var left = apps.length;
+    if (!left) return cb(pRes);
+    apps.forEach(function (a) {
+      appsModule.getIconPath(a.id, function (p) {
+        if (!p) a.noIcon = true;
+        if (--left === 0) cb(pRes);
+      });
+    });
+  });
+}
+
+/*
  * ui.html names its stylesheet and scripts under assets/ui/, and they are put
  * back inline here, so the browser still gets one page in one gzipped response
  * that is never cached apart from it. The scripts become a single <script> in
@@ -2338,7 +2356,7 @@ function handleRequest(req, res) {
       servicesModule.getServices(function (sRes) {
         if (sRes && sRes.services) d.services = sRes.services;
         if (!preloadModule) return send(res, 200, JSON.stringify(d));
-        preloadModule.getPreload(function (pRes) {
+        preloadWithIcons(function (pRes) {
           d.preload = (pRes && pRes.apps) || [];
           if (!quickAccessModule) return send(res, 200, JSON.stringify(d));
           quickAccessModule.getQuickAccess(function (qa) {

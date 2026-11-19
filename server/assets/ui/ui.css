@@ -537,6 +537,12 @@ html.nav-hidden body.nav-open{overflow:hidden}
   background:var(--w100);pointer-events:none;
   transition:width .08s ease, opacity .16s ease;
 }
+/* The scale: a tick every tenth along the foot, so the control reads as a
+   fader at 0 as at 100. */
+.vol-wrap::before{content:'';position:absolute;left:0;right:0;bottom:0;height:7px;pointer-events:none;
+  background:repeating-linear-gradient(90deg,transparent 0 calc(10% - 1px),var(--w25) calc(10% - 1px) 10%)}
+/* The fill's edge, a line a hand can find at any level, 0 included. */
+.vol-fill{box-shadow:2px 0 0 var(--w100)}
 .vol-wrap.muted .vol-fill{opacity:.35}
 .vol-wrap.dragging .vol-fill{transition:none}
 .vol-wrap input[type=range]{
@@ -626,7 +632,11 @@ html.nav-hidden body.nav-open{overflow:hidden}
 .disc{border-top:1px solid var(--w06);margin-top:20px}
 .disc>summary{list-style:none;cursor:pointer;display:flex;justify-content:space-between;
   align-items:center;font-family:'Manrope',sans-serif;font-weight:500;font-size:var(--h-grp);letter-spacing:.12em;
-  text-transform:uppercase;color:var(--w60);padding:14px 0 4px;min-height:44px;box-sizing:border-box}
+  text-transform:uppercase;color:var(--w60);padding:14px 0;min-height:52px;box-sizing:border-box}
+/* Rows one after another stack as a list, a rule between each, rather
+   than standing apart by the column's gap. */
+.disc+.disc{margin-top:0}
+.lcols .lcol>.disc+.disc{margin-top:calc(-1 * clamp(26px,3vw,34px))}
 .disc>summary::-webkit-details-marker{display:none}
 .disc>summary::after{content:'+';font-size:17px;line-height:1;color:var(--w60)}
 .disc[open]>summary::after{content:'\2212'}
@@ -830,13 +840,15 @@ button.key-hit{background:var(--w10)}
 .ss-card.on .ss-name{color:var(--green)}
 .ss-tag{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--green);margin-left:10px}
 .ss-level-row{margin-top:22px;max-width:760px}
+.ss-head{margin-bottom:0}
+#sspane .ss-head+.ss-split .ss-list,#sspane .ss-head+.ss-split .ss-side{margin-top:26px}
 /* The choice on the left, and what to do with it - brightness, starting it,
    the firmware note - beside it on a wide screen rather than below the list.
-   Beside them, the list scrolls within the window so the controls stay in view. */
+   The list runs its full length, rather than in a box that cuts off a saver. */
 @media(min-width:1020px){
   .ss-split{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(260px,1fr);gap:clamp(36px,4vw,56px);
             align-items:start}
-  .ss-split .ss-list{max-width:none;max-height:clamp(320px,60vh,620px);overflow-y:auto;overscroll-behavior:contain}
+  .ss-split .ss-list{max-width:none}
   .ss-side{margin-top:22px;display:flex;flex-direction:column;gap:22px}
   #sspane .ss-side>*{margin-top:0}
 }
@@ -1082,8 +1094,8 @@ button.pill.flash.idle[disabled]:hover{color:var(--w60);border-color:var(--edge)
 .pv-d>summary::-webkit-details-marker{display:none}
 .pv-d>summary::after{content:'+';font-family:'Manrope';font-size:20px;line-height:1;color:var(--w60)}
 .pv-d[open]>summary::after{content:'\2212'}
-.pv-d>summary .cur{margin-left:auto;font-family:'Manrope';font-weight:500;font-size:13px;
-  letter-spacing:.10em;text-transform:uppercase;color:var(--w60);white-space:nowrap}
+.pv-d>summary .cur{margin-left:auto;font-family:'Manrope';font-weight:400;font-size:14px;
+  letter-spacing:.02em;text-transform:none;color:var(--w60);white-space:nowrap}
 .ps{margin:0}
 /* Three areas side by side where they fit, rather than the two-column flow
    the long lists use, which split a row's "still on" line from its row. */
@@ -1130,15 +1142,22 @@ button.pill.flash.idle[disabled]:hover{color:var(--w60);border-color:var(--edge)
 #inputspane .pv-g{margin:20px 0 10px}
 #inputs-nosignal-cards{margin-top:16px}
 #inputs-bar-choice-note,#inputs-nosignal-desc{margin:12px 0 0}
-.apps-grp-h{font-family:'Manrope',sans-serif;font-weight:500;font-size:var(--h-grp);letter-spacing:.12em;text-transform:uppercase;color:var(--w80);margin:0 0 6px}
-.apps-grp-d{margin-bottom:6px}
+.apps-grp-h{font-family:'Outfit';font-weight:300;font-size:var(--h-sec);letter-spacing:.005em;color:var(--w100);
+  margin:0 0 14px;padding-bottom:12px;border-bottom:1px solid var(--w25)}
+.apps-grp-d{margin-bottom:2px}
+/* As on Home: each group a section, its folding parts the rows within it. */
+#appspane .pv-d>summary{font-family:'Manrope',sans-serif;font-weight:600;font-size:var(--h-row);letter-spacing:.02em;
+  color:var(--w90);align-items:center;min-height:0;padding:16px 0;border-top:0;border-bottom:1px solid var(--w06)}
+#appspane .pv-d>summary::after{font-size:18px}
+#appspane .pv-d[open]>summary{border-bottom-color:transparent}
+#appspane .pv-d[open]{padding-bottom:16px;border-bottom:1px solid var(--w06)}
 /* Settings tables sit side by side in at most two responsive columns on wide
    screens so each switch sits beside its label, collapsing cleanly to one
    column on narrow viewports. */
 #advpane .prot-table,#serverpane .prot-table,#inputspane .prot-table,#audiopane .prot-table,#ambientpane .prot-table,#privpane .prot-table,#appspane .prot-table:not(.catalog-grid),#homepane .prot-table:not(#home-rows .prot-table):not(#home-recents .prot-table):not(#home-ch-list),#hw-specs,.pv-adid-rows{
   display:grid;column-gap:clamp(30px,4vw,52px);
   grid-template-columns:repeat(auto-fill,minmax(min(100%,max(340px,calc((100% - clamp(30px,4vw,52px)) / 2))),1fr))}
-.home-weather-place,#ssh-row,#backup-daily-row,#appspane .prot-table:not(.catalog-grid)>.sub{grid-column:1/-1}
+.row-alone,.home-weather-place,#ssh-row,#appspane .prot-table:not(.catalog-grid)>.sub{grid-column:1/-1}
 #advpane .prot-row,#serverpane .prot-row,#inputspane .prot-row,#audiopane .prot-row,#ambientpane .prot-row,#privpane .prot-row,#appspane .prot-table:not(.catalog-grid) .prot-row,.home-custom-table .prot-row{align-items:flex-start;padding:16px 0}
 #advpane .prot-title,#serverpane .prot-title,#inputspane .prot-title,#privpane .prot-title,#homepane .prot-title{font-size:var(--h-row);font-weight:600;letter-spacing:.02em;color:var(--w90)}
 #advpane .prot-desc,#serverpane .prot-desc,#inputspane .prot-desc,#privpane .prot-desc,#homepane .prot-desc{font-size:14px;line-height:1.5;margin-top:4px;max-width:none}
@@ -1803,7 +1822,8 @@ button.tools-jump:active{background:var(--w80)}
 .qa-key-body .rk-ico-svg{width:36px;height:36px;border-radius:var(--r-sm);padding:7px}
 .qa-title{font:500 15px/1.3 'Manrope';color:var(--w100);max-width:100%;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere}
 .rk-key.qa-zero-tile .qa-title{color:var(--w80);font-weight:400}
-.qa-empty{font-size:14px;color:var(--w60)}
+.qa-empty{font-size:22px;font-weight:300;line-height:1;color:var(--w35)}
+.qa-key-tile:hover .qa-empty{color:var(--w80)}
 .qa-note{font:500 12px/1.2 'Manrope';color:var(--w70);padding:3px 8px;border-radius:999px;border:1px solid var(--w12);max-width:72%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 @media (max-width:560px){
   .qa-pad-frame{padding:10px;border-radius:var(--r-lg)}
@@ -1993,6 +2013,10 @@ button.tools-jump:active{background:var(--w80)}
   letter-spacing:-.01em;color:var(--w100);overflow-wrap:anywhere}
 .pic-scope{font-size:14px;line-height:1.5;color:var(--w60);max-width:62ch;margin-top:14px}
 .pic-mode-ctl .pill-sel{min-width:200px}
+.pic-kicker{margin-bottom:12px}
+.pic-off-note{margin:-14px 0 6px}
+#picpane .prot-row.pic-off .prot-title{color:var(--w60)}
+#picpane .prot-row.pic-off .prot-desc{color:var(--w40)}
 .pic-sec{margin-top:clamp(34px,4.5vw,48px)}
 #pic-groups>.pic-sec:first-child{margin-top:0}
 .pic-extra{margin:-18px 0 clamp(24px,3vw,34px)}
@@ -2841,3 +2865,15 @@ html.remote-view #disc-pointer .pointer-pad{min-height:min(52vh,420px)}
 html.remote-asleep .rp-asleep{display:block}
 .rp button:disabled{opacity:.32;cursor:default;transform:none;background:transparent}
 html.remote-asleep #disc-pointer,html.remote-asleep #disc-keyboard{opacity:.4;pointer-events:none}
+
+/* A phone's width. The buttons' labels fit within them, the input's name
+   stays on one line beside the header's buttons where it can, and the footer
+   keeps to the version rather than breaking after the TV's host name. */
+@media (max-width:520px){
+  .btns button,.playback-btns button{font-size:12px;letter-spacing:.03em;padding:12px 2px}
+  .playback-btns{gap:6px}
+  .playback-btns button{white-space:nowrap}
+  header{gap:12px}
+  .src.now .t{font-size:20px}
+  #tv-name{display:none}
+}

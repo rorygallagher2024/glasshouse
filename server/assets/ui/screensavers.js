@@ -748,32 +748,35 @@ async function ssPoolSelectAll(selectAll) {
 }
 
 /*
- * Poweroff after: minutes of screen saver before the TV goes to standby.
- * Typed rather than picked, so any number of minutes will do; blank is off.
+ * Power off after: minutes of screen saver before the TV goes to standby,
+ * picked from a list and saved at once. A number set another way, in
+ * config.json or typed here before, is kept in the list.
  */
+const SS_POWEROFF_CHOICES = [0, 15, 30, 60, 120, 240];
 function renderSsPowerOff(d) {
-  const input = q('ss-poweroff'), btn = q('ss-poweroff-save'), desc = q('ss-poweroff-desc');
-  if (!input) return;
+  const sel = q('ss-poweroff'), desc = q('ss-poweroff-desc');
+  if (!sel) return;
   const n = d.powerOffMinutes || 0;
-  // Not while someone is typing: the tab reloads under them.
-  if (!input.dataset.dirty) input.value = n ? String(n) : '';
-  input.disabled = btn.disabled = !d.writable;
+  const list = SS_POWEROFF_CHOICES.includes(n) ? SS_POWEROFF_CHOICES : SS_POWEROFF_CHOICES.concat(n).sort((x, y) => x - y);
+  const html = list.map(m => '<option value="' + m + '"' + (m === n ? ' selected' : '') + '>' +
+    esc(m ? t('ctl.sleep.minutes', '{n} min', { n: m }) : t('common.off', 'Off')) + '</option>').join('');
+  if (sel.innerHTML !== html) sel.innerHTML = html;
+  sel.value = String(n);
+  sel.disabled = !d.writable;
   desc.textContent = !d.allowPower
     ? t('ss.powerOff.noPower', 'Power actions are off in config.json, so this cannot put the TV in standby.')
     : n === 1 ? t('ss.powerOff.onOne', 'The TV goes to standby once a screen saver has been on for a minute. Any button on the remote starts the count again.')
     : n ? t('ss.powerOff.on', 'The TV goes to standby once a screen saver has been on for {n} minutes. Any button on the remote starts the count again.', { n })
-    : t('ss.powerOff.off', 'Minutes of screen saver before the TV goes to standby. Blank for never.');
+    : t('ss.powerOff.offPick', 'How long a screen saver runs before the TV goes to standby.');
 }
 
 async function saveSsPowerOff() {
-  const input = q('ss-poweroff'), btn = q('ss-poweroff-save');
-  btn.disabled = true; btn.classList.add('busy');
+  const sel = q('ss-poweroff');
+  sel.disabled = true;
   try {
-    // A refusal, such as a word for a number, is shown by sendCommand.
-    const r = await sendCommand('screensaverPowerOff', input.value.trim());
-    if (r && r.ok) delete input.dataset.dirty;
+    await sendCommand('screensaverPowerOff', sel.value === '0' ? '' : sel.value);
   } finally {
-    btn.disabled = false; btn.classList.remove('busy');
+    sel.disabled = false;
     loadScreensavers();
   }
 }
