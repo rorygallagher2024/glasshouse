@@ -32,6 +32,7 @@ var names = require('./names');
 var writeJsonAtomic = require('./util').writeJsonAtomic;
 var wallpapers = require('./home-wallpapers');
 var takeover = require('./home-takeover');
+var bootwake = require('./bootwake');
 var compat = require('./compat');
 var recent = require('./home-recent');
 var recentApps = require('./home-recent-apps');
@@ -2538,6 +2539,7 @@ function enable(cb) {
     startingNotice(true);
     syncLgAutoLaunch();
     syncDefaultHome();
+    syncWakeHome();
     if (viewInFront() && powerActive) watchBeat(firstBeatGraceMs);
     console.log('home: Glasshouse Home switched on');
     cb({ ok: true });
@@ -2562,6 +2564,7 @@ function disable(cb) {
   escaped = false;
   cancelWake();
   stopBeatWatch();
+  syncWakeHome();
   switchTo(false, function (r) {
     if (!r.ok) return cb({ ok: false, error: msg('srv.home.restoreFailed', 'the TV would not take its earlier Home settings back') + ' (' + r.error + ')' });
     syncLgAutoLaunch(function (restored) {
@@ -2805,6 +2808,7 @@ function setAutoLaunch(on, cb) {
   var want = on === true || on === 'on';
   function finish(ok) {
     autoLaunchBusy = false;
+    syncWakeHome();
     cb({ ok: !!ok });
     if (autoLaunchAgain) {
       autoLaunchAgain = false;
@@ -3525,6 +3529,24 @@ function homeAtPowerOn(cb) {
 }
 
 /*
+ * Wake-on-LAN opens Home, as the remote's power key does, while Glasshouse Home
+ * is on in LG's Home's place and the owner has Home open at power-on
+ * (lib/bootwake); otherwise bootd has LG's config. From the next boot.
+ */
+function syncWakeHome(cb) {
+  cb = cb || function () {};
+  function apply(appId) {
+    var r = bootwake.sync(appId);
+    if (r === 'written') console.log('home: Wake-on-LAN opens Home from the next start');
+    else if (r === 'removed') console.log('home: Wake-on-LAN opens what LG chooses from the next start');
+    else if (r === 'kept') console.log('home: bootd has a config of its own in /var/luna/preferences; left as it is');
+    cb();
+  }
+  if (isStandalone() || !readConfig().enabled) return apply(null);
+  homeAtPowerOn(function (wanted) { apply(readConfig().enabled && wanted ? LG_HOME : null); });
+}
+
+/*
  * Switched back on before the TV had powered off, it wakes from Active Standby
  * without a boot, so the boot hook does not run, and with auto launch held off
  * bootd opens the last input (a G3, webOS 9.2.2, off and on 6 s apart), as it
@@ -3744,6 +3766,7 @@ function init(opts) {
   saverIdleMs = null;
   saverTimerReadAt = 0;
   wallpapers.init(stateDir);
+  bootwake.init({ copyFile: path.join(stateDir, 'bootd-wake.json'), lgConf: opts.bootdConf, ownConf: opts.bootdOwnConf });
   recent.init(stateDir, opts.now);
   recentApps.init({ luna: lunaFn, excluded: function () { return readConfig().excludedRecents; } });
   recommended.init({ luna: lunaFn });
@@ -3976,14 +3999,15 @@ function start(done) {
       }
       startingNotice(c.enabled);
       // Off, but the Home key's target was never put back: a switch-off cut short.
-      if (!c.enabled) return syncDefaultHome(function () { done(); });
+      if (!c.enabled) return syncDefaultHome(function () { syncWakeHome(); done(); });
       wasEnabled = true;
       switchTo(true, function (r) {
         if (!r.ok) console.error('home: could not ' + (isStandalone() ? 'enable Glasshouse Home' : 'take LG\'s Home\'s place') + ': ' + r.error);
-        var left = 2;
+        var left = 3;
         function synced() { if (--left === 0) done(); }
         syncLgAutoLaunch(synced);
         syncDefaultHome(synced);
+        syncWakeHome(synced);
         if (r.ok) watchBootOpen();
       });
     });

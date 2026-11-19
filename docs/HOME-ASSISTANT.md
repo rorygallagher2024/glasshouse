@@ -474,7 +474,7 @@ When the TV is switched off, its entities stay available and show a switched-off
 A TV in standby is asleep and cannot receive commands, so it is switched back on over the network with Wake-on-LAN.
 
 1. Turn on **Wake-on-LAN** on the TV: in the web dashboard under **System &rarr; Power**, on the TV dashboard under **System &rarr; Power**, or in LG's menu under **Settings &rarr; General &rarr; Mobile TV On**. Wake-on-LAN works over Ethernet and, on most models, Wi-Fi.
-2. In Home Assistant, add the **Wake on LAN** integration (**Settings &rarr; Devices &amp; services &rarr; Add integration &rarr; Wake on LAN**) with the TV's MAC address. The address is listed under **Connections** on the TV's device page in Home Assistant, and as the **MAC Address** sensor.
+2. In Home Assistant, add the **Wake on LAN** integration (**Settings &rarr; Devices &amp; services &rarr; Add integration &rarr; Wake on LAN**) with the TV's MAC address. The address is listed under **Connections** on the TV's device page in Home Assistant, and as the **MAC Address** sensor. A TV has one MAC address for Ethernet and another for Wi-Fi: use the one Glasshouse lists, which is the connection in use. As the broadcast address, give the network's (`192.168.1.255` on a `192.168.1.x` network), not the TV's own: a TV asleep does not answer at its address, so a packet sent there never leaves Home Assistant.
 
 This creates a button that wakes the TV from standby. To make one switch that shows whether the TV is on and turns it on or off, add a template switch to `configuration.yaml`, with the TV's MAC address. If it already has a `template:` key, add the `switch:` entry under it:
 

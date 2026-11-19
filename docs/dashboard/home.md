@@ -493,6 +493,8 @@ Each appears where the TV has it. A TV Glasshouse Home is not offered on, such a
 
 Opens the Home screen when the TV is switched on, rather than staying on the last input. LG calls this Home Auto Launch (`general.homeAutoLaunch`). While Glasshouse Home is on, the Home it opens is Glasshouse Home (see [Switching it on and off](#switching-it-on-and-off)).
 
+While Glasshouse Home is on with this set, a TV switched on with Wake-on-LAN, from Home Assistant say, opens Home as the remote's power button does. LG's software otherwise starts the last input under it, and a console or set-top box on that input can wake with the TV over HDMI-CEC. This applies from the TV's next start.
+
 ### Layout options
 
 The **Layout** section configures the on-screen placement of rows and status elements:

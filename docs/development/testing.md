@@ -228,6 +228,8 @@ before its first read.
 
 `test-home.js` also checks that a port whose tile changes once a CEC device on it is listed has the view draw its tiles again, and that the tile drawn before still opens that port, and only that port.
 
+`test-bootwake.js` checks that LG's bootd config is copied with the Wake-on-LAN reasons opening Home, written again when LG's changes, left alone where it already maps them or someone else's file is in place, and removed again only when written here.
+
 `test-home.js` also checks that apps take card icons from the card icon folder by title, or by a part of their app id only where the title has it, or the one chosen for them, that only names an app title can match are listed or served, that the card and pulse switches are saved only when sent as true or false, that the sound as focus moves is one Home has and that the two it ships with are there, that card transparency keeps to steps of ten from 0 to 90, and that card icons and the own sound uploaded from a dashboard are held to a card icon name, a PNG of at most 1280 × 720, and an OGG, WAV or MP3 file, that a new sound replaces the last whatever its kind, and that removing an icon clears any app's choice of it.
 
 `test-home-video-idle.js` checks that Home's video background fades out and lets the video go after two minutes without a key, that a key plays it again, and that with the TV's screen saver time known it plays until that time and then asks for the screen saver; `test-home.js` that the heartbeat brings that time from LG's settings and that the screen saver is started only with the view in front and the TV awake.
