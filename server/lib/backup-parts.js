@@ -305,6 +305,17 @@ var PARTS = [
     }
   },
   {
+    // How many points one press of a Brightness key moves the picture, kept with the remote keys.
+    id: 'brightnessStep',
+    valid: function (v) { return typeof v === 'number' && v % 1 === 0 && v >= 1 && v <= 50; },
+    read: function (cb) {
+      remoteKeys.getRemoteKeys(function (r) {
+        cb(r && r.supported && typeof r.brightnessStep === 'number' ? r.brightnessStep : undefined);
+      });
+    },
+    write: function (v, cb) { remoteKeys.setBrightnessStep(v, cb); }
+  },
+  {
     // { '1'..'9': what the key opens, '' for nothing }.
     id: 'quickAccess',
     action: 'quickAccess',

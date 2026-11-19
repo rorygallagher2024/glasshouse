@@ -140,8 +140,9 @@ var MEDIA_REPEATS = { volumeUp: true, volumeDown: true };
 var SCREEN_OFF = 'action:screenOff';
 /*
  * Panel brightness (OLED light, or the backlight on an LCD) up or down one
- * step per press. Offered on webOS 11 beside Screen off, answered from the
- * system log the same way; the JavaScript filter does not carry it.
+ * step per press. Where the JavaScript filter runs, it steps it itself and
+ * repeats while the key is held; on webOS 11 it is offered beside Screen off
+ * and answered from the system log the same way, one step per press.
  */
 var BRIGHTNESS_UP = 'action:brightnessUp';
 var BRIGHTNESS_DOWN = 'action:brightnessDown';
@@ -1409,7 +1410,8 @@ function buttonPressed(button) {
 /*
  * One step of the current picture mode's brightness, read first since the
  * settings service keeps one value per mode and input (controls.js's
- * backlight).
+ * backlight). Presses closer than PRESS_DEBOUNCE_MS never get here, so no two
+ * steps read the level at once.
  */
 function stepBrightness(delta) {
   lunaFn('com.webos.service.settings/getSystemSettings', { category: 'picture', keys: ['backlight'] }, function (r) {
