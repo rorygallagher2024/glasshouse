@@ -338,7 +338,7 @@ function fakeLibrary(homeOn) {
   var util = require('../server/lib/util');
   var guidePatch = require('../server/lib/guidepatch');
   var sha = function (b) { return crypto.createHash('sha256').update(b).digest('hex'); };
-  var lib = path.join(dir, 'libappLaunch.so.1');
+  var lib = path.join(dir, 'libappLaunch.so.1'), uiLib = path.join(dir, 'libsystemUI.so.1');
   var picker = '{"id": "com.webos.app.quickinputpicker"}\0';
   var make = function (guide, input) {
     var b = util.allocBuffer(80);
@@ -349,16 +349,34 @@ function fakeLibrary(homeOn) {
     util.toBuffer(text, 'binary').copy(b, 20);
     return b;
   };
+  // The Home key's library: four bytes at 40 are the bar's change.
+  var makeUi = function (bar) {
+    var b = util.allocBuffer(64);
+    b.fill(9);
+    if (bar) b.fill(0xcc, 40, 44);
+    return b;
+  };
   fs.writeFileSync(lib, make(false, ''));
-  guidePatch.BUILDS[sha(make(false, ''))] = { tv: 'test TV',
-    guide: [{ at: 8, was: '07070707', now: 'aaaaaaaa' }],
+  fs.writeFileSync(uiLib, makeUi(false));
+  guidePatch.LIBRARIES.appLaunch.builds[sha(make(false, ''))] = { tv: 'test TV',
+    sets: { guide: [{ at: 8, was: '07070707', now: 'aaaaaaaa' }] },
     picker: { at: 20, was: util.toBuffer(picker, 'binary').toString('hex') } };
-  var lab = { execs: [], mounted: [], stack: [], failRestarts: 0, restarts: 0, barApp: [], barKeys: 0, homeOn: homeOn !== false, make: make, sameBytes: util.sameBytes, lib: lib };
+  guidePatch.LIBRARIES.systemUI.builds[sha(makeUi(false))] = { tv: 'test TV',
+    sets: { bar: [{ at: 40, was: '09090909', now: 'cccccccc' }] } };
+  // stack and uiStack: what is mounted on each library, the last on top and LG's at the bottom. failRestarts makes that many compositor restarts fail.
+  var lab = { execs: [], mounted: [], stack: [], uiStack: [], failRestarts: 0, restarts: 0, barApp: [], barKeys: 0, homeOn: homeOn !== false, launcher: false,
+    make: make, makeUi: makeUi, sameBytes: util.sameBytes, lib: lib, uiLib: uiLib };
+  var realLib = fs.realpathSync(lib);
+  var stackOf = function (file) { return fs.realpathSync(file) === realLib ? lab.stack : lab.uiStack; };
+  var plainOf = function (file) { return fs.realpathSync(file) === realLib ? make(false, '') : makeUi(false); };
   var opts = {};
   Object.keys(initOpts).forEach(function (k) { opts[k] = initOpts[k]; });
   opts.guideLibrary = lib;
-  opts.guideMounts = function () { return lab.stack.length; };
+  opts.systemUiLibrary = uiLib;
+  opts.guideMounts = function (file) { return stackOf(file).length; };
   opts.homeGuide = function () { return lab.homeOn; };
+  // Glasshouse Bar chosen as the launcher (lib/homebar).
+  opts.homeBarLauncher = function () { return lab.launcher; };
   // The bar's app, put on the TV when a key is set to it and taken off with the last key.
   opts.inputBarApp = function (action, cb) { lab.barApp.push(action); cb({ ok: true }); };
   opts.onInputBarKey = function () { lab.barKeys++; };
@@ -369,21 +387,24 @@ function fakeLibrary(homeOn) {
     // A file a mount was made from cannot be written over: each mount has a copy of its own.
     if (file === 'mount') {
       assert.ok(lab.mounted.indexOf(args[1]) === -1, 'a copy already mounted is not mounted or written again');
-      assert.strictEqual(lab.stack.length, 0, 'the copy before is taken off first, so mounts do not pile up');
+      assert.strictEqual(stackOf(args[2]).length, 0, 'the copy before is taken off first, so mounts do not pile up');
       lab.mounted.push(args[1]);
-      lab.stack.push(fs.readFileSync(args[1]));
-      fs.writeFileSync(lib, lab.stack[lab.stack.length - 1]);
+      stackOf(args[2]).push(fs.readFileSync(args[1]));
+      fs.writeFileSync(args[2], stackOf(args[2])[stackOf(args[2]).length - 1]);
     }
     if (file === 'umount') {
-      lab.stack.pop();
-      fs.writeFileSync(lib, lab.stack.length ? lab.stack[lab.stack.length - 1] : make(false, ''));
+      var left = stackOf(args[1]);
+      left.pop();
+      fs.writeFileSync(args[1], left.length ? left[left.length - 1] : plainOf(args[1]));
     }
     if (file === 'systemctl' && lab.failRestarts > 0) { lab.failRestarts--; return cb(new Error('restart failed')); }
     cb(null);
   };
+  lab.opts = opts;
   rk.init(opts);
   lab.finish = function (next) {
-    delete guidePatch.BUILDS[sha(make(false, ''))];
+    delete guidePatch.LIBRARIES.appLaunch.builds[sha(make(false, ''))];
+    delete guidePatch.LIBRARIES.systemUI.builds[sha(makeUi(false))];
     rk.init(initOpts);
     next();
   };
@@ -392,7 +413,7 @@ function fakeLibrary(homeOn) {
 
 // The copies of LG's library Glasshouse has written, by name.
 function copies() {
-  return fs.readdirSync(stateDir).filter(function (f) { return f.indexOf('libappLaunch.so.1.glasshouse-') === 0; });
+  return fs.readdirSync(stateDir).filter(function (f) { return f.indexOf('libguidepatch-') === 0; });
 }
 
 step('Guide opens Glasshouse Home\'s guide where LG\'s key handler can be changed, and goes back to LG\'s', function (next) {
@@ -493,7 +514,63 @@ step('a compositor that does not restart on the changed handler is restarted on 
     assert.deepEqual(lab.execs, ['mount', 'systemctl', 'umount', 'systemctl'], 'the copy taken off and the compositor restarted again');
     assert.strictEqual(lab.stack.length, 0, 'nothing left mounted');
     assert.ok(lab.sameBytes(fs.readFileSync(lab.lib), lab.make(false, '')), 'LG\'s handler in place');
-    lab.finish(next);
+    // The choice stays saved: set back, so the steps after start as LG has it.
+    set('guide', 'lg', '', function () { lab.finish(next); });
+  });
+});
+
+step('Glasshouse Bar as the launcher changes the Home key\'s library, and a restart of the server makes the change again', function (next) {
+  var lab = fakeLibrary();
+  lab.launcher = true;
+  rk.ensure(function () {
+    assert.deepEqual(lab.execs, ['mount', 'systemctl'], 'the Home key\'s library mounted and the compositor restarted once');
+    assert.ok(lab.sameBytes(fs.readFileSync(lab.uiLib), lab.makeUi(true)));
+    assert.ok(lab.sameBytes(fs.readFileSync(lab.lib), lab.make(false, '')), 'the key handler is as LG has it');
+    assert.strictEqual(lab.restarts, 1);
+    assert.strictEqual(require('../server/lib/guidepatch').status().applied.bar, true);
+    // The TV restarted, LG's library back, and the server starts: the change is made again.
+    fs.writeFileSync(lab.uiLib, lab.makeUi(false));
+    rk.init(lab.opts);
+    rk.ensure(function () {
+      assert.ok(lab.sameBytes(fs.readFileSync(lab.uiLib), lab.makeUi(true)), 'made again at the start');
+      // With the key handler's changes as well, in one restart.
+      lab.homeOn = true;
+      set('guide', 'open', 'action:homeGuide', function () {
+        assert.ok(lab.sameBytes(fs.readFileSync(lab.lib), lab.make(true, '')));
+        assert.ok(lab.sameBytes(fs.readFileSync(lab.uiLib), lab.makeUi(true)), 'the bar\'s change stays');
+        set('guide', 'lg', '', function () {
+          lab.launcher = false;
+          rk.ensure(function () {
+            assert.ok(lab.sameBytes(fs.readFileSync(lab.uiLib), lab.makeUi(false)), 'another launcher chosen: LG\'s library is back');
+            assert.strictEqual(require('../server/lib/guidepatch').status().applied.bar, false);
+            lab.finish(next);
+          });
+        });
+      });
+    });
+  });
+});
+
+step('a copy still mounted is not removed when the other library changes', function (next) {
+  var lab = fakeLibrary();
+  var info = path.join(dir, 'mountinfo');
+  lab.opts.guideMountInfo = info;
+  rk.init(lab.opts);
+  lab.homeOn = true;
+  // The Guide change is mounted, as an earlier start did.
+  set('guide', 'open', 'action:homeGuide', function () {
+    var guideCopy = copies()[0];
+    assert.ok(guideCopy, 'a copy for the key handler');
+    // mountinfo names the real file the copy is mounted on.
+    fs.writeFileSync(info, '899 50 179:56 /var/lib/tvweb/' + guideCopy + ' ' + fs.realpathSync(lab.lib) + ' rw - ext4 /dev/x rw\n');
+    lab.launcher = true;
+    // The bar is chosen: only the Home key's library changes, and the handler's copy stays.
+    rk.ensure(function () {
+      assert.ok(copies().indexOf(guideCopy) !== -1, 'the copy still mounted is not removed');
+      fs.writeFileSync(info, '');
+      lab.launcher = false;
+      set('guide', 'lg', '', function () { rk.ensure(function () { lab.finish(next); }); });
+    });
   });
 });
 

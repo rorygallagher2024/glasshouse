@@ -645,6 +645,9 @@ homebar.init({
   app: function (action, cb) { tvApp(action, cb, 'homebar-app'); },
   setHomeKey: remoteKeys.setHome,
   allowed: function () { return inputBar.allowed(); },
+  native: remoteKeys.nativeHomeBar,
+  nativeOn: remoteKeys.nativeHomeBarOn,
+  applyKeys: remoteKeys.ensure,
   standing: function () { return inputBar.standing(); },
   compat: function () { return compat.info('inputBar', compatTv(), 'Glasshouse Bar'); },
   on: function () { return !liveState || (liveState.state.snapshot().power || {}).systemOn !== false; },
@@ -2206,6 +2209,8 @@ function startGlasshouseHome() {
   var weather = require('./lib/weather');
   weather.init({ getJson: fetchLib.getJson });
   glasshouseHome.init({
+    // webOS 11 with the Home key changed: LG's Home stays drawn under Glasshouse Bar unless it is closed.
+    lgHomeUnderBar: remoteKeys.nativeHomeBarOn,
     screensavers: screensavers,
     weather: weather,
     // What the dashboard's Remote section shows: the level, the step it stands
