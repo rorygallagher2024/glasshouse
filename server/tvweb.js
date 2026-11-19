@@ -133,6 +133,7 @@ var logsModule = require('./lib/logs');
 var syslogForwarder = require('./lib/syslog');
 var ntpClient = require('./lib/ntp');
 var history = require('./lib/history');
+var perfHistory = require('./lib/perfhistory');
 var sshKeys = require('./lib/sshkeys');
 var screentime = require('./lib/screentime');
 var saverPowerOff = require('./lib/saverpoweroff');
@@ -1094,6 +1095,7 @@ routes.init({
   syslog: syslogForwarder,
   ntp: ntpClient,
   history: history,
+  perfHistory: perfHistory,
   sshKeys: sshKeys,
   screentime: screentime,
   backup: backup,
@@ -2316,6 +2318,8 @@ if (!CLI_MODE) {
 
   history.init({ config: CONFIG, luna: luna, liveState: liveState, appTitle: telemetry.appTitle });
   history.start();
+  perfHistory.init({ liveState: liveState, presentCpus: telemetry.presentCpus, socTemp: telemetry.socTemp, socMhz: telemetry.socMhz });
+  perfHistory.start();
   screentime.init({ config: CONFIG, liveState: liveState, control: controls.doControl, injectKey: controls.injectKey, keyBack: controls.KEY_BACK });
   screentime.start();
   saverPowerOff.init({ config: CONFIG, liveState: liveState, control: controls.doControl,

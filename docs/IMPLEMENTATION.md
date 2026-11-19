@@ -1454,6 +1454,32 @@ answer from the read-back, the set counts as done.
 
 ---
 
+## Performance history
+
+`server/lib/perfhistory.js` keeps the Metrics tab's Performance charts. Every
+5 seconds from server start it reads `/proc/stat`, `/proc/meminfo`,
+`/proc/net/dev` and the SoC temperature and clock, and nothing else: no luna
+call and no process. The processor is split into user and nice, system (with
+irq, softirq and steal) and iowait, each against every core in
+`/sys/devices/system/cpu/present`, so a parked core counts as idle as the
+Overview's figure does; per core, a parked one is null. Memory in use is
+`MemTotal` less `MemAvailable` (free, cached and buffers on kernels without
+it), and cache is cached and buffers less shared memory.
+
+Two rings in memory: an hour of 5-second samples and a day of minutes, each
+the average of its samples. Nothing is written to flash, so a restart starts
+afresh. It follows the live state's `application` and `power` changes as
+events (app, TV off, screen off, TV on), the last 400 within a day, but does
+not start the `application` subscription itself: the events come while
+something else has (Watch time, Glasshouse Home, the MQTT bridge) or from a
+dashboard's polls, which reconcile it.
+
+`GET /api/perf?range=5m|1h|24h` returns the range as columns (`t`, `cpu`,
+`user`, `sys`, `io`, `mem`, `cache`, `rx`, `tx`, `temp`, `mhz`), the latest
+per-core loads, the events in the range and the one before it.
+
+---
+
 ## Counting watch time
 
 `server/lib/history.js` counts, while it is switched on, how long the screen

@@ -196,11 +196,13 @@ function stopCpuPolling() {
 }
 
 function cpuPanelOpen() {
-  return typeof activeTab !== 'undefined' && activeTab === 'metrics' && metricsSubView === 'advanced';
+  return typeof activeTab !== 'undefined' && activeTab === 'metrics' && metricsSubView === 'performance';
 }
 
 function setMetricsSubView(view) {
-  const valid = ['overview', 'watch', 'advanced'];
+  const valid = ['overview', 'performance', 'watch', 'advanced'];
+  // System info was called Advanced, and held the process lists.
+  if (view === 'info') view = 'advanced';
   metricsSubView = valid.indexOf(view) !== -1 ? view : 'overview';
   const pane = q('tab-metrics');
   if (pane) pane.setAttribute('data-metrics-view', metricsSubView);
@@ -219,4 +221,5 @@ function setMetricsSubView(view) {
   } else {
     stopCpuPolling();
   }
+  if (typeof perfViewChanged === 'function') perfViewChanged();
 }

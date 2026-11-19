@@ -155,8 +155,9 @@
 <section class="panel" id="tab-metrics" role="tabpanel" data-metrics-view="overview" hidden>
   <div class="catalog-seg home-subnav metrics-subnav" id="metrics-subnav" role="tablist">
     <button type="button" class="home-sub-btn on" data-metrics-view="overview" aria-pressed="true" onclick="setMetricsSubView('overview')" data-t="pv.overview">Overview</button>
+    <button type="button" class="home-sub-btn" data-metrics-view="performance" aria-pressed="false" onclick="setMetricsSubView('performance')" data-t="metrics.performance">Performance</button>
     <button type="button" class="home-sub-btn" id="metrics-sub-watch" data-metrics-view="watch" aria-pressed="false" onclick="setMetricsSubView('watch')" hidden data-t="metrics.watch">Watch time</button>
-    <button type="button" class="home-sub-btn" data-metrics-view="advanced" aria-pressed="false" onclick="setMetricsSubView('advanced')" data-t="tab.advanced">Advanced</button>
+    <button type="button" class="home-sub-btn" data-metrics-view="advanced" aria-pressed="false" onclick="setMetricsSubView('advanced')" data-t="metrics.systemInfo">System info</button>
   </div>
   <div class="col-telemetry" id="metrics-overview" data-metrics-sub="overview">
     <div class="col-sec" data-t="metrics.system">System</div>
@@ -251,6 +252,75 @@
     </div>
   </div>
 
+  <div class="metrics-perf-view" id="perfblock" data-metrics-sub="performance">
+    <div class="perf-head">
+      <div class="catalog-seg perf-range" id="perf-range" role="group" aria-label="Time range" data-t-aria-label="metrics.perf.range">
+        <button type="button" class="home-sub-btn on" data-range="5m" aria-pressed="true" data-t="metrics.perf.5m">5 min</button>
+        <button type="button" class="home-sub-btn" data-range="1h" aria-pressed="false" data-t="metrics.perf.1h">1 hour</button>
+        <button type="button" class="home-sub-btn" data-range="24h" aria-pressed="false" data-t="metrics.perf.24h">24 hours</button>
+      </div>
+      <div class="perf-note" id="perf-note"></div>
+    </div>
+    <div class="perf-grid">
+      <section class="perf-card perf-wide" id="perf-cpu" aria-labelledby="perf-cpu-h">
+        <div class="perf-top">
+          <div>
+            <div class="grp" id="perf-cpu-h" data-t="metrics.processor">Processor</div>
+            <div class="perf-big num"><span id="perf-cpu-now">&mdash;</span><small>%</small></div>
+            <div class="perf-sub" id="perf-cpu-sub"></div>
+          </div>
+          <div class="perf-legend" id="perf-cpu-legend"></div>
+        </div>
+        <div class="perf-cpu-body">
+          <div class="perf-chart-wrap"><div class="perf-chart" id="perf-cpu-chart"></div><div class="perf-events" id="perf-events"></div></div>
+          <div class="perf-cores-wrap">
+            <div class="perf-cores" id="perf-cores" role="img"></div>
+            <div class="perf-cores-cap" data-t="metrics.perf.perCore">Per core</div>
+          </div>
+        </div>
+      </section>
+      <section class="perf-card" id="perf-mem" aria-labelledby="perf-mem-h">
+        <div class="perf-top">
+          <div>
+            <div class="grp" id="perf-mem-h" data-t="metrics.memory">Memory</div>
+            <div class="perf-big num"><span id="perf-mem-now">&mdash;</span><small>%</small></div>
+            <div class="perf-sub" id="perf-mem-sub"></div>
+          </div>
+          <div class="perf-legend" id="perf-mem-legend"></div>
+        </div>
+        <div class="perf-chart" id="perf-mem-chart"></div>
+      </section>
+      <section class="perf-card" id="perf-net" aria-labelledby="perf-net-h">
+        <div class="perf-top">
+          <div>
+            <div class="grp" id="perf-net-h" data-t="metrics.network">Network</div>
+            <div class="perf-big num" id="perf-net-now">&mdash;</div>
+            <div class="perf-sub" id="perf-net-sub"></div>
+          </div>
+          <div class="perf-legend" id="perf-net-legend"></div>
+        </div>
+        <div class="perf-chart" id="perf-net-chart"></div>
+      </section>
+      <section class="perf-card" id="perf-temp" aria-labelledby="perf-temp-h" hidden>
+        <div class="perf-top">
+          <div>
+            <div class="grp" id="perf-temp-h" data-t="metrics.temperature">Temperature</div>
+            <div class="perf-big num"><span id="perf-temp-now">&mdash;</span><small>&deg;</small></div>
+            <div class="perf-sub" id="perf-temp-sub"></div>
+          </div>
+        </div>
+        <div class="perf-chart" id="perf-temp-chart"></div>
+      </section>
+      <div class="perf-card metrics-adv-sec" id="disc-proc">
+        <div class="grp"><span data-t="metrics.processMemory">Process memory</span><span class="cur" id="proc-cur"></span></div>
+        <div id="proc-list"></div>
+      </div>
+      <div class="perf-card metrics-adv-sec" id="disc-cpu">
+        <div class="grp"><span data-t="metrics.cpuDetail">Detailed CPU usage</span><span class="cur" id="cpu-cur"></span></div>
+        <div id="cpu-list"></div>
+      </div>
+    </div>
+  </div>
   <div class="metrics-adv-view" id="advblock" data-metrics-sub="advanced">
     <div class="metrics-adv-sec" id="disc-hwinfo" hidden>
       <div class="grp" data-t="metrics.systemInfo">System info</div>
@@ -290,16 +360,6 @@
           </div>
           <div class="prot-status"><span class="pill idle" id="spec-tcon">&mdash;</span></div>
         </div>
-      </div>
-    </div>
-    <div class="metrics-adv-cols">
-      <div class="metrics-adv-sec" id="disc-proc">
-        <div class="grp"><span data-t="metrics.processMemory">Process memory</span><span class="cur" id="proc-cur"></span></div>
-        <div id="proc-list"></div>
-      </div>
-      <div class="metrics-adv-sec" id="disc-cpu">
-        <div class="grp"><span data-t="metrics.cpuDetail">Detailed CPU usage</span><span class="cur" id="cpu-cur"></span></div>
-        <div id="cpu-list"></div>
       </div>
     </div>
   </div>
@@ -2645,6 +2705,7 @@
 <script src="/assets/ui/bluetooth.js"></script>
 <script src="/assets/ui/picture.js"></script>
 <script src="/assets/ui/servicemenu.js"></script>
+<script src="/assets/ui/perf.js"></script>
 <script src="/assets/ui/oled.js"></script>
 <script src="/assets/ui/screensavers.js"></script>
 <script src="/assets/ui/mqtt.js"></script>

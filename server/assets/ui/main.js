@@ -52,8 +52,10 @@ async function waitForServer() {
 })();
 
 const openSection = new URLSearchParams(location.search).get('open');
-if (openSection === 'metrics' || openSection === 'system' || openSection === 'processes') {
+if (openSection === 'metrics' || openSection === 'system' || openSection === 'info') {
   if (typeof setMetricsSubView === 'function') setMetricsSubView('advanced');
+} else if (openSection === 'processes' || openSection === 'performance') {
+  if (typeof setMetricsSubView === 'function') setMetricsSubView('performance');
 } else if (openSection === 'watch') {
   if (typeof setMetricsSubView === 'function') setMetricsSubView('watch');
 }
