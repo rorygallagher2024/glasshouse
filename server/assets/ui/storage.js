@@ -281,7 +281,9 @@ function renderStorMap() {
     // In shares of the map, less the gap, so a tile can never run past its edge
     // whatever the map's width when it was measured.
     const pc = (a, b) => (a / b * 100).toFixed(3) + '%';
-    const thin = w < 10 || h < 10 ? ' thin' : '';
+    // A tile too small for a name has no padding either, which would otherwise
+    // hold a button wider than its share and push it past the map's edge.
+    const thin = !mid ? ' thin' : '';
     return '<' + tag + ' class="stor-tile ' + n.g + (n.n ? '' : ' rest') + (zoom ? ' zoom' : '') + thin + '" data-k="' + k + '"' +
       ' style="left:' + pc(r.x, W) + ';top:' + pc(r.y, H) + ';width:calc(' + pc(r.w, W) + ' - ' + GAP + 'px);height:calc(' + pc(r.h, H) + ' - ' + GAP + 'px)"' +
       ' aria-label="' + esc(name + ', ' + storSize(n.s)) + '">' + label + '</' + close + '>';
