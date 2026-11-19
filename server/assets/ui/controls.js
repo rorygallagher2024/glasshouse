@@ -82,6 +82,8 @@ function applyOptimistic(action, value) {
     if (q('vol-slider')) q('vol-slider').value = v;
     if (q('vol-fill')) q('vol-fill').style.width = v + '%';
     if (q('vol') && !muted) q('vol').textContent = v;
+    if (q('hdr-vol-val') && !muted) q('hdr-vol-val').textContent = v;
+    if (q('hdr-vol-fill')) q('hdr-vol-fill').style.width = v + '%';
   } else if (action === 'mute') {
     const m = !!value;
     setLease('mute', m);
@@ -90,6 +92,11 @@ function applyOptimistic(action, value) {
     if (q('vol-wrap')) q('vol-wrap').classList.toggle('muted', m);
     const curVol = q('vol-slider') ? q('vol-slider').value : '';
     if (q('vol')) q('vol').textContent = m ? t('ctl.muted', 'MUTED') : curVol;
+    if (q('hdr-vol')) {
+      q('hdr-vol').classList.toggle('muted', m);
+      q('hdr-vol').setAttribute('aria-pressed', String(m));
+    }
+    if (q('hdr-vol-val')) q('hdr-vol-val').textContent = m ? t('ctl.muted', 'MUTED') : curVol;
   } else if (action === 'sleepTimer') {
     const st = String(value);
     setLease('sleepTimer', st);
@@ -143,6 +150,11 @@ function applyOptimistic(action, value) {
       const matches = b.id === 'in_' + inp;
       b.classList.toggle('on', matches);
       if (matches && q('currapp-lbl')) q('currapp-lbl').textContent = b.textContent.toUpperCase();
+    }
+    if (q('source-menu')) {
+      for (const b of q('source-menu').querySelectorAll('button[data-src-in]')) {
+        b.classList.toggle('on', b.getAttribute('data-src-in') === inp);
+      }
     }
   } else if (action === 'launchApp') {
     const appId = String(value);
@@ -540,25 +552,33 @@ function holdVolumeControls() {
   if (q('vol-slider')) q('vol-slider').disabled = true;
   if (q('vol-wrap')) q('vol-wrap').classList.add('off');
   if (q('mute')) q('mute').disabled = true;
+  if (q('hdr-vol')) q('hdr-vol').disabled = true;
   if (q('vol-steps')) q('vol-steps').querySelectorAll('button').forEach(b => { b.disabled = true; });
+}
+
+function applyLiveVolume(pct) {
+  const slider = q('vol-slider');
+  const fill = q('vol-fill');
+  if (slider) slider.value = pct;
+  if (fill) fill.style.width = pct + '%';
+  if (q('vol')) q('vol').textContent = pct;
+  if (q('vol-wrap')) q('vol-wrap').classList.remove('muted');
+  if (q('hdr-vol-fill')) q('hdr-vol-fill').style.width = pct + '%';
+  if (q('hdr-vol-val')) q('hdr-vol-val').textContent = pct;
+  if (q('hdr-vol')) {
+    q('hdr-vol').classList.remove('muted');
+    q('hdr-vol').setAttribute('aria-pressed', 'false');
+  }
+  muted = false;
+  if (q('mute')) q('mute').classList.remove('on');
+  return pct;
 }
 
 function setVolFromPointer(e) {
   const wrap = q('vol-wrap');
   if (!wrap) return 0;
   const rect = wrap.getBoundingClientRect();
-  const pct = Math.max(0, Math.min(100, Math.round(((e.clientX - rect.left) / rect.width) * 100)));
-  const slider = q('vol-slider');
-  const fill = q('vol-fill');
-  if (slider) slider.value = pct;
-  if (fill) fill.style.width = pct + '%';
-  const volEl = q('vol');
-  if (volEl) volEl.textContent = pct;
-  wrap.classList.remove('muted');
-  muted = false;
-  const muteBtn = q('mute');
-  if (muteBtn) muteBtn.classList.remove('on');
-  return pct;
+  return applyLiveVolume(Math.max(0, Math.min(100, Math.round(((e.clientX - rect.left) / rect.width) * 100))));
 }
 
 function initVolSlider() {
@@ -637,16 +657,77 @@ function initVolSlider() {
       e.preventDefault();
       const current = Number(slider.value) || 0;
       const next = Math.max(0, Math.min(100, current + step));
-      slider.value = next;
-      if (q('vol-fill')) q('vol-fill').style.width = next + '%';
-      if (q('vol')) q('vol').textContent = next;
-      wrap.classList.remove('muted');
-      muted = false;
-      if (q('mute')) q('mute').classList.remove('on');
+      applyLiveVolume(next);
       setLease('volume', next);
       await sendCommand('volume', next);
     }
   });
+
+  const hdrVol = q('hdr-vol');
+  if (hdrVol) {
+    let hdrDown = false, hdrScrubbed = false, hdrStartX = 0;
+    const hdrPct = e => {
+      const r = hdrVol.getBoundingClientRect();
+      return Math.max(0, Math.min(100, Math.round(((e.clientX - r.left) / r.width) * 100)));
+    };
+    hdrVol.addEventListener('pointerdown', e => {
+      if (e.button !== 0 || hdrVol.disabled) return;
+      hdrDown = true;
+      hdrScrubbed = false;
+      hdrStartX = e.clientX;
+    });
+    hdrVol.addEventListener('pointermove', e => {
+      if (!hdrDown || slider.disabled) return;
+      if (!hdrScrubbed && Math.abs(e.clientX - hdrStartX) < 5) return;
+      if (!hdrScrubbed) {
+        hdrScrubbed = true;
+        volDragging = true;
+        hdrVol.classList.add('dragging');
+        try { hdrVol.setPointerCapture(e.pointerId); } catch (err) {}
+      }
+      applyLiveVolume(hdrPct(e));
+    });
+    hdrVol.addEventListener('pointerup', async e => {
+      if (!hdrDown) return;
+      hdrDown = false;
+      if (hdrScrubbed) {
+        hdrScrubbed = false;
+        hdrVol.classList.remove('dragging');
+        try { hdrVol.releasePointerCapture(e.pointerId); } catch (err) {}
+        const val = applyLiveVolume(hdrPct(e));
+        setLease('volume', val);
+        volDragging = false;
+        await sendCommand('volume', val);
+      } else {
+        await sendCommand('mute', !muted);
+      }
+    });
+    hdrVol.addEventListener('pointercancel', e => {
+      if (!hdrDown) return;
+      hdrDown = false;
+      if (hdrScrubbed) {
+        hdrScrubbed = false;
+        volDragging = false;
+        hdrVol.classList.remove('dragging');
+        try { hdrVol.releasePointerCapture(e.pointerId); } catch (err) {}
+        clearLease('volume');
+        setTimeout(tick, 0);
+      }
+    });
+    hdrVol.addEventListener('keydown', async e => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        if (!hdrVol.disabled) await sendCommand('mute', !muted);
+      } else if (!slider.disabled && (e.key === 'ArrowRight' || e.key === 'ArrowUp' || e.key === 'ArrowLeft' || e.key === 'ArrowDown')) {
+        e.preventDefault();
+        const step = (e.key === 'ArrowRight' || e.key === 'ArrowUp') ? 1 : -1;
+        const next = Math.max(0, Math.min(100, (Number(slider.value) || 0) + step));
+        applyLiveVolume(next);
+        setLease('volume', next);
+        await sendCommand('volume', next);
+      }
+    });
+  }
 }
 initVolSlider();
 initBacklightSlider();

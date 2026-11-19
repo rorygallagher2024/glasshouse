@@ -474,7 +474,7 @@ rows are labelled **Hidden**.
 
 ## Home customisation
 
-The Home tab's **Home customisation** section holds what applies to whichever Home is the TV's, grouped under headings:
+The Home tab's **Home customisation** section holds what applies to whichever Home is the TV's, grouped under headings. While Glasshouse Home is active, a bar underneath switches between **Rows & tiles**, **Appearance & wallpaper**, **Behavior & startup** and **Internet TV**:
 
 ![Home customisation on a C2, grouped under Starting up, Layout, Shown on Home, Live preview, Search and Animations](../screenshots/home-customisation.png)
 

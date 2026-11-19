@@ -1,6 +1,6 @@
 # Telemetry and diagnostics
 
-The **Metrics** tab (`/?tab=metrics`) exposes live hardware and software telemetry from the TV — most of which is absent from LG's own settings menus.
+The **Metrics** tab (`/?tab=metrics`) exposes live hardware and software telemetry from the TV — most of which is absent from LG's own settings menus. Its views are split into **Overview** (live telemetry), **Watch time** (when enabled), and **Advanced** (System info, Process memory, and Detailed CPU usage together).
 
 ![Metrics tab: processor, memory, swap and network readouts](../screenshots/metrics-system.png)
 
@@ -12,7 +12,7 @@ The **Metrics** tab (`/?tab=metrics`) exposes live hardware and software telemet
 
     ---
 
-    SoC temperature, overall and per-core CPU load, GPU clock, memory, and swap. Includes an on-demand breakdown of resident memory and top CPU processes with their PIDs.
+    SoC temperature, overall and per-core CPU load, GPU clock, memory, and swap. Includes an on-demand breakdown of resident memory (with RAM percentage) and top CPU processes with their PIDs, both colour-coded by usage level.
 
 -   **Network & storage**
 

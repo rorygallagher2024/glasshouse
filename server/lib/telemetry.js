@@ -208,6 +208,13 @@ var installedApps = [];
 // Every app's title by id, hidden ones included: the app list leaves out apps
 // hidden from the home screen, but one can still be the app on screen.
 var appTitles = {};
+var BUILTIN_APP_TITLES = {
+  'com.tvweb.dashboard': 'Glasshouse',
+  'io.github.rorygallagher2024.lg-webos-dashboard': 'Glasshouse',
+  'org.webosbrew.hbchannel': 'Homebrew Channel',
+  'com.webos.app.factorywin': 'Service Menu',
+  'com.open.hidden.menu': 'Service Menu'
+};
 var lastAppsScan = 0;
 
 var SOC_ARCH = {
@@ -1657,7 +1664,10 @@ function cpuProcessRows(first, second, elapsed) {
 function collectProcesses(all, cb) {
   execFile('/bin/ps', ['-eo', 'pid,rss,comm,args'], { timeout: 4000, maxBuffer: 1024 * 1024 }, function (err, stdout) {
     if (err) return cb({ ok: false, error: msg('srv.processes.failed', 'could not read process list') });
-    cb(parseProcesses(stdout, all));
+    var res = parseProcesses(stdout, all);
+    var memTotalKb = meminfo().MemTotal || 0;
+    if (memTotalKb > 0) res.ramMb = Math.round(memTotalKb / 1024 * 10) / 10;
+    cb(res);
   });
 }
 
@@ -2326,7 +2336,7 @@ function applyForegroundApp(out, app, receiverMap, hdmiStatus) {
     // Inputs by the names given them in the TV's settings, apps by
     // their titles; the id only when neither is known.
     var isInput = inputNameMap[shortApp] && inputNameMap[shortApp] !== shortApp;
-    out.app_name = inputNameMap[shortApp] || appTitles[app.appId] || shortApp;
+    out.app_name = inputNameMap[shortApp] || appTitles[app.appId] || BUILTIN_APP_TITLES[app.appId] || shortApp;
     out.display_title = isInput ? names.inputTitle(shortApp, inputNameMap[shortApp]) : out.app_name;
 
     var hdmiOnScreen = names.hdmiPort(shortApp);
@@ -2525,7 +2535,7 @@ function getCapabilities(extra) {
 
 // An app's title, by its full id, once the installed apps have been read.
 function appTitle(appId) {
-  return appTitles[appId] || null;
+  return appTitles[appId] || BUILTIN_APP_TITLES[appId] || null;
 }
 
 function getInstalledApps() {
