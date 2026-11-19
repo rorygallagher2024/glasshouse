@@ -505,9 +505,9 @@ function renderRemoteKeys(d) {
   const more = away.length ? `<details class="rk-more"${rkMoreOpen ? ' open' : ''} ontoggle="rkMoreOpen = this.open">
       <summary class="rk-grp">${esc(t('apps.remoteKeys.elsewhere', 'Buttons on remotes sold elsewhere ({n})', { n: away.length }))}</summary>
       <div class="rk-grid">${away.map(tile).join('')}</div></details>` : '';
-  // How far a Brightness key moves the picture, where one can be set.
+  // How far a Brightness key moves the picture, once a key is set to one.
   let stepRow = '';
-  if (rk.choices.some(c => c.id === 'action:brightnessUp')) {
+  if (rk.keys.some(k => k.id === 'action:brightnessUp' || k.id === 'action:brightnessDown')) {
     const sizes = [5, 10, 15, 20, 25];
     if (sizes.indexOf(rk.brightnessStep) === -1) sizes.push(rk.brightnessStep);
     sizes.sort((a, b) => a - b);
