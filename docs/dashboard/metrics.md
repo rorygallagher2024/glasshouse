@@ -1,6 +1,6 @@
 # Telemetry and diagnostics
 
-The **Metrics** tab (`/?tab=metrics`) exposes live hardware and software telemetry from the TV, most of which is absent from LG's own settings menus. Its views are split into **Overview** (live telemetry), **[Performance](#performance)** (the processor, memory, network and temperature over time, with the process lists), **Watch time** (when enabled), and **System info** (webOS, firmware and hardware versions).
+The **Metrics** tab (`/?tab=metrics`) exposes live hardware and software telemetry from the TV, most of which is absent from LG's own settings menus. Its views are split into **Overview** (live telemetry), **[Performance](#performance)** (the processor, memory, network and temperature over time, with the process lists), **[Storage](#storage)** (what fills the TV's storage, and which apps take the most), **Watch time** (when enabled), and **System info** (webOS, firmware and hardware versions).
 
 ![Metrics tab: processor, memory, swap and network readouts](../screenshots/metrics-system.png)
 
@@ -62,6 +62,18 @@ The **Performance** view (`/?tab=metrics&open=performance`) charts the TV over t
 Glasshouse takes a reading every 5 seconds from the start of the server, whether or not a dashboard is open, so the charts are already filled when you open them. The last hour is kept at 5 seconds and the last day at one reading a minute (the average of that minute). Each reading only reads a few system files and asks the TV nothing. The history is kept in memory, never written to the TV's storage, so it begins again when the server restarts.
 
 The process memory and CPU lists sit below the charts and refresh while the view is open.
+
+## Storage
+
+![Storage: the TV's three writable partitions, then a map of what fills the app partition, mostly LG's preinstalled content](../screenshots/metrics-storage.png)
+
+The **Storage** view (`/?tab=metrics&open=storage`) shows what is using the TV's storage:
+
+* **Partitions:** a card for each part of the storage the TV can write to (apps, system data, the settings database, and a USB drive when one is plugged in), with how much is used and free. The bar splits what is used between your apps, what LG puts on every TV, and the system.
+* **What is using it:** a map of the selected partition, each block sized by the space it takes and coloured by who put it there. Select a block to look inside it and the path above the map to come back out. Point at a block (or move to it with the keyboard) to see its size, its share of the partition and where it is. LG's own content, such as the store demo videos most TVs carry, is marked as something that cannot be removed.
+* **Apps by space used:** every app with its files totalled wherever they are kept: the app itself, its artwork, its sandbox and its saved state. Built-in apps and the ones you installed are marked, and Glasshouse is listed too.
+
+Glasshouse looks through the storage when you open the view, at most every ten minutes, or when you select **Look again**. On a C2 this takes under a second. The view only shows: apps you installed can be removed from the [Apps](apps.md) tab.
 
 ## Watch time
 

@@ -123,6 +123,7 @@ var ntpModule = null;
 /** @type {typeof import('./history')} */
 var historyModule = null;
 var perfHistoryModule = null;
+var storageScanModule = null;
 /** @type {typeof import('./sshkeys')} */
 var sshKeysModule = null;
 /** @type {typeof import('./screentime')} */
@@ -2187,6 +2188,10 @@ function handleRequest(req, res) {
 
   // The Performance view's charts: the processor, memory, network and
   // temperature over the last 5 minutes, hour or day.
+  if (pathname === '/api/storage' && storageScanModule) {
+    // A rescan only by POST, so a page load never forces one.
+    return storageScanModule.query(req.method === 'POST', function (d) { send(res, 200, JSON.stringify(d)); });
+  }
   if (pathname === '/api/perf' && perfHistoryModule) {
     return send(res, 200, JSON.stringify(perfHistoryModule.query(String(u.query.range || '5m'))));
   }
@@ -2757,6 +2762,7 @@ function init(opts) {
   if (opts.ntp) ntpModule = opts.ntp;
   if (opts.history) historyModule = opts.history;
   if (opts.perfHistory) perfHistoryModule = opts.perfHistory;
+  if (opts.storageScan) storageScanModule = opts.storageScan;
   if (opts.sshKeys) sshKeysModule = opts.sshKeys;
   if (opts.screentime) screentimeModule = opts.screentime;
   if (opts.backup) backupModule = opts.backup;

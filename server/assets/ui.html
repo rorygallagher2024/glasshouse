@@ -156,6 +156,7 @@
   <div class="catalog-seg home-subnav metrics-subnav" id="metrics-subnav" role="tablist">
     <button type="button" class="home-sub-btn on" data-metrics-view="overview" aria-pressed="true" onclick="setMetricsSubView('overview')" data-t="pv.overview">Overview</button>
     <button type="button" class="home-sub-btn" data-metrics-view="performance" aria-pressed="false" onclick="setMetricsSubView('performance')" data-t="metrics.performance">Performance</button>
+    <button type="button" class="home-sub-btn" data-metrics-view="storage" aria-pressed="false" onclick="setMetricsSubView('storage')" data-t="metrics.storage">Storage</button>
     <button type="button" class="home-sub-btn" id="metrics-sub-watch" data-metrics-view="watch" aria-pressed="false" onclick="setMetricsSubView('watch')" hidden data-t="metrics.watch">Watch time</button>
     <button type="button" class="home-sub-btn" data-metrics-view="advanced" aria-pressed="false" onclick="setMetricsSubView('advanced')" data-t="metrics.systemInfo">System info</button>
   </div>
@@ -318,6 +319,31 @@
       <div class="perf-card metrics-adv-sec" id="disc-cpu">
         <div class="grp"><span data-t="metrics.cpuDetail">Detailed CPU usage</span><span class="cur" id="cpu-cur"></span></div>
         <div id="cpu-list"></div>
+      </div>
+    </div>
+  </div>
+  <div class="metrics-stor-view" id="storblock" data-metrics-sub="storage">
+    <div class="perf-head">
+      <div class="perf-note" id="stor-note"></div>
+      <div class="catalog-seg"><button type="button" class="home-sub-btn" id="stor-rescan" data-t="metrics.stor.rescan">Look again</button></div>
+    </div>
+    <div class="stor-vols" id="stor-vols"></div>
+    <div class="perf-grid">
+      <div class="perf-card perf-wide">
+        <div class="perf-top">
+          <div>
+            <div class="grp" data-t="metrics.stor.mapTitle">What is using it</div>
+            <nav class="stor-crumbs" id="stor-crumbs" aria-label="Folder" data-t-aria-label="metrics.stor.folder"></nav>
+          </div>
+          <div class="perf-legend" id="stor-legend"></div>
+        </div>
+        <div class="stor-map" id="stor-map"></div>
+        <div class="stor-hint" data-t="metrics.stor.hint">Select a block to look inside it.</div>
+      </div>
+      <div class="perf-card perf-wide">
+        <div class="perf-top"><div class="grp" data-t="metrics.stor.appsTitle">Apps by space used</div></div>
+        <ol class="stor-apps" id="stor-apps"></ol>
+        <button type="button" class="home-sub-btn stor-apps-more" id="stor-apps-more" hidden></button>
       </div>
     </div>
   </div>
@@ -2706,6 +2732,7 @@
 <script src="/assets/ui/picture.js"></script>
 <script src="/assets/ui/servicemenu.js"></script>
 <script src="/assets/ui/perf.js"></script>
+<script src="/assets/ui/storage.js"></script>
 <script src="/assets/ui/oled.js"></script>
 <script src="/assets/ui/screensavers.js"></script>
 <script src="/assets/ui/mqtt.js"></script>

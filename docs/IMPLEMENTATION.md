@@ -1480,6 +1480,33 @@ per-core loads, the events in the range and the one before it.
 
 ---
 
+## Storage scan
+
+`server/lib/storagescan.js` serves the Metrics tab's Storage view. It reads
+`df -k` and keeps one entry per writable device, named by its best mount
+(`/mnt/lg/appstore`, `/mnt/lg/cmn_data`, `/mnt/lg/db8`, a USB drive under
+`/tmp/usb`). Read-only images (the root filesystem, fonts, certificates show
+as full with nothing free), memory filesystems, loop images and stores under
+16 MB are left out. Each is walked with `du -kx`, which stays on that device;
+a non-zero exit from one unreadable folder keeps the rest, and only a timeout
+(30 s, for a large USB drive) marks the partition as not looked through.
+
+The folders come back as a tree. Each folder below 1/4000 of its partition's
+used space (at least 64 KiB) is folded into one block with its parent's own
+files, and a folder that holds only one other is merged with it, so
+`cryptofs/apps/usr/palm` is one step. Every folder is grouped as `app`
+(`cryptofs`, `developer`, Glasshouse's `var/lib/tvweb`, and anything named
+after a removable app), `lg` (`preload` and `system` on the app partition)
+or `sys`. Folders named after an app from `applicationManager/listApps`
+are totalled per app, a folder inside one already counted for that app not
+counted again.
+
+`GET /api/storage` returns the last scan, starting a new one in the
+background when it is over ten minutes old; the first waits for it.
+`POST /api/storage` scans again. Nothing is deleted.
+
+---
+
 ## Counting watch time
 
 `server/lib/history.js` counts, while it is switched on, how long the screen
