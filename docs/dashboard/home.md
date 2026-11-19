@@ -159,6 +159,7 @@ Internet TV places channels from your IPTV provider into a dedicated row on Glas
     * **Edit:** Updates credentials or URLs (leaving the password blank preserves the existing password).
     * **Remove:** Deletes the playlist, cached guide, and associated channels from the TV.
 * **Satellite tuner (Enigma2):** **Add a satellite tuner** takes the address of an Enigma2 receiver (for example `192.168.1.10`) and, only if its web interface asks for one, a user name and password. Glasshouse reads the tuner's OpenWebif: every TV bouquet becomes a group, channels keep their bouquet order as numbers, logos are the tuner's picons, and the guide covers a week, read from the tuner every six hours. Several tuners can be added, each as its own playlist. The picture streams straight from the tuner's stream port, the one its own bouquets name (usually 8001). **Stream port** overrides it, for a tuner whose channels are to come from a different port instead, such as a transcoding profile on 8002. For a tuner that asks for a login there, turn on **The tuner asks for a login to play a channel**: the TV then passes the stream on with the same login, and a channel played that way cannot be paused. With the **When every tuner is busy, switch a tuner to the requested channel** switch on (off by default), a channel that finds every tuner busy moves the tuner showing live TV to it. A free tuner is used as it is, and a tuner recording or streaming for someone else is never touched. The tuner is asked one request at a time, and the guide is only read for bouquets that have a channel in the lineup.
+* **Channel logos:** Displays the playlist's logo on each Internet TV tile. Switched off, channels show their names instead. The switch is in the Internet TV section, above the channel list.
 * **Failure handling:** If a playlist is temporarily unreachable, the previous channel list is retained. If login authentication is refused, automatic retries pause until edited or refreshed manually, preventing account lockouts from repeated failed attempts.
 
 ### Choosing channels
@@ -481,7 +482,7 @@ The Home tab's **Home customisation** section holds what applies to whichever Ho
 * While Glasshouse Home is on:
     * **Starting up:** Open Home at power-on, Hide LG's Home while the TV starts.
     * **Layout:** Alternative View, Rows along the bottom.
-    * **Shown on Home:** Clock and date, Last watched, App count, App labels, Apps as cards, Card transparency, Pulse on the app in focus, Sound when moving, CEC addresses, Channel logos, Weather, Remote battery, Picture details.
+    * **Shown on Home:** Clock and date, Last watched, App count, App labels, Apps as cards, Card transparency, Pulse on the app in focus, Sound when moving, CEC addresses, Weather, Remote battery, Picture details.
     * **Live preview:** Live preview, with Preview sound, Keep the preview on, Preview in the tile and Preview size once it is on.
     * **Search.**
     * **Animations:** Fade in and out, Wallpaper drift, Wallpaper cross-fade, Smooth scrolling, Sliding panels.
@@ -522,7 +523,6 @@ Individual toggles in the **Shown on Home** section control informative badges a
 * **Pulse on the app in focus:** Off by default. The ring around the app in focus breathes, with a soft glow around it, as a card or a square tile. Both the ring and the glow take the accent of Home's colours.
 * **Sound when moving:** Off by default. A sound plays through the TV each time focus moves to another tile: **Click** or **Rollover**, from Kenney's UI Audio (CC0), at half their recorded volume, or **Your own**. The play button beside the choice plays it in the browser. With **Your own** chosen, **Upload a sound** takes an OGG, WAV or MP3 file of up to 512 KB, played as it is, and **Remove** deletes it; Home uses a new one within a few seconds. It is kept on the TV as `/var/lib/tvweb/home-sounds/nav.ogg` (or `nav.wav`, `nav.mp3`), so it can also be copied there over SSH.
 * **CEC addresses:** Displays physical HDMI-CEC port addresses (such as `1.0.0.0` or `2.1.0.0`) on each input tile.
-* **Channel logos:** Displays graphical channel logos on Internet TV tiles; when disabled, channels display plain text names instead.
 * **Picture details:** Displays the active picture preset, OLED light / backlight level, and signal format in the top-right corner.
 * **Magic Remote pointer:** On by default. Switched off, the remote's pointer is hidden on Glasshouse Home and moving the remote no longer moves the focus, so only the arrow keys move around Home; OK opens the tile in focus. The wheel still scrolls the rows. Apps, inputs and LG's menus keep the pointer.
 
