@@ -157,6 +157,7 @@
     <button type="button" class="home-sub-btn on" data-metrics-view="overview" aria-pressed="true" onclick="setMetricsSubView('overview')" data-t="pv.overview">Overview</button>
     <button type="button" class="home-sub-btn" data-metrics-view="performance" aria-pressed="false" onclick="setMetricsSubView('performance')" data-t="metrics.performance">Performance</button>
     <button type="button" class="home-sub-btn" data-metrics-view="storage" aria-pressed="false" onclick="setMetricsSubView('storage')" data-t="metrics.storage">Storage</button>
+    <button type="button" class="home-sub-btn" data-metrics-view="hdmi" aria-pressed="false" onclick="setMetricsSubView('hdmi')" translate="no">HDMI</button>
     <button type="button" class="home-sub-btn" id="metrics-sub-watch" data-metrics-view="watch" aria-pressed="false" onclick="setMetricsSubView('watch')" hidden data-t="metrics.watch">Watch time</button>
     <button type="button" class="home-sub-btn" data-metrics-view="advanced" aria-pressed="false" onclick="setMetricsSubView('advanced')" data-t="metrics.systemInfo">System info</button>
   </div>
@@ -228,11 +229,6 @@
       </div>
     </div>
 
-    <div class="grp-sec" id="hdmiblock" data-col="2">
-      <div class="grp"><span translate="no">HDMI</span><span class="cur" id="hdmi-cur"></span></div>
-      <div class="ports" id="hdmi-grid"></div>
-      <div class="sub" id="hdmi-diag-row" hidden style="margin-top:12px;line-height:1.5"></div>
-    </div>
   </div>
 
   <div class="metrics-watch-view" id="watchblock" data-metrics-sub="watch" hidden>
@@ -346,6 +342,14 @@
         <button type="button" class="home-sub-btn stor-apps-more" id="stor-apps-more" hidden></button>
       </div>
     </div>
+  </div>
+  <div class="metrics-hdmi-view" id="hdmiview" data-metrics-sub="hdmi">
+    <div class="grp-sec hdmi-ports-sec" id="hdmiblock">
+      <div class="grp"><span data-t="metrics.hdmiv.ports">Ports</span><span class="cur" id="hdmi-cur"></span></div>
+      <div class="ports" id="hdmi-grid"></div>
+      <div class="sub" id="hdmi-diag-row" hidden style="margin-top:12px;line-height:1.5"></div>
+    </div>
+    <div class="perf-grid hdmi-links" id="hdmi-links"></div>
   </div>
   <div class="metrics-adv-view" id="advblock" data-metrics-sub="advanced">
     <div class="metrics-adv-sec" id="disc-hwinfo" hidden>
@@ -2733,6 +2737,7 @@
 <script src="/assets/ui/servicemenu.js"></script>
 <script src="/assets/ui/perf.js"></script>
 <script src="/assets/ui/storage.js"></script>
+<script src="/assets/ui/hdmi.js"></script>
 <script src="/assets/ui/oled.js"></script>
 <script src="/assets/ui/screensavers.js"></script>
 <script src="/assets/ui/mqtt.js"></script>

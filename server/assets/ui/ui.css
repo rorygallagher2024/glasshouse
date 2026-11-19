@@ -1288,6 +1288,7 @@ button.pill.flash.idle[disabled]:hover{color:var(--w60);border-color:var(--edge)
 #tab-metrics[data-metrics-view="watch"] [data-metrics-sub]:not([data-metrics-sub="watch"]),
 #tab-metrics[data-metrics-view="performance"] [data-metrics-sub]:not([data-metrics-sub="performance"]),
 #tab-metrics[data-metrics-view="storage"] [data-metrics-sub]:not([data-metrics-sub="storage"]),
+#tab-metrics[data-metrics-view="hdmi"] [data-metrics-sub]:not([data-metrics-sub="hdmi"]),
 #tab-metrics[data-metrics-view="advanced"] [data-metrics-sub]:not([data-metrics-sub="advanced"]){display:none !important}
 /* Performance: Stats-style history charts. */
 .perf-head{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px 20px;margin:0 0 18px}
@@ -1344,6 +1345,42 @@ button.pill.flash.idle[disabled]:hover{color:var(--w60);border-color:var(--edge)
 .perf-core-bar b{position:absolute;left:0;right:0;bottom:0;border-radius:4px 4px 0 0;background:var(--pf-a);transition:height .4s ease}
 .perf-core.parked .perf-core-bar{background:none;border:1px dashed var(--w25)}
 .perf-core-n{font-size:11px;color:var(--w60)}
+
+/* HDMI view: the ports, then each input's link in detail. */
+.hdmi-ports-sec{margin:0 0 18px}
+.hdmi-ports-sec .ports{grid-template-columns:repeat(auto-fit,minmax(200px,1fr))}
+.hdmi-card .perf-top{margin-bottom:8px}
+.hdmi-card .pill{flex:none}
+.hdmi-name{color:var(--w100);text-transform:none;letter-spacing:0;margin-left:6px}
+.hdmi-desc{margin:0 0 18px}
+.hdmi-row{display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin-bottom:8px}
+.hdmi-lbl{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--w60)}
+.hdmi-val{font-size:13px;color:var(--w60)} .hdmi-val b{font-weight:500;color:var(--w100);font-size:15px}
+.hdmi-bw{margin:0 0 18px}
+.hdmi-bar{position:relative;height:12px;border-radius:6px;background:var(--w06);margin-bottom:26px}
+.hdmi-bar > b{position:absolute;left:0;top:0;bottom:0;border-radius:6px;background:var(--pf-a);transition:width .4s ease}
+.hdmi-mark{position:absolute;top:-3px;bottom:-3px;width:0;border-left:1px dashed var(--w60)}
+.hdmi-mark.over{border-left-color:var(--w25)}
+.hdmi-mark span{position:absolute;top:20px;left:0;transform:translateX(-50%);font-size:11px;font-style:normal;color:var(--w60);white-space:nowrap}
+.hdmi-mark.over span{color:var(--w40)}
+.hdmi-mark.end span{transform:translateX(-100%);padding-right:4px}
+.hdmi-sub{font-size:13px;color:var(--w60);line-height:1.5}
+.hdmi-chips{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 18px}
+.hdmi-chip{display:inline-flex;align-items:center;gap:7px;padding:4px 10px;border:1px solid var(--w12);border-radius:999px;font-size:12px;color:var(--w50)}
+.hdmi-chip i{width:6px;height:6px;border-radius:50%;border:1px solid var(--w35)}
+.hdmi-chip.on{color:var(--w100);border-color:var(--w35)}
+.hdmi-chip.on i{background:var(--w100);border-color:var(--w100)}
+.hdmi-health{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;padding:14px 0 0;border-top:1px solid var(--w10)}
+.hdmi-stat-v{margin-top:6px;font-size:18px;color:var(--w100)} .hdmi-stat-v small{font-size:12px;color:var(--w60)}
+.hdmi-stat-v .good{color:var(--green)}
+.hdmi-err-note{display:block;margin-top:3px}
+.hdmi-tech{margin-top:16px;font-size:13px}
+.hdmi-tech summary{cursor:pointer;color:var(--w60);font-size:12px;letter-spacing:.06em;text-transform:uppercase}
+.hdmi-tech summary:hover{color:var(--w100)}
+.hdmi-tech dl{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px 18px;margin:12px 0 0}
+.hdmi-tech dt{font-size:12px;color:var(--w60)} .hdmi-tech dd{margin:3px 0 0;color:var(--w100)}
+.hdmi-card.asleep .perf-top{margin-bottom:6px}
+@media (prefers-reduced-motion:reduce){.hdmi-bar > b{transition:none}}
 
 /* Storage view: the partitions, a treemap of what fills one, and apps by size. */
 .stor-vols{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px;margin:0 0 18px}

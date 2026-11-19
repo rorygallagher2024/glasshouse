@@ -54,6 +54,8 @@ async function waitForServer() {
 const openSection = new URLSearchParams(location.search).get('open');
 if (openSection === 'metrics' || openSection === 'system' || openSection === 'info') {
   if (typeof setMetricsSubView === 'function') setMetricsSubView('advanced');
+} else if (openSection === 'hdmi') {
+  if (typeof setMetricsSubView === 'function') setMetricsSubView('hdmi');
 } else if (openSection === 'storage' || openSection === 'disk') {
   if (typeof setMetricsSubView === 'function') setMetricsSubView('storage');
 } else if (openSection === 'processes' || openSection === 'performance') {
