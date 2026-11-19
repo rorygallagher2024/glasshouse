@@ -134,6 +134,7 @@ var syslogForwarder = require('./lib/syslog');
 var ntpClient = require('./lib/ntp');
 var history = require('./lib/history');
 var perfHistory = require('./lib/perfhistory');
+var storageScan = require('./lib/storagescan');
 var sshKeys = require('./lib/sshkeys');
 var screentime = require('./lib/screentime');
 var saverPowerOff = require('./lib/saverpoweroff');
@@ -1096,6 +1097,7 @@ routes.init({
   ntp: ntpClient,
   history: history,
   perfHistory: perfHistory,
+  storageScan: storageScan,
   sshKeys: sshKeys,
   screentime: screentime,
   backup: backup,
@@ -2320,6 +2322,13 @@ if (!CLI_MODE) {
   history.start();
   perfHistory.init({ liveState: liveState, presentCpus: telemetry.presentCpus, socTemp: telemetry.socTemp, socMhz: telemetry.socMhz });
   perfHistory.start();
+  // The HDMI view's link error counts, kept from when a link comes up.
+  require('./lib/hdmilink').startTally(telemetry.readHdmiReceiverStatus);
+  storageScan.init({
+    listApps: function (cb) {
+      luna('com.webos.applicationManager/listApps', {}, function (res) { cb((res && res.apps) || []); });
+    }
+  });
   screentime.init({ config: CONFIG, liveState: liveState, control: controls.doControl, injectKey: controls.injectKey, keyBack: controls.KEY_BACK });
   screentime.start();
   saverPowerOff.init({ config: CONFIG, liveState: liveState, control: controls.doControl,

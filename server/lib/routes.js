@@ -123,6 +123,20 @@ var ntpModule = null;
 /** @type {typeof import('./history')} */
 var historyModule = null;
 var perfHistoryModule = null;
+var storageScanModule = null;
+
+// HDMI inputs the TV's input service calls plugged in, with no powered source
+// on the cable and no picture, as the HDMI view sees them (telemetry).
+function markNoSignal(c, done) {
+  if (!c || !Array.isArray(c.devices) || !telemetryModule || typeof telemetryModule.hdmiSignalByInput !== 'function') return done();
+  telemetryModule.hdmiSignalByInput(function (byInput) {
+    c.devices.forEach(function (d) {
+      var sig = d && !d.unused && !d.kind && d.port ? byInput[d.port] : null;
+      if (sig && !sig.powered && !sig.locked) d.noSignal = true;
+    });
+    done();
+  });
+}
 /** @type {typeof import('./sshkeys')} */
 var sshKeysModule = null;
 /** @type {typeof import('./screentime')} */
@@ -1250,14 +1264,19 @@ function handleHomeRoute(req, res, u, pathname) {
     }
     if (pathname === '/api/home/catalogue') {
       return homeModule.catalogue(function (c) {
-        var st = homeModule.viewStatus();
-        c.ok = true;
-        c.layout = st.layout;
-        c.enabled = st.enabled;
-        c.supported = st.supported;
-        c.wallpapers = st.wallpapers;
-        c.layoutVersion = homeModule.layoutVersion();
-        reply(c);
+        // The Inputs tab's state for each HDMI input agrees with the HDMI
+        // view: plugged in by the TV's input service, but with no powered
+        // source on the cable and no picture, it is no signal, not connected.
+        markNoSignal(c, function () {
+          var st = homeModule.viewStatus();
+          c.ok = true;
+          c.layout = st.layout;
+          c.enabled = st.enabled;
+          c.supported = st.supported;
+          c.wallpapers = st.wallpapers;
+          c.layoutVersion = homeModule.layoutVersion();
+          reply(c);
+        });
       });
     }
     if (pathname === '/api/home/channels') {
@@ -2187,6 +2206,10 @@ function handleRequest(req, res) {
 
   // The Performance view's charts: the processor, memory, network and
   // temperature over the last 5 minutes, hour or day.
+  if (pathname === '/api/storage' && storageScanModule) {
+    // A rescan only by POST, so a page load never forces one.
+    return storageScanModule.query(req.method === 'POST', function (d) { send(res, 200, JSON.stringify(d)); });
+  }
   if (pathname === '/api/perf' && perfHistoryModule) {
     return send(res, 200, JSON.stringify(perfHistoryModule.query(String(u.query.range || '5m'))));
   }
@@ -2757,6 +2780,7 @@ function init(opts) {
   if (opts.ntp) ntpModule = opts.ntp;
   if (opts.history) historyModule = opts.history;
   if (opts.perfHistory) perfHistoryModule = opts.perfHistory;
+  if (opts.storageScan) storageScanModule = opts.storageScan;
   if (opts.sshKeys) sshKeysModule = opts.sshKeys;
   if (opts.screentime) screentimeModule = opts.screentime;
   if (opts.backup) backupModule = opts.backup;
