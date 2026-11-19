@@ -78,6 +78,7 @@ const STOR_NAMES = {
     'cryptofs/apps/usr/palm/data/images': () => t('metrics.stor.n.artwork', 'App artwork'),
     'cryptofs/data': () => t('metrics.stor.n.appData', 'App data'),
     'developer': () => t('metrics.stor.n.developer', 'Developer mode apps'),
+    'internal': () => t('metrics.stor.g.sys', 'System'),
     'developer/apps/usr/palm/applications': () => t('metrics.stor.n.developer', 'Developer mode apps')
   },
   data: {
@@ -260,6 +261,7 @@ function renderStorMap() {
 
   const kids = (node.c && node.c.length ? node.c : [node]).filter(c => c.s > 0);
   const W = map.clientWidth, H = map.clientHeight;
+  storMapW = W;
   const rel = trail[trail.length - 1].rel;
   const GAP = 2;
   const tiles = storSquarify(kids, 0, 0, W, H);
@@ -276,8 +278,12 @@ function renderStorMap() {
       : mid ? '<span class="stor-tile-name">' + esc(name) + '</span>' : '';
     const tag = zoom ? 'button type="button"' : 'div tabindex="0"';
     const close = zoom ? 'button' : 'div';
-    return '<' + tag + ' class="stor-tile ' + n.g + (n.n ? '' : ' rest') + (zoom ? ' zoom' : '') + '" data-k="' + k + '"' +
-      ' style="left:' + r.x.toFixed(1) + 'px;top:' + r.y.toFixed(1) + 'px;width:' + w.toFixed(1) + 'px;height:' + h.toFixed(1) + 'px"' +
+    // In shares of the map, less the gap, so a tile can never run past its edge
+    // whatever the map's width when it was measured.
+    const pc = (a, b) => (a / b * 100).toFixed(3) + '%';
+    const thin = w < 10 || h < 10 ? ' thin' : '';
+    return '<' + tag + ' class="stor-tile ' + n.g + (n.n ? '' : ' rest') + (zoom ? ' zoom' : '') + thin + '" data-k="' + k + '"' +
+      ' style="left:' + pc(r.x, W) + ';top:' + pc(r.y, H) + ';width:calc(' + pc(r.w, W) + ' - ' + GAP + 'px);height:calc(' + pc(r.h, H) + ' - ' + GAP + 'px)"' +
       ' aria-label="' + esc(name + ', ' + storSize(n.s)) + '">' + label + '</' + close + '>';
   }).join('') + '<div class="perf-tip stor-tip" id="stor-tip" hidden></div>';
 
@@ -367,9 +373,15 @@ function renderStorApps() {
 
 q('stor-apps-more').addEventListener('click', () => { storAppsAll = !storAppsAll; renderStorApps(); });
 
+// Laid out again whenever the map's own size changes: a scrollbar appearing,
+// the sidebar folding, or the window resizing.
 let storResize = null;
-window.addEventListener('resize', () => {
-  if (!storLast || !storOpen()) return;
+let storMapW = 0;
+const storRelayout = () => {
+  const w = q('stor-map').clientWidth;
+  if (!storLast || !storOpen() || !w || w === storMapW) return;
   clearTimeout(storResize);
-  storResize = setTimeout(renderStorMap, 150);
-});
+  storResize = setTimeout(renderStorMap, 120);
+};
+if (typeof ResizeObserver === 'function') new ResizeObserver(storRelayout).observe(q('stor-map'));
+else window.addEventListener('resize', storRelayout);

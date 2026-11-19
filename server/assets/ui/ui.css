@@ -1375,6 +1375,7 @@ button.pill.flash.idle[disabled]:hover{color:var(--w60);border-color:var(--edge)
 .stor-tile.sys::before{background:var(--w12)}
 .stor-tile.rest::before{opacity:.5} .stor-tile.rest::after{border-style:dashed}
 .stor-tile.zoom{cursor:zoom-in}
+.stor-tile.thin{padding:0;border-radius:3px}
 .stor-tile:hover::before,.stor-tile:focus-visible::before{opacity:.62}
 .stor-tile.sys:hover::before,.stor-tile.sys:focus-visible::before{background:var(--w25);opacity:1}
 .stor-tile:focus-visible{outline:2px solid var(--w100);outline-offset:-2px}
