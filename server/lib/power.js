@@ -39,6 +39,11 @@ var lastState = null;
 var historyFile = null;
 function readBootId() { return util.readTrimmed('/proc/sys/kernel/random/boot_id'); }
 function wallNow() { return Date.now(); }
+function readUptime() {
+  var n = parseFloat(util.readTrimmed('/proc/uptime') || '');
+  return isFinite(n) ? n : null;
+}
+var uptimeFn = readUptime;
 var bootIdFn = readBootId;
 var wallFn = wallNow;
 var history = null;
@@ -90,18 +95,30 @@ function seed(h, boot, at) {
   return true;
 }
 
-function countPowerOn() {
-  if (!onReason || !onTime || !(onTime.ontime > 0) || onTime.uptime === null) return;
+/*
+ * why is 'start' for the read at Glasshouse's start, 'on' for the read after
+ * a transition to on. A TV with tvpower's times (webOS 5 and later) is counted
+ * by them at any read; one without (a B8 on webOS 4) at each transition to on,
+ * and at a start just after a boot, once a boot.
+ */
+function countPowerOn(why) {
+  if (!onReason) return;
+  var timed = !!(onTime && onTime.uptime !== null);
+  if (timed && !(onTime.ontime > 0)) return;
   var h = loadHistory();
   var boot = String(bootIdFn() || '');
+  var up = timed ? onTime.uptime : uptimeFn();
   // Seconds after boot the TV came on; the two readings differ by the read.
-  var at = Math.round((onTime.uptime - onTime.ontime) * 10) / 10;
+  var at = timed ? Math.round((onTime.uptime - onTime.ontime) * 10) / 10 : Math.round(up || 0);
   var changed = seed(h, boot, at);
-  if (!(h.last && h.last.boot === boot && Math.abs(h.last.at - at) < 10)) {
+  var isNew;
+  if (timed) isNew = !(h.last && h.last.boot === boot && Math.abs(h.last.at - at) < 10);
+  else isNew = why === 'on' || (why === 'start' && up !== null && up <= 300 && !(h.last && h.last.boot === boot));
+  if (isNew) {
     h.counts[onReason] = (h.counts[onReason] || 0) + 1;
     h.last = { boot: boot, at: at, reason: onReason };
     var now = wallFn();
-    if (!h.since && now >= PLAUSIBLE_MS) h.since = now - Math.round(onTime.ontime * 1000);
+    if (!h.since && now >= PLAUSIBLE_MS) h.since = now - Math.round((timed ? onTime.ontime : 0) * 1000);
     changed = true;
   }
   if (!changed || !historyFile) return;
@@ -153,8 +170,9 @@ function parseTime(reply) {
 /**
  * Reads both afresh. A TV without the methods leaves both null.
  * @param {function(): void} [done]
+ * @param {string} [why] 'start' or 'on', for counting the power-on
  */
-function refresh(done) {
+function refresh(done, why) {
   done = done || function () {};
   if (!luna) return done();
   luna(REASON_URI, {}, function (r) {
@@ -162,7 +180,7 @@ function refresh(done) {
     luna(TIME_URI, {}, function (t) {
       onTime = parseTime(t);
       onTimeReadAt = clockFn();
-      countPowerOn();
+      countPowerOn(why);
       done();
     });
   });
@@ -204,7 +222,7 @@ function start() {
     }
     var up = onTime && onTime.uptime !== null ? ', up ' + Math.round(onTime.uptime) + ' s' : '';
     log('power: on by ' + onReason + up);
-  });
+  }, 'start');
 }
 
 /**
@@ -229,7 +247,7 @@ function stateChanged(state) {
   refresh(function () {
     log(line + (onReason ? ', on by ' + onReason : ''));
     flush();
-  });
+  }, 'on');
 }
 
 /**
@@ -265,6 +283,7 @@ function isScreenSaver(ps) {
  *   start the counts from when there are none
  * @param {function(): ?string} [opts.bootId] this boot's id, for tests
  * @param {function(): number} [opts.wall] the wall clock, for tests
+ * @param {function(): ?number} [opts.uptime] seconds since boot, for tests
  */
 function init(opts) {
   luna = opts.luna;
@@ -278,6 +297,7 @@ function init(opts) {
   seedFiles = opts.seedFrom || [];
   bootIdFn = opts.bootId || readBootId;
   wallFn = opts.wall || wallNow;
+  uptimeFn = opts.uptime || readUptime;
   history = null;
 }
 

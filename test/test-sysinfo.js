@@ -176,4 +176,34 @@ power.refresh();
 assert.strictEqual(power.powerOns().total, 3);
 console.log('  ✓ the first counts start from Glasshouse\'s log, once');
 
+// A B8 (webOS 4): a reason, no times. Counted at a start just after boot,
+// once a boot, and at each transition to on.
+try { fs.unlinkSync(countsFile); } catch (e) {}
+var b8Up = 40, b8Boot = 'b8-1';
+function b8() {
+  power.init({
+    luna: function (uri, payload, cb) { cb(uri === REASON_URI ? { returnValue: true, reason: 'wakeOnWiFi' } : UNKNOWN_TIME); },
+    syslog: null, log: function () {}, clock: function () { return 0; },
+    historyFile: countsFile, bootId: function () { return b8Boot; },
+    uptime: function () { return b8Up; }, wall: function () { return Date.UTC(2026, 10, 19); }
+  });
+}
+var UNKNOWN_TIME = { returnValue: false, errorText: 'Unknown method "getPowerOnTime"' };
+b8();
+power.start();
+assert.strictEqual(power.powerOns().total, 1, 'a start just after boot');
+b8Up = 50;
+b8();
+power.start();
+assert.strictEqual(power.powerOns().total, 1, 'a second start in the boot is Glasshouse restarting');
+b8Up = 4000;
+b8Boot = 'b8-2';
+b8();
+power.start();
+assert.strictEqual(power.powerOns().total, 1, 'a start long after boot is Glasshouse starting, not the TV');
+power.stateChanged('Active Standby');
+power.stateChanged('Active');
+assert.deepEqual(power.powerOns().reasons, [{ reason: 'wakeOnWiFi', count: 2 }], 'a transition to on');
+console.log('  ✓ a TV without tvpower\'s times counts at a transition to on and a start just after boot');
+
 console.log('ALL test-sysinfo.js assertions passed!');

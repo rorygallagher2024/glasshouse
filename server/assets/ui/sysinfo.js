@@ -109,8 +109,7 @@ function sysinfoHtml(d, f) {
   const serial = f.serial
     ? sysRow(t('metrics.sys.serial', 'Serial number'),
       sysSerialShown ? sysText(f.serial)
-        : `<button type="button" class="home-sub-btn si-reveal" data-sys-reveal>${esc(t('metrics.sys.show', 'Show'))}</button>`,
-      t('metrics.sys.serial.desc', 'Hidden so it stays out of screenshots'))
+        : `<button type="button" class="home-sub-btn si-reveal" data-sys-reveal>${esc(t('metrics.sys.show', 'Show'))}</button>`)
     : '';
   const tv = sysSection(t('metrics.sys.tv', 'This TV'), [
     val(t('metrics.sys.model', 'Model'), model),
@@ -135,7 +134,7 @@ function sysinfoHtml(d, f) {
 
   // Hardware
   const cores = d.coresTotal || 0;
-  const ghz = f.cpuMaxHz ? (f.cpuMaxHz / 1e9).toFixed(f.cpuMaxHz % 1e8 ? 2 : 1) : null;
+  const ghz = f.cpuMaxHz ? (f.cpuMaxHz / 1e9).toFixed(1) : null;
   const cpuDesc = cores && ghz ? t('metrics.sys.cpu.coresGhz', '{n} cores, up to {ghz} GHz', { n: cores, ghz })
     : cores ? t('metrics.sys.cpu.cores', '{n} cores', { n: cores })
     : t('metrics.processor.desc', 'SoC platform and generation');
@@ -162,8 +161,9 @@ function sysinfoHtml(d, f) {
   const power = sysSection(t('metrics.sys.power', 'Power'), [
     !isNaN(boot) && d.uptime ? sysRow(t('metrics.sys.upSince', 'Running since'), sysText(sysWhen(boot)),
       t('metrics.sys.upFor', 'Up {time}, counting standby', { time: sysUptime(d.uptime) })) : '',
-    ps2.onReason && ontime ? sysRow(t('metrics.sys.lastOn', 'Last switched on'), sysText(sysReason(ps2.onReason)),
-      t('metrics.sys.lastOn.desc', '{time} ago', { time: sysUptime(ontime) })) : '',
+    // A B8 (webOS 4) gives the reason without the time.
+    ps2.onReason && ps2.systemOn ? sysRow(t('metrics.sys.lastOn', 'Last switched on'), sysText(sysReason(ps2.onReason)),
+      ontime ? t('metrics.sys.lastOn.desc', '{time} ago', { time: sysUptime(ontime) }) : '') : '',
     // The System tab's settings, by its names; the server gives each only
     // where the TV has it.
     bool(d.quickBoot) ? sysRow(t('adv.quickBoot', 'Quick Boot'), sysOnOff(d.quickBoot),
