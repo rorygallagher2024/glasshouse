@@ -196,6 +196,9 @@ function renderAppsPanel() {
 // actions and media controls; inputs reuse window.glasshouseDevIcon.
 const RK_PICK_SVGS = {
   'action:screenOff': '<rect x="3" y="5" width="18" height="12" rx="2"/><path d="M8 20h8M4 4l16 16"/>',
+  // A full sun with all its rays for up, an outline with short ones for down.
+  'action:brightnessUp': '<circle cx="12" cy="12" r="3.5" fill="currentColor"/><path d="M12 3v2.5M12 18.5V21M3 12h2.5M18.5 12H21M5.6 5.6l1.8 1.8M16.6 16.6l1.8 1.8M5.6 18.4l1.8-1.8M16.6 7.4l1.8-1.8"/>',
+  'action:brightnessDown': '<circle cx="12" cy="12" r="3.5"/><path d="M12 4.5v1M12 18.5v1M4.5 12h1M18.5 12h1"/>',
   'action:powerOff': '<path d="M12 3v8"/><path d="M17.5 6.8a7.5 7.5 0 1 1-11 0"/>',
   ha: '<path d="M4 11l8-7 8 7"/><path d="M6 10v9h12v-9"/><circle cx="12" cy="14" r="2"/>',
   'media:ok': '<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3" fill="currentColor"/>',
@@ -502,7 +505,20 @@ function renderRemoteKeys(d) {
   const more = away.length ? `<details class="rk-more"${rkMoreOpen ? ' open' : ''} ontoggle="rkMoreOpen = this.open">
       <summary class="rk-grp">${esc(t('apps.remoteKeys.elsewhere', 'Buttons on remotes sold elsewhere ({n})', { n: away.length }))}</summary>
       <div class="rk-grid">${away.map(tile).join('')}</div></details>` : '';
-  list.innerHTML = groups + more;
+  // How far a Brightness key moves the picture, once a key is set to one.
+  let stepRow = '';
+  if (rk.keys.some(k => k.id === 'action:brightnessUp' || k.id === 'action:brightnessDown')) {
+    const sizes = [5, 10, 15, 20, 25];
+    if (sizes.indexOf(rk.brightnessStep) === -1) sizes.push(rk.brightnessStep);
+    sizes.sort((a, b) => a - b);
+    stepRow = `<div class="prot-row">
+      <div class="prot-main"><div class="prot-title"><label for="apps-rk-step">${esc(t('apps.remoteKeys.step', 'Brightness step'))}</label></div>
+        <div class="prot-desc">${esc(t('apps.remoteKeys.stepDesc', 'How many points one press of a Brightness up or Brightness down key moves the picture, out of 100.'))}</div></div>
+      <div class="prot-status"><select id="apps-rk-step" class="pill-sel" ${rkWritable ? '' : 'disabled'} onchange="rkSetBrightnessStep(this.value)">
+        ${sizes.map(n => `<option value="${n}"${n === rk.brightnessStep ? ' selected' : ''}>${n}</option>`).join('')}
+      </select></div></div>`;
+  }
+  list.innerHTML = groups + more + stepRow;
   if (rkOpen) {
     const tile = list.querySelector(`.rk-key[data-key="${CSS.escape(rkOpen)}"]`);
     rkOpen = null;
@@ -619,6 +635,23 @@ async function chooseRemoteKey(btn) {
     error = e.message;
   }
   closeRemoteKeyPicker(true);
+  if (error) alert(t('apps.remoteKeys.failed', 'Could not change it: {error}', { error }));
+  await loadApps();
+}
+
+async function rkSetBrightnessStep(value) {
+  let error = null;
+  try {
+    const res = await fetch(api('/api/remotekeys'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ brightnessStep: Number(value) })
+    });
+    const r = await res.json();
+    if (!r || !r.ok) error = (r && r.error) || t('common.unknownError', 'unknown error');
+  } catch (e) {
+    error = e.message;
+  }
   if (error) alert(t('apps.remoteKeys.failed', 'Could not change it: {error}', { error }));
   await loadApps();
 }
