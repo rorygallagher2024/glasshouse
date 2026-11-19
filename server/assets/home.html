@@ -3873,7 +3873,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     var tabs = $('gTabs');
     tabs.className = guide.tabs ? 'focus' : '';
     tabs.innerHTML = guide.groups.map(function (g, i) {
-      return '<span' + (i === guide.group ? ' class="on"' : '') + '>' + esc(i === 0 ? t('home.tv.guideAll', 'All') : g === '*' ? t('home.tv.guideFavourites', 'Favourites') : sectionName(g)) + '</span>';
+      return '<span data-gt="' + i + '"' + (i === guide.group ? ' class="on"' : '') + '>' + esc(i === 0 ? t('home.tv.guideAll', 'All') : g === '*' ? t('home.tv.guideFavourites', 'Favourites') : sectionName(g)) + '</span>';
     }).join('');
     // A lineup of many sections runs past the edge: the chosen tab is kept in view.
     var onTab = tabs.children[guide.group];
@@ -3947,6 +3947,22 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
   // The sound as the guide's focus moves: a row, a programme, a tab or the hours shown.
   function guidePlace() { return [guide.row, guide.at, guide.group, guide.tabs, guide.start].join('|'); }
 
+  function guideSetGroup(i) {
+    guide.group = i;
+    guide.list = guideTabList(guide.groups[i]);
+    guide.row = 0;
+    guide.top = 0;
+  }
+
+  // The tab under the pointer, if it is on the tabs.
+  function guideTabAt(target) {
+    while (target && target !== document.body) {
+      if (target.getAttribute && target.getAttribute('data-gt') !== null) return +target.getAttribute('data-gt');
+      target = target.parentNode;
+    }
+    return -1;
+  }
+
   function guideKey(k) {
     if (k === KEY.back) return closeGuide();
     var placed = guidePlace();
@@ -3959,10 +3975,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     var it = guide.list[guide.row];
     if (guide.tabs) {
       if (k === KEY.left || k === KEY.right) {
-        guide.group = (guide.group + (k === KEY.left ? -1 : 1) + guide.groups.length) % guide.groups.length;
-        guide.list = guideTabList(guide.groups[guide.group]);
-        guide.row = 0;
-        guide.top = 0;
+        guideSetGroup((guide.group + (k === KEY.left ? -1 : 1) + guide.groups.length) % guide.groups.length);
       } else if (k === KEY.down || k === KEY.ok) guide.tabs = false;
       if (guidePlace() !== placed) navTick();
       return renderGuide();
@@ -4027,6 +4040,11 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
 
   // The row under the pointer, and the programme in it, are the focus.
   function guidePointer(target) {
+    // Over the tabs the focus is the tabs, as Up from the first row leaves it.
+    if (within(target, 'gTabs')) {
+      if (!guide.tabs) { navTick(); guide.tabs = true; renderGuide(); }
+      return;
+    }
     var at = null;
     while (target && target !== document.body && !(target.className && /\bgr\b/.test(target.className))) {
       if (target.getAttribute && target.getAttribute('data-s')) at = Math.max(+target.getAttribute('data-s'), guide.start);
@@ -4045,6 +4063,13 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
 
   function guideClick(target) {
     if (!within(target, 'guide')) return closeGuide();
+    var tab = guideTabAt(target);
+    if (tab !== -1) {
+      if (tab !== guide.group) { navTick(); guideSetGroup(tab); }
+      guide.tabs = true;
+      return renderGuide();
+    }
+    if (within(target, 'gTabs')) return;
     guidePointer(target);
     guideKey(KEY.ok);
   }
