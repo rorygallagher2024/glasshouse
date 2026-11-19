@@ -616,6 +616,8 @@ quickAccess.init({ luna: luna, inputNames: telemetry.inputNameMap });
 remoteKeys.init({ luna: luna, subscription: lunaTransport.Subscription, services: servicesModule, inputNames: telemetry.inputNameMap, stateDir: __dirname,
   // The Guide key can open Glasshouse Home's Internet TV guide.
   homeGuide: function () { return !!(glasshouseHome && iptv && glasshouseHome.enabled() && iptv.hasPlaylists()); },
+  // The compositor restarts for a change to LG's key handler: Glasshouse Home's view is opened afresh.
+  compositorRestarted: function () { if (glasshouseHome) glasshouseHome.reopenAfterCompositor(); },
   homeAssistant: function () { return !!(CONFIG.mqtt && CONFIG.mqtt.enabled && CONFIG.mqtt.host); },
   // The input bar: offered where lib/inputbar.js allows it, its app installed
   // when a key is set to it, and preloaded from then on.
@@ -632,6 +634,7 @@ inputBar.init({
   luna: luna,
   webosVersion: telemetry.detectWebosVersion(),
   wanted: remoteKeys.opensInputBar,
+  native: remoteKeys.nativeInputBar,
   tvInfo: compatTv,
   // liveState is set up further on; the bar only asks once started.
   on: function () { return !liveState || (liveState.state.snapshot().power || {}).systemOn !== false; }
@@ -642,6 +645,9 @@ homebar.init({
   app: function (action, cb) { tvApp(action, cb, 'homebar-app'); },
   setHomeKey: remoteKeys.setHome,
   allowed: function () { return inputBar.allowed(); },
+  native: remoteKeys.nativeHomeBar,
+  nativeOn: remoteKeys.nativeHomeBarOn,
+  applyKeys: remoteKeys.ensure,
   standing: function () { return inputBar.standing(); },
   compat: function () { return compat.info('inputBar', compatTv(), 'Glasshouse Bar'); },
   on: function () { return !liveState || (liveState.state.snapshot().power || {}).systemOn !== false; },
@@ -2203,6 +2209,8 @@ function startGlasshouseHome() {
   var weather = require('./lib/weather');
   weather.init({ getJson: fetchLib.getJson });
   glasshouseHome.init({
+    // webOS 11 with the Home key changed: LG's Home stays drawn under Glasshouse Bar unless it is closed.
+    lgHomeUnderBar: remoteKeys.nativeHomeBarOn,
     screensavers: screensavers,
     weather: weather,
     // What the dashboard's Remote section shows: the level, the step it stands
@@ -2287,7 +2295,12 @@ if (!CLI_MODE) {
       resettime.apply();
     }
   });
-  liveState.groups.power.onReply = idlesaver.powerReply;
+  liveState.groups.power.onReply = function (response) {
+    try { idlesaver.powerReply(response); } catch (e) { console.error('idlesaver: ' + e.message); }
+    if (glasshouseHome) {
+      try { glasshouseHome.powerReply(response); } catch (e) { console.error('home: ' + e.message); }
+    }
+  };
   // Its own start, as the MQTT bridge starts every group only with a broker.
   liveState.startGroup('power');
   liveState.state.onChange(function (ev) {
