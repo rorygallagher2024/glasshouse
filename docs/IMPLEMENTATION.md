@@ -148,8 +148,11 @@ its own, `lib/iptv-worker.js` with its readers in `lib/iptv-parse.js`:
   after 1.5 s and reopened after 4 s. It keeps 12 to 24 s behind the picture:
   a browser removes video up to the next keyframe after the end it is given.
   A channel with no H.264 or HEVC video, with MPEG sound (MP2, read as mp3:
-  a G3 on webOS 10.3 showed no picture with it), or with two decoding errors
-  in a visit without 30 s of playing between them, goes to the TV's player. HLS, paused
+  a G3 on webOS 10.3 showed no picture with it), with two decoding errors
+  in a visit without 30 s of playing between them, or with no picture in
+  12 s on its first open, goes to the TV's player for the rest of the visit.
+  mpegts.js reads the stream on the page rather than in a worker, which held
+  a G3's page about 34 MB lower on a 720p channel. HLS, paused
   live TV, satellite tuners, and an https link on node before 12 (no usable CA
   bundle) use the TV's player.
 - **The relay rejoins**: for Home's player, `relayStream` follows up to 4

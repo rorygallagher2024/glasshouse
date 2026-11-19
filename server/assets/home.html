@@ -3116,7 +3116,12 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
         tvStream.engine = 'mse';
         var gotData = false;
         var m = window.mpegts.createPlayer({ type: 'mpegts', isLive: true, url: location.protocol + '//' + location.host + r.relay }, {
-          enableWorker: true, enableStashBuffer: true, stashInitialSize: 384 * 1024, lazyLoad: false,
+          /*
+           * Read on the page, not in a worker: on a G3 (webOS 10.3.0), 3 minutes of a
+           * 720p channel held Home's page at 152 to 217 MB (178 on average), and 183
+           * to 255 MB (212) with the worker, with no dropped frames either way.
+           */
+          enableWorker: false, enableStashBuffer: true, stashInitialSize: 384 * 1024, lazyLoad: false,
           /*
            * A browser removes video up to the next keyframe after the end it is given:
            * with 4 s kept and keyframes 10 s apart (an HEVC channel), every cleanup took the
@@ -3272,6 +3277,21 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     tvStream.watch = null;
     detail.why = why;
     var it = tvStream.item, cb = tvStream.onState;
+    /*
+     * No picture from Home's player on a first open, with no error to say why
+     * (an MP2 channel did this before the mp3 check): the TV's player has the
+     * channel for the rest of the visit, and its own first open, before Home
+     * gives up.
+     */
+    if (why === 'nopicture' && !tvStream.everPlayed && tvStream.engine === 'mse' && it && !nativeOnly[it.pl + ':' + it.key]) {
+      nativeOnly[it.pl + ':' + it.key] = true;
+      streamEvent('native', { detail: 'nopicture' });
+      releaseVideo(true);
+      var nativeGen = ++tvStream.gen;
+      tvStream.item = it;
+      tvStream.onState = cb;
+      return openTvStream(nativeGen);
+    }
     /*
      * No picture on a first open is a channel this TV cannot show: given up at once.
      * After a reconnect it is the provider's refusal (a 500 seen) leaving the next
