@@ -67,6 +67,7 @@ assert.strictEqual(q5.step, 5000);
 assert.deepEqual(q5.samples.cpu, [20]);
 assert.strictEqual(q5.memTotal, 2000000);
 assert.strictEqual(q5.coresTotal, 4);
+assert.strictEqual(q5.since, q5.samples.t[0], 'since is the first sample, not its minute');
 assert.deepEqual(q5.events.map(function (e) { return [e.kind, e.title]; }), [['app', 'YouTube'], ['off', null]]);
 assert.strictEqual(perf.query('nonsense').range, '5m', 'an unknown range is the shortest');
 

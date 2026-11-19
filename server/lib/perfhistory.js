@@ -47,6 +47,8 @@ var prevNet = null;
 var timer = null;
 var memTotalKb = 0;
 var coresTotal = 0;
+// The first sample kept: the charts are only as long as the server has run.
+var firstAt = null;
 
 /*
  * Time each online core has spent in each mode since boot, in ticks, from
@@ -196,6 +198,7 @@ function sample() {
     rx: rx, tx: tx,
     temp: deps.socTemp(), mhz: deps.socMhz()
   };
+  if (firstAt === null) firstAt = t;
   fine.push(s);
   if (fine.length > FINE_MAX) fine.shift();
   addToMinute(s);
@@ -268,7 +271,7 @@ function query(range) {
     samples: cols,
     cores: last ? last.cores : [],
     // When sampling began: the charts are only as long as the server has run.
-    since: coarse.length ? coarse[0].t : minute ? minute.t : fine.length ? fine[0].t : now,
+    since: firstAt === null ? now : firstAt,
     events: events.filter(function (e) { return e.t >= from; }),
     // What was in front as the range began, to label its start.
     before: events.filter(function (e) { return e.t < from; }).slice(-1)[0] || null
@@ -296,7 +299,7 @@ function stop() {
 // For the tests: everything as it was at load.
 function reset() {
   fine = []; coarse = []; minute = null; events = []; prevTimes = null; prevNet = null;
-  memTotalKb = 0; coresTotal = 0;
+  memTotalKb = 0; coresTotal = 0; firstAt = null;
 }
 
 module.exports = {
