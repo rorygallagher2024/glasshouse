@@ -97,6 +97,15 @@ function loadFilter(broken, extra) {
       send: function (service, method, payload, cb) {
         sent.push({ uri: service + method, payload: JSON.parse(payload) });
         if (method === '/getAppInfo') cb(JSON.stringify({ returnValue: true, appInfo: { type: tv.homeType } }));
+        else if (method === '/getSystemSettings' || method === '/setSystemSettings') {
+          // tv.deferred holds the answers back, as the settings service is not instant.
+          var answer = function () {
+            if (method === '/getSystemSettings') return cb(JSON.stringify({ returnValue: true, settings: { backlight: String(tv.backlight) } }));
+            tv.backlight = Number(JSON.parse(payload).settings.backlight);
+            if (cb) cb(JSON.stringify({ returnValue: true }));
+          };
+          if (tv.deferred) tv.deferred.push(answer); else answer();
+        }
         else if (cb) cb(JSON.stringify({ returnValue: true }));
       }
     },
@@ -148,7 +157,7 @@ step(function (next) {
     assert.ok(r.keys.every(function (k) { return k.action === 'lg' && k.id === ''; }));
     assert.strictEqual(r.inChain, false);
     assert.deepEqual(r.choices.map(function (c) { return c.id; }),
-      ['action:screenOff', 'action:powerOff', 'media:ok', 'media:play', 'media:pause', 'media:stop', 'media:rewind', 'media:fastForward',
+      ['action:screenOff', 'action:powerOff', 'action:brightnessUp', 'action:brightnessDown', 'media:ok', 'media:play', 'media:pause', 'media:stop', 'media:rewind', 'media:fastForward',
        'media:volumeUp', 'media:volumeDown', 'media:mute',
        'com.webos.app.hdmi1', 'com.webos.app.hdmi2', 'com.webos.app.livetv',
        'com.webos.app.home', 'netflix', 'youtube.leanback.v4']);
@@ -323,6 +332,128 @@ step(function (next) {
         console.log('  ✓ a key set to Screen off blanks the panel on its release, and a press while it is off only wakes it');
         next();
       }));
+    }));
+  }));
+});
+
+step(function (next) {
+  rk.setRemoteKey('red', 'open', 'action:brightnessUp', guard(function (up) {
+    assert.strictEqual(up.ok, true);
+    rk.setRemoteKey('netflix', 'open', 'action:brightnessDown', guard(function (down) {
+      assert.strictEqual(down.ok, true);
+      var f = loadFilter();
+      var writes = function () { return f.sent.filter(function (m) { return m.uri === 'com.webos.service.settings/setSystemSettings'; }).length; };
+      // expire() runs every timer set so far; one tick runs those waiting and drops them.
+      var tick = function () { var n = f.timers.length; f.expire(); f.timers.splice(0, n); };
+      f.timers.length = 0;
+      tv.backlight = 50;
+      assert.strictEqual(f.handle(1004, true, false), 'accepted');
+      assert.strictEqual(tv.backlight, 60, 'up one step on the press');
+      // This remote sends no auto-repeat: the filter's own timer repeats while the key is down.
+      f.handle(1004, true, true);
+      assert.strictEqual(tv.backlight, 60, 'an auto-repeat is not a second press');
+      tick();
+      assert.strictEqual(tv.backlight, 70, 'a held key steps again on the timer');
+      tick();
+      assert.strictEqual(tv.backlight, 80, 'and again');
+      f.handle(1004, false, false);
+      assert.strictEqual(tv.backlight, 80, 'the release itself steps nothing');
+      tick();
+      assert.strictEqual(tv.backlight, 80, 'no step once the key is up');
+      tv.backlight = 90;
+      f.handle(1004, true, false);
+      assert.strictEqual(tv.backlight, 100);
+      tick();
+      assert.strictEqual(tv.backlight, 100, 'stops at the end of the range');
+      f.handle(1004, false, false);
+      tv.backlight = 50;
+      f.handle(1004, true, false);
+      f.handle(1004, false, false);
+      assert.strictEqual(tv.backlight, 60);
+      // A tap soon after another: the first press's timer must not step again.
+      f.timers.length = 0;
+      tv.backlight = 50;
+      f.handle(1004, true, false);
+      f.handle(1004, false, false);
+      f.handle(1004, true, false);
+      assert.strictEqual(tv.backlight, 70, 'the second tap is one step');
+      // The first press's repeat timer fires with the second key still down: it must do nothing,
+      // so only the second press's own repeat adds a step.
+      tick();
+      assert.strictEqual(tv.backlight, 80, 'a timer left from the first tap does not step again');
+      f.handle(1004, false, false);
+      // Taps while a step is still being written each count, one after another.
+      f.timers.length = 0;
+      tv.backlight = 50;
+      tv.deferred = [];
+      [1, 2, 3, 4].forEach(function () { f.handle(1004, true, false); f.handle(1004, false, false); });
+      while (tv.deferred.length) tv.deferred.shift()();
+      tv.deferred = null;
+      tick();
+      assert.strictEqual(tv.backlight, 90, 'four quick taps are four steps');
+      assert.strictEqual(f.launched.length, 0, 'opens no app');
+      tv.backlight = 98;
+      f.handle(1004, true, false);
+      assert.strictEqual(tv.backlight, 100, 'clamped to 100');
+      var before = writes();
+      f.handle(1004, true, false);
+      assert.strictEqual(writes(), before, 'nothing written at the top');
+      tv.backlight = 3;
+      f.handle(1001, true, false);
+      assert.strictEqual(tv.backlight, 0, 'down clamped to 0');
+      rk.getRemoteKeys(guard(function (r) {
+        assert.ok(r.choices.some(function (c) { return c.id === 'action:brightnessUp'; }));
+        var red = r.keys.filter(function (k) { return k.key === 'red'; })[0];
+        assert.strictEqual(red.opens, 'Brightness up');
+        rk.setRemoteKey('red', 'lg', '', guard(function () {
+          rk.setRemoteKey('netflix', 'lg', '', guard(function () {
+            console.log('  ✓ Brightness up and down step the panel brightness in the filter, repeat while held, and stop at 0 and 100');
+            next();
+          }));
+        }));
+      }));
+    }));
+  }));
+});
+
+step(function (next) {
+  rk.setRemoteKey('red', 'open', 'action:brightnessUp', guard(function () {
+    rk.getRemoteKeys(guard(function (before) {
+      assert.strictEqual(before.brightnessStep, 10, 'ten points unless set');
+      var refused = 0;
+      var bad = [0, 51, 2.5, 'x', -5];
+      (function refuse(i) {
+        if (i === bad.length) return accepted();
+        rk.setBrightnessStep(bad[i], guard(function (r) {
+          assert.strictEqual(r.ok, false, String(bad[i]) + ' refused');
+          refuse(i + 1);
+        }));
+      })(0);
+      function accepted() {
+        rk.setBrightnessStep(20, guard(function (r) {
+          assert.strictEqual(r.ok, true);
+          assert.strictEqual(tv.keys.brightnessStep, 20, 'sent to the filter with the keys');
+          var f = loadFilter();
+          tv.backlight = 30;
+          f.handle(1004, true, false);
+          assert.strictEqual(tv.backlight, 50, 'the filter steps by the set size');
+          // Kept through a change of keys, and by a later update of the filter.
+          rk.setRemoteKey('netflix', 'open', 'action:brightnessDown', guard(function () {
+            assert.strictEqual(tv.keys.brightnessStep, 20);
+            rk.getRemoteKeys(guard(function (after) {
+              assert.strictEqual(after.brightnessStep, 20);
+              rk.setRemoteKey('netflix', 'lg', '', guard(function () {
+                rk.setRemoteKey('red', 'lg', '', guard(function () {
+                  rk.setBrightnessStep(10, guard(function () {
+                    console.log('  ✓ the brightness step is a setting from 1 to 50 that the filter follows and a change of keys keeps');
+                    next();
+                  }));
+                }));
+              }));
+            }));
+          }));
+        }));
+      }
     }));
   }));
 });

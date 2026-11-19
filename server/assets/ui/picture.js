@@ -139,7 +139,12 @@ function renderPicture(d, fromPoll) {
   PICTURE_GROUPS.forEach(([group, title]) => {
     const list = rows.filter(r => r.group === group);
     if (!list.length) return;
-    html += '<div class="pv-sec pic-sec">' + esc(title()) + '</div><div class="prot-table">' + list.map(pictureRow).join('') + '</div>';
+    // Settings the mode or the picture rule out are greyed, and said so once
+    // under the heading rather than on each of them.
+    const off = list.some(pictureOff);
+    html += '<div class="pv-sec pic-sec">' + esc(title()) + '</div>' +
+      (off ? '<div class="sub pic-off-note">' + esc(t('pic.offNote', 'Greyed out: not available in the current picture mode, or for what is on screen.')) + '</div>' : '') +
+      '<div class="prot-table">' + list.map(pictureRow).join('') + '</div>';
   });
   const wb = rows.filter(r => r.group === 'whiteBalance');
   if (wb.length) {
@@ -156,8 +161,17 @@ function renderPicture(d, fromPoll) {
   if (!d.writable) q('picpane').querySelectorAll('button[data-lgs],select[data-lgs],input[data-lgs]').forEach(el => { el.disabled = true; });
 }
 
+// Greyed out for the mode or what is on screen, with no reason of its own.
+function pictureOff(r) {
+  return r.active === false && !r.inactive && r.section === 'picture';
+}
+
 function pictureRow(r) {
-  return lgsRow(r).replace(/<(select|button)\b/, '<$1 aria-label="' + esc(r.title) + '"');
+  const off = pictureOff(r);
+  // The control stays disabled; the note is the group's, under its heading.
+  let html = lgsRow(r);
+  if (off) html = html.replace(' ' + esc(lgsInactive(r)), '').replace('<div class="prot-row">', '<div class="prot-row pic-off">');
+  return html.replace(/<(select|button)\b/, '<$1 aria-label="' + esc(r.title) + '"');
 }
 
 // Six colours down, saturation, hue and luminance across, each colour named

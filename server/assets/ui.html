@@ -352,46 +352,7 @@
     <div class="perf-grid hdmi-links" id="hdmi-links"></div>
   </div>
   <div class="metrics-adv-view" id="advblock" data-metrics-sub="advanced">
-    <div class="metrics-adv-sec" id="disc-hwinfo" hidden>
-      <div class="grp" data-t="metrics.systemInfo">System info</div>
-      <div class="prot-table" id="hw-specs">
-        <div class="prot-row" id="spec-os-item" hidden>
-          <div class="prot-main">
-            <div class="prot-title" translate="no">webOS</div>
-            <div class="prot-desc" data-t="metrics.webos.desc">Operating system release version</div>
-          </div>
-          <div class="prot-status"><span class="pill idle" id="spec-os">&mdash;</span></div>
-        </div>
-        <div class="prot-row" id="spec-fw-item" hidden>
-          <div class="prot-main">
-            <div class="prot-title" data-t="metrics.firmware">Firmware</div>
-            <div class="prot-desc" data-t="metrics.firmware.desc">TV software build version</div>
-          </div>
-          <div class="prot-status"><span class="pill idle" id="spec-fw">&mdash;</span></div>
-        </div>
-        <div class="prot-row" id="spec-arch-item" hidden>
-          <div class="prot-main">
-            <div class="prot-title" data-t="metrics.processor">Processor</div>
-            <div class="prot-desc" data-t="metrics.processor.desc">SoC platform and generation</div>
-          </div>
-          <div class="prot-status"><span class="pill idle" id="spec-arch">&mdash;</span></div>
-        </div>
-        <div class="prot-row" id="spec-silicon-item" hidden>
-          <div class="prot-main">
-            <div class="prot-title" data-t="metrics.oledCell">OLED Cell</div>
-            <div class="prot-desc" data-t="metrics.oledCell.desc">Panel silicon cell identifier</div>
-          </div>
-          <div class="prot-status"><span class="pill idle" id="spec-silicon">&mdash;</span></div>
-        </div>
-        <div class="prot-row" id="spec-tcon-item" hidden>
-          <div class="prot-main">
-            <div class="prot-title" data-t="metrics.tcon">TCON Firmware</div>
-            <div class="prot-desc" data-t="metrics.tcon.desc">Timing controller driving the panel</div>
-          </div>
-          <div class="prot-status"><span class="pill idle" id="spec-tcon">&mdash;</span></div>
-        </div>
-      </div>
-    </div>
+    <div class="metrics-adv-cols si-cols" id="sysinfo"></div>
   </div>
 
 </section>
@@ -665,7 +626,7 @@
       <div class="n num" style="margin-top:10px"><span id="oc-hours">&mdash;</span><em data-t="oled.hoursUnit">hours</em></div>
       <div class="cols" style="margin-top:22px">
         <div>
-          <div class="lbl" data-t="oled.compIn">Panel maintenance in</div>
+          <div class="lbl" data-t="oled.compIn">Maintenance in</div>
           <div class="v num" id="oc-comp">&mdash;</div>
           <div class="track oc-track" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"><b id="oc-comp-bar" style="width:0%"></b></div>
           <div class="sub" id="oc-comp-sub">&mdash;</div>
@@ -721,6 +682,7 @@
   <div class="err-note" id="pic-error" role="alert" hidden></div>
   <div class="pic-now" id="pic-now" hidden>
     <div class="pic-now-main">
+      <div class="lbl pic-kicker" data-t="srv.lgs.pictureMode">Picture mode</div>
       <div class="pic-mode" id="pic-mode" role="status">&mdash;</div>
       <div class="pic-scope" id="pic-scope"></div>
     </div>
@@ -1106,6 +1068,7 @@
       <div class="prot-status"><button type="button" class="pill idle" id="ss-exp-btn" onclick="toggleSsExperimental()">&mdash;</button></div>
     </div>
   </div>
+  <div class="pv-sec ss-head" data-t="ss.heading">Choose a screen saver</div>
   <div class="ss-split">
   <div id="ss-list" class="ss-list"></div>
   <div class="ss-side">
@@ -1177,13 +1140,9 @@
   </div>
 
   <div class="ss-level-row" id="ss-poweroff-row">
-    <div class="ss-level-lbl" data-t="ss.powerOff">Poweroff after</div>
-    <form class="toast-form" id="ss-poweroff-form" onsubmit="event.preventDefault();saveSsPowerOff();">
-      <input type="text" id="ss-poweroff" inputmode="numeric" maxlength="12" placeholder="Off" data-t-placeholder="common.off"
-        autocomplete="off" aria-label="Minutes of screen saver before standby" data-t-aria-label="ss.powerOff.input"
-        oninput="this.dataset.dirty='1'">
-      <button type="submit" id="ss-poweroff-save" data-t="server.port.save">Save</button>
-    </form>
+    <div class="ss-level-lbl" data-t="ss.powerOff">Power off after</div>
+    <select class="pill-sel ss-sel" id="ss-poweroff" onchange="saveSsPowerOff()"
+      aria-label="Minutes of screen saver before standby" data-t-aria-label="ss.powerOff.input"></select>
     <div class="pv-sub" id="ss-poweroff-desc"></div>
   </div>
 
@@ -2738,6 +2697,7 @@
 <script src="/assets/ui/perf.js"></script>
 <script src="/assets/ui/storage.js"></script>
 <script src="/assets/ui/hdmi.js"></script>
+<script src="/assets/ui/sysinfo.js"></script>
 <script src="/assets/ui/oled.js"></script>
 <script src="/assets/ui/screensavers.js"></script>
 <script src="/assets/ui/mqtt.js"></script>

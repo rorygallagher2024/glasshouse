@@ -124,6 +124,10 @@ var ntpModule = null;
 var historyModule = null;
 var perfHistoryModule = null;
 var storageScanModule = null;
+/** @type {typeof import('./sysinfo')} */
+var sysinfoModule = null;
+/** @type {typeof import('./power')} */
+var powerModule = null;
 
 // HDMI inputs the TV's input service calls plugged in, with no powered source
 // on the cable and no picture, as the HDMI view sees them (telemetry).
@@ -640,6 +644,24 @@ function missingAssetsPage() {
     '<p class="dim">tvweb ' + displayVersionStr + '</p>',
     '</body></html>'
   ].join('\n');
+}
+
+/*
+ * The apps LG keeps ready, each marked noIcon where it has none to show, such
+ * as Yandex Alice on a C2, so the page does not ask for one and get a 404.
+ */
+function preloadWithIcons(cb) {
+  preloadModule.getPreload(function (pRes) {
+    var apps = (pRes && pRes.apps) || [];
+    var left = apps.length;
+    if (!left) return cb(pRes);
+    apps.forEach(function (a) {
+      appsModule.getIconPath(a.id, function (p) {
+        if (!p) a.noIcon = true;
+        if (--left === 0) cb(pRes);
+      });
+    });
+  });
 }
 
 /*
@@ -2206,6 +2228,15 @@ function handleRequest(req, res) {
 
   // The Performance view's charts: the processor, memory, network and
   // temperature over the last 5 minutes, hour or day.
+  // The System info view's fixed facts, and how the TV has been powered on.
+  if (pathname === '/api/sysinfo' && sysinfoModule) {
+    var si = {};
+    var facts = sysinfoModule.read();
+    for (var sk in facts) si[sk] = facts[sk];
+    si.ok = true;
+    si.powerOns = powerModule && typeof powerModule.powerOns === 'function' ? powerModule.powerOns() : null;
+    return send(res, 200, JSON.stringify(si));
+  }
   if (pathname === '/api/storage' && storageScanModule) {
     // A rescan only by POST, so a page load never forces one.
     return storageScanModule.query(req.method === 'POST', function (d) { send(res, 200, JSON.stringify(d)); });
@@ -2325,7 +2356,7 @@ function handleRequest(req, res) {
       servicesModule.getServices(function (sRes) {
         if (sRes && sRes.services) d.services = sRes.services;
         if (!preloadModule) return send(res, 200, JSON.stringify(d));
-        preloadModule.getPreload(function (pRes) {
+        preloadWithIcons(function (pRes) {
           d.preload = (pRes && pRes.apps) || [];
           if (!quickAccessModule) return send(res, 200, JSON.stringify(d));
           quickAccessModule.getQuickAccess(function (qa) {
@@ -2520,6 +2551,11 @@ function handleRequest(req, res) {
     }
     return readJsonBody(req, res, function (body) {
       if (!remoteKeysModule) return send(res, 503, JSON.stringify({ ok: false, error: 'remote keys module unavailable' }));
+      if (body && body.brightnessStep !== undefined) {
+        return remoteKeysModule.setBrightnessStep(body.brightnessStep, function (r) {
+          send(res, r && r.ok ? 200 : 400, JSON.stringify(r));
+        });
+      }
       remoteKeysModule.setRemoteKey(body && body.key, body && body.action, body && body.id, function (r) {
         send(res, r && r.ok ? 200 : 400, JSON.stringify(r));
       });
@@ -2781,6 +2817,8 @@ function init(opts) {
   if (opts.history) historyModule = opts.history;
   if (opts.perfHistory) perfHistoryModule = opts.perfHistory;
   if (opts.storageScan) storageScanModule = opts.storageScan;
+  if (opts.sysinfo) sysinfoModule = opts.sysinfo;
+  if (opts.power) powerModule = opts.power;
   if (opts.sshKeys) sshKeysModule = opts.sshKeys;
   if (opts.screentime) screentimeModule = opts.screentime;
   if (opts.backup) backupModule = opts.backup;

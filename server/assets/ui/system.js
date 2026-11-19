@@ -225,4 +225,5 @@ function setMetricsSubView(view) {
   if (typeof perfViewChanged === 'function') perfViewChanged();
   if (typeof storageViewChanged === 'function') storageViewChanged();
   if (typeof hdmiViewChanged === 'function') hdmiViewChanged();
+  if (typeof sysinfoViewChanged === 'function') sysinfoViewChanged();
 }

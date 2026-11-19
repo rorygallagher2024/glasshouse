@@ -1,6 +1,6 @@
 # Telemetry and diagnostics
 
-The **Metrics** tab (`/?tab=metrics`) exposes live hardware and software telemetry from the TV, most of which is absent from LG's own settings menus. Its views are split into **Overview** (live telemetry), **[Performance](#performance)** (the processor, memory, network and temperature over time, with the process lists), **[Storage](#storage)** (what fills the TV's storage, and which apps take the most), **[HDMI](#hdmi)** (each input's link in detail), **Watch time** (when enabled), and **System info** (webOS, firmware and hardware versions).
+The **Metrics** tab (`/?tab=metrics`) exposes live hardware and software telemetry from the TV, most of which is absent from LG's own settings menus. Its views are split into **Overview** (live telemetry), **[Performance](#performance)** (the processor, memory, network and temperature over time, with the process lists), **[Storage](#storage)** (what fills the TV's storage, and which apps take the most), **[HDMI](#hdmi)** (each input's link in detail), **Watch time** (when enabled), and **[System info](#system-info)** (what the TV is, what it runs, how it has been switched on, and its network addresses).
 
 ![Metrics tab: processor, memory, swap and network readouts](../screenshots/metrics-system.png)
 
@@ -18,7 +18,7 @@ The **Metrics** tab (`/?tab=metrics`) exposes live hardware and software telemet
 
     ---
 
-    Wi-Fi signal strength (RSSI), live network throughput, the TV's DNS name where the network's DNS has a reverse entry for it, then its IPv4 and IPv6 local addresses, eMMC flash wear (JEDEC health), and free app-partition storage.
+    Wi-Fi signal strength (RSSI), live network throughput, eMMC flash wear (JEDEC health), and free app-partition storage.
 
 -   **HDMI port bay**
 
@@ -88,6 +88,19 @@ The **HDMI** view (`/?tab=metrics&open=hdmi`) shows the four ports, then each in
 * **Technical details:** the video code (VIC), total timing, pixel clock and link mode.
 
 A device that is switched on but not sending a picture (asleep, or waiting to be chosen) is listed as such. The detail comes from the status files of LG's HDMI driver. Older TVs, such as a C9 on webOS 4, report only the mode each input sends, which shows on its port.
+
+## System info
+
+![System info: this TV, its software and hardware, power, what has switched it on, and the network](../screenshots/metrics-system-info.png)
+
+The **System info** view (`/?tab=metrics&open=info`) shows the TV's details in six groups. A row appears only when the TV reports its value, so an older TV shows fewer rows, and a group with none is left out.
+
+* **This TV:** model, main board, serial number, built-in storage, and memory (with the compressed swap). The serial number stays hidden until you select **Show**.
+* **Software:** webOS, firmware, Glasshouse, the Homebrew Channel, the Linux kernel, and the Node.js version Glasshouse runs on.
+* **Hardware:** processor (with its cores and top clock speed), panel refresh rate, OLED cell, TCON firmware, and panel hours. [OLED Care](oled-care.md) has the panel's upkeep.
+* **Power:** when the TV last started (standby counts as running), what last switched it on and when, and whether Quick Boot, Stay connected when off, Always Ready and Wake-on-LAN are on.
+* **Switched on by:** how many times the TV has been switched on each way, such as the remote, HDMI-CEC from another device, the button on the TV, or Wake-on-LAN. Glasshouse counts each power-on once, and keeps the counts on the TV in `/var/lib/tvweb/power-ons.json`. The first counts come from Glasshouse's own log, so they start a few days back.
+* **Network:** hostname, IPv4 and IPv6 addresses, the Wi-Fi network and signal, and both MAC addresses, with the one in use marked. A [Wake-on-LAN](advanced.md#wake-on-lan) packet has to go to the MAC address in use.
 
 ## Watch time
 
