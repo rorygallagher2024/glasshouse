@@ -1,6 +1,6 @@
 # Telemetry and diagnostics
 
-The **Metrics** tab (`/?tab=metrics`) exposes live hardware and software telemetry from the TV — most of which is absent from LG's own settings menus. Its views are split into **Overview** (live telemetry), **Watch time** (when enabled), and **Advanced** (System info, Process memory, and Detailed CPU usage together).
+The **Metrics** tab (`/?tab=metrics`) exposes live hardware and software telemetry from the TV, most of which is absent from LG's own settings menus. Its views are split into **Overview** (live telemetry), **[Performance](#performance)** (the processor, memory, network and temperature over time, with the process lists), **Watch time** (when enabled), and **System info** (webOS, firmware and hardware versions).
 
 ![Metrics tab: processor, memory, swap and network readouts](../screenshots/metrics-system.png)
 
@@ -12,7 +12,7 @@ The **Metrics** tab (`/?tab=metrics`) exposes live hardware and software telemet
 
     ---
 
-    SoC temperature, overall and per-core CPU load, GPU clock, memory, and swap. Includes an on-demand breakdown of resident memory (with RAM percentage) and top CPU processes with their PIDs, both colour-coded by usage level.
+    SoC temperature, overall and per-core CPU load, GPU clock, memory, and swap. The [Performance](#performance) view charts them over time, beside a breakdown of resident memory (with RAM percentage) and the top CPU processes with their PIDs, both colour-coded by usage level.
 
 -   **Network & storage**
 
@@ -45,6 +45,23 @@ The **Metrics** tab (`/?tab=metrics`) exposes live hardware and software telemet
     webOS and firmware versions, SoC architecture, OLED cell ID, and TCON firmware where the platform exposes them.
 
 </div>
+
+## Performance
+
+![Performance: the processor over the last five minutes with a bar for each core, then memory, network and temperature](../screenshots/metrics-performance.png)
+
+The **Performance** view (`/?tab=metrics&open=performance`) charts the TV over the last **5 minutes**, **hour** or **24 hours**:
+
+* **Processor:** time spent in apps and in the system, stacked, with time waiting on storage above them in grey. Beside the chart, a bar for each core shows its load now. webOS parks cores it does not need, and a parked core shows as an empty outline rather than a bar at zero.
+* **Memory:** memory in use by programs, with the cache the system can give back above it.
+* **Network:** download above the middle line and upload below it, on the same scale.
+* **Temperature:** the SoC temperature, where the TV has a sensor.
+* **What was on screen:** each change of app or input is marked along the processor chart and drawn as a faint line down every chart, so a spike can be matched to what caused it. Time with the TV or its screen off is shaded. The app in front is known while Glasshouse follows it: with Watch time, Glasshouse Home or Home Assistant on, or while a dashboard is open.
+* **Readings:** point at any chart to read the values and the app in front at that moment.
+
+Glasshouse takes a reading every 5 seconds from the start of the server, whether or not a dashboard is open, so the charts are already filled when you open them. The last hour is kept at 5 seconds and the last day at one reading a minute (the average of that minute). Each reading only reads a few system files and asks the TV nothing. The history is kept in memory, never written to the TV's storage, so it begins again when the server restarts.
+
+The process memory and CPU lists sit below the charts and refresh while the view is open.
 
 ## Watch time
 

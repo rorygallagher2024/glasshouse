@@ -2576,6 +2576,8 @@ module.exports = {
   meminfo: meminfo,
   emmcInfo: emmcInfo,
   onlineCpus: onlineCpus,
+  presentCpus: presentCpus,
+  socTemp: socTemp,
   statCpu: statCpu,
   alwaysOnSupported: alwaysOnSupported,
   cpuSincePublish: cpuSincePublish,

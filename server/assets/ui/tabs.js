@@ -99,6 +99,7 @@ function showTab(name) {
   if (typeof cpuPanelOpen === 'function') {
     if (cpuPanelOpen()) { loadProcesses(); startCpuPolling(); }
     else stopCpuPolling();
+    if (typeof perfViewChanged === 'function') perfViewChanged();
   }
   if (name === 'apps') { loadApps(); loadCatalog(false); pollInstall(); loadRestoredApps(); }
   if (name === 'remote') loadApps();

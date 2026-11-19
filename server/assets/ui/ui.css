@@ -50,6 +50,10 @@
      4.5:1 AA floor for small text. The solid tone stays for fills. */
   --purple-t:#B57BFF;
   /* Watch time chart palette: top 5 sources plus muted Other. */
+  /* Performance charts: two series at most per chart, blue then orange,
+     checked for colour-blind separation on black; the third (iowait,
+     cache) is a neutral grey. */
+  --pf-a:#4B8BFF; --pf-b:#D07828;
   --wt0:#4B8BFF; --wt1:#30DE61; --wt2:#FFB04F; --wt3:#B57BFF; --wt4:#FF5454; --wt5:var(--w35);
   --gut:clamp(20px,5vw,64px);
   /* The masthead's type and the gap under it, shared with the sidebar so its
@@ -78,6 +82,7 @@
   --cool:#3a6fcf; --warm:#b8860b; --cand:#9c6218;
   --red:#d42020; --blue:#2050cc; --green:#157f37; --purple:#6b20cc;
   --purple-t:#6b20cc;
+  --pf-a:#2050CC; --pf-b:#C2700A;
   --wt0:#2050CC; --wt1:#157F37; --wt2:#C2700A; --wt3:#7028D4; --wt4:#D42020; --wt5:var(--w35);
   --btn-on-fg:#fff;
 }
@@ -1281,7 +1286,72 @@ button.pill.flash.idle[disabled]:hover{color:var(--w60);border-color:var(--edge)
 .metrics-subnav{margin:0 0 24px}
 #tab-metrics[data-metrics-view="overview"] [data-metrics-sub]:not([data-metrics-sub="overview"]),
 #tab-metrics[data-metrics-view="watch"] [data-metrics-sub]:not([data-metrics-sub="watch"]),
+#tab-metrics[data-metrics-view="performance"] [data-metrics-sub]:not([data-metrics-sub="performance"]),
 #tab-metrics[data-metrics-view="advanced"] [data-metrics-sub]:not([data-metrics-sub="advanced"]){display:none !important}
+/* Performance: Stats-style history charts. */
+.perf-head{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px 20px;margin:0 0 18px}
+.perf-head .perf-range{margin:0}
+.perf-note{font-size:13px;color:var(--w60)}
+.perf-grid{display:grid;grid-template-columns:1fr;gap:18px}
+@media (min-width:980px){.perf-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.perf-wide{grid-column:1 / -1}}
+.perf-card{background:transparent;border:1px solid var(--w12);border-radius:var(--r-md,14px);padding:18px 20px 20px;min-width:0}
+.perf-card[hidden]{display:none}
+.perf-top{display:flex;flex-wrap:wrap;align-items:flex-start;justify-content:space-between;gap:8px 18px;margin-bottom:14px}
+.perf-top .grp{margin:0 0 6px}
+.perf-big{font-family:'Outfit',sans-serif;font-weight:300;font-size:clamp(30px,3.4vw,40px);line-height:1}
+.perf-big small{font-size:.5em;color:var(--w60);margin-left:2px}
+.perf-sub{font-size:13px;color:var(--w60);margin-top:8px}
+.perf-legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:13px;color:var(--w70)}
+.perf-leg{display:inline-flex;align-items:center;gap:6px}
+.perf-leg b{font-weight:500;color:var(--w100)}
+.perf-sw{display:inline-block;width:10px;height:10px;border-radius:3px;flex:none}
+.perf-sw.sa{background:var(--pf-a)} .perf-sw.sb{background:var(--pf-b)} .perf-sw.sn{background:var(--w35)} .perf-sw.st{background:var(--w80)}
+.perf-cpu-body{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:18px;align-items:start}
+.perf-chart-wrap{min-width:0}
+.perf-chart{position:relative;height:150px;border-radius:10px;background:rgba(var(--fg),.03);touch-action:pan-y}
+#perf-cpu-chart{height:190px}
+.perf-chart svg{position:absolute;inset:0;width:100%;height:100%;display:block;border-radius:10px}
+.perf-area{stroke:none}
+.perf-area.sa{fill:var(--pf-a);opacity:.55} .perf-area.sb{fill:var(--pf-b);opacity:.6} .perf-area.sn{fill:var(--w25)}
+.perf-area.wash{opacity:.14} .perf-area.st{fill:var(--w80)}
+.perf-line{fill:none;stroke-width:2;vector-effect:non-scaling-stroke;stroke-linejoin:round}
+.perf-line.sa{stroke:var(--pf-a)} .perf-line.sb{stroke:var(--pf-b)} .perf-line.st{stroke:var(--w80)}
+.perf-grid-line{stroke:var(--w10);stroke-width:1;vector-effect:non-scaling-stroke}
+.perf-mark{stroke:var(--w25);stroke-width:1;stroke-dasharray:3 4;vector-effect:non-scaling-stroke}
+.perf-hatch{stroke:var(--w12);stroke-width:3} .perf-off.screen{opacity:.6}
+.perf-y,.perf-x{position:absolute;font-size:11px;color:var(--w60);pointer-events:none;line-height:1}
+.perf-y{left:8px} .perf-y.top{top:7px} .perf-y.bot{bottom:7px}
+.perf-x{bottom:-18px} .perf-x.left{left:0} .perf-x.right{right:0}
+.perf-chart + .perf-events,.perf-chart{margin-bottom:22px}
+.perf-events{position:relative;height:22px;margin-top:-4px}
+.perf-events[hidden]{display:none}
+.perf-ev{position:absolute;top:0;transform:translateX(-1px);border-left:1px solid var(--w40);height:8px}
+.perf-ev span{position:absolute;top:6px;left:-1px;white-space:nowrap;max-width:110px;overflow:hidden;text-overflow:ellipsis;
+  font-size:11px;color:var(--w70);padding:2px 6px;border-radius:6px;background:var(--w06);border:1px solid var(--w10)}
+.perf-ev.power span{color:var(--w50)}
+.perf-ev.tick{height:6px;border-left-color:var(--w25)}
+.perf-cross{position:absolute;top:0;bottom:0;width:1px;background:var(--w50);pointer-events:none}
+.perf-tip{position:absolute;top:8px;z-index:2;min-width:150px;padding:8px 10px;border-radius:10px;font-size:12px;pointer-events:none;
+  background:var(--bg);border:1px solid var(--w25);box-shadow:0 6px 24px rgba(0,0,0,.35)}
+.perf-tip > div{display:flex;align-items:center;gap:6px;margin-top:4px;color:var(--w70)}
+.perf-tip > div b{margin-left:auto;padding-left:12px;color:var(--w100);font-weight:500}
+.perf-tip .perf-tip-t{margin:0 0 2px;color:var(--w60)}
+.perf-cores-wrap{display:flex;flex-direction:column;align-items:center;gap:8px}
+.perf-cores{display:flex;gap:6px;height:190px;align-items:stretch}
+.perf-core{display:flex;flex-direction:column;align-items:center;gap:6px;width:22px}
+.perf-core-bar{position:relative;flex:1;width:100%;border-radius:6px;background:var(--w06);overflow:hidden}
+.perf-core-bar b{position:absolute;left:0;right:0;bottom:0;border-radius:4px 4px 0 0;background:var(--pf-a);transition:height .4s ease}
+.perf-core.parked .perf-core-bar{background:none;border:1px dashed var(--w25)}
+.perf-core-n{font-size:11px;color:var(--w60)}
+.perf-cores-cap{font-size:11px;color:var(--w60);letter-spacing:.06em;text-transform:uppercase}
+@media (max-width:560px){
+  .perf-card{padding:16px 14px 18px}
+  .perf-cpu-body{grid-template-columns:1fr}
+  .perf-cores{height:90px}
+  .perf-cores-wrap{flex-direction:row;justify-content:flex-start}
+}
+.perf-card.metrics-adv-sec .grp{margin-top:0}
+@media (prefers-reduced-motion:reduce){.perf-core-bar b{transition:none}}
 .metrics-watch-view .watch-totals{max-width:640px;padding-bottom:22px;border-bottom:1px solid var(--w12)}
 .metrics-watch-view .watch-totals .uptime-val{font-size:clamp(28px,3.2vw,40px)}
 .watch-split{display:grid;grid-template-columns:1fr;gap:28px clamp(30px,4vw,52px);margin-top:24px;align-items:start}
