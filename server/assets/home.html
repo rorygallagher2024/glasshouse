@@ -3746,7 +3746,8 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
       player.lcol = +row.getAttribute('data-l');
       return playerKey(KEY.ok);
     }
-    if (player.list) return closeList();
+    // With the list open, a click off its rows is OK on the focused channel: the remote's OK arrives as a click wherever the pointer rests, after the wheel moved the focus.
+    if (player.list) return playerKey(KEY.ok);
     if (player.failed) return startPlayerStream();
     playerKey(KEY.ok);
   }
