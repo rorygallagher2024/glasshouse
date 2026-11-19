@@ -2295,7 +2295,12 @@ if (!CLI_MODE) {
       resettime.apply();
     }
   });
-  liveState.groups.power.onReply = idlesaver.powerReply;
+  liveState.groups.power.onReply = function (response) {
+    try { idlesaver.powerReply(response); } catch (e) { console.error('idlesaver: ' + e.message); }
+    if (glasshouseHome) {
+      try { glasshouseHome.powerReply(response); } catch (e) { console.error('home: ' + e.message); }
+    }
+  };
   // Its own start, as the MQTT bridge starts every group only with a broker.
   liveState.startGroup('power');
   liveState.state.onChange(function (ev) {

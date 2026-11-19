@@ -203,6 +203,36 @@ var BEAT_LATE_MS = 5000;
 var HOLD_MS = 1200;
 var holdMs = HOLD_MS;
 /*
+ * webOS 5 and 6: how long LG's Home, opened by the TV, stays in front before
+ * Glasshouse Home covers it, where the close of the app before it was missed
+ * (appLifeEvent) or Glasshouse Home itself closed. While it starts, LG's Home takes the screen back
+ * about 0.5 s after it is covered; on a C1 (webOS 6.5.3) covering it at once
+ * drew up to seven swaps after one app closed, and 0.6 s drew none in 12
+ * (#1454).
+ */
+var LG_HOME_SETTLE_MS = 600;
+var lgHomeSettleMs = LG_HOME_SETTLE_MS;
+var coverTimer = null;
+// webOS 5 and 6: sam's app life events, for the app in front closing.
+var lifeSub = null;
+/*
+ * The app in front by those events, and the apps starting (launch or splash
+ * seen, not yet in front, in the background or gone), each with when it
+ * started. A preload sends "preload" and "background", never "launch".
+ */
+var lifeFront = '';
+var startingApps = {};
+var STARTING_MS = 5000;
+var SAVER_APP = 'com.webos.app.screensaver';
+/*
+ * When tvpower began switching the TV off, 0 otherwise. Its steps keep state
+ * Active, and the app in front closes 0.2 to 1.5 s after the first of them
+ * (a C1, webOS 6.5.3); state Suspend comes 1.7 s after it.
+ */
+var switchingOffAt = 0;
+var SWITCH_OFF_MS = 10000;
+var SWITCH_OFF_STEPS = ['Request Power Off', 'Request Active Standby', 'Request Suspend', 'Prepare Suspend'];
+/*
  * A short Home press has the view in front within 0.1 s (a G3, webOS 9.2.2; a
  * G5, webOS 10.3.1), and it beats as it shows. No beat this long after, and
  * WebAppMgr not running, the press opened nothing. With WebAppMgr running the
@@ -2475,6 +2505,8 @@ function supported() {
   if (c.standing === 'untried') { out.untried = true; out.report = c.report; }
   // webOS 2 to 6 run it as an app of its own, beside LG's Home (isStandalone).
   if (isStandalone()) out.standalone = true;
+  // webOS 5 and 6 open LG's Home when the view closes, so Back keeps it open.
+  if (lgHomeOpensOnClose()) out.lgHomeOnClose = true;
   // The live preview options (Preview sound, Keep the preview on, Preview in
   // the tile) are omitted on webOS 2 to 4.
   if (/^[234]\./.test(v)) out.previewOptions = false;
@@ -3230,6 +3262,8 @@ function barOpened() {
   return foreground === LG_HOME || (foreground === BAR_APP && barFromLgHome);
 }
 
+function isLgHome(id) { return id === LG_HOME || id === LG_FULLHOME; }
+
 function foregroundChanged(id) {
   var was = foreground;
   foreground = id;
@@ -3254,11 +3288,17 @@ function foregroundChanged(id) {
   stopBeatWatch();
   // LG's Home opened by the TV itself, not by one of the ways back to it,
   // which set escaped: Glasshouse Home is opened over it, as Home would.
-  if (isStandalone() && lgHomeOpensOnClose() && !escaped && powerActive && (id === LG_HOME || id === LG_FULLHOME)) {
-    console.log('home: LG\'s Home opened on its own (from ' + (was || 'nothing') + '); opening Glasshouse Home');
-    return launch(HOME_APP, null, function (r) {
-      if (!r || !r.ok) console.error('home: could not open Glasshouse Home over LG\'s Home');
-    });
+  if (isStandalone() && lgHomeOpensOnClose() && !escaped && powerActive && isLgHome(id)) {
+    clearTimeout(coverTimer);
+    coverTimer = setTimeout(function () {
+      coverTimer = null;
+      if (!isLgHome(foreground) || escaped || !powerActive || !readConfig().enabled) return;
+      console.log('home: LG\'s Home opened on its own (from ' + (was || 'nothing') + '); opening Glasshouse Home');
+      launch(HOME_APP, null, function (r) {
+        if (!r || !r.ok) console.error('home: could not open Glasshouse Home over LG\'s Home');
+      });
+    }, lgHomeSettleMs);
+    return;
   }
   // sam names nothing in front for a moment between apps.
   if (!id || !escaped) return;
@@ -3755,6 +3795,7 @@ function init(opts) {
   setHomeKeyFn = opts.setHomeKey || function (id, cb) { cb({ ok: true, none: true }); };
   readsHomeKeyFn = opts.readsHomeKey || function () { return false; };
   holdMs = opts.holdMs || HOLD_MS;
+  lgHomeSettleMs = opts.lgHomeSettleMs || LG_HOME_SETTLE_MS;
   homeKeyAppFn = opts.homeKeyApp || function () { return ''; };
   setStartingFn = opts.setStarting || function (text, cb) { cb({ ok: true, none: true }); };
   buildId = opts.build || '';
@@ -3809,6 +3850,66 @@ function init(opts) {
       if (ev.group === 'power' && ev.key === 'screenOn') powerChanged(ev.value === true);
       if (ev.group === 'power' && ev.key === 'state') powerStateChanged(ev.value);
     });
+  }
+  if (lifeSub) lifeSub.stop();
+  lifeSub = null;
+  lifeFront = '';
+  startingApps = {};
+  switchingOffAt = 0;
+  if (opts.Subscription && isStandalone() && lgHomeOpensOnClose()) {
+    lifeSub = new opts.Subscription('com.webos.applicationManager/getAppLifeEvents', { subscribe: true }, null, {});
+    lifeSub.handlers.message = appLifeEvent;
+    lifeSub.start();
+  }
+}
+
+/*
+ * webOS 5 and 6: the app in front closing. sam opens LG's Home about 1 s
+ * later, unless another app is starting by then, so Glasshouse Home is opened
+ * at once and LG's Home is not started at all. Left to sam: an app sent to
+ * the background or closed behind another, a close while another app starts
+ * (an app opening another and exiting), the screen saver ending, and the TV
+ * switching off. The app in front is taken from these events, as
+ * getForegroundAppInfo can name the one before for a moment.
+ */
+function appLifeEvent(r) {
+  var id = r && r.appId;
+  if (!id) return;
+  var ev = r.event;
+  if (ev === 'launch' || ev === 'splash') startingApps[id] = nowMs();
+  else if (ev === 'foreground' || ev === 'background' || ev === 'close' || ev === 'stop') delete startingApps[id];
+  if (ev === 'foreground') lifeFront = id;
+  if (ev !== 'close' || id !== (lifeFront || foreground)) return;
+  if (id === HOME_APP || isLgHome(id) || id === SAVER_APP) return;
+  if (r.reason === 'powerOff' || switchingOff() || powerState === 'Screen Saver') return;
+  if (escaped || !powerActive || otherStarting() || !readConfig().enabled) return;
+  console.log('home: ' + id + ' closed (' + (r.reason || 'no reason') + '); opening Glasshouse Home before LG\'s Home');
+  launch(HOME_APP, null, function (res) {
+    if (!res || !res.ok) console.error('home: could not open Glasshouse Home after ' + id + ' closed');
+  });
+}
+
+function otherStarting() {
+  var now = nowMs();
+  for (var id in startingApps) {
+    if (!startingApps.hasOwnProperty(id)) continue;
+    if (now - startingApps[id] > STARTING_MS) delete startingApps[id];
+    else if (!isLgHome(id)) return true;
+  }
+  return false;
+}
+
+function switchingOff() {
+  return switchingOffAt > 0 && nowMs() - switchingOffAt < SWITCH_OFF_MS;
+}
+
+// Every reply of tvpower's power state subscription, "processing" steps included.
+function powerReply(r) {
+  if (!r || r.state !== 'Active') return;
+  if (r.onOff === 'off' || SWITCH_OFF_STEPS.indexOf(r.processing) !== -1) {
+    if (!switchingOffAt) switchingOffAt = nowMs();
+  } else {
+    switchingOffAt = 0;
   }
 }
 
@@ -3940,6 +4041,10 @@ function stop() {
   stopOpenWatch();
   if (holdTimer) clearTimeout(holdTimer);
   holdTimer = null;
+  clearTimeout(coverTimer);
+  coverTimer = null;
+  if (lifeSub) lifeSub.stop();
+  lifeSub = null;
   clearTimeout(appRefreshTimer);
   appRefreshTimer = null;
   homeKeysFn(false);
@@ -3956,6 +4061,7 @@ module.exports = {
   init: init,
   start: start,
   stop: stop,
+  powerReply: powerReply,
   // What was opened, written now rather than after its short delay, as the server stops.
   flush: recent.flush,
   status: status,

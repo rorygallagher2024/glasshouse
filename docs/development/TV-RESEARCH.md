@@ -1032,6 +1032,45 @@ Reported on PR #910 on 27 October 2026.
 - **Exiting an app lands on the last input**, from LG's Exit dialog or Back on
   LG's Apps, not on Home.
 
+## LG's Home after an app closes (OLED55C16LA, webOS 6.5.3, firmware 03.53.45)
+
+- **sam opens LG's Home about 1 s after the app in front closes.** The app's
+  window went at 8932.21 s and `last_input_handler` launched
+  `com.webos.app.home` (`mode: "last_input"`) at 8933.23 s, with
+  `lastInputApp` at `com.webos.app.hdmi1`.
+- **sam skips it when another full-screen app is starting.** Glasshouse Home
+  launched on the closing app's `close` event from
+  `applicationManager/getAppLifeEvents` was in front 0.12 s after it, and
+  `last_input_handler` launched nothing in 10 of 10 closes. sam's strings
+  name the case `skip_launching_last_input_app`.
+- **An app left for another gets `background`, not `close`.** Opening NPO
+  Start over the Glasshouse app gave the Glasshouse app `background`; `close`
+  came only from closing it. Switching inputs (Live TV to HDMI 1, HDMI 1 to
+  HDMI 3 and back) gave the input left `background` each time.
+- **An app opening another and exiting sends `close` while the other
+  starts.** Launching Netflix over YouTube and closing YouTube at once gave
+  `launch netflix`, then `close youtube.leanback.v4`, then
+  `foreground netflix` about 0.5 s later. A preload sends `preload` and
+  `background` (status `preload`), not `launch`.
+- **Switching off, tvpower's steps come before any close.** With the remote's
+  power key, `getPowerState` replied `Request Power Off`, `Request Active
+  Standby`, `Request Suspend` and `Prepare Suspend`, each with state `Active`
+  and `onOff: "off"`, within 0.14 s. sam's closes followed 0.2 to 0.5 s after
+  the first: `windowPolicy` for inputs behind the app in front, `powerOff`
+  for Glasshouse Home, none for AirPlay. State `Suspend` came 1.74 s after
+  the first step. LG's YouTube in front got `background`; a sideloaded
+  YouTube build got `close`, 1.5 s before `Suspend`.
+- **LG's Home takes the screen back while it starts.** Covered about 0.1 s
+  after it showed, its card window went invisible and visible again about
+  0.5 s later with no launch in sam, and sam named it in front. Covering it
+  again at once repeated this up to seven times after one close; covering it
+  once it had been in front 0.6 s did not, in 12 of 12. Its QML shows its
+  window from several launch handlers (`launching`, `relaunching`, the
+  registerApp `relaunch` event, and a launch mode kept until it is ready),
+  and hides it on `background`, so a handler still to run shows it again.
+  Its own `printLog` lines go to a `com.webos.app.home` PmLog context that
+  the firmware does not register, so they are not in `/var/log/messages`.
+
 ## Glasshouse Home's frames (C2, webOS 9.2.2; B8, webOS 4.4.3)
 
 Measured with `scripts/tv.sh <tv> frames` (testing.md), in Alternative View:
