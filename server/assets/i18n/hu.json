@@ -1000,6 +1000,9 @@
  "server.watch.clearConfirm": {"text": "Törli a TV-n tárolt összes nézési időt?", "from": "Delete all watch time kept on the TV?"},
  "server.watch.desc": {"text": "Alkalmazásonként és bemenetenként méri a képernyő bekapcsolt állapotban töltött idejét a Mérőszámok lap és a Home Assistant számára. Az adatokat 13 hónapig tárolja a TV-n. Mivel rögzíti, mit néz a háztartás, csak akkor kapcsol be, ha itt engedélyezi.", "from": "Counts how long the screen is on, per app and input, for the Metrics tab and Home Assistant. Kept on the TV for 13 months. It records what the household watches, so it stays off until turned on here."},
  "server.watch.title": {"text": "Nézési idő", "from": "Watch time"},
+ "server.glow.title": {"text": "Képernyőfény", "from": "Screen glow"},
+ "server.glow.desc": {"text": "Lehetővé teszi, hogy a vezérlőpult a tévé képernyőjének színeivel világítsa meg az oldala tetejét; a színeket néhány másodpercenként olvassa be, amíg látható. Csak a színek hagyják el a tévét, kép soha. Minden böngésző az oldalsáv Beállítások részében vagy a lap alján lévő fény gombbal kapcsolja be.", "from": "Lets a dashboard light the top of its page with the colours on the TV's screen, read every few seconds while it shows. Only the colours leave the TV, never a picture. Each browser switches the glow on under Preferences in the sidebar, or with the glow button at the foot of the page."},
+ "server.glow.none": {"text": "Ezen a tévén nincs képernyőrögzítő szolgáltatás, ezért a képernyőfény itt nem érhető el.", "from": "This TV has no screen capture service, so the glow is not offered here."},
  "server.whatsNew": {"text": "Újdonságok", "from": "What’s new"},
  "server.whatsNew.more": {"text": "És még {n} kiadás", "from": "And {n} more releases"},
  "server.whatsNew.moreOne": {"text": "És még 1 kiadás", "from": "And 1 more release"},
@@ -3651,5 +3654,7 @@
  "metrics.sys.wifi": {"from": "Wi-Fi network", "text": "Wi-Fi-hálózat"},
  "metrics.sys.wifiMac": {"from": "Wi-Fi MAC", "text": "Wi-Fi MAC"},
  "metrics.sys.wiredMac": {"from": "Wired MAC", "text": "Vezetékes MAC"},
- "pic.offNote": {"text": "Szürkítve: nem érhető el a jelenlegi képmódban vagy a képernyőn látható tartalomnál.", "from": "Greyed out: not available in the current picture mode, or for what is on screen."}
+ "pic.offNote": {"text": "Szürkítve: nem érhető el a jelenlegi képmódban vagy a képernyőn látható tartalomnál.", "from": "Greyed out: not available in the current picture mode, or for what is on screen."},
+ "glow.toggleOn": {"text": "Képernyőfény: ki (kattintson, hogy a tévé képernyője megvilágítsa az oldalt)", "from": "Screen glow: off (click to light the page from the TV’s screen)"},
+ "glow.toggleOff": {"text": "Képernyőfény: be (kattintson a kikapcsoláshoz)", "from": "Screen glow: on (click to switch off)"}
 }

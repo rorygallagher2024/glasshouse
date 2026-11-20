@@ -1102,6 +1102,9 @@
  "server.watch.clearConfirm": {"text": "هل تريد حذف كل سجل وقت المشاهدة المحفوظ على التلفاز؟", "from": "Delete all watch time kept on the TV?"},
  "server.watch.desc": {"text": "يحسب مدة تشغيل الشاشة لكل تطبيق ومدخل لعرضها في تبويب «المقاييس» وHome Assistant. يُحفظ على التلفاز لمدة 13 شهراً، ويبقى متوقفاً افتراضياً لحماية خصوصية المشاهدة حتى تفعّله من هنا.", "from": "Counts how long the screen is on, per app and input, for the Metrics tab and Home Assistant. Kept on the TV for 13 months. It records what the household watches, so it stays off until turned on here."},
  "server.watch.title": {"text": "حساب وقت المشاهدة", "from": "Watch time"},
+ "server.glow.title": {"text": "توهج الشاشة", "from": "Screen glow"},
+ "server.glow.desc": {"text": "يتيح للوحة التحكم إضاءة أعلى صفحتها بألوان شاشة التلفزيون، تُقرأ كل بضع ثوانٍ أثناء عرضها. لا يغادر التلفزيون سوى الألوان، ولا تُرسل أي صورة أبدًا. يشغّل كل متصفح التوهج من التفضيلات في الشريط الجانبي، أو بزر التوهج أسفل الصفحة.", "from": "Lets a dashboard light the top of its page with the colours on the TV's screen, read every few seconds while it shows. Only the colours leave the TV, never a picture. Each browser switches the glow on under Preferences in the sidebar, or with the glow button at the foot of the page."},
+ "server.glow.none": {"text": "لا يحتوي هذا التلفزيون على خدمة لالتقاط الشاشة، لذا لا يُتاح التوهج هنا.", "from": "This TV has no screen capture service, so the glow is not offered here."},
  "server.whatsNew": {"text": "ما الجديد", "from": "What’s new"},
  "server.whatsNew.more": {"text": "و{n} إصدارات أخرى", "from": "And {n} more releases"},
  "server.whatsNew.moreOne": {"text": "وإصدار واحد آخر", "from": "And 1 more release"},
@@ -3637,5 +3640,7 @@
  "metrics.sys.wifi": {"from": "Wi-Fi network", "text": "شبكة Wi-Fi"},
  "metrics.sys.wifiMac": {"from": "Wi-Fi MAC", "text": "MAC لشبكة Wi-Fi"},
  "metrics.sys.wiredMac": {"from": "Wired MAC", "text": "MAC السلكي"},
- "pic.offNote": {"text": "الإعدادات الرمادية غير متاحة في وضع الصورة الحالي أو لما يُعرض على الشاشة.", "from": "Greyed out: not available in the current picture mode, or for what is on screen."}
+ "pic.offNote": {"text": "الإعدادات الرمادية غير متاحة في وضع الصورة الحالي أو لما يُعرض على الشاشة.", "from": "Greyed out: not available in the current picture mode, or for what is on screen."},
+ "glow.toggleOn": {"text": "توهج الشاشة: متوقف (انقر لإضاءة الصفحة من شاشة التلفزيون)", "from": "Screen glow: off (click to light the page from the TV’s screen)"},
+ "glow.toggleOff": {"text": "توهج الشاشة: يعمل (انقر لإيقافه)", "from": "Screen glow: on (click to switch off)"}
 }

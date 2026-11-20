@@ -126,6 +126,8 @@ var perfHistoryModule = null;
 var storageScanModule = null;
 /** @type {typeof import('./sysinfo')} */
 var sysinfoModule = null;
+/** @type {typeof import('./screencolour')} */
+var screenColourModule = null;
 /** @type {typeof import('./power')} */
 var powerModule = null;
 
@@ -419,6 +421,11 @@ function lanOrigin() {
   if (!networkOpen()) return null;
   var ip4 = localAddress4();
   return ip4 ? 'http://' + hostPort(ip4, config.port) : null;
+}
+
+// Off only where switched off on the Server tab.
+function screenGlowAllowed() {
+  return !(config.screenGlow && config.screenGlow.allowed === false);
 }
 
 function prometheusEnabled() {
@@ -753,6 +760,9 @@ function updateSummary() {
   s.isWebos10 = !!(screensaversModule && screensaversModule.experimental && screensaversModule.experimental());
   s.homeLayout = homeScreenModule ? homeScreenModule.experimental() : null;
   s.prometheusEnabled = prometheusEnabled();
+  s.screenGlowAllowed = screenGlowAllowed();
+  // Where the TV has no capture service, the glow is not offered; null while unknown.
+  s.screenGlowSupported = screenColourModule ? screenColourModule.supported() : false;
   s.clockHour12 = clockHour12();
   s.watchHistory = historyModule ? historyModule.status() : null;
   s.backupDaily = backupModule ? backupModule.dailyStatus() : null;
@@ -2237,6 +2247,23 @@ function handleRequest(req, res) {
     si.powerOns = powerModule && typeof powerModule.powerOns === 'function' ? powerModule.powerOns() : null;
     return send(res, 200, JSON.stringify(si));
   }
+  // The colours on screen, for the dashboard's glow: colours only, no picture.
+  if (pathname === '/api/screen-colour' && screenColourModule) {
+    if (!screenGlowAllowed()) return send(res, 200, JSON.stringify({ ok: false, off: true }));
+    /*
+     * PicCap and Hue Sync stream from the TV's capture hardware themselves, and
+     * a capture of ours beside theirs could stall their stream. While either is
+     * capturing, the glow waits. Their status is asked as the stats ask it for
+     * the Ambient Light tab, from the same caches.
+     */
+    return piccapStatusFn(function (pc) {
+      huesyncStatusFn(function (hs) {
+        var busy = pc && pc.running ? 'piccap' : hs && hs.streaming ? 'huesync' : null;
+        if (busy) return send(res, 200, JSON.stringify({ ok: false, busy: busy }));
+        screenColourModule.read(function (c) { send(res, 200, JSON.stringify(c)); });
+      });
+    });
+  }
   if (pathname === '/api/storage' && storageScanModule) {
     // A rescan only by POST, so a page load never forces one.
     return storageScanModule.query(req.method === 'POST', function (d) { send(res, 200, JSON.stringify(d)); });
@@ -2818,6 +2845,7 @@ function init(opts) {
   if (opts.perfHistory) perfHistoryModule = opts.perfHistory;
   if (opts.storageScan) storageScanModule = opts.storageScan;
   if (opts.sysinfo) sysinfoModule = opts.sysinfo;
+  if (opts.screenColour) screenColourModule = opts.screenColour;
   if (opts.power) powerModule = opts.power;
   if (opts.sshKeys) sshKeysModule = opts.sshKeys;
   if (opts.screentime) screentimeModule = opts.screentime;

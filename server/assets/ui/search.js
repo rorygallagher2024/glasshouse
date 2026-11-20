@@ -416,6 +416,38 @@
     indexLogLines(seen);
     indexSettings(seen);
     indexControls(seen);
+    indexPreferences(seen);
+  }
+
+  // 7. The sidebar's Preferences: this browser's own choices, on no tab.
+  const PREF_ALIASES = {
+    'server.theme.title': ['dark mode', 'light mode', 'appearance', 'colours', 'colors'],
+    'server.sidebar.title': ['menu', 'navigation', 'hide sidebar'],
+    'server.language.title': ['translation', 'locale'],
+    'server.glow.title': ['glow', 'ambient', 'ambilight', 'background light', 'colour from the tv', 'color from the tv']
+  };
+  function indexPreferences(seen) {
+    document.querySelectorAll('#nav-pref .nav-pref-grp').forEach(grp => {
+      if (grp.hidden || getComputedStyle(grp).display === 'none') return;
+      const lbl = grp.querySelector('.nav-pref-lbl');
+      const target = grp.querySelector('button, select');
+      if (!lbl || !target) return;
+      const id = lbl.getAttribute('data-t') || lbl.textContent;
+      const key = 'pref:' + id;
+      if (seen[key]) return;
+      seen[key] = true;
+      index.push({
+        key,
+        title: lbl.textContent.replace(/\s+/g, ' ').trim(),
+        kind: 'setting',
+        tab: null,
+        tabTitle: t('nav.pref', 'Preferences'),
+        searchText: grp.textContent.replace(/\s+/g, ' ').trim(),
+        aliases: PREF_ALIASES[id] || [],
+        target,
+        detail: q('nav-pref')
+      });
+    });
   }
 
   // Scoring function with low cyclomatic complexity: flat score levels per match tier.
@@ -466,6 +498,8 @@
     if (!item) return;
     if (item.tab && typeof showTab === 'function') showTab(item.tab);
     if (item.detail) item.detail.open = true;
+    // A preference is in the sidebar, which on a phone slides in.
+    if (item.target && item.target.closest && item.target.closest('.sidenav') && typeof openNav === 'function') openNav();
     const homeSub = item.target && item.target.closest ? item.target.closest('[data-home-sub]') : null;
     if (homeSub && typeof setHomeSubView === 'function') setHomeSubView(homeSub.getAttribute('data-home-sub'));
     const metricsSub = item.target && item.target.closest ? item.target.closest('[data-metrics-sub]') : null;

@@ -1101,6 +1101,9 @@
  "server.watch.clearConfirm": {"text": "Eliminar todo o tempo de visualização guardado na TV?", "from": "Delete all watch time kept on the TV?"},
  "server.watch.desc": {"text": "Conta durante quanto tempo o ecrã está ligado, por aplicação e entrada, para o separador Métricas e o Home Assistant. Guardado na TV durante 13 meses. Regista o que a casa vê, por isso fica desligado até ser ativado aqui.", "from": "Counts how long the screen is on, per app and input, for the Metrics tab and Home Assistant. Kept on the TV for 13 months. It records what the household watches, so it stays off until turned on here."},
  "server.watch.title": {"text": "Tempo de visualização", "from": "Watch time"},
+ "server.glow.title": {"text": "Brilho do ecrã", "from": "Screen glow"},
+ "server.glow.desc": {"text": "Permite que um painel ilumine o topo da página com as cores do ecrã do televisor, lidas a cada poucos segundos enquanto é mostrado. Só as cores saem do televisor, nunca uma imagem. Cada navegador liga o brilho em Preferências, na barra lateral, ou com o botão do brilho no fundo da página.", "from": "Lets a dashboard light the top of its page with the colours on the TV's screen, read every few seconds while it shows. Only the colours leave the TV, never a picture. Each browser switches the glow on under Preferences in the sidebar, or with the glow button at the foot of the page."},
+ "server.glow.none": {"text": "Este televisor não tem um serviço de captura de ecrã, por isso o brilho não está disponível aqui.", "from": "This TV has no screen capture service, so the glow is not offered here."},
  "server.whatsNew": {"text": "Novidades", "from": "What’s new"},
  "server.whatsNew.more": {"text": "E mais {n} versões", "from": "And {n} more releases"},
  "server.whatsNew.moreOne": {"text": "E mais 1 versão", "from": "And 1 more release"},
@@ -3637,5 +3640,7 @@
  "metrics.sys.wifi": {"from": "Wi-Fi network", "text": "Rede Wi-Fi"},
  "metrics.sys.wifiMac": {"from": "Wi-Fi MAC", "text": "MAC Wi-Fi"},
  "metrics.sys.wiredMac": {"from": "Wired MAC", "text": "MAC por cabo"},
- "pic.offNote": {"text": "A cinzento: não disponível no modo de imagem atual ou para o que está no ecrã.", "from": "Greyed out: not available in the current picture mode, or for what is on screen."}
+ "pic.offNote": {"text": "A cinzento: não disponível no modo de imagem atual ou para o que está no ecrã.", "from": "Greyed out: not available in the current picture mode, or for what is on screen."},
+ "glow.toggleOn": {"text": "Brilho do ecrã: desligado (clique para iluminar a página a partir do ecrã do televisor)", "from": "Screen glow: off (click to light the page from the TV’s screen)"},
+ "glow.toggleOff": {"text": "Brilho do ecrã: ligado (clique para desligar)", "from": "Screen glow: on (click to switch off)"}
 }

@@ -116,6 +116,12 @@ For companion applications, see [Glasshouse apps](../apps/tv-app.md), including 
 
 The page works with no internet access, and has a dark/light mode toggle (via the UI or `/?theme=light`).
 
+## Screen glow
+
+The dashboard can take its light from the TV. The top of the page, the sidebar included, glows with the colours on the TV's screen, the left half's colour on the left and the right half's on the right, and fades as the picture changes, as a room takes its light from the TV. It is off until switched on in this browser under **Preferences** in the sidebar, or with the glow button beside the light and dark switch at the foot of the page. Searching for "glow" finds both.
+
+While the glow is on and the page shows, the TV captures a 64 by 36 pixel copy of its screen every 3 seconds, works out its colours and deletes the copy, so only the colours leave the TV. The glow pauses while the screen is off, while the source says a game is playing, and while PicCap or Hue Sync is capturing the screen, and protected video, such as Netflix's, gives none. **Screen glow** on the [Server](server.md) tab switches it off for every browser. A TV whose software has no screen capture service doesn't offer the glow at all: its switches are hidden, and the Server tab says why.
+
 The footer names the TV, by its DNS name where the home network's DNS has one or else by its address, beside the Glasshouse version, and gives its model where the TV's name does not already include it.
 
 Use the search button at the top of the sidebar (or press `/` or `Ctrl`/`Cmd` + `K`)
@@ -126,10 +132,10 @@ with the star beside a search result, keeping shortcuts to them in the sidebar.
 
 === "Dark theme"
 
-    ![Metrics tab: SoC temperature, system readouts, storage, watch time, Magic Remote battery and HDMI ports, dark theme (OLED42C24LA)](../screenshots/dashboard.png)
+    ![Metrics tab: SoC temperature, system readouts, storage and Magic Remote battery, dark theme, with the screen glow on (OLED42C24LA)](../screenshots/dashboard.png)
 
 === "Light theme"
 
-    ![Control tab: panel, source, volume, playback, sleep timer and power, light theme (OLED42C24LA)](../screenshots/dashboard-light.png)
+    ![Control tab: panel, source, volume, playback, sleep timer and power, light theme, with the screen glow on (OLED42C24LA)](../screenshots/dashboard-light.png)
 
-*Metrics and Control tabs, shown in dark and light themes.*
+*Metrics and Control tabs, shown in dark and light themes, with the [screen glow](#screen-glow) taking its colours from the TV.*
