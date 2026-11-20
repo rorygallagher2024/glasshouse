@@ -1122,6 +1122,7 @@
  "server.watch.title": {"text": "Czas oglądania", "from": "Watch time"},
  "server.glow.title": {"text": "Poświata ekranu", "from": "Screen glow"},
  "server.glow.desc": {"text": "Pozwala panelowi oświetlić górę strony kolorami z ekranu telewizora, odczytywanymi co kilka sekund, gdy panel jest widoczny. Telewizor opuszczają tylko kolory, nigdy obraz. Każda przeglądarka włącza poświatę w Preferencjach na pasku bocznym lub przyciskiem poświaty u dołu strony.", "from": "Lets a dashboard light the top of its page with the colours on the TV's screen, read every few seconds while it shows. Only the colours leave the TV, never a picture. Each browser switches the glow on under Preferences in the sidebar, or with the glow button at the foot of the page."},
+ "server.glow.none": {"text": "Ten telewizor nie ma usługi przechwytywania ekranu, więc poświata nie jest tu dostępna.", "from": "This TV has no screen capture service, so the glow is not offered here."},
  "server.whatsNew": {"text": "Co nowego", "from": "What’s new"},
  "server.whatsNew.more": {"text": "I jeszcze wydania: {n}", "from": "And {n} more releases"},
  "server.whatsNew.moreOne": {"text": "I jeszcze 1 wydanie", "from": "And 1 more release"},

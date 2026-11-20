@@ -1751,6 +1751,7 @@
  "server.watch.title": {"text": "Tiempo de visionado", "from": "Watch time"},
  "server.glow.title": {"text": "Resplandor de la pantalla", "from": "Screen glow"},
  "server.glow.desc": {"text": "Permite que un panel ilumine la parte superior de su página con los colores de la pantalla del televisor, leídos cada pocos segundos mientras se muestra. Solo los colores salen del televisor, nunca una imagen. Cada navegador activa el resplandor en Preferencias, en la barra lateral, o con el botón de resplandor al pie de la página.", "from": "Lets a dashboard light the top of its page with the colours on the TV's screen, read every few seconds while it shows. Only the colours leave the TV, never a picture. Each browser switches the glow on under Preferences in the sidebar, or with the glow button at the foot of the page."},
+ "server.glow.none": {"text": "Este televisor no tiene un servicio de captura de pantalla, así que aquí no se ofrece el resplandor.", "from": "This TV has no screen capture service, so the glow is not offered here."},
  "server.whatsNew": {"text": "Novedades", "from": "What’s new"},
  "server.whatsNew.more": {"text": "Y {n} versiones más", "from": "And {n} more releases"},
  "server.whatsNew.moreOne": {"text": "Y 1 versión más", "from": "And 1 more release"},

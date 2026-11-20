@@ -761,6 +761,8 @@ function updateSummary() {
   s.homeLayout = homeScreenModule ? homeScreenModule.experimental() : null;
   s.prometheusEnabled = prometheusEnabled();
   s.screenGlowAllowed = screenGlowAllowed();
+  // Where the TV has no capture service, the glow is not offered; null while unknown.
+  s.screenGlowSupported = screenColourModule ? screenColourModule.supported() : false;
   s.clockHour12 = clockHour12();
   s.watchHistory = historyModule ? historyModule.status() : null;
   s.backupDaily = backupModule ? backupModule.dailyStatus() : null;

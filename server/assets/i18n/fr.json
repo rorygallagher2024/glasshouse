@@ -1702,6 +1702,7 @@
  "server.watch.title": {"from": "Watch time", "text": "Temps de visionnage"},
  "server.glow.title": {"from": "Screen glow", "text": "Halo de l'écran"},
  "server.glow.desc": {"from": "Lets a dashboard light the top of its page with the colours on the TV's screen, read every few seconds while it shows. Only the colours leave the TV, never a picture. Each browser switches the glow on under Preferences in the sidebar, or with the glow button at the foot of the page.", "text": "Permet à un tableau de bord d'éclairer le haut de sa page avec les couleurs de l'écran de la TV, lues toutes les quelques secondes tant qu'il est affiché. Seules les couleurs quittent la TV, jamais une image. Chaque navigateur active le halo dans Préférences, dans la barre latérale, ou avec le bouton du halo en bas de la page."},
+ "server.glow.none": {"from": "This TV has no screen capture service, so the glow is not offered here.", "text": "Cette TV n'a pas de service de capture d'écran, le halo n'est donc pas proposé ici."},
  "server.whatsNew": {"from": "What’s new", "text": "Nouveautés"},
  "server.whatsNew.more": {"from": "And {n} more releases", "text": "Et {n} versions de plus"},
  "server.whatsNew.moreOne": {"from": "And 1 more release", "text": "Et 1 version de plus"},

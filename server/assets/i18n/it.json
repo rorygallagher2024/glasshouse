@@ -1157,6 +1157,7 @@
  "server.watch.title": {"text": "Tempo di visione", "from": "Watch time"},
  "server.glow.title": {"text": "Bagliore dello schermo", "from": "Screen glow"},
  "server.glow.desc": {"text": "Permette a una dashboard di illuminare la parte alta della pagina con i colori dello schermo del televisore, letti ogni pochi secondi mentre è visibile. Escono dal televisore solo i colori, mai un'immagine. Ogni browser attiva il bagliore in Preferenze, nella barra laterale, o con il pulsante del bagliore in fondo alla pagina.", "from": "Lets a dashboard light the top of its page with the colours on the TV's screen, read every few seconds while it shows. Only the colours leave the TV, never a picture. Each browser switches the glow on under Preferences in the sidebar, or with the glow button at the foot of the page."},
+ "server.glow.none": {"text": "Questo televisore non ha un servizio di cattura dello schermo, quindi il bagliore qui non è disponibile.", "from": "This TV has no screen capture service, so the glow is not offered here."},
  "server.whatsNew": {"text": "Novità", "from": "What’s new"},
  "server.whatsNew.more": {"text": "E altre {n} versioni", "from": "And {n} more releases"},
  "server.whatsNew.moreOne": {"text": "E un'altra versione", "from": "And 1 more release"},

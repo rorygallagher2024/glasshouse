@@ -11,6 +11,11 @@
  *
  * A capture costs the TV a moment's work, so one serves every dashboard asking
  * within MIN_GAP_MS, and requests while one runs wait for it.
+ *
+ * Which service the TV has is asked once, without a capture: called with no
+ * path, a service that is there refuses the request ("Invalid argument" on a
+ * B8, "ERROR_NOT_ENOUGH_MEMORY" on a C2), and the bus answers "Service does
+ * not exist" for one that is not. A TV with neither does not offer the glow.
  */
 
 var fs = require('fs');
@@ -26,6 +31,49 @@ var removeFile = function (p) { try { fs.unlinkSync(p); } catch (e) {} };
 var nowMs = Date.now;
 var service = null;       // the one that answered, once one has
 var last = null, lastAt = 0, waiting = null;
+var available = null;     // whether the TV has a capture service: null until asked
+var probing = null;       // callbacks waiting on the question
+
+// The bus's answer for a service the TV does not have.
+function absent(r) {
+  return !!(r && r.returnValue === false &&
+    /service does not exist|no such service|unknown method|not registered/i.test(String(r.errorText || '')));
+}
+
+/*
+ * Asks each service, with no path so nothing is captured, and keeps the
+ * first that is there. cb(available). A service that does not answer at all
+ * leaves the question open, to be asked again.
+ */
+function probe(cb) {
+  if (available !== null) return cb && cb(available);
+  if (!lunaFn) return cb && cb(null);
+  if (probing) return cb && probing.push(cb);
+  probing = cb ? [cb] : [];
+  var tries = SERVICES.slice(), unanswered = false;
+  (function next() {
+    var uri = tries.shift();
+    if (!uri) return done(unanswered ? null : false);
+    lunaFn(uri, {}, function (r) {
+      if (!r) { unanswered = true; return next(); }
+      if (absent(r)) return next();
+      service = uri;
+      done(true);
+    });
+  })();
+  function done(v) {
+    available = v;
+    var q = probing;
+    probing = null;
+    q.forEach(function (fn) { fn(v); });
+  }
+}
+
+/**
+ * Whether the TV has a capture service: true, false, or null while unknown.
+ * @returns {boolean|null}
+ */
+function supported() { return available; }
 
 function init(opts) {
   opts = opts || {};
@@ -37,6 +85,8 @@ function init(opts) {
   last = null;
   lastAt = 0;
   waiting = null;
+  available = null;
+  probing = null;
 }
 
 /*
@@ -133,11 +183,14 @@ function colours(rows) {
 
 function capture(cb) {
   var tries = service ? [service] : SERVICES.slice();
+  var missing = 0, asked = tries.length;
   (function next() {
     var uri = tries.shift();
-    if (!uri) return cb(null);
+    // Every service missing from the bus: the TV has none, and is not asked again.
+    if (!uri) { if (missing === asked && !service) available = false; return cb(null); }
     removeFile(PATH);
     lunaFn(uri, { path: PATH, method: 'DISPLAY', width: W, height: H, format: 'BMP' }, function (r) {
+      if (absent(r)) missing++;
       var rows = null;
       if (r && r.returnValue) {
         try { rows = readBmp(readFile(PATH)); } catch (e) { rows = null; }
@@ -145,6 +198,7 @@ function capture(cb) {
       removeFile(PATH);
       if (!rows) return next();
       service = uri;
+      available = true;
       cb(rows);
     });
   })();
@@ -156,6 +210,7 @@ function capture(cb) {
  * @param {function(Object): void} cb
  */
 function read(cb) {
+  if (available === false) return cb({ ok: false, unsupported: true });
   if (last && nowMs() - lastAt < MIN_GAP_MS) return cb(last);
   if (waiting) return waiting.push(cb);
   if (!lunaFn) return cb({ ok: false, error: 'no luna wrapper' });
@@ -174,6 +229,8 @@ function read(cb) {
 module.exports = {
   init: init,
   read: read,
+  probe: probe,
+  supported: supported,
   readBmp: readBmp,
   colours: colours
 };

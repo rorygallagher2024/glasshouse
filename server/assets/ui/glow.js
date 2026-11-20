@@ -1,14 +1,14 @@
 /*
  * Screen glow: the top of the dashboard takes a soft light from the colours
  * on the TV's screen, left and right, as a room does from the TV. Off until
- * switched on with the footer's button, kept per browser, and offered only
- * where the Server tab allows it. Read from /api/screen-colour every few
- * seconds, only while the page shows and the screen is on, and not while the
- * source says a game is playing (ALLM), so a game's frames are left alone,
- * nor while PicCap or Hue Sync is capturing the screen itself.
- * LG's Game picture mode alone does not stop it: a computer is often shown
- * in it for its low latency. Given up for the visit where the TV gives no
- * capture.
+ * switched on, under Preferences or with the footer's button, kept per
+ * browser, and offered only where the Server tab allows it and the TV has a
+ * capture service. Read from /api/screen-colour every few seconds, only while
+ * the page shows and the screen is on, and not while the source says a game
+ * is playing (ALLM), so a game's frames are left alone, nor while PicCap or
+ * Hue Sync is capturing the screen itself. LG's Game picture mode alone does
+ * not stop it: a computer is often shown in it for its low latency. Given up
+ * for the visit after three failed reads.
  */
 const GLOW_KEY = 'glasshouse.glow';
 const GLOW_MS = 3000;
@@ -130,7 +130,8 @@ async function glowTick() {
   }
   try {
     const d = await (await fetch(api('/api/screen-colour'), { cache: 'no-store' })).json();
-    if (d && d.off) { glowAllowed(false); return; }
+    // Switched off on the Server tab, or the TV has no capture service: the switches go.
+    if (d && (d.off || d.unsupported)) { glowAllowed(false); return; }
     // PicCap or Hue Sync is capturing: no glow until it stops, and no failure.
     if (d && d.busy) glowFade();
     else if (!d || !d.ok) glowFails++;
