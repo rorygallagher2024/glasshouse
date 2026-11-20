@@ -1068,7 +1068,7 @@ step(function (next) {
       f.handle(1004, true, false);
       var opened = f.launched.filter(function (l) { return l.id === 'com.tvweb.inputbar'; });
       assert.strictEqual(opened.length, 1, 'the bar opens on the press');
-      assert.deepEqual(JSON.parse(opened[0].params), { glasshouse: 'osd', kind: 'brightness', level: 60 });
+      assert.deepEqual(JSON.parse(opened[0].params), { glasshouse: 'osd', kind: 'brightness', level: 60, style: 'lg' });
       tick();
       tick();
       assert.strictEqual(f.launched.length, 1, 'a held key opens it once: its page follows the level');
@@ -1081,7 +1081,7 @@ step(function (next) {
       assert.deepEqual(JSON.parse(f.launched[f.launched.length - 1].params).level, 100, 'at the end of the range the level is still shown');
       f.handle(1004, false, false);
       rk.getBrightness(guard(function (b) {
-        assert.deepEqual(b, { ok: true, level: 100 });
+        assert.deepEqual(b, { ok: true, level: 100, style: 'lg' });
         rk.setRemoteKey('red', 'lg', '', guard(function (s3) {
           assert.ok(s3.ok, s3.error);
           setImmediate(guard(function () {
@@ -1089,6 +1089,44 @@ step(function (next) {
             assert.strictEqual(rk.opensInputBar(), false);
             console.log('  ✓ a Brightness key puts the bar\'s app on the TV, opens it once for each press, and gives it up with the last key');
             next();
+          }));
+        }));
+      }));
+    }));
+  }));
+});
+
+// The level bar's style is chosen on the Remote tab: LG's vertical bar unless horizontal is set.
+step(function (next) {
+  bar.allowed = true;
+  rk.setRemoteKey('red', 'open', 'action:brightnessUp', guard(function (s) {
+    assert.ok(s.ok, s.error);
+    assert.strictEqual(tv.keys.osdStyle, undefined, 'the default style is not kept');
+    rk.getRemoteKeys(guard(function (r) {
+      assert.strictEqual(r.brightnessBarStyle, 'lg');
+      assert.strictEqual(r.brightnessBar, true, 'offered where the filter and the bar\'s app are');
+      rk.setBrightnessBarStyle('bogus', guard(function (bad) {
+        assert.strictEqual(bad.ok, false, 'an unknown style is refused');
+        rk.setBrightnessBarStyle('horizontal', guard(function (h) {
+          assert.ok(h.ok, h.error);
+          assert.strictEqual(tv.keys.osdStyle, 'horizontal', 'the filter is told');
+          rk.getBrightness(guard(function (b) {
+            assert.strictEqual(b.style, 'horizontal', 'and the bar\'s page, while it follows the level');
+            var f = loadFilter();
+            tv.backlight = 50;
+            f.handle(1004, true, false);
+            var opened = f.launched.filter(function (l) { return l.id === 'com.tvweb.inputbar'; });
+            assert.strictEqual(JSON.parse(opened[0].params).style, 'horizontal', 'each press opens the bar in that style');
+            f.handle(1004, false, false);
+            rk.setBrightnessBarStyle('lg', guard(function (back) {
+              assert.ok(back.ok, back.error);
+              assert.strictEqual(tv.keys.osdStyle, undefined, 'back to the default, nothing kept');
+              rk.setRemoteKey('red', 'lg', '', guard(function (off) {
+                assert.ok(off.ok, off.error);
+                console.log('  ✓ the level bar style is vertical by default, horizontal when chosen, refused when unknown, and reaches the filter and the page');
+                next();
+              }));
+            }));
           }));
         }));
       }));

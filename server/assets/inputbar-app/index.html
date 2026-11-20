@@ -42,9 +42,35 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
 .tworow .tile{margin-top:16px;margin-bottom:16px}
 .tworow .tile.now:after{bottom:-20px}
 /*
- * The level bar (opened by a Brightness key): a dark pill low on the screen
- * with an icon, a track and the number, drawn like the TV's own volume bar.
+ * The level bar (opened by a Brightness key), in one of two styles that the
+ * Remote tab chooses between (body.osdlg or body.osdh): a vertical bar at the
+ * right edge, laid out like the TV's own volume bar (#osdv), or a dark pill
+ * low on the screen with an icon, a track and the number (#osd).
  */
+.osdlg #osd,.osdh #osdv{display:none}
+/*
+ * LG's volume bar (StarfishVolume.qml), as measured on a capture of it at
+ * 1920 x 1080: a tube 18 wide and 552 high from y 263, its right edge 60 from
+ * the screen's, a 1 px light outline round a dark inside (#262a2c over the
+ * picture) and a fill of the same width, a thin + above it and - below, the
+ * level in a light digit face with its right edge 54 from the tube, and the
+ * icon (a sun of the same 4 px stroke and 36 px height as its speaker) before the digits.
+ */
+#osdv{position:absolute;right:57px;top:calc(50% - 1px);-webkit-transform:translateY(-50%);transform:translateY(-50%);
+  display:-webkit-flex;display:flex;-webkit-align-items:center;align-items:center;opacity:0;
+  -webkit-transition:opacity .15s linear;transition:opacity .15s linear}
+/* It appears at once and fades out over 150 ms (LG's fadeAnimationDuration); a cut out reads as a pop. */
+.osdon #osdv{opacity:1;-webkit-transition:none;transition:none}
+#osdv .vico{position:relative;top:1px;-webkit-flex:0 0 auto;flex:0 0 auto;width:36px;height:36px;margin-right:16px;filter:drop-shadow(0 2px 8px rgba(0,0,0,.7))}
+#osdv .vico svg,#osdv .varrow svg{display:block;width:100%;height:100%}
+#osdv .vnum{position:relative;top:1px;-webkit-flex:0 0 auto;flex:0 0 auto;margin-right:38px;text-align:right;font-family:"LG Smart UI",sans-serif;font-size:85px;line-height:1;font-weight:400;
+  font-variant-numeric:tabular-nums;color:#e6e5e5;text-shadow:0 2.5px 8px rgba(0,0,0,.7)}
+#osdv .vcol{-webkit-flex:0 0 auto;flex:0 0 auto;display:-webkit-flex;display:flex;-webkit-flex-direction:column;flex-direction:column;-webkit-align-items:center;align-items:center}
+#osdv .varrow{width:24px;height:24px}
+#osdv .vcol>.varrow:first-child{margin:0 0 10px}
+#osdv .vcol>.varrow:last-child{margin:9px 0 0}
+#osdv .vtrack{position:relative;box-sizing:border-box;width:18px;height:552px;border-radius:9px;border:1px solid #e5e9eb;background:rgba(55,58,65,.66)}
+#osdv .vfill{position:absolute;left:-1px;bottom:2px;width:18px;height:0;border-radius:9px;background:#e4e7e6}
 /* Centred, and as wide as its parts, which do not change with the level. */
 #osd{position:absolute;left:50%;bottom:80px;height:80px;border-radius:40px;-webkit-transform:translateX(-50%);transform:translateX(-50%);
   background:rgba(34,34,36,.94);box-shadow:0 8px 32px rgba(0,0,0,.5);opacity:0;display:-webkit-flex;display:flex;
@@ -64,6 +90,7 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
 <body>
 <div id="shade"></div>
 <div id="bar"><div id="tiles"></div></div>
+<div id="osdv"><div class="vico"><svg viewBox="0 0 36 36" fill="none" stroke="#e6e5e5" stroke-width="4"><circle cx="18" cy="18" r="6.6"/><path d="M18 6.4V0.2M18 29.6v6.2M6.4 18H0.2M29.6 18h6.2M26.2 9.8l4.4-4.4M9.8 9.8L5.4 5.4M26.2 26.2l4.4 4.4M9.8 26.2l-4.4 4.4"/></svg></div><div class="vnum" id="vnum"></div><div class="vcol"><div class="varrow"><svg viewBox="0 0 24 24" fill="none" stroke="#e5e9eb" stroke-width="3.8" stroke-linecap="round"><path d="M12 3.5v17M3.5 12h17"/></svg></div><div class="vtrack"><div class="vfill" id="vfill"></div></div><div class="varrow"><svg viewBox="0 0 24 24" fill="none" stroke="#e5e9eb" stroke-width="3.8" stroke-linecap="round"><path d="M3.5 12h17"/></svg></div></div></div>
 <div id="osd"><div class="oico"><svg viewBox="0 0 48 48" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round"><circle cx="24" cy="24" r="8" fill="#fff" stroke="none"/><path d="M24 5v6M24 37v6M5 24h6M37 24h6M10.6 10.6l4.2 4.2M33.2 33.2l4.2 4.2M10.6 37.4l4.2-4.2M33.2 14.8l4.2-4.2"/></svg></div><div class="otrack"><div class="ofill" id="ofill"></div></div><div class="onum" id="onum"></div></div>
 <script>
 /*
@@ -173,12 +200,23 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
    */
   var OSD_IDLE_MS = 1600;
   var OSD_POLL_MS = 120;
-  var osdTimer = null, osdPoll = null, osdLevel = -1, osdOpen = false, osdCloseTimer = null;
+  var OSD_FILL_MAX = 547;
+  var osdTimer = null, osdPoll = null, osdLevel = -1, osdOpen = false, osdCloseTimer = null, osdStyle = 'osdlg';
+  // The class the body carries while the bar is up: the vertical bar, unless the launch or the server says horizontal.
+  function osdClass(style) {
+    osdStyle = style === 'horizontal' ? 'osdh' : 'osdlg';
+  }
+  function osdBodyClass() {
+    document.body.className = 'osdon ' + osdStyle;
+  }
   function osdDraw(level) {
     if (level === osdLevel) return false;
     osdLevel = level;
     $('ofill').style.width = level + '%';
     $('onum').textContent = String(level);
+    // A level above 0 is at least as tall as the fill is wide, so its ends stay round.
+    $('vfill').style.height = (level > 0 ? Math.max(18, Math.round(level * OSD_FILL_MAX / 100)) : 0) + 'px';
+    $('vnum').textContent = String(level);
     return true;
   }
   function osdStill() {
@@ -199,7 +237,11 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
     if (osdPoll) return;
     osdPoll = setInterval(function () {
       getJson(BASE + '/api/remotekeys/brightness', function (j) {
-        if (osdOpen && j && j.ok && osdDraw(j.level)) osdStill();
+        if (osdOpen && j && j.ok) {
+          // A style changed on the Remote tab while the bar is up takes effect at once.
+          if (j.style) { var before = osdStyle; osdClass(j.style); if (before !== osdStyle) osdBodyClass(); }
+          if (osdDraw(j.level)) osdStill();
+        }
       });
     }, OSD_POLL_MS);
   }
@@ -211,8 +253,9 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
     clearTimeout(osdCloseTimer);
     closing = false;
     osdOpen = true;
+    osdClass(p.style);
     osdDraw(level);
-    document.body.className = 'osdon';
+    osdBodyClass();
     osdStill();
     osdFollow();
   }

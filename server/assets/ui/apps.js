@@ -518,7 +518,18 @@ function renderRemoteKeys(d) {
         ${sizes.map(n => `<option value="${n}"${n === rk.brightnessStep ? ' selected' : ''}>${n}</option>`).join('')}
       </select></div></div>`;
   }
-  list.innerHTML = groups + more + stepRow;
+  // How the level bar a Brightness key shows looks, where the filter and the bar's app can show it.
+  let barStyleRow = '';
+  if (stepRow && rk.brightnessBar) {
+    barStyleRow = `<div class="prot-row">
+      <div class="prot-main"><div class="prot-title"><label for="apps-rk-bar-style">${esc(t('apps.remoteKeys.barStyle', 'Level bar style'))}</label></div>
+        <div class="prot-desc">${esc(t('apps.remoteKeys.barStyleDesc', 'How the bar that a Brightness key shows looks: a vertical bar at the right edge, as the TV\'s volume bar, or a horizontal bar low on the screen.'))}</div></div>
+      <div class="prot-status"><select id="apps-rk-bar-style" class="pill-sel" ${rkWritable ? '' : 'disabled'} onchange="rkSetBrightnessBarStyle(this.value)">
+        <option value="lg"${rk.brightnessBarStyle !== 'horizontal' ? ' selected' : ''}>${esc(t('apps.remoteKeys.barStyleLg', 'Vertical, like the TV\'s volume bar'))}</option>
+        <option value="horizontal"${rk.brightnessBarStyle === 'horizontal' ? ' selected' : ''}>${esc(t('apps.remoteKeys.barStyleHorizontal', 'Horizontal, low on the screen'))}</option>
+      </select></div></div>`;
+  }
+  list.innerHTML = groups + more + stepRow + barStyleRow;
   if (rkOpen) {
     const tile = list.querySelector(`.rk-key[data-key="${CSS.escape(rkOpen)}"]`);
     rkOpen = null;
@@ -646,6 +657,23 @@ async function rkSetBrightnessStep(value) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ brightnessStep: Number(value) })
+    });
+    const r = await res.json();
+    if (!r || !r.ok) error = (r && r.error) || t('common.unknownError', 'unknown error');
+  } catch (e) {
+    error = e.message;
+  }
+  if (error) alert(t('apps.remoteKeys.failed', 'Could not change it: {error}', { error }));
+  await loadApps();
+}
+
+async function rkSetBrightnessBarStyle(value) {
+  let error = null;
+  try {
+    const res = await fetch(api('/api/remotekeys'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ brightnessBarStyle: value })
     });
     const r = await res.json();
     if (!r || !r.ok) error = (r && r.error) || t('common.unknownError', 'unknown error');
