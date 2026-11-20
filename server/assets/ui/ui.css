@@ -2829,7 +2829,7 @@ html.remote-view #remote-modes{display:grid;order:5}
 html.remote-view #remote-full{order:6}
 html.remote-view #disc-pointer>summary,html.remote-view #disc-keyboard>summary{display:none}
 html.remote-view #disc-pointer,html.remote-view #disc-keyboard{border-top:0;margin-top:8px}
-html.remote-view:not(.remote-mode-touch) #tab-control .col-controls > #disc-pointer,
+html.remote-view:not(.remote-mode-touch):not(.remote-mode-motion) #tab-control .col-controls > #disc-pointer,
 html.remote-view:not(.remote-mode-keys) #tab-control .col-controls > #disc-keyboard{display:none !important}
 html.remote-view.remote-inputs #tab-control .col-controls > #control-source{display:block !important}
 html.remote-view.remote-inputs .rp-body,html.remote-view:not(.remote-mode-buttons) .rp-body{display:none}
@@ -2866,6 +2866,8 @@ html.remote-view.remote-inputs .rp-body,html.remote-view:not(.remote-mode-button
 .rp-modes button[hidden]{display:none}
 .rp-modes button[aria-selected="true"]{background:var(--w10);color:var(--w100)}
 html.remote-view #disc-pointer .pointer-pad{min-height:min(52vh,420px)}
+.motion-pad,html.remote-view.remote-mode-motion #pointer-pad{display:none}
+html.remote-view.remote-mode-motion #motion-pad{display:flex}
 /* In standby: everything but Power on dimmed, and a line saying why. */
 .rp-asleep{display:none;margin:-8px 0 18px;text-align:center;font-size:13px;color:var(--w60)}
 html.remote-asleep .rp-asleep{display:block}

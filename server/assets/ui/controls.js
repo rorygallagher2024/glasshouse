@@ -901,6 +901,76 @@ function queuePointerMove(dx, dy) {
     if (dx || dy) sendPointer({ scroll: { dx, dy } });
   }, { passive: false });
 })();
+/*
+ * Motion: the phone aimed like a Magic Remote while the pad is held. Only the
+ * Android app offers it: browsers give a page the gyroscope over https alone,
+ * and the dashboard is served over http. The app reads the sensor between
+ * motionStart() and motionStop(); motionRead() answers "yaw,pitch", the
+ * radians the phone has turned left and tilted up since the last read.
+ */
+const motionApp = (() => {
+  try {
+    const app = window.GlasshouseApp;
+    return app && typeof app.motionRead === 'function' && app.motionAvailable() ? app : null;
+  } catch (e) { return null; }
+})();
+// TV pixels a radian: more the faster the phone turns, so a flick crosses the
+// screen, and less below MOTION_STILL rad/s (a hand's tremor), so it holds still.
+const MOTION_GAIN = 1100, MOTION_STILL = 0.08;
+const motionGain = speed => MOTION_GAIN * (1 + Math.min(1.5, speed / 2)) * Math.min(1, speed / MOTION_STILL);
+(function initMotionPad() {
+  const pad = q('motion-pad');
+  if (!pad || !motionApp) return;
+  let held = null;
+  const read = () => {
+    const parts = String(motionApp.motionRead()).split(',');
+    return { yaw: Number(parts[0]) || 0, pitch: Number(parts[1]) || 0 };
+  };
+  const step = now => {
+    if (!held) return;
+    const turn = read();
+    const dt = Math.max(1, now - held.t) / 1000;
+    held.t = now;
+    const angle = Math.hypot(turn.yaw, turn.pitch);
+    const gain = motionGain(angle / dt);
+    held.turned += angle;
+    held.carryX -= turn.yaw * gain;
+    held.carryY -= turn.pitch * gain;
+    const dx = held.carryX < 0 ? Math.ceil(held.carryX) : Math.floor(held.carryX);
+    const dy = held.carryY < 0 ? Math.ceil(held.carryY) : Math.floor(held.carryY);
+    if (dx || dy) {
+      held.carryX -= dx;
+      held.carryY -= dy;
+      queuePointerMove(dx, dy);
+    }
+    held.frame = requestAnimationFrame(step);
+  };
+  const stop = cancelled => {
+    if (!held) return;
+    cancelAnimationFrame(held.frame);
+    try { motionApp.motionStop(); } catch (e) {}
+    // A tap: brief, and the phone barely turned (0.03 rad is under 2 degrees).
+    const tap = !cancelled && held.turned < 0.03 && Date.now() - held.at < 300;
+    held = null;
+    pad.classList.remove('dragging');
+    if (tap) sendPointer({ click: true });
+  };
+  pad.addEventListener('pointerdown', e => {
+    if (e.button !== 0 || held) return;
+    e.preventDefault();
+    try { pad.setPointerCapture(e.pointerId); } catch (err) {}
+    try { motionApp.motionStart(); } catch (err) { return; }
+    read();
+    held = { id: e.pointerId, carryX: 0, carryY: 0, turned: 0, at: Date.now(), t: performance.now(), frame: 0 };
+    held.frame = requestAnimationFrame(step);
+    pad.classList.add('dragging');
+  });
+  const end = cancelled => e => { if (held && e.pointerId === held.id) stop(cancelled); };
+  pad.addEventListener('pointerup', end(false));
+  pad.addEventListener('pointercancel', end(true));
+  document.addEventListener('visibilitychange', () => { if (document.hidden) stop(true); });
+  window.addEventListener('pagehide', () => stop(true));
+})();
 q('pointer-click').addEventListener('click', () => sendPointer({ click: true }));
 function closePointerSocket() {
   if (!pointerSocket) return;
@@ -1142,23 +1212,27 @@ document.addEventListener('keydown', e => {
 /*
  * The remote's own layout (#remote-pad, the remote view only): Screen,
  * Input and Settings along the top, a ring D-pad, volume and playback
- * rockers beside Back, Home and Mute, and Buttons, Touchpad and Keyboard
+ * rockers beside Back, Home and Mute, and Buttons, Touchpad, Motion (in the
+ * Android app) and Keyboard
  * along the foot. Its volume and mute follow the Control tab's, and its
  * Screen button the header's state.
  */
 const REMOTE_MODE_KEY = 'remoteMode';
+const REMOTE_MODES = ['buttons', 'touch', 'motion', 'keys'];
 // quiet: as the page opens, where the keyboard box is not focused (a phone's keyboard would pop up).
 function remoteMode(mode, quiet) {
   if (!remoteView) return;
   const touchOk = q('disc-pointer') && !q('disc-pointer').hidden;
-  if (mode === 'touch' && !touchOk) mode = 'buttons';
-  if (['buttons', 'touch', 'keys'].indexOf(mode) === -1) mode = 'buttons';
+  // Motion kept from the app, on a page opened in a browser: the touchpad instead.
+  if (mode === 'motion' && !motionApp) mode = 'touch';
+  if ((mode === 'touch' || mode === 'motion') && !touchOk) mode = 'buttons';
+  if (REMOTE_MODES.indexOf(mode) === -1) mode = 'buttons';
   const root = document.documentElement;
-  ['buttons', 'touch', 'keys'].forEach(m => root.classList.toggle('remote-mode-' + m, m === mode));
+  REMOTE_MODES.forEach(m => root.classList.toggle('remote-mode-' + m, m === mode));
   root.classList.remove('remote-inputs');
   if (q('rp-input')) q('rp-input').setAttribute('aria-expanded', 'false');
   document.querySelectorAll('#remote-modes [data-mode]').forEach(b => b.setAttribute('aria-selected', String(b.dataset.mode === mode)));
-  if (mode === 'touch' && q('disc-pointer')) q('disc-pointer').open = true;
+  if ((mode === 'touch' || mode === 'motion') && q('disc-pointer')) q('disc-pointer').open = true;
   if (mode === 'keys' && q('disc-keyboard')) { q('disc-keyboard').open = true; if (!quiet && q('kb-text')) q('kb-text').focus(); }
   try { localStorage.setItem(REMOTE_MODE_KEY, mode); } catch (e) {}
 }
@@ -1215,7 +1289,9 @@ function remoteScreen() {
     }
     if (touch && pointer) {
       touch.hidden = pointer.hidden;
-      if (pointer.hidden && document.documentElement.classList.contains('remote-mode-touch')) remoteMode('buttons');
+      if (q('rp-mode-motion')) q('rp-mode-motion').hidden = pointer.hidden || !motionApp;
+      const root = document.documentElement;
+      if (pointer.hidden && (root.classList.contains('remote-mode-touch') || root.classList.contains('remote-mode-motion'))) remoteMode('buttons');
     }
   };
   const watch = new MutationObserver(mirror);
