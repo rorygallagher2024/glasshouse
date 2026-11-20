@@ -3082,6 +3082,14 @@ function watchBeat(ms) {
     beatTimer = null;
     // Switched off into standby the view stops beating; nothing is on screen to replace.
     if (!viewInFront() || !powerActive) return;
+    /*
+     * Under the screen saver the view can stop beating altogether: a C2
+     * (webOS 10.3.1) went quiet within seconds of it starting, and LG's Home,
+     * opened in its place, ended the screen saver (#1605). That is no hang.
+     * The check waits on, and the screen saver's end gives the view a first
+     * beat's wait, which still catches a view that did hang (#1549).
+     */
+    if (viewCovered()) return watchBeat(beatGraceMs);
     if (nowMs() - setAt > ms + BEAT_LATE_MS) {
       console.log('home: heartbeat check held up by a suspend; waiting for the view');
       return watchBeat(firstBeatGraceMs);
