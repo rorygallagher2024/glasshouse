@@ -1122,6 +1122,21 @@
     <div class="pv-sub" data-t="ss.video.where">The videos, their order and the captions are set on the Home tab, under Background.</div>
   </div>
 
+  <!-- The Art saver's pictures and how it shows them (lib/art) -->
+  <div class="ss-level-row" id="ss-art-row" hidden>
+    <div class="ss-level-lbl" data-t="ss.art.pictures">Pictures</div>
+    <div class="ss-pool-box ss-art-box" id="ss-art-sources"></div>
+    <div class="ss-level-lbl ss-video-lbl" id="ss-art-mine-lbl" data-t="ss.art.mine">Your pictures</div>
+    <div class="ss-art-pics" id="ss-art-pics"></div>
+    <input type="file" id="ss-art-file" accept="image/jpeg,image/png,image/webp" multiple hidden onchange="ssArtPicked(this)">
+    <div class="pv-sub" id="ss-art-note" role="status"></div>
+    <div class="ss-level-lbl ss-video-lbl" id="ss-art-show-lbl" data-t="ss.art.show">Showing them</div>
+    <select class="pill-sel ss-sel" id="ss-art-minutes" aria-labelledby="ss-art-show-lbl ss-art-minutes" onchange="ssArtSave({ minutes: Number(this.value) })"></select>
+    <select class="pill-sel ss-sel" id="ss-art-fit" aria-labelledby="ss-art-show-lbl ss-art-fit" onchange="ssArtSave({ fit: this.value })"></select>
+    <select class="pill-sel ss-sel" id="ss-art-caption" aria-labelledby="ss-art-show-lbl ss-art-caption" onchange="ssArtSave({ caption: this.value })"></select>
+    <div class="pv-sub" id="ss-art-where"></div>
+  </div>
+
   <div class="ss-level-row" id="ss-entities-row" hidden>
     <div class="ss-level-lbl" data-t="ss.entities">Home Assistant Entities</div>
     <div id="ss-entities-list"></div>
