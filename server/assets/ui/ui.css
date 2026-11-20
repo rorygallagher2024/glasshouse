@@ -2459,6 +2459,12 @@ button.home-look:active{background:none}
 #ss-art-note{margin-top:8px}
 #ss-art-where,#ss-art-note{max-width:340px}
 #ss-art-folders .ss-pool-box{margin-bottom:10px}
+.ss-art-now{display:grid;grid-template-columns:96px minmax(0,1fr);gap:8px 14px;align-items:center;max-width:340px}
+.ss-art-now-pic{width:96px;aspect-ratio:16/9;border-radius:var(--r-sm);border:1px solid var(--w12);background:#000 center/contain no-repeat}
+.ss-art-now-words{min-width:0;font-size:13.5px}
+.ss-art-now-words .ss-art-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ss-art-now-btns{grid-column:1/-1;display:flex;gap:8px}
+.ss-art-now-btns .ss-pool-btn{flex:1}
 .ss-art-folder{justify-content:space-between;cursor:default}
 .ss-art-folder .wall-link{flex-shrink:0}
 .ss-art-browse{max-width:340px;margin-top:12px;padding:12px;border:1px solid var(--w12);border-radius:var(--r-md)}

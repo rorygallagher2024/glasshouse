@@ -762,9 +762,13 @@ function renderSsArt(art, locked) {
     }
     sel.disabled = locked;
   };
-  fill('ss-art-minutes', (art.minuteChoices || [5, 10, 15, 30, 60]).map(m => [m, m === 60
-    ? t('ss.art.everyHour', 'A new picture every hour')
-    : t('ss.art.everyMinutes', 'A new picture every {n} minutes', { n: m })]), s.minutes);
+  fill('ss-art-minutes', (art.secondChoices || [30, 60, 120, 300, 600, 900, 1800, 3600]).map(n => [n,
+    n === 3600 ? t('ss.art.everyHour', 'A new picture every hour')
+      : n === 60 ? t('ss.art.everyMinute', 'A new picture every minute')
+      : n < 60 ? t('ss.art.everySeconds', 'A new picture every {n} seconds', { n })
+      : t('ss.art.everyMinutes', 'A new picture every {n} minutes', { n: n / 60 })]), s.seconds);
+  renderSsArtNow(art);
+  ssArtWatchNow();
   fill('ss-art-fit', [['fit', t('ss.art.fit', 'The whole picture, on black')], ['fill', t('ss.art.fill', 'Filling the screen')]], s.fit);
   fill('ss-art-caption', [['brief', t('ss.art.captionBrief', 'Its label for a moment after each change')],
     ['always', t('ss.art.captionAlways', 'Its label all the time')], ['off', t('ss.art.captionOff', 'No label')]], s.caption);
@@ -863,6 +867,52 @@ async function ssArtRemoveFolder(key) {
   loadScreensavers();
 }
 
+/*
+ * What the picture frame shows now, with Previous and Next, which it takes up
+ * within a couple of seconds; offered only while it is on screen, as the
+ * screen saver or the No Signal screen. Kept up to date while the row shows.
+ */
+function renderSsArtNow(art) {
+  const box = q('ss-art-now');
+  const cur = art.current;
+  const info = (cur && cur.info) || {};
+  const words = cur
+    ? [info.title || t('ss.art.yours', 'One of your pictures'), [info.artist, info.date].filter(Boolean).join(', '), info.credit].filter(Boolean)
+    : [];
+  const key = JSON.stringify([cur && cur.id, art.showing, art.canGoBack, ssWritable]);
+  if (box.dataset.key === key) return;
+  box.dataset.key = key;
+  const off = !art.showing || !ssWritable;
+  box.innerHTML = `<div class="ss-art-now-pic"${cur ? ` style="background-image:url('${esc(api('/api/art/image?id=' + encodeURIComponent(cur.id)))}')"` : ''}></div>
+    <div class="ss-art-now-words">${words.length && art.showing
+      ? words.map((w, i) => `<div class="${i ? 'ss-art-sub' : 'ss-art-name'}">${esc(w)}</div>`).join('')
+      : `<div class="ss-art-sub">${esc(t('ss.art.notShowing', 'Not on screen. Previous and Next work while the picture frame shows, as the screen saver or on an input\u2019s No Signal screen.'))}</div>`}</div>
+    <div class="ss-art-now-btns">
+      <button type="button" class="ss-pool-btn" onclick="ssArtGo('prev')" ${off || !art.canGoBack ? 'disabled' : ''} aria-label="${esc(t('ss.art.prev', 'Previous'))}">\u2039 ${esc(t('ss.art.prev', 'Previous'))}</button>
+      <button type="button" class="ss-pool-btn" onclick="ssArtGo('next')" ${off ? 'disabled' : ''} aria-label="${esc(t('ss.art.next', 'Next'))}">${esc(t('ss.art.next', 'Next'))} \u203a</button>
+    </div>`;
+}
+
+let ssArtNowTimer = null;
+function ssArtWatchNow() {
+  if (ssArtNowTimer) return;
+  ssArtNowTimer = setInterval(async () => {
+    if (activeTab !== 'screensaver' || q('ss-art-row').hidden || document.hidden) return;
+    try {
+      const r = await (await fetch(api('/api/art'))).json();
+      if (r && r.ok) { ssArtState = Object.assign({}, ssArtState || {}, r); renderSsArtNow(r); }
+    } catch (e) { /* the next tick tries again */ }
+  }, 3000);
+}
+
+async function ssArtGo(dir) {
+  try {
+    const res = await fetch(api('/api/art'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ go: dir }) });
+    const r = await res.json();
+    if (!r.ok) throw new Error(r.error || t('common.unknownError', 'unknown error'));
+  } catch (e) { showErr(e.message); }
+}
+
 async function ssArtSave(settings) {
   try {
     const res = await fetch(api('/api/art'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ settings }) });
@@ -911,7 +961,7 @@ async function ssArtUpload(files, art) {
   }
   ssArtUploading = false;
   const parts = [t('home.wall.uploadedN', '{n} of {total} uploaded.', { n: done, total: files.length })];
-  if (files.length > take.length) parts.push(t('ss.art.room', 'Art holds {max} of your pictures.', { max: art.maxPictures }));
+  if (files.length > take.length) parts.push(t('ss.art.room', 'The picture frame holds {max} of your pictures.', { max: art.maxPictures }));
   if (failed) parts.push(failed);
   note.textContent = parts.join(' ');
   loadScreensavers();

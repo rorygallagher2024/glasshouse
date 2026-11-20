@@ -1846,13 +1846,18 @@ function handleRequest(req, res) {
 
   /* The Art screen saver's pictures (lib/art). next is what the screen saver
      asks for each picture; image serves one, the owner's or one fetched. */
+  // Whether Next or Previous was asked for, polled by the views on screen.
+  if (pathname === '/api/art/command' && req.method === 'GET') {
+    return send(res, 200, JSON.stringify(artModule.poll(String(u.query && u.query.view || ''))));
+  }
   if (pathname === '/api/art/next' && req.method === 'GET') {
+    var artDir = String(u.query && u.query.dir || '');
     return artModule.next(function (r) {
       if (r.ok) {
         r.image = '/api/art/image?id=' + encodeURIComponent(r.id) + (config.token ? '&k=' + encodeURIComponent(config.token) : '');
       }
       send(res, 200, JSON.stringify(r));
-    });
+    }, artDir === 'prev' ? 'prev' : 'next');
   }
   if (pathname === '/api/art/image' && req.method === 'GET') {
     var artFile = artModule.image(String(u.query && u.query.id || ''));
@@ -1893,6 +1898,7 @@ function handleRequest(req, res) {
         return artModule.addFolder(String(body.addFolder.udn || ''), String(body.addFolder.id || ''), String(body.addFolder.title || ''), done);
       }
       if (body && typeof body.removeFolder === 'string') return artModule.removeFolder(body.removeFolder, done);
+      if (body && typeof body.go === 'string') return artModule.go(body.go, done);
       if (body && typeof body.remove === 'string') return artModule.remove(body.remove, done);
       artModule.save(body && body.settings, done);
     }, 4096);

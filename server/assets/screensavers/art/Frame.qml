@@ -1,5 +1,5 @@
 /*
- * One picture of the Art screen saver. There are two, one fading in over the
+ * One picture of the Picture frame screen saver. There are two, one fading in over the
  * other as the picture changes.
  *
  * The picture drifts slowly over a few dozen pixels, too slowly to be seen
@@ -26,7 +26,8 @@ Item {
     signal ready()
     signal failed()
 
-    Behavior on opacity { NumberAnimation { duration: 3000; easing.type: Easing.InOutQuad } }
+    property int fadeMs: 3000
+    Behavior on opacity { NumberAnimation { duration: frame.fadeMs; easing.type: Easing.InOutQuad } }
 
     function show(url, details) {
         frame.pending = details || null;
