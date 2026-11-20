@@ -20,6 +20,8 @@ When Hue Sync is installed, the **Ambient Light** page (`/?tab=ambient`), below 
 * **On:** Instructs Hue Sync's service to start streaming (`com.lighting.huesync.service/set` with `{"key":"streaming","data":true}`). The selected entertainment area starts following the screen for ambient light. The app often does not start on an enable without saying so, so Glasshouse sends the enable, waits 3 seconds and asks the app's own state; if it still is not streaming, it sends the enable again, up to three tries in all: one click is enough.
 * **Off:** Instructs the service to stop (`data: false`). The app stops streaming colour data to the selected entertainment area.
 
+While Hue Sync is streaming, the dashboard's [screen glow](dashboard/index.md#screen-glow) waits, so its own captures never run beside Hue Sync's.
+
 ### Home Assistant integration
 
 When Hue Sync is answering on the TV, Glasshouse discovers a **Hue Sync** switch in Home Assistant (`switch.<tv_name>_huesync`) under the **Controls & Media** category:

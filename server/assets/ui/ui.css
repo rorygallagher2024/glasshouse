@@ -2885,13 +2885,20 @@ html.remote-asleep #disc-pointer,html.remote-asleep #disc-keyboard{opacity:.4;po
 }
 
 /* The screen's glow (glow.js): light from the colours on the TV's screen,
-   from the top corners, behind everything. */
-#screen-glow{position:fixed;left:0;right:0;top:0;height:min(70vh,640px);z-index:-1;pointer-events:none;
-  opacity:var(--glow-opacity,.38);
-  background:radial-gradient(55% 90% at 28% 0%,var(--glow-l),transparent 70%),
-             radial-gradient(60% 90% at 88% 0%,var(--glow-r),transparent 70%);
+   from the top corners, behind everything. It is drawn in the window's own
+   units, once, so the layer behind the page and the sidebar, which paints it
+   fixed to the window, show the same light at the same place and it runs
+   across the sidebar's edge without a seam. The colours fade on the root,
+   so both change together. */
+html.glow{
+  --glow-h:min(70vh,640px);
+  --glow-paint:radial-gradient(60vw calc(var(--glow-h) * .9) at 14vw 0,color-mix(in srgb,var(--glow-l) calc(var(--glow-opacity,.38) * 100%),transparent),transparent 70%),
+               radial-gradient(60vw calc(var(--glow-h) * .9) at 88vw 0,color-mix(in srgb,var(--glow-r) calc(var(--glow-opacity,.38) * 100%),transparent),transparent 70%);
   transition:--glow-l 2.4s ease,--glow-r 2.4s ease}
-[data-theme="light"] #screen-glow{--glow-opacity:.22}
+[data-theme="light"]{--glow-opacity:.22}
+#screen-glow{position:fixed;left:0;right:0;top:0;height:var(--glow-h);z-index:-1;pointer-events:none;
+  background:var(--glow-paint)}
+html.glow .sidenav{background-color:var(--bg);background-image:var(--glow-paint);background-attachment:fixed;background-repeat:no-repeat}
 /* The page's own background would cover it: the root's shows instead. */
 html.glow body{background:transparent}
-@media (prefers-reduced-motion:reduce){#screen-glow{transition:none}}
+@media (prefers-reduced-motion:reduce){html.glow{transition:none}}

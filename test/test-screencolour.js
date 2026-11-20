@@ -103,7 +103,7 @@ console.log('  ✓ one capture for close requests, the service that answers kept
   var cfgPath = path.join(os.tmpdir(), 'tvweb-screenglow-' + process.pid + '.json');
   fs.writeFileSync(cfgPath, JSON.stringify({ port: 8080 }), 'utf8');
   var config = { web: { enabled: false }, token: '', allowControl: true };
-  var captures = 0;
+  var captures = 0, piccap = null, huesync = null;
   sc.init({
     luna: function (uri, payload, cb) { captures++; cb({ returnValue: false }); },
     readFile: function () { throw new Error('none'); },
@@ -114,6 +114,8 @@ console.log('  ✓ one capture for close requests, the service that answers kept
     configFile: cfgPath,
     version: '0.157.1',
     screenColour: sc,
+    piccapStatus: function (cb) { cb(piccap); },
+    huesyncStatus: function (cb) { cb(huesync); },
     updater: { updateSummary: function () { return { ok: true, writable: true }; } },
     privacy: { tvUpdatesBlocked: function () { return false; } }
   });
@@ -138,9 +140,18 @@ console.log('  ✓ one capture for close requests, the service that answers kept
   });
   controls.doControl('setScreenGlowAllowed', true, function (r) { checks++; assert.strictEqual(r.screenGlowAllowed, true); });
   get('/api/screen-colour', function (r) { checks++; assert.strictEqual(r.off, undefined); assert.ok(captures > 0); });
+  // PicCap or Hue Sync capturing: the glow waits, without a capture of its own.
+  var before = captures;
+  piccap = { running: true };
+  get('/api/screen-colour', function (r) { checks++; assert.deepEqual(r, { ok: false, busy: 'piccap' }); });
+  piccap = { running: false };
+  huesync = { streaming: true };
+  get('/api/screen-colour', function (r) { checks++; assert.deepEqual(r, { ok: false, busy: 'huesync' }); });
+  assert.strictEqual(captures, before, 'no capture beside theirs');
   try { fs.unlinkSync(cfgPath); } catch (e) {}
-  assert.strictEqual(checks, 4, 'every callback ran');
+  assert.strictEqual(checks, 6, 'every callback ran');
   console.log('  ✓ the Server tab switch saves the setting, and while it is off nothing is captured');
+  console.log('  ✓ while PicCap or Hue Sync captures the screen, the glow waits');
 })();
 
 console.log('ALL test-screencolour.js assertions passed!');

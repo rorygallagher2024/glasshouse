@@ -119,6 +119,14 @@
               data-sidebar-set="hide" data-t="server.sidebar.hide">Hide</button>
           </div>
         </div>
+        <!-- Shown where the Server tab allows the glow; glow.js. -->
+        <div class="nav-pref-grp" id="nav-pref-glow" hidden>
+          <div class="nav-pref-lbl" data-t="server.glow.title">Screen glow</div>
+          <div class="theme-seg" role="group" aria-label="Screen glow" data-t-aria-label="server.glow.title">
+            <button type="button" data-glow-set="off" data-t="common.off">Off</button><button type="button"
+              data-glow-set="on" data-t="common.on">On</button>
+          </div>
+        </div>
         <div class="nav-pref-grp">
           <div class="nav-pref-lbl" data-t="server.language.title">Language</div>
           <!-- A list rather than buttons: one for each language would not fit the
@@ -2364,7 +2372,7 @@
       <div class="prot-row">
         <div class="prot-main">
           <div class="prot-title" data-t="server.glow.title">Screen glow</div>
-          <div class="prot-desc" data-t="server.glow.desc">Lets a dashboard light the top of its page with the colours on the TV's screen, read every few seconds while it shows. Only the colours leave the TV, never a picture. Each browser switches the glow on with the button beside the light and dark switch, at the foot of the page.</div>
+          <div class="prot-desc" data-t="server.glow.desc">Lets a dashboard light the top of its page with the colours on the TV's screen, read every few seconds while it shows. Only the colours leave the TV, never a picture. Each browser switches the glow on under Preferences in the sidebar, or with the glow button at the foot of the page.</div>
         </div>
         <div class="prot-status"><button type="button" class="pill idle" id="srv-glow" onclick="toggleScreenGlowAllowed()">&mdash;</button></div>
       </div>
