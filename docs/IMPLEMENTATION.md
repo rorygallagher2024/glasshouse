@@ -1580,9 +1580,12 @@ and the header says the screen is on, and not while the stats'
 `signal_format.game_mode` is set. Each side's hue is raised to a fixed
 brightness, at least half saturated, so a dim picture still gives a colour;
 the picture's brightness sets how strong it shows. The two colours are
-registered custom properties, so a change fades. With the glow on, the body's
+registered custom properties, faded on the root. With the glow on, the body's
 background is transparent, so the fixed layer behind the page shows over the
-root's.
+root's. The light is one value, `--glow-paint`, sized in the window's units:
+the layer behind the page paints it, and the sidebar paints it as a
+background fixed to the window, so it runs across the sidebar's edge, and
+into the menu that slides in on a phone, without a seam.
 
 ---
 
