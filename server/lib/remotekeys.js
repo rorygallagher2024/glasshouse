@@ -334,6 +334,9 @@ function init(opts) {
   nativeFilters = null;
   switcherFound = null;
   watchLg(false);
+  backlightStop();
+  if (typeof opts.backlightIdleMs === 'number') backlightIdleMs = opts.backlightIdleMs;
+  barStyleCache.at = 0;
   reapplied = [];
   SubscriptionCtor = opts.subscription || null;
   followPresses({});
@@ -458,8 +461,17 @@ function brightnessBarStyle() {
   return readStoredBarStyle() || 'lg';
 }
 
+// The style for the bar's polls, read from the file at most every 2 s (a write drops it).
+var barStyleCache = { value: 'lg', at: 0 };
+function barStyleForPoll() {
+  var now = Date.now();
+  if (now - barStyleCache.at > 2000 || now < barStyleCache.at) barStyleCache = { value: brightnessBarStyle(), at: now };
+  return barStyleCache.value;
+}
+
 // step and style are kept as they were in the file unless one is given ('' for the default).
 function writeMap(map, home, starting, step, style) {
+  barStyleCache.at = 0;
   if (step === undefined) step = readStoredBrightnessStep();
   if (style === undefined) style = readStoredBarStyle();
   if (!Object.keys(map).length && !home && !starting && !step && !style) {
@@ -1943,12 +1955,52 @@ function setBrightnessBarStyle(value, cb) {
  * The app the Home key opens, for Glasshouse Home, or '' to give Home back to
  * LG's filters. cb({ ok, error }).
  */
+/*
+ * The panel's brightness for the bar's page, which asks every 120 ms while a
+ * key is held. Each luna call is a fork and exec of luna-send, so the answer
+ * comes from a subscription to the settings service's backlight instead: one
+ * long-lived luna-send, started by the first ask and stopped backlightIdleMs
+ * after the last. Until it has answered, or after it has closed, the ask is
+ * made of the settings service itself.
+ */
+var BACKLIGHT_IDLE_MS = 30000;
+var backlightIdleMs = BACKLIGHT_IDLE_MS;
+var backlightSub = null;
+var backlightLevel = -1;     // -1: not known
+var backlightIdleTimer = null;
+
+function backlightStop() {
+  if (backlightIdleTimer) { clearTimeout(backlightIdleTimer); backlightIdleTimer = null; }
+  if (backlightSub) { backlightSub.stop(); backlightSub = null; }
+  backlightLevel = -1;
+}
+
+function backlightMessage(r) {
+  var level = r && r.returnValue !== false && r.settings ? Math.round(parseFloat(r.settings.backlight)) : NaN;
+  backlightLevel = isNaN(level) ? -1 : level;
+}
+
+function backlightWatch() {
+  if (!SubscriptionCtor) return;
+  if (!backlightSub) {
+    backlightSub = new SubscriptionCtor('com.webos.settingsservice/getSystemSettings',
+      { category: 'picture', keys: ['backlight'], subscribe: true }, null,
+      { message: backlightMessage, close: function () { backlightLevel = -1; } });
+    backlightSub.start();
+  }
+  if (backlightIdleTimer) clearTimeout(backlightIdleTimer);
+  backlightIdleTimer = setTimeout(backlightStop, backlightIdleMs);
+  if (backlightIdleTimer.unref) backlightIdleTimer.unref();
+}
+
 // The current picture mode's brightness and the bar's style, for the bar's page to follow while a key is held. cb({ ok, level, style }).
 function getBrightness(cb) {
   if (!lunaFn) return cb({ ok: false });
+  backlightWatch();
+  if (backlightLevel >= 0) return cb({ ok: true, level: backlightLevel, style: barStyleForPoll() });
   lunaFn('com.webos.service.settings/getSystemSettings', { category: 'picture', keys: ['backlight'] }, function (r) {
     var level = r && r.settings ? parseFloat(r.settings.backlight) : NaN;
-    cb(isNaN(level) ? { ok: false } : { ok: true, level: Math.round(level), style: brightnessBarStyle() });
+    cb(isNaN(level) ? { ok: false } : { ok: true, level: Math.round(level), style: barStyleForPoll() });
   });
 }
 

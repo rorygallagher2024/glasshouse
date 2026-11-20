@@ -1137,6 +1137,57 @@ step(function (next) {
   }));
 });
 
+// The bar's polls are answered from a subscription to the backlight, not a luna call each.
+step(function (next) {
+  var reads = 0;
+  var subs = [];
+  function FakeSub(uri, payload, appId, handlers) {
+    this.uri = uri; this.payload = payload; this.handlers = handlers; this.running = false;
+    subs.push(this);
+  }
+  FakeSub.prototype.start = function () { this.running = true; };
+  FakeSub.prototype.stop = function () { this.running = false; };
+  rk.init({ luna: function (uri, payload, cb) {
+      if (uri === 'com.webos.service.settings/getSystemSettings') reads++;
+      return luna(uri, payload, cb);
+    }, subscription: FakeSub, backlightIdleMs: 40, inputNames: {}, stateDir: stateDir, filtersDir: filtersDir });
+  tv.backlight = 40;
+  rk.getBrightness(guard(function (first) {
+    assert.deepEqual(first, { ok: true, level: 40, style: 'lg' }, 'the first ask is made of the settings service');
+    assert.strictEqual(reads, 1);
+    assert.strictEqual(subs.length, 1, 'and starts the subscription');
+    assert.strictEqual(subs[0].uri, 'com.webos.settingsservice/getSystemSettings');
+    assert.deepEqual(subs[0].payload, { category: 'picture', keys: ['backlight'], subscribe: true });
+    assert.ok(subs[0].running);
+    subs[0].handlers.message({ returnValue: true, subscribed: true, settings: { backlight: '55' } });
+    rk.getBrightness(guard(function (second) {
+      assert.deepEqual(second, { ok: true, level: 55, style: 'lg' }, 'once it has answered, the level is its');
+      assert.strictEqual(reads, 1, 'with no further call to the settings service');
+      rk.setBrightnessBarStyle('horizontal', guard(function (h) {
+        assert.ok(h.ok, h.error);
+        rk.getBrightness(guard(function (third) {
+          assert.strictEqual(third.style, 'horizontal', 'a change of style is seen at the next ask');
+          subs[0].handlers.close();
+          rk.getBrightness(guard(function (fourth) {
+            assert.strictEqual(fourth.level, 40, 'after the subscription closes the ask goes to the settings service again');
+            assert.strictEqual(reads, 2);
+            setTimeout(guard(function () {
+              assert.strictEqual(subs[0].running, false, 'it is stopped when no one has asked for a while');
+              rk.setBrightnessBarStyle('lg', guard(function () {
+                rk.getBrightness(guard(function () {
+                  assert.strictEqual(subs.length, 2, 'and the next ask starts another');
+                  console.log('  ✓ the bar\'s level comes from a subscription to the backlight, falling back to a read, and stops with no asks');
+                  next();
+                }));
+              }));
+            }), 120);
+          }));
+        }));
+      }));
+    }));
+  }));
+});
+
 function done() {
   fs.readdirSync(filtersDir).forEach(function (f) { fs.unlinkSync(path.join(filtersDir, f)); });
   fs.rmdirSync(filtersDir);
