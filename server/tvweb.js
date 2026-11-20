@@ -2218,6 +2218,8 @@ function startGlasshouseHome() {
   glasshouseHome.init({
     // webOS 11 with the Home key changed: LG's Home stays drawn under Glasshouse Bar unless it is closed.
     lgHomeUnderBar: remoteKeys.nativeHomeBarOn,
+    // File-only: { "home": { "reopenAfterWake": true or false } } overrides whether Glasshouse Home is opened again after a wake on webOS 11.
+    reopenAfterWake: function () { return CONFIG.home && typeof CONFIG.home.reopenAfterWake === 'boolean' ? CONFIG.home.reopenAfterWake : null; },
     screensavers: screensavers,
     weather: weather,
     // What the dashboard's Remote section shows: the level, the step it stands

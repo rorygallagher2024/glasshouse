@@ -3406,6 +3406,35 @@ step('on webOS 11, Glasshouse Home is closed and opened again once after a wake,
   });
 });
 
+step('on firmware 44 and later it is not done, unless config.json says so', function (done) {
+  var on44 = webos11();
+  on44.tvInfo = function () { return { webos: '11.2.0', firmware: '44.00.92' }; };
+  start(null, on44);
+  home.enable(function () {
+    foreground(LG_HOME);
+    power(false);
+    power(true);
+    wait(4500, function () {
+      assert.strictEqual(tv.events.indexOf('close ' + LG_HOME), -1, 'firmware 44 leaves it alone');
+      home.disable(function () {
+        var forced = webos11();
+        forced.tvInfo = on44.tvInfo;
+        forced.reopenAfterWake = function () { return true; };
+        start(null, forced);
+        home.enable(function () {
+          foreground(LG_HOME);
+          power(false);
+          power(true);
+          wait(4500, function () {
+            assert.notStrictEqual(tv.events.indexOf('close ' + LG_HOME), -1, 'home.reopenAfterWake true does it');
+            home.disable(function () { done(); });
+          });
+        });
+      });
+    });
+  });
+});
+
 step('on webOS 11, an app opened after the wake, or a switch-off, cancels it; other webOS never does it', function (done) {
   start(null, webos11());
   home.enable(function () {

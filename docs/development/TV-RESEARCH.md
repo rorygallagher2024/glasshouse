@@ -2629,6 +2629,11 @@ the compositor gave the view the keys and they were lost in the web engine.
 every time. On that TV `preloadmanager/setPreloadPolicy` failed each time it
 was asked.
 
+The same wake on an OLED48C31LA (C3, webOS 11.2.0, firmware 44.00.92) kept the
+remote working with Glasshouse Home left as it was, so the close and open
+shown as Home going and coming back after each wake was only a cost there. It
+is done on firmware older than 44 and not on 44 or later.
+
 ## WebAppMgr stopped (G4, webOS 11.2.0)
 
 Seen on 23 October 2026 on an OLED65G4KNA with Glasshouse Home switched on.
