@@ -139,7 +139,12 @@ var mock = require('./mock-env').createMockEnv({ luna: {
   'com.webos.settingsservice/getSystemSettings': function () { return { returnValue: true, settings: {} }; },
   'com.webos.settingsservice/setSystemSettings': function () { return { returnValue: true }; },
   'com.webos.service.systemservice/getPreferences': function () { return { returnValue: true, timeFormat: 'HH24' }; },
-  'com.webos.service.systemservice/setPreferences': function () { return { returnValue: true }; }
+  'com.webos.service.systemservice/setPreferences': function () { return { returnValue: true }; },
+  // The emulator's stand-in for LG's network input (FAKE_POINTER_SOCKET, scripts/emulate-tv.js).
+  'com.webos.service.networkinput/getPointerInputSocket': function () {
+    if (!process.env.FAKE_POINTER_SOCKET) return { returnValue: false, errorText: 'no pointer socket in this mock' };
+    return { returnValue: true, socketPath: process.env.FAKE_POINTER_SOCKET };
+  }
 } });
 
 var args = process.argv.slice(2);
