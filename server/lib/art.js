@@ -67,6 +67,18 @@ var RIJKS_IIIF = /^https:\/\/iiif\.micr\.io\/[A-Za-z0-9]{1,40}\/full\/max\/0\/de
 // IIIF's best fit within this: room for Fill's crop, a few hundred KB.
 var RIJKS_SIZE = '!2400,1400';
 var RIJKS = msg('srv.art.rijks', 'Rijksmuseum');
+// ESA/Webb and ESA/Hubble: CC BY 4.0, each image with its own credit line,
+// which has to stay visible and unaltered (esawebb.org/copyright).
+var ESA_ID = /^[a-z0-9_-]{1,60}$/i;
+var ESA_PAGE = 50;
+// Titles of what is not a picture to hang: diagrams, annotated or labelled
+// versions, artists' impressions, the telescope itself and its tests.
+var ESA_NOT_A_PICTURE = /compass|annotated|label|diagram|illustration|artist|impression|infographic|graph|chart|spectrum|comparison|sharpness|alignment|mirror|segment|test|instrument|telescope|spacecraft|launch|engineering|scale/i;
+// Wikimedia Commons: the licences shown, all free to show with their credit.
+var COMMONS_API = 'https://commons.wikimedia.org/w/api.php';
+var COMMONS_LICENCE = /^(pd|cc0|cc-by-\d(\.\d)?|cc-by-sa-\d(\.\d)?)$/;
+var COMMONS_URL = /^https:\/\/(upload|thumb)\.wikimedia\.org\/[^\s"<>?]+\.jpe?g(\?[^\s"<>]*)?$/i;
+var COMMONS = msg('srv.art.commons', 'Wikimedia Commons');
 // Linked Art's English, and a name that is the title.
 var AAT_ENGLISH = 'http://vocab.getty.edu/aat/300388277';
 var AAT_PREFERRED = 'http://vocab.getty.edu/aat/300404670';
@@ -77,22 +89,48 @@ var AAT_CREATOR = 'http://vocab.getty.edu/aat/300435417';
  * domain: free to show with no conditions, so the credit is a courtesy.
  */
 var COLLECTIONS = [
-  { id: 'rijks-golden', museum: 'rijks', years: [1600, 1699],
+  { id: 'webb', museum: 'esa', group: 'space', site: 'esawebb.org', categories: ['pictureofthemonth', 'nebulae', 'galaxies'],
+    label: msg('srv.art.webb', 'James Webb Space Telescope'),
+    detail: msg('srv.art.webbDesc', 'Nebulae, galaxies and planets in infrared, from ESA/Webb.') },
+  // Hubble's Picture of the Week, chosen by ESA, rather than its archive,
+  // which holds diagrams and test charts among the pictures.
+  { id: 'hubble', museum: 'esa', group: 'space', site: 'esahubble.org', list: '/images/potw/', perPage: 20,
+    label: msg('srv.art.hubble', 'Hubble Space Telescope'),
+    detail: msg('srv.art.hubbleDesc2', 'Picture of the Week: nebulae, galaxies and star clusters, from ESA/Hubble.') },
+  { id: 'commons-landscapes', museum: 'commons', group: 'photos', category: 'Featured pictures of landscapes',
+    label: msg('srv.art.landscapes', 'Landscapes'),
+    detail: msg('srv.art.landscapesDesc', 'Mountains, coasts and countryside.') },
+  { id: 'commons-phenomena', museum: 'commons', group: 'photos', category: 'Featured pictures of natural phenomena',
+    label: msg('srv.art.phenomena', 'Skies and weather'),
+    detail: msg('srv.art.phenomenaDesc', 'Sunsets, storms, auroras and rainbows.') },
+  { id: 'commons-astronomy', museum: 'commons', group: 'photos', category: 'Featured pictures of astronomy',
+    label: msg('srv.art.nightSky', 'The night sky'),
+    detail: msg('srv.art.nightSkyDesc', 'The Milky Way, the Moon and eclipses, from the ground.') },
+  { id: 'commons-animals', museum: 'commons', group: 'photos', category: 'Featured pictures of animals',
+    label: msg('srv.art.animals', 'Animals'),
+    detail: msg('srv.art.animalsDesc', 'Birds, mammals, insects and sea life, wild and tame.') },
+  { id: 'commons-plants', museum: 'commons', group: 'photos', category: 'Featured pictures of plants',
+    label: msg('srv.art.plants', 'Plants and flowers'),
+    detail: msg('srv.art.plantsDesc', 'Flowers, trees and fungi, close up.') },
+  { id: 'commons-architecture', museum: 'commons', group: 'photos', category: 'Featured pictures of architecture',
+    label: msg('srv.art.architecture', 'Architecture'),
+    detail: msg('srv.art.architectureDesc', 'Buildings, interiors and bridges.') },
+  { id: 'rijks-golden', museum: 'rijks', group: 'paintings', years: [1600, 1699],
     label: msg('srv.art.rijksGolden', 'Dutch Golden Age paintings'),
     detail: msg('srv.art.rijksGoldenDesc', 'Rembrandt, Vermeer, Hals and their contemporaries.') },
-  { id: 'rijks-later', museum: 'rijks', years: [1700, 1899],
+  { id: 'rijks-later', museum: 'rijks', group: 'paintings', years: [1700, 1899],
     label: msg('srv.art.rijksLater', 'Dutch paintings of the 1700s and 1800s'),
     detail: msg('srv.art.rijksLaterDesc', 'From Dutch interiors to the Hague School and Breitner.') },
-  { id: 'cma-european', museum: 'cma', departments: ['European Painting and Sculpture'],
+  { id: 'cma-european', museum: 'cma', group: 'paintings', departments: ['European Painting and Sculpture'],
     label: msg('srv.art.cmaEuropean', 'European paintings'),
     detail: msg('srv.art.cmaEuropeanDesc', 'Old masters, from the 1300s to the 1700s.') },
-  { id: 'cma-modern', museum: 'cma', departments: ['Modern European Painting and Sculpture'],
+  { id: 'cma-modern', museum: 'cma', group: 'paintings', departments: ['Modern European Painting and Sculpture'],
     label: msg('srv.art.cmaModern', 'European paintings of the 1800s'),
     detail: msg('srv.art.cmaModernDesc', 'From Romanticism to Monet, Cézanne and Van Gogh.') },
-  { id: 'cma-american', museum: 'cma', departments: ['American Painting and Sculpture'],
+  { id: 'cma-american', museum: 'cma', group: 'paintings', departments: ['American Painting and Sculpture'],
     label: msg('srv.art.cmaAmerican', 'American paintings'),
     detail: msg('srv.art.cmaAmericanDesc', 'Portraits and landscapes from the 1700s to the early 1900s.') },
-  { id: 'cma-asian', museum: 'cma', departments: ['Japanese Art', 'Chinese Art'],
+  { id: 'cma-asian', museum: 'cma', group: 'paintings', departments: ['Japanese Art', 'Chinese Art'],
     label: msg('srv.art.cmaAsian', 'Japanese and Chinese paintings'),
     detail: msg('srv.art.cmaAsianDesc', 'Screens, hanging scrolls and album leaves.') }
 ];
@@ -191,6 +229,7 @@ function init(opts) {
   if (opts.stateDir) { stateDir = opts.stateDir; paths(); }
   if (opts.download) downloadFn = opts.download;
   if (opts.getJson) getJsonFn = opts.getJson;
+  if (opts.getText) getTextFn = opts.getText;
   if (opts.free) freeFn = opts.free;
   queue = []; history = []; pos = -1; recent = []; totals = {}; deck = [];
   command = { seq: 0, dir: 'next' }; viewedAt = {};
@@ -262,7 +301,7 @@ function status() {
     current: pos >= 0 && history[pos] ? { id: history[pos].id, info: history[pos].info } : null,
     canGoBack: pos > 0,
     collections: COLLECTIONS.map(function (c) {
-      return { id: c.id, label: c.label, detail: c.detail, source: c.museum === 'rijks' ? RIJKS : CLEVELAND, on: settings.collections.indexOf(c.id) !== -1 };
+      return { id: c.id, group: c.group, label: c.label, detail: c.detail, source: sourceName(c), on: settings.collections.indexOf(c.id) !== -1 };
     }),
     folders: settings.folders.map(function (f) { return { key: f.key, server: f.server, title: f.title }; }),
     maxFolders: MAX_FOLDERS,
@@ -672,9 +711,219 @@ function itemKey(f, id) {
   return 'dl-' + crypto.createHash('sha1').update(f.key + '\n' + id).digest('hex').slice(0, 16);
 }
 
+function sourceName(c) {
+  if (c.museum === 'rijks') return RIJKS;
+  if (c.museum === 'esa') return c.site === 'esawebb.org' ? 'ESA/Webb' : 'ESA/Hubble';
+  if (c.museum === 'commons') return COMMONS;
+  return CLEVELAND;
+}
+
+/*
+ * A page fetched over HTTPS: cb(err, text). Through a file, as a download:
+ * ESA/Hubble's deeper archive pages take 20 s to come, past a text fetch's
+ * 10 s; a download gives up only once nothing has come for 30 s. getText is
+ * the tests'.
+ */
+var getTextFn = function (url, cb) {
+  try { if (!fs.existsSync(cacheDir)) fs.mkdirSync(cacheDir); } catch (e) { return cb(e); }
+  var file = path.join(cacheDir, 'page-' + process.pid + '.part');
+  fetchMod.download(url, file, {}, function (err) {
+    var text = null;
+    if (!err) {
+      try {
+        if (fs.statSync(file).size > 4 * 1024 * 1024) err = new Error('the page was too large');
+        else text = fs.readFileSync(file, 'utf8');
+      } catch (e) { err = e; }
+    }
+    util.unlinkQuiet(file);
+    cb(err, text);
+  });
+};
+
+function plain(htmlText) {
+  return String(htmlText || '').replace(/<[^>]*>/g, ' ').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&')
+    .replace(/&quot;/g, '"').replace(/&#0?39;|&apos;/g, '\'').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+    .replace(/&#(\d+);/g, function (m, n) { return String.fromCharCode(+n); })
+    .replace(/\s+/g, ' ').trim();
+}
+
+/*
+ * An ESA archive page's images: [{ id, title, width, height }], and how many
+ * the category holds, from "Showing 1 to 50 of 710".
+ */
+function readEsaArchive(page) {
+  var text = String(page || '');
+  var total = /Showing \d+ to \d+ of (\d+)/.exec(text);
+  var list = [], re = /\{\s*id:\s*'([^']*)',\s*title:\s*'((?:[^'\\]|\\.)*)',\s*width:\s*(\d+),\s*height:\s*(\d+)/g, m;
+  while ((m = re.exec(text)) !== null) {
+    list.push({ id: m[1], title: plain(m[2].replace(/\\(.)/g, '$1')), width: +m[3], height: +m[4] });
+  }
+  return { total: total ? +total[1] : list.length, images: list };
+}
+
+// A Picture of the Week page: its images' ids and titles, and how many there are.
+function readEsaList(page) {
+  var text = String(page || '');
+  var total = /Showing \d+ to \d+ of (\d+)/.exec(text);
+  var list = [], seen = {}, re = /<a href="\/images\/([a-z0-9_-]+)\/">\s*<div class="news-wrapper">[\s\S]*?alt="([^"]*)"/gi, m;
+  while ((m = re.exec(text)) !== null) {
+    if (seen[m[1]]) continue;
+    seen[m[1]] = true;
+    list.push({ id: m[1], title: plain(m[2]), width: 0, height: 0 });
+  }
+  return { total: total ? +total[1] : list.length, images: list };
+}
+
+// An image page's size, "4000 x 2750 px", or null.
+function readEsaSize(page) {
+  var m = /(\d[\d,]*) x (\d[\d,]*) px/.exec(String(page || ''));
+  return m ? [+m[1].replace(/,/g, ''), +m[2].replace(/,/g, '')] : null;
+}
+
+// An image page's credit line, as ESA asks it to be shown, word for word.
+function readEsaCredit(page) {
+  var m = /class="credit">([\s\S]*?)<\/div>/.exec(String(page || ''));
+  // Whole or not at all: it is to be shown unaltered.
+  var credit = m ? plain(m[1]) : '';
+  return credit.length <= 400 ? credit : '';
+}
+
+/*
+ * One image of an ESA collection: a random page of one of its categories, an
+ * image of a shape for the screen not shown lately, and its credit from its
+ * own page. Fetched at "publicationjpg", 4000 pixels on its long side.
+ */
+function pickEsa(collection, cb) {
+  var tries = 0;
+  (function attempt() {
+    if (tries++ >= PICK_TRIES) return cb(null, null);
+    var cat = collection.list ? 'potw' : collection.categories[Math.floor(Math.random() * collection.categories.length)];
+    var base = 'https://' + collection.site + (collection.list || '/images/archive/category/' + cat + '/');
+    var perPage = collection.perPage || ESA_PAGE;
+    var known = totals[collection.site + '/' + cat];
+    var pageNo = known ? 1 + Math.floor(Math.random() * Math.ceil(known / perPage)) : 1;
+    getTextFn(pageNo > 1 ? base + 'page/' + pageNo + '/' : base, function (err, text) {
+      if (err) return cb(err);
+      var archive = collection.list ? readEsaList(text) : readEsaArchive(text);
+      totals[collection.site + '/' + cat] = archive.total;
+      // The first ask only learns the size, where there is more than a page.
+      if (!known && archive.total > perPage) return attempt();
+      var fit = archive.images.filter(function (im) {
+        var key = 'esa-' + im.id.toLowerCase();
+        // A list gives no size; the image's page does, below.
+        var sized = !im.width || (im.width / im.height >= MIN_RATIO && im.width / im.height <= MAX_RATIO && Math.max(im.width, im.height) >= 1600);
+        return ESA_ID.test(im.id) && sized && !ESA_NOT_A_PICTURE.test(im.title) &&
+          recent.indexOf(key) === -1 && !inQueue(key);
+      });
+      if (!fit.length) return attempt();
+      var im = fit[Math.floor(Math.random() * fit.length)];
+      getTextFn('https://' + collection.site + '/images/' + im.id + '/', function (err2, pageText) {
+        if (err2) return cb(err2);
+        var credit = readEsaCredit(pageText);
+        // No credit line found: not shown, as it could not be credited.
+        if (!credit) return attempt();
+        if (!im.width) {
+          var size = readEsaSize(pageText);
+          if (!size || size[0] / size[1] < MIN_RATIO || size[0] / size[1] > MAX_RATIO || Math.max(size[0], size[1]) < 1600) return attempt();
+          im.width = size[0];
+          im.height = size[1];
+        }
+        cb(null, {
+          key: ('esa-' + im.id.toLowerCase()).slice(0, 40),
+          collection: collection.id,
+          url: 'https://cdn.' + collection.site + '/archives/images/publicationjpg/' + im.id + '.jpg',
+          // Older images have no publicationjpg; their "large" is the original,
+          // which is fetched only where it is of a modest size.
+          also: Math.max(im.width, im.height) <= 6000 ? ['https://cdn.' + collection.site + '/archives/images/large/' + im.id + '.jpg'] : [],
+          info: { title: im.title.slice(0, 200), artist: '', date: '', credit: credit, mustCredit: true }
+        });
+      });
+    });
+  })();
+}
+
+/*
+ * A Commons file's details as a picture to fetch, or null: a JPEG under a
+ * licence that lets it be shown with its credit, of a shape for the screen,
+ * at a size that fills it.
+ */
+function commonsPick(page, collection) {
+  var ii = page && page.imageinfo && page.imageinfo[0];
+  if (!ii || !/^image\/jpeg$/.test(ii.mime || '')) return null;
+  var meta = ii.extmetadata || {};
+  function val(k) { return meta[k] && typeof meta[k].value === 'string' ? meta[k].value : ''; }
+  var licence = val('License').toLowerCase();
+  if (!COMMONS_LICENCE.test(licence)) return null;
+  if (!(ii.width > 0 && ii.height > 0) || ii.width / ii.height < MIN_RATIO || ii.width / ii.height > MAX_RATIO) return null;
+  if (Math.max(ii.width, ii.height) < 1600) return null;
+  var url = ii.thumburl || ii.url;
+  if (!COMMONS_URL.test(String(url || ''))) return null;
+  var title = plain(val('ObjectName')) || String(page.title || '').replace(/^File:/, '').replace(/\.[a-z]+$/i, '').replace(/_/g, ' ');
+  var artist = plain(val('Artist')).slice(0, 100);
+  var shortName = plain(val('LicenseShortName')) || licence.toUpperCase();
+  var year = /\b(1[89]\d\d|20\d\d)\b/.exec(plain(val('DateTimeOriginal')));
+  if (!/^\d{1,12}$/.test(String(page.pageid))) return null;
+  return {
+    key: 'wc-' + page.pageid,
+    collection: collection.id,
+    url: url,
+    info: {
+      title: title.slice(0, 200),
+      artist: artist,
+      date: year ? year[1] : '',
+      credit: [shortName, COMMONS].join(' \u00b7 '),
+      mustCredit: licence !== 'pd' && licence !== 'cc0'
+    }
+  };
+}
+
+function commonsSearch(collection, offset, limit) {
+  return COMMONS_API + '?action=query&format=json&generator=search&gsrnamespace=6' +
+    '&gsrsearch=' + encodeURIComponent('deepcat:"' + collection.category + '" filetype:bitmap') +
+    '&gsroffset=' + offset + '&gsrlimit=' + limit +
+    // Wikimedia serves thumbnails at set widths; 1920 is one, a few hundred KB.
+    '&prop=imageinfo&iiprop=url|size|mime|extmetadata&iiurlwidth=1920' +
+    '&iiextmetadatafilter=' + encodeURIComponent('License|LicenseShortName|Artist|ObjectName|DateTimeOriginal');
+}
+
+/*
+ * One featured picture of a Commons topic, its subcategories too: ten from a
+ * random place in the search, and one of those that pass, not shown lately.
+ */
+function pickCommons(collection, cb) {
+  var tries = 0;
+  (function attempt() {
+    if (tries++ >= PICK_TRIES) return cb(null, null);
+    var total = totals[collection.id];
+    // Search goes no further than its first 10,000.
+    var offset = total ? Math.floor(Math.random() * Math.max(1, Math.min(total, 9990) - 10)) : 0;
+    // The first ask only counts the topic's pictures.
+    var ask = total ? commonsSearch(collection, offset, 10)
+      : COMMONS_API + '?action=query&format=json&list=search&srnamespace=6&srlimit=1&srinfo=totalhits&srsearch=' +
+        encodeURIComponent('deepcat:"' + collection.category + '" filetype:bitmap');
+    getJsonFn(ask, function (err, doc) {
+      if (err) return cb(err);
+      if (!total) {
+        var hits = doc && doc.query && doc.query.searchinfo && doc.query.searchinfo.totalhits;
+        if (!hits) return cb(new Error('the topic has no pictures'));
+        totals[collection.id] = hits;
+        return attempt();
+      }
+      var pages = doc && doc.query && doc.query.pages ? Object.keys(doc.query.pages).map(function (k) { return doc.query.pages[k]; }) : [];
+      var fit = pages.map(function (pg) { return commonsPick(pg, collection); }).filter(function (pick) {
+        return pick && recent.indexOf(pick.key) === -1 && !inQueue(pick.key);
+      });
+      if (!fit.length) return attempt();
+      cb(null, fit[Math.floor(Math.random() * fit.length)]);
+    });
+  })();
+}
+
 // A picture from one source: a collection's id or a network folder's key.
 function pickFrom(source, cb) {
   var c = collectionById(source);
+  if (c && c.museum === 'esa') return pickEsa(c, cb);
+  if (c && c.museum === 'commons') return pickCommons(c, cb);
   if (c) return c.museum === 'rijks' ? pickRijks(c, cb) : pickCleveland(c, cb);
   var f = folderByKey(source);
   if (f) return pickFolder(f, cb);
@@ -682,7 +931,16 @@ function pickFrom(source, cb) {
 }
 
 function fetchTo(pick, part, cb) {
-  if (!pick.local) return downloadFn(pick.url, part, cb);
+  if (!pick.local) {
+    var urls = [pick.url].concat(pick.also || []);
+    return (function attempt(i, lastErr) {
+      if (i >= urls.length) return cb(lastErr);
+      downloadFn(urls[i], part, function (err) {
+        if (err) { util.unlinkQuiet(part); return attempt(i + 1, err); }
+        cb(null);
+      });
+    })(0, null);
+  }
   dlna.fetchFile(pick.url, MAX_FETCH, function (err, buf) {
     if (err) return cb(err);
     fs.writeFile(part, buf, cb);
@@ -895,6 +1153,11 @@ module.exports = {
   fill: fill,
   clevelandPick: clevelandPick,
   rijksPick: rijksPick,
+  commonsPick: commonsPick,
+  readEsaArchive: readEsaArchive,
+  readEsaCredit: readEsaCredit,
+  readEsaList: readEsaList,
+  readEsaSize: readEsaSize,
   findServers: findServers,
   browseFolder: browseFolder,
   addFolder: addFolder,

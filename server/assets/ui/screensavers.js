@@ -722,7 +722,14 @@ function renderSsArt(art, locked) {
   q('ss-art-sources').innerHTML =
     item(s.mine, 'ssArtSave({ mine: this.checked })', t('ss.art.mine', 'Your pictures'),
       t('ss.art.mineCount', '{n} added below', { n: pics.length })) +
-    art.collections.map(c => item(c.on, `ssArtCollection('${esc(c.id)}', this.checked)`, c.label, c.detail)).join('');
+    [['space', t('ss.art.groupSpace', 'Space')], ['photos', t('ss.art.groupPhotos', 'Photography')], ['paintings', t('ss.art.groupPaintings', 'Paintings')]]
+      .map(([group, name]) => {
+        const list = art.collections.filter(c => (c.group || 'paintings') === group);
+        if (!list.length) return '';
+        const from = [...new Set(list.map(c => c.source))].join(', ');
+        return `<div class="ss-art-group"><span>${esc(name)}</span><span class="ss-art-from">${esc(from)}</span></div>` +
+          list.map(c => item(c.on, `ssArtCollection('${esc(c.id)}', this.checked)`, c.label, c.detail)).join('');
+      }).join('');
 
   const full = pics.length >= art.maxPictures;
   const busy = locked || ssArtUploading || art.uploading;
@@ -777,7 +784,7 @@ function renderSsArt(art, locked) {
   const museums = [...new Set(art.collections.filter(c => c.on).map(c => c.source))];
   if (museums.length) {
     where.push(art.fetching ? t('ss.art.fetching', 'Fetching the next painting…')
-      : t('ss.art.privacy2', 'The paintings are in the public domain, from the open access collections of {museums}. The TV fetches them one at a time, and keeps only the next one or two.', { museums: museums.join(t('ss.art.and', ' and ')) }));
+      : t('ss.art.privacy3', 'Pictures from {sources} are free to show with their credit, which each one\u2019s label carries, and stays on screen where its licence asks. The TV fetches them one at a time, and keeps only the last few and the next one or two.', { sources: museums.join(t('ss.art.and', ' and ')) }));
   }
   if (art.error) where.push(art.error);
   if (!s.mine && !museums.length && !folders.length) where.push(t('ss.art.nothing', 'Pick your pictures or a collection, or the screen saver has nothing to show.'));

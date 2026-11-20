@@ -235,7 +235,10 @@ With a collection picked for the **Picture frame** screen saver, the server conn
 the Cleveland Museum of Art (`openaccess-api.clevelandart.org` to pick a
 painting, `openaccess-cdn.clevelandart.org` for its picture) or the Rijksmuseum
 (`data.rijksmuseum.nl` and `id.rijksmuseum.nl` to pick one, `iiif.micr.io` for
-its picture), one at a time and only while the screen saver asks for more.
+its picture), ESA (`esawebb.org` or `esahubble.org` for a page of the archive
+and the image's credit, `cdn.esawebb.org` or `cdn.esahubble.org` for the
+picture) or Wikimedia Commons (`commons.wikimedia.org` to pick one,
+`upload.wikimedia.org` or `thumb.wikimedia.org` for the picture), one at a time and only while the screen saver asks for more. Requests name Glasshouse and its project page in their User-Agent, as Wikimedia's API rules ask; nothing about the TV or its owner is in them.
 **Add a network folder** sends an SSDP search for media servers on the local
 network, and a folder added is listed and its pictures fetched over HTTP from
 that server, on the local network only. Nothing about the TV is sent

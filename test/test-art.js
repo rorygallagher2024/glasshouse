@@ -94,6 +94,37 @@ assert.strictEqual(art.rijksPick(rijks(1, { attributed: true }), { id: 'x' }).in
 assert.strictEqual(art.rijksPick(rijks(2, { copyright: true }), { id: 'x' }), null, 'not public domain, not shown');
 assert.strictEqual(art.rijksPick({ id: 'https://example.com/1' }, { id: 'x' }), null);
 
+// ESA's archive: its images and how many there are; an image's credit
+// whole, or none where it is too long to show unaltered.
+var archive = art.readEsaArchive("Showing 1 to 50 of 710 var images = [ { id: 'heic2007a', title: 'Hubble\\'s 30th: the \\'Cosmic Reef\\'', width: 6000, height: 4000, src: 'x' }, { id: 'opo1', title: 'A &amp; B', width: 100, height: 3000, src: 'y' } ];");
+assert.strictEqual(archive.total, 710);
+assert.deepEqual(archive.images[0], { id: 'heic2007a', title: "Hubble's 30th: the 'Cosmic Reef'", width: 6000, height: 4000 });
+assert.strictEqual(archive.images[1].title, 'A & B');
+assert.strictEqual(art.readEsaCredit('<div class="credit"><p>NASA, ESA, and STScI</p></div>'), 'NASA, ESA, and STScI');
+assert.strictEqual(art.readEsaCredit('<div class="credit"><p>' + new Array(500).join('x') + '</p></div>'), '', 'never cut short');
+
+// Commons: only free licences, credited; a JPEG of a shape for the screen.
+function commons(licence, opts) {
+  opts = opts || {};
+  return { pageid: 42, title: 'File:Lake_at_dawn.jpg', imageinfo: [{
+    mime: opts.mime || 'image/jpeg', width: opts.width || 4000, height: opts.height || 3000,
+    thumburl: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/a/ab/Lake.jpg/1920px-Lake.jpg?utm_source=commons.wikimedia.org',
+    extmetadata: { License: { value: licence }, LicenseShortName: { value: licence.toUpperCase() },
+      Artist: { value: '<a href="x">Ann Example</a>' }, DateTimeOriginal: { value: '2019-05-01 06:12' } } }] };
+}
+var wc = art.commonsPick(commons('cc-by-sa-4.0'), { id: 'commons-landscapes' });
+assert.strictEqual(wc.key, 'wc-42');
+assert.deepEqual(wc.info, { title: 'Lake at dawn', artist: 'Ann Example', date: '2019', credit: 'CC-BY-SA-4.0 \u00b7 Wikimedia Commons', mustCredit: true });
+assert.strictEqual(art.commonsPick(commons('pd'), { id: 'x' }).info.mustCredit, false, 'public domain needs no credit kept up');
+assert.ok(art.commonsPick(commons('cc0'), { id: 'x' }));
+assert.ok(art.commonsPick(commons('cc-by-2.0'), { id: 'x' }));
+['fal', 'gfdl', 'cc-by-nc-4.0', 'cc-by-nd-4.0', ''].forEach(function (l) {
+  assert.strictEqual(art.commonsPick(commons(l), { id: 'x' }), null, 'licence ' + (l || 'none') + ' left out');
+});
+assert.strictEqual(art.commonsPick(commons('cc0', { mime: 'image/png' }), { id: 'x' }), null);
+assert.strictEqual(art.commonsPick(commons('cc0', { width: 8000, height: 1500 }), { id: 'x' }), null, 'a panorama is too thin');
+assert.strictEqual(art.commonsPick(commons('cc0', { width: 1200, height: 900 }), { id: 'x' }), null, 'too small for the screen');
+
 var steps = [
   // Nothing picked and nothing uploaded: the message says where to add some.
   function (done) {
