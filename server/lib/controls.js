@@ -1180,6 +1180,14 @@ function doControl(action, value, cb) {
         cb(r);
       });
 
+    // Also over an HDMI input or Live TV, where 'screensaver' refuses: for a
+    // remote key bound to the screen saver.
+    case 'screensaverOverInputs':
+      return screensavers.triggerOverInputs(function (r) {
+        telemetry.clearCache();
+        cb(r);
+      });
+
     case 'screensaverEntities':
       if (!screensavers) return cb({ ok: false, error: 'screensavers module not available' });
       if (!value || typeof value !== 'object' || !value.saver || !value.entities) {

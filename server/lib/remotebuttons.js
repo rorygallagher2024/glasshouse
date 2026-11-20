@@ -62,6 +62,15 @@ var onHomeKeyFn = null;
 var onAnyKeyFn = null;
 // The Magic Remote's pointer moving, at most once a second (the Python worker only).
 var onPointerFn = null;
+// KEY_LGE_CURSOR_HIDE (1207 in /usr/share/X11/xkb/keycodes/lg, less 8): the
+// Magic Remote sends it by itself when the pointer times out, about a minute
+// after the remote last moved (G2, webOS 7.3.1), so it is no one pressing a key.
+var CURSOR_HIDE_CODE = 1199;
+
+function reportKey(code) {
+  if (onAnyKeyFn && code !== CURSOR_HIDE_CODE) onAnyKeyFn(code);
+}
+
 // Who wants the worker running: MQTT for the coloured buttons, Glasshouse Home
 // for the Home button, the screen saver while one it launched shows. It runs
 // while any do.
@@ -104,8 +113,8 @@ function findRcuDevices() {
 }
 
 function handleParsedEvent(type, code, val) {
-  if (type === EV_KEY && val === KEY_PRESS && process.argv.indexOf('--worker') === -1 && onAnyKeyFn) {
-    onAnyKeyFn(code);
+  if (type === EV_KEY && val === KEY_PRESS && process.argv.indexOf('--worker') === -1) {
+    reportKey(code);
   }
   if (type === EV_KEY && code === HOME_CODE && (val === 0 || val === 1)) {
     if (process.argv.indexOf('--worker') !== -1) {
@@ -281,12 +290,12 @@ function start() {
         if (!line) continue;
         var parts = line.split(' ');
         if (parts[0] === 'home') {
-          if (parts[1] === '1' && onAnyKeyFn) onAnyKeyFn(HOME_CODE);
+          if (parts[1] === '1') reportKey(HOME_CODE);
           if (onHomeKeyFn) onHomeKeyFn(parts[1] === '1');
           continue;
         }
         if (parts[0] === 'key') {
-          if (onAnyKeyFn) onAnyKeyFn(parseInt(parts[1], 10));
+          reportKey(parseInt(parts[1], 10));
           continue;
         }
         if (parts[0] === 'pointer') {
@@ -296,7 +305,7 @@ function start() {
         var color = parts[0];
         var code = parseInt(parts[1], 10);
         if (BUTTON_CODES[code]) {
-          if (onAnyKeyFn) onAnyKeyFn(code);
+          reportKey(code);
           if (onButtonFn) onButtonFn(color, code);
         }
       }

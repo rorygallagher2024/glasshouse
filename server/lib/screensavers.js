@@ -2071,14 +2071,61 @@ function launchScreensaverApp(cb) {
         var fgId = fg && fg.returnValue !== false && fg.appId ? inputKeyFn(fg.appId) : '';
         if (!fgId || names.isHdmiKey(fgId) || fgId === 'livetv') return cb(false);
         console.log('screensaver: launching the screen saver app after a refused request');
-        lunaFn('com.webos.applicationManager/launch', { id: SCREENSAVER_APP_ID }, function (r) {
-          var ok = !!(r && r.returnValue);
-          if (ok) setLaunched(true);
-          cb(ok);
-        });
+        launchApp(cb);
       });
     });
   }, true);
+}
+
+// The app itself, with the remote's keys watched to close it (setLaunched).
+function launchApp(cb) {
+  lunaFn('com.webos.applicationManager/launch', { id: SCREENSAVER_APP_ID }, function (r) {
+    var ok = !!(r && r.returnValue);
+    if (ok) setLaunched(true);
+    cb(ok);
+  });
+}
+
+/*
+ * Over an HDMI input with no signal, for lib/nosignalsaver.js. There LG's
+ * idle timer starts no screen saver, and tvpower answers turnOnScreenSaver
+ * true and then drops it ("Request Screen Saver", then "Screen On" within
+ * milliseconds) (G2, webOS 7.3.1), so the app is launched as after a refused
+ * request. cb(true) once one this server launched shows.
+ */
+function launchOverNoSignal(cb) {
+  if (!lunaFn || switching()) return cb(false);
+  if (launchedDirectly) return cb(true);
+  lunaFn('com.webos.service.tvpower/power/getPowerState', {}, function (pw) {
+    var currentPower = power.mapState(pw && pw.state);
+    if (!pw || pw.returnValue === false || power.isScreenSaver(currentPower) || !currentPower.screenOn ||
+        (pw.processing && pw.processing !== 'Screen On')) return cb(false);
+    ensureScreensaverKnown(function (known) {
+      if (!known) return cb(false);
+      console.log('screensaver: launching the screen saver app over an input');
+      launchApp(cb);
+    });
+  });
+}
+
+/*
+ * The screen saver action, also over an HDMI input or Live TV, where trigger()
+ * refuses one: there the app is launched directly, as over an input with no
+ * signal, and the input keeps playing under it, sound included. From an app
+ * it is trigger(). For a remote key bound to the screen saver.
+ */
+function triggerOverInputs(cb) {
+  if (!lunaFn) return cb({ ok: false, error: 'luna bus not available' });
+  lunaFn('com.webos.applicationManager/getForegroundAppInfo', {}, function (fg) {
+    var fgId = (fg && fg.appId) ? inputKeyFn(fg.appId) : '';
+    if (!names.isHdmiKey(fgId) && fgId !== 'livetv') return trigger(cb);
+    launchOverNoSignal(function (ok) {
+      cb(ok ? { ok: true } : {
+        ok: false,
+        error: msg('srv.saver.refusedFrom', 'the TV would not start a screen saver from {source}', { source: fgId })
+      });
+    });
+  });
 }
 
 /*
@@ -2273,6 +2320,8 @@ module.exports = {
   onLaunchedChange: onLaunchedChange,
   keyPressed: keyPressed,
   pointerUsed: pointerUsed,
+  launchOverNoSignal: launchOverNoSignal,
+  triggerOverInputs: triggerOverInputs,
   adoptLaunched: adoptLaunched,
   trigger: trigger
 };

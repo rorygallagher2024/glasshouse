@@ -2376,6 +2376,22 @@ about:blank`) in front.
   On the CX the input shows its own No Signal picture instead, LG's No Signal
   Image (settings `general.noSignalScreenSaver`, on on that CX, off on the
   C5).
+- **G2 (webOS 7.3.1), HDMI 1 with no signal, No Signal Image on:** no screen
+  saver came either. `turnOnScreenSaver` returned true, then `getPowerState`
+  went "Request Screen Saver" to "Screen On" within milliseconds and nothing
+  started, as on the G3 below. `applicationManager/launch` of
+  `com.webos.app.screensaver` did bring it up over the input (the foreground
+  app still read `com.webos.app.hdmi1`), and a remote key did not close it:
+  only `closeByAppId` did. With No Signal Image on, a screen capture showed
+  the screen saver drawing while the panel showed LG's No Signal picture:
+  that picture is above the compositor's planes, so no app window covers it.
+  With it off (`general.noSignalScreenSaver` `off`) the screen saver showed.
+  The Magic Remote sends key 1199 on `LGE M-RCU - Builtin [0]` by itself
+  when its pointer times out (`KEY_LGE_CURSOR_HIDE`, 1207 in
+  `/usr/share/X11/xkb/keycodes/lg`, less 8). The launched screen saver does not hold off LG's
+  No Signal Power Off (settings `time` `noSignalAutoOff`): tvpowerd went
+  Active to Active Standby with `PowerOffReason` `nosignal` about 15 minutes
+  after the signal went, with the screen saver showing.
 - **On the C5 the TV falls back to Live TV** after a reboot, and when the
   compositor's 120 s timer closes a Home window with nothing under it, sam
   launches the last app (`LAUNCH_LASTAPP on_foreground_null`). A Home that
