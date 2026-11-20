@@ -832,8 +832,6 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
   var ADD_TILE = 'iptv-add';
   // The More apps tile, last in the Apps row while any app is in the folder.
   var FOLDER_TILE = 'more-apps';
-  // Tiles per line in the More apps grid: 9 of 176px fill the 1696px between the margins.
-  var FOLDER_COLS = 9;
   // Held this long, OK arranges the tiles rather than opening one.
   var LONG_PRESS_MS = 800;
   var BEAT_MS = 5000;
@@ -4309,16 +4307,28 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     });
   }
 
+  /*
+   * Tiles per line in the More apps grid, as laid out: 9 small tiles fit, but
+   * only 5 cards, and the keys must follow the lines the grid shows.
+   */
+  function folderCols() {
+    var tiles = $('folderGrid').querySelectorAll('.tile'), cols = 0;
+    while (cols < tiles.length && tiles[cols].offsetTop === tiles[0].offsetTop) cols++;
+    return cols || 1;
+  }
+
   function folderKey(k) {
     var n = folder.apps.length, c = folder.col;
     if (k === KEY.back) return closeFolder();
     if (!n) return;
     if (k === KEY.ok) return openFromFolder(folder.apps[c]);
-    if (k === KEY.left && c % FOLDER_COLS > 0) c--;
-    else if (k === KEY.right && c % FOLDER_COLS < FOLDER_COLS - 1 && c + 1 < n) c++;
-    else if (k === KEY.up && c - FOLDER_COLS >= 0) c -= FOLDER_COLS;
+    var cols = folderCols();
+    if (k === KEY.left && c % cols > 0) c--;
+    else if (k === KEY.right && c % cols < cols - 1 && c + 1 < n) c++;
+    else if (k === KEY.up && c - cols >= 0) c -= cols;
     // Down from above a short last line goes to its last tile.
-    else if (k === KEY.down && Math.floor(c / FOLDER_COLS) < Math.floor((n - 1) / FOLDER_COLS)) c = Math.min(n - 1, c + FOLDER_COLS);
+    else if (k === KEY.down && Math.floor(c / cols) < Math.floor((n - 1) / cols)) c = Math.min(n - 1, c + cols);
+    if (c !== folder.col) navTick();
     folder.col = c;
     focusFolder();
   }
