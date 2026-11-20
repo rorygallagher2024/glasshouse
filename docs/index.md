@@ -41,11 +41,11 @@ Use it for remote control, app installation and removal, OLED panel care, privac
 === "Web dashboard"
 
     <p align="center">
-      <a href="screenshots/dashboard.png"><img src="screenshots/dashboard.png" alt="Metrics tab: SoC temperature, system readouts, storage, watch time, Magic Remote battery and HDMI ports, dark theme (OLED42C24LA)" width="440"></a>
+      <a href="screenshots/dashboard.png"><img src="screenshots/dashboard.png" alt="Metrics tab: SoC temperature, system readouts, storage and Magic Remote battery, dark theme, with the screen glow on (OLED42C24LA)" width="440"></a>
       &nbsp;
-      <a href="screenshots/dashboard-light.png"><img src="screenshots/dashboard-light.png" alt="Control tab: panel, source, volume, playback, sleep timer and power, light theme (OLED42C24LA)" width="440"></a>
+      <a href="screenshots/dashboard-light.png"><img src="screenshots/dashboard-light.png" alt="Control tab: panel, source, volume, playback, sleep timer and power, light theme, with the screen glow on (OLED42C24LA)" width="440"></a>
       <br>
-      <sub>Metrics and Control tabs in dark and light themes — served directly from the TV with no cloud or external dependencies.</sub>
+      <sub>Metrics and Control tabs in dark and light themes, with the <a href="dashboard/#screen-glow">screen glow</a> taking its colours from the TV, served directly from the TV with no cloud or external dependencies.</sub>
     </p>
 
 === "Remote"

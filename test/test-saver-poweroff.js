@@ -8,7 +8,7 @@ var StateManager = require('../server/lib/state').StateManager;
 
 console.log('Running test-saver-poweroff.js ...');
 
-function setup(minutes, state) {
+function setup(minutes, state, launched) {
   var states = new StateManager();
   if (state) states.update('power', 'state', state);
   var config = { allowPower: true };
@@ -22,7 +22,9 @@ function setup(minutes, state) {
       var entry = { fn: fn, ms: ms, cancelled: false };
       waiting.push(entry);
       return function () { entry.cancelled = true; };
-    }
+    },
+    launchedShowing: launched && function () { return launched.showing; },
+    launchedRunning: launched && function (cb) { cb(launched.running); }
   });
   saverPowerOff.start();
   return {
@@ -108,6 +110,31 @@ function setup(minutes, state) {
   saverPowerOff.apply();
   assert.strictEqual(t.live().length, 0, 'switched off, nothing waits');
   console.log('  ✓ a new setting takes effect at once');
+})();
+
+(function testLaunchedDirectly() {
+  // The TV ended the video screen saver it started, and Glasshouse launched it
+  // again itself: tvpower reads Active while it shows (G3, webOS 10.3).
+  var launched = { showing: false, running: true };
+  var t = setup(60, 'Screen Saver', launched);
+  t.states.update('power', 'state', 'Active');
+  assert.strictEqual(t.live().length, 0, 'the TV ending it ends the wait');
+  launched.showing = true;
+  saverPowerOff.launchedChanged();
+  assert.strictEqual(t.live().length, 1, 'launched again, it counts');
+  t.live()[0].fn();
+  assert.deepEqual(t.calls, ['powerOff'], 'standby with tvpower Active');
+
+  t = setup(60, 'Active', launched);
+  launched.running = false;
+  t.live()[0].fn();
+  assert.deepEqual(t.calls, [], 'not switched off when sam no longer runs it');
+
+  t = setup(60, 'Active', launched);
+  launched.showing = false;
+  saverPowerOff.launchedChanged();
+  assert.strictEqual(t.live().length, 0, 'its closing ends the wait');
+  console.log('  ✓ a screen saver Glasshouse launched itself counts too');
 })();
 
 console.log('test-saver-poweroff.js passed');

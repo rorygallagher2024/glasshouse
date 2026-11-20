@@ -7,6 +7,9 @@
 *{margin:0;padding:0;box-sizing:border-box}
 /* The window is an overlay: whatever is on screen shows through above the bar. */
 html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font-family:sans-serif;color:#fff;cursor:default}
+/* Over LG's Home, which webOS 11 keeps drawn under an overlay: black, as webOS 5 leaves behind it. */
+#backdrop{display:none;position:absolute;left:0;top:0;width:1920px;height:1080px;background:#000}
+#backdrop.on{display:block}
 #shade{position:absolute;left:0;right:0;bottom:0;height:460px;opacity:0;
   background:-webkit-linear-gradient(top,rgba(0,0,0,0),rgba(0,0,0,.78));background:linear-gradient(to bottom,rgba(0,0,0,0),rgba(0,0,0,.78));
   -webkit-transition:opacity .18s ease-out;transition:opacity .18s ease-out}
@@ -39,6 +42,16 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
   -webkit-transition:-webkit-transform .1s ease-out;transition:transform .1s ease-out}
 .tile.input{width:300px;padding:0 22px;text-align:left}
 .tile.focus{background:#fff;color:#111;border-color:#fff;-webkit-transform:scale(1.07);transform:scale(1.07)}
+/*
+ * An icon that is a symbol on a clear ground takes the tile's colour as its
+ * name does, so it never vanishes into the tile: a light one, as several of
+ * LG's own are (Apps, Notifications, Sports on a C2), turns dark on the white
+ * tile in focus, and a dark one (AirPlay on a B8) light on the dark tiles.
+ * Which icons are which is worked out once, as each is kept (toneIcon), never
+ * as the focus moves.
+ */
+.tile.focus.lite .ico{-webkit-filter:brightness(.07);filter:brightness(.07)}
+.tile.dark:not(.focus) .ico{-webkit-filter:invert(1) brightness(.78);filter:invert(1) brightness(.78)}
 .ico{display:block;width:112px;height:112px;margin:0 auto 14px;border-radius:20px;background:#333 center/contain no-repeat}
 img.ico{background:none;object-fit:contain}
 .ico.letter{line-height:112px;font-size:52px;font-weight:600;color:#fff;background:#3a3a3a}
@@ -60,6 +73,7 @@ img.ico{background:none;object-fit:contain}
 </style>
 </head>
 <body>
+<div id="backdrop"></div>
 <div id="shade"></div>
 <div id="clock"></div>
 <div id="bar"><div id="row"></div></div>
@@ -137,7 +151,7 @@ img.ico{background:none;object-fit:contain}
     visibleSince = 0;
     clearInterval(clockTimer);
     document.body.className = '';
-    closeTimer = setTimeout(function () { closeTimer = null; window.close(); }, 160);
+    closeTimer = setTimeout(function () { closeTimer = null; $('backdrop').className = ''; window.close(); }, 160);
   }
 
   function pad(n) { return n < 10 ? '0' + n : String(n); }
@@ -194,7 +208,7 @@ img.ico{background:none;object-fit:contain}
   function tileHtml(e, i) {
     // Every input, AirPlay's among them, as an input, with its icon.
     var isDev = !!e.dev;
-    var cls = 'tile' + (isDev ? ' input' : '') + (i === focus ? ' focus' : '') +
+    var cls = 'tile' + (isDev ? ' input' : '') + (!isDev && e.icon && iconTone[e.icon] ? ' ' + iconTone[e.icon] : '') + (i === focus ? ' focus' : '') +
       (e.kind === 'input' && e.port && e.port === onPort ? ' now' : '');
     if (isDev) {
       var sub = e.kind === 'input' ? 'HDMI ' + e.port
@@ -351,6 +365,53 @@ img.ico{background:none;object-fit:contain}
       if (text.length <= ICON_CACHE_MAX) window.localStorage.setItem(ICON_CACHE, text);
     } catch (e) {}
   }
+  /*
+   * Each kept icon's tone, kept beside the icons: 'lite' for a light symbol
+   * on a clear ground, 'dark' for a dark one, where most of a 24 px copy is
+   * clear and what is not is near white or near black. '' for any other,
+   * such as an icon that fills its square.
+   */
+  var TONE_CACHE = 'glasshouse.homebar.iconTones';
+  var iconTone = {};
+  try { iconTone = JSON.parse(window.localStorage.getItem(TONE_CACHE) || '{}') || {}; } catch (e) { iconTone = {}; }
+  function saveTones() {
+    try { window.localStorage.setItem(TONE_CACHE, JSON.stringify(iconTone)); } catch (e) {}
+  }
+  function toneIcon(url, data) {
+    var img = new Image();
+    img.onload = function () {
+      var tone;
+      try {
+        var c = document.createElement('canvas');
+        c.width = c.height = 24;
+        var g = c.getContext('2d');
+        g.drawImage(img, 0, 0, 24, 24);
+        var d = g.getImageData(0, 0, 24, 24).data, clear = 0, n = 0, lum = 0;
+        for (var i = 0; i < d.length; i += 4) {
+          if (d[i + 3] < 128) { clear++; continue; }
+          n++;
+          lum += 0.2126 * d[i] + 0.7152 * d[i + 1] + 0.0722 * d[i + 2];
+        }
+        tone = clear < 24 * 24 * 0.3 || !n ? '' : lum / n > 200 ? 'lite' : lum / n < 60 ? 'dark' : '';
+      } catch (e) { return; }
+      if (iconTone[url] === tone) return;
+      iconTone[url] = tone;
+      saveTones();
+      markTone(url, tone);
+    };
+    img.src = data;
+  }
+  // The tiles showing an icon, once its tone is known.
+  function markTone(url, tone) {
+    var tiles = $('row').querySelectorAll('.tile');
+    for (var k = 0; k < tiles.length; k++) {
+      var e = list[+tiles[k].getAttribute('data-i')];
+      if (!e || e.dev || e.icon !== url) continue;
+      var cls = tiles[k].className.replace(/ (lite|dark)\b/g, '');
+      if (tone) cls = cls.replace(/^tile/, 'tile ' + tone);
+      if (tiles[k].className !== cls) tiles[k].className = cls;
+    }
+  }
   function keepIcon(url) {
     if (!window.FileReader) return;
     var x = new XMLHttpRequest();
@@ -360,9 +421,14 @@ img.ico{background:none;object-fit:contain}
       if (x.status !== 200 || !x.response) return;
       var r = new FileReader();
       r.onload = function () {
-        if (typeof r.result !== 'string' || r.result.indexOf('data:image/') !== 0 || iconData[url] === r.result) return;
+        if (typeof r.result !== 'string' || r.result.indexOf('data:image/') !== 0) return;
+        if (iconData[url] === r.result) {
+          if (!iconTone.hasOwnProperty(url)) toneIcon(url, r.result);
+          return;
+        }
         iconData[url] = r.result;
         saveIcons();
+        toneIcon(url, r.result);
       };
       r.readAsDataURL(x.response);
     };
@@ -378,6 +444,11 @@ img.ico{background:none;object-fit:contain}
       if (iconData.hasOwnProperty(url) && !used[url]) { delete iconData[url]; dropped = true; }
     }
     if (dropped) saveIcons();
+    var toneDropped = false;
+    for (var t in iconTone) {
+      if (iconTone.hasOwnProperty(t) && !used[t]) { delete iconTone[t]; toneDropped = true; }
+    }
+    if (toneDropped) saveTones();
     items.forEach(function (e) {
       if (e.icon && !warmed[e.icon + '#kept']) { warmed[e.icon + '#kept'] = true; keepIcon(e.icon); }
     });
@@ -444,6 +515,8 @@ img.ico{background:none;object-fit:contain}
     if (labelsChanged) scrollTo();
   }
   function openWindow() {
+    // Where LG's Home stays drawn under the bar (webOS 11), the server says so and the bar covers it.
+    if (document.body.className !== 'on') getJson(BASE + '/api/home/bar-open', function (j) { if (j && j.lgHomeUnder === true) $('backdrop').className = 'on'; });
     tick();
     clearInterval(clockTimer);
     clockTimer = setInterval(tick, 10000);

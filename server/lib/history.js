@@ -465,6 +465,7 @@ module.exports = {
   localNow: localNow,
   watched: watched,
   current: function () { return running && current ? current.key : null; },
+  titleOf: titleOf,
   status: status,
   observe: observe,
   keyFor: keyFor,

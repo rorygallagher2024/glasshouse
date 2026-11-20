@@ -57,6 +57,7 @@ var GLASSHOUSE = {
   },
   ntp: { server: isString, port: isPort, enabled: isBool },
   history: { enabled: isBool },
+  screenGlow: { allowed: isBool },
   backup: { daily: isBool },
   screenTime: screentime.VALID,
   prometheus: { enabled: isBool },

@@ -15,17 +15,25 @@
 <header>
   <div class="src now">
     <div class="st" id="state"><i></i><span>&mdash;</span></div>
-    <div class="t" id="source">&mdash;</div>
+    <button type="button" class="t src-btn" id="source" aria-haspopup="true" aria-expanded="false" onclick="toggleSourceMenu(event)">&mdash;</button>
+    <div class="src-menu" id="source-menu" role="menu" aria-label="Switch input" data-t-aria-label="header.switchInput" hidden></div>
     <div class="stream-info">
       <div class="stream-primary num" id="stream-primary">&mdash;</div>
     </div>
   </div>
   <div class="hdr-status">
-    <!-- The remote at any time (#1586). The volume is on the Control tab and in the remote itself. -->
-    <button type="button" class="hdr-remote" id="hdr-remote" onclick="openRemote()">
-      <svg class="hdr-remote-ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="2.5" width="8" height="19" rx="3"/><circle cx="12" cy="8" r="1.6"/><path d="M10.5 13h3M10.5 16h3"/></svg>
-      <span class="hdr-remote-label" data-t="header.remote">Remote</span>
-    </button>
+    <!-- The remote at any time (#1586), with a live volume/mute badge beside it. -->
+    <div class="hdr-actions">
+      <button type="button" class="hdr-vol num" id="hdr-vol" aria-label="Mute" data-t-aria-label="ctl.mute" hidden>
+        <span class="hdr-vol-fill" id="hdr-vol-fill"></span>
+        <svg class="hdr-vol-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path class="vol-waves" d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11"/><path class="vol-x" d="M16 9.5l5 5M21 9.5l-5 5"/></svg>
+        <span class="hdr-vol-val" id="hdr-vol-val">&mdash;</span>
+      </button>
+      <button type="button" class="hdr-remote" id="hdr-remote" onclick="openRemote()">
+        <svg class="hdr-remote-ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="2.5" width="8" height="19" rx="3"/><circle cx="12" cy="8" r="1.6"/><path d="M10.5 13h3M10.5 16h3"/></svg>
+        <span class="hdr-remote-label" data-t="header.remote">Remote</span>
+      </button>
+    </div>
     <div class="hdr-line" id="hdr-sleep" hidden></div>
   </div>
 </header>
@@ -82,7 +90,6 @@
     <button type="button" role="tab" data-tab="ambient" id="tab-btn-ambient" hidden><svg class="nav-ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="7" width="12" height="10" rx="1.5"/><path d="M3 8v8M21 8v8M8 4h8M8 20h8"/></svg><span data-t="adv.ambient">Ambient Light</span></button>
     <button type="button" role="tab" data-tab="privacy"><svg class="nav-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l7 3v5.5c0 4.4-3 8-7 9.5-4-1.5-7-5.1-7-9.5V6z"/></svg><span data-t="tab.privacy">Privacy</span></button>
     <button type="button" role="tab" data-tab="advanced"><svg class="nav-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg><span data-t="tab.system">System</span></button>
-    <button type="button" role="tab" data-tab="servicemenu" id="tab-btn-servicemenu" hidden><svg class="nav-ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 9h6M9 13h6M9 17h3"/></svg><span data-t="tab.serviceMenu">Service menu</span></button>
     <div class="nav-grp" role="presentation" translate="no">Glasshouse</div>
     <button type="button" role="tab" data-tab="mqtt"><svg class="nav-ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="6" cy="12" r="2.2"/><circle cx="18" cy="6" r="2.2"/><circle cx="18" cy="18" r="2.2"/><path d="M8 11l8-4M8 13l8 4"/></svg><span translate="no">HA &amp; MQTT</span></button>
     <button type="button" role="tab" data-tab="server"><svg class="nav-ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="7" rx="1.5"/><rect x="4" y="13" width="16" height="7" rx="1.5"/><path d="M8 7.5h.01M8 16.5h.01"/></svg><span data-t="tab.server">Server</span></button>
@@ -110,6 +117,14 @@
           <div class="theme-seg" role="group" aria-label="Sidebar" data-t-aria-label="server.sidebar.group">
             <button type="button" data-sidebar-set="show" data-t="server.sidebar.show">Show</button><button type="button"
               data-sidebar-set="hide" data-t="server.sidebar.hide">Hide</button>
+          </div>
+        </div>
+        <!-- Shown where the Server tab allows the glow; glow.js. -->
+        <div class="nav-pref-grp" id="nav-pref-glow" hidden>
+          <div class="nav-pref-lbl" data-t="server.glow.title">Screen glow</div>
+          <div class="theme-seg" role="group" aria-label="Screen glow" data-t-aria-label="server.glow.title">
+            <button type="button" data-glow-set="off" data-t="common.off">Off</button><button type="button"
+              data-glow-set="on" data-t="common.on">On</button>
           </div>
         </div>
         <div class="nav-pref-grp">
@@ -145,8 +160,16 @@
 </div>
 
 <main id="panels">
-<section class="panel" id="tab-metrics" role="tabpanel" hidden>
-  <div class="col-telemetry">
+<section class="panel" id="tab-metrics" role="tabpanel" data-metrics-view="overview" hidden>
+  <div class="catalog-seg home-subnav metrics-subnav" id="metrics-subnav" role="tablist">
+    <button type="button" class="home-sub-btn on" data-metrics-view="overview" aria-pressed="true" onclick="setMetricsSubView('overview')" data-t="pv.overview">Overview</button>
+    <button type="button" class="home-sub-btn" data-metrics-view="performance" aria-pressed="false" onclick="setMetricsSubView('performance')" data-t="metrics.performance">Performance</button>
+    <button type="button" class="home-sub-btn" data-metrics-view="storage" aria-pressed="false" onclick="setMetricsSubView('storage')" data-t="metrics.storage">Storage</button>
+    <button type="button" class="home-sub-btn" data-metrics-view="hdmi" aria-pressed="false" onclick="setMetricsSubView('hdmi')" translate="no">HDMI</button>
+    <button type="button" class="home-sub-btn" id="metrics-sub-watch" data-metrics-view="watch" aria-pressed="false" onclick="setMetricsSubView('watch')" hidden data-t="metrics.watch">Watch time</button>
+    <button type="button" class="home-sub-btn" data-metrics-view="advanced" aria-pressed="false" onclick="setMetricsSubView('advanced')" data-t="metrics.systemInfo">System info</button>
+  </div>
+  <div class="col-telemetry" id="metrics-overview" data-metrics-sub="overview">
     <div class="col-sec" data-t="metrics.system">System</div>
 
     <div class="grp-sec first" id="tempblock" data-col="0">
@@ -171,7 +194,7 @@
       <section class="readouts" id="readouts"></section>
     </div>
 
-    <div class="grp-sec" id="luxblock" data-col="2" hidden>
+    <div class="grp-sec" id="luxblock" data-col="1" hidden>
       <div class="grp" data-t="metrics.ambient">Ambient</div>
       <div class="lbl" data-t="metrics.roomLight">Room light</div>
       <div class="v num" id="lux">&mdash;</div>
@@ -199,7 +222,7 @@
       </div>
     </div>
 
-    <div class="grp-sec" id="remoteblock" data-col="2" hidden>
+    <div class="grp-sec" id="remoteblock" data-col="1" hidden>
       <div class="grp"><span data-t="metrics.remote">Magic remote</span><span class="pill idle" id="remote-pill" data-t="metrics.remote.standby">Standby</span></div>
       <div>
         <div class="lbl" data-t="metrics.battery">Battery</div>
@@ -214,78 +237,130 @@
       </div>
     </div>
 
-    <div class="grp-sec" id="hdmiblock" data-col="2">
-      <div class="grp"><span translate="no">HDMI</span><span class="cur" id="hdmi-cur"></span></div>
+  </div>
+
+  <div class="metrics-watch-view" id="watchblock" data-metrics-sub="watch" hidden>
+    <div class="grp" data-t="metrics.watch">Watch time</div>
+    <div class="watch-totals">
+      <div><div class="lbl" data-t="metrics.watch.today">Today</div><div class="uptime-val num" id="watch-today">&mdash;</div></div>
+      <div><div class="lbl" data-t="metrics.watch.week">7 days</div><div class="uptime-val num" id="watch-week">&mdash;</div></div>
+      <div><div class="lbl" data-t="metrics.watch.month">30 days</div><div class="uptime-val num" id="watch-month">&mdash;</div></div>
+    </div>
+    <div class="watch-split">
+      <div class="watch-chart-col">
+        <div class="watch-bars" id="watch-bars" role="img" aria-label="Hours watched each day for the last 14 days" data-t-aria-label="metrics.watch.bars"></div>
+      </div>
+      <div class="watch-list-col">
+        <div id="watch-list"></div>
+        <div class="sub" id="watch-note" hidden></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="metrics-perf-view" id="perfblock" data-metrics-sub="performance">
+    <div class="perf-head">
+      <div class="catalog-seg perf-range" id="perf-range" role="group" aria-label="Time range" data-t-aria-label="metrics.perf.range">
+        <button type="button" class="home-sub-btn on" data-range="5m" aria-pressed="true" data-t="metrics.perf.5m">5 min</button>
+        <button type="button" class="home-sub-btn" data-range="1h" aria-pressed="false" data-t="metrics.perf.1h">1 hour</button>
+        <button type="button" class="home-sub-btn" data-range="24h" aria-pressed="false" data-t="metrics.perf.24h">24 hours</button>
+      </div>
+      <div class="perf-note" id="perf-note"></div>
+    </div>
+    <div class="perf-grid">
+      <section class="perf-card perf-wide" id="perf-cpu" aria-labelledby="perf-cpu-h">
+        <div class="perf-top">
+          <div>
+            <div class="grp" id="perf-cpu-h" data-t="metrics.processor">Processor</div>
+            <div class="perf-big num"><span id="perf-cpu-now">&mdash;</span><small>%</small></div>
+            <div class="perf-sub" id="perf-cpu-sub"></div>
+          </div>
+          <div class="perf-legend" id="perf-cpu-legend"></div>
+        </div>
+        <div class="perf-cpu-body">
+          <div class="perf-chart-wrap"><div class="perf-chart" id="perf-cpu-chart"></div><div class="perf-events" id="perf-events"></div></div>
+          <div class="perf-cores-wrap">
+            <div class="perf-cores" id="perf-cores" role="img"></div>
+            <div class="perf-cores-cap" data-t="metrics.perf.perCore">Per core</div>
+          </div>
+        </div>
+      </section>
+      <section class="perf-card" id="perf-mem" aria-labelledby="perf-mem-h">
+        <div class="perf-top">
+          <div>
+            <div class="grp" id="perf-mem-h" data-t="metrics.memory">Memory</div>
+            <div class="perf-big num"><span id="perf-mem-now">&mdash;</span><small>%</small></div>
+            <div class="perf-sub" id="perf-mem-sub"></div>
+          </div>
+          <div class="perf-legend" id="perf-mem-legend"></div>
+        </div>
+        <div class="perf-chart" id="perf-mem-chart"></div>
+      </section>
+      <section class="perf-card" id="perf-net" aria-labelledby="perf-net-h">
+        <div class="perf-top">
+          <div>
+            <div class="grp" id="perf-net-h" data-t="metrics.network">Network</div>
+            <div class="perf-big num" id="perf-net-now">&mdash;</div>
+            <div class="perf-sub" id="perf-net-sub"></div>
+          </div>
+          <div class="perf-legend" id="perf-net-legend"></div>
+        </div>
+        <div class="perf-chart" id="perf-net-chart"></div>
+      </section>
+      <section class="perf-card" id="perf-temp" aria-labelledby="perf-temp-h" hidden>
+        <div class="perf-top">
+          <div>
+            <div class="grp" id="perf-temp-h" data-t="metrics.temperature">Temperature</div>
+            <div class="perf-big num"><span id="perf-temp-now">&mdash;</span><small>&deg;</small></div>
+            <div class="perf-sub" id="perf-temp-sub"></div>
+          </div>
+        </div>
+        <div class="perf-chart" id="perf-temp-chart"></div>
+      </section>
+      <div class="perf-card metrics-adv-sec" id="disc-proc">
+        <div class="grp"><span data-t="metrics.processMemory">Process memory</span><span class="cur" id="proc-cur"></span></div>
+        <div id="proc-list"></div>
+      </div>
+      <div class="perf-card metrics-adv-sec" id="disc-cpu">
+        <div class="grp"><span data-t="metrics.cpuDetail">Detailed CPU usage</span><span class="cur" id="cpu-cur"></span></div>
+        <div id="cpu-list"></div>
+      </div>
+    </div>
+  </div>
+  <div class="metrics-stor-view" id="storblock" data-metrics-sub="storage">
+    <div class="perf-head">
+      <div class="perf-note" id="stor-note"></div>
+      <div class="catalog-seg"><button type="button" class="home-sub-btn" id="stor-rescan" data-t="metrics.stor.rescan">Look again</button></div>
+    </div>
+    <div class="stor-vols" id="stor-vols"></div>
+    <div class="perf-grid">
+      <div class="perf-card perf-wide">
+        <div class="perf-top">
+          <div>
+            <div class="grp" data-t="metrics.stor.mapTitle">What is using it</div>
+            <nav class="stor-crumbs" id="stor-crumbs" aria-label="Folder" data-t-aria-label="metrics.stor.folder"></nav>
+          </div>
+          <div class="perf-legend" id="stor-legend"></div>
+        </div>
+        <div class="stor-map" id="stor-map"></div>
+        <div class="stor-hint" data-t="metrics.stor.hint">Select a block to look inside it.</div>
+      </div>
+      <div class="perf-card perf-wide">
+        <div class="perf-top"><div class="grp" data-t="metrics.stor.appsTitle">Apps by space used</div></div>
+        <ol class="stor-apps" id="stor-apps"></ol>
+        <button type="button" class="home-sub-btn stor-apps-more" id="stor-apps-more" hidden></button>
+      </div>
+    </div>
+  </div>
+  <div class="metrics-hdmi-view" id="hdmiview" data-metrics-sub="hdmi">
+    <div class="grp-sec hdmi-ports-sec" id="hdmiblock">
+      <div class="grp"><span data-t="metrics.hdmiv.ports">Ports</span><span class="cur" id="hdmi-cur"></span></div>
       <div class="ports" id="hdmi-grid"></div>
       <div class="sub" id="hdmi-diag-row" hidden style="margin-top:12px;line-height:1.5"></div>
     </div>
-
-    <div class="grp-sec" id="watchblock" data-col="1" hidden>
-      <div class="grp" data-t="metrics.watch">Watch time</div>
-      <div class="watch-totals">
-        <div><div class="lbl" data-t="metrics.watch.today">Today</div><div class="uptime-val num" id="watch-today">&mdash;</div></div>
-        <div><div class="lbl" data-t="metrics.watch.week">7 days</div><div class="uptime-val num" id="watch-week">&mdash;</div></div>
-        <div><div class="lbl" data-t="metrics.watch.month">30 days</div><div class="uptime-val num" id="watch-month">&mdash;</div></div>
-      </div>
-      <div class="watch-bars" id="watch-bars" role="img" aria-label="Hours watched each day for the last 14 days" data-t-aria-label="metrics.watch.bars"></div>
-      <div id="watch-list"></div>
-      <div class="sub" id="watch-note" hidden></div>
-    </div>
-
-    <div class="grp-sec" id="advblock" data-col="1">
-      <div class="grp" data-t="tab.advanced">Advanced</div>
-      <details class="disc" id="disc-hwinfo" hidden style="border-top:0;margin-top:0">
-      <summary data-t="metrics.systemInfo">System info</summary>
-      <div class="prot-table" id="hw-specs">
-        <div class="prot-row" id="spec-os-item" hidden>
-          <div class="prot-main">
-            <div class="prot-title" translate="no">webOS</div>
-            <div class="prot-desc" data-t="metrics.webos.desc">Operating system release version</div>
-          </div>
-          <div class="prot-status"><span class="pill idle" id="spec-os">&mdash;</span></div>
-        </div>
-        <div class="prot-row" id="spec-fw-item" hidden>
-          <div class="prot-main">
-            <div class="prot-title" data-t="metrics.firmware">Firmware</div>
-            <div class="prot-desc" data-t="metrics.firmware.desc">TV software build version</div>
-          </div>
-          <div class="prot-status"><span class="pill idle" id="spec-fw">&mdash;</span></div>
-        </div>
-        <div class="prot-row" id="spec-arch-item" hidden>
-          <div class="prot-main">
-            <div class="prot-title" data-t="metrics.processor">Processor</div>
-            <div class="prot-desc" data-t="metrics.processor.desc">SoC platform and generation</div>
-          </div>
-          <div class="prot-status"><span class="pill idle" id="spec-arch">&mdash;</span></div>
-        </div>
-        <div class="prot-row" id="spec-silicon-item" hidden>
-          <div class="prot-main">
-            <div class="prot-title" data-t="metrics.oledCell">OLED Cell</div>
-            <div class="prot-desc" data-t="metrics.oledCell.desc">Panel silicon cell identifier</div>
-          </div>
-          <div class="prot-status"><span class="pill idle" id="spec-silicon">&mdash;</span></div>
-        </div>
-        <div class="prot-row" id="spec-tcon-item" hidden>
-          <div class="prot-main">
-            <div class="prot-title" data-t="metrics.tcon">TCON Firmware</div>
-            <div class="prot-desc" data-t="metrics.tcon.desc">Timing controller driving the panel</div>
-          </div>
-          <div class="prot-status"><span class="pill idle" id="spec-tcon">&mdash;</span></div>
-        </div>
-      </div>
-    </details>
-
-
-      <details class="disc" id="disc-proc">
-      <summary><span data-t="metrics.processMemory">Process memory</span> <span class="cur" id="proc-cur"></span></summary>
-      <div id="proc-list"></div>
-    </details>
-
-      <details class="disc" id="disc-cpu">
-      <summary><span data-t="metrics.cpuDetail">Detailed CPU usage</span> <span class="cur" id="cpu-cur"></span></summary>
-      <div id="cpu-list"></div>
-    </details>
-    </div>
+    <div class="perf-grid hdmi-links" id="hdmi-links"></div>
+  </div>
+  <div class="metrics-adv-view" id="advblock" data-metrics-sub="advanced">
+    <div class="metrics-adv-cols si-cols" id="sysinfo"></div>
   </div>
 
 </section>
@@ -551,17 +626,6 @@
   </div>
 </section>
 
-<section class="priv panel" id="svcpane" role="tabpanel" hidden>
-  <div id="svc-rows"></div>
-
-  <div class="oled-warn" data-t="svc.warn">
-    The service menu is LG's own engineering menu. It can change panel
-    calibration and hardware settings that the normal menus deliberately keep
-    out of reach, and some of them are not easy to put back. Opening it asks for
-    the PIN on the TV.
-  </div>
-</section>
-
 <section class="priv panel" id="oledpane" role="tabpanel" hidden>
   <div class="oled-split">
     <div class="oled-wear">
@@ -570,7 +634,7 @@
       <div class="n num" style="margin-top:10px"><span id="oc-hours">&mdash;</span><em data-t="oled.hoursUnit">hours</em></div>
       <div class="cols" style="margin-top:22px">
         <div>
-          <div class="lbl" data-t="oled.compIn">Panel maintenance in</div>
+          <div class="lbl" data-t="oled.compIn">Maintenance in</div>
           <div class="v num" id="oc-comp">&mdash;</div>
           <div class="track oc-track" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"><b id="oc-comp-bar" style="width:0%"></b></div>
           <div class="sub" id="oc-comp-sub">&mdash;</div>
@@ -626,6 +690,7 @@
   <div class="err-note" id="pic-error" role="alert" hidden></div>
   <div class="pic-now" id="pic-now" hidden>
     <div class="pic-now-main">
+      <div class="lbl pic-kicker" data-t="srv.lgs.pictureMode">Picture mode</div>
       <div class="pic-mode" id="pic-mode" role="status">&mdash;</div>
       <div class="pic-scope" id="pic-scope"></div>
     </div>
@@ -648,6 +713,10 @@
 
 <section class="priv panel" id="audiopane" role="tabpanel" hidden>
   <div class="lbl" data-t="tab.audio">Audio</div>
+  <div class="err-note audio-error" id="audio-error" role="alert" hidden></div>
+  <div class="audio-now" id="audio-now" hidden>
+    <ol class="audio-path" id="audio-path"></ol>
+  </div>
   <div class="pv-sec" id="audio-sound-head" data-t="adv.sound">Sound</div>
   <div class="prot-table" id="audio-settings" data-reload="loadAudio"></div>
 
@@ -669,7 +738,6 @@
     <div class="err-note audio-error" id="audio-bt-error" role="alert" hidden></div>
   </div>
 
-  <div class="err-note audio-error" id="audio-error" role="alert" hidden></div>
   <details class="pv-d audio-more" id="audio-more">
   <summary><span class="audio-fold"><span data-t="audio.pathTitle">Soundbar and receiver</span><span class="pv-sub" data-t="audio.pathDesc">Whether a soundbar or receiver is connected over HDMI ARC or eARC, and which audio formats the TV and the receiver say they support. Useful when Dolby Atmos or DTS doesn’t come through.</span></span></summary>
   <div class="audio-head">
@@ -677,7 +745,6 @@
     <button type="button" class="pill idle" id="audio-refresh" onclick="loadAudio()" data-t="audio.refresh">Refresh</button>
   </div>
   <div id="audio-readings" aria-busy="true">
-    <ol class="audio-path" id="audio-path"></ol>
     <div class="audio-formats-wrap">
       <table class="audio-formats">
         <caption class="sub" data-t="audio.tableCaption">Supported formats</caption>
@@ -865,7 +932,7 @@
       </div>
       <div class="prot-status"><button type="button" class="pill idle" id="st-enabled" onclick="toggleScreenTime()">&mdash;</button></div>
     </div>
-    <div class="prot-row">
+    <div class="prot-row" id="st-daily-row" hidden>
       <div class="prot-main">
         <div class="prot-title" data-t="adv.screenTime.daily">Daily limit</div>
         <div class="prot-desc" data-t="adv.screenTime.daily.desc">The screen time allowed each day, counted from midnight on the TV’s clock.</div>
@@ -874,7 +941,7 @@
       <div class="prot-status"><select class="pill-sel" id="st-daily" aria-label="Daily limit" data-t-aria-label="adv.screenTime.daily"
         onchange="saveScreenTime({ dailyMinutes: Number(this.value) })"></select></div>
     </div>
-    <div class="prot-row">
+    <div class="prot-row" id="st-bed-row" hidden>
       <div class="prot-main">
         <div class="prot-title" data-t="adv.screenTime.bedtime">Bedtime</div>
         <div class="prot-desc" data-t="adv.screenTime.bedtime.desc">Between these two times, the TV does what is chosen below. Clearing either time turns bedtime off.</div>
@@ -884,16 +951,17 @@
           onchange="saveScreenTime({ bedtimeStart: this.value })">
         <input type="time" class="pill-sel" id="st-bed-to" aria-label="Bedtime ends" data-t-aria-label="adv.screenTime.bedtime.to"
           onchange="saveScreenTime({ bedtimeEnd: this.value })">
+        <button type="button" class="link-btn st-bed-clear" id="st-bed-clear" hidden onclick="clearBedtime()" data-t="adv.screenTime.remove">Remove</button>
       </div>
     </div>
-    <div class="prot-row">
+    <div class="prot-row" id="st-action-row" hidden>
       <div class="prot-main">
         <div class="prot-title" data-t="adv.screenTime.action">At the daily limit or bedtime</div>
       </div>
       <div class="prot-status"><select class="pill-sel" id="st-action" aria-label="At the daily limit or bedtime" data-t-aria-label="adv.screenTime.action"
         onchange="saveScreenTime({ action: this.value })"></select></div>
     </div>
-    <div class="prot-row" id="st-apps-row">
+    <div class="prot-row" id="st-apps-row" hidden>
       <div class="prot-main">
         <div class="prot-title" data-t="adv.screenTime.apps">App and input limits</div>
         <div class="prot-desc" data-t="adv.screenTime.apps.desc">Minutes a day for one app or input. Those watched in the last 30 days can be picked.</div>
@@ -902,7 +970,7 @@
         onchange="addScreenTimeApp(this.value)"></select></div>
       <div class="st-apps" id="st-apps"></div>
     </div>
-    <div class="prot-row">
+    <div class="prot-row" id="st-app-action-row" hidden>
       <div class="prot-main">
         <div class="prot-title" data-t="adv.screenTime.appAction">At an app or input’s limit</div>
       </div>
@@ -986,6 +1054,15 @@
       <div class="prot-status"><button type="button" class="pill idle" id="lt_logo" onclick="toggleLight('logoLight')">&mdash;</button></div>
     </div>
   </div>
+
+  <div class="pv-sec adv-sec" id="adv-servicemenu" data-t="tab.serviceMenu">Service menu</div>
+  <div class="oled-warn svc-warn" data-t="svc.warn">
+    The service menu is LG's own engineering menu. It can change panel
+    calibration and hardware settings that the normal menus deliberately keep
+    out of reach, and some of them are not easy to put back. Opening it asks for
+    the PIN on the TV.
+  </div>
+  <div class="prot-table" id="svc-rows"></div>
 </section>
 
 <section class="priv panel" id="sspane" role="tabpanel" hidden>
@@ -999,6 +1076,7 @@
       <div class="prot-status"><button type="button" class="pill idle" id="ss-exp-btn" onclick="toggleSsExperimental()">&mdash;</button></div>
     </div>
   </div>
+  <div class="pv-sec ss-head" data-t="ss.heading">Choose a screen saver</div>
   <div class="ss-split">
   <div id="ss-list" class="ss-list"></div>
   <div class="ss-side">
@@ -1070,13 +1148,9 @@
   </div>
 
   <div class="ss-level-row" id="ss-poweroff-row">
-    <div class="ss-level-lbl" data-t="ss.powerOff">Poweroff after</div>
-    <form class="toast-form" id="ss-poweroff-form" onsubmit="event.preventDefault();saveSsPowerOff();">
-      <input type="text" id="ss-poweroff" inputmode="numeric" maxlength="12" placeholder="Off" data-t-placeholder="common.off"
-        autocomplete="off" aria-label="Minutes of screen saver before standby" data-t-aria-label="ss.powerOff.input"
-        oninput="this.dataset.dirty='1'">
-      <button type="submit" id="ss-poweroff-save" data-t="server.port.save">Save</button>
-    </form>
+    <div class="ss-level-lbl" data-t="ss.powerOff">Power off after</div>
+    <select class="pill-sel ss-sel" id="ss-poweroff" onchange="saveSsPowerOff()"
+      aria-label="Minutes of screen saver before standby" data-t-aria-label="ss.powerOff.input"></select>
     <div class="pv-sub" id="ss-poweroff-desc"></div>
   </div>
 
@@ -1095,7 +1169,7 @@
     <details class="pv-d" id="disc-installed-apps">
       <summary><span data-t="apps.manage">Manage applications</span> <span class="cur" id="apps-installed-summary"></span></summary>
       <div class="pv-sub" data-t="apps.manage.desc">Store downloads and user-installed applications. Launch opens the application on the TV, or click Uninstall to permanently remove it and free up internal eMMC flash storage space.</div>
-      <div class="prot-table" id="apps-installed-list">
+      <div class="prot-table catalog-grid" id="apps-installed-list">
         <div class="sub" style="padding:16px 0" data-t="apps.loadingInstalled">Loading installed apps&hellip;</div>
       </div>
     </details>
@@ -1153,7 +1227,7 @@
           </div>
         </div>
       </div>
-      <div class="prot-table" id="apps-catalog-list">
+      <div id="apps-catalog-list">
         <div class="sub" style="padding:16px 0" data-t="apps.install.loading">Loading the catalog&hellip;</div>
       </div>
     </details>
@@ -1175,7 +1249,7 @@
         <input type="search" id="others-search" placeholder="Search apps" data-t-placeholder="apps.install.search" maxlength="60"
           autocomplete="off" spellcheck="false" oninput="renderOtherCatalogs()">
       </form>
-      <div class="prot-table" id="apps-others-list"></div>
+      <div id="apps-others-list"></div>
     </details>
     <details class="pv-d" id="disc-sideload-apps">
       <summary><span data-t="apps.sideload.heading">Install app from a URL or file</span> <span class="cur" id="apps-sideload-summary"></span></summary>
@@ -1297,17 +1371,16 @@
 
 <section class="priv panel" id="remotepane" role="tabpanel" hidden>
   <div class="lbl" data-t="tab.remote">Remote</div>
-  <div class="pv-sub apps-grp-d" data-t="apps.group.launch.desc">What the remote&rsquo;s keys open.</div>
 
   <details class="pv-d" id="disc-quickaccess" open hidden>
     <summary><span data-t="apps.quickAccess">Quick Access</span> <span class="cur" id="apps-qa-summary"></span></summary>
-    <div class="pv-sub" data-t="apps.quickAccess.desc">Holding a number key on the remote opens the app or input set for it. A change here applies on the TV straight away.</div>
+    <div class="pv-sub" data-t="apps.quickAccess.desc">Holding a number key on the remote opens the app or input set for it.</div>
     <div id="apps-qa-list"></div>
   </details>
 
   <details class="pv-d" id="disc-remotekeys" open hidden>
     <summary><span data-t="apps.remoteKeys">Remote keys</span> <span class="cur" id="apps-rk-summary"></span></summary>
-    <div class="pv-sub" data-t="apps.remoteKeys.desc">What a key on the remote does: as LG has it, nothing, or opening an app or input instead. A change applies straight away and lasts across reboots. A key set here is taken before any app sees it, so an app that uses the key itself, such as YouTube with Guide, no longer gets it. The keys listed are the ones this TV handles; a given remote may not have them all.</div>
+    <div class="pv-sub" data-t="apps.remoteKeys.desc">What a key on the remote does: as LG has it, nothing, or opening an app or input instead.</div>
     <div id="apps-rk-list"></div>
   </details>
 </section>
@@ -1371,7 +1444,13 @@
        own options while it is on, LG's Home's layout while that is, and system apps -->
   <div id="home-custom" hidden>
   <div class="pv-sec" data-t="home.customisation">Home customisation</div>
-  <div class="home-group" id="home-g-start">
+  <div class="catalog-seg home-subnav" id="home-subnav" role="group" aria-label="Home sections" data-t-aria-label="home.sub.label" hidden>
+    <button type="button" class="on" data-home-view="rows" onclick="setHomeSubView('rows')" data-t="home.sub.rows">Rows &amp; tiles</button>
+    <button type="button" data-home-view="appearance" onclick="setHomeSubView('appearance')" data-t="home.sub.appearance">Appearance &amp; wallpaper</button>
+    <button type="button" data-home-view="behavior" onclick="setHomeSubView('behavior')" data-t="home.sub.behavior">Behavior &amp; startup</button>
+    <button type="button" data-home-view="iptv" onclick="setHomeSubView('iptv')" data-t="home.sub.iptv">Internet TV</button>
+  </div>
+  <div class="home-group" id="home-g-start" data-home-sub="behavior">
   <div class="pv-g" data-t="home.group.start">Starting up</div>
   <div class="prot-table home-custom-table">
     <div class="prot-row" id="home-autolaunch-row" hidden>
@@ -1391,7 +1470,7 @@
     </div>
   </div>
   </div>
-  <div class="home-group" id="home-g-layout">
+  <div class="home-group" id="home-g-layout" data-home-sub="rows">
   <div class="pv-g" data-t="home.group.layout">Layout</div>
   <div class="prot-table home-custom-table">
     <div class="prot-row home-gh-row" id="home-alternative-row" hidden>
@@ -1410,7 +1489,7 @@
     </div>
   </div>
   </div>
-  <div class="home-group" id="home-g-shown">
+  <div class="home-group" id="home-g-shown" data-home-sub="behavior">
   <div class="pv-g" data-t="home.group.shown">Shown on Home</div>
   <div class="prot-table home-custom-table">
     <div class="prot-row home-gh-row home-show-row" hidden>
@@ -1444,6 +1523,89 @@
     </div>
     <div class="prot-row home-gh-row home-show-row" hidden>
       <div class="prot-main">
+        <div class="prot-title" data-t="home.appCards">Apps as cards</div>
+        <div class="prot-desc" data-t="home.appCardsDesc">Wide black cards with a logo on each, rather than square icons. To add or change an app’s logo, click its card under Rows and tiles; an app without one shows its own icon on the card.</div>
+      </div>
+      <div class="prot-status"><button type="button" class="pill idle" id="home-app-cards" onclick="homeOptIn('appCards')">&mdash;</button></div>
+    </div>
+    <div class="prot-row home-gh-row home-show-row" hidden>
+      <div class="prot-main">
+        <div class="prot-title" data-t="home.cardFade">Card transparency</div>
+        <div class="prot-desc" data-t="home.cardFadeDesc">How see-through the cards not in focus are. Solid shows them all at full strength.</div>
+      </div>
+      <div class="prot-status"><select class="pill-sel" id="home-card-fade-sel" onchange="homeCardFade(this.value)" aria-label="Card transparency" data-t-aria-label="home.cardFade">
+        <option value="0" data-t="home.cardFade.solid">Solid</option>
+        <option value="10">10%</option>
+        <option value="20">20%</option>
+        <option value="30">30%</option>
+        <option value="40">40%</option>
+        <option value="50">50%</option>
+        <option value="60">60%</option>
+        <option value="70">70%</option>
+        <option value="80">80%</option>
+        <option value="90">90%</option>
+      </select></div>
+    </div>
+    <div class="prot-row home-gh-row home-show-row" hidden>
+      <div class="prot-main">
+        <div class="prot-title" data-t="home.focusPulse">Pulse on the app in focus</div>
+        <div class="prot-desc" data-t="home.focusPulseDesc">The ring around the app you are on breathes, with a soft glow, in Home’s accent colour.</div>
+      </div>
+      <div class="prot-status"><button type="button" class="pill idle" id="home-focus-pulse" onclick="homeOptIn('focusPulse')">&mdash;</button></div>
+    </div>
+    <div class="prot-row home-gh-row home-show-row" hidden>
+      <div class="prot-main">
+        <div class="prot-title" data-t="home.navSound">Sound when moving</div>
+        <div class="prot-desc" data-t="home.navSoundDesc">A sound each time you move between tiles: a click, a softer rollover, or a sound of your own.</div>
+        <div class="prot-desc home-sound-own" id="home-nav-sound-own" hidden>
+          <span id="home-nav-sound-note" role="status"></span>
+          <button type="button" class="pill idle" id="home-nav-sound-upload" onclick="q('home-nav-sound-file').click()" data-t="home.navSound.upload">Upload a sound</button>
+          <button type="button" class="pill idle" id="home-nav-sound-remove" onclick="homeNavSoundRemove()" data-t="home.cardIconRemove">Remove</button>
+        </div>
+        <input type="file" id="home-nav-sound-file" accept=".ogg,.wav,.mp3,audio/ogg,audio/wav,audio/mpeg" hidden onchange="homeNavSoundPicked(this)">
+      </div>
+      <div class="prot-status home-sound-ctl">
+        <button type="button" class="pill idle home-sound-play" id="home-nav-sound-play" onclick="homeNavSoundPlay()" aria-label="Play" data-t-aria-label="home.navSound.play" title="Play" data-t-title="home.navSound.play">&#9654;</button>
+        <select class="pill-sel" id="home-nav-sound-sel" onchange="homeNavSound(this.value)" aria-label="Sound when moving" data-t-aria-label="home.navSound">
+        <option value="off" data-t="home.navSound.off">Off</option>
+        <option value="click" data-t="home.navSound.click">Click</option>
+        <option value="rollover" data-t="home.navSound.rollover">Rollover</option>
+        <option value="own" data-t="home.navSound.own">Your own</option>
+      </select></div>
+    </div>
+    <input type="file" id="home-card-icon-file" accept="image/png,image/jpeg,image/webp,image/svg+xml" hidden onchange="homeCardIconPicked(this)">
+    <div id="home-card-modal" class="modal-backdrop" hidden onclick="if(event.target===this)homeCardIconClose()" onkeydown="if(event.key==='Escape')homeCardIconClose()">
+      <div class="modal-card home-card-modal" role="dialog" aria-modal="true" aria-labelledby="home-card-modal-title">
+        <div class="home-card-modal-head">
+          <div class="home-card-modal-title" id="home-card-modal-title">&mdash;</div>
+          <button type="button" class="pill idle" id="home-card-modal-close" onclick="homeCardIconClose()" data-t="home.cardIconDoneBtn">Done</button>
+        </div>
+        <div class="home-card-modal-preview" id="home-card-modal-preview" onclick="homeCardIconUpload()"
+          ondragover="event.preventDefault();this.classList.add('drag')" ondragleave="this.classList.remove('drag')" ondrop="homeCardIconDrop(event)"></div>
+        <div class="sub" id="home-card-modal-state"></div>
+        <div class="btns home-card-modal-btns">
+          <button type="button" class="on" id="home-card-modal-upload" onclick="homeCardIconUpload()"></button>
+          <button type="button" id="home-card-modal-remove" onclick="homeCardIconRemove()" data-t="home.cardIconRemove">Remove</button>
+        </div>
+        <div class="sub" id="home-card-modal-note" role="status" aria-live="polite"></div>
+        <ul class="home-card-specs">
+          <li data-t="home.cardIconSpec.shape">16:9, like the card. 640 × 360 suits it; up to 1280 × 720.</li>
+          <li data-t="home.cardIconSpec.look">The card is black: a white or full-colour logo on a transparent background looks best.</li>
+          <li data-t="home.cardIconSpec.files">PNG, JPEG, WebP or SVG up to 10 MB, or drop one on the card. Another shape is fitted whole, never cropped.</li>
+        </ul>
+        <div class="home-card-modal-pick" id="home-card-modal-pickrow">
+          <label class="sub" for="home-card-modal-pick" data-t="home.cardIconOther">Or use an icon already on the TV</label>
+          <div class="home-card-modal-pickline">
+            <input type="search" class="home-card-search" id="home-card-modal-pick" translate="no" list="home-card-icon-list" autocomplete="off"
+              aria-label="Card icon" data-t-aria-label="home.cardIconLabel" onchange="homeSetCardIcon(this)">
+            <button type="button" class="pill idle" id="home-card-modal-auto" onclick="homeSetCardIcon(null)" data-t="home.cardIconMatchBtn">Match by name</button>
+          </div>
+          <datalist id="home-card-icon-list"></datalist>
+        </div>
+      </div>
+    </div>
+    <div class="prot-row home-gh-row home-show-row" hidden>
+      <div class="prot-main">
         <div class="prot-title" data-t="home.showCec">CEC addresses</div>
         <div class="prot-desc" data-t="home.showCecDesc">On each input’s tile: the HDMI-CEC address of the device behind it.</div>
       </div>
@@ -1455,13 +1617,6 @@
         <div class="prot-desc" data-t="home.showPointerDesc">Moving the remote shows its pointer on Glasshouse Home. Off, only the arrow keys move around Home, and OK and a click both open the tile in focus.</div>
       </div>
       <div class="prot-status"><button type="button" class="pill idle" id="home-show-pointer" onclick="homeShow('showPointer')">&mdash;</button></div>
-    </div>
-    <div class="prot-row home-gh-row home-show-row" hidden>
-      <div class="prot-main">
-        <div class="prot-title" data-t="home.showTvLogos">Channel logos</div>
-        <div class="prot-desc" data-t="home.showTvLogosDescName">On Internet TV: the playlist’s logo for each channel. Off shows the channel’s name in its place.</div>
-      </div>
-      <div class="prot-status"><button type="button" class="pill idle" id="home-show-tv-logos" onclick="homeShow('showTvLogos')">&mdash;</button></div>
     </div>
     <div class="prot-row home-gh-row home-show-row" hidden>
       <div class="prot-main">
@@ -1504,7 +1659,7 @@
     </div>
   </div>
   </div>
-  <div class="home-group" id="home-g-preview">
+  <div class="home-group" id="home-g-preview" data-home-sub="behavior">
   <div class="pv-g" data-t="home.group.preview">Live preview</div>
   <div class="prot-table home-custom-table">
     <div class="prot-row home-gh-row" id="home-preview-row" hidden>
@@ -1548,7 +1703,7 @@
     </div>
   </div>
   </div>
-  <div class="home-group" id="home-g-search">
+  <div class="home-group" id="home-g-search" data-home-sub="behavior">
   <div class="pv-g" data-t="home.group.search">Search</div>
   <div class="prot-table home-custom-table">
     <div class="prot-row home-gh-row" id="home-search-row" hidden>
@@ -1562,7 +1717,7 @@
     </div>
   </div>
   </div>
-  <div class="home-group" id="home-g-motion">
+  <div class="home-group" id="home-g-motion" data-home-sub="appearance">
   <div class="pv-g" data-t="home.group.motion">Animations</div>
   <div class="prot-table home-custom-table">
     <div class="prot-row home-gh-row" id="home-fade-row" hidden>
@@ -1650,34 +1805,47 @@
   <div id="home-more">
 
   <!-- .home-arrange: also shown while a custom launcher is the TV's Home, whose apps and inputs it orders and hides -->
-  <div class="pv-g home-arrange" id="home-layout-title" data-t="home.layout">Rows and tiles</div>
-  <div class="sub home-arrange home-gh-only" data-t="home.layoutDesc">Apps and inputs come from the TV: hide the ones not wanted. Channels are only the ones added here. Holding OK on Glasshouse Home arranges the same layout on the TV.</div>
-  <div class="sub home-arrange home-bar-only" data-t="home.layoutDescBar">Which of the TV&rsquo;s apps and inputs Glasshouse Bar shows, and in what order. Apps in More apps are left out of it.</div>
-  <div class="sub home-arrange home-launcher-only" data-t="home.layoutDescLaunchers">Which of the TV&rsquo;s apps and inputs Minimal shows, and in what order. A launcher of your own follows this where it was written to.</div>
-  <div class="pv-note home-arrange" id="home-history-note" hidden data-t="home.historyNote">Apps are in LG's order. With History switched on in Advanced, new apps are placed by how much each is used.</div>
-  <div class="home-arrange" id="home-rows"></div>
-  <div id="home-recents"></div>
-  <div class="btns home-arrange" style="max-width:240px"><button type="button" id="home-reset" onclick="homeResetLayout()" data-t="home.reset">Reset the layout</button></div>
-  <div class="sub home-arrange" data-t="home.resetDesc">The rows, apps and inputs go back to their first order, with LG’s promotions hidden again. Channels stay as they are.</div>
+  <div class="pv-g home-arrange" id="home-layout-title" data-home-sub="rows" data-t="home.layout">Rows and tiles</div>
+  <div class="sub home-arrange home-gh-only" data-home-sub="rows" data-t="home.layoutDesc">Apps and inputs come from the TV: hide the ones not wanted. Channels are only the ones added here. Holding OK on Glasshouse Home arranges the same layout on the TV.</div>
+  <div class="sub home-arrange home-bar-only" data-home-sub="rows" data-t="home.layoutDescBar">Which of the TV&rsquo;s apps and inputs Glasshouse Bar shows, and in what order. Apps in More apps are left out of it.</div>
+  <div class="sub home-arrange home-launcher-only" data-home-sub="rows" data-t="home.layoutDescLaunchers">Which of the TV&rsquo;s apps and inputs Minimal shows, and in what order. A launcher of your own follows this where it was written to.</div>
+  <div class="pv-note home-arrange" id="home-history-note" data-home-sub="rows" hidden data-t="home.historyNote">Apps are in LG's order. With History switched on in Advanced, new apps are placed by how much each is used.</div>
+  <div class="home-arrange" id="home-rows" data-home-sub="rows"></div>
+  <div id="home-recents" data-home-sub="rows"></div>
+  <div class="btns home-arrange" data-home-sub="rows" style="max-width:240px"><button type="button" class="pill idle" id="home-reset" onclick="homeResetLayout()" data-t="home.reset">Reset the layout</button></div>
+  <div class="sub home-arrange" data-home-sub="rows" data-t="home.resetDesc">The rows, apps and inputs go back to their first order, with LG’s promotions hidden again. Channels stay as they are.</div>
 
-  <div class="pv-g" data-t="home.tv.title">Internet TV</div>
-  <div class="sub" data-t="home.tv.intro">Channels from your IPTV provider, in a row of their own on Glasshouse Home. Add the same M3U link or Xtream login your IPTV app uses, It is kept on the TV and never shown here again.</div>
-  <div id="home-tv"></div>
+  <div class="pv-g" data-home-sub="iptv" data-t="home.tv.title">Internet TV</div>
+  <div class="sub" data-home-sub="iptv" data-t="home.tv.intro">Channels from your IPTV provider, in a row of their own on Glasshouse Home. Add the same M3U link or Xtream login your IPTV app uses, It is kept on the TV and never shown here again.</div>
+  <div id="home-tv" data-home-sub="iptv"></div>
+  <!-- In a wrapper of its own: the table's grid rule outranks the one that
+       hides #home-more's sections for a launcher or Glasshouse Bar. -->
+  <div data-home-sub="iptv">
+    <div class="prot-table home-custom-table">
+      <div class="prot-row home-gh-row home-show-row" hidden>
+        <div class="prot-main">
+          <div class="prot-title" data-t="home.showTvLogos">Channel logos</div>
+          <div class="prot-desc" data-t="home.showTvLogosDescName">On Internet TV: the playlist’s logo for each channel. Off shows the channel’s name in its place.</div>
+        </div>
+        <div class="prot-status"><button type="button" class="pill idle" id="home-show-tv-logos" onclick="homeShow('showTvLogos')">&mdash;</button></div>
+      </div>
+    </div>
+  </div>
 
-  <div class="pv-g" data-t="home.colours.title">Colours</div>
-  <div class="sub" data-t="home.colours.desc">The text on Glasshouse Home, the highlight behind the chosen tile, and the accent that frames it and marks what was last on. The quieter text is a shade of the text colour.</div>
-  <div class="home-looks" id="home-looks"></div>
-  <div class="home-custom">
+  <div class="pv-g" data-home-sub="appearance" data-t="home.colours.title">Colours</div>
+  <div class="sub" data-home-sub="appearance" data-t="home.colours.desc">The text on Glasshouse Home, the highlight behind the chosen tile, and the accent that frames it and marks what was last on. The quieter text is a shade of the text colour.</div>
+  <div class="home-looks" id="home-looks" data-home-sub="appearance"></div>
+  <div class="home-custom" data-home-sub="appearance">
     <label><input type="color" id="home-col-text" onchange="homeCustomColours()"> <span data-t="home.colours.text">Text</span></label>
     <label><input type="color" id="home-col-accent" onchange="homeCustomColours()"> <span data-t="home.colours.accent">Accent</span></label>
     <label><input type="color" id="home-col-highlight" onchange="homeCustomHighlight()"> <span data-t="home.colours.highlight">Tile highlight</span></label>
-    <button type="button" id="home-col-reset" onclick="homeSaveLayout({ colours: homeDefaultLook(), tileHighlight: null })" data-t="home.colours.reset">Use the default colours</button>
+    <button type="button" class="pill idle" id="home-col-reset" onclick="homeSaveLayout({ colours: homeDefaultLook(), tileHighlight: null })" data-t="home.colours.reset">Use the default colours</button>
   </div>
 
-  <div class="pv-g" data-t="home.bg.title">Background</div>
-  <div class="sub" data-t="home.bg.intro">What is behind Glasshouse Home: nothing, pictures that change with the part of the day, or a moving background.</div>
-  <div class="btns wall-choice" id="home-bg-kind"></div>
-  <div id="home-bg-pictures">
+  <div class="pv-g" data-home-sub="appearance" data-t="home.bg.title">Background</div>
+  <div class="sub" data-home-sub="appearance" data-t="home.bg.intro">What is behind Glasshouse Home: nothing, pictures that change with the part of the day, or a moving background.</div>
+  <div class="btns wall-choice" id="home-bg-kind" data-home-sub="appearance"></div>
+  <div id="home-bg-pictures" data-home-sub="appearance">
     <div class="sub" id="home-wall-intro"></div>
     <div class="btns wall-choice" id="home-wall-choice"></div>
     <!-- Your own, shuffled: any number of pictures, one at a time in a random order -->
@@ -1700,7 +1868,7 @@
     </div>
     <div class="sub" id="home-wall-upload-note" role="status"></div>
   </div>
-  <div id="home-bg-animated">
+  <div id="home-bg-animated" data-home-sub="appearance">
     <div class="sub" data-t="home.animDesc">Light that moves slowly behind Glasshouse Home. It stops whenever Home is not on screen.</div>
     <div class="btns wall-choice scenes" id="home-anim-scenes"></div>
     <div id="home-anim-colours">
@@ -1712,7 +1880,7 @@
       </div>
     </div>
   </div>
-  <div id="home-bg-video" hidden>
+  <div id="home-bg-video" data-home-sub="appearance" hidden>
     <div class="sub"><span data-t="home.video.help">Links to video files, one per line, such as https://example.com/beach.mp4, or to a playlist of them. The TV streams them itself, from the internet or your own network.</span> <a href="https://rorygallagher2024.github.io/glasshouse/dashboard/home/#which-video-links-work" target="_blank" rel="noopener" data-t="home.video.docs">Which links work</a></div>
     <textarea id="home-video-urls" class="home-video-urls" rows="5" spellcheck="false" aria-label="Video URLs, one per line" data-t-aria-label="home.video.urlsLabel" oninput="homeVideoCount()"></textarea>
     <div class="wall-foot">
@@ -1720,19 +1888,21 @@
       <div class="wall-foot-btns"><button type="button" class="pill idle" id="home-video-save" onclick="homeVideoSave()">&mdash;</button></div>
     </div>
     <div class="sub" id="home-video-note" role="status"></div>
-    <div class="prot-row">
-      <div class="prot-main">
-        <div class="prot-title" data-t="home.video.shuffle">Random order</div>
-        <div class="prot-desc" data-t="home.video.shuffleHelp">Every video plays once before any plays again.</div>
+    <div class="prot-table">
+      <div class="prot-row">
+        <div class="prot-main">
+          <div class="prot-title" data-t="home.video.shuffle">Random order</div>
+          <div class="prot-desc" data-t="home.video.shuffleHelp">Every video plays once before any plays again.</div>
+        </div>
+        <div class="prot-status"><button type="button" class="pill idle" id="home-video-shuffle" onclick="homeVideoShuffle()">&mdash;</button></div>
       </div>
-      <div class="prot-status"><button type="button" class="pill idle" id="home-video-shuffle" onclick="homeVideoShuffle()">&mdash;</button></div>
-    </div>
-    <div class="prot-row">
-      <div class="prot-main">
-        <div class="prot-title" data-t="home.video.captions">Captions</div>
-        <div class="prot-desc" data-t="home.video.captionsDesc">Each scene’s name, and what is in view as it plays, where a playlist gives them; a plain video link has none. Shown on Glasshouse Home in its text colour, and on the Video screen saver, where its clock and weather are set.</div>
+      <div class="prot-row">
+        <div class="prot-main">
+          <div class="prot-title" data-t="home.video.captions">Captions</div>
+          <div class="prot-desc" data-t="home.video.captionsDesc">Each scene’s name, and what is in view as it plays, where a playlist gives them; a plain video link has none. Shown on Glasshouse Home in its text colour, and on the Video screen saver, where its clock and weather are set.</div>
+        </div>
+        <div class="prot-status"><button type="button" class="pill idle" id="home-video-show-captions" onclick="homeVideoShow('showCaptions')">&mdash;</button></div>
       </div>
-      <div class="prot-status"><button type="button" class="pill idle" id="home-video-show-captions" onclick="homeVideoShow('showCaptions')">&mdash;</button></div>
     </div>
     <div class="set"><div class="lbl" data-t="home.video.captionPosition">Captions</div>
       <div class="btns wall-choice" id="home-video-caption-position"></div>
@@ -1740,7 +1910,7 @@
       <div class="btns wall-choice" id="home-video-caption-font"></div>
     </div>
   </div>
-  <div class="set home-dark"><div class="lbl"><span data-t="home.darkening">Darkening</span> &middot; <span id="home-dark-lbl" class="num">&mdash;</span></div>
+  <div class="set home-dark" data-home-sub="appearance"><div class="lbl"><span data-t="home.darkening">Darkening</span> &middot; <span id="home-dark-lbl" class="num">&mdash;</span></div>
     <div class="sub" data-t="home.darkeningDesc">How much the wallpaper is darkened behind the clock and the rows, to keep them easy to read. Off shows the picture as it is.</div>
     <div class="vol-row">
       <div class="vol-wrap full" id="home-dark-wrap" role="group" aria-label="Darkening" data-t-aria-label="home.darkening">
@@ -1799,8 +1969,10 @@
     <div class="pv-h" data-t="pv.adid">Advertising identifier</div>
     <div class="pv-sub" data-t="pv.adid.desc">A unique ID your TV hands to advertisers so they can recognise it and
       target ads at you. Resetting it breaks the link to any profile built from past activity.</div>
-    <div id="pv-adid"></div>
-    <div id="pv-lmt"></div>
+    <div class="pv-adid-rows">
+      <div id="pv-adid"></div>
+      <div id="pv-lmt"></div>
+    </div>
     <div class="sub" id="pv-adnote" style="margin-top:8px"></div>
     <div class="btns" style="margin-top:14px;max-width:520px">
       <button id="adid-reset" onclick="privAction('resetAdId')" data-t="pv.adid.reset">Reset advertising ID</button>
@@ -1969,13 +2141,23 @@
     </div>
   </div>
 
-  <div class="cfg-toggles">
-    <button id="cfg-tls" onclick="cfgToggle('cfg-tls')" translate="no">TLS</button>
-    <button id="cfg-verify" onclick="cfgToggle('cfg-verify')" data-t="mqtt.verify">Verify certificate</button>
+  <div class="pv-table" style="margin-top:8px">
+    <div class="pv-row">
+      <div>
+        <div class="n" translate="no">TLS</div>
+        <div class="d" data-t="mqtt.tls.note">Without TLS the username and password cross the network in
+          cleartext. The config file is readable by anything with root on this TV, so use a
+          broker account restricted to these topics rather than a shared one.</div>
+      </div>
+      <button type="button" class="pill idle" id="cfg-tls" onclick="cfgToggle('cfg-tls')">&mdash;</button>
+    </div>
+    <div class="pv-row">
+      <div>
+        <div class="n" data-t="mqtt.verify">Verify certificate</div>
+      </div>
+      <button type="button" class="pill idle" id="cfg-verify" onclick="cfgToggle('cfg-verify')">&mdash;</button>
+    </div>
   </div>
-  <div class="pv-note" data-t="mqtt.tls.note">Without TLS the username and password cross the network in
-    cleartext. The config file is readable by anything with root on this TV, so use a
-    broker account restricted to these topics rather than a shared one.</div>
 
   <div class="pv-h" data-t="mqtt.topics">Topics &amp; identity</div>
   <div class="pv-sub" data-t="mqtt.topics.desc">Changing the device ID orphans any entities Home Assistant has
@@ -2052,7 +2234,7 @@
 
   <div class="ha-api-section" id="ha-api-section">
     <div class="pv-h" style="margin-top:0" data-t="ha.api">Home Assistant API</div>
-    <div class="pv-sub" data-t="ha.api.desc">Display live Home Assistant entities inside Glasshouse screen savers (such as Ambient). Connects straight to Home Assistant over HTTP/HTTPS without using MQTT, and saves without restarting.</div>
+    <div class="pv-sub" data-t="ha.api.desc">Enables the Home Assistant screen savers (Ambient and Data Display) on the Screensaver tab to show live Home Assistant entities. Connects straight to Home Assistant over HTTP/HTTPS without using MQTT, and saves without restarting.</div>
 
     <div class="cfg-cols">
       <div class="cfg-side">
@@ -2192,6 +2374,14 @@
           <button type="button" class="link-btn" id="srv-watch-clear" hidden onclick="clearWatchTime()" data-t="server.watch.clear">Clear history</button>
         </div>
         <div class="prot-status"><button type="button" class="pill idle" id="srv-watch" onclick="toggleWatchTime()">&mdash;</button></div>
+      </div>
+      <div class="prot-row">
+        <div class="prot-main">
+          <div class="prot-title" data-t="server.glow.title">Screen glow</div>
+          <div class="prot-desc" data-t="server.glow.desc">Lets a dashboard light the top of its page with the colours on the TV's screen, read every few seconds while it shows. Only the colours leave the TV, never a picture. Each browser switches the glow on under Preferences in the sidebar, or with the glow button at the foot of the page.</div>
+          <div class="prot-desc" id="srv-glow-none" hidden data-t="server.glow.none">This TV has no screen capture service, so the glow is not offered here.</div>
+        </div>
+        <div class="prot-status"><button type="button" class="pill idle" id="srv-glow" onclick="toggleScreenGlowAllowed()">&mdash;</button></div>
       </div>
       <div class="prot-row">
         <div class="prot-main">
@@ -2440,7 +2630,7 @@
 
 <footer>
   <span class="foot-tv" id="foot-tv" translate="no"></span>
-  <span class="foot-end"><span id="activity-txrx" class="activity-txrx" aria-hidden="true"><span id="act-tx" class="txrx-pip"></span><span id="act-rx" class="txrx-pip"></span></span><span id="tv-name" hidden></span><a id="version" hidden target="_blank" rel="noopener noreferrer"></a><a id="version-new" hidden target="_blank" rel="noopener noreferrer"></a><button type="button" class="theme-toggle" id="theme-toggle">☾</button></span>
+  <span class="foot-end"><span id="activity-txrx" class="activity-txrx" aria-hidden="true"><span id="act-tx" class="txrx-pip"></span><span id="act-rx" class="txrx-pip"></span></span><span id="tv-name" hidden></span><a id="version" hidden target="_blank" rel="noopener noreferrer"></a><a id="version-new" hidden target="_blank" rel="noopener noreferrer"></a><button type="button" class="theme-toggle glow-toggle" id="glow-toggle" hidden aria-pressed="false" onclick="toggleGlow()"><svg viewBox="0 0 24 24" aria-hidden="true"><circle class="glow-halo" cx="12" cy="10" r="8"/><rect x="4.5" y="9" width="15" height="9.5" rx="1.5"/></svg></button><button type="button" class="theme-toggle" id="theme-toggle">☾</button></span>
 </footer>
 
 <!-- Offered on load when "Update pop-up" is on in the Server tab; see offerUpdatePopup in ui/update.js. -->
@@ -2526,6 +2716,11 @@
 <script src="/assets/ui/bluetooth.js"></script>
 <script src="/assets/ui/picture.js"></script>
 <script src="/assets/ui/servicemenu.js"></script>
+<script src="/assets/ui/perf.js"></script>
+<script src="/assets/ui/storage.js"></script>
+<script src="/assets/ui/hdmi.js"></script>
+<script src="/assets/ui/sysinfo.js"></script>
+<script src="/assets/ui/glow.js"></script>
 <script src="/assets/ui/oled.js"></script>
 <script src="/assets/ui/screensavers.js"></script>
 <script src="/assets/ui/mqtt.js"></script>

@@ -1033,6 +1033,14 @@ function doControl(action, value, cb) {
     case 'serviceMenuOpen':
       return oled.openServiceMenu(String((value && value.menu) || 'ezAdjust'), cb);
 
+    case 'serviceMenuPin':
+      var rawPin = value && typeof value === 'object' ? value.pin : value;
+      var svcPin = String(rawPin === undefined || rawPin === null ? '0413' : rawPin).trim();
+      if (!/^\d{4,6}$/.test(svcPin)) return cb({ ok: false, error: 'invalid PIN' });
+      var pinKeys = typing.keyCodesFor(svcPin, 0);
+      if (pinKeys.error) return cb({ ok: false, error: pinKeys.error });
+      return pressKeyCodes(pinKeys.codes, cb);
+
     case 'oledProtection':
       var prot = (value && typeof value === 'object') ? value : {};
       var protKey = String(prot.key || '');
@@ -1497,6 +1505,19 @@ function doControl(action, value, cb) {
         if (err) return cb({ ok: false, error: 'could not save setting: ' + err.message });
         historyModule.setEnabled(historyOn);
         if (republishDiscoveryFn) republishDiscoveryFn();
+        cb(getUpdateSummary());
+      });
+
+    // Whether dashboards may light their page from the colours on screen.
+    case 'setScreenGlowAllowed':
+      if (!writeSettingsFn) return cb({ ok: false, error: 'settings cannot be saved' });
+      var glowOn = (value === true || value === 'on' || value === 'true');
+      return writeSettingsFn({ screenGlow: { allowed: glowOn } }, function (err) {
+        if (err) return cb({ ok: false, error: 'could not save setting: ' + err.message });
+        if (config) {
+          config.screenGlow = config.screenGlow || {};
+          config.screenGlow.allowed = glowOn;
+        }
         cb(getUpdateSummary());
       });
 

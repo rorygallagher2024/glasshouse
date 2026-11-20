@@ -88,11 +88,11 @@ This project is intended to give a rooted webOS TV a useful local control surfac
 ## Screenshots
 
 <p align="center">
-  <a href="docs/screenshots/dashboard.png"><img src="docs/screenshots/dashboard.png" alt="Metrics tab: SoC temperature, system readouts, storage, watch time, Magic Remote battery and HDMI ports, dark theme (OLED42C24LA)" width="440"></a>
+  <a href="docs/screenshots/dashboard.png"><img src="docs/screenshots/dashboard.png" alt="Metrics tab: SoC temperature, system readouts, storage and Magic Remote battery, dark theme, with the screen glow on (OLED42C24LA)" width="440"></a>
   &nbsp;
-  <a href="docs/screenshots/dashboard-light.png"><img src="docs/screenshots/dashboard-light.png" alt="Control tab: panel, source, volume, playback, sleep timer and power, light theme (OLED42C24LA)" width="440"></a>
+  <a href="docs/screenshots/dashboard-light.png"><img src="docs/screenshots/dashboard-light.png" alt="Control tab: panel, source, volume, playback, sleep timer and power, light theme, with the screen glow on (OLED42C24LA)" width="440"></a>
   <br>
-  <sub>Metrics and Control tabs, shown in dark and light themes.</sub>
+  <sub>Metrics and Control tabs, shown in dark and light themes, with the <a href="https://rorygallagher2024.github.io/glasshouse/dashboard/#screen-glow">screen glow</a> taking its colours from the TV.</sub>
 </p>
 
 [More screenshots](https://rorygallagher2024.github.io/glasshouse/#screenshots), including Home Assistant.

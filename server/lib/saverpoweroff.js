@@ -20,6 +20,14 @@ var later = function (fn, ms) {
   return function () { clearTimeout(timer); };
 };
 var listening = false;
+/*
+ * A screen saver Glasshouse launched itself, with tvpower left Active: on a
+ * G3 (webOS 10.3) the TV ends a video screen saver it started as the video
+ * begins, and lib/screensavers launches it again that way.
+ */
+var launchedShowing = function () { return false; };
+/** @type {function(function(boolean): void): void} */
+var launchedRunning = function (cb) { cb(false); };
 // The wait under way: { minutes, since, cancel }.
 var pending = null;
 
@@ -53,7 +61,7 @@ function powerState() {
 }
 
 function inScreenSaver(state) {
-  return !!state && power.isScreenSaver(power.mapState(state));
+  return (!!state && power.isScreenSaver(power.mapState(state))) || !!launchedShowing();
 }
 
 function cancel() {
@@ -68,9 +76,14 @@ function fire(wait) {
   var n = wait.minutes;
   // The state is read again: the change that ended the screen saver may still be on its way.
   if (!inScreenSaver(powerState()) || minutes() !== n) return;
-  console.log('saver-poweroff: screen saver on for ' + n + ' min, switching the TV off');
-  control('powerOff', null, function (r) {
-    if (!r || !r.ok) console.error('saver-poweroff: powerOff failed: ' + ((r && r.error) || 'no answer'));
+  var tvs = power.isScreenSaver(power.mapState(powerState()));
+  // One launched directly is known closed only a poll later: sam is asked.
+  (tvs ? function (cb) { cb(true); } : launchedRunning)(function (showing) {
+    if (!showing) return;
+    console.log('saver-poweroff: screen saver on for ' + n + ' min, switching the TV off');
+    control('powerOff', null, function (r) {
+      if (!r || !r.ok) console.error('saver-poweroff: powerOff failed: ' + ((r && r.error) || 'no answer'));
+    });
   });
 }
 
@@ -101,6 +114,11 @@ function start() {
   assess(powerState());
 }
 
+// A screen saver launched directly opened or closed.
+function launchedChanged() {
+  assess(powerState());
+}
+
 function stop() {
   cancel();
 }
@@ -119,6 +137,8 @@ function status() {
  * @param {any} [opts.liveState] state.init()'s result
  * @param {function(string, any, function(any): void): void} opts.control controls.doControl
  * @param {function(function(): void, number): function(): void} [opts.later] for tests
+ * @param {function(): boolean} [opts.launchedShowing] screensavers.launchedShowing
+ * @param {function(function(boolean): void): void} [opts.launchedRunning] screensavers.launchedRunning
  */
 function init(opts) {
   stop();
@@ -127,6 +147,8 @@ function init(opts) {
   liveState = opts.liveState || null;
   control = opts.control;
   if (opts.later) later = opts.later;
+  launchedShowing = opts.launchedShowing || function () { return false; };
+  launchedRunning = opts.launchedRunning || function (cb) { cb(false); };
 }
 
 module.exports = {
@@ -137,5 +159,6 @@ module.exports = {
   start: start,
   stop: stop,
   apply: apply,
+  launchedChanged: launchedChanged,
   status: status
 };

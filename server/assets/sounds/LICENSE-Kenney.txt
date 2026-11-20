@@ -1,0 +1,5 @@
+click.wav (click5.wav) and rollover.wav (rollover2.wav) are from "UI SFX Set"
+(UI Audio) by Kenney Vleugels, www.kenney.nl.
+
+License: Creative Commons Zero, CC0
+http://creativecommons.org/publicdomain/zero/1.0/

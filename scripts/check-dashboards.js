@@ -914,6 +914,7 @@ async function visitHomeRemoteBatterySetting(browser, base, problems) {
     });
     try {
       await page.goto(base + '/?tab=home');
+      await page.locator('#home-subnav button[data-home-view="behavior"]').click();
       // Weather's row, beside it, shows once the tab has drawn.
       await page.waitForFunction(() => { const s = document.getElementById('home-weather-sel'); return s && s.offsetParent; });
       const sel = page.locator('#home-remote-battery-sel');
@@ -962,6 +963,7 @@ async function visitHomeWeatherSetting(browser, base, problems) {
   });
   try {
     await page.goto(base + '/?tab=home');
+    await page.locator('#home-subnav button[data-home-view="behavior"]').click();
     const sel = page.locator('#home-weather-sel');
     await page.waitForFunction(() => { const s = document.getElementById('home-weather-sel'); return s && !s.disabled && s.offsetParent; });
     if (await sel.inputValue() !== 'ha') fail('the source read ' + await sel.inputValue() + ' for Home Assistant');
@@ -2601,6 +2603,7 @@ async function visitHomeEditor(browser, base, problems) {
     if (JSON.stringify(saves[saves.length - 1]) !== JSON.stringify({ appNames: { one: 'Custom One' } })) {
       problems.push('Home editor: renaming an app did not save appNames: ' + JSON.stringify(saves[saves.length - 1]));
     }
+    await page.locator('#home-subnav button[data-home-view="behavior"]').click();
     const labelSave = page.waitForResponse(r => new URL(r.url()).pathname === '/api/home/layout');
     await page.locator('#home-show-app-labels').click();
     await labelSave;
@@ -2667,6 +2670,7 @@ async function visitHomeUploads(browser, base, problems) {
   try {
     await page.goto(base + '/?tab=home');
     await page.waitForFunction(() => typeof homeStatus !== 'undefined' && homeStatus && homeCat);
+    await page.locator('#home-subnav button[data-home-view="appearance"]').click();
     // With None chosen, the pictures' settings are not shown; Pictures shows
     // the sets, without Black, which None is.
     await page.waitForSelector('#home-bg-kind button');
@@ -2684,6 +2688,7 @@ async function visitHomeUploads(browser, base, problems) {
     await (await chooser).setFiles(path.join(ASSETS, 'dashboard-app/assets/icon130.png'));
     await sent;
     await observer.goto(base + '/?tab=home');
+    await observer.locator('#home-subnav button[data-home-view="appearance"]').click();
     await card(observer, 'morning').locator('.wall-sending').waitFor();
     if (!await card(observer, 'evening').locator('.wall-screen').isDisabled()) problems.push('Home uploads: another tab did not show the pending upload');
     release();
@@ -2767,6 +2772,7 @@ async function visitHomeShuffle(browser, base, problems) {
   try {
     await page.goto(base + '/?tab=home');
     await page.waitForFunction(() => typeof homeStatus !== 'undefined' && homeStatus && homeCat);
+    await page.locator('#home-subnav button[data-home-view="appearance"]').click();
     await page.locator('#home-wall-choice button', { hasText: 'Your own, shuffled' }).click();
     await page.waitForSelector('#home-shuffle-add:not(:disabled)');
     if (await page.locator('#home-walls').isVisible()) problems.push('Home shuffle: the times of day showed with the collection chosen');
@@ -3040,6 +3046,9 @@ async function visitHomeAvailability(browser, base, problems) {
       if (c.glasshouse && !st.enabled && await page.locator('#home-state-desc').isVisible()) {
         fail('the state description showed with LG Home selected');
       }
+      if (c.glasshouse && st.enabled && (c.previewOptions !== undefined || st.homeAutoLaunch !== undefined)) {
+        await page.locator('#home-subnav button[data-home-view="behavior"]').click();
+      }
       if (c.previewOptions !== undefined) {
         for (const id of ['#home-preview-sound-row', '#home-preview-always-row', '#home-preview-tile-row']) {
           if (await page.locator(id).isVisible() !== c.previewOptions) fail(id + ' ' + (c.previewOptions ? 'missing' : 'shown'));
@@ -3171,6 +3180,43 @@ async function visitHomeReadiness(browser, base, problems) {
     await page.waitForSelector('.tile');
     await page.waitForTimeout(100);
     if (beats !== 1) problems.push('Home readiness: delayed first render did not immediately send a heartbeat');
+  } finally { await page.close(); }
+}
+
+// The key that ends the screen saver reaches Home before its heartbeat hears
+// the screen saver has gone: it only wakes the screen. Back then opened Recents.
+async function visitHomeSaverWake(browser, base, problems) {
+  const page = await browser.newPage({ viewport: { width: 1920, height: 1080 } });
+  page.on('pageerror', e => problems.push('Home saver wake: ' + e.message));
+  let saver = true, beats = 0;
+  const reply = (route, body) => route.fulfill({ contentType: 'application/json', body: JSON.stringify(body) });
+  await page.route('**/api/home/**', route => {
+    const pathname = new URL(route.request().url()).pathname;
+    if (pathname === '/api/home/catalogue') return reply(route, {
+      ok: true, apps: [], devices: [], channels: [], sources: {}, order: { app: ['lg-home'], dev: [], ch: [] },
+      layout: { rows: ['app', 'dev', 'ch'], hidden: { app: [], dev: [], ch: [] }, channels: [], hintSeen: true, searchHintSeen: true }
+    });
+    if (pathname === '/api/home/beat') { beats++; return reply(route, { ok: true, covered: saver, saver, build: 'one' }); }
+    if (pathname === '/api/home/recents') return reply(route, { ok: true, apps: [] });
+    return reply(route, { ok: true, kind: null, build: 'one' });
+  });
+  const back = () => page.evaluate(() => {
+    for (const type of ['keydown', 'keyup']) document.dispatchEvent(new KeyboardEvent(type, { keyCode: 461 }));
+  });
+  try {
+    await page.goto(base + '/assets/home.html');
+    await page.waitForSelector('#rows .tile');
+    await page.waitForFunction(() => document.documentElement.classList.contains('resting'));
+    saver = false;
+    const heard = beats;
+    await back();
+    await waitUntil(page, () => beats > heard, 300);
+    if (beats === heard) problems.push('Home saver wake: the waking key did not ask at once whether the screen saver had gone');
+    await page.waitForFunction(() => !document.documentElement.classList.contains('resting'));
+    if (await page.locator('#stage.recents').count()) problems.push('Home saver wake: Back ending the screen saver opened Recents');
+    await back();
+    try { await page.waitForSelector('#stage.recents', { timeout: 5000 }); }
+    catch (e) { problems.push('Home saver wake: Back after the screen saver did not open Recents'); }
   } finally { await page.close(); }
 }
 
@@ -3782,6 +3828,17 @@ async function visitHomeInternetTv(browser, base, problems) {
     await key(33);
     await waitUntil(page, async () => await guideRow() === '0');
     if (await guideRow() !== '0') fail('Channel up did not turn the guide back a page');
+    // A channel picked in the guide: Back goes back to the guide, on it.
+    await key(40);
+    await waitUntil(page, async () => await guideRow() === '1');
+    const picked = streams.length;
+    await key(13);
+    await waitUntil(page, () => streams.length > picked);
+    if (streams[streams.length - 1] !== 'x2') fail('OK in the guide did not play the channel');
+    await key(461);
+    try { await page.waitForSelector('#stage.guiding #gBody .gr.focus', { timeout: 3000 }); }
+    catch (e) { fail('Back from a channel picked in the guide did not go back to the guide'); }
+    if (await guideRow() !== '1') fail('Back to the guide was not on the channel picked there');
     await key(461);
     await page.waitForTimeout(200);
     if (/guiding/.test(await page.locator('#stage').getAttribute('class'))) fail('Back did not close the guide');
@@ -4660,7 +4717,7 @@ function groups(web, tv) {
       visits: [visitTvDashboard, visitTvAudio, visitTvPictureWrites, visitPictureUnavailable, visitTvNonOled, visitTvHuesync] },
     { job: 'home', tabs: [], visits: [visitHomePicture, visitHomePreview, visitHomePreviewOptions, visitHomePreviewWebos4, visitHomePreviewSize, visitHomePreviewSizeDetails, visitInputBarBehindHome, visitInputBarSwitchOnOk, visitHomeBarPrewarm, visitHomeBarIconsReady, visitHomeBarTiles, visitHomeBarBesideHome, visitHomeBarScroll, visitHomeUpDown, visitHomePointerOff, visitHomeOrder, visitHomeAvailability, visitHomeSearch, visitHomeWeather, visitHomeWeatherSetting, visitHomeRemoteBattery, visitHomeRemoteBatterySetting] },
     { job: 'home', tabs: [], visits: [visitHomeArrangement, visitHomeVisibility, visitHomeColours, visitHomeInputsEditor, visitHomeEditor,
-      visitHomeRecentsHidden, visitHomeUploads, visitHomeShuffle, visitHomeLauncher, visitHomeReadiness, visitAudioOverride, visitHomeRecents, visitHomeGuide,
+      visitHomeRecentsHidden, visitHomeSaverWake, visitHomeUploads, visitHomeShuffle, visitHomeLauncher, visitHomeReadiness, visitAudioOverride, visitHomeRecents, visitHomeGuide,
       visitHomeFadeAndInputs] },
     { job: 'home', tabs: [], visits: [visitHomeInternetTv, visitIptvChannels] },
     /*
