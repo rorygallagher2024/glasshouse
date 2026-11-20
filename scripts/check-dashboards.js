@@ -3783,6 +3783,11 @@ async function visitHomeInternetTv(browser, base, problems) {
     for (const code of list) for (const type of ['keydown', 'keyup']) document.dispatchEvent(new KeyboardEvent(type, { keyCode: code, bubbles: true }));
   }, codes);
   const key = code => keys([code]);
+  // Back closes the band if it is up, then the player: the band shows itself on each channel change.
+  const leavePlayer = async () => {
+    if (/band/.test(await page.locator('#player').getAttribute('class'))) await key(461);
+    await key(461);
+  };
   const playing = () => page.locator('#pvVideo').dispatchEvent('playing');
   const fillsTile = () => page.evaluate(() => {
     const tile = document.querySelector('.row.active .tile.focus'), pv = document.getElementById('preview');
@@ -3824,7 +3829,7 @@ async function visitHomeInternetTv(browser, base, problems) {
     const pendingOutput = page.waitForRequest(r => new URL(r.url()).pathname === '/api/iptv/output');
     await key(405);
     await pendingOutput;
-    await key(461);
+    await leavePlayer();
     await page.waitForFunction(() => !!document.getElementById('pvVideo').getAttribute('src'));
     await playing();
     await key(13);
@@ -3837,9 +3842,23 @@ async function visitHomeInternetTv(browser, base, problems) {
     if (streams.length !== beforeLate) fail('a late format save reopened a player that had been left');
     holdOutput = false;
 
+    // OK shows and hides the band, whichever it was.
+    const bandUp = async () => /band/.test(await page.locator('#player').getAttribute('class'));
+    const wasUp = await bandUp();
     await key(13);
+    await page.waitForSelector(wasUp ? '#player:not(.band)' : '#player.band');
+    if (/list/.test(await page.locator('#player').getAttribute('class'))) fail('OK in the player opened the channel list, not the band');
+    await key(13);
+    await page.waitForSelector(wasUp ? '#player.band' : '#player:not(.band)');
+    if (await bandUp()) await key(13);
+    await page.waitForSelector('#player:not(.band)');
+    await key(37);
     await page.waitForSelector('#player.list');
-    if (!/list/.test(await page.locator('#player').getAttribute('class'))) fail('OK in the player did not open the channel list');
+    if (/band/.test(await page.locator('#player').getAttribute('class'))) fail('the band came up with the channel list');
+    await key(39);
+    await page.waitForSelector('#player:not(.list)');
+    await key(37);
+    await page.waitForSelector('#player.list');
     const releasedBefore = await page.evaluate(() => window.released);
     await key(40);
     await key(13);
@@ -3849,6 +3868,10 @@ async function visitHomeInternetTv(browser, base, problems) {
     const asked = trace.lastIndexOf('request x2'), playedNext = trace.lastIndexOf('play http://s.test/x2.m3u8');
     const releasedAt = trace.slice(0, asked).lastIndexOf('release'), lastOld = trace.slice(0, asked).lastIndexOf('play http://s.test/x1.m3u8');
     if (!(releasedAt > lastOld && asked > releasedAt && playedNext > asked)) fail('the channel change did not release, then ask, then play: ' + trace.slice(-6).join(', '));
+    await page.waitForSelector('#player.band');
+    await key(461);
+    await page.waitForSelector('#player:not(.band)');
+    if (!/playing/.test(await page.locator('#stage').getAttribute('class'))) fail('Back with the band up left the player');
     await key(461);
     await page.waitForTimeout(300);
     if (/playing/.test(await page.locator('#stage').getAttribute('class'))) fail('Back did not close the player');
@@ -3863,7 +3886,7 @@ async function visitHomeInternetTv(browser, base, problems) {
     await page.waitForTimeout(1500);
     if (streams.length !== before + 1) fail('OK during the preview\'s dwell opened ' + (streams.length - before) + ' streams');
     if (!/full/.test(await page.locator('#preview').getAttribute('class'))) fail('a late preview timer took the player\'s picture back');
-    await key(461);
+    await leavePlayer();
     await page.waitForTimeout(300);
     await key(457);
     await page.waitForSelector('#guide .gc b');
@@ -3882,7 +3905,7 @@ async function visitHomeInternetTv(browser, base, problems) {
     await key(13);
     await waitUntil(page, () => streams.length > picked);
     if (streams[streams.length - 1] !== 'x2') fail('OK in the guide did not play the channel');
-    await key(461);
+    await leavePlayer();
     try { await page.waitForSelector('#stage.guiding #gBody .gr.focus', { timeout: 3000 }); }
     catch (e) { fail('Back from a channel picked in the guide did not go back to the guide'); }
     if (await guideRow() !== '1') fail('Back to the guide was not on the channel picked there');
@@ -3911,7 +3934,7 @@ async function visitHomeInternetTv(browser, base, problems) {
     const full = await page.locator('#preview').boundingBox();
     if (!full || full.width < 1900 || full.height < 1060) fail('the tile preview did not fill the screen');
     if (streams.length !== beforeTile) fail('opening the tile preview reopened its stream');
-    await key(461);
+    await leavePlayer();
     await waitUntil(page, fillsTile);
     if (!await fillsTile()) fail('Back did not return the stream to its tile');
     if (streams.length !== beforeTile) fail('returning to the tile reopened its stream');

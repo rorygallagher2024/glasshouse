@@ -590,17 +590,22 @@ html.resting #wall .layer{-webkit-animation-play-state:paused;animation-play-sta
 #clGroup{font-family:'Outfit',sans-serif;font-size:44px;font-weight:300;letter-spacing:-.4px;overflow:hidden;text-overflow:ellipsis;min-width:0}
 #clCount{margin-left:22px;font-size:23px;color:#a39d93;-webkit-flex:0 0 auto;flex:0 0 auto}
 #clCount i{font-style:normal;color:#6b665e;margin:0 10px}
-#clWrap{position:absolute;left:100px;right:44px;top:170px;bottom:300px;overflow:hidden;padding:6px 12px}
+#clWrap{position:absolute;left:100px;right:44px;top:170px;bottom:70px;overflow:hidden;padding:6px 12px}
 #clItems{-webkit-transition:-webkit-transform .2s cubic-bezier(.2,.7,.2,1);transition:transform .2s cubic-bezier(.2,.7,.2,1)}
 .cl{position:relative;display:-webkit-flex;display:flex;-webkit-align-items:center;align-items:center;height:112px;padding:0 20px;margin-bottom:6px;
-  border-radius:6px;outline:2px solid transparent;opacity:.72}
-.cl.focus{background:rgba(20,19,16,.86);outline-color:#ece7df;opacity:1}
-.cl .glyph{-webkit-flex:0 0 auto;flex:0 0 auto;width:96px;height:34px;display:-webkit-flex;display:flex;-webkit-align-items:flex-end;align-items:flex-end;overflow:hidden}
-.cl .glyph img{display:block;max-width:84px;max-height:34px}
+  border-radius:6px;opacity:.72}
+/* The frame is drawn apart so it can fade to the right, as the list's own background does. */
+.cl:after{content:"";position:absolute;left:0;top:0;right:0;bottom:0;border-radius:6px;outline:2px solid transparent;outline-offset:-2px;pointer-events:none;
+  -webkit-mask-image:linear-gradient(90deg,#000 0,#000 55%,transparent 100%);mask-image:linear-gradient(90deg,#000 0,#000 55%,transparent 100%);
+  -webkit-transition:outline-color .12s;transition:outline-color .12s}
+.cl.focus{opacity:1}
+.cl.focus:after{outline-color:#ece7df}
+.cl .glyph{-webkit-flex:0 0 auto;flex:0 0 auto;width:104px;height:46px;margin-right:2px;display:-webkit-flex;display:flex;-webkit-align-items:center;align-items:center;overflow:hidden}
+.cl .glyph img{display:block;max-width:92px;max-height:46px}
 .cl .n{-webkit-flex:0 0 auto;flex:0 0 auto;width:56px;font-family:'Outfit',sans-serif;font-size:30px;font-weight:300;color:#a39d93}
 .cl .c{-webkit-flex:1 1 auto;flex:1 1 auto;min-width:0}
-.cl .nm{font-size:25px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.cl .pg{font-size:21px;color:#a39d93;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cl .nm{font-size:25px;line-height:30px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cl .pg{font-size:21px;line-height:25px;color:#a39d93;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .cl .bar{height:2px;background:#2a2825;margin-top:10px}
 .cl .bar i{display:block;height:100%;background:#a39d93}
 .cl.focus .bar i{background:#ece7df}
@@ -627,11 +632,12 @@ html.resting #wall .layer{-webkit-animation-play-state:paused;animation-play-sta
 .gr.focus .gnm{color:#ece7df}
 .gr .gnm em{font-style:normal;color:#6b665e;margin-right:12px;font-variant-numeric:tabular-nums}
 .gr .lane{position:relative;-webkit-flex:1 1 auto;flex:1 1 auto;overflow:hidden}
-.gc{position:absolute;top:5px;bottom:5px;padding:9px 14px 0;background:#100f0d;border-radius:4px;overflow:hidden;outline:2px solid transparent;outline-offset:-2px;white-space:nowrap}
+.gc{position:absolute;top:5px;bottom:5px;padding:9px 14px 0;background:#100f0d;border-radius:4px;overflow:hidden;outline:2px solid transparent;outline-offset:-2px;white-space:nowrap;
+  -webkit-transition:background-color .12s,outline-color .12s;transition:background-color .12s,outline-color .12s}
 .gc.past{background:#080807}
 .gc.past b{color:#6b665e}
 .gc.live{background:#1a1814}
-.gc.focus{background:#24211b;outline-color:#ece7df}
+.gc.focus{background:rgba(20,19,16,.86);outline-color:#ece7df}
 .gc b{display:block;font-size:21px;font-weight:600;overflow:hidden;text-overflow:ellipsis}
 .gc i{display:block;font-style:normal;font-size:17px;color:#6b665e;margin-top:3px;overflow:hidden;text-overflow:ellipsis}
 .gc.none b{font-weight:400;color:#6b665e}
@@ -1742,7 +1748,8 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
 
   /*
    * The Magic Remote's wheel scrolls the row under the pointer, or the row in
-   * focus, a tile a notch. Older engines only fire mousewheel, whose
+   * focus, a tile a notch. In the guide and the player's channel list it moves
+   * the focus a row a notch. Older engines only fire mousewheel, whose
    * wheelDelta has the opposite sign to deltaY.
    */
   function onWheel(e) {
@@ -1751,6 +1758,9 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     var d = e.deltaY !== undefined ? e.deltaY : -e.wheelDelta;
     if (e.deltaX && Math.abs(e.deltaX) > Math.abs(d || 0)) d = e.deltaX;
     if (!d) return;
+    // In the guide and the player's channel list a notch is Down or Up.
+    if (guide.open) return guideKey(d > 0 ? KEY.down : KEY.up);
+    if (player.open) return player.list ? playerKey(d > 0 ? KEY.down : KEY.up) : undefined;
     var key = hoverKey || (recents.open ? 'recents' : rowKey());
     var m = measure(key), tile = m && m.track.querySelector('.tile');
     if (!tile) return;
@@ -2190,7 +2200,8 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
   /*
    * The sound as focus moves (layout navSound, lib/home navSoundFile), loaded
    * at the first move after it is chosen. The context is made then too, as
-   * that follows a key.
+   * that follows a key. It plays whenever focus lands on another tile, from a
+   * key or from the Magic Remote's pointer.
    */
   var navAudio = null, navBuffer = null, navBufferFor = '';
   // key: the sound's name, and for the own sound its revision, so one replaced is loaded again.
@@ -3336,13 +3347,21 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
   }
 
   function showBand(stay) {
+    if (player.list) return;
     renderBand();
-    $('player').className = 'band' + (player.list ? ' list' : '');
+    $('player').className = 'band';
     clearTimeout(player.bandTimer);
     if (stay && (player.failed || tvStream.paused || tvStream.seekTarget !== null)) return;
     player.bandTimer = setTimeout(function () {
-      if (player.open) $('player').className = player.list ? 'list' : '';
+      if (player.open && !player.list) $('player').className = '';
     }, BAND_MS);
+  }
+
+  function toggleBand() {
+    if (/\bband\b/.test($('player').className)) {
+      clearTimeout(player.bandTimer);
+      $('player').className = '';
+    } else showBand();
   }
 
   function renderBand() {
@@ -3563,8 +3582,9 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     player.lcol = Math.max(0, indexIn(groupItems(), playerChannel().id));
     player.list = true;
     renderList();
-    $('player').className = 'list band';
-    showBand();
+    // The band and the list are not shown together.
+    clearTimeout(player.bandTimer);
+    $('player').className = 'list';
     listIdle();
   }
 
@@ -3579,8 +3599,8 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     player.listTimer = setTimeout(function () { if (player.open && player.list) closeList(); }, LIST_IDLE_MS);
   }
 
-  // A section can hold hundreds of channels: only those near the focus are drawn.
-  var LIST_WINDOW = 40;
+  // Seven channels are drawn, the focus on the middle one. At either end of the section the list stops and the focus moves instead.
+  var LIST_ROWS = 7, LIST_MIDDLE = 3;
   function renderList() {
     var list = groupItems(), g = player.groups[player.group];
     $('clGroup').textContent = sectionName(g);
@@ -3588,8 +3608,8 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
       esc(list.length === 1 ? t('home.tv.oneChannel', '1 channel') : t('home.tv.channels', '{n} channels', { n: list.length })) +
       (player.groups.length > 1 ? '<i>›</i>' : '');
     var html = '', on = playerChannel();
-    var from = Math.max(0, Math.min(player.lcol - 12, list.length - LIST_WINDOW));
-    list.slice(from, from + LIST_WINDOW).forEach(function (it, n) {
+    var from = Math.max(0, Math.min(player.lcol - LIST_MIDDLE, list.length - LIST_ROWS));
+    list.slice(from, from + LIST_ROWS).forEach(function (it, n) {
       var i = from + n, now = tvNow(it.id);
       html += '<div class="cl' + (i === player.lcol ? ' focus' : '') + (on && it.id === on.id ? ' on' : '') + '" data-l="' + i + '">' +
         '<div class="glyph">' + glyphHtml(it) + '</div><div class="n">' + esc(it.number || String(indexIn(player.items, it.id) + 1)) + '</div>' +
@@ -3598,10 +3618,6 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     });
     $('clItems').innerHTML = html;
     wireGlyphs($('clItems'));
-    var row = $('clItems').children[player.lcol - from];
-    var view = $('clWrap').clientHeight - 12;
-    var y = row ? Math.max(0, row.offsetTop + row.offsetHeight - view) : 0;
-    $('clItems').style.webkitTransform = $('clItems').style.transform = 'translateY(' + (-y) + 'px)';
   }
 
   function clearDigits() {
@@ -3642,11 +3658,20 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     if (k === KEY.back) {
       if (player.digits) return clearDigits();
       if (player.list) return closeList();
+      // Back closes the band as it closes the list, and leaves for Home only with neither open.
+      if (/\bband\b/.test($('player').className)) return toggleBand();
       if (tsBehindLive()) return askLive();
       return closePlayer(true);
     }
     if (k >= 48 && k <= 57) return digit(k - 48);
     if (k >= 96 && k <= 105) return digit(k - 96);
+    if ((k === KEY.chUp || k === KEY.chDown) && player.list && player.groups.length > 1) {
+      listIdle();
+      player.group = (player.group + (k === KEY.chUp ? 1 : -1) + player.groups.length) % player.groups.length;
+      player.lcol = 0;
+      navTick();
+      return renderList();
+    }
     if (k === KEY.chUp) return zapTo(player.idx + 1);
     if (k === KEY.chDown) return zapTo(player.idx - 1);
     if (k === KEY.info) return showBand();
@@ -3657,29 +3682,30 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     if (k === KEY.yellow && !player.list && tvStream.switchable && tvStream.item === playerChannel()) return switchFormat();
     if (player.list) {
       listIdle();
-      var list = groupItems();
+      var list = groupItems(), listAt = player.group + '|' + player.lcol;
       if (k === KEY.up) player.lcol = Math.max(0, player.lcol - 1);
       else if (k === KEY.down) player.lcol = Math.min(list.length - 1, player.lcol + 1);
-      else if ((k === KEY.left || k === KEY.right) && player.groups.length > 1) {
-        player.group = (player.group + (k === KEY.left ? -1 : 1) + player.groups.length) % player.groups.length;
-        player.lcol = 0;
-      } else if (k === KEY.ok) {
+      else if (k === KEY.right) return closeList();
+      else if (k === KEY.ok) {
         var pick = list[player.lcol];
         if (pick && pick.id !== playerChannel().id) { closeList(); return zapTo(indexIn(player.items, pick.id)); }
         return closeList();
       }
+      if (player.group + '|' + player.lcol !== listAt) navTick();
       return renderList();
     }
     if (k === KEY.ok) {
       if (player.failed) { showBand(); return startPlayerStream(); }
-      return openList();
+      // OK shows and hides the band. A recording keeps Left and Right for seeking, so its list is on OK.
+      if (tsCanSeek()) return openList();
+      return toggleBand();
     }
     // Up and down change channel, as channel up and down do.
     if (k === KEY.up) return zapTo(player.idx + 1);
     if (k === KEY.down) return zapTo(player.idx - 1);
     // In a recording, left and right go back and forward; OK opens the list.
     if ((k === KEY.left || k === KEY.right) && tsCanSeek()) return tsSeek(k === KEY.left ? TS_STEP_S : -TS_STEP_S);
-    if (k === KEY.left || k === KEY.right) return openList();
+    if (k === KEY.left) return openList();
   }
 
   function otherFormat() { return tvStream.format === 'MPEG-TS' ? 'HLS' : 'MPEG-TS'; }
@@ -3702,6 +3728,21 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     });
   }
 
+  // The channel list's row under the pointer is the focus.
+  function playerPointer(target) {
+    if (!player.list) return;
+    var row = target;
+    while (row && row !== document.body && !(row.className && /\bcl\b/.test(row.className))) row = row.parentNode;
+    if (!row || row === document.body || +row.getAttribute('data-l') === player.lcol) return;
+    // Only the focus mark moves: drawing the list again would scroll it from under the pointer.
+    var rows = $('clItems').children;
+    for (var i = 0; i < rows.length; i++) rows[i].className = rows[i].className.replace(/ ?\bfocus\b/, '');
+    row.className += ' focus';
+    player.lcol = +row.getAttribute('data-l');
+    navTick();
+    listIdle();
+  }
+
   function playerClick(target) {
     var row = target;
     while (row && row !== document.body && !(row.className && /\bcl\b/.test(row.className))) row = row.parentNode;
@@ -3709,9 +3750,10 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
       player.lcol = +row.getAttribute('data-l');
       return playerKey(KEY.ok);
     }
-    if (player.list) return closeList();
+    // With the list open, a click off its rows is OK on the focused channel: the remote's OK arrives as a click wherever the pointer rests, after the wheel moved the focus.
+    if (player.list) return playerKey(KEY.ok);
     if (player.failed) return startPlayerStream();
-    openList();
+    playerKey(KEY.ok);
   }
 
   // ---------------------------------------------------------------- guide
@@ -3854,7 +3896,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     var tabs = $('gTabs');
     tabs.className = guide.tabs ? 'focus' : '';
     tabs.innerHTML = guide.groups.map(function (g, i) {
-      return '<span' + (i === guide.group ? ' class="on"' : '') + '>' + esc(i === 0 ? t('home.tv.guideAll', 'All') : g === '*' ? t('home.tv.guideFavourites', 'Favourites') : sectionName(g)) + '</span>';
+      return '<span data-gt="' + i + '"' + (i === guide.group ? ' class="on"' : '') + '>' + esc(i === 0 ? t('home.tv.guideAll', 'All') : g === '*' ? t('home.tv.guideFavourites', 'Favourites') : sectionName(g)) + '</span>';
     }).join('');
     // A lineup of many sections runs past the edge: the chosen tab is kept in view.
     var onTab = tabs.children[guide.group];
@@ -3925,21 +3967,40 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     guide.start = Math.max(min, Math.min(max, guide.start + ms));
   }
 
+  // The sound as the guide's focus moves: a row, a programme, a tab or the hours shown.
+  function guidePlace() { return [guide.row, guide.at, guide.group, guide.tabs, guide.start].join('|'); }
+
+  function guideSetGroup(i) {
+    guide.group = i;
+    guide.list = guideTabList(guide.groups[i]);
+    guide.row = 0;
+    guide.top = 0;
+  }
+
+  // The tab under the pointer, if it is on the tabs.
+  function guideTabAt(target) {
+    while (target && target !== document.body) {
+      if (target.getAttribute && target.getAttribute('data-gt') !== null) return +target.getAttribute('data-gt');
+      target = target.parentNode;
+    }
+    return -1;
+  }
+
   function guideKey(k) {
     if (k === KEY.back) return closeGuide();
+    var placed = guidePlace();
     if (k === KEY.chUp || k === KEY.chDown) {
       if (!guide.list.length) return;
       guidePage(k === KEY.chUp ? -1 : 1);
+      if (guidePlace() !== placed) navTick();
       return renderGuide();
     }
     var it = guide.list[guide.row];
     if (guide.tabs) {
       if (k === KEY.left || k === KEY.right) {
-        guide.group = (guide.group + (k === KEY.left ? -1 : 1) + guide.groups.length) % guide.groups.length;
-        guide.list = guideTabList(guide.groups[guide.group]);
-        guide.row = 0;
-        guide.top = 0;
+        guideSetGroup((guide.group + (k === KEY.left ? -1 : 1) + guide.groups.length) % guide.groups.length);
       } else if (k === KEY.down || k === KEY.ok) guide.tabs = false;
+      if (guidePlace() !== placed) navTick();
       return renderGuide();
     }
     if (k === KEY.up) {
@@ -3960,6 +4021,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     } else if (k === KEY.ok) return guideOpen(it);
     else if (k === KEY.info) return closeGuide();
     else return;
+    if (guidePlace() !== placed) navTick();
     renderGuide();
   }
 
@@ -4001,6 +4063,11 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
 
   // The row under the pointer, and the programme in it, are the focus.
   function guidePointer(target) {
+    // Over the tabs the focus is the tabs, as Up from the first row leaves it.
+    if (within(target, 'gTabs')) {
+      if (!guide.tabs) { navTick(); guide.tabs = true; renderGuide(); }
+      return;
+    }
     var at = null;
     while (target && target !== document.body && !(target.className && /\bgr\b/.test(target.className))) {
       if (target.getAttribute && target.getAttribute('data-s')) at = Math.max(+target.getAttribute('data-s'), guide.start);
@@ -4009,6 +4076,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     if (!target || target === document.body) return;
     var r = +target.getAttribute('data-g');
     if (r !== guide.row || guide.tabs || (at !== null && at !== guide.at)) {
+      navTick();
       guide.row = r;
       guide.tabs = false;
       if (at !== null) guide.at = at;
@@ -4018,6 +4086,13 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
 
   function guideClick(target) {
     if (!within(target, 'guide')) return closeGuide();
+    var tab = guideTabAt(target);
+    if (tab !== -1) {
+      if (tab !== guide.group) { navTick(); guideSetGroup(tab); }
+      guide.tabs = true;
+      return renderGuide();
+    }
+    if (within(target, 'gTabs')) return;
     guidePointer(target);
     guideKey(KEY.ok);
   }
@@ -5131,7 +5206,8 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
   }
   // Focuses the tile under the pointer, without moving its row.
   function hoverTile(target) {
-    if (layoutBusy || !data || !layout || player.open) return;
+    if (layoutBusy || !data || !layout) return;
+    if (player.open) return playerPointer(target);
     if (guide.open) return guidePointer(target);
     if (adder.open) {
       var adRow = target;
@@ -5147,18 +5223,20 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
       var inFolder = tileAt(target);
       if (inFolder && inFolder.hasAttribute('data-f') && +inFolder.getAttribute('data-f') !== folder.col) {
         folder.col = +inFolder.getAttribute('data-f');
+        navTick();
         focusFolder();
       }
       return;
     }
     if (!state.arranging && searchOn() && within(target, 'rail')) {
-      if (!state.rail) { state.rail = true; state.bar = -1; applyFocus(false, true); }
+      if (!state.rail) { state.rail = true; state.bar = -1; navTick(); applyFocus(false, true); }
       return;
     }
     var tile = tileAt(target);
     if (recents.open) {
       if (tile && /\brc\b/.test(tile.className) && (+tile.getAttribute('data-c') !== recents.col || recents.onAll)) {
         recents.col = +tile.getAttribute('data-c'); recents.onAll = false; recents.onX = false;
+        navTick();
         focusRecents(false, true);
       }
       return;
@@ -5170,6 +5248,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     var r = +rowEl.getAttribute('data-row'), c = +tile.getAttribute('data-c'), kind = layout.rows[r];
     if (state.row !== r || colOf(kind) !== c || state.bar >= 0 || state.rail) {
       state.row = r; state.col[kind] = c; state.bar = -1; state.rail = false;
+      navTick();
       applyFocus(false, true);
     }
   }
@@ -6366,7 +6445,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
       '@-webkit-keyframes cardPulse' + cardFrames + '@keyframes cardPulse' + cardFrames +
       '@-webkit-keyframes tilePulse' + tileFrames + '@keyframes tilePulse' + tileFrames +
       '.pulse.cards .app.focus .card:after{-webkit-animation:cardPulse' + breathe + 'animation:cardPulse' + breathe + '}' +
-      '.pulse:not(.cards) .tile.app.focus{-webkit-animation:tilePulse' + breathe + 'animation:tilePulse' + breathe + '}';
+      '.pulse:not(.cards) .tile.app.focus,.pulse .cl.focus:after,.pulse .gc.focus{-webkit-animation:tilePulse' + breathe + 'animation:tilePulse' + breathe + '}';
   }
 
   function applyColours(c, highlight) {
