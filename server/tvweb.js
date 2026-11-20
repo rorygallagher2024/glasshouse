@@ -136,6 +136,7 @@ var history = require('./lib/history');
 var perfHistory = require('./lib/perfhistory');
 var storageScan = require('./lib/storagescan');
 var sysinfo = require('./lib/sysinfo');
+var screenColour = require('./lib/screencolour');
 var sshKeys = require('./lib/sshkeys');
 var screentime = require('./lib/screentime');
 var saverPowerOff = require('./lib/saverpoweroff');
@@ -339,6 +340,15 @@ var CONFIG = {
    */
   history: {
     enabled: false
+  },
+
+  /*
+   * The dashboard's screen glow: whether a dashboard may read the colours on
+   * screen (lib/screencolour.js) to light its page. Each browser switches the
+   * glow on for itself; off here, none can.
+   */
+  screenGlow: {
+    allowed: true
   },
 
   /*
@@ -584,6 +594,7 @@ game.init({ lunaCached: lunaCached, inputKey: telemetry.inputKey });
 appHosts.init({});
 privacy.init({ luna: luna, lunaCached: lunaCached, config: CONFIG, lgSettings: lgSettings, services: servicesModule, appHosts: CLI_MODE ? null : appHosts });
 oled.init({ luna: luna, config: CONFIG });
+screenColour.init({ luna: luna });
 samrescan.init({ luna: luna });
 appsModule.init({ luna: luna, config: CONFIG });
 iconServer.init({ config: CONFIG, apps: appsModule, iptv: iptv });
@@ -1100,6 +1111,7 @@ routes.init({
   perfHistory: perfHistory,
   storageScan: storageScan,
   sysinfo: sysinfo,
+  screenColour: screenColour,
   power: power,
   sshKeys: sshKeys,
   screentime: screentime,

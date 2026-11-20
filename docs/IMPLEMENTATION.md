@@ -1554,6 +1554,36 @@ Each is null where the TV does not give it, or gives a placeholder. nyx's
 power-on counts (see [Why the TV powered on](#why-the-tv-powered-on)). The
 view shows a row only for a value it has, as models and webOS releases differ.
 
+## Screen glow
+
+`server/lib/screencolour.js` answers `GET /api/screen-colour` with the colours
+on screen, never a picture. It captures the screen with LG's
+`executeOneShot` as a 64x36 BMP (`method: DISPLAY`, which includes HDMI and
+app video), reads the pixels and deletes the file. The service is
+`com.webos.service.capture` on webOS 9 (a C2) and `com.webos.service.tv.capture`
+on webOS 4 (a B8); the first to answer is kept. The answer is the average
+colour, the brightness from 0 to 1, and an accent for each half: the most
+present vivid hue there, in twelve hue bands with each pixel counted by its
+saturation and brightness, or the half's average where nothing is vivid. A
+near-black screen has no accent. One capture serves every request within
+1.5 s.
+
+A capture takes about 0.2 s on a C2 and 0.7 s on a B8, mostly the capture
+hardware: one every 3 s added under 1% to a B8's CPU. With no signal on an
+HDMI input the picture is black, and `method: VIDEO` answers
+`REFUSED_PERMISSION_DENIED` until a signal arrives. Protected video captures
+black.
+
+`assets/ui/glow.js` reads it while its browser has the glow on, the Server
+tab allows it (`screenGlow.allowed`, on unless switched off), the page shows
+and the header says the screen is on, and not while the stats'
+`signal_format.game_mode` is set. Each side's hue is raised to a fixed
+brightness, at least half saturated, so a dim picture still gives a colour;
+the picture's brightness sets how strong it shows. The two colours are
+registered custom properties, so a change fades. With the glow on, the body's
+background is transparent, so the fixed layer behind the page shows over the
+root's.
+
 ---
 
 ## Counting watch time

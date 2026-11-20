@@ -413,7 +413,7 @@ var NOT_CARRIED = {
   // The adBlock part's control under its other names.
   adblock: 'carried', toggleAdBlock: 'carried',
   updateAutoCheck: 'carried', setPrometheusEnabled: 'carried', setNtpServer: 'carried', setNtpEnabled: 'carried',
-  setHistoryEnabled: 'carried', setBackupDaily: 'carried',
+  setHistoryEnabled: 'carried', setBackupDaily: 'carried', setScreenGlowAllowed: 'carried',
   // One of lgsettings.js's rows: carried by its section.
   lgSetting: 'carried'
 };

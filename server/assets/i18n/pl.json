@@ -1120,6 +1120,8 @@
  "server.watch.clearConfirm": {"text": "Usunąć cały czas oglądania zapisany na telewizorze?", "from": "Delete all watch time kept on the TV?"},
  "server.watch.desc": {"text": "Liczy, jak długo ekran jest włączony, dla każdej aplikacji i wejścia, na potrzeby karty Metryka i Home Assistant. Przechowywane na telewizorze przez 13 miesięcy. Zapisuje, co oglądają domownicy, więc pozostaje wyłączone, dopóki nie zostanie tu włączone.", "from": "Counts how long the screen is on, per app and input, for the Metrics tab and Home Assistant. Kept on the TV for 13 months. It records what the household watches, so it stays off until turned on here."},
  "server.watch.title": {"text": "Czas oglądania", "from": "Watch time"},
+ "server.glow.title": {"text": "Poświata ekranu", "from": "Screen glow"},
+ "server.glow.desc": {"text": "Pozwala panelowi oświetlić górę strony kolorami z ekranu telewizora, odczytywanymi co kilka sekund, gdy panel jest widoczny. Telewizor opuszczają tylko kolory, nigdy obraz. Każda przeglądarka włącza poświatę przyciskiem obok przełącznika jasnego i ciemnego motywu u dołu strony.", "from": "Lets a dashboard light the top of its page with the colours on the TV's screen, read every few seconds while it shows. Only the colours leave the TV, never a picture. Each browser switches the glow on with the button beside the light and dark switch, at the foot of the page."},
  "server.whatsNew": {"text": "Co nowego", "from": "What’s new"},
  "server.whatsNew.more": {"text": "I jeszcze wydania: {n}", "from": "And {n} more releases"},
  "server.whatsNew.moreOne": {"text": "I jeszcze 1 wydanie", "from": "And 1 more release"},
@@ -3653,5 +3655,7 @@
  "metrics.sys.wifi": {"from": "Wi-Fi network", "text": "Sieć Wi-Fi"},
  "metrics.sys.wifiMac": {"from": "Wi-Fi MAC", "text": "MAC Wi-Fi"},
  "metrics.sys.wiredMac": {"from": "Wired MAC", "text": "MAC przewodowy"},
- "pic.offNote": {"text": "Wyszarzone: niedostępne w bieżącym trybie obrazu lub dla tego, co jest na ekranie.", "from": "Greyed out: not available in the current picture mode, or for what is on screen."}
+ "pic.offNote": {"text": "Wyszarzone: niedostępne w bieżącym trybie obrazu lub dla tego, co jest na ekranie.", "from": "Greyed out: not available in the current picture mode, or for what is on screen."},
+ "glow.toggleOn": {"text": "Poświata ekranu: wyłączona (kliknij, aby oświetlić stronę ekranem telewizora)", "from": "Screen glow: off (click to light the page from the TV’s screen)"},
+ "glow.toggleOff": {"text": "Poświata ekranu: włączona (kliknij, aby wyłączyć)", "from": "Screen glow: on (click to switch off)"}
 }
