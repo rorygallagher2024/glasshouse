@@ -596,6 +596,11 @@ two aborts are reported as such rather than as a network failure. A
 failed job leaves no partial snapshot. The native webOS libuv fault still
 needs a Node 8 TV; the test injects its downloader exit signal.
 
+`test-iptv-guide-login.js` runs a real guide worker against a local provider
+that answers 401 without a login. A guide link with a user name and password
+in it is read, the login going as HTTP Basic, and curl's recorded arguments
+hold neither the password nor the address with the login in it.
+
 `test-iptv-lineup.js` checks the lineup's rules alone: a version 1 selection
 becoming one section of favourites, numbering through sections with a start
 number already passed moved on, a channel in two sections counted once, a

@@ -148,6 +148,9 @@ files 600), and they stay there:
 - Logos and guide links found in a playlist are fetched only over http or
   https and only without a user name in them; a logo is kept only if its
   first bytes are a PNG, JPEG or WebP, and is 256 KB at most.
+- A login written into the owner's own guide link (`http://user:pass@host/...`)
+  is sent as HTTP Basic, to curl on its standard input and never in a command
+  line, and the address is asked for without it.
 
 A satellite tuner's login is kept the same way. It goes to curl on its
 standard input, never in a command line, and is sent only to the tuner's own
