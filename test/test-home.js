@@ -3518,6 +3518,31 @@ step('the end of the screen saver gives the view a first beat\'s wait, and a rea
   });
 });
 
+// A C2 (webOS 10.3.1): the view sent no beats under the screen saver, and
+// LG's Home, opened as if it had hung, ended the screen saver (#1605).
+step('a view silent under the screen saver is not a hang, and one still silent after it is', function (done) {
+  start(null, { beatGraceMs: 100, firstBeatGraceMs: 300 });
+  home.enable(function () {
+    foreground(LG_HOME);
+    powerState('Active');
+    home.beat();
+    tv.launched = [];
+    powerState('Screen Saver');
+    wait(350, function () {
+      assert.deepEqual(tv.launched, [], 'no beats under the screen saver is not a hang');
+      assert.ok(taken(), 'Glasshouse Home keeps its place');
+      powerState('Active');
+      wait(200, function () {
+        assert.deepEqual(tv.launched, [], 'the end of the screen saver gives a first beat\'s wait');
+        wait(250, function () {
+          assert.deepEqual(tv.launched, [LG_HOME], 'with no beat after the saver, it is one');
+          done();
+        });
+      });
+    });
+  });
+});
+
 step('switching the screen off ends the heartbeat check', function (done) {
   start(null, { beatGraceMs: 100, firstBeatGraceMs: 200 });
   home.enable(function () {
