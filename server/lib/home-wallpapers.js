@@ -42,6 +42,11 @@ var SETS = {
 // own is the owner's uploads; black, no picture at all.
 var CHOICES = ['black', 'landscape', 'abstract', 'own'];
 var choice = 'black';
+// status() is read every 5s from the heartbeat; while the choice and its
+// folder haven't changed since, this is reused rather than statting every
+// slot's file again. Not kept while uploading or fetching, which change the
+// folder outside of a beat and need every status() live.
+var statusCache = null;
 
 function init(stateDir) {
   uploadsDir = path.join(stateDir, 'home-wallpaper-uploads');
@@ -82,6 +87,12 @@ function saveChoice() {
 }
 
 function status() {
+  var dir = choice === 'black' ? null : choice === 'own' ? uploadsDir : path.join(setsDir, choice);
+  var canCache = !!dir && !uploading && !fetching, dirMtime = 0;
+  if (canCache) {
+    try { dirMtime = fs.statSync(dir).mtime.getTime(); } catch (e) {}
+    if (statusCache && statusCache.choice === choice && statusCache.dirMtime === dirMtime) return statusCache.result;
+  }
   var slots = {}, revision = [choice];
   SLOTS.forEach(function (key) {
     var file = image(key), st = null;
@@ -89,9 +100,11 @@ function status() {
     slots[key] = !!st;
     revision.push(st ? String(Number(st.mtime)) + '-' + st.size : '0');
   });
-  return { available: SLOTS.some(function (key) { return slots[key]; }),
+  var result = { available: SLOTS.some(function (key) { return slots[key]; }),
     choice: choice, choices: CHOICES, fetching: fetching,
     uploading: uploading || !!fetching, slots: slots, revision: revision.join('.') };
+  if (canCache) statusCache = { choice: choice, dirMtime: dirMtime, result: result };
+  return result;
 }
 
 function setFile(name, key) { return path.join(setsDir, name, key + '.jpg'); }
