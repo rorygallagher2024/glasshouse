@@ -382,8 +382,11 @@ function renderHome() {
   if (pointerSel) {
     const pointerName = (st.layout && st.layout.pointerSound) || 'off';
     pointerSel.value = pointerName;
-    pointerSel.disabled = !homeWritable();
-    q('home-pointer-sound-play').disabled = pointerName === 'off' || (pointerName === 'own' && !(st.layout && st.layout.ownSound));
+    // Not shown with no Magic Remote paired to point, and unavailable while the pointer is switched off.
+    const noPointer = st.layout && st.layout.showPointer === false;
+    q('home-pointer-sound-row').hidden = !st.supported.ok || st.remoteBatteryAvailable === false;
+    pointerSel.disabled = !homeWritable() || noPointer;
+    q('home-pointer-sound-play').disabled = noPointer || pointerName === 'off' || (pointerName === 'own' && !(st.layout && st.layout.ownSound));
   }
   const fadeSel = q('home-card-fade-sel');
   if (fadeSel) {
