@@ -2864,6 +2864,8 @@ html.remote-view.remote-inputs .rp-body,html.remote-view:not(.remote-mode-button
   padding:0 0 0 .08em;border:0;border-radius:19px;background:transparent;color:var(--w60);
   font:500 11.5px/1 'Manrope';letter-spacing:.08em;text-transform:uppercase;cursor:pointer}
 .rp-modes button[hidden]{display:none}
+/* Four modes at 360 px: equal columns cut off the longer words (Billentyűzet), so each takes its label's width. */
+.rp-modes:has(> [data-mode="motion"]:not([hidden])){grid-template-columns:none;grid-auto-flow:column;grid-auto-columns:auto}
 .rp-modes button[aria-selected="true"]{background:var(--w10);color:var(--w100)}
 html.remote-view #disc-pointer .pointer-pad{min-height:min(52vh,420px)}
 .motion-pad,html.remote-view.remote-mode-motion #pointer-pad{display:none}
