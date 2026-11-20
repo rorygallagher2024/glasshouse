@@ -1620,13 +1620,6 @@
     </div>
     <div class="prot-row home-gh-row home-show-row" hidden>
       <div class="prot-main">
-        <div class="prot-title" data-t="home.showTvLogos">Channel logos</div>
-        <div class="prot-desc" data-t="home.showTvLogosDescName">On Internet TV: the playlist’s logo for each channel. Off shows the channel’s name in its place.</div>
-      </div>
-      <div class="prot-status"><button type="button" class="pill idle" id="home-show-tv-logos" onclick="homeShow('showTvLogos')">&mdash;</button></div>
-    </div>
-    <div class="prot-row home-gh-row home-show-row" hidden>
-      <div class="prot-main">
         <div class="prot-title" data-t="home.weather">Weather</div>
         <div class="prot-desc" data-t="home.weatherDesc">Next to the clock: the weather Home Assistant sends, or the weather for a place you choose, from Open-Meteo.</div>
       </div>
@@ -1825,6 +1818,19 @@
   <div class="pv-g" data-home-sub="iptv" data-t="home.tv.title">Internet TV</div>
   <div class="sub" data-home-sub="iptv" data-t="home.tv.intro">Channels from your IPTV provider, in a row of their own on Glasshouse Home. Add the same M3U link or Xtream login your IPTV app uses, It is kept on the TV and never shown here again.</div>
   <div id="home-tv" data-home-sub="iptv"></div>
+  <!-- In a wrapper of its own: the table's grid rule outranks the one that
+       hides #home-more's sections for a launcher or Glasshouse Bar. -->
+  <div data-home-sub="iptv">
+    <div class="prot-table home-custom-table">
+      <div class="prot-row home-gh-row home-show-row" hidden>
+        <div class="prot-main">
+          <div class="prot-title" data-t="home.showTvLogos">Channel logos</div>
+          <div class="prot-desc" data-t="home.showTvLogosDescName">On Internet TV: the playlist’s logo for each channel. Off shows the channel’s name in its place.</div>
+        </div>
+        <div class="prot-status"><button type="button" class="pill idle" id="home-show-tv-logos" onclick="homeShow('showTvLogos')">&mdash;</button></div>
+      </div>
+    </div>
+  </div>
 
   <div class="pv-g" data-home-sub="appearance" data-t="home.colours.title">Colours</div>
   <div class="sub" data-home-sub="appearance" data-t="home.colours.desc">The text on Glasshouse Home, the highlight behind the chosen tile, and the accent that frames it and marks what was last on. The quieter text is a shade of the text colour.</div>
