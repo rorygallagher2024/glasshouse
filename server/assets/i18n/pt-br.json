@@ -1313,6 +1313,7 @@
  "server.watch.title": {"text": "Tempo assistido", "from": "Watch time"},
  "server.glow.title": {"text": "Brilho da tela", "from": "Screen glow"},
  "server.glow.desc": {"text": "Permite que um painel ilumine o topo da página com as cores da tela da TV, lidas a cada poucos segundos enquanto ele está aberto. Só as cores saem da TV, nunca uma imagem. Cada navegador liga o brilho em Preferências, na barra lateral, ou com o botão do brilho no rodapé da página.", "from": "Lets a dashboard light the top of its page with the colours on the TV's screen, read every few seconds while it shows. Only the colours leave the TV, never a picture. Each browser switches the glow on under Preferences in the sidebar, or with the glow button at the foot of the page."},
+ "server.glow.none": {"text": "Esta TV não tem um serviço de captura de tela, então o brilho não está disponível aqui.", "from": "This TV has no screen capture service, so the glow is not offered here."},
  "server.whatsNew": {"text": "Novidades", "from": "What’s new"},
  "server.whatsNew.more": {"text": "E mais {n} versões", "from": "And {n} more releases"},
  "server.whatsNew.moreOne": {"text": "E mais 1 versão", "from": "And 1 more release"},

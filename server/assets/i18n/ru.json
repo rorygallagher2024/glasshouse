@@ -1002,6 +1002,7 @@
  "server.watch.title": {"text": "Время просмотра", "from": "Watch time"},
  "server.glow.title": {"text": "Подсветка от экрана", "from": "Screen glow"},
  "server.glow.desc": {"text": "Позволяет панели подсвечивать верх страницы цветами с экрана телевизора, считываемыми каждые несколько секунд, пока она открыта. Телевизор покидают только цвета, никогда не изображение. Каждый браузер включает подсветку в разделе «Настройки» на боковой панели или кнопкой подсветки внизу страницы.", "from": "Lets a dashboard light the top of its page with the colours on the TV's screen, read every few seconds while it shows. Only the colours leave the TV, never a picture. Each browser switches the glow on under Preferences in the sidebar, or with the glow button at the foot of the page."},
+ "server.glow.none": {"text": "На этом телевизоре нет службы захвата экрана, поэтому подсветка здесь недоступна.", "from": "This TV has no screen capture service, so the glow is not offered here."},
  "server.whatsNew": {"text": "Что нового", "from": "What’s new"},
  "server.whatsNew.more": {"text": "Еще выпусков: {n}", "from": "And {n} more releases"},
  "server.whatsNew.moreOne": {"text": "Еще один выпуск", "from": "And 1 more release"},

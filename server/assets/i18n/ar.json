@@ -1104,6 +1104,7 @@
  "server.watch.title": {"text": "حساب وقت المشاهدة", "from": "Watch time"},
  "server.glow.title": {"text": "توهج الشاشة", "from": "Screen glow"},
  "server.glow.desc": {"text": "يتيح للوحة التحكم إضاءة أعلى صفحتها بألوان شاشة التلفزيون، تُقرأ كل بضع ثوانٍ أثناء عرضها. لا يغادر التلفزيون سوى الألوان، ولا تُرسل أي صورة أبدًا. يشغّل كل متصفح التوهج من التفضيلات في الشريط الجانبي، أو بزر التوهج أسفل الصفحة.", "from": "Lets a dashboard light the top of its page with the colours on the TV's screen, read every few seconds while it shows. Only the colours leave the TV, never a picture. Each browser switches the glow on under Preferences in the sidebar, or with the glow button at the foot of the page."},
+ "server.glow.none": {"text": "لا يحتوي هذا التلفزيون على خدمة لالتقاط الشاشة، لذا لا يُتاح التوهج هنا.", "from": "This TV has no screen capture service, so the glow is not offered here."},
  "server.whatsNew": {"text": "ما الجديد", "from": "What’s new"},
  "server.whatsNew.more": {"text": "و{n} إصدارات أخرى", "from": "And {n} more releases"},
  "server.whatsNew.moreOne": {"text": "وإصدار واحد آخر", "from": "And 1 more release"},
