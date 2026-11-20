@@ -1460,6 +1460,13 @@
       </div>
       <div class="prot-status"><button type="button" class="pill idle" id="home-autolaunch" onclick="toggleHomeAutoLaunch('home-autolaunch')">&mdash;</button></div>
     </div>
+    <div class="prot-row home-gh-row" id="home-reopen-wake-row" hidden>
+      <div class="prot-main">
+        <div class="prot-title" data-t="home.reopenWake">Reopen Home after a wake</div>
+        <div class="prot-desc" data-t="home.reopenWakeDesc">A few seconds after the TV wakes, Glasshouse Home is closed and opened again. On a C5 the remote stopped answering after a wake without it. Switch it off if the remote answers on this TV without it, and Home no longer goes away and comes back. webOS 11 only.</div>
+      </div>
+      <div class="prot-status"><button type="button" class="pill idle" id="home-reopen-wake" onclick="homeReopenWake()">&mdash;</button></div>
+    </div>
     <div class="prot-row home-gh-row" id="home-hide-lg-row" hidden>
       <div class="prot-main">
         <div class="prot-title" data-t="home.hideLg">Hide LG’s Home while the TV starts</div>

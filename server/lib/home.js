@@ -500,6 +500,8 @@ function defaults() {
     showTvLogos: true,
     // The Magic Remote's pointer on the view (#1212).
     showPointer: true,
+    // webOS 11: Home closed and opened again after a wake (reopenAfterWake11).
+    reopenAfterWake: true,
     // Where the weather comes from, and the place Open-Meteo is asked about.
     weather: 'ha',
     weatherPlace: null,
@@ -640,6 +642,7 @@ function normalise(raw) {
   d.weather = WEATHER_SOURCES.indexOf(raw.weather) !== -1 ? raw.weather : raw.showWeather === false ? 'off' : 'ha';
   d.weatherPlace = weatherPlaceOf(raw.weatherPlace);
   d.rowsBottom = raw.rowsBottom === true;
+  d.reopenAfterWake = raw.reopenAfterWake !== false;
   d.view = raw.view === 'alternative' ? 'alternative' : 'standard';
   d.previewAlways = raw.previewAlways === true;
   d.previewInTile = raw.previewInTile === true;
@@ -867,6 +870,7 @@ function setLayout(body, cb) {
     showCec: typeof body.showCec === 'boolean' ? body.showCec : c.showCec,
     showTvLogos: typeof body.showTvLogos === 'boolean' ? body.showTvLogos : c.showTvLogos,
     showPointer: typeof body.showPointer === 'boolean' ? body.showPointer : c.showPointer,
+    reopenAfterWake: typeof body.reopenAfterWake === 'boolean' ? body.reopenAfterWake : c.reopenAfterWake,
     // showWeather is the switch an older dashboard still sends.
     weather: body.weather !== undefined ? body.weather
       : typeof body.showWeather === 'boolean' ? (body.showWeather ? 'ha' : 'off') : c.weather,
@@ -1017,7 +1021,7 @@ function layoutOf(c) {
     searchHintSeen: c.searchHintSeen, picture: c.picture, livePreview: c.livePreview, search: c.search, recommended: c.recommended,
     fade: c.fade, wallDrift: c.wallDrift, wallCrossfade: c.wallCrossfade, smoothScroll: c.smoothScroll, slidePanels: c.slidePanels,
     darkening: c.darkening, hideUnused: c.hideUnused, showMediaServers: c.showMediaServers, deviceNames: devNamesNow(c.deviceNames), appNames: c.appNames, appCards: c.appCards, focusPulse: c.focusPulse, navSound: c.navSound, ownSound: ownSoundInfo(), cardFade: c.cardFade, appIcons: c.appIcons, inputBarTransparent: c.inputBarTransparent, inputBarSwitchOnOk: c.inputBarSwitchOnOk, showClock: c.showClock, rowsBottom: c.rowsBottom, view: c.view,
-    showLastOn: c.showLastOn, showAppCount: c.showAppCount, showAppLabels: c.showAppLabels, showCec: c.showCec, showTvLogos: c.showTvLogos, showPointer: c.showPointer, weather: c.weather, weatherPlace: c.weatherPlace, previewAlways: c.previewAlways, previewInTile: c.previewInTile, previewSize: c.previewSize, previewSound: c.previewSound, wallAnim: c.wallAnim,
+    showLastOn: c.showLastOn, showAppCount: c.showAppCount, showAppLabels: c.showAppLabels, showCec: c.showCec, showTvLogos: c.showTvLogos, showPointer: c.showPointer, reopenAfterWake: c.reopenAfterWake, weather: c.weather, weatherPlace: c.weatherPlace, previewAlways: c.previewAlways, previewInTile: c.previewInTile, previewSize: c.previewSize, previewSound: c.previewSound, wallAnim: c.wallAnim,
     remoteBattery: c.remoteBattery,
     animTheme: c.animTheme, animSky: c.animSky, animLight: c.animLight, animThemes: ANIM_THEMES,
     wallShuffleMinutes: c.wallShuffleMinutes, shuffleMinutes: SHUFFLE_MINUTES, colours: c.colours,
@@ -3627,6 +3631,17 @@ function powerStateChanged(raw) {
   }, wakeSettleMs);
 }
 
+/*
+ * The reopening is on by default: it was needed on a C5 (firmware 43.21.77),
+ * and LG numbers firmware per model year, so no number says another TV does
+ * not need it. The dashboard's Reopen Home after a wake switch (home.json
+ * reopenAfterWake) skips it, for a TV where the remote answers after a wake
+ * without it (a C3 on 44.00.92).
+ */
+function wakeReopenWanted() {
+  return readConfig().reopenAfterWake !== false;
+}
+
 function describeViewFocus() {
   if (!viewFocus) return 'nothing of its focus';
   return (viewFocus.focused ? 'it had the focus' : 'it did not have the focus') +
@@ -3704,7 +3719,7 @@ function powerChanged(active) {
     clearTimeout(wake11Timer);
     wake11Timer = null;
   }
-  if (!was && active && flutterHome() && readConfig().enabled) reopenAfterWake11();
+  if (!was && active && flutterHome() && readConfig().enabled && wakeReopenWanted()) reopenAfterWake11();
   if (!active) cancelWake();
   // Off, the view need not beat. A check its beats set in Active Standby is
   // caught as late when a suspend holds it up (watchBeat).
