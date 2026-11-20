@@ -16,14 +16,14 @@ function tv(options) {
   var state = {
     requested: false, launched: 0, closed: 0, running: !!options.running,
     closeOK: true, closeReply: null, runningReply: null, watches: [], pointerWatches: [], screenOns: 0,
-    power: 'Active', foreground: 'com.webos.app.home', media: { state: 'idle', fullScreen: false }
+    power: 'Active', foreground: 'com.webos.app.home', fronts: 0, media: { state: 'idle', fullScreen: false }
   };
   state.homeVideo = !!options.homeVideo;
   state.luna = function (uri, params, cb) {
     if (/getPowerState$/.test(uri)) {
       return cb({ returnValue: true, state: options.startsItself && state.requested ? 'Screen Saver' : state.power });
     }
-    if (/getForegroundAppInfo$/.test(uri)) return cb({ returnValue: true, appId: state.foreground });
+    if (/getForegroundAppInfo$/.test(uri)) { state.fronts++; return cb({ returnValue: true, appId: state.foreground }); }
     if (/getAppInfo$/.test(uri)) return cb({ returnValue: true, appInfo: { id: params.id } });
     if (/turnOnScreen$/.test(uri)) { state.screenOns++; return cb({ returnValue: true }); }
     if (/turnOnScreenSaver$/.test(uri)) {
@@ -44,7 +44,7 @@ function tv(options) {
     throw new Error('Unexpected luna call: ' + uri);
   };
   state.initialise = function () {
-    screensavers.init({ luna: state.luna, config: {}, injectKey: function (k, cb) { cb(true); }, KEY_BACK: 412,
+    screensavers.init({ luna: state.luna, config: {}, frontPollMs: 5, injectKey: function (k, cb) { cb(true); }, KEY_BACK: 412,
       inputKey: require('../server/lib/names').shortAppId,
       watchKeys: function (on) { state.watches.push(on); },
       watchPointer: function (on) { state.pointerWatches.push(on); },
@@ -62,6 +62,29 @@ function tv(options) {
 
 var cases = [];
 function test(name, fn) { cases.push([name, fn]); }
+
+// A PS5 woken over HDMI-CEC put HDMI 2 in front under the screen saver, with no key pressed (G3, webOS 10.3).
+test('an input coming to the front closes a screen saver launched directly', function (done) {
+  var state = tv();
+  screensavers.trigger(function (r) {
+    assert.strictEqual(r.ok, true, r.error);
+    assert.strictEqual(screensavers.launchedShowing(), true);
+    setTimeout(function () {
+      assert.strictEqual(state.closed, 0, 'Home still in front under it: left showing');
+      state.foreground = 'com.webos.app.hdmi2';
+      setTimeout(function () {
+        assert.strictEqual(state.closed, 1, 'closed once HDMI 2 came to the front');
+        assert.strictEqual(screensavers.launchedShowing(), false);
+        assert.strictEqual(state.watches[state.watches.length - 1], false);
+        var fronts = state.fronts;
+        setTimeout(function () {
+          assert.strictEqual(state.fronts, fronts, 'stops looking once it is closed');
+          done();
+        }, 30);
+      }, 30);
+    }, 30);
+  });
+});
 
 test('a dropped request launches, survives a server restart and closes on a key', function (done) {
   var state = tv();

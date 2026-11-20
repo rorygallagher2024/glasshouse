@@ -880,6 +880,8 @@ function init(opts) {
   launchedDirectly = false;
   launchGeneration++;
   closeCallbacks = [];
+  stopFrontWatch();
+  frontPollMs = opts.frontPollMs !== undefined ? opts.frontPollMs : FRONT_POLL_MS;
   randomConfigFile = (opts && opts.randomConfigFile) ? opts.randomConfigFile : RANDOM_CONFIG_FILE;
   wasInScreenSaver = false;
   saverStartedAt = 0;
@@ -1973,6 +1975,51 @@ function launchedRunning(cb) {
   screensaverRunning(function (running) { cb(running !== false); });
 }
 
+/*
+ * The app in front, watched while a screen saver launched directly shows. A
+ * G3 (webOS 10.3) put HDMI 2 in front as a PS5 woke it over HDMI-CEC, with
+ * the screen saver still drawn over it and holding the video decoder: no key
+ * was pressed, so nothing closed it, and the input showed only after the
+ * screen saver closed. Any other app or input coming to the front closes it.
+ * sam's front stays what was there before (Home) while it shows.
+ */
+var FRONT_POLL_MS = 1000;
+var frontPollMs = FRONT_POLL_MS;
+var frontTimer = null;
+var frontUnder = null;
+
+function stopFrontWatch() {
+  if (frontTimer) clearTimeout(frontTimer);
+  frontTimer = null;
+  frontUnder = null;
+}
+
+function startFrontWatch() {
+  stopFrontWatch();
+  var generation = launchGeneration;
+  // The first look, at once, is what is under it.
+  (function look(delay) {
+    frontTimer = setTimeout(function () {
+      if (!launchedDirectly || generation !== launchGeneration || !lunaFn) return;
+      lunaFn('com.webos.applicationManager/getForegroundAppInfo', {}, function (fg) {
+        if (!launchedDirectly || generation !== launchGeneration) return;
+        var id = fg && fg.returnValue !== false && fg.appId;
+        if (id && id !== SCREENSAVER_APP_ID) {
+          if (frontUnder === null) frontUnder = id;
+          else if (id !== frontUnder) {
+            console.log('screensaver: ' + inputKeyFn(id) + ' came to the front; closing the screen saver');
+            frontUnder = null;
+            return closeLaunched(function () {});
+          }
+        }
+        look(frontPollMs);
+      });
+    }, delay);
+    // Not what keeps the server, or a test, running.
+    if (frontTimer.unref) frontTimer.unref();
+  })(0);
+}
+
 function setLaunched(on) {
   var was = launchedDirectly;
   if (on) {
@@ -1988,6 +2035,8 @@ function setLaunched(on) {
   launchedDirectly = on;
   launchGeneration++;
   watchKeysFn(on);
+  if (on) startFrontWatch();
+  else stopFrontWatch();
   for (var i = 0; i < launchedListeners.length; i++) launchedListeners[i](on);
 }
 
