@@ -2102,8 +2102,28 @@ function launchOverNoSignal(cb) {
         (pw.processing && pw.processing !== 'Screen On')) return cb(false);
     ensureScreensaverKnown(function (known) {
       if (!known) return cb(false);
-      console.log('screensaver: launching the screen saver app over an input with no signal');
+      console.log('screensaver: launching the screen saver app over an input');
       launchApp(cb);
+    });
+  });
+}
+
+/*
+ * The screen saver action, also over an HDMI input or Live TV, where trigger()
+ * refuses one: there the app is launched directly, as over an input with no
+ * signal, and the input keeps playing under it, sound included. From an app
+ * it is trigger(). For a remote key bound to the screen saver.
+ */
+function triggerOverInputs(cb) {
+  if (!lunaFn) return cb({ ok: false, error: 'luna bus not available' });
+  lunaFn('com.webos.applicationManager/getForegroundAppInfo', {}, function (fg) {
+    var fgId = (fg && fg.appId) ? inputKeyFn(fg.appId) : '';
+    if (!names.isHdmiKey(fgId) && fgId !== 'livetv') return trigger(cb);
+    launchOverNoSignal(function (ok) {
+      cb(ok ? { ok: true } : {
+        ok: false,
+        error: msg('srv.saver.refusedFrom', 'the TV would not start a screen saver from {source}', { source: fgId })
+      });
     });
   });
 }
@@ -2301,6 +2321,7 @@ module.exports = {
   keyPressed: keyPressed,
   pointerUsed: pointerUsed,
   launchOverNoSignal: launchOverNoSignal,
+  triggerOverInputs: triggerOverInputs,
   adoptLaunched: adoptLaunched,
   trigger: trigger
 };

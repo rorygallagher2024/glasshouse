@@ -14,7 +14,7 @@ function tv(options) {
   var state = { launched: 0, requested: 0, watches: [], power: options.power || 'Active', processing: options.processing };
   state.luna = function (uri, params, cb) {
     if (/getPowerState$/.test(uri)) return cb({ returnValue: true, state: state.power, processing: state.processing });
-    if (/getForegroundAppInfo$/.test(uri)) return cb({ returnValue: true, appId: 'com.webos.app.hdmi1' });
+    if (/getForegroundAppInfo$/.test(uri)) return cb({ returnValue: true, appId: options.foreground || 'com.webos.app.hdmi1' });
     if (/getAppInfo$/.test(uri)) return cb({ returnValue: true, appInfo: { id: params.id } });
     if (/turnOnScreenSaver$/.test(uri)) { state.requested++; return cb({ returnValue: true }); }
     if (/\/launch$/.test(uri)) {
@@ -87,6 +87,61 @@ test('does not launch a second one over one it launched', function (done) {
       assert.strictEqual(state.launched, 1);
       done();
     });
+  });
+});
+
+test('the screen saver action over a live input launches the app, not tvpower', function (done) {
+  var state = tv();
+  screensavers.keyPressed(); // the one the test before left showing
+  screensavers.triggerOverInputs(function (r) {
+    assert.strictEqual(r.ok, true);
+    assert.strictEqual(state.launched, 1);
+    assert.strictEqual(state.requested, 0, 'tvpower is not asked over an input');
+    assert.strictEqual(screensavers.launchedShowing(), true);
+    screensavers.keyPressed();
+    done();
+  });
+});
+
+test('the screen saver action over Live TV launches the app too', function (done) {
+  var state = tv({ foreground: 'com.webos.app.livetv' });
+  screensavers.triggerOverInputs(function (r) {
+    assert.strictEqual(r.ok, true);
+    assert.strictEqual(state.launched, 1);
+    assert.strictEqual(state.requested, 0);
+    screensavers.keyPressed();
+    done();
+  });
+});
+
+test('the screen saver action from an app asks tvpower, as Start screen saver does', function (done) {
+  var state = tv({ foreground: 'com.example.app', power: 'Active' });
+  state.luna = (function (inner) {
+    return function (uri, params, cb) {
+      if (/turnOnScreenSaver$/.test(uri)) { state.requested++; state.power = 'Screen Saver'; return cb({ returnValue: true }); }
+      return inner(uri, params, cb);
+    };
+  })(state.luna);
+  screensavers.init({ luna: state.luna, config: {}, injectKey: function (k, cb) { cb(true); }, KEY_BACK: 412,
+    inputKey: require('../server/lib/names').shortAppId,
+    watchKeys: function () {},
+    mediaState: function (cb) { cb({ state: 'idle', fullScreen: false }); }
+  });
+  screensavers.triggerOverInputs(function (r) {
+    assert.strictEqual(r.ok, true);
+    assert.strictEqual(state.requested, 1);
+    assert.strictEqual(state.launched, 0);
+    done();
+  });
+});
+
+test('the screen saver action over an input with the screen off does nothing', function (done) {
+  var state = tv({ power: 'Screen Off' });
+  screensavers.triggerOverInputs(function (r) {
+    assert.strictEqual(r.ok, false);
+    assert.ok(r.error, 'says why');
+    assert.strictEqual(state.launched, 0);
+    done();
   });
 });
 
