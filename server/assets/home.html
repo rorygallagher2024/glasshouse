@@ -593,8 +593,13 @@ html.resting #wall .layer{-webkit-animation-play-state:paused;animation-play-sta
 #clWrap{position:absolute;left:100px;right:44px;top:170px;bottom:70px;overflow:hidden;padding:6px 12px}
 #clItems{-webkit-transition:-webkit-transform .2s cubic-bezier(.2,.7,.2,1);transition:transform .2s cubic-bezier(.2,.7,.2,1)}
 .cl{position:relative;display:-webkit-flex;display:flex;-webkit-align-items:center;align-items:center;height:112px;padding:0 20px;margin-bottom:6px;
-  border-radius:6px;outline:2px solid transparent;opacity:.72}
-.cl.focus{background:rgba(20,19,16,.86);outline-color:#ece7df;opacity:1}
+  border-radius:6px;opacity:.72}
+/* The frame is drawn apart so it can fade to the right, as the list's own background does. */
+.cl:after{content:"";position:absolute;left:0;top:0;right:0;bottom:0;border-radius:6px;outline:2px solid transparent;outline-offset:-2px;pointer-events:none;
+  -webkit-mask-image:linear-gradient(90deg,#000 0,#000 55%,transparent 100%);mask-image:linear-gradient(90deg,#000 0,#000 55%,transparent 100%);
+  -webkit-transition:outline-color .12s;transition:outline-color .12s}
+.cl.focus{opacity:1}
+.cl.focus:after{outline-color:#ece7df}
 .cl .glyph{-webkit-flex:0 0 auto;flex:0 0 auto;width:104px;height:46px;margin-right:2px;display:-webkit-flex;display:flex;-webkit-align-items:center;align-items:center;overflow:hidden}
 .cl .glyph img{display:block;max-width:92px;max-height:46px}
 .cl .n{-webkit-flex:0 0 auto;flex:0 0 auto;width:56px;font-family:'Outfit',sans-serif;font-size:30px;font-weight:300;color:#a39d93}
@@ -627,11 +632,12 @@ html.resting #wall .layer{-webkit-animation-play-state:paused;animation-play-sta
 .gr.focus .gnm{color:#ece7df}
 .gr .gnm em{font-style:normal;color:#6b665e;margin-right:12px;font-variant-numeric:tabular-nums}
 .gr .lane{position:relative;-webkit-flex:1 1 auto;flex:1 1 auto;overflow:hidden}
-.gc{position:absolute;top:5px;bottom:5px;padding:9px 14px 0;background:#100f0d;border-radius:4px;overflow:hidden;outline:2px solid transparent;outline-offset:-2px;white-space:nowrap}
+.gc{position:absolute;top:5px;bottom:5px;padding:9px 14px 0;background:#100f0d;border-radius:4px;overflow:hidden;outline:2px solid transparent;outline-offset:-2px;white-space:nowrap;
+  -webkit-transition:background-color .12s,outline-color .12s;transition:background-color .12s,outline-color .12s}
 .gc.past{background:#080807}
 .gc.past b{color:#6b665e}
 .gc.live{background:#1a1814}
-.gc.focus{background:#24211b;outline-color:#ece7df}
+.gc.focus{background:rgba(20,19,16,.86);outline-color:#ece7df}
 .gc b{display:block;font-size:21px;font-weight:600;overflow:hidden;text-overflow:ellipsis}
 .gc i{display:block;font-style:normal;font-size:17px;color:#6b665e;margin-top:3px;overflow:hidden;text-overflow:ellipsis}
 .gc.none b{font-weight:400;color:#6b665e}
@@ -6429,7 +6435,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
       '@-webkit-keyframes cardPulse' + cardFrames + '@keyframes cardPulse' + cardFrames +
       '@-webkit-keyframes tilePulse' + tileFrames + '@keyframes tilePulse' + tileFrames +
       '.pulse.cards .app.focus .card:after{-webkit-animation:cardPulse' + breathe + 'animation:cardPulse' + breathe + '}' +
-      '.pulse:not(.cards) .tile.app.focus{-webkit-animation:tilePulse' + breathe + 'animation:tilePulse' + breathe + '}';
+      '.pulse:not(.cards) .tile.app.focus,.pulse .cl.focus:after,.pulse .gc.focus{-webkit-animation:tilePulse' + breathe + 'animation:tilePulse' + breathe + '}';
   }
 
   function applyColours(c, highlight) {
