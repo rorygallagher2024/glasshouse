@@ -1018,6 +1018,17 @@ function tidy(list, shiftMs) {
   return out;
 }
 
+// A guide link and the login written into it, apart: { url, auth }, auth null for a bare link.
+function guideLogin(u) {
+  u = String(u || '');
+  var m = /^https?:\/\/([^\/?#@]*)@/i.exec(u);
+  if (!m) return { url: u, auth: null };
+  var colon = m[1].indexOf(':');
+  var user = colon === -1 ? m[1] : m[1].slice(0, colon), pass = colon === -1 ? '' : m[1].slice(colon + 1);
+  try { user = decodeURIComponent(user); pass = decodeURIComponent(pass); } catch (e) { return { url: u, auth: null }; }
+  return { url: withoutUserInfo(u), auth: user ? { user: user, pass: pass } : null };
+}
+
 function guideJob(cb) {
   var now = Date.now(), from = now - GUIDE_BACK_MS, to = now + GUIDE_AHEAD_MS;
   var wanted = job.channels || [];
@@ -1026,7 +1037,13 @@ function guideJob(cb) {
     progs[w.key] = [];
     caps[w.key] = w.fav ? { to: to, n: 400, desc: 400 } : { to: Math.min(to, now + GUIDE_LINEUP_AHEAD_MS), n: GUIDE_LINEUP_PROGS, desc: GUIDE_LINEUP_DESC };
   });
-  var urls = (job.urls || []).filter(parse.safeDerivedUrl).slice(0, 4);
+  /*
+   * The owner's own link may carry a login, as the playlist link may. It goes
+   * as HTTP Basic (to curl on its standard input, where a tuner's does) and
+   * the address is asked for without it. A link found in a playlist never
+   * has one: iptv.js leaves those out.
+   */
+  var urls = (job.urls || []).map(guideLogin).filter(function (g) { return parse.safeDerivedUrl(g.url); }).slice(0, 4);
   if (!urls.length) return cb(fail('no-guide'));
   /*
    * Only guide channels that could match an added one are kept: a guide can
@@ -1057,7 +1074,7 @@ function guideJob(cb) {
       writeSchedule(job.tmp, progs, now, carried);
       return cb(null, { matched: matched, channels: wanted.length, carried: Object.keys(carried).length });
     }
-    var url = urls[i++];
+    var g = urls[i++];
     map = null;
     var reader = new parse.XmltvReader(function (c) {
       if (!c.id) return;
@@ -1082,7 +1099,7 @@ function guideJob(cb) {
         progs[k].push({ start: p.start, stop: p.stop, title: title, desc: p.desc, descMax: cap.desc });
       });
     });
-    download(url, { maxBytes: CEIL.downloadBytes, timeoutS: 1200 }, reader, function (err) {
+    download(g.url, { maxBytes: CEIL.downloadBytes, timeoutS: 1200, auth: g.auth }, reader, function (err) {
       if (err) { lastErr = err; return nextUrl(); }
       if (!map) resolve();
       anyOk = true;
