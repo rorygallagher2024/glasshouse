@@ -3658,5 +3658,7 @@
  "metrics.sys.wiredMac": {"from": "Wired MAC", "text": "MAC przewodowy"},
  "pic.offNote": {"text": "Wyszarzone: niedostępne w bieżącym trybie obrazu lub dla tego, co jest na ekranie.", "from": "Greyed out: not available in the current picture mode, or for what is on screen."},
  "glow.toggleOn": {"text": "Poświata ekranu: wyłączona (kliknij, aby oświetlić stronę ekranem telewizora)", "from": "Screen glow: off (click to light the page from the TV’s screen)"},
- "glow.toggleOff": {"text": "Poświata ekranu: włączona (kliknij, aby wyłączyć)", "from": "Screen glow: on (click to switch off)"}
+ "glow.toggleOff": {"text": "Poświata ekranu: włączona (kliknij, aby wyłączyć)", "from": "Screen glow: on (click to switch off)"},
+ "home.reopenWake": {"text": "Otwieraj Home ponownie po wybudzeniu", "from": "Reopen Home after a wake"},
+ "home.reopenWakeDesc": {"text": "Kilka sekund po wybudzeniu telewizora Glasshouse Home jest zamykany i otwierany od nowa. Na modelu C5 pilot bez tego przestawał reagować po wybudzeniu. Wyłącz, jeśli na tym telewizorze pilot działa bez tego, a Home przestanie znikać i wracać. Tylko webOS 11.", "from": "A few seconds after the TV wakes, Glasshouse Home is closed and opened again. On a C5 the remote stopped answering after a wake without it. Switch it off if the remote answers on this TV without it, and Home no longer goes away and comes back. webOS 11 only."}
 }

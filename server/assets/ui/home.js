@@ -404,6 +404,15 @@ function renderHome() {
       ? t('home.searchBlockedList', 'Unavailable: the ad blocker\u2019s hosts list blocks {host}, which LG\u2019s search needs, so the search mark is hidden on Glasshouse Home. Take {host} out of the list to use it. This switch keeps its setting.', { host: searchBlocked.host })
       : t('home.searchBlockedLevel', 'Unavailable: the ad blocker\u2019s Everything setting blocks {host}, which LG\u2019s search needs, so the search mark is hidden on Glasshouse Home. Set the ad blocker to Ads & telemetry or off to use it. This switch keeps its setting.', { host: searchBlocked.host });
   }
+  // On unless switched off, and for webOS 11 only.
+  const wakeRow = q('home-reopen-wake-row');
+  if (wakeRow) wakeRow.hidden = !st.supported.ok || !(parseInt(st.supported.webos, 10) >= 11);
+  const wakeBtn = q('home-reopen-wake');
+  if (wakeBtn) {
+    const on = !st.layout || st.layout.reopenAfterWake !== false;
+    updateToggle(wakeBtn, { cls: on ? 'good' : 'idle', label: on ? t('common.on', 'On') : t('common.off', 'Off') });
+    wakeBtn.disabled = !homeWritable();
+  }
   // Fading, as Picture details.
   [['home-fade', 'fade'], ['home-rows-bottom', 'rowsBottom']].forEach(([id, field]) => {
     const row = q(id + '-row');
@@ -1646,6 +1655,10 @@ async function homeVideoSave() {
     await loadHome();
     renderHomeWalls();
   }
+}
+
+function homeReopenWake() {
+  homeSaveLayout({ reopenAfterWake: homeLayout.reopenAfterWake === false });
 }
 
 function homeRowsBottom() {

@@ -397,6 +397,7 @@ Under **Choose your launcher** on the web dashboard's **Home** tab, preview card
   * Stop the Glasshouse server: if Glasshouse Home stops answering or the server is stopped/uninstalled, LG's Home automatically takes its place back.
   * Glasshouse Home not opening: if a short press of **Home** brings nothing from Glasshouse Home, LG's Home opens instead. Where the TV's web app manager, which runs Glasshouse Home, has stopped, this is decided after five seconds, and the web app manager is started again first and Glasshouse Home given one more try. Where it is running, Glasshouse Home may only be slow to load, as on the first press after a reboot, so it is given 20 seconds. An app opened from Glasshouse Home is given 30 seconds to show its window before Glasshouse Home counts as not answering, as some, such as Nuvio, show LG's loading screen for several seconds first. A press of **Home** that only ends the screen saver opens nothing, as on LG's own Home, and is not taken for one that should open Glasshouse Home.
 * **Cold boot & standby:** [Open Home at power-on](#open-home-at-power-on) controls whether the TV opens the Home screen when switched on or stays on the last input (LG's Home Auto Launch). With Quick Start+ (Active Standby) on, Glasshouse Home opens immediately on wake (and on TVs like the C4 on webOS 10.3.1 that start on their last input anyway, Glasshouse Home is opened over it when Open Home at power-on is on). On a cold boot (Quick Start+ off), Glasshouse Home takes over about 25–40 seconds after power-on; pressing Home during startup keeps the TV on the current input with a brief notice until ready.
+* **Reopen Home after a wake (webOS 11):** On by default. A few seconds after the TV wakes, Glasshouse Home is closed and opened again, which brought back the remote on a C5 where it stopped answering after a wake. It shows as Home going away and coming back. Switched off, Home is left as it is: use that on a TV whose remote answers after a wake without it.
 * **Hide LG's Home while the TV starts (webOS 9 optional setting):** Replaces LG's Home layout with a blank screen during the first seconds of a cold boot so LG's launcher never flashes on screen.
 
 > [!WARNING]
@@ -481,7 +482,7 @@ The Home tab's **Home customisation** section holds what applies to whichever Ho
 ![Home customisation on a C2, grouped under Starting up, Layout, Shown on Home, Live preview, Search and Animations](../screenshots/home-customisation.png)
 
 * While Glasshouse Home is on:
-    * **Starting up:** Open Home at power-on, Hide LG's Home while the TV starts.
+    * **Starting up:** Open Home at power-on, Reopen Home after a wake, Hide LG's Home while the TV starts.
     * **Layout:** Alternative View, Rows along the bottom.
     * **Shown on Home:** Clock and date, Last watched, App count, App labels, Apps as cards, Card transparency, Pulse on the app in focus, Sound when moving, CEC addresses, Weather, Remote battery, Picture details.
     * **Live preview:** Live preview, with Preview sound, Keep the preview on, Preview in the tile and Preview size once it is on.
