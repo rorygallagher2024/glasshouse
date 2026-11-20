@@ -3255,8 +3255,6 @@ function remoteBatteryAvailable() {
  */
 var BAR_APP = 'com.tvweb.homebar';
 var lgHomeUnderBarFn = function () { return false; };
-// config.json home.reopenAfterWake: true or false decides the reopening after a wake on webOS 11 (reopenAfterWake11), null leaves it to the firmware.
-var reopenAfterWakeFn = function () { return null; };
 var barFromLgHome = false;
 /*
  * Whether LG's Home is under the bar that has opened, and stays drawn there.
@@ -3621,21 +3619,6 @@ function powerStateChanged(raw) {
   }, wakeSettleMs);
 }
 
-/*
- * The reopening was needed on a C5 on firmware 43.21.77 and is not on a C3 on
- * 44.00.92, where it only made Home go and come back. Firmware 44 and later
- * is left alone, an older or unknown one keeps it, and home.reopenAfterWake
- * in config.json overrides either way.
- */
-function wakeReopenWanted() {
-  var chosen = reopenAfterWakeFn();
-  if (typeof chosen === 'boolean') return chosen;
-  /** @type {any} */
-  var tv = tvInfoFn() || {};
-  var major = parseInt(String(tv.firmware || ''), 10);
-  return !(major >= 44);
-}
-
 function describeViewFocus() {
   if (!viewFocus) return 'nothing of its focus';
   return (viewFocus.focused ? 'it had the focus' : 'it did not have the focus') +
@@ -3713,7 +3696,7 @@ function powerChanged(active) {
     clearTimeout(wake11Timer);
     wake11Timer = null;
   }
-  if (!was && active && flutterHome() && readConfig().enabled && wakeReopenWanted()) reopenAfterWake11();
+  if (!was && active && flutterHome() && readConfig().enabled) reopenAfterWake11();
   if (!active) cancelWake();
   // Off, the view need not beat. A check its beats set in Active Standby is
   // caught as late when a suspend holds it up (watchBeat).
@@ -3824,7 +3807,6 @@ function init(opts) {
   pageSeenAt = 0;
   execFn = opts.exec || execFile;
   if (typeof opts.lgHomeUnderBar === 'function') lgHomeUnderBarFn = opts.lgHomeUnderBar;
-  if (typeof opts.reopenAfterWake === 'function') reopenAfterWakeFn = opts.reopenAfterWake;
   systemctlPath = opts.systemctl !== undefined ? opts.systemctl
     : SYSTEMCTLS.filter(function (p) { return fs.existsSync(p); })[0] || '';
   if (typeof opts.tvInfo === 'function') tvInfoFn = opts.tvInfo;

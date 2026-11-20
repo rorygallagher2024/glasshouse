@@ -77,8 +77,6 @@ Edit those in `config.json` and redeploy, or edit `/var/lib/tvweb/config.json` o
 
 `apps.hosts` is file-only as well. `apps.hosts` lists the hostnames, beyond IP addresses and `localhost`, that may be used to reach the dashboard when installing apps (e.g. `"apps": { "hosts": ["lgtv.local"] }`). `apps.repos` lists further catalogs served over HTTPS in Homebrew Channel format, which the Apps tab's **Other app catalogs** also adds to and removes from. `apps.sideload: true` allows installing from a URL or an uploaded file without a token; with a token set or from the TV itself, it is allowed already.
 
-`home.reopenAfterWake` is file-only too. On webOS 11 Glasshouse closes and opens Home again about four seconds after the TV wakes, which brought back the remote on a C5 (firmware 43) where it stopped answering after a wake, and shows as Home going and coming back. It is done on firmware older than 44 and not on 44 or later. `"home": { "reopenAfterWake": true }` or `false` decides it for a TV either way.
-
 `fetch.ip` is file-only too: `"fetch": { "ip": "4" }` or `"6"` makes the TV's curl use that address family first. Without it, a connection that fails is retried with `-6`, then `-4`.
 
 `allowPower` defaults to true: who on the network can use controls is decided by network exposure and `token`. Setting `"allowPower": false` hides and refuses power off, power on, and reboot, both in the dashboard and in Home Assistant.
