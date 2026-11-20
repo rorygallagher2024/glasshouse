@@ -53,6 +53,14 @@ function glowRender() {
     btn.title = label;
     btn.setAttribute('aria-label', label);
   }
+  // Preferences' Off and On, the same choice as the footer's button.
+  const pref = q('nav-pref-glow');
+  if (pref) pref.hidden = !glowAllowedHere || !(window.CSS && CSS.registerProperty);
+  document.querySelectorAll('[data-glow-set]').forEach(b => {
+    const on = (b.dataset.glowSet === 'on') === glowWanted;
+    b.classList.toggle('on', on);
+    b.setAttribute('aria-pressed', on ? 'true' : 'false');
+  });
   if (glowActive() && glowSetup()) document.documentElement.classList.add('glow');
   else glowFade();
 }
@@ -63,6 +71,10 @@ function glowAllowed(on) {
   glowRender();
   glowSchedule();
 }
+
+document.querySelectorAll('[data-glow-set]').forEach(b => b.addEventListener('click', () => {
+  if ((b.dataset.glowSet === 'on') !== glowWanted) toggleGlow();
+}));
 
 function toggleGlow() {
   glowWanted = !glowWanted;
