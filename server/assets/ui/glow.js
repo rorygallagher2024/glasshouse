@@ -4,7 +4,8 @@
  * switched on with the footer's button, kept per browser, and offered only
  * where the Server tab allows it. Read from /api/screen-colour every few
  * seconds, only while the page shows and the screen is on, and not while the
- * source says a game is playing (ALLM), so a game's frames are left alone.
+ * source says a game is playing (ALLM), so a game's frames are left alone,
+ * nor while PicCap or Hue Sync is capturing the screen itself.
  * LG's Game picture mode alone does not stop it: a computer is often shown
  * in it for its low latency. Given up for the visit where the TV gives no
  * capture.
@@ -130,7 +131,9 @@ async function glowTick() {
   try {
     const d = await (await fetch(api('/api/screen-colour'), { cache: 'no-store' })).json();
     if (d && d.off) { glowAllowed(false); return; }
-    if (!d || !d.ok) glowFails++;
+    // PicCap or Hue Sync is capturing: no glow until it stops, and no failure.
+    if (d && d.busy) glowFade();
+    else if (!d || !d.ok) glowFails++;
     else {
       glowFails = 0;
       // Stronger on a bright picture, and nothing from a dark one.

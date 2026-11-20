@@ -26,6 +26,8 @@ When PicCap is installed, **Ambient Light** (`/?tab=ambient`), below Home in the
 
 This allows toggling ambient lighting instantly from any phone, tablet, or browser without needing to open the PicCap application on the TV or use the Magic Remote.
 
+While PicCap is capturing, the dashboard's [screen glow](dashboard/index.md#screen-glow) waits, so its own captures never run beside PicCap's.
+
 ### Home Assistant integration
 
 When PicCap is answering on the TV, Glasshouse discovers a **PicCap Capture** switch in Home Assistant (`switch.<tv_name>_piccap`) under the **Controls & Media** category:

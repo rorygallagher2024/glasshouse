@@ -2248,7 +2248,19 @@ function handleRequest(req, res) {
   // The colours on screen, for the dashboard's glow: colours only, no picture.
   if (pathname === '/api/screen-colour' && screenColourModule) {
     if (!screenGlowAllowed()) return send(res, 200, JSON.stringify({ ok: false, off: true }));
-    return screenColourModule.read(function (c) { send(res, 200, JSON.stringify(c)); });
+    /*
+     * PicCap and Hue Sync stream from the TV's capture hardware themselves, and
+     * a capture of ours beside theirs could stall their stream. While either is
+     * capturing, the glow waits. Their status is asked as the stats ask it for
+     * the Ambient Light tab, from the same caches.
+     */
+    return piccapStatusFn(function (pc) {
+      huesyncStatusFn(function (hs) {
+        var busy = pc && pc.running ? 'piccap' : hs && hs.streaming ? 'huesync' : null;
+        if (busy) return send(res, 200, JSON.stringify({ ok: false, busy: busy }));
+        screenColourModule.read(function (c) { send(res, 200, JSON.stringify(c)); });
+      });
+    });
   }
   if (pathname === '/api/storage' && storageScanModule) {
     // A rescan only by POST, so a page load never forces one.
