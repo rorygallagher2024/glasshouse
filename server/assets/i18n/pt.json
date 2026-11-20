@@ -3676,5 +3676,7 @@
  "srv.art.empty": {"text": "Adicione imagens ou escolha uma coleção para Arte no separador Proteção de ecrã.", "from": "Add pictures or pick a collection for Art on the Screensaver tab."},
  "srv.saver.noArt": {"text": "Pede as imagens de Arte, que só as proteções de ecrã do próprio Glasshouse recebem.", "from": "It asks for Art's pictures, which only Glasshouse's own screen savers are given."},
  "ss.art.pictures": {"text": "Imagens", "from": "Pictures"},
- "ss.art.show": {"text": "Como são mostradas", "from": "Showing them"}
+ "ss.art.show": {"text": "Como são mostradas", "from": "Showing them"},
+ "inputs.noSignal.art": {"text": "Arte", "from": "Art"},
+ "inputs.noSignal.artDesc": {"text": "As imagens da proteção de ecrã Arte, com «Sem sinal» na legenda de cada uma. Escolha-as no separador Proteção de ecrã.", "from": "The Art screen saver’s pictures, with “No Signal” on each picture’s label. Pick them on the Screensaver tab."}
 }

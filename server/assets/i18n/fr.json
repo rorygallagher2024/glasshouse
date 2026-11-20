@@ -3676,5 +3676,7 @@
  "srv.art.empty": {"from": "Add pictures or pick a collection for Art on the Screensaver tab.", "text": "Ajoutez des images ou choisissez une collection pour Art dans l’onglet Écran de veille."},
  "srv.saver.noArt": {"from": "It asks for Art's pictures, which only Glasshouse's own screen savers are given.", "text": "Il demande les images d’Art, réservées aux écrans de veille de Glasshouse."},
  "ss.art.pictures": {"from": "Pictures", "text": "Images"},
- "ss.art.show": {"from": "Showing them", "text": "Affichage"}
+ "ss.art.show": {"from": "Showing them", "text": "Affichage"},
+ "inputs.noSignal.art": {"from": "Art", "text": "Art"},
+ "inputs.noSignal.artDesc": {"from": "The Art screen saver’s pictures, with “No Signal” on each picture’s label. Pick them on the Screensaver tab.", "text": "Les images de l’écran de veille Art, avec « Aucun signal » sur le cartel de chacune. Choisissez-les dans l’onglet Écran de veille."}
 }

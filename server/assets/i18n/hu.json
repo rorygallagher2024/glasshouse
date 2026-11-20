@@ -3690,5 +3690,7 @@
  "srv.art.empty": {"text": "Adjon hozzá képeket, vagy válasszon gyűjteményt a Művészethez a Képernyővédő lapon.", "from": "Add pictures or pick a collection for Art on the Screensaver tab."},
  "srv.saver.noArt": {"text": "A Művészet képeit kéri, amelyeket csak a Glasshouse saját képernyővédői kapnak meg.", "from": "It asks for Art's pictures, which only Glasshouse's own screen savers are given."},
  "ss.art.pictures": {"text": "Képek", "from": "Pictures"},
- "ss.art.show": {"text": "Megjelenítés", "from": "Showing them"}
+ "ss.art.show": {"text": "Megjelenítés", "from": "Showing them"},
+ "inputs.noSignal.art": {"text": "Művészet", "from": "Art"},
+ "inputs.noSignal.artDesc": {"text": "A Művészet képernyővédő képei, minden kép feliratán a „Nincs jel” szöveggel. A Képernyővédő lapon választhatja ki őket.", "from": "The Art screen saver’s pictures, with “No Signal” on each picture’s label. Pick them on the Screensaver tab."}
 }

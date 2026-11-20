@@ -3694,5 +3694,7 @@
  "srv.art.empty": {"text": "Dodaj zdjęcia lub wybierz kolekcję dla Sztuki na karcie Wygaszacz.", "from": "Add pictures or pick a collection for Art on the Screensaver tab."},
  "srv.saver.noArt": {"text": "Prosi o obrazy Sztuki, które otrzymują tylko wygaszacze Glasshouse.", "from": "It asks for Art's pictures, which only Glasshouse's own screen savers are given."},
  "ss.art.pictures": {"text": "Obrazy", "from": "Pictures"},
- "ss.art.show": {"text": "Wyświetlanie", "from": "Showing them"}
+ "ss.art.show": {"text": "Wyświetlanie", "from": "Showing them"},
+ "inputs.noSignal.art": {"text": "Sztuka", "from": "Art"},
+ "inputs.noSignal.artDesc": {"text": "Obrazy wygaszacza Sztuka, z napisem „Brak sygnału” na podpisie każdego obrazu. Wybierz je na karcie Wygaszacz.", "from": "The Art screen saver’s pictures, with “No Signal” on each picture’s label. Pick them on the Screensaver tab."}
 }

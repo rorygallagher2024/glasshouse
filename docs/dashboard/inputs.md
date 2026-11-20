@@ -53,6 +53,7 @@ Offered on TVs whose No Signal overlay Glasshouse knows how to replace (tried on
 * **LG's screen:** LG's default No Signal graphic, text, and help banner.
 * **Just “No Signal”:** Strips out the animated picture and help text so only the words “No Signal” drift quietly across a black screen.
 * **Disconnected cable:** Hides the “No Signal” text as well and shows a subtle disconnected HDMI cable icon instead.
+* **Art:** Shows the [Art screen saver](screen-savers.md#art)'s pictures, your own and the collections picked there, each fading into the next. Each picture's label starts with LG's own “No Signal”, and shows as the Art screen saver's does: for a moment after each change, always, or never. Until the first picture is in, or with nothing picked, LG's “No Signal” stays on screen. Pictures are asked for only while the screen shows. Tried on a B8 running webOS 4.4.3.
 
 Switching modes takes effect immediately when an idle input is already on screen, and otherwise the next time no HDMI input is active (such as at Home), so restarting the input app never interrupts what you are watching. LG's other messages, such as a scrambled channel notice, remain untouched. The chosen mode is preserved across restarts and is also available in the TV app under **Screen saver**.
 

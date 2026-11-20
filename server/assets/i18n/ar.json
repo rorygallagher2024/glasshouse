@@ -3676,5 +3676,7 @@
  "srv.art.empty": {"text": "أضف صورًا أو اختر مجموعة لـ«فن» في تبويب شاشة التوقف.", "from": "Add pictures or pick a collection for Art on the Screensaver tab."},
  "srv.saver.noArt": {"text": "يطلب صور «فن»، التي لا تُعطى إلا لشاشات توقف Glasshouse الخاصة.", "from": "It asks for Art's pictures, which only Glasshouse's own screen savers are given."},
  "ss.art.pictures": {"text": "الصور", "from": "Pictures"},
- "ss.art.show": {"text": "طريقة العرض", "from": "Showing them"}
+ "ss.art.show": {"text": "طريقة العرض", "from": "Showing them"},
+ "inputs.noSignal.art": {"text": "فن", "from": "Art"},
+ "inputs.noSignal.artDesc": {"text": "صور شاشة التوقف «فن»، مع «لا توجد إشارة» على بطاقة كل صورة. اخترها في تبويب شاشة التوقف.", "from": "The Art screen saver’s pictures, with “No Signal” on each picture’s label. Pick them on the Screensaver tab."}
 }
