@@ -142,6 +142,14 @@ WebOSWindow {
             x: (win.corner % 2) ? win.width - width - margin : margin
             y: win.corner >= 2 ? win.height - height - margin : margin
 
+            Text {
+                id: titleMeasure
+                visible: false
+                text: win.shownInfo && win.shownInfo.title ? win.shownInfo.title : ""
+                font.family: win.titleFamily
+                font.pixelSize: 30
+                font.italic: true
+            }
             Column {
                 id: words
                 x: 22
@@ -150,7 +158,9 @@ WebOSWindow {
                 Text {
                     text: win.shownInfo && win.shownInfo.title ? win.shownInfo.title : ""
                     visible: text !== ""
-                    width: Math.min(implicitWidth, 760)
+                    // A wrapped Text's own measure follows its width, so an
+                    // unwrapped copy says how wide the title wants to be.
+                    width: Math.min(titleMeasure.implicitWidth + 1, 760)
                     wrapMode: Text.WordWrap
                     maximumLineCount: 2
                     elide: Text.ElideRight
