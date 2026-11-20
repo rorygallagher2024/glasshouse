@@ -345,6 +345,7 @@ step(function (next) {
       assert.strictEqual(down.ok, true);
       var f = loadFilter();
       var writes = function () { return f.sent.filter(function (m) { return m.uri === 'com.webos.service.settings/setSystemSettings'; }).length; };
+      var reads = function () { return f.sent.filter(function (m) { return m.uri === 'com.webos.service.settings/getSystemSettings'; }).length; };
       // expire() runs every timer set so far; one tick runs those waiting and drops them.
       var tick = function () { var n = f.timers.length; f.expire(); f.timers.splice(0, n); };
       f.timers.length = 0;
@@ -358,6 +359,7 @@ step(function (next) {
       assert.strictEqual(tv.backlight, 70, 'a held key steps again on the timer');
       tick();
       assert.strictEqual(tv.backlight, 80, 'and again');
+      assert.strictEqual(reads(), 1, 'a held key reads the level once, on the press; its repeats go on from what it wrote');
       f.handle(1004, false, false);
       assert.strictEqual(tv.backlight, 80, 'the release itself steps nothing');
       tick();
@@ -365,6 +367,7 @@ step(function (next) {
       tv.backlight = 90;
       f.handle(1004, true, false);
       assert.strictEqual(tv.backlight, 100);
+      assert.strictEqual(reads(), 2, 'a new press reads the level again');
       tick();
       assert.strictEqual(tv.backlight, 100, 'stops at the end of the range');
       f.handle(1004, false, false);

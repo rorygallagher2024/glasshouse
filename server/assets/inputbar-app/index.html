@@ -196,12 +196,14 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
    * 'brightness', level } (the key filter, once for each press), it draws that
    * level at once and then follows the server's while the key is held, up to
    * OSD_IDLE_MS after the last change. A press while it is up only moves the
-   * time it closes.
+   * time it closes. The page cannot ask the settings service itself: an app
+   * installed from developer mode holds only luna's public group, and a
+   * requiredPermissions in its appinfo.json does not add settings.read.
    */
   var OSD_IDLE_MS = 1600;
   var OSD_POLL_MS = 120;
   var OSD_FILL_MAX = 547;
-  var osdTimer = null, osdPoll = null, osdLevel = -1, osdOpen = false, osdCloseTimer = null, osdStyle = 'osdlg';
+  var osdTimer = null, osdPoll = null, osdLevel = -1, osdOpen = false, osdCloseTimer = null, osdStyle = 'osdlg', osdPainted = '';
   // The class the body carries while the bar is up: the vertical bar, unless the launch or the server says horizontal.
   function osdClass(style) {
     osdStyle = style === 'horizontal' ? 'osdh' : 'osdlg';
@@ -209,15 +211,25 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
   function osdBodyClass() {
     document.body.className = 'osdon ' + osdStyle;
   }
+  // Writes the level to the style on screen only; a change of style paints the other again.
+  function osdPaint() {
+    if (osdStyle === 'osdh') {
+      $('ofill').style.width = osdLevel + '%';
+      $('onum').textContent = String(osdLevel);
+    } else {
+      // A level above 0 is at least as tall as the fill is wide, so its ends stay round.
+      $('vfill').style.height = (osdLevel > 0 ? Math.max(18, Math.round(osdLevel * OSD_FILL_MAX / 100)) : 0) + 'px';
+      $('vnum').textContent = String(osdLevel);
+    }
+    osdPainted = osdStyle;
+  }
+  // True where the level is not the one drawn.
   function osdDraw(level) {
-    if (level === osdLevel) return false;
+    var changed = level !== osdLevel;
+    if (!changed && osdPainted === osdStyle) return false;
     osdLevel = level;
-    $('ofill').style.width = level + '%';
-    $('onum').textContent = String(level);
-    // A level above 0 is at least as tall as the fill is wide, so its ends stay round.
-    $('vfill').style.height = (level > 0 ? Math.max(18, Math.round(level * OSD_FILL_MAX / 100)) : 0) + 'px';
-    $('vnum').textContent = String(level);
-    return true;
+    osdPaint();
+    return changed;
   }
   function osdStill() {
     clearTimeout(osdTimer);
