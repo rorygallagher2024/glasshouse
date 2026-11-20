@@ -1,8 +1,9 @@
 /**
  * test/test-art.js - The Art screen saver's pictures: the settings and what
  * is refused, a museum record as a picture (or not), paintings fetched ahead
- * and only a few kept, the owner's own taken in turn with them, uploads, and
- * the message with nothing to show.
+ * and only a few kept, the owner's own taken in turn with them, uploads, the
+ * message with nothing to show, a Rijksmuseum object read, and a network
+ * folder as a source.
  *
  * Strict ES5: runs on node 0.12.
  */
@@ -13,6 +14,7 @@ var fs = require('fs');
 var os = require('os');
 var path = require('path');
 var art = require('../server/lib/art');
+var dlna = require('../server/lib/dlna');
 
 console.log('Running test-art.js ...');
 
@@ -57,6 +59,35 @@ assert.strictEqual(pick.info.date, '1888');
 assert.strictEqual(art.clevelandPick(record(8, 3400, 600), c), null, 'a long scroll is left out');
 assert.strictEqual(art.clevelandPick(record(9, 3400, 2400, 'https://example.com/x.jpg'), c), null, 'only from the museum');
 assert.strictEqual(art.clevelandPick({ id: 10, images: {} }, c), null, 'no print, no picture');
+
+// A Rijksmuseum object, as Linked Art: its IIIF image where marked public
+// domain, its English title, its painter (or the attribution's) and date.
+function rijks(id, opts) {
+  opts = opts || {};
+  var EN = [{ id: 'http://vocab.getty.edu/aat/300388277' }], NL = [{ id: 'http://vocab.getty.edu/aat/300388256' }];
+  var part = opts.attributed
+    ? { referred_to_by: [{ classified_as: [{ id: 'http://vocab.getty.edu/aat/300435417' }], content: 'Geo Poggenbeek (mentioned on object)', language: EN }] }
+    : { carried_out_by: [{ notation: [{ '@language': 'nl', '@value': 'Jan Toorop' }, { '@language': 'en', '@value': 'Jan Toorop' }] }] };
+  return {
+    id: 'https://id.rijksmuseum.nl/' + id,
+    identified_by: [
+      { type: 'Name', content: 'Mistige zee', language: NL, classified_as: [{ id: 'http://vocab.getty.edu/aat/300404670' }] },
+      { type: 'Name', content: 'Misty Sea', language: EN, classified_as: [{ id: 'http://vocab.getty.edu/aat/300404670' }] }
+    ],
+    produced_by: { part: [part], timespan: { identified_by: [{ type: 'Name', content: '1899', language: EN }] } },
+    subject_of: [{ digitally_carried_by: [{
+      access_point: [{ id: 'https://iiif.micr.io/mPymb/full/max/0/default.jpg' }],
+      referred_to_by: [{ content: opts.copyright ? 'https://rightsstatements.org/vocab/InC/1.0/' : 'https://creativecommons.org/publicdomain/mark/1.0/' }]
+    }] }]
+  };
+}
+var rk = art.rijksPick(rijks(200100988), { id: 'rijks-later' });
+assert.strictEqual(rk.key, 'rk-200100988');
+assert.strictEqual(rk.url, 'https://iiif.micr.io/mPymb/full/!2400,1400/0/default.jpg', 'at a size for the screen');
+assert.deepEqual(rk.info, { title: 'Misty Sea', artist: 'Jan Toorop', date: '1899', credit: 'Rijksmuseum' }, 'in English');
+assert.strictEqual(art.rijksPick(rijks(1, { attributed: true }), { id: 'x' }).info.artist, 'Geo Poggenbeek', 'an attribution\'s painter');
+assert.strictEqual(art.rijksPick(rijks(2, { copyright: true }), { id: 'x' }), null, 'not public domain, not shown');
+assert.strictEqual(art.rijksPick({ id: 'https://example.com/1' }, { id: 'x' }), null);
 
 var steps = [
   // Nothing picked and nothing uploaded: the message says where to add some.
@@ -185,6 +216,55 @@ var steps = [
       art.next(function (r2) {
         assert.ok(r2.empty);
         done();
+      });
+    });
+  },
+  // A network folder: found, added, its pictures fetched over the network.
+  function (done) {
+    var SV = { udn: 'uuid:nas', name: 'NAS', location: 'http://192.168.1.20:8200/d.xml', control: 'http://192.168.1.20:8200/ctl' };
+    var browsed = [], got = [];
+    dlna.discover = function (cb) { setTimeout(function () { cb(null, [SV]); }, 0); };
+    dlna.describe = function (loc, cb) { setTimeout(function () { cb(null, { udn: SV.udn, name: SV.name, control: SV.control }); }, 0); };
+    dlna.browse = function (control, id, max, cb) {
+      browsed.push(id);
+      setTimeout(function () {
+        cb(null, { folders: [{ id: '64$1', title: 'Trips', count: 2 }], total: 3, pictures: id === '64' ? [
+          { id: 'a', title: 'Beach', date: '2019-07-01', url: 'http://192.168.1.20:8200/a.jpg' },
+          { id: 'b', title: 'Hill', date: '', url: 'http://192.168.1.20:8200/b.jpg' }] : [] });
+      }, 0);
+    };
+    dlna.fetchFile = function (u, max, cb) { got.push(u); setTimeout(function () { cb(null, JPEG); }, 0); };
+    init();
+    art.save({ mine: false, collections: [] }, function () {
+      art.addFolder('uuid:nas', '64', 'Photos', function (r0) {
+        assert.strictEqual(r0.ok, false, 'not before the servers are looked for');
+        art.findServers(function (s) {
+          assert.deepEqual(s.servers, [{ udn: 'uuid:nas', name: 'NAS' }]);
+          art.browseFolder('uuid:nas', '64', function (b) {
+            assert.strictEqual(b.pictures, 2);
+            assert.deepEqual(b.folders, [{ id: '64$1', title: 'Trips', count: 2 }]);
+            art.addFolder('uuid:nas', '64', 'Photos', function (r) {
+              assert.strictEqual(r.ok, true);
+              assert.strictEqual(r.folders.length, 1);
+              assert.strictEqual(r.folders[0].server, 'NAS');
+              later(function () {
+                assert.strictEqual(got.length, 2, 'two fetched ahead from the folder');
+                art.next(function (n) {
+                  assert.ok(/^c-dl-[0-9a-f]{16}$/.test(n.id));
+                  assert.strictEqual(n.info.credit, 'Photos \u00b7 NAS');
+                  assert.ok(n.info.date === '2019' || n.info.date === '');
+                  var key = r.folders[0].key;
+                  init();
+                  assert.strictEqual(art.status().folders[0].key, key, 'kept over a restart');
+                  art.removeFolder(key, function (r2) {
+                    assert.strictEqual(r2.folders.length, 0);
+                    done();
+                  });
+                });
+              });
+            });
+          });
+        });
       });
     });
   },

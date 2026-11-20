@@ -747,6 +747,13 @@ function renderSsArt(art, locked) {
     if (files.length && !busy && !full) ssArtUpload(files, art);
   });
 
+  const folders = art.folders || [];
+  q('ss-art-folders').innerHTML = (folders.length ? `<div class="ss-pool-box ss-art-box">${folders.map(f => `<div class="ss-pool-item ss-art-item ss-art-folder">
+      <span><span class="ss-art-name">${esc(f.title || f.server)}</span><span class="ss-art-sub">${esc(f.server)}</span></span>
+      <button type="button" class="wall-link" onclick="ssArtRemoveFolder('${esc(f.key)}')" ${locked ? 'disabled' : ''}>${esc(t('home.wall.remove', 'Remove'))}</button>
+    </div>`).join('')}</div>` : '') +
+    `<div class="ss-pool-actions"><button type="button" class="ss-pool-btn" onclick="ssArtBrowse()" ${locked || folders.length >= (art.maxFolders || 10) || !q('ss-art-browse').hidden ? 'disabled' : ''}>${esc(t('ss.art.addFolder', 'Add a network folder'))}</button></div>`;
+
   const fill = (id, options, value) => {
     const sel = q(id);
     if (document.activeElement !== sel) {
@@ -763,13 +770,97 @@ function renderSsArt(art, locked) {
     ['always', t('ss.art.captionAlways', 'Its label all the time')], ['off', t('ss.art.captionOff', 'No label')]], s.caption);
 
   const where = [];
-  if (art.collections.some(c => c.on)) {
+  const museums = [...new Set(art.collections.filter(c => c.on).map(c => c.source))];
+  if (museums.length) {
     where.push(art.fetching ? t('ss.art.fetching', 'Fetching the next painting…')
-      : t('ss.art.privacy', 'The paintings are from {source}\'s open access collection, in the public domain. The TV fetches them from the museum one at a time, and keeps only the next one or two.', { source: art.collections[0].source }));
+      : t('ss.art.privacy2', 'The paintings are in the public domain, from the open access collections of {museums}. The TV fetches them one at a time, and keeps only the next one or two.', { museums: museums.join(t('ss.art.and', ' and ')) }));
   }
   if (art.error) where.push(art.error);
-  if (!s.mine && !art.collections.some(c => c.on)) where.push(t('ss.art.nothing', 'Pick your pictures or a collection, or the screen saver has nothing to show.'));
+  if (!s.mine && !museums.length && !folders.length) where.push(t('ss.art.nothing', 'Pick your pictures or a collection, or the screen saver has nothing to show.'));
   q('ss-art-where').textContent = where.join(' ');
+}
+
+/*
+ * Adding a network folder: the media servers found, then a server's folders,
+ * one level at a time, each with how many pictures it holds.
+ */
+let ssArtPath = [];
+
+async function ssArtGet(path) {
+  const r = await (await fetch(api(path))).json();
+  if (!r.ok) throw new Error(r.error || t('common.unknownError', 'unknown error'));
+  return r;
+}
+
+async function ssArtBrowse() {
+  const box = q('ss-art-browse');
+  box.hidden = false;
+  ssArtPath = [];
+  box.innerHTML = `<div class="pv-sub">${esc(t('ss.art.looking', 'Looking for media servers on your network…'))}</div>`;
+  if (ssArtState) renderSsArt(ssArtState, false);
+  let r;
+  try { r = await ssArtGet('/api/art/servers'); } catch (e) { box.innerHTML = `<div class="pv-sub">${esc(e.message)}</div>`; return; }
+  const list = r.servers || [];
+  box.innerHTML = (list.length
+    ? `<div class="ss-pool-box ss-art-box">${list.map(sv => `<button type="button" class="ss-art-row" onclick="ssArtOpen(${esc(JSON.stringify(JSON.stringify({ udn: sv.udn, name: sv.name })))}, '0', '')">${esc(sv.name)}<span aria-hidden="true">›</span></button>`).join('')}</div>`
+    : `<div class="pv-sub">${esc(t('ss.art.noServers', 'No media servers answered. Check that one, such as Plex, Jellyfin or a NAS, is on and sharing over DLNA.'))}</div>`) +
+    `<div class="ss-pool-actions"><button type="button" class="ss-pool-btn" onclick="ssArtBrowseClose()">${esc(t('common.cancel', 'Cancel'))}</button></div>`;
+}
+
+function ssArtBrowseClose() {
+  q('ss-art-browse').hidden = true;
+  ssArtPath = [];
+  if (ssArtState) renderSsArt(ssArtState, false);
+}
+
+// One folder of a server; up goes back one level, or to the servers.
+async function ssArtOpen(serverJson, id, title, up) {
+  const sv = JSON.parse(serverJson);
+  if (up) ssArtPath = ssArtPath.slice(0, -1);
+  else if (id !== '0') ssArtPath.push({ id, title });
+  else ssArtPath = [];
+  const box = q('ss-art-browse');
+  box.innerHTML = `<div class="pv-sub">${esc(t('ss.art.opening', 'Opening the folder…'))}</div>`;
+  let r;
+  try { r = await ssArtGet('/api/art/browse?udn=' + encodeURIComponent(sv.udn) + '&id=' + encodeURIComponent(id)); }
+  catch (e) { box.innerHTML = `<div class="pv-sub">${esc(e.message)}</div><div class="ss-pool-actions"><button type="button" class="ss-pool-btn" onclick="ssArtBrowse()">${esc(t('ss.art.servers', 'Media servers'))}</button></div>`; return; }
+  const svArg = esc(JSON.stringify(serverJson));
+  const crumbs = [sv.name].concat(ssArtPath.map(p => p.title)).join(' / ');
+  const parent = ssArtPath.length > 1 ? ssArtPath[ssArtPath.length - 2] : null;
+  const back = ssArtPath.length
+    ? `ssArtOpen(${svArg}, ${esc(JSON.stringify(parent ? parent.id : '0'))}, '', true)`
+    : 'ssArtBrowse()';
+  const folders = r.folders || [];
+  box.innerHTML = `<div class="ss-art-crumbs">${esc(crumbs)}</div>` +
+    (folders.length ? `<div class="ss-pool-box ss-art-box">${folders.map(f => `<button type="button" class="ss-art-row" onclick="ssArtOpen(${svArg}, ${esc(JSON.stringify(f.id))}, ${esc(JSON.stringify(f.title))})">${esc(f.title)}<span aria-hidden="true">›</span></button>`).join('')}</div>` : '') +
+    `<div class="pv-sub">${esc(r.pictures === 1 ? t('ss.art.folderHasOne', 'This folder holds 1 picture.') : r.pictures ? t('ss.art.folderHas', 'This folder holds {n} pictures.', { n: r.pictures }) : t('ss.art.folderNone', 'This folder holds no JPEG pictures of its own.'))}</div>` +
+    `<div class="ss-pool-actions">
+      <button type="button" class="ss-pool-btn" onclick="${back}">${esc(t('ss.art.back', 'Back'))}</button>
+      <button type="button" class="ss-pool-btn" onclick="ssArtAddFolder(${svArg}, ${esc(JSON.stringify(id))})" ${r.pictures ? '' : 'disabled'}>${esc(t('ss.art.useFolder', 'Use this folder'))}</button>
+      <button type="button" class="ss-pool-btn" onclick="ssArtBrowseClose()">${esc(t('common.cancel', 'Cancel'))}</button>
+    </div>`;
+}
+
+async function ssArtAddFolder(serverJson, id) {
+  const sv = JSON.parse(serverJson);
+  const title = ssArtPath.length ? ssArtPath.map(p => p.title).join(' / ') : sv.name;
+  try {
+    const res = await fetch(api('/api/art'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ addFolder: { udn: sv.udn, id, title } }) });
+    const r = await res.json();
+    if (!r.ok) throw new Error(r.error || t('common.unknownError', 'unknown error'));
+  } catch (e) { showErr(e.message); return; }
+  q('ss-art-browse').hidden = true;
+  ssArtPath = [];
+  loadScreensavers();
+}
+
+async function ssArtRemoveFolder(key) {
+  try {
+    const res = await fetch(api('/api/art'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ removeFolder: key }) });
+    const r = await res.json();
+    if (!r.ok) throw new Error(r.error || t('common.unknownError', 'unknown error'));
+  } catch (e) { showErr(e.message); }
+  loadScreensavers();
 }
 
 async function ssArtSave(settings) {

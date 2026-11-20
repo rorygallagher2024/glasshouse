@@ -1130,6 +1130,9 @@
     <div class="ss-art-pics" id="ss-art-pics"></div>
     <input type="file" id="ss-art-file" accept="image/jpeg,image/png,image/webp" multiple hidden onchange="ssArtPicked(this)">
     <div class="pv-sub" id="ss-art-note" role="status"></div>
+    <div class="ss-level-lbl ss-video-lbl" data-t="ss.art.folders">Network folders</div>
+    <div id="ss-art-folders"></div>
+    <div class="ss-art-browse" id="ss-art-browse" hidden></div>
     <div class="ss-level-lbl ss-video-lbl" id="ss-art-show-lbl" data-t="ss.art.show">Showing them</div>
     <select class="pill-sel ss-sel" id="ss-art-minutes" aria-labelledby="ss-art-show-lbl ss-art-minutes" onchange="ssArtSave({ minutes: Number(this.value) })"></select>
     <select class="pill-sel ss-sel" id="ss-art-fit" aria-labelledby="ss-art-show-lbl ss-art-fit" onchange="ssArtSave({ fit: this.value })"></select>

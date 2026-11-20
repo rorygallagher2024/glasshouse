@@ -1,15 +1,19 @@
 'use strict';
 /*
  * lib/art.js - The pictures the Art screen saver shows: the owner's own,
- * uploaded from the browser, and paintings from museum collections in the
- * public domain. Strict ES5 for Node 0.12.2 on webOS 4.
+ * uploaded from the browser, paintings from museum collections in the public
+ * domain, and folders on the home network's media servers (lib/dlna).
+ * Strict ES5 for Node 0.12.2 on webOS 4.
  *
  * The screen saver asks next() for each picture and is handed an address on
  * this server, never the museum's: the TV's own curl or wget fetches it (Qt's
  * network stack on webOS 4 is too old for most sites' TLS), and the file is
  * checked as a JPEG before it is shown.
  *
- * A collection is a query of a museum's open access API. Only the next
+ * A collection is a query of a museum's open access API: the Cleveland Museum
+ * of Art's by department, the Rijksmuseum's by year. A network folder is a
+ * folder of a media server, its pictures listed again every few minutes.
+ * Only the next
  * picture or two and the one on screen are kept, in CACHE_DIR, so a run never
  * waits on the network once the first has come; the rest are deleted.
  *
@@ -25,6 +29,7 @@ var installer = require('./installer');
 var msg = require('./say').msg;
 var fetchMod = require('./fetch');
 var wallpapers = require('./home-wallpapers');
+var dlna = require('./dlna');
 
 var stateDir = '/var/lib/tvweb';
 var uploadsDir, cacheDir, settingsFile, queueFile;
@@ -32,9 +37,14 @@ var uploadsDir, cacheDir, settingsFile, queueFile;
 // The owner's own: re-encoded by the browser at 1920 x 1080 or less.
 var MAX_PICTURES = 100;
 var MAX_UPLOAD = 5 * 1024 * 1024;
-// A museum's print size is 3400 pixels on its long side, a few MB.
+// A museum's print size is 3400 pixels on its long side, a few MB; a camera's
+// photo on a media server may be 6000. The screen saver decodes either at the
+// screen's size.
 var MAX_FETCH = 12 * 1024 * 1024;
-var MAX_FETCH_SIDE = 4096;
+var MAX_FETCH_SIDE = 8192;
+// Network folders: how many, and how long a folder's listing is used.
+var MAX_FOLDERS = 10;
+var LISTING_MS = 10 * 60 * 1000;
 // Pictures fetched ahead, and how many recent ones are not picked again.
 var QUEUE = 2;
 var RECENT = 60;
@@ -45,27 +55,43 @@ var PICK_TRIES = 5;
 var MINUTES = [5, 10, 15, 30, 60];
 var FITS = ['fit', 'fill'];
 var CAPTIONS = ['brief', 'always', 'off'];
-var DEFAULTS = { mine: true, collections: [], minutes: 10, fit: 'fit', caption: 'brief' };
+var DEFAULTS = { mine: true, collections: [], folders: [], minutes: 10, fit: 'fit', caption: 'brief' };
 
 var CLEVELAND_API = 'https://openaccess-api.clevelandart.org/api/artworks/';
 var CLEVELAND_CDN = /^https:\/\/openaccess-cdn\.clevelandart\.org\/[A-Za-z0-9._\/-]+\.jpg$/;
 var CLEVELAND = msg('srv.art.cleveland', 'The Cleveland Museum of Art');
+var RIJKS_SEARCH = 'https://data.rijksmuseum.nl/search/collection?type=painting&imageAvailable=true&creationDate=';
+var RIJKS_ID = /^https:\/\/id\.rijksmuseum\.nl\/\d{1,15}$/;
+var RIJKS_IIIF = /^https:\/\/iiif\.micr\.io\/[A-Za-z0-9]{1,40}\/full\/max\/0\/default\.jpg$/;
+// IIIF's best fit within this: room for Fill's crop, a few hundred KB.
+var RIJKS_SIZE = '!2400,1400';
+var RIJKS = msg('srv.art.rijks', 'Rijksmuseum');
+// Linked Art's English, and a name that is the title.
+var AAT_ENGLISH = 'http://vocab.getty.edu/aat/300388277';
+var AAT_PREFERRED = 'http://vocab.getty.edu/aat/300404670';
+var AAT_CREATOR = 'http://vocab.getty.edu/aat/300435417';
 
 /*
- * The collections, each one query. Every work in them is CC0: free to show
- * with no conditions, so the credit is a courtesy.
+ * The collections, each one query. Every work in them is CC0 or in the public
+ * domain: free to show with no conditions, so the credit is a courtesy.
  */
 var COLLECTIONS = [
-  { id: 'cma-european', departments: ['European Painting and Sculpture'],
+  { id: 'rijks-golden', museum: 'rijks', years: [1600, 1699],
+    label: msg('srv.art.rijksGolden', 'Dutch Golden Age paintings'),
+    detail: msg('srv.art.rijksGoldenDesc', 'Rembrandt, Vermeer, Hals and their contemporaries.') },
+  { id: 'rijks-later', museum: 'rijks', years: [1700, 1899],
+    label: msg('srv.art.rijksLater', 'Dutch paintings of the 1700s and 1800s'),
+    detail: msg('srv.art.rijksLaterDesc', 'From Dutch interiors to the Hague School and Breitner.') },
+  { id: 'cma-european', museum: 'cma', departments: ['European Painting and Sculpture'],
     label: msg('srv.art.cmaEuropean', 'European paintings'),
     detail: msg('srv.art.cmaEuropeanDesc', 'Old masters, from the 1300s to the 1700s.') },
-  { id: 'cma-modern', departments: ['Modern European Painting and Sculpture'],
+  { id: 'cma-modern', museum: 'cma', departments: ['Modern European Painting and Sculpture'],
     label: msg('srv.art.cmaModern', 'European paintings of the 1800s'),
     detail: msg('srv.art.cmaModernDesc', 'From Romanticism to Monet, Cézanne and Van Gogh.') },
-  { id: 'cma-american', departments: ['American Painting and Sculpture'],
+  { id: 'cma-american', museum: 'cma', departments: ['American Painting and Sculpture'],
     label: msg('srv.art.cmaAmerican', 'American paintings'),
     detail: msg('srv.art.cmaAmericanDesc', 'Portraits and landscapes from the 1700s to the early 1900s.') },
-  { id: 'cma-asian', departments: ['Japanese Art', 'Chinese Art'],
+  { id: 'cma-asian', museum: 'cma', departments: ['Japanese Art', 'Chinese Art'],
     label: msg('srv.art.cmaAsian', 'Japanese and Chinese paintings'),
     detail: msg('srv.art.cmaAsianDesc', 'Screens, hanging scrolls and album leaves.') }
 ];
@@ -102,10 +128,36 @@ function readSettings(raw) {
       return collectionById(id) && all.indexOf(id) === i;
     });
   }
+  if (Array.isArray(raw.folders)) {
+    raw.folders.forEach(function (f) {
+      var one = readFolder(f);
+      if (one && s.folders.length < MAX_FOLDERS && !s.folders.some(function (o) { return o.key === one.key; })) s.folders.push(one);
+    });
+  }
   if (MINUTES.indexOf(raw.minutes) !== -1) s.minutes = raw.minutes;
   if (FITS.indexOf(raw.fit) !== -1) s.fit = raw.fit;
   if (CAPTIONS.indexOf(raw.caption) !== -1) s.caption = raw.caption;
   return s;
+}
+
+// A network folder as saved: its server and the folder, under a key of its own.
+function readFolder(f) {
+  if (!f || typeof f !== 'object') return null;
+  var udn = String(f.udn || ''), id = String(f.id || ''), location = String(f.location || '');
+  if (!udn || udn.length > 200 || !id || id.length > 500 || !/^http:\/\//.test(location) || location.length > 500) return null;
+  return {
+    key: folderKey(udn, id), udn: udn, id: id, location: location,
+    server: String(f.server || '').slice(0, 120), title: String(f.title || '').slice(0, 300)
+  };
+}
+
+function folderKey(udn, id) {
+  return 'nf-' + crypto.createHash('sha1').update(udn + '\n' + id).digest('hex').slice(0, 12);
+}
+
+function folderByKey(key) {
+  for (var i = 0; i < settings.folders.length; i++) if (settings.folders[i].key === key) return settings.folders[i];
+  return null;
 }
 
 function collectionById(id) {
@@ -124,6 +176,7 @@ function init(opts) {
   if (opts.free) freeFn = opts.free;
   queue = []; shown = []; recent = []; totals = {}; deck = [];
   filling = false; lastError = ''; uploading = false; turn = 0;
+  servers = {}; listings = {};
   var raw = null;
   try { raw = JSON.parse(fs.readFileSync(settingsFile, 'utf8')); } catch (e) {}
   settings = readSettings(raw);
@@ -181,8 +234,10 @@ function status() {
     uploading: uploading,
     minuteChoices: MINUTES.slice(),
     collections: COLLECTIONS.map(function (c) {
-      return { id: c.id, label: c.label, detail: c.detail, source: CLEVELAND, on: settings.collections.indexOf(c.id) !== -1 };
+      return { id: c.id, label: c.label, detail: c.detail, source: c.museum === 'rijks' ? RIJKS : CLEVELAND, on: settings.collections.indexOf(c.id) !== -1 };
     }),
+    folders: settings.folders.map(function (f) { return { key: f.key, server: f.server, title: f.title }; }),
+    maxFolders: MAX_FOLDERS,
     fetching: filling,
     error: lastError || undefined
   };
@@ -200,11 +255,25 @@ function save(patch, cb) {
     if (!Object.prototype.hasOwnProperty.call(patch, k)) continue;
     if (JSON.stringify(read[k]) !== JSON.stringify(next[k])) return cb({ ok: false, error: 'invalid ' + k });
   }
-  var dropped = settings.collections.filter(function (id) { return read.collections.indexOf(id) === -1; });
-  settings = read;
+  commit(read, cb);
+}
+
+// The collections and network folders pictures are fetched from.
+function sources() {
+  return settings.collections.concat(settings.folders.map(function (f) { return f.key; }));
+}
+
+/*
+ * New settings saved; pictures fetched from a source no longer picked go, and
+ * the first picture of a new one is fetched by the time the screen saver asks.
+ */
+function commit(next, cb) {
+  var before = sources();
+  settings = next;
   try { util.writeJsonAtomic(settingsFile, settings); }
   catch (e) { return cb({ ok: false, error: e.message }); }
-  // Pictures fetched from a collection no longer picked go.
+  var now = sources();
+  var dropped = before.filter(function (id) { return now.indexOf(id) === -1; });
   if (dropped.length) {
     queue = queue.filter(function (item) {
       if (dropped.indexOf(item.collection) === -1) return true;
@@ -214,9 +283,55 @@ function save(patch, cb) {
     saveQueue();
   }
   lastError = '';
-  // The first picture is ready by the time the screen saver first asks.
   fill();
   cb(status());
+}
+
+/*
+ * The media servers on the network, found again each time: [{ udn, name }].
+ * Those found are remembered, so a folder can be added from one by its udn.
+ */
+var servers = {};
+function findServers(cb) {
+  dlna.discover(function (err, list) {
+    (list || []).forEach(function (sv) { servers[sv.udn] = sv; });
+    cb({ ok: true, servers: (list || []).map(function (sv) { return { udn: sv.udn, name: sv.name }; }) });
+  });
+}
+
+/*
+ * One folder of a server found: its subfolders, and how many pictures it holds.
+ */
+function browseFolder(udn, id, cb) {
+  var sv = servers[udn];
+  if (!sv) return cb({ ok: false, error: msg('srv.art.serverGone', 'Look for media servers again: this one was not found.') });
+  dlna.browse(sv.control, id || '0', MAX_FETCH_SIDE, function (err, r) {
+    if (err) return cb({ ok: false, error: msg('srv.art.browseFailed', 'Could not open the folder: {error}', { error: err.message }) });
+    cb({ ok: true, folders: r.folders, pictures: r.pictures.length, total: r.total });
+  });
+}
+
+// A folder of a server found, added as a source.
+function addFolder(udn, id, title, cb) {
+  var sv = servers[udn];
+  if (!sv) return cb({ ok: false, error: msg('srv.art.serverGone', 'Look for media servers again: this one was not found.') });
+  if (settings.folders.length >= MAX_FOLDERS) {
+    return cb({ ok: false, error: msg('srv.art.foldersFull', 'Art takes up to {max} network folders. Remove one to add another.', { max: MAX_FOLDERS }) });
+  }
+  var f = readFolder({ udn: udn, id: id, location: sv.location, server: sv.name, title: title });
+  if (!f) return cb({ ok: false, error: 'invalid folder' });
+  if (folderByKey(f.key)) return cb(status());
+  var next = copy(settings);
+  next.folders.push(f);
+  commit(readSettings(next), cb);
+}
+
+function removeFolder(key, cb) {
+  if (!folderByKey(key)) return cb({ ok: false, error: 'unknown folder' });
+  var next = copy(settings);
+  next.folders = next.folders.filter(function (f) { return f.key !== key; });
+  delete listings[key];
+  commit(readSettings(next), cb);
 }
 
 function newPictureId() {
@@ -338,7 +453,7 @@ function clevelandUrl(department, skip, limit) {
  * in one of its departments, its size learnt from the first answer.
  * cb(err, pick).
  */
-function pickFrom(collection, cb) {
+function pickCleveland(collection, cb) {
   var tries = 0;
   (function attempt() {
     if (tries++ >= PICK_TRIES) return cb(null, null);
@@ -383,23 +498,192 @@ function readJpegFile(file) {
  * one at a time. A failure stops it until the next ask, and is shown on the
  * dashboard.
  */
+// Linked Art's English name of a kind, else the first.
+function englishName(names, kind) {
+  var list = (Array.isArray(names) ? names : []).filter(function (n) {
+    return n && n.type === 'Name' && typeof n.content === 'string' && (!kind || (n.classified_as || []).some(function (c) { return c && c.id === kind; }));
+  });
+  var en = list.filter(function (n) { return (n.language || []).some(function (l) { return l && l.id === AAT_ENGLISH; }); });
+  return ((en[0] || list[0] || {}).content || '').trim();
+}
+
+function englishNotation(notation) {
+  var list = Array.isArray(notation) ? notation : [];
+  for (var i = 0; i < list.length; i++) if (list[i] && list[i]['@language'] === 'en') return String(list[i]['@value'] || '');
+  return list[0] ? String(list[0]['@value'] || '') : '';
+}
+
+/*
+ * A Rijksmuseum object (Linked Art) as a picture to fetch, or null: its IIIF
+ * image, where it is marked public domain, at a size for the screen.
+ */
+function rijksPick(obj, collection) {
+  if (!obj || typeof obj.id !== 'string' || !RIJKS_ID.test(obj.id)) return null;
+  /** @type {string|null} */
+  var image = null;
+  (obj.subject_of || []).forEach(function (so) {
+    (so && so.digitally_carried_by || []).forEach(function (dobj) {
+      var free = (dobj.referred_to_by || []).some(function (r) { return /publicdomain/.test(String(r && r.content || '')); });
+      (dobj.access_point || []).forEach(function (ap) {
+        if (!image && free && ap && RIJKS_IIIF.test(String(ap.id || ''))) image = ap.id;
+      });
+    });
+  });
+  if (!image) return null;
+  var made = obj.produced_by || {};
+  var artist = '';
+  [made].concat(made.part || []).forEach(function (part) {
+    (part && part.carried_out_by || []).forEach(function (who) {
+      if (!artist && who) artist = englishNotation(who.notation) || englishName(who.identified_by);
+    });
+  });
+  // An attribution names its painter only in a statement: "Geo Poggenbeek (mentioned on object)".
+  [made].concat(made.part || []).forEach(function (part) {
+    (part && part.referred_to_by || []).forEach(function (r) {
+      var says = r && typeof r.content === 'string' && (r.classified_as || []).some(function (c) { return c && c.id === AAT_CREATOR; }) &&
+        (r.language || []).some(function (l) { return l && l.id === AAT_ENGLISH; });
+      if (!artist && says) artist = r.content.replace(/\s*\(.*$/, '').trim();
+    });
+  });
+  var date = made.timespan ? englishName(made.timespan.identified_by) : '';
+  return {
+    key: 'rk-' + obj.id.split('/').pop(),
+    collection: collection.id,
+    url: image.replace('/full/max/', '/full/' + RIJKS_SIZE + '/'),
+    info: {
+      title: (englishName(obj.identified_by, AAT_PREFERRED) || englishName(obj.identified_by)).slice(0, 200),
+      artist: artist.slice(0, 120),
+      date: date.slice(0, 60),
+      credit: RIJKS
+    }
+  };
+}
+
+/*
+ * One painting of a Rijksmuseum collection: the paintings of a random year in
+ * its span, and one of those not shown lately.
+ */
+function pickRijks(collection, cb) {
+  var tries = 0;
+  (function attempt() {
+    if (tries++ >= PICK_TRIES) return cb(null, null);
+    var year = collection.years[0] + Math.floor(Math.random() * (collection.years[1] - collection.years[0] + 1));
+    getJsonFn(RIJKS_SEARCH + year, function (err, doc) {
+      if (err) return cb(err);
+      var ids = (doc && Array.isArray(doc.orderedItems) ? doc.orderedItems : [])
+        .map(function (o) { return o && String(o.id || ''); })
+        .filter(function (id) { return RIJKS_ID.test(id) && recent.indexOf('rk-' + id.split('/').pop()) === -1 && !inQueue('rk-' + id.split('/').pop()); });
+      if (!ids.length) return attempt();
+      getJsonFn(ids[Math.floor(Math.random() * ids.length)], function (err2, obj) {
+        if (err2) return cb(err2);
+        var pick = rijksPick(obj, collection);
+        if (!pick) return attempt();
+        cb(null, pick);
+      });
+    });
+  })();
+}
+
+// What each network folder holds, listed again after LISTING_MS: key -> { at, pictures }.
+var listings = {};
+
+/*
+ * A folder's pictures, from its listing; where the server does not answer at
+ * the address it had, it is looked for again by its udn, as a server's
+ * address can change.
+ */
+function folderPictures(f, cb) {
+  var l = listings[f.key];
+  if (l && Date.now() - l.at < LISTING_MS) return cb(null, l.pictures);
+  function list(control, again) {
+    dlna.browse(control, f.id, MAX_FETCH_SIDE, function (err, r) {
+      if (!err) {
+        listings[f.key] = { at: Date.now(), pictures: r.pictures };
+        return cb(null, r.pictures);
+      }
+      if (!again) return cb(err);
+      dlna.discover(function (e2, found) {
+        var sv = (found || []).filter(function (o) { return o.udn === f.udn; })[0];
+        if (!sv) return cb(err);
+        servers[sv.udn] = sv;
+        f.location = sv.location;
+        try { util.writeJsonAtomic(settingsFile, settings); } catch (e) {}
+        list(sv.control, false);
+      });
+    });
+  }
+  dlna.describe(f.location, function (err, d) {
+    if (err || d.udn !== f.udn) return list(null, true);
+    list(d.control, true);
+  });
+}
+
+function pickFolder(f, cb) {
+  folderPictures(f, function (err, list) {
+    if (err) return cb(err);
+    var fresh = (list || []).filter(function (p) {
+      var key = itemKey(f, p.id);
+      return recent.indexOf(key) === -1 && !inQueue(key);
+    });
+    // All shown lately: any but those waiting or on screen.
+    if (!fresh.length) fresh = (list || []).filter(function (p) { return !inQueue(itemKey(f, p.id)); });
+    if (!fresh.length) return cb(null, null);
+    var p = fresh[Math.floor(Math.random() * fresh.length)];
+    var year = /^\d{4}/.exec(p.date || '');
+    cb(null, {
+      key: itemKey(f, p.id),
+      collection: f.key,
+      url: p.url,
+      local: true,
+      info: { title: p.title, artist: '', date: year ? year[0] : '', credit: [f.title, f.server].filter(Boolean).join(' \u00b7 ') }
+    });
+  });
+}
+
+function itemKey(f, id) {
+  return 'dl-' + crypto.createHash('sha1').update(f.key + '\n' + id).digest('hex').slice(0, 16);
+}
+
+// A picture from one source: a collection's id or a network folder's key.
+function pickFrom(source, cb) {
+  var c = collectionById(source);
+  if (c) return c.museum === 'rijks' ? pickRijks(c, cb) : pickCleveland(c, cb);
+  var f = folderByKey(source);
+  if (f) return pickFolder(f, cb);
+  cb(null, null);
+}
+
+function fetchTo(pick, part, cb) {
+  if (!pick.local) return downloadFn(pick.url, part, cb);
+  dlna.fetchFile(pick.url, MAX_FETCH, function (err, buf) {
+    if (err) return cb(err);
+    fs.writeFile(part, buf, cb);
+  });
+}
+
 function fill() {
-  if (filling || !settings.collections.length || queue.length >= QUEUE) return;
+  var all = sources();
+  if (filling || !all.length || queue.length >= QUEUE) return;
   filling = true;
-  var picked = settings.collections;
-  var collection = collectionById(picked[Math.floor(Math.random() * picked.length)]);
+  var source = all[Math.floor(Math.random() * all.length)];
+  var folder = folderByKey(source);
   function done(err) {
     filling = false;
     if (err) {
-      lastError = msg('srv.art.fetchFailed', 'Could not fetch a painting: {error}', { error: String(err.message || err) });
+      var detail = String(err.message || err);
+      lastError = folder
+        ? msg('srv.art.folderFailed', 'Could not fetch a picture from {folder}: {error}', { folder: folder.title || folder.server, error: detail })
+        : msg('srv.art.fetchFailed', 'Could not fetch a painting: {error}', { error: detail });
       return;
     }
     lastError = '';
     fill();
   }
-  pickFrom(collection, function (err, pick) {
+  pickFrom(source, function (err, pick) {
     if (err) return done(err);
-    if (!pick) return done(new Error('no painting of a size for the screen was found'));
+    if (!pick) {
+      return done(new Error(folder ? msg('srv.art.folderEmpty', 'it holds no JPEG pictures') : 'no painting of a size for the screen was found'));
+    }
     try { if (!fs.existsSync(cacheDir)) fs.mkdirSync(cacheDir); }
     catch (e) { return done(e); }
     freeFn(cacheDir, function (free) {
@@ -407,15 +691,15 @@ function fill() {
         return done(new Error(msg('srv.art.space', 'The TV does not have enough free space for the picture.')));
       }
       var file = cacheFile(pick.key), part = file + '.part';
-      downloadFn(pick.url, part, function (err2) {
+      fetchTo(pick, part, function (err2) {
         if (err2 || !readJpegFile(part)) {
           util.unlinkQuiet(part);
           return done(err2 || new Error('the picture was not a JPEG the TV can show'));
         }
         try { fs.renameSync(part, file); }
         catch (e) { util.unlinkQuiet(part); return done(e); }
-        // A collection dropped while this one came.
-        if (settings.collections.indexOf(pick.collection) === -1) { util.unlinkQuiet(file); return done(); }
+        // A source dropped while this one came.
+        if (sources().indexOf(pick.collection) === -1) { util.unlinkQuiet(file); return done(); }
         queue.push({ key: pick.key, collection: pick.collection, info: pick.info });
         saveQueue();
         done();
@@ -465,7 +749,7 @@ function nextCollection() {
  */
 function next(cb) {
   var own = settings.mine && pictures().length > 0;
-  var online = settings.collections.length > 0;
+  var online = sources().length > 0;
   var base = { minutes: settings.minutes, fit: settings.fit, caption: settings.caption };
   function answer(pick) {
     fill();
@@ -500,6 +784,11 @@ module.exports = {
   next: next,
   fill: fill,
   clevelandPick: clevelandPick,
+  rijksPick: rijksPick,
+  findServers: findServers,
+  browseFolder: browseFolder,
+  addFolder: addFolder,
+  removeFolder: removeFolder,
   COLLECTIONS: COLLECTIONS,
   MAX_PICTURES: MAX_PICTURES
 };
