@@ -20,7 +20,7 @@ The **Privacy** tab (`/?tab=privacy`) surfaces the TV's telemetry, advertising, 
 
     ---
 
-    Lists every data collection agreement recorded on the TV, grouped by subject, with switches to withdraw consent (persisting across reboots). Accepting new terms is left to LG's own menus.
+    Lists every data collection agreement recorded on the TV, grouped by subject, with switches to withdraw consent (kept off: the server switches one off again if the TV turns it back on, for example at boot). Accepting new terms is left to LG's own menus.
 
 -   **Advertising ID & cookies**
 
