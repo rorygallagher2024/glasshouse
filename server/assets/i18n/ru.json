@@ -3690,5 +3690,7 @@
  "srv.art.empty": {"text": "Добавьте изображения или выберите коллекцию для «Искусства» на вкладке «Заставка».", "from": "Add pictures or pick a collection for Art on the Screensaver tab."},
  "srv.saver.noArt": {"text": "Он запрашивает изображения «Искусства», которые получают только заставки самого Glasshouse.", "from": "It asks for Art's pictures, which only Glasshouse's own screen savers are given."},
  "ss.art.pictures": {"text": "Изображения", "from": "Pictures"},
- "ss.art.show": {"text": "Показ", "from": "Showing them"}
+ "ss.art.show": {"text": "Показ", "from": "Showing them"},
+ "inputs.noSignal.art": {"text": "Искусство", "from": "Art"},
+ "inputs.noSignal.artDesc": {"text": "Изображения заставки «Искусство» с надписью «Нет сигнала» на подписи к каждому. Выберите их на вкладке «Заставка».", "from": "The Art screen saver’s pictures, with “No Signal” on each picture’s label. Pick them on the Screensaver tab."}
 }

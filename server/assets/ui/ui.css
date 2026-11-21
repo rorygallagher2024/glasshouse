@@ -2132,8 +2132,10 @@ button.tools-jump:active{background:var(--w80)}
 .hm-grid{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:14px;max-width:1060px}
 .hm-grid.hm-grid-2{grid-auto-flow:row;grid-template-columns:repeat(2,minmax(0,260px));max-width:540px}
 .hm-grid.hm-grid-3{grid-auto-flow:row;grid-template-columns:repeat(3,minmax(0,260px));max-width:808px}
+.hm-grid.hm-grid-4{grid-auto-flow:row;grid-template-columns:repeat(4,minmax(0,220px));max-width:934px}
+@media (max-width:1100px){.hm-grid.hm-grid-4{grid-template-columns:repeat(2,minmax(0,260px));max-width:540px}}
 @media (max-width:860px){.hm-grid,.hm-grid.hm-grid-3{grid-auto-flow:row;grid-template-columns:repeat(3,minmax(0,1fr))}}
-@media (max-width:560px){.hm-grid,.hm-grid.hm-grid-2,.hm-grid.hm-grid-3{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}}
+@media (max-width:560px){.hm-grid,.hm-grid.hm-grid-2,.hm-grid.hm-grid-3,.hm-grid.hm-grid-4{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}}
 button.hm-card{display:flex;flex-direction:column;align-items:stretch;gap:9px;min-width:0;min-height:0;padding:0;
   border:0;background:none;color:inherit;text-align:left;text-transform:none;letter-spacing:normal;font-weight:400}
 button.hm-card:hover,button.hm-card:active,button.hm-card.on,button.hm-card.on:hover,button.hm-card.warn{
@@ -2302,7 +2304,12 @@ input.inp-name-in:disabled{border-bottom-color:transparent;cursor:default}
 .hm-inpbar-tile b{flex:1;height:2.5px;border-radius:1px;background:currentColor;opacity:.75}
 .hm-inpbar-tile.focus{opacity:1;background:#fff;color:#111;border-color:#fff;transform:scale(1.06)}
 .hm-inpbar-tile.now::after{content:'';position:absolute;left:50%;bottom:-6px;width:4px;height:4px;margin-left:-2px;border-radius:50%;background:#30de61}
-.hm-s-nslg,.hm-s-nsplain,.hm-s-nsicon{background:#000;align-items:center;justify-content:center;padding:12px}
+.hm-s-nslg,.hm-s-nsplain,.hm-s-nsicon,.hm-s-nsart{background:#000;align-items:center;justify-content:center;padding:12px}
+/* Art: a landscape painting on black, its label in a corner. */
+.hm-nsart-pic{position:relative;width:46%;aspect-ratio:4/3;border-radius:1px;
+  background:linear-gradient(180deg,#6f8fb0 0%,#c9b48a 46%,#7d8a52 47%,#4d5a33 100%)}
+.hm-nsart-pic::after{content:'';position:absolute;left:18%;bottom:30%;width:22%;aspect-ratio:1;border-radius:50%;background:#e8c46a;opacity:.85;transform:translateY(-120%)}
+.hm-nsart-pic i{position:absolute;right:-58%;bottom:-6%;width:36%;height:9%;border-radius:1px;background:rgba(255,255,255,.28)}
 .hm-nsicon-svg{width:76px;height:38px;color:#fff;opacity:.72}
 .hm-nslg-box{display:flex;flex-direction:column;align-items:center;gap:5px;width:68%}
 .hm-nslg-box b,.hm-nsplain-txt{font-family:'Outfit',sans-serif;font-weight:300;font-size:12px;letter-spacing:.04em;color:rgba(255,255,255,.88);line-height:1}

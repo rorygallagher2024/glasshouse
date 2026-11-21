@@ -703,7 +703,7 @@ idlesaver.init({ luna: luna, mediaState: telemetry.readMediaState,
 // The Art screen saver's settings and the paintings it fetched ahead.
 require('./lib/art').init();
 // A mount does not outlive a reboot: the plain No Signal screen is mounted again.
-nosignal.init({ luna: luna });
+nosignal.init({ luna: luna, config: CONFIG });
 nosignal.apply();
 telemetry.init({
   luna: luna,

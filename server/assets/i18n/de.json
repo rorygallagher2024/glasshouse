@@ -1048,5 +1048,7 @@
  "srv.art.empty": {"text": "Fügen Sie Bilder hinzu oder wählen Sie eine Sammlung für „Kunst“ im Tab Bildschirmschoner.", "from": "Add pictures or pick a collection for Art on the Screensaver tab."},
  "srv.saver.noArt": {"text": "Er verlangt die Bilder von „Kunst“, die nur Glasshouses eigene Bildschirmschoner erhalten.", "from": "It asks for Art's pictures, which only Glasshouse's own screen savers are given."},
  "ss.art.pictures": {"text": "Bilder", "from": "Pictures"},
- "ss.art.show": {"text": "Anzeige", "from": "Showing them"}
+ "ss.art.show": {"text": "Anzeige", "from": "Showing them"},
+ "inputs.noSignal.art": {"text": "Kunst", "from": "Art"},
+ "inputs.noSignal.artDesc": {"text": "Die Bilder des Bildschirmschoners „Kunst“, mit „Kein Signal“ auf der Beschriftung jedes Bildes. Wählen Sie sie im Tab Bildschirmschoner.", "from": "The Art screen saver’s pictures, with “No Signal” on each picture’s label. Pick them on the Screensaver tab."}
 }

@@ -38,6 +38,8 @@ With both, they take turns. Under **Showing them**, a new picture comes every 5,
 
 Nothing is fetched until a collection is picked. Then the TV fetches one painting at a time from the museum, keeping the next one or two ready, so the screen saver never waits on the network; older ones are deleted. A museum that cannot be reached is said under the settings.
 
+The same pictures can be the [No Signal screen](inputs.md#no-signal-screen) of an input with nothing coming in.
+
 For an OLED, each picture drifts slowly across a few dozen pixels while it is up, too slowly to be seen, and the label moves to another corner with each picture. A painting is still a still picture, so keep **Power off after** set, and choose a shorter time between pictures on an OLED.
 
 ### Clock
