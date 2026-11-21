@@ -3356,7 +3356,6 @@
  "home.cardIconLabel": {"text": "Kártyaikon", "from": "Card icon"},
  "home.focusPulse": {"text": "Pulzálás a kijelölt alkalmazáson", "from": "Pulse on the app in focus"},
  "home.focusPulseDesc": {"text": "A kijelölt alkalmazás kerete lágy fénnyel lüktet, a Home kiemelőszínében.", "from": "The ring around the app you are on breathes, with a soft glow, in Home’s accent colour."},
- "home.navSound": {"text": "Hang mozgáskor", "from": "Sound when moving"},
  "home.navSound.click": {"text": "Kattanás", "from": "Click"},
  "home.navSound.off": {"text": "Ki", "from": "Off"},
  "home.navSound.own": {"text": "Saját", "from": "Your own"},
@@ -3385,7 +3384,6 @@
  "home.cardIconSpec.files": {"text": "PNG, JPEG, WebP vagy SVG legfeljebb 10 MB-ig, vagy húzz egyet a kártyára. Más arányú kép egészében illeszkedik, levágás nélkül.", "from": "PNG, JPEG, WebP or SVG up to 10 MB, or drop one on the card. Another shape is fitted whole, never cropped."},
  "home.cardIconOther": {"text": "Vagy használj egy ikont, amely már a tévén van", "from": "Or use an icon already on the TV"},
  "home.navSound.rollover": {"text": "Átsuhanás", "from": "Rollover"},
- "home.navSoundDesc": {"text": "Hang minden lépésnél a csempék között: kattanás, lágyabb rollover vagy saját hang.", "from": "A sound each time you move between tiles: a click, a softer rollover, or a sound of your own."},
  "home.colours.highlight": {"from": "Tile highlight", "text": "Csempe kiemelése"},
  "home.colours.highlightHint": {"from": "The fill colour behind the focused tile on Glasshouse Home. Any colour can be picked on the browser dashboard’s Home tab.", "text": "A kijelölt csempe mögötti kitöltőszín a Glasshouse Home felületén. A böngészős vezérlőpult Home fülén bármilyen szín kiválasztható."},
  "home.highlight.default": {"from": "Default", "text": "Alapértelmezett"},
@@ -3774,5 +3772,9 @@
  "ss.ha.reads": {"text": "Olvassa", "from": "Reads"},
  "ss.ha.settings": {"text": "Képernyővédő beállításai", "from": "Screen saver settings"},
  "ss.entities2": {"text": "Entitások", "from": "Entities"},
- "ss.tvOff": {"text": "A TV ki van kapcsolva. Kapcsolja be a képernyővédő indításához.", "from": "The TV is off. Switch it on to start a screen saver."}
+ "ss.tvOff": {"text": "A TV ki van kapcsolva. Kapcsolja be a képernyővédő indításához.", "from": "The TV is off. Switch it on to start a screen saver."},
+ "home.navSound": {"text": "Hang a gombokkal való mozgáskor", "from": "Sound when moving with the buttons"},
+ "home.navSoundDesc": {"text": "Hang minden alkalommal, amikor a nyílgombok mozgatják a fókuszt, és minden OK vagy Vissza gombnyomáskor: kattanás, lágyabb suhanás vagy saját hang.", "from": "A sound each time the arrow keys move focus, and each time OK or Back is pressed: a click, a softer rollover, or a sound of your own."},
+ "home.pointerSound": {"text": "Hang a mutatóval való mozgáskor", "from": "Sound when moving with the pointer"},
+ "home.pointerSoundDesc": {"text": "Hang minden alkalommal, amikor a Magic Remote mutatója vagy görgője mozgatja a fókuszt, és minden kattintáskor: kattanás, lágyabb suhanás vagy saját hang.", "from": "A sound each time the Magic Remote's pointer or wheel moves focus, and each time it clicks: a click, a softer rollover, or a sound of your own."}
 }

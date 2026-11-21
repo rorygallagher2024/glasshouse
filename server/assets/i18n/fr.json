@@ -3342,7 +3342,6 @@
  "home.cardIconLabel": {"text": "Icône de carte", "from": "Card icon"},
  "home.focusPulse": {"text": "Pulsation sur l’app sélectionnée", "from": "Pulse on the app in focus"},
  "home.focusPulseDesc": {"text": "Le contour de l’app sur laquelle vous êtes respire, avec une douce lueur, dans la couleur d’accent de Home.", "from": "The ring around the app you are on breathes, with a soft glow, in Home’s accent colour."},
- "home.navSound": {"text": "Son lors du déplacement", "from": "Sound when moving"},
  "home.navSound.click": {"text": "Clic", "from": "Click"},
  "home.navSound.off": {"text": "Désactivé", "from": "Off"},
  "home.navSound.own": {"text": "Le vôtre", "from": "Your own"},
@@ -3371,7 +3370,6 @@
  "home.cardIconSpec.files": {"text": "PNG, JPEG, WebP ou SVG jusqu’à 10 Mo, ou déposez-en un sur la carte. Une autre forme est ajustée en entier, jamais rognée.", "from": "PNG, JPEG, WebP or SVG up to 10 MB, or drop one on the card. Another shape is fitted whole, never cropped."},
  "home.cardIconOther": {"text": "Ou utiliser une icône déjà sur le téléviseur", "from": "Or use an icon already on the TV"},
  "home.navSound.rollover": {"text": "Survol", "from": "Rollover"},
- "home.navSoundDesc": {"text": "Un son à chaque déplacement entre les tuiles : un clic, un survol plus doux, ou un son à vous.", "from": "A sound each time you move between tiles: a click, a softer rollover, or a sound of your own."},
  "home.colours.highlight": {"from": "Tile highlight", "text": "Surbrillance de tuile"},
  "home.colours.highlightHint": {"from": "The fill colour behind the focused tile on Glasshouse Home. Any colour can be picked on the browser dashboard’s Home tab.", "text": "La couleur de fond derrière la tuile sélectionnée sur Glasshouse Home. N’importe quelle couleur peut être choisie sur l’onglet Accueil du tableau de bord dans un navigateur."},
  "home.highlight.default": {"from": "Default", "text": "Par défaut"},
@@ -3760,5 +3758,9 @@
  "ss.ha.reads": {"from": "Reads", "text": "Affiche"},
  "ss.ha.settings": {"from": "Screen saver settings", "text": "Réglages de l’écran de veille"},
  "ss.entities2": {"from": "Entities", "text": "Entités"},
- "ss.tvOff": {"from": "The TV is off. Switch it on to start a screen saver.", "text": "Le téléviseur est éteint. Allumez-le pour lancer un écran de veille."}
+ "ss.tvOff": {"from": "The TV is off. Switch it on to start a screen saver.", "text": "Le téléviseur est éteint. Allumez-le pour lancer un écran de veille."},
+ "home.navSound": {"from": "Sound when moving with the buttons", "text": "Son des déplacements avec les boutons"},
+ "home.navSoundDesc": {"from": "A sound each time the arrow keys move focus, and each time OK or Back is pressed: a click, a softer rollover, or a sound of your own.", "text": "Un son chaque fois que les flèches déplacent le focus, et à chaque appui sur OK ou Retour : un clic, un effleurement plus doux ou un son à vous."},
+ "home.pointerSound": {"from": "Sound when moving with the pointer", "text": "Son des déplacements avec le pointeur"},
+ "home.pointerSoundDesc": {"from": "A sound each time the Magic Remote's pointer or wheel moves focus, and each time it clicks: a click, a softer rollover, or a sound of your own.", "text": "Un son chaque fois que le pointeur ou la molette de la Magic Remote déplacent le focus, et à chaque clic : un clic, un effleurement plus doux ou un son à vous."}
 }
