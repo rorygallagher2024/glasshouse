@@ -1669,6 +1669,22 @@
       <div class="sub" id="home-weather-chosen" role="status"></div>
       <div class="sub home-weather-credit" data-t="home.weather.credits">Weather data by Open-Meteo.com. Location data based on GeoNames.</div>
     </div>
+    <div class="prot-row home-gh-row home-show-row" hidden>
+      <div class="prot-main">
+        <div class="prot-title" data-t="home.info">Lines from Home Assistant</div>
+        <div class="prot-desc" data-t="home.infoDesc">Beside the clock: up to four lines, each an entity's value, such as the next bin collection, the post or a share price. Or lines Home Assistant sends itself.</div>
+      </div>
+      <div class="prot-status"><select class="pill-sel" id="home-info-sel" onchange="homeInfoSource(this.value)" aria-label="Lines from Home Assistant" data-t-aria-label="home.info">
+        <option value="off" data-t="common.off">Off</option>
+        <option value="entities" data-t="home.info.fromEntities">Entities you choose</option>
+        <option value="ha" data-t="home.info.fromHa">Sent from Home Assistant</option>
+      </select></div>
+    </div>
+    <div class="home-info-panel" id="home-info-panel" hidden>
+      <div class="sub" id="home-info-note"></div>
+      <div id="home-info-lines"></div>
+      <datalist id="home-info-entities"></datalist>
+    </div>
     <div class="prot-row home-gh-row" id="home-remote-battery-row" hidden>
       <div class="prot-main">
         <div class="prot-title" data-t="home.remoteBattery">Remote battery</div>

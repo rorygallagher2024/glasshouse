@@ -3782,5 +3782,20 @@
  "ss.entities2": {"text": "Encje", "from": "Entities"},
  "ss.tvOff": {"text": "Telewizor jest wyłączony. Włącz go, aby uruchomić wygaszacz.", "from": "The TV is off. Switch it on to start a screen saver."},
  "home.pointerSound": {"text": "Dźwięk przy przechodzeniu wskaźnikiem", "from": "Sound when moving with the pointer"},
- "home.pointerSoundDesc": {"text": "Dźwięk przy każdym przesunięciu fokusu wskaźnikiem lub rolką Magic Remote oraz przy każdym kliknięciu: kliknięcie, łagodniejsze muśnięcie albo własny dźwięk.", "from": "A sound each time the Magic Remote's pointer or wheel moves focus, and each time it clicks: a click, a softer rollover, or a sound of your own."}
+ "home.pointerSoundDesc": {"text": "Dźwięk przy każdym przesunięciu fokusu wskaźnikiem lub rolką Magic Remote oraz przy każdym kliknięciu: kliknięcie, łagodniejsze muśnięcie albo własny dźwięk.", "from": "A sound each time the Magic Remote's pointer or wheel moves focus, and each time it clicks: a click, a softer rollover, or a sound of your own."},
+ "home.info": {"from": "Lines from Home Assistant", "text": "Wiersze z Home Assistant"},
+ "home.info.attribute": {"from": "Attribute (optional)", "text": "Atrybut (opcjonalnie)"},
+ "home.info.before": {"from": "Before the value", "text": "Przed wartością"},
+ "home.info.date": {"from": "{day} {month}", "text": "{day} {month}"},
+ "home.info.entitiesDesc": {"from": "Choose an entity for each line. A date shows as today, tomorrow or a weekday, a number with its unit. Read every 30 seconds while Home is on screen.", "text": "Wybierz encję dla każdego wiersza. Data pojawia się jako dziś, jutro lub dzień tygodnia, liczba z jednostką. Odczytywane co 30 sekund, gdy Home jest na ekranie."},
+ "home.info.entity": {"from": "Entity, such as sensor.bin_collection", "text": "Encja, na przykład sensor.odbior_smieci"},
+ "home.info.entityLabel": {"from": "Entity", "text": "Encja"},
+ "home.info.fromEntities": {"from": "Entities you choose", "text": "Wybrane encje"},
+ "home.info.fromHa": {"from": "Sent from Home Assistant", "text": "Wysyłane przez Home Assistant"},
+ "home.info.label": {"from": "Label", "text": "Etykieta"},
+ "home.info.line": {"from": "Line {n}", "text": "Wiersz {n}"},
+ "home.info.today": {"from": "today", "text": "dziś"},
+ "home.info.tomorrow": {"from": "tomorrow", "text": "jutro"},
+ "home.info.weekday": {"from": "on {weekday}", "text": "{weekday}"},
+ "home.infoDesc": {"from": "Beside the clock: up to four lines, each an entity's value, such as the next bin collection, the post or a share price. Or lines Home Assistant sends itself.", "text": "Obok zegara: do czterech wierszy, każdy z wartością encji, na przykład najbliższy odbiór śmieci, poczta lub kurs akcji. Albo wiersze wysyłane przez sam Home Assistant."}
 }

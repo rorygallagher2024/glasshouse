@@ -395,6 +395,7 @@ function renderHome() {
   }
   loadHomeCardIcons();
   renderHomeWeather(st);
+  renderHomeInfo(st);
   const countAlt = q('home-show-count-alt');
   if (countAlt) countAlt.hidden = !altView;
   const searchRow = q('home-search-row');
@@ -1233,6 +1234,93 @@ function homeWeatherPick(i) {
   if (!place) return;
   q('home-weather-results').textContent = '';
   homeSaveLayout({ weather: 'internet', weatherPlace: place });
+}
+
+/*
+ * The lines beside the clock: off, entities chosen here, or lines Home
+ * Assistant sends. Each of the four takes an entity, optionally one of its
+ * attributes in place of its state, a label and a few words before the value.
+ * The entity list comes from Home Assistant's API, as the screen savers' does,
+ * and is read once.
+ */
+const HOME_INFO_SLOTS = 4;
+let homeHaList = null;       // { configured, entities, error } once read
+let homeHaListReading = false;
+
+async function homeReadHaList() {
+  if (homeHaList || homeHaListReading) return;
+  homeHaListReading = true;
+  try {
+    const r = await fetch(api('/api/ha/entities'));
+    const d = await r.json();
+    homeHaList = { configured: !!d.configured, entities: Array.isArray(d.entities) ? d.entities : [], error: d.ok ? '' : (d.error || '') };
+  } catch (e) {
+    homeHaList = { configured: true, entities: [], error: e.message };
+  }
+  homeHaListReading = false;
+  const dl = q('home-info-entities');
+  if (dl) dl.innerHTML = homeHaList.entities.map(e => `<option value="${esc(e.id)}">${esc(e.name || '')}</option>`).join('');
+  if (homeStatus) renderHomeInfo(homeStatus, true);
+}
+
+function renderHomeInfo(st, force) {
+  const sel = q('home-info-sel');
+  if (!sel) return;
+  const source = (st.layout && st.layout.info) || 'entities';
+  sel.value = source;
+  sel.disabled = !homeWritable();
+  const panel = q('home-info-panel');
+  panel.hidden = !st.supported.ok || source !== 'entities';
+  if (panel.hidden) return;
+  homeReadHaList();
+  const note = q('home-info-note');
+  if (homeHaList && !homeHaList.configured) {
+    note.textContent = t('ss.haNotConfigured', 'Home Assistant API is not configured. Save the address and access token in the HA and MQTT tab.');
+    note.className = 'set-note warn';
+  } else {
+    note.textContent = homeHaList && homeHaList.error ? homeHaList.error
+      : t('home.info.entitiesDesc', 'Choose an entity for each line. A date shows as today, tomorrow or a weekday, a number with its unit. Read every 30 seconds while Home is on screen.');
+    note.className = homeHaList && homeHaList.error ? 'set-note warn' : 'sub';
+  }
+  // Not rebuilt under a field being typed in, unless a save asks for it.
+  const box = q('home-info-lines');
+  if (!force && box.contains(document.activeElement)) return;
+  const lines = (st.layout && st.layout.infoLines) || [];
+  const dis = homeWritable() ? '' : 'disabled';
+  let html = '';
+  for (let i = 0; i < HOME_INFO_SLOTS; i++) {
+    const l = lines[i] || {};
+    const name = l.entity && homeHaList ? (homeHaList.entities.find(e => e.id === l.entity) || {}).name : '';
+    html += `<div class="home-info-line">
+      <div class="home-info-n">${esc(t('home.info.line', 'Line {n}', { n: i + 1 }))}${name ? ' · ' + esc(name) : ''}</div>
+      <input type="text" list="home-info-entities" id="home-info-entity-${i}" value="${esc(l.entity || '')}" ${dis}
+        placeholder="${esc(t('home.info.entity', 'Entity, such as sensor.bin_collection'))}" aria-label="${esc(t('home.info.entityLabel', 'Entity'))}"
+        autocomplete="off" spellcheck="false" onchange="homeInfoSave()">
+      <input type="text" id="home-info-attr-${i}" value="${esc(l.attribute || '')}" maxlength="64" ${dis}
+        placeholder="${esc(t('home.info.attribute', 'Attribute (optional)'))}" aria-label="${esc(t('home.info.attribute', 'Attribute (optional)'))}"
+        autocomplete="off" spellcheck="false" onchange="homeInfoSave()">
+      <input type="text" id="home-info-label-${i}" value="${esc(l.label || '')}" maxlength="32" ${dis}
+        placeholder="${esc(t('home.info.label', 'Label'))}" aria-label="${esc(t('home.info.label', 'Label'))}" onchange="homeInfoSave()">
+      <input type="text" id="home-info-before-${i}" value="${esc(l.before || '')}" maxlength="24" ${dis}
+        placeholder="${esc(t('home.info.before', 'Before the value'))}" aria-label="${esc(t('home.info.before', 'Before the value'))}" onchange="homeInfoSave()">
+    </div>`;
+  }
+  box.innerHTML = html;
+}
+
+function homeInfoSource(value) {
+  homeSaveLayout({ info: value });
+}
+
+function homeInfoSave() {
+  const lines = [];
+  for (let i = 0; i < HOME_INFO_SLOTS; i++) {
+    const entity = q('home-info-entity-' + i).value.trim();
+    if (!entity) continue;
+    lines.push({ entity, attribute: q('home-info-attr-' + i).value.trim(), label: q('home-info-label-' + i).value.trim(),
+                 before: q('home-info-before-' + i).value.trim() });
+  }
+  homeSaveLayout({ infoLines: lines });
 }
 
 function homeShow(key) {

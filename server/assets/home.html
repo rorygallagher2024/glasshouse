@@ -2069,9 +2069,49 @@ html[lang="vi"] #srcTitle,html[lang="vi"] #plMode,html[lang="vi"] #pvMode,html[l
     return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
       INFO_ICONS[drawn] + '</svg>';
   }
+  /*
+   * A line's value. One Home Assistant sent comes as text. One read from an
+   * entity comes as its state or attribute, formatted here in the page's
+   * language: a date as today, tomorrow, a weekday within the week or a day
+   * and month, a number with its unit and its own decimals, anything else as
+   * it is. The words set before it on the dashboard go first.
+   */
+  function infoValue(l) {
+    if (typeof l.value === 'string') return l.value;
+    var v = l.v === null || l.v === undefined ? '' : String(l.v);
+    if (!v || v === 'unknown' || v === 'unavailable') return '–';
+    var lang = (window.I18N && I18N.lang) ? I18N.lang() : 'en';
+    var loc = lang === 'en' ? 'en-GB' : lang;
+    var text = v;
+    var m = /^(\d{4})-(\d{2})-(\d{2})(?:[T ](\d{2}):(\d{2}))?/.exec(v);
+    var num = /^-?\d+(\.\d+)?$/.exec(v);
+    if (m) {
+      // A time with its offset is a moment, read in the TV's time; a bare date is that day.
+      var d = m[4] !== undefined && /(Z|[+-]\d\d:?\d\d)$/.test(v) ? new Date(v) : new Date(+m[1], +m[2] - 1, +m[3]);
+      if (!isNaN(d.getTime())) {
+        var today = new Date();
+        today = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+        var days = Math.round((new Date(d.getFullYear(), d.getMonth(), d.getDate()) - today) / 86400000);
+        var part = function (opts) { try { return d.toLocaleDateString(loc, opts); } catch (e) { return ''; } };
+        text = days === 0 ? t('home.info.today', 'today')
+          : days === 1 ? t('home.info.tomorrow', 'tomorrow')
+          : days > 1 && days < 7 ? t('home.info.weekday', 'on {weekday}', { weekday: part({ weekday: 'long' }) })
+          : t('home.info.date', '{day} {month}', { day: d.getDate(), month: part({ month: 'short' }) });
+      }
+    } else if (num) {
+      var places = num[1] ? num[1].length - 1 : 0;
+      var n = parseFloat(v);
+      try { text = n.toLocaleString(loc, { minimumFractionDigits: places, maximumFractionDigits: places }); } catch (e) { text = v; }
+      if (l.unit) text += (l.unit === '%' ? ' ' : ' ') + l.unit;
+    } else if (l.unit) {
+      text += ' ' + l.unit;
+    }
+    return (l.before ? l.before + ' ' : '') + text;
+  }
   var shownInfo = null;
   function renderInfo(lines) {
-    var key = lines && lines.length ? JSON.stringify(lines) : '';
+    // The day too: a date reads differently from midnight.
+    var key = lines && lines.length ? JSON.stringify(lines) + new Date().toDateString() : '';
     if (key === shownInfo) return;
     shownInfo = key;
     if (!key) { $('info').className = 'none'; $('info').innerHTML = ''; return; }
@@ -2080,7 +2120,7 @@ html[lang="vi"] #srcTitle,html[lang="vi"] #plMode,html[lang="vi"] #pvMode,html[l
       var l = lines[i];
       html += '<div class="info-line">' + (l.icon ? infoIcon(l.icon) : '') +
         (l.label ? '<span class="info-label">' + esc(l.label) + '</span>' : '') +
-        (l.value ? '<span class="info-value">' + esc(l.value) + '</span>' : '') + '</div>';
+        '<span class="info-value">' + esc(infoValue(l)) + '</span></div>';
     }
     $('info').innerHTML = html;
     $('info').className = '';

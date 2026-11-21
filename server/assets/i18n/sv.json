@@ -3782,5 +3782,20 @@
  "ss.entities2": {"text": "Entiteter", "from": "Entities"},
  "ss.tvOff": {"text": "TV:n är avstängd. Slå på den för att starta en skärmsläckare.", "from": "The TV is off. Switch it on to start a screen saver."},
  "ctl.pointer.motionHint": {"text": "Håll kvar här och peka med telefonen för att flytta. Släpp för att stanna. Tryck för att klicka.", "from": "Hold here and point the phone to move. Let go to stop. Tap to click."},
- "rp.motion": {"text": "Rörelse", "from": "Motion"}
+ "rp.motion": {"text": "Rörelse", "from": "Motion"},
+ "home.info": {"from": "Lines from Home Assistant", "text": "Rader från Home Assistant"},
+ "home.info.attribute": {"from": "Attribute (optional)", "text": "Attribut (valfritt)"},
+ "home.info.before": {"from": "Before the value", "text": "Före värdet"},
+ "home.info.date": {"from": "{day} {month}", "text": "{day} {month}"},
+ "home.info.entitiesDesc": {"from": "Choose an entity for each line. A date shows as today, tomorrow or a weekday, a number with its unit. Read every 30 seconds while Home is on screen.", "text": "Välj en entitet för varje rad. Ett datum visas som i dag, i morgon eller en veckodag, ett tal med sin enhet. Läses var 30:e sekund medan Home visas."},
+ "home.info.entity": {"from": "Entity, such as sensor.bin_collection", "text": "Entitet, till exempel sensor.sophamtning"},
+ "home.info.entityLabel": {"from": "Entity", "text": "Entitet"},
+ "home.info.fromEntities": {"from": "Entities you choose", "text": "Entiteter du väljer"},
+ "home.info.fromHa": {"from": "Sent from Home Assistant", "text": "Skickas från Home Assistant"},
+ "home.info.label": {"from": "Label", "text": "Etikett"},
+ "home.info.line": {"from": "Line {n}", "text": "Rad {n}"},
+ "home.info.today": {"from": "today", "text": "i dag"},
+ "home.info.tomorrow": {"from": "tomorrow", "text": "i morgon"},
+ "home.info.weekday": {"from": "on {weekday}", "text": "på {weekday}"},
+ "home.infoDesc": {"from": "Beside the clock: up to four lines, each an entity's value, such as the next bin collection, the post or a share price. Or lines Home Assistant sends itself.", "text": "Bredvid klockan: upp till fyra rader, var och en en entitets värde, till exempel nästa sophämtning, posten eller en aktiekurs. Eller rader som Home Assistant skickar själv."}
 }

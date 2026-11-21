@@ -3778,5 +3778,20 @@
  "home.navSound": {"text": "Suono quando ti sposti con i tasti", "from": "Sound when moving with the buttons"},
  "home.navSoundDesc": {"text": "Un suono ogni volta che le frecce spostano il focus e a ogni pressione di OK o Indietro: un clic, un passaggio più morbido o un suono tuo.", "from": "A sound each time the arrow keys move focus, and each time OK or Back is pressed: a click, a softer rollover, or a sound of your own."},
  "home.pointerSound": {"text": "Suono quando ti sposti con il puntatore", "from": "Sound when moving with the pointer"},
- "home.pointerSoundDesc": {"text": "Un suono ogni volta che il puntatore o la rotella del Magic Remote spostano il focus e a ogni clic: un clic, un passaggio più morbido o un suono tuo.", "from": "A sound each time the Magic Remote's pointer or wheel moves focus, and each time it clicks: a click, a softer rollover, or a sound of your own."}
+ "home.pointerSoundDesc": {"text": "Un suono ogni volta che il puntatore o la rotella del Magic Remote spostano il focus e a ogni clic: un clic, un passaggio più morbido o un suono tuo.", "from": "A sound each time the Magic Remote's pointer or wheel moves focus, and each time it clicks: a click, a softer rollover, or a sound of your own."},
+ "home.info": {"from": "Lines from Home Assistant", "text": "Righe da Home Assistant"},
+ "home.info.attribute": {"from": "Attribute (optional)", "text": "Attributo (facoltativo)"},
+ "home.info.before": {"from": "Before the value", "text": "Prima del valore"},
+ "home.info.date": {"from": "{day} {month}", "text": "{day} {month}"},
+ "home.info.entitiesDesc": {"from": "Choose an entity for each line. A date shows as today, tomorrow or a weekday, a number with its unit. Read every 30 seconds while Home is on screen.", "text": "Scegli un'entità per ogni riga. Una data appare come oggi, domani o un giorno della settimana, un numero con la sua unità. Letta ogni 30 secondi mentre Home è sullo schermo."},
+ "home.info.entity": {"from": "Entity, such as sensor.bin_collection", "text": "Entità, ad esempio sensor.raccolta_rifiuti"},
+ "home.info.entityLabel": {"from": "Entity", "text": "Entità"},
+ "home.info.fromEntities": {"from": "Entities you choose", "text": "Entità che scegli"},
+ "home.info.fromHa": {"from": "Sent from Home Assistant", "text": "Inviate da Home Assistant"},
+ "home.info.label": {"from": "Label", "text": "Etichetta"},
+ "home.info.line": {"from": "Line {n}", "text": "Riga {n}"},
+ "home.info.today": {"from": "today", "text": "oggi"},
+ "home.info.tomorrow": {"from": "tomorrow", "text": "domani"},
+ "home.info.weekday": {"from": "on {weekday}", "text": "{weekday}"},
+ "home.infoDesc": {"from": "Beside the clock: up to four lines, each an entity's value, such as the next bin collection, the post or a share price. Or lines Home Assistant sends itself.", "text": "Accanto all'orologio: fino a quattro righe, ciascuna il valore di un'entità, come la prossima raccolta rifiuti, la posta o il prezzo di un'azione. Oppure righe inviate da Home Assistant stesso."}
 }

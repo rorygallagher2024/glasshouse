@@ -91,7 +91,7 @@ Preview cards at the top of the **Home** tab switch between five launcher option
 
     ---
 
-    Up to four short lines beside the clock, each an icon, a label and a value sent from Home Assistant: the next bin collection, the post, a share price. See [Lines from Home Assistant](#lines-from-home-assistant).
+    Up to four short lines beside the clock, each a Home Assistant entity's value chosen on the dashboard, or lines Home Assistant sends: the next bin collection, the post, a share price. See [Lines from Home Assistant](#lines-from-home-assistant).
 
 -   **Badges & labels**
 
@@ -561,9 +561,18 @@ The badge appears once data is received, is kept when the TV restarts, and is hi
 
 ### Lines from Home Assistant
 
-Up to four lines of your own after the weather, or before the clock in the Alternative View: each an icon, a label and a value, such as *Bin 1 · in 4 days* or *PostNord · Friday*. They show whatever was last written to the `text.lg_tv_home_info` entity, a JSON list such as `[{"icon":"trash-can","label":"Bin 1","value":"in 4 days"}]` ([entities](../HOME-ASSISTANT-ENTITIES.md)), and stay, across a restart too, until the next one. An empty value or `[]` takes them away. An automation keeps them current ([example automation](../HOME-ASSISTANT.md#7-your-own-lines-on-glasshouse-home)).
+Up to four lines of your own after the weather, or before the clock in the Alternative View, each an icon, a label and a value: *Bin 1 · collected on Wednesday*, *PostNord · arrives tomorrow*, *Viscaria · 14.58 SEK*. The **Lines from Home Assistant** setting chooses where they come from:
 
-The icon is a [Material Design Icons](https://pictogrammers.com/library/mdi/) name, with or without `mdi:`. Glasshouse Home draws its own outline for names starting with trash, delete, recycle, mail, email, post, chart, trending, finance, cash, car, flash, lightning, power, battery, calendar, thermometer, home, package and truck, and a dot for any other. A line without an icon has none.
+* **Entities you choose (default):** each line reads a Home Assistant entity, through the [Home Assistant API](../HOME-ASSISTANT.md#screen-savers-reading-home-assistant) the screen savers use, every 30 seconds while Home is on screen. For each, pick the entity (the field lists Home Assistant's), and optionally:
+  * **Attribute:** one of its attributes in place of its state, such as `next_date` for a bin collection whose state is text.
+  * **Label:** in place of the entity's name.
+  * **Before the value:** a few words in front of it, such as *collected* or *arrives*.
+
+  A date shows as today, tomorrow, a weekday within the week, or a day and month after that, in the page's language. A number shows with its own decimals and its unit. Anything else shows as Home Assistant has it. The icon is the entity's own, or one for what it measures.
+* **Sent from Home Assistant:** whatever was last written to the `text.lg_tv_home_info` entity, a JSON list such as `[{"icon":"trash-can","label":"Bin 1","value":"in 4 days"}]` ([entities](../HOME-ASSISTANT-ENTITIES.md)), kept across a restart until the next one. An empty value or `[]` takes them away ([example automation](../HOME-ASSISTANT.md#7-your-own-lines-on-glasshouse-home)).
+* **Off.**
+
+Icons are [Material Design Icons](https://pictogrammers.com/library/mdi/) names, with or without `mdi:`. Glasshouse Home draws its own outline for names starting with trash, delete, recycle, mail, email, post, chart, trending, finance, cash, car, flash, lightning, power, battery, calendar, thermometer, home, package and truck, and a dot for any other.
 
 ### Remote battery
 

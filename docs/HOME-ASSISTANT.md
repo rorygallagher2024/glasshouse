@@ -377,7 +377,7 @@ action:
 The temperature is shown as sent, in the unit the weather entity uses. `city` is optional.
 
 ### 7. Your own lines on Glasshouse Home
-Glasshouse Home shows up to four lines of your own beside the clock, each an icon, a label and a value ([Home tab](dashboard/home.md#lines-from-home-assistant)). This sends the next bin collection and the next post delivery whenever one changes and when Home Assistant starts. The list goes straight to the command topic, as `text.set_value` takes 255 characters at most. They stay until the next push; an empty payload takes them away.
+Glasshouse Home shows up to four lines of your own beside the clock, each an icon, a label and a value. The Home tab can read them from entities with no automation at all ([Home tab](dashboard/home.md#lines-from-home-assistant)); with **Sent from Home Assistant** chosen there, an automation writes them instead, for text the entities do not have. This sends the next bin collection and the next post delivery whenever one changes and when Home Assistant starts. The list goes straight to the command topic, as `text.set_value` takes 255 characters at most. They stay until the next push; an empty payload takes them away.
 
 ```yaml
 alias: "Lines on Glasshouse Home"

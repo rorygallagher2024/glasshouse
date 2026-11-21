@@ -3778,5 +3778,20 @@
  "home.navSound": {"text": "Звук при перемещении кнопками", "from": "Sound when moving with the buttons"},
  "home.navSoundDesc": {"text": "Звук каждый раз, когда стрелки перемещают фокус, и при каждом нажатии OK или «Назад»: щелчок, мягкий звук или свой звук.", "from": "A sound each time the arrow keys move focus, and each time OK or Back is pressed: a click, a softer rollover, or a sound of your own."},
  "home.pointerSound": {"text": "Звук при перемещении указателем", "from": "Sound when moving with the pointer"},
- "home.pointerSoundDesc": {"text": "Звук каждый раз, когда указатель или колесо Magic Remote перемещают фокус, и при каждом щелчке: щелчок, мягкий звук или свой звук.", "from": "A sound each time the Magic Remote's pointer or wheel moves focus, and each time it clicks: a click, a softer rollover, or a sound of your own."}
+ "home.pointerSoundDesc": {"text": "Звук каждый раз, когда указатель или колесо Magic Remote перемещают фокус, и при каждом щелчке: щелчок, мягкий звук или свой звук.", "from": "A sound each time the Magic Remote's pointer or wheel moves focus, and each time it clicks: a click, a softer rollover, or a sound of your own."},
+ "home.info": {"from": "Lines from Home Assistant", "text": "Строки из Home Assistant"},
+ "home.info.attribute": {"from": "Attribute (optional)", "text": "Атрибут (необязательно)"},
+ "home.info.before": {"from": "Before the value", "text": "Перед значением"},
+ "home.info.date": {"from": "{day} {month}", "text": "{day} {month}"},
+ "home.info.entitiesDesc": {"from": "Choose an entity for each line. A date shows as today, tomorrow or a weekday, a number with its unit. Read every 30 seconds while Home is on screen.", "text": "Выберите сущность для каждой строки. Дата показывается как сегодня, завтра или день недели, число — с единицей измерения. Обновляется каждые 30 секунд, пока Home на экране."},
+ "home.info.entity": {"from": "Entity, such as sensor.bin_collection", "text": "Сущность, например sensor.vyvoz_musora"},
+ "home.info.entityLabel": {"from": "Entity", "text": "Сущность"},
+ "home.info.fromEntities": {"from": "Entities you choose", "text": "Выбранные сущности"},
+ "home.info.fromHa": {"from": "Sent from Home Assistant", "text": "Отправляет Home Assistant"},
+ "home.info.label": {"from": "Label", "text": "Подпись"},
+ "home.info.line": {"from": "Line {n}", "text": "Строка {n}"},
+ "home.info.today": {"from": "today", "text": "сегодня"},
+ "home.info.tomorrow": {"from": "tomorrow", "text": "завтра"},
+ "home.info.weekday": {"from": "on {weekday}", "text": "{weekday}"},
+ "home.infoDesc": {"from": "Beside the clock: up to four lines, each an entity's value, such as the next bin collection, the post or a share price. Or lines Home Assistant sends itself.", "text": "Рядом с часами: до четырёх строк, каждая — значение сущности, например следующий вывоз мусора, почта или цена акции. Или строки, которые отправляет сам Home Assistant."}
 }

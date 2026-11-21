@@ -3764,5 +3764,20 @@
  "home.navSound": {"text": "صوت عند التنقل بالأزرار", "from": "Sound when moving with the buttons"},
  "home.navSoundDesc": {"text": "صوت في كل مرة تنقل فيها مفاتيح الأسهم التركيز، وفي كل ضغطة على OK أو رجوع: نقرة، أو صوت أنعم، أو صوت من اختيارك.", "from": "A sound each time the arrow keys move focus, and each time OK or Back is pressed: a click, a softer rollover, or a sound of your own."},
  "home.pointerSound": {"text": "صوت عند التنقل بالمؤشر", "from": "Sound when moving with the pointer"},
- "home.pointerSoundDesc": {"text": "صوت في كل مرة ينقل فيها مؤشر Magic Remote أو عجلته التركيز، وفي كل نقرة: نقرة، أو صوت أنعم، أو صوت من اختيارك.", "from": "A sound each time the Magic Remote's pointer or wheel moves focus, and each time it clicks: a click, a softer rollover, or a sound of your own."}
+ "home.pointerSoundDesc": {"text": "صوت في كل مرة ينقل فيها مؤشر Magic Remote أو عجلته التركيز، وفي كل نقرة: نقرة، أو صوت أنعم، أو صوت من اختيارك.", "from": "A sound each time the Magic Remote's pointer or wheel moves focus, and each time it clicks: a click, a softer rollover, or a sound of your own."},
+ "home.info": {"from": "Lines from Home Assistant", "text": "أسطر من Home Assistant"},
+ "home.info.attribute": {"from": "Attribute (optional)", "text": "سمة (اختياري)"},
+ "home.info.before": {"from": "Before the value", "text": "قبل القيمة"},
+ "home.info.date": {"from": "{day} {month}", "text": "{day} {month}"},
+ "home.info.entitiesDesc": {"from": "Choose an entity for each line. A date shows as today, tomorrow or a weekday, a number with its unit. Read every 30 seconds while Home is on screen.", "text": "اختر كيانًا لكل سطر. يظهر التاريخ كاليوم أو غدًا أو يوم من أيام الأسبوع، والرقم مع وحدته. يُقرأ كل 30 ثانية ما دام Home ظاهرًا على الشاشة."},
+ "home.info.entity": {"from": "Entity, such as sensor.bin_collection", "text": "كيان، مثل sensor.bin_collection"},
+ "home.info.entityLabel": {"from": "Entity", "text": "الكيان"},
+ "home.info.fromEntities": {"from": "Entities you choose", "text": "كيانات تختارها"},
+ "home.info.fromHa": {"from": "Sent from Home Assistant", "text": "يرسلها Home Assistant"},
+ "home.info.label": {"from": "Label", "text": "التسمية"},
+ "home.info.line": {"from": "Line {n}", "text": "السطر {n}"},
+ "home.info.today": {"from": "today", "text": "اليوم"},
+ "home.info.tomorrow": {"from": "tomorrow", "text": "غدًا"},
+ "home.info.weekday": {"from": "on {weekday}", "text": "يوم {weekday}"},
+ "home.infoDesc": {"from": "Beside the clock: up to four lines, each an entity's value, such as the next bin collection, the post or a share price. Or lines Home Assistant sends itself.", "text": "بجانب الساعة: حتى أربعة أسطر، كل منها قيمة كيان، مثل موعد جمع النفايات التالي أو البريد أو سعر سهم. أو أسطر يرسلها Home Assistant بنفسه."}
 }

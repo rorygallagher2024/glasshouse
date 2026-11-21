@@ -3778,5 +3778,20 @@
  "home.navSound": {"text": "Hang a gombokkal való mozgáskor", "from": "Sound when moving with the buttons"},
  "home.navSoundDesc": {"text": "Hang minden alkalommal, amikor a nyílgombok mozgatják a fókuszt, és minden OK vagy Vissza gombnyomáskor: kattanás, lágyabb suhanás vagy saját hang.", "from": "A sound each time the arrow keys move focus, and each time OK or Back is pressed: a click, a softer rollover, or a sound of your own."},
  "home.pointerSound": {"text": "Hang a mutatóval való mozgáskor", "from": "Sound when moving with the pointer"},
- "home.pointerSoundDesc": {"text": "Hang minden alkalommal, amikor a Magic Remote mutatója vagy görgője mozgatja a fókuszt, és minden kattintáskor: kattanás, lágyabb suhanás vagy saját hang.", "from": "A sound each time the Magic Remote's pointer or wheel moves focus, and each time it clicks: a click, a softer rollover, or a sound of your own."}
+ "home.pointerSoundDesc": {"text": "Hang minden alkalommal, amikor a Magic Remote mutatója vagy görgője mozgatja a fókuszt, és minden kattintáskor: kattanás, lágyabb suhanás vagy saját hang.", "from": "A sound each time the Magic Remote's pointer or wheel moves focus, and each time it clicks: a click, a softer rollover, or a sound of your own."},
+ "home.info": {"from": "Lines from Home Assistant", "text": "Sorok a Home Assistantből"},
+ "home.info.attribute": {"from": "Attribute (optional)", "text": "Attribútum (nem kötelező)"},
+ "home.info.before": {"from": "Before the value", "text": "Az érték előtt"},
+ "home.info.date": {"from": "{day} {month}", "text": "{month} {day}."},
+ "home.info.entitiesDesc": {"from": "Choose an entity for each line. A date shows as today, tomorrow or a weekday, a number with its unit. Read every 30 seconds while Home is on screen.", "text": "Válassz egy entitást minden sorhoz. A dátum ma, holnap vagy a hét napjaként jelenik meg, a szám a mértékegységével. 30 másodpercenként olvassa, amíg a Home látható."},
+ "home.info.entity": {"from": "Entity, such as sensor.bin_collection", "text": "Entitás, például sensor.szemetszallitas"},
+ "home.info.entityLabel": {"from": "Entity", "text": "Entitás"},
+ "home.info.fromEntities": {"from": "Entities you choose", "text": "Választott entitások"},
+ "home.info.fromHa": {"from": "Sent from Home Assistant", "text": "A Home Assistant küldi"},
+ "home.info.label": {"from": "Label", "text": "Címke"},
+ "home.info.line": {"from": "Line {n}", "text": "{n}. sor"},
+ "home.info.today": {"from": "today", "text": "ma"},
+ "home.info.tomorrow": {"from": "tomorrow", "text": "holnap"},
+ "home.info.weekday": {"from": "on {weekday}", "text": "{weekday}"},
+ "home.infoDesc": {"from": "Beside the clock: up to four lines, each an entity's value, such as the next bin collection, the post or a share price. Or lines Home Assistant sends itself.", "text": "Az óra mellett: legfeljebb négy sor, mindegyik egy entitás értéke, például a következő szemétszállítás, a posta vagy egy részvény árfolyama. Vagy a Home Assistant által küldött sorok."}
 }
