@@ -10,6 +10,7 @@
     "pt": "Bokeh",
     "pt-br": "Bokeh",
     "ru": "Боке",
+    "sv": "Bokeh",
     "vi": "Bokeh"
   },
   "description": {
@@ -21,6 +22,7 @@
     "pt": "Círculos suaves de luz que surgem e se desvanecem sobre fundo preto.",
     "pt-br": "Círculos suaves de luz que surgem e somem sobre o preto.",
     "ru": "Мягкие круги света проплывают и тают на чёрном фоне.",
+    "sv": "Mjuka ljuscirklar som glider in och ut på svart.",
     "vi": "Những vòng sáng mềm mại trôi nổi rồi mờ dần trên nền đen."
   },
   "license": "MIT",

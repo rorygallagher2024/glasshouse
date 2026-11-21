@@ -560,6 +560,8 @@ function defaults() {
     focusPulse: false,
     // The sound as focus moves: off, click, rollover or own (lib navSoundFile).
     navSound: 'off',
+    // The same as the sound for the Magic Remote's pointer and wheel (navSound is the keys').
+    pointerSound: 'off',
     // How see-through the cards not in focus are, in percent: 0 is solid.
     cardFade: 20,
     // The card icon chosen for an app, by name, keyed by app id: in place of
@@ -671,6 +673,8 @@ function normalise(raw) {
   d.focusPulse = raw.focusPulse === true;
   // true, from before there was a choice, is the click.
   d.navSound = NAV_SOUNDS.indexOf(raw.navSound) !== -1 ? raw.navSound : raw.navSound === true ? 'click' : 'off';
+  // One sound for both until the pointer's is chosen.
+  d.pointerSound = NAV_SOUNDS.indexOf(raw.pointerSound) !== -1 ? raw.pointerSound : d.navSound;
   d.cardFade = validCardFade(raw.cardFade);
   d.appIcons = validAppIcons(raw.appIcons);
   d.inputBarTransparent = raw.inputBarTransparent === true;
@@ -900,6 +904,7 @@ function setLayout(body, cb) {
     appCards: typeof body.appCards === 'boolean' ? body.appCards : c.appCards,
     focusPulse: typeof body.focusPulse === 'boolean' ? body.focusPulse : c.focusPulse,
     navSound: body.navSound !== undefined ? body.navSound : c.navSound,
+    pointerSound: body.pointerSound !== undefined ? body.pointerSound : c.pointerSound,
     cardFade: body.cardFade !== undefined ? body.cardFade : c.cardFade,
     appIcons: body.appIcons !== undefined ? validAppIcons(body.appIcons, c.appIcons) : c.appIcons,
     inputBarTransparent: typeof body.inputBarTransparent === 'boolean' ? body.inputBarTransparent : c.inputBarTransparent,
@@ -1020,7 +1025,7 @@ function layoutOf(c) {
     excludedRecents: c.excludedRecents,
     searchHintSeen: c.searchHintSeen, picture: c.picture, livePreview: c.livePreview, search: c.search, recommended: c.recommended,
     fade: c.fade, wallDrift: c.wallDrift, wallCrossfade: c.wallCrossfade, smoothScroll: c.smoothScroll, slidePanels: c.slidePanels,
-    darkening: c.darkening, hideUnused: c.hideUnused, showMediaServers: c.showMediaServers, deviceNames: devNamesNow(c.deviceNames), appNames: c.appNames, appCards: c.appCards, focusPulse: c.focusPulse, navSound: c.navSound, ownSound: ownSoundInfo(), cardFade: c.cardFade, appIcons: c.appIcons, inputBarTransparent: c.inputBarTransparent, inputBarSwitchOnOk: c.inputBarSwitchOnOk, showClock: c.showClock, rowsBottom: c.rowsBottom, view: c.view,
+    darkening: c.darkening, hideUnused: c.hideUnused, showMediaServers: c.showMediaServers, deviceNames: devNamesNow(c.deviceNames), appNames: c.appNames, appCards: c.appCards, focusPulse: c.focusPulse, navSound: c.navSound, pointerSound: c.pointerSound, ownSound: ownSoundInfo(), cardFade: c.cardFade, appIcons: c.appIcons, inputBarTransparent: c.inputBarTransparent, inputBarSwitchOnOk: c.inputBarSwitchOnOk, showClock: c.showClock, rowsBottom: c.rowsBottom, view: c.view,
     showLastOn: c.showLastOn, showAppCount: c.showAppCount, showAppLabels: c.showAppLabels, showCec: c.showCec, showTvLogos: c.showTvLogos, showPointer: c.showPointer, reopenAfterWake: c.reopenAfterWake, weather: c.weather, weatherPlace: c.weatherPlace, previewAlways: c.previewAlways, previewInTile: c.previewInTile, previewSize: c.previewSize, previewSound: c.previewSound, wallAnim: c.wallAnim,
     remoteBattery: c.remoteBattery,
     animTheme: c.animTheme, animSky: c.animSky, animLight: c.animLight, animThemes: ANIM_THEMES,

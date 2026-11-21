@@ -146,7 +146,8 @@ function validateUrl(url) {
  * such flag).
  */
 function fetchArgs(bin, url, outFile, mode, ipFlag) {
-  var ua = 'tvweb/' + currentVersion;
+  // Named, with where to read about it, as Wikimedia's and others' API rules ask.
+  var ua = 'tvweb/' + currentVersion + ' (+https://github.com/rorygallagher2024/glasshouse)';
   mode = mode || (outFile ? 'file' : 'text');
   var wget = isWget(bin);
   var ip = !wget && ipFlag ? [ipFlag] : [];

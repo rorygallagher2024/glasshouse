@@ -10,6 +10,7 @@
     "pt": "Tesseract",
     "pt-br": "Tesserato",
     "ru": "Тессеракт",
+    "sv": "Tesserakt",
     "vi": "Siêu lập phương"
   },
   "description": {
@@ -21,6 +22,7 @@
     "pt": "Um cubo de quatro dimensões a rodar pela quarta dimensão, em finas linhas de luz.",
     "pt-br": "Um cubo de quatro dimensões girando pela quarta dimensão, em finas linhas de luz.",
     "ru": "Четырёхмерный куб, вращающийся в четвёртом измерении, из тонких линий света.",
+    "sv": "En fyrdimensionell kub som roterar genom den fjärde dimensionen, i fina ljuslinjer.",
     "vi": "Khối lập phương bốn chiều xoay trong không gian bốn chiều bằng những đường sáng mảnh."
   },
   "license": "MIT",

@@ -10,6 +10,7 @@
     "pt": "Relógio",
     "pt-br": "Relógio",
     "ru": "Часы",
+    "sv": "Klocka",
     "vi": "Đồng hồ"
   },
   "description": {
@@ -21,6 +22,7 @@
     "pt": "Um relógio digital sobre fundo preto, que muda de posição a cada minuto, com os segundos, o dia da semana e a data, se escolhidos.",
     "pt-br": "Um relógio digital sobre o preto, que muda de posição a cada minuto, com os segundos, o dia da semana e a data, se escolhidos.",
     "ru": "Цифровые часы на чёрном фоне, которые каждую минуту перемещаются на новое место, по выбору с секундами, днём недели и датой.",
+    "sv": "En digital klocka på svart, som flyttar till en ny plats varje minut, med sekunder, veckodag och datum om det valts.",
     "vi": "Đồng hồ kỹ thuật số trên nền đen, đổi vị trí mỗi phút, có thể hiện thêm giây, thứ và ngày."
   },
   "license": "MIT",
@@ -39,6 +41,7 @@
       "pt": "Mostrar",
       "pt-br": "Mostrar",
       "ru": "Показывать",
+      "sv": "Visa",
       "vi": "Hiển thị"
     },
     "default": "time",
@@ -54,6 +57,7 @@
           "pt": "Hora",
           "pt-br": "Hora",
           "ru": "Время",
+          "sv": "Tid",
           "vi": "Thời gian"
         },
         "value": "false"
@@ -69,6 +73,7 @@
           "pt": "Hora, segundos e data",
           "pt-br": "Hora, segundos e data",
           "ru": "Время, секунды и дата",
+          "sv": "Tid, sekunder och datum",
           "vi": "Thời gian, giây và ngày"
         },
         "value": "true"
