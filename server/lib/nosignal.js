@@ -1,6 +1,6 @@
 'use strict';
 /*
- * lib/nosignal.js - LG's No Signal screen as just "No Signal"
+ * lib/nosignal.js - LG's No Signal screen as just "No Signal", an icon or Art
  *
  * An input with nothing coming in shows LG's No Signal screen, drawn by the
  * input app (com.webos.app.inputcommon, QML) in its Screensaver.qml: an
@@ -23,6 +23,11 @@
  * boot, 7 s into a B8's), so an input with nothing coming in does not hold the
  * restart back: its No Signal screen is drawn again, plain, with nothing lost.
  *
+ * Art mode draws the picture frame's pictures (lib/art) full screen under
+ * LG's drifting box, which fades once the first picture is in, so until then,
+ * or with nothing to show, LG's "No Signal" stays. It asks Art's address only
+ * while the No Signal screen shows.
+ *
  * Strict ES5: runs on node 0.12 (0.10 on webOS 2).
  */
 var fs = require('fs');
@@ -43,6 +48,195 @@ var PATCHES = [
 ];
 var HEADER_START = /\n([ \t]*)ScreensaverMainText \{\s*\n[ \t]*id: headerText(?=\n)/g;
 var HEADER_ID = /(\n([ \t]*)id: headerText)(?=\n)/g;
+// Art: drawn under LG's drifting box, which fades once a picture is in.
+var MOVER_START = /\n([ \t]*)RandomMoveItem \{(?=\n)/g;
+var MOVER_ID = /(\n([ \t]*)id: element)(?=\n)/g;
+
+/*
+ * The picture frame's pictures (lib/art) as the No Signal screen: the same
+ * address it asks, each picture fading into the next and drifting slowly, its
+ * label for a moment, always or never, with LG's own "No Signal" above it.
+ * It fills the screen even where LG draws its box small, and asks for
+ * pictures only while it shows, letting them go when it does not.
+ */
+function artBlock(indent, api) {
+  var lines = [
+    'Item {',
+    '    id: glasshouseArt',
+    '    property bool active: currentKey === "noSignal" && screensaverRoot.visible',
+    '    property string api: ' + JSON.stringify(api),
+    '    property string origin: api.split("/api/")[0]',
+    '    property real t: Math.random() * 10000',
+    '    property int seconds: 600',
+    '    property int seq: -1',
+    '    property string commandUrl: api.replace("/api/art/next", "/api/art/command") + (api.indexOf("?") === -1 ? "?" : "&") + "view=nosignal"',
+    '    property string fit: "fit"',
+    '    property string caption: "brief"',
+    '    property bool started: false',
+    '    property var info: null',
+    '    property bool labelUp: false',
+    '    property int corner: Math.floor(Math.random() * 4)',
+    '    property real k: height / 1080',
+    '    visible: active',
+    '    x: -screensaverRoot.x',
+    '    y: -screensaverRoot.y',
+    '    width: screensaverRoot.parent ? screensaverRoot.parent.width : screensaverRoot.width',
+    '    height: screensaverRoot.parent ? screensaverRoot.parent.height : screensaverRoot.height',
+    '    onActiveChanged: {',
+    '        if (active) { glasshouseArtAsk.interval = 300; glasshouseArtAsk.restart(); return; }',
+    '        glasshouseArtAsk.stop();',
+    '        seq = -1;',
+    '        glasshouseArtOut.stop();',
+    '        started = false;',
+    '        labelUp = false;',
+    '        glasshouseArtA.waiting = false; glasshouseArtA.opacity = 0; glasshouseArtA.source = "";',
+    '        glasshouseArtB.waiting = false; glasshouseArtB.opacity = 0; glasshouseArtB.source = "";',
+    '    }',
+    '    function later(seconds) { glasshouseArtAsk.interval = Math.max(1, seconds) * 1000; glasshouseArtAsk.restart(); }',
+    '    function ask(dir) {',
+    '        if (!active) return;',
+    '        var x = new XMLHttpRequest();',
+    '        x.onreadystatechange = function () {',
+    '            if (x.readyState !== XMLHttpRequest.DONE) return;',
+    '            var d = null;',
+    '            try { d = JSON.parse(x.responseText); } catch (e) { d = null; }',
+    '            if (!d) { later(30); return; }',
+    '            if (d.seconds) seconds = d.seconds;',
+    '            if (seq < 0 && typeof d.seq === "number") seq = d.seq;',
+    '            if (d.fit) fit = d.fit;',
+    '            if (d.caption) caption = d.caption;',
+    '            if (!d.ok || !d.image) { later(d.waiting ? 10 : 60); return; }',
+    '            var f = glasshouseArtA.opacity > 0.5 ? glasshouseArtB : glasshouseArtA;',
+    '            f.details = d.info || null;',
+    '            f.seed = Math.random() * 1000;',
+    '            f.fadeMs = dir ? 800 : 3000;',
+    '            f.waiting = true;',
+    '            f.source = "";',
+    '            f.source = origin + d.image;',
+    '        };',
+    '        x.open("GET", api + (dir ? (api.indexOf("?") === -1 ? "?" : "&") + "dir=" + dir : ""));',
+    '        x.send();',
+    '    }',
+    '    function shown(f) {',
+    '        var other = f === glasshouseArtA ? glasshouseArtB : glasshouseArtA;',
+    '        other.fadeMs = f.fadeMs;',
+    '        f.z = 2; other.z = 1;',
+    '        f.opacity = 1; other.opacity = 0;',
+    '        started = true;',
+    '        labelUp = false;',
+    '        info = f.details;',
+    '        corner = (corner + 1 + Math.floor(Math.random() * 3)) % 4;',
+    '        glasshouseArtIn.restart();',
+    '        later(seconds);',
+    '    }',
+    '    function poll() {',
+    '        if (!active) return;',
+    '        var x = new XMLHttpRequest();',
+    '        x.onreadystatechange = function () {',
+    '            if (x.readyState !== XMLHttpRequest.DONE) return;',
+    '            var d = null;',
+    '            try { d = JSON.parse(x.responseText); } catch (e) { d = null; }',
+    '            if (!d || typeof d.seq !== "number") return;',
+    '            if (seq < 0) { seq = d.seq; return; }',
+    '            if (d.seq === seq) return;',
+    '            seq = d.seq;',
+    '            glasshouseArtAsk.stop();',
+    '            ask(d.dir === "prev" ? "prev" : "next");',
+    '        };',
+    '        x.open("GET", commandUrl);',
+    '        x.send();',
+    '    }',
+    '    Timer { id: glasshouseArtAsk; interval: 300; onTriggered: glasshouseArt.ask("") }',
+    '    Timer { interval: 1500; running: glasshouseArt.active; repeat: true; onTriggered: glasshouseArt.poll() }',
+    '    Timer { interval: 1000; running: glasshouseArt.active; repeat: true; onTriggered: glasshouseArt.t += 1 }',
+    '    Timer {',
+    '        id: glasshouseArtIn',
+    '        interval: 3000',
+    '        onTriggered: {',
+    '            glasshouseArt.labelUp = glasshouseArt.caption !== "off";',
+    '            if (glasshouseArt.labelUp && glasshouseArt.caption === "brief") glasshouseArtOut.restart();',
+    '        }',
+    '    }',
+    '    Timer { id: glasshouseArtOut; interval: 20000; onTriggered: glasshouseArt.labelUp = false }',
+    '    Rectangle { anchors.fill: parent; color: "black" }'
+  ];
+  ['glasshouseArtA', 'glasshouseArtB'].forEach(function (id) {
+    lines.push(
+      '    Image {',
+      '        id: ' + id,
+      '        property var details: null',
+      '        property bool waiting: false',
+      '        property real seed: 0',
+      '        property int fadeMs: 3000',
+      '        property bool filling: glasshouseArt.fit === "fill"',
+      '        property real phase: glasshouseArt.t * 2 * Math.PI / 600 + seed',
+      '        opacity: 0',
+      '        visible: opacity > 0',
+      '        Behavior on opacity { NumberAnimation { duration: ' + id + '.fadeMs; easing.type: Easing.InOutQuad } }',
+      '        asynchronous: true',
+      '        cache: false',
+      '        smooth: true',
+      '        autoTransform: true',
+      '        fillMode: filling ? Image.PreserveAspectCrop : Image.PreserveAspectFit',
+      '        sourceSize.width: 1920',
+      '        sourceSize.height: 1080',
+      '        width: glasshouseArt.width * (filling ? 1.06 : 0.86)',
+      '        height: glasshouseArt.height * (filling ? 1.06 : 0.86)',
+      '        x: (glasshouseArt.width - width) / 2 + 0.024 * glasshouseArt.width * Math.sin(phase)',
+      '        y: (glasshouseArt.height - height) / 2 + 0.024 * glasshouseArt.height * Math.sin(phase * 0.73 + 1.7)',
+      '        onStatusChanged: {',
+      '            if (!waiting) return;',
+      '            if (status === Image.Ready) { waiting = false; glasshouseArt.shown(' + id + '); }',
+      '            else if (status === Image.Error) { waiting = false; glasshouseArt.later(20); }',
+      '        }',
+      '    }'
+    );
+  });
+  lines.push(
+    '    Rectangle {',
+    '        z: 3',
+    '        property real margin: 72 * glasshouseArt.k',
+    '        width: glasshouseArtWords.width + 44 * glasshouseArt.k',
+    '        height: glasshouseArtWords.height + 32 * glasshouseArt.k',
+    '        radius: 4 * glasshouseArt.k',
+    '        color: "black"',
+    '        opacity: glasshouseArt.started && glasshouseArt.labelUp ? 0.82 : 0',
+    '        visible: opacity > 0',
+    '        Behavior on opacity { NumberAnimation { duration: 1500 } }',
+    '        x: (glasshouseArt.corner % 2) ? glasshouseArt.width - width - margin : margin',
+    '        y: glasshouseArt.corner >= 2 ? glasshouseArt.height - height - margin : margin',
+    '        Text { id: glasshouseArtCredit; visible: false; text: glasshouseArt.info && glasshouseArt.info.credit ? glasshouseArt.info.credit : ""; font.pixelSize: 19 * glasshouseArt.k }',
+    '        Text { id: glasshouseArtTitle; visible: false; text: glasshouseArt.info && glasshouseArt.info.title ? glasshouseArt.info.title : ""; font.pixelSize: 30 * glasshouseArt.k; font.italic: true }',
+    '        Column {',
+    '            id: glasshouseArtWords',
+    '            x: 22 * glasshouseArt.k',
+    '            y: 16 * glasshouseArt.k',
+    '            spacing: 6 * glasshouseArt.k',
+    '            Text { text: headerText.text; visible: text !== ""; color: "#8c8c8c"; font.pixelSize: 19 * glasshouseArt.k; font.capitalization: Font.AllUppercase; font.letterSpacing: 2 * glasshouseArt.k }',
+    '            Text { text: glasshouseArt.info && glasshouseArt.info.title ? glasshouseArt.info.title : ""; visible: text !== ""; width: Math.min(glasshouseArtTitle.implicitWidth + 1, 760 * glasshouseArt.k); wrapMode: Text.WordWrap; maximumLineCount: 2; elide: Text.ElideRight; color: "#f2f2f2"; font.pixelSize: 30 * glasshouseArt.k; font.italic: true }',
+    '            Text { text: glasshouseArt.info ? [glasshouseArt.info.artist, glasshouseArt.info.date].filter(function (s) { return !!s; }).join(", ") : ""; visible: text !== ""; width: Math.min(implicitWidth, 760 * glasshouseArt.k); elide: Text.ElideRight; color: "#c8c8c8"; font.pixelSize: 24 * glasshouseArt.k }',
+    '            Text { text: glasshouseArt.info && glasshouseArt.info.credit ? glasshouseArt.info.credit : ""; visible: text !== ""; width: Math.min(glasshouseArtCredit.implicitWidth + 1, 760 * glasshouseArt.k); wrapMode: Text.WordWrap; color: "#8c8c8c"; font.pixelSize: 19 * glasshouseArt.k }',
+    '        }',
+    '    }',
+    '    Rectangle {',
+    '        z: 3',
+    '        property string line: glasshouseArt.info ? [glasshouseArt.info.artist, glasshouseArt.info.credit].filter(function (s) { return !!s; }).join(" \\u00b7 ") : ""',
+    '        width: glasshouseArtSmall.width + 20 * glasshouseArt.k',
+    '        height: glasshouseArtSmall.height + 12 * glasshouseArt.k',
+    '        radius: 3 * glasshouseArt.k',
+    '        color: "black"',
+    '        opacity: glasshouseArt.started && !glasshouseArt.labelUp && glasshouseArt.info && glasshouseArt.info.mustCredit ? 0.7 : 0',
+    '        visible: opacity > 0',
+    '        Behavior on opacity { NumberAnimation { duration: 1500 } }',
+    '        x: (glasshouseArt.corner % 2) ? 40 * glasshouseArt.k : glasshouseArt.width - width - 40 * glasshouseArt.k',
+    '        y: glasshouseArt.height - height - 36 * glasshouseArt.k',
+    '        Text { id: glasshouseArtSmallMeasure; visible: false; text: parent.line; font.pixelSize: 17 * glasshouseArt.k }',
+    '        Text { id: glasshouseArtSmall; x: 10 * glasshouseArt.k; y: 6 * glasshouseArt.k; text: parent.line; width: Math.min(glasshouseArtSmallMeasure.implicitWidth + 1, 900 * glasshouseArt.k); wrapMode: Text.WordWrap; color: "#b4b4b4"; font.pixelSize: 17 * glasshouseArt.k }',
+    '    }',
+    '}'
+  );
+  return lines.map(function (l) { return indent + l; }).join('\n');
+}
 
 function iconBlock(indent) {
   var pad = indent + '    ';
@@ -121,10 +315,18 @@ var pendingFile = '/var/run/tvweb-nosignal-restart';
 var retryTimer = null;
 var restartPending = false;
 var lastProblem = '';
+var config = {};
+
+// Art's next picture, as the screen saver asks for it, with the token.
+function artUrl() {
+  var port = config.port || 8080;
+  return 'http://127.0.0.1:' + port + '/api/art/next' + (config.token ? '?k=' + encodeURIComponent(config.token) : '');
+}
 
 function init(opts) {
   opts = opts || {};
   luna = opts.luna || null;
+  config = opts.config || {};
   execFn = opts.exec || execFile;
   stateDir = opts.stateDir || '/var/lib/tvweb';
   appQml = opts.appQml || APP_QML;
@@ -143,6 +345,7 @@ function origFile() { return path.join(ownDir(), 'Screensaver.lg.qml'); }
 
 function normalizeMode(val) {
   if (val === 'icon') return 'icon';
+  if (val === 'art') return 'art';
   if (val === 'plain' || val === true || val === 'on' || val === 'true') return 'plain';
   return 'lg';
 }
@@ -150,7 +353,8 @@ function normalizeMode(val) {
 function wanted() {
   if (!fs.existsSync(flagFile())) return 'lg';
   try {
-    return fs.readFileSync(flagFile(), 'utf8').trim() === 'icon' ? 'icon' : 'plain';
+    var saved = fs.readFileSync(flagFile(), 'utf8').trim();
+    return saved === 'icon' || saved === 'art' ? saved : 'plain';
   } catch (e) {
     return 'plain';
   }
@@ -158,6 +362,7 @@ function wanted() {
 
 function modeLabel(mode) {
   if (mode === 'icon') return 'disconnected-cable';
+  if (mode === 'art') return 'picture frame';
   if (mode === 'plain') return 'plain';
   return 'LG\'s';
 }
@@ -181,10 +386,11 @@ function mounted(file) {
 }
 
 /*
- * The TV's own file patched for the requested mode ('plain' or 'icon'), or
- * null where a line this looks for is not there exactly once.
+ * The TV's own file patched for the requested mode ('plain', 'icon' or 'art'),
+ * or null where a line this looks for is not there exactly once. artApi: the
+ * address Art asks for its pictures, for 'art'.
  */
-function patch(text, mode) {
+function patch(text, mode, artApi) {
   var out = String(text || '');
   for (var i = 0; i < PATCHES.length; i++) {
     var found = out.match(PATCHES[i].find);
@@ -201,6 +407,18 @@ function patch(text, mode) {
     if (!ids || ids.length !== 1) return null;
     out = out.replace(HEADER_ID, function (match, line, indent) {
       return line + '\n' + indent + 'visible: currentKey !== "noSignal"';
+    });
+  }
+  if (mode === 'art') {
+    var movers = out.match(MOVER_START);
+    if (!movers || movers.length !== 1) return null;
+    var moverIds = out.match(MOVER_ID);
+    if (!moverIds || moverIds.length !== 1) return null;
+    out = out.replace(MOVER_START, function (match, indent) {
+      return '\n' + artBlock(indent, artApi || artUrl()) + match;
+    });
+    out = out.replace(MOVER_ID, function (match, line, indent) {
+      return line + '\n' + indent + 'opacity: currentKey === "noSignal" && glasshouseArt.started ? 0 : 1';
     });
   }
   return out;
@@ -375,16 +593,17 @@ function set(val, cb) {
 
 // What the dashboards show: offered where the TV has the screen this knows.
 function status() {
-  var file = target(), mode = wanted(), available = false;
+  var file = target(), mode = wanted(), available = false, art = false;
   if (file) {
     var isMounted = mounted(file);
-    if (isMounted) available = true;
-    else {
-      try { available = !!patch(fs.readFileSync(file, 'utf8'), 'icon'); } catch (e) { available = false; }
-    }
-    return { ok: true, available: available, on: mode !== 'lg', mode: mode, applied: isMounted, restartPending: restartPending };
+    // Mounted, the TV's own is the copy kept beside ours.
+    var lgText = null;
+    try { lgText = fs.readFileSync(isMounted ? origFile() : file, 'utf8'); } catch (e) { lgText = null; }
+    available = isMounted || (lgText !== null && !!patch(lgText, 'icon'));
+    art = lgText !== null && !!patch(lgText, 'art');
+    return { ok: true, available: available, art: art, on: mode !== 'lg', mode: mode, applied: isMounted, restartPending: restartPending };
   }
-  return { ok: true, available: false, on: mode !== 'lg', mode: mode, applied: false, restartPending: false };
+  return { ok: true, available: false, art: false, on: mode !== 'lg', mode: mode, applied: false, restartPending: false };
 }
 
 module.exports = { init: init, apply: apply, set: set, status: status, patch: patch };

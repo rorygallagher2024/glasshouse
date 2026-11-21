@@ -192,8 +192,8 @@ A screen saver names in `uses` what Glasshouse should fill in:
   the screen saver's `choices`, which the dashboard offers as a dropdown.
 
 Glasshouse's own can also ask for `stats`, the address of the TV's readings,
-which carries the dashboard's access token; one added on the TV is not given
-it.
+and `art`, the address of the picture frame's next picture. Both carry the dashboard's access
+token, so one added on the TV is given neither.
 
 What one added on the TV does past the screen is noted under it in the list,
 and it can still be picked: *It reaches the network* for `XMLHttpRequest`, a

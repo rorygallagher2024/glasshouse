@@ -123,6 +123,9 @@ async function loadScreensavers() {
   q('ss-video-row').hidden = !(active && active.videoStyle);
   if (active && active.videoStyle) renderSsVideo(active.videoStyle, locked);
 
+  q('ss-art-row').hidden = !(active && active.art);
+  if (active && active.art) { ssArtState = Object.assign({}, ssArtState || {}, active.art, { writable: d.writable }); frameShowNow(ssArtState); }
+
   // Entities or ordered entity list declared by the active screen saver:
   const entities = active && active.entities;
   const entityList = active && active.entityList;
@@ -696,6 +699,399 @@ function ssVideoStyle(key, value) {
 function ssVideoReset() {
   const { showClock, showDate, showWeather, infoPosition, infoSize, clockFont, textFont, textColor } = HOME_VIDEO_STYLE;
   ssVideoSave({ showClock, showDate, showWeather, infoPosition, infoSize, clockFont, textFont, textColor });
+}
+
+/*
+ * The Art saver's pictures: the owner's own, uploaded here, and the museum
+ * collections it may fetch from (lib/art); how long each stays, how it fits
+ * the screen and when its label shows. A change takes effect with the next
+ * picture, as the saver asks for each.
+ */
+let ssArtUploading = false;
+let ssArtState = null;
+
+function renderSsArt(art, locked) {
+  ssArtState = art;
+  const s = art.settings;
+  const pics = art.pictures || [];
+  // A switch pressed redraws its row: focus is kept on it, for the keyboard.
+  const focusKey = document.activeElement && document.activeElement.dataset ? document.activeElement.dataset.fkey : '';
+  const onOff = on => on ? t('common.on', 'On') : t('common.off', 'Off');
+  const row = (key, name, desc, on, onclick) => `<div class="prot-row">
+      <div class="prot-main">
+        <div class="prot-title" id="frame-t-${esc(key)}">${esc(name)}</div>
+        ${desc ? `<div class="prot-desc">${esc(desc)}</div>` : ''}
+      </div>
+      <div class="prot-status"><button type="button" class="pill pill-toggle ${on ? 'good' : 'idle'}" data-fkey="${esc(key)}"
+        aria-pressed="${on ? 'true' : 'false'}" aria-labelledby="frame-t-${esc(key)}" onclick="${onclick}" ${locked ? 'disabled' : ''}>${esc(onOff(on))}</button></div>
+    </div>`;
+
+  q('ss-art-mine').innerHTML = row('mine', t('ss.art.mineShow', 'Show your pictures'),
+    pics.length === 1 ? t('ss.art.mineOne', '1 picture added.') : t('ss.art.mineN', '{n} pictures added.', { n: pics.length }),
+    s.mine, `ssArtSave({ mine: ${s.mine ? 'false' : 'true'} })`);
+
+  q('ss-art-sources').innerHTML =
+    [['space', t('ss.art.groupSpace', 'Space')], ['photos', t('ss.art.groupPhotos', 'Photography')], ['paintings', t('ss.art.groupPaintings', 'Paintings')]]
+      .map(([group, name]) => {
+        const list = art.collections.filter(c => (c.group || 'paintings') === group);
+        if (!list.length) return '';
+        const from = [...new Set(list.map(c => c.source))].join(', ');
+        return `<section class="set-sec" aria-labelledby="frame-sec-${group}">
+          <h3 class="pv-g" id="frame-sec-${group}">${esc(name)}<span class="c">${esc(from)}</span></h3>
+          <div class="prot-table">${list.map(c => row(c.id, c.label, c.detail, c.on, `ssArtCollection('${esc(c.id)}', ${c.on ? 'false' : 'true'})`)).join('')}</div>
+        </section>`;
+      }).join('');
+
+  const full = pics.length >= art.maxPictures;
+  const busy = locked || ssArtUploading || art.uploading;
+  q('ss-art-pics').innerHTML = `<div class="wall-card${ssArtUploading ? ' busy' : ''}">
+      <button type="button" class="wall-screen" id="ss-art-add" data-fkey="add" onclick="ssArtChoose()" ${busy || full ? 'disabled' : ''}
+          aria-label="${esc(t('ss.art.add', 'Add pictures'))}">
+        ${full ? '' : `<span class="wall-add">${esc(t('ss.art.add', 'Add pictures'))}</span>`}
+        ${ssArtUploading ? `<span class="wall-sending">${esc(t('home.wall.uploading', 'Uploading…'))}</span>` : ''}
+      </button>
+    </div>` + pics.map((id, i) => `<div class="wall-card has fixed">
+      <div class="wall-screen" role="img" aria-label="${esc(t('home.wall.pictureN', 'Picture {n}', { n: i + 1 }))}"
+          style="background-image:url('${esc(api('/api/art/image?id=p-' + encodeURIComponent(id)))}')"></div>
+      <div class="wall-actions"><button type="button" class="wall-link" data-fkey="rm-${esc(id)}" onclick="ssArtRemove('${esc(id)}')" ${busy ? 'disabled' : ''}
+        aria-label="${esc(t('ss.art.removeN', 'Remove picture {n}', { n: i + 1 }))}">${esc(t('home.wall.remove', 'Remove'))}</button></div>
+    </div>`).join('');
+  const add = q('ss-art-add');
+  add.addEventListener('dragover', e => { if (busy || full) return; e.preventDefault(); add.classList.add('drop'); });
+  add.addEventListener('dragleave', () => add.classList.remove('drop'));
+  add.addEventListener('drop', e => {
+    e.preventDefault();
+    add.classList.remove('drop');
+    const files = e.dataTransfer ? Array.from(e.dataTransfer.files) : [];
+    if (files.length && !busy && !full) ssArtUpload(files, art);
+  });
+
+  const folders = art.folders || [];
+  const browsing = !q('ss-art-browse').hidden;
+  q('ss-art-folders').innerHTML = folders.map(f => `<div class="prot-row">
+      <div class="prot-main"><div class="prot-title">${esc(f.title || f.server)}</div><div class="prot-desc">${esc(f.server)}</div></div>
+      <div class="prot-status"><button type="button" class="pill idle" data-fkey="f-${esc(f.key)}" onclick="ssArtRemoveFolder('${esc(f.key)}')" ${locked ? 'disabled' : ''}
+        aria-label="${esc(t('ss.art.removeFolder', 'Remove {folder}', { folder: f.title || f.server }))}">${esc(t('home.wall.remove', 'Remove'))}</button></div>
+    </div>`).join('') + (browsing ? '' : `<div class="prot-row">
+      <div class="prot-main"><div class="prot-desc set-desc-only">${esc(folders.length ? t('ss.art.foldersMore', 'Pictures from a NAS or media server on your network, such as Plex or Jellyfin, over DLNA.')
+        : t('ss.art.foldersNone', 'Pictures from a NAS or media server on your network, such as Plex or Jellyfin, over DLNA. None added yet.'))}</div></div>
+      <div class="prot-status"><button type="button" class="pill idle" data-fkey="addfolder" onclick="ssArtBrowse()" ${locked || folders.length >= (art.maxFolders || 10) ? 'disabled' : ''}>${esc(t('ss.art.addFolderShort', 'Add folder'))}</button></div>
+    </div>`);
+
+  const fill = (id, options, value) => {
+    const sel = q(id);
+    if (document.activeElement !== sel) {
+      sel.innerHTML = options.map(([v, label]) => `<option value="${esc(String(v))}">${esc(label)}</option>`).join('');
+      sel.value = String(value);
+    }
+    sel.disabled = locked;
+  };
+  fill('ss-art-minutes', (art.secondChoices || [30, 60, 120, 300, 600, 900, 1800, 3600]).map(n => [n,
+    n === 3600 ? t('ss.art.oneHour', '1 hour') : n === 60 ? t('ss.art.oneMinute', '1 minute')
+      : n < 60 ? t('ss.art.nSeconds', '{n} seconds', { n }) : t('ss.art.nMinutes', '{n} minutes', { n: n / 60 })]), s.seconds);
+  fill('ss-art-fit', [['fit', t('ss.art.fitWhole', 'Whole picture')], ['fill', t('ss.art.fitFill', 'Fill the screen')]], s.fit);
+  fill('ss-art-caption', [['brief', t('ss.art.capBrief', 'Briefly')], ['always', t('ss.art.capAlways', 'Always')], ['off', t('ss.art.capOff', 'Off')]], s.caption);
+
+  const where = [];
+  const museums = [...new Set(art.collections.filter(c => c.on).map(c => c.source))];
+  if (museums.length) {
+    where.push(art.fetching ? t('ss.art.fetching', 'Fetching the next painting…')
+      : t('ss.art.privacy3', 'Pictures from {sources} are free to show with their credit, which each one’s label carries, and stays on screen where its licence asks. The TV fetches them one at a time, and keeps only the last few and the next one or two.', { sources: museums.join(t('ss.art.and', ' and ')) }));
+  }
+  if (art.error) where.push(art.error);
+  if (!s.mine && !museums.length && !folders.length) where.push(t('ss.art.nothing', 'Pick your pictures or a collection, or the screen saver has nothing to show.'));
+  q('ss-art-where').textContent = where.join(' ');
+  q('frame-modal-sub').textContent = frameSummary(art);
+
+  if (focusKey) {
+    const again = q('frame-modal').querySelector(`[data-fkey="${CSS.escape(focusKey)}"]`);
+    if (again && !again.disabled) again.focus();
+  }
+}
+
+/*
+ * Adding a network folder: the media servers found, then a server's folders,
+ * one level at a time, each with how many pictures it holds.
+ */
+let ssArtPath = [];
+
+async function ssArtGet(path) {
+  const r = await (await fetch(api(path))).json();
+  if (!r.ok) throw new Error(r.error || t('common.unknownError', 'unknown error'));
+  return r;
+}
+
+async function ssArtBrowse() {
+  const box = q('ss-art-browse');
+  box.hidden = false;
+  ssArtPath = [];
+  box.innerHTML = `<p class="set-note" role="status">${esc(t('ss.art.looking', 'Looking for media servers on your network…'))}</p>`;
+  if (ssArtState) renderSsArt(ssArtState, false);
+  let r;
+  try { r = await ssArtGet('/api/art/servers'); } catch (e) { box.innerHTML = `<p class="set-note">${esc(e.message)}</p>`; return; }
+  const list = r.servers || [];
+  box.innerHTML = (list.length
+    ? `<div class="set-crumbs">${esc(t('ss.art.servers', 'Media servers'))}</div><div class="set-list">${list.map(sv => `<button type="button" class="set-item" onclick="ssArtOpen(${esc(JSON.stringify(JSON.stringify({ udn: sv.udn, name: sv.name })))}, '0', '')"><span>${esc(sv.name)}</span><span class="set-chev" aria-hidden="true">›</span></button>`).join('')}</div>`
+    : `<p class="set-note">${esc(t('ss.art.noServers', 'No media servers answered. Check that one, such as Plex, Jellyfin or a NAS, is on and sharing over DLNA.'))}</p>`) +
+    `<div class="set-actions"><button type="button" class="pill idle" onclick="ssArtBrowseClose()">${esc(t('common.cancel', 'Cancel'))}</button></div>`;
+}
+
+function ssArtBrowseClose() {
+  q('ss-art-browse').hidden = true;
+  ssArtPath = [];
+  if (ssArtState) renderSsArt(ssArtState, false);
+}
+
+// One folder of a server; up goes back one level, or to the servers.
+async function ssArtOpen(serverJson, id, title, up) {
+  const sv = JSON.parse(serverJson);
+  if (up) ssArtPath = ssArtPath.slice(0, -1);
+  else if (id !== '0') ssArtPath.push({ id, title });
+  else ssArtPath = [];
+  const box = q('ss-art-browse');
+  box.innerHTML = `<p class="set-note" role="status">${esc(t('ss.art.opening', 'Opening the folder…'))}</p>`;
+  let r;
+  try { r = await ssArtGet('/api/art/browse?udn=' + encodeURIComponent(sv.udn) + '&id=' + encodeURIComponent(id)); }
+  catch (e) { box.innerHTML = `<p class="set-note">${esc(e.message)}</p><div class="set-actions"><button type="button" class="pill idle" onclick="ssArtBrowse()">${esc(t('ss.art.servers', 'Media servers'))}</button></div>`; return; }
+  const svArg = esc(JSON.stringify(serverJson));
+  const crumbs = [sv.name].concat(ssArtPath.map(p => p.title)).join(' / ');
+  const parent = ssArtPath.length > 1 ? ssArtPath[ssArtPath.length - 2] : null;
+  const back = ssArtPath.length
+    ? `ssArtOpen(${svArg}, ${esc(JSON.stringify(parent ? parent.id : '0'))}, '', true)`
+    : 'ssArtBrowse()';
+  const folders = r.folders || [];
+  box.innerHTML = `<div class="set-crumbs">${esc(crumbs)}</div>` +
+    (folders.length ? `<div class="set-list">${folders.map(f => `<button type="button" class="set-item" onclick="ssArtOpen(${svArg}, ${esc(JSON.stringify(f.id))}, ${esc(JSON.stringify(f.title))})"><span>${esc(f.title)}</span><span class="set-chev" aria-hidden="true">›</span></button>`).join('')}</div>` : '') +
+    `<p class="set-note">${esc(r.pictures === 1 ? t('ss.art.folderHasOne', 'This folder holds 1 picture.') : r.pictures ? t('ss.art.folderHas', 'This folder holds {n} pictures.', { n: r.pictures }) : t('ss.art.folderNone', 'This folder holds no JPEG pictures of its own.'))}</p>` +
+    `<div class="set-actions">
+      <button type="button" class="pill idle" onclick="${back}">${esc(t('ss.art.back', 'Back'))}</button>
+      <button type="button" class="pill good" onclick="ssArtAddFolder(${svArg}, ${esc(JSON.stringify(id))})" ${r.pictures ? '' : 'disabled'}>${esc(t('ss.art.useFolder', 'Use this folder'))}</button>
+      <button type="button" class="pill idle" onclick="ssArtBrowseClose()">${esc(t('common.cancel', 'Cancel'))}</button>
+    </div>`;
+}
+
+async function ssArtAddFolder(serverJson, id) {
+  const sv = JSON.parse(serverJson);
+  const title = ssArtPath.length ? ssArtPath.map(p => p.title).join(' / ') : sv.name;
+  try {
+    const res = await fetch(api('/api/art'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ addFolder: { udn: sv.udn, id, title } }) });
+    const r = await res.json();
+    if (!r.ok) throw new Error(r.error || t('common.unknownError', 'unknown error'));
+  } catch (e) { showErr(e.message); return; }
+  q('ss-art-browse').hidden = true;
+  ssArtPath = [];
+  frameChanged();
+}
+
+async function ssArtRemoveFolder(key) {
+  try {
+    const res = await fetch(api('/api/art'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ removeFolder: key }) });
+    const r = await res.json();
+    if (!r.ok) throw new Error(r.error || t('common.unknownError', 'unknown error'));
+  } catch (e) { showErr(e.message); }
+  frameChanged();
+}
+
+/*
+ * What the picture frame shows now, with Previous and Next, which it takes up
+ * within a couple of seconds; offered only while it is on screen, as the
+ * screen saver or the No Signal screen. Kept up to date while the row shows.
+ */
+function renderSsArtNow(art, box) {
+  if (!box) return;
+  const writable = art.writable !== undefined ? art.writable : ssWritable;
+  const cur = art.current;
+  const info = (cur && cur.info) || {};
+  const words = cur
+    ? [info.title || t('ss.art.yours', 'One of your pictures'), [info.artist, info.date].filter(Boolean).join(', '), info.credit].filter(Boolean)
+    : [];
+  const key = JSON.stringify([cur && cur.id, art.showing, art.canGoBack, writable]);
+  if (box.dataset.key === key) return;
+  box.dataset.key = key;
+  const off = !art.showing || !writable;
+  box.innerHTML = `<div class="ss-art-now-pic"${cur ? ` style="background-image:url('${esc(api('/api/art/image?id=' + encodeURIComponent(cur.id)))}')"` : ''}></div>
+    <div class="ss-art-now-words">${words.length && art.showing
+      ? words.map((w, i) => `<div class="${i ? 'prot-desc' : 'prot-title'}">${esc(w)}</div>`).join('')
+      : `<div class="prot-desc">${esc(t('ss.art.notShowing', 'Not on screen. Previous and Next work while the picture frame shows, as the screen saver or on an input\u2019s No Signal screen.'))}</div>`}</div>
+    <div class="ss-art-now-btns">
+      <button type="button" class="pill idle" onclick="ssArtGo('prev')" ${off || !art.canGoBack ? 'disabled' : ''} aria-label="${esc(t('ss.art.prev', 'Previous'))}">\u2039 ${esc(t('ss.art.prev', 'Previous'))}</button>
+      <button type="button" class="pill idle" onclick="ssArtGo('next')" ${off ? 'disabled' : ''} aria-label="${esc(t('ss.art.next', 'Next'))}">${esc(t('ss.art.next', 'Next'))} \u203a</button>
+    </div>`;
+}
+
+/*
+ * Now showing, on whichever of the two tabs shows it, and the line saying
+ * where the pictures come from and how often they change.
+ */
+function frameShowNow(art) {
+  renderSsArtNow(art, q('ss-art-now'));
+  renderSsArtNow(art, q('inputs-art-now'));
+  const sum = q('ss-art-summary');
+  if (sum) sum.textContent = frameSummary(art);
+  ssArtWatchNow();
+}
+
+function frameSummary(art) {
+  const s = art.settings || {};
+  const names = (art.collections || []).filter(c => c.on).map(c => c.label)
+    .concat((art.folders || []).map(f => f.title || f.server));
+  if (s.mine && (art.pictures || []).length) names.unshift(t('ss.art.mine', 'Your pictures'));
+  if (!names.length) return t('ss.art.nothing', 'Pick your pictures or a collection, or the screen saver has nothing to show.');
+  const from = names.length > 3
+    ? t('ss.art.andMore', '{names} and {n} more', { names: names.slice(0, 2).join(', '), n: names.length - 2 })
+    : names.join(', ');
+  const n = s.seconds || 600;
+  const every = n === 3600 ? t('ss.art.everyHour', 'A new picture every hour')
+    : n === 60 ? t('ss.art.everyMinute', 'A new picture every minute')
+    : n < 60 ? t('ss.art.everySeconds', 'A new picture every {n} seconds', { n })
+    : t('ss.art.everyMinutes', 'A new picture every {n} minutes', { n: n / 60 });
+  return t('ss.art.summary', '{from}. {every}.', { from, every });
+}
+
+// Kept up to date while it shows: on either tab, or in the dialog.
+let ssArtNowTimer = null;
+function ssArtWatchNow() {
+  if (ssArtNowTimer) return;
+  ssArtNowTimer = setInterval(() => {
+    if (document.hidden) return;
+    const shown = (activeTab === 'screensaver' && !q('ss-art-row').hidden) ||
+      (activeTab === 'inputs' && q('inputs-frame') && !q('inputs-frame').hidden) || !q('frame-modal').hidden;
+    if (shown) frameLoad(true);
+  }, 3000);
+}
+
+/*
+ * The picture frame's state, read again: Now showing on both tabs, and the
+ * dialog's settings where it is open (not on the 3 s refresh, which would
+ * redraw a list someone is scrolling).
+ */
+async function frameLoad(nowOnly) {
+  let r;
+  try { r = await (await fetch(api('/api/art'))).json(); } catch (e) { return null; }
+  if (!r || !r.ok) return null;
+  ssArtState = r;
+  frameShowNow(r);
+  if (!nowOnly && !q('frame-modal').hidden && !ssArtUploading) renderSsArt(r, !r.writable);
+  return r;
+}
+
+function frameChanged() {
+  return frameLoad(false);
+}
+
+/*
+ * A settings dialog (set-modal) keeps the keyboard inside while it is open,
+ * and gives focus back to what opened it when it closes.
+ */
+function setModalOpen(box, first) {
+  box._opener = document.activeElement;
+  box.hidden = false;
+  if (!box._trapped) {
+    box._trapped = true;
+    box.addEventListener('keydown', e => {
+      if (e.key !== 'Tab') return;
+      const all = [...box.querySelectorAll('button,select,input,a[href],[tabindex]:not([tabindex="-1"])')]
+        .filter(el => !el.disabled && !el.hidden && el.offsetParent !== null);
+      if (!all.length) return;
+      const at = all.indexOf(document.activeElement);
+      if (e.shiftKey && at <= 0) { e.preventDefault(); all[all.length - 1].focus(); }
+      else if (!e.shiftKey && at === all.length - 1) { e.preventDefault(); all[0].focus(); }
+    });
+  }
+  if (first) first.focus();
+}
+
+function setModalClose(box) {
+  box.hidden = true;
+  const back = box._opener;
+  box._opener = null;
+  if (back && document.contains(back) && typeof back.focus === 'function') back.focus();
+}
+
+function openFrameSettings() {
+  const box = q('frame-modal');
+  setModalOpen(box, q('frame-modal-close'));
+  if (ssArtState && ssArtState.secondChoices) renderSsArt(ssArtState, ssArtState.writable === false);
+  frameLoad(false);
+}
+
+function closeFrameSettings() {
+  setModalClose(q('frame-modal'));
+  q('ss-art-browse').hidden = true;
+  ssArtPath = [];
+}
+
+async function ssArtGo(dir) {
+  try {
+    const res = await fetch(api('/api/art'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ go: dir }) });
+    const r = await res.json();
+    if (!r.ok) throw new Error(r.error || t('common.unknownError', 'unknown error'));
+  } catch (e) { showErr(e.message); }
+  // The screen takes it up within a couple of seconds.
+  setTimeout(() => frameLoad(true), 2500);
+}
+
+async function ssArtSave(settings) {
+  try {
+    const res = await fetch(api('/api/art'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ settings }) });
+    const r = await res.json();
+    if (!r.ok) throw new Error(r.error || t('common.unknownError', 'unknown error'));
+  } catch (e) { showErr(e.message); }
+  frameChanged();
+}
+
+function ssArtCollection(id, on) {
+  const ids = ssArtState ? ssArtState.collections.filter(c => c.on && c.id !== id).map(c => c.id) : [];
+  if (on) ids.push(id);
+  ssArtSave({ collections: ids });
+}
+
+function ssArtChoose() {
+  if (ssArtUploading) return;
+  const input = q('ss-art-file');
+  input.value = '';
+  input.click();
+}
+
+function ssArtPicked(input) {
+  const files = Array.from(input.files || []);
+  if (files.length) ssArtUpload(files, ssArtState);
+}
+
+// One after another, as the TV takes one upload at a time.
+async function ssArtUpload(files, art) {
+  if (ssArtUploading || !art) return;
+  const note = q('ss-art-note');
+  const room = Math.max(0, art.maxPictures - (art.pictures || []).length);
+  const take = files.slice(0, room);
+  ssArtUploading = true;
+  renderSsArt(art, false);
+  let done = 0, failed = '';
+  for (const file of take) {
+    note.textContent = t('home.wall.uploadingOf', 'Uploading {n} of {total}…', { n: done + 1, total: take.length });
+    try {
+      const blob = await homePrepareWall(file);
+      const res = await fetch(api('/api/art/upload'), { method: 'POST', headers: { 'Content-Type': 'image/jpeg' }, body: blob });
+      const r = await res.json();
+      if (!res.ok || !r.ok) throw new Error(r.error || t('home.wall.uploadFailed', 'The image could not be uploaded.'));
+      done++;
+    } catch (e) { failed = file.name + ': ' + e.message; }
+  }
+  ssArtUploading = false;
+  const parts = [t('home.wall.uploadedN', '{n} of {total} uploaded.', { n: done, total: files.length })];
+  if (files.length > take.length) parts.push(t('ss.art.room', 'The picture frame holds {max} of your pictures.', { max: art.maxPictures }));
+  if (failed) parts.push(failed);
+  note.textContent = parts.join(' ');
+  frameChanged();
+}
+
+async function ssArtRemove(id) {
+  try {
+    const res = await fetch(api('/api/art'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ remove: id }) });
+    const r = await res.json();
+    if (!r.ok) throw new Error(r.error || t('common.unknownError', 'unknown error'));
+  } catch (e) { showErr(e.message); }
+  frameChanged();
 }
 
 async function pickSsColor(id) {

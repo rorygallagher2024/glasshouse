@@ -2132,8 +2132,10 @@ button.tools-jump:active{background:var(--w80)}
 .hm-grid{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:14px;max-width:1060px}
 .hm-grid.hm-grid-2{grid-auto-flow:row;grid-template-columns:repeat(2,minmax(0,260px));max-width:540px}
 .hm-grid.hm-grid-3{grid-auto-flow:row;grid-template-columns:repeat(3,minmax(0,260px));max-width:808px}
+.hm-grid.hm-grid-4{grid-auto-flow:row;grid-template-columns:repeat(4,minmax(0,220px));max-width:934px}
+@media (max-width:1100px){.hm-grid.hm-grid-4{grid-template-columns:repeat(2,minmax(0,260px));max-width:540px}}
 @media (max-width:860px){.hm-grid,.hm-grid.hm-grid-3{grid-auto-flow:row;grid-template-columns:repeat(3,minmax(0,1fr))}}
-@media (max-width:560px){.hm-grid,.hm-grid.hm-grid-2,.hm-grid.hm-grid-3{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}}
+@media (max-width:560px){.hm-grid,.hm-grid.hm-grid-2,.hm-grid.hm-grid-3,.hm-grid.hm-grid-4{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}}
 button.hm-card{display:flex;flex-direction:column;align-items:stretch;gap:9px;min-width:0;min-height:0;padding:0;
   border:0;background:none;color:inherit;text-align:left;text-transform:none;letter-spacing:normal;font-weight:400}
 button.hm-card:hover,button.hm-card:active,button.hm-card.on,button.hm-card.on:hover,button.hm-card.warn{
@@ -2302,7 +2304,12 @@ input.inp-name-in:disabled{border-bottom-color:transparent;cursor:default}
 .hm-inpbar-tile b{flex:1;height:2.5px;border-radius:1px;background:currentColor;opacity:.75}
 .hm-inpbar-tile.focus{opacity:1;background:#fff;color:#111;border-color:#fff;transform:scale(1.06)}
 .hm-inpbar-tile.now::after{content:'';position:absolute;left:50%;bottom:-6px;width:4px;height:4px;margin-left:-2px;border-radius:50%;background:#30de61}
-.hm-s-nslg,.hm-s-nsplain,.hm-s-nsicon{background:#000;align-items:center;justify-content:center;padding:12px}
+.hm-s-nslg,.hm-s-nsplain,.hm-s-nsicon,.hm-s-nsart{background:#000;align-items:center;justify-content:center;padding:12px}
+/* Art: a landscape painting on black, its label in a corner. */
+.hm-nsart-pic{position:relative;width:46%;aspect-ratio:4/3;border-radius:1px;
+  background:linear-gradient(180deg,#6f8fb0 0%,#c9b48a 46%,#7d8a52 47%,#4d5a33 100%)}
+.hm-nsart-pic::after{content:'';position:absolute;left:18%;bottom:30%;width:22%;aspect-ratio:1;border-radius:50%;background:#e8c46a;opacity:.85;transform:translateY(-120%)}
+.hm-nsart-pic i{position:absolute;right:-58%;bottom:-6%;width:36%;height:9%;border-radius:1px;background:rgba(255,255,255,.28)}
 .hm-nsicon-svg{width:76px;height:38px;color:#fff;opacity:.72}
 .hm-nslg-box{display:flex;flex-direction:column;align-items:center;gap:5px;width:68%}
 .hm-nslg-box b,.hm-nsplain-txt{font-family:'Outfit',sans-serif;font-weight:300;font-size:12px;letter-spacing:.04em;color:rgba(255,255,255,.88);line-height:1}
@@ -2439,6 +2446,68 @@ button.home-look:active{background:none}
 #home-bg-video .set .wall-choice+.wall-choice{margin-top:8px}
 .ss-video-box{max-height:none}
 .ss-video-lbl{margin-top:20px}
+/*
+ * Settings dialog (set-modal): a header that stays while the body scrolls,
+ * the dashboard's own groups (.pv-g) and rows (.prot-row) inside. The body is
+ * the one scroller, so a wheel anywhere in it scrolls it. A phone gets the
+ * whole screen. Text keeps to the scale: titles at --h-sec, groups at
+ * --h-grp, rows at --h-row, descriptions at 14px, nothing below --w60.
+ */
+.set-modal{max-width:640px;padding:0;display:flex;flex-direction:column;overflow:hidden;border-color:var(--w25)}
+.set-modal-head{flex:none;display:flex;align-items:flex-start;justify-content:space-between;gap:16px;
+  padding:22px 28px 18px;border-bottom:1px solid var(--w12)}
+.set-modal-heading{min-width:0}
+.set-modal-title{font-family:'Outfit',sans-serif;font-weight:300;font-size:var(--h-sec);line-height:1.2;color:var(--w100);margin:0}
+.set-modal-sub{font-size:14px;line-height:1.45;color:var(--w60);margin:6px 0 0}
+.set-modal-sub:empty{display:none}
+.set-modal-body{flex:1;min-height:0;overflow-y:auto;padding:0 28px 28px}
+.set-sec{margin-top:28px}
+.set-modal-body>.set-sec:first-child{margin-top:20px}
+h3.pv-g{margin:0 0 2px}
+.set-note{font-size:14px;line-height:1.45;color:var(--w60);margin:14px 0 0;max-width:62ch}
+.set-note:empty{display:none}
+.set-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.set-browse{margin-top:12px;padding:16px;border:1px solid var(--w12);border-radius:var(--r-md)}
+.set-browse .set-note:first-child{margin-top:0}
+.set-crumbs{font-size:14px;line-height:1.45;color:var(--w60);margin-bottom:4px;overflow-wrap:anywhere}
+.set-list{display:flex;flex-direction:column}
+button.set-item{display:flex;justify-content:space-between;align-items:center;gap:12px;width:100%;min-height:44px;padding:10px 0;
+  border:0;border-bottom:1px solid var(--w06);border-radius:0;background:transparent;cursor:pointer;
+  font:600 var(--h-row) 'Manrope',sans-serif;letter-spacing:.02em;text-transform:none;text-align:left;color:var(--w90)}
+button.set-item:hover{color:var(--w100)}
+.set-chev{font-size:20px;line-height:1;color:var(--w60)}
+.set-modal .prot-status .pill-sel{min-width:150px}
+.set-modal .ss-art-pics{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:14px 12px;margin-top:14px}
+.set-modal .wall-card:not(.has) button.wall-screen{background:transparent;border-color:var(--edge)}
+.set-modal .wall-card:not(.has) button.wall-screen::before{display:none}
+.set-modal .wall-card:not(.has) button.wall-screen:hover:not(:disabled){border-color:var(--w80);background:rgba(var(--fg),.04)}
+.set-modal .wall-add{font-size:13px;color:var(--w80)}
+.set-modal .wall-add::before{font-size:24px;color:var(--w90)}
+.set-modal button.wall-link{font-size:13px}
+.set-modal div.wall-screen{position:relative;display:block;width:100%;aspect-ratio:16/9;border:1px solid var(--w12);border-radius:var(--r-md);
+  background:#000 center/cover no-repeat}
+@media (max-width:560px){
+  .set-modal-backdrop{padding:0;align-items:stretch}
+  .set-modal{max-width:none;max-height:none;height:100%;border:0;border-radius:0}
+  .set-modal-head{padding:16px}
+  .set-modal-body{padding:0 16px 24px}
+  .set-modal .ss-art-pics{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .set-modal .prot-row{flex-wrap:wrap}
+  .set-modal .prot-status .pill-sel{min-width:0;width:100%}
+  .set-modal .prot-row:has(.pill-sel) .prot-status{flex-basis:100%}
+}
+/* Picture frame on the Screensaver and Inputs tabs: what it shows now. */
+.inputs-frame{margin-top:18px;max-width:560px}
+.inputs-frame .ss-art-now{margin-bottom:4px}
+.ss-art-summary{margin-top:12px;max-width:340px}
+.ss-art-now{display:grid;grid-template-columns:112px minmax(0,1fr);gap:12px 14px;align-items:center;max-width:340px}
+.inputs-frame .ss-art-now{max-width:560px}
+.ss-art-now-pic{width:112px;aspect-ratio:16/9;border-radius:var(--r-sm);border:1px solid var(--w12);background:#000 center/contain no-repeat}
+.ss-art-now-words{min-width:0}
+.ss-art-now-words .prot-title{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ss-art-now-words .prot-desc{margin-top:2px}
+.ss-art-now-btns{grid-column:1/-1;display:flex;gap:8px}
+.ss-art-now-btns .pill{flex:1;min-width:0}
 .ss-video-colour{display:flex;align-items:center;gap:10px;margin-top:14px;color:var(--w80);font-size:13px}
 .ss-video-colour input[type=color]{width:40px;height:28px;padding:0;border:1px solid var(--edge);border-radius:var(--r-md);background:none}
 .ss-video-actions{margin:14px 0 8px}

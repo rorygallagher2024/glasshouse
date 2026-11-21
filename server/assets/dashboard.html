@@ -1045,6 +1045,14 @@ function saverRows(d) {
              act: 'plainNoSignal', target: 'icon', on: nsIcon,
              press: nsIcon ? t('tv.saver.allow.off', 'Press OK to switch off') : t('tv.noSignal.on', 'Press OK to switch on'),
              hint: t('inputs.noSignal.iconDesc', 'Shows a subtle disconnected cable icon instead of \u201cNo Signal\u201d.') });
+    if (d.noSignal.art || nsMode === 'art') {
+      var nsArt = nsMode === 'art';
+      r.push({ label: t('inputs.noSignal.art', 'Picture frame'),
+               value: nsArt ? t('common.on', 'On') : t('common.off', 'Off'), cls: nsArt ? 'on' : 'off',
+               act: 'plainNoSignal', target: 'art', on: nsArt,
+               press: nsArt ? t('tv.saver.allow.off', 'Press OK to switch off') : t('tv.noSignal.on', 'Press OK to switch on'),
+               hint: t('inputs.noSignal.artDescTv', 'The picture frame\u2019s pictures, with \u201cNo Signal\u201d on each picture\u2019s label. Pick them in Picture frame settings, on the Screensaver or Inputs tab of the dashboard in a browser.') });
+    }
   }
   r.push(head(t('tv.saver.head.aFirmwareUpdatePuts', 'A firmware update puts LG’s own back')));
   return r;
