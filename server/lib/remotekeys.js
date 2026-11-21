@@ -74,6 +74,7 @@ var path = require('path');
 var msg = require('./say').msg;
 var allocBuffer = require('./util').allocBuffer;
 var guidePatch = require('./guidepatch');
+var levelBar = require('./levelbar');
 
 var CONFIG_KEY = 'com.webos.surfacemanager.keyFilters';
 // What each key does, read by the filter; see the header.
@@ -334,11 +335,9 @@ function init(opts) {
   nativeFilters = null;
   switcherFound = null;
   watchLg(false);
-  backlightStop();
-  if (typeof opts.backlightIdleMs === 'number') backlightIdleMs = opts.backlightIdleMs;
-  barStyleCache.at = 0;
   reapplied = [];
   SubscriptionCtor = opts.subscription || null;
+  levelBar.init({ luna: lunaFn, subscription: SubscriptionCtor, readStyle: brightnessBarStyle, idleMs: opts.backlightIdleMs });
   followPresses({});
   if (toastsTimer) { clearTimeout(toastsTimer); toastsTimer = null; }
   servicesModule = opts.services || null;
@@ -444,14 +443,14 @@ function brightnessStep() {
 
 /*
  * How the level bar looks: 'lg', a vertical bar at the right edge laid out like
- * the TV's own volume bar, or 'horizontal', a pill low on the screen. Only
- * 'horizontal' is kept in the file, so a TV left on the default holds none.
+ * the TV's own volume bar, 'horizontal', a pill low on the screen, or 'none',
+ * no bar at all. Only the last two are kept in the file, so a TV left on the
+ * default holds none.
  */
-var BAR_STYLES = ['lg', 'horizontal'];
 function readStoredBarStyle() {
   try {
     var j = JSON.parse(fs.readFileSync(mapFile(), 'utf8'));
-    return j && j.brightnessBarStyle === 'horizontal' ? 'horizontal' : '';
+    return j && (j.brightnessBarStyle === 'horizontal' || j.brightnessBarStyle === 'none') ? j.brightnessBarStyle : '';
   } catch (e) {
     return '';
   }
@@ -461,17 +460,19 @@ function brightnessBarStyle() {
   return readStoredBarStyle() || 'lg';
 }
 
-// The style for the bar's polls, read from the file at most every 2 s (a write drops it).
-var barStyleCache = { value: 'lg', at: 0 };
-function barStyleForPoll() {
-  var now = Date.now();
-  if (now - barStyleCache.at > 2000 || now < barStyleCache.at) barStyleCache = { value: brightnessBarStyle(), at: now };
-  return barStyleCache.value;
+// A Brightness key shows a level bar unless the style is 'none'.
+function levelBarShown() {
+  return brightnessBarStyle() !== 'none';
+}
+
+// Whether a key set to id needs the bar's app: it opens the bar, or shows a level bar.
+function needsBarApp(id) {
+  return id === INPUT_BAR || (isBrightnessAction(id) && levelBarShown());
 }
 
 // step and style are kept as they were in the file unless one is given ('' for the default).
 function writeMap(map, home, starting, step, style) {
-  barStyleCache.at = 0;
+  levelBar.forgetStyle();
   if (step === undefined) step = readStoredBrightnessStep();
   if (style === undefined) style = readStoredBarStyle();
   if (!Object.keys(map).length && !home && !starting && !step && !style) {
@@ -538,8 +539,7 @@ function filterSource() {
     '        glasshouseKeyIds = ids;',
     '        glasshousePowerOffArmed = {};',
     '        glasshouseStarting = typeof value.starting === "string" ? value.starting : "";',
-    '        glasshouseOsd = value.osd === true;',
-    '        glasshouseOsdStyle = value.osdStyle === "horizontal" ? "horizontal" : "lg";',
+    levelBar.filterConfig(),
     '        glasshouseBrightnessStep = typeof value.brightnessStep === "number" && value.brightnessStep >= 1 ? value.brightnessStep : ' + BRIGHTNESS_DEFAULT_STEP + ';',
     '    } catch (e) {',
     '        console.warn("glasshouse keyfilter: " + e + "; keys left as they were");',
@@ -571,16 +571,8 @@ function filterSource() {
     'var glasshouseBrightnessPending = [];',
     // The level this press last wrote, so its repeats while the key is held skip the read (-1: none).
     'var glasshouseBrightnessLevel = -1;',
-    // The bar's app shows the new level (assets/inputbar-app), opened once for each press:
-    // its page follows the level itself while the key is held.
-    'var glasshouseOsd = false;',
-    'var glasshouseOsdStyle = "lg";',
-    'var glasshouseOsdPress = 0;',
-    'function glasshouseBrightnessShow(level, press) {',
-    '    if (!glasshouseOsd || press === glasshouseOsdPress) return;',
-    '    glasshouseOsdPress = press;',
-    '    try { applicationManager.launch(' + JSON.stringify(INPUT_BAR) + ', JSON.stringify({ "glasshouse": "osd", "kind": "brightness", "level": level, "style": glasshouseOsdStyle })); } catch (e) {}',
-    '}',
+    // The bar's app shows the new level (assets/inputbar-app), opened once for each press (lib/levelbar.js):
+    levelBar.filterShow(INPUT_BAR),
     'function glasshouseBrightnessKey(direction, pressed, autoRepeat) {',
     '    if (!pressed) { glasshouseBrightnessHeld = 0; glasshouseBrightnessLevel = -1; return; }',
     '    if (autoRepeat) return;',
@@ -804,8 +796,8 @@ function writeKeys(map, cb, home, starting) {
   if (starting) value.starting = starting;
   var step = readStoredBrightnessStep();
   if (step) value.brightnessStep = step;
-  if (barAvailable() && Object.keys(map).some(function (k) { return isBrightnessAction(map[k]); })) value.osd = true;
-  if (readStoredBarStyle()) value.osdStyle = readStoredBarStyle();
+  if (levelBarShown() && barAvailable() && Object.keys(map).some(function (k) { return isBrightnessAction(map[k]); })) value.osd = true;
+  if (readStoredBarStyle() === 'horizontal') value.osdStyle = 'horizontal';
   configs[MAP_KEY] = value;
   lunaFn('com.webos.service.config/setConfigs', { configs: configs }, function (r) {
     cb(!!(r && r.returnValue));
@@ -1834,7 +1826,7 @@ function setRemoteKey(key, action, id, cb) {
 
 function setOfferedKey(def, action, id, kind, cb) {
   var map = readMap();
-  var hadBar = map[def.key] === INPUT_BAR || isBrightnessAction(map[def.key]), hadHomeBar = map[def.key] === HOME_BAR;
+  var hadBar = needsBarApp(map[def.key]), hadHomeBar = map[def.key] === HOME_BAR;
   function saved(r) {
     if (r && r.ok) { dropBarIfUnused(hadBar); dropHomeBarIfUnused(hadHomeBar); }
     cb(r);
@@ -1867,7 +1859,7 @@ function setOfferedKey(def, action, id, kind, cb) {
       }
       if (!allowed) return cb({ ok: false, error: msg('srv.remoteKeys.unknownApp', 'That app is not on this TV') });
       // The bar's app also shows the level a Brightness key has set, where the filter can open it.
-      var wantsBar = id === INPUT_BAR || (isBrightnessAction(id) && kind === 'filter' && barAvailable());
+      var wantsBar = id === INPUT_BAR || (isBrightnessAction(id) && kind === 'filter' && barAvailable() && levelBarShown());
       function store() {
         map[def.key] = id;
         save(map, function (r) {
@@ -1937,73 +1929,50 @@ function setBrightnessStep(value, cb) {
   applyAny(function (ok) { cb(ok ? { ok: true } : { ok: false, error: msg('srv.remoteKeys.chainFailed', 'The TV did not take the change') }); });
 }
 
-// The level bar's look, from the Remote tab. cb({ ok, error }).
+// Whether a key is set to a Brightness action.
+function brightnessKeySet() {
+  var map = readMap();
+  return Object.keys(map).some(function (k) { return isBrightnessAction(map[k]); });
+}
+
+/*
+ * The level bar's look, from the Remote tab. cb({ ok, error }). 'none' takes
+ * the bar's app off the TV where no other key needs it; a style that shows a
+ * bar again puts it back first, so a Brightness key is never left to open an
+ * app that is not there.
+ */
 function setBrightnessBarStyle(value, cb) {
-  if (BAR_STYLES.indexOf(value) === -1) {
-    return cb({ ok: false, error: msg('srv.remoteKeys.badBarStyle', 'The level bar style must be lg or horizontal') });
+  if (!levelBar.isStyle(value)) {
+    return cb({ ok: false, error: msg('srv.remoteKeys.badBarStyle', 'The level bar style must be lg, horizontal or none') });
   }
   if (!lunaFn) return cb({ ok: false, error: 'no luna wrapper' });
-  try {
-    writeMap(readMap(), readHome(), readStarting(), undefined, value === 'horizontal' ? 'horizontal' : '');
-  } catch (e) {
-    return cb({ ok: false, error: msg('srv.remoteKeys.saveFailed', 'Could not save the change: {error}', { error: e.message }) });
+  var wasShown = levelBarShown();
+  var willShow = value !== 'none';
+  function save() {
+    try {
+      writeMap(readMap(), readHome(), readStarting(), undefined, value === 'lg' ? '' : value);
+    } catch (e) {
+      return cb({ ok: false, error: msg('srv.remoteKeys.saveFailed', 'Could not save the change: {error}', { error: e.message }) });
+    }
+    applyAny(function (ok) {
+      if (ok && wasShown && !willShow) dropBarIfUnused(true);
+      if (ok && !wasShown && willShow && keySetFn && barAvailable() && brightnessKeySet()) keySetFn();
+      cb(ok ? { ok: true } : { ok: false, error: msg('srv.remoteKeys.chainFailed', 'The TV did not take the change') });
+    });
   }
-  applyAny(function (ok) { cb(ok ? { ok: true } : { ok: false, error: msg('srv.remoteKeys.chainFailed', 'The TV did not take the change') }); });
+  if (!wasShown && willShow && barAppFn && barAvailable() && brightnessKeySet()) {
+    return barAppFn('install', function (r) {
+      if (!r || !r.ok) return cb({ ok: false, error: msg('srv.remoteKeys.inputBarInstall', 'The input bar could not be put on the TV. Try again in a moment.') });
+      save();
+    });
+  }
+  save();
 }
 
 /*
  * The app the Home key opens, for Glasshouse Home, or '' to give Home back to
  * LG's filters. cb({ ok, error }).
  */
-/*
- * The panel's brightness for the bar's page, which asks every 120 ms while a
- * key is held. Each luna call is a fork and exec of luna-send, so the answer
- * comes from a subscription to the settings service's backlight instead: one
- * long-lived luna-send, started by the first ask and stopped backlightIdleMs
- * after the last. Until it has answered, or after it has closed, the ask is
- * made of the settings service itself.
- */
-var BACKLIGHT_IDLE_MS = 30000;
-var backlightIdleMs = BACKLIGHT_IDLE_MS;
-var backlightSub = null;
-var backlightLevel = -1;     // -1: not known
-var backlightIdleTimer = null;
-
-function backlightStop() {
-  if (backlightIdleTimer) { clearTimeout(backlightIdleTimer); backlightIdleTimer = null; }
-  if (backlightSub) { backlightSub.stop(); backlightSub = null; }
-  backlightLevel = -1;
-}
-
-function backlightMessage(r) {
-  var level = r && r.returnValue !== false && r.settings ? Math.round(parseFloat(r.settings.backlight)) : NaN;
-  backlightLevel = isNaN(level) ? -1 : level;
-}
-
-function backlightWatch() {
-  if (!SubscriptionCtor) return;
-  if (!backlightSub) {
-    backlightSub = new SubscriptionCtor('com.webos.settingsservice/getSystemSettings',
-      { category: 'picture', keys: ['backlight'], subscribe: true }, null,
-      { message: backlightMessage, close: function () { backlightLevel = -1; } });
-    backlightSub.start();
-  }
-  if (backlightIdleTimer) clearTimeout(backlightIdleTimer);
-  backlightIdleTimer = setTimeout(backlightStop, backlightIdleMs);
-  if (backlightIdleTimer.unref) backlightIdleTimer.unref();
-}
-
-// The current picture mode's brightness and the bar's style, for the bar's page to follow while a key is held. cb({ ok, level, style }).
-function getBrightness(cb) {
-  if (!lunaFn) return cb({ ok: false });
-  backlightWatch();
-  if (backlightLevel >= 0) return cb({ ok: true, level: backlightLevel, style: barStyleForPoll() });
-  lunaFn('com.webos.service.settings/getSystemSettings', { category: 'picture', keys: ['backlight'] }, function (r) {
-    var level = r && r.settings ? parseFloat(r.settings.backlight) : NaN;
-    cb(isNaN(level) ? { ok: false } : { ok: true, level: Math.round(level), style: barStyleForPoll() });
-  });
-}
-
 function setHome(id, cb) {
   if (!lunaFn) return cb({ ok: false, error: 'no luna wrapper' });
   save(readMap(), cb, String(id || ''));
@@ -2164,7 +2133,7 @@ function dropInputBar(cb) {
 // Whether a key needs the bar's app: it opens the bar, or shows a Brightness key's level.
 function opensInputBar() {
   var map = readMap();
-  return Object.keys(map).some(function (k) { return map[k] === INPUT_BAR || isBrightnessAction(map[k]); });
+  return Object.keys(map).some(function (k) { return needsBarApp(map[k]); });
 }
 
 // Whether a key is set to open Glasshouse Bar, which lib/homebar.js keeps loaded.
@@ -2189,7 +2158,7 @@ module.exports = {
   setHome: setHome,
   setBrightnessStep: setBrightnessStep,
   setBrightnessBarStyle: setBrightnessBarStyle,
-  getBrightness: getBrightness,
+  getBrightness: levelBar.getBrightness,
   setStarting: setStarting,
   homeApp: readHome,
   ensure: ensure,

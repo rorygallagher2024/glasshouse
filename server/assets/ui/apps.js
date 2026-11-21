@@ -505,7 +505,7 @@ function renderRemoteKeys(d) {
   const more = away.length ? `<details class="rk-more"${rkMoreOpen ? ' open' : ''} ontoggle="rkMoreOpen = this.open">
       <summary class="rk-grp">${esc(t('apps.remoteKeys.elsewhere', 'Buttons on remotes sold elsewhere ({n})', { n: away.length }))}</summary>
       <div class="rk-grid">${away.map(tile).join('')}</div></details>` : '';
-  // How far a Brightness key moves the picture, once a key is set to one.
+  // The settings of the Brightness keys, in a section of their own that shows once a key is set to one.
   let stepRow = '';
   if (rk.keys.some(k => k.id === 'action:brightnessUp' || k.id === 'action:brightnessDown')) {
     const sizes = [5, 10, 15, 20, 25];
@@ -523,13 +523,15 @@ function renderRemoteKeys(d) {
   if (stepRow && rk.brightnessBar) {
     barStyleRow = `<div class="prot-row">
       <div class="prot-main"><div class="prot-title"><label for="apps-rk-bar-style">${esc(t('apps.remoteKeys.barStyle', 'Level bar style'))}</label></div>
-        <div class="prot-desc">${esc(t('apps.remoteKeys.barStyleDesc', 'How the bar that a Brightness key shows looks: a vertical bar at the right edge, as the TV\'s volume bar, or a horizontal bar low on the screen.'))}</div></div>
+        <div class="prot-desc">${esc(t('apps.remoteKeys.barStyleDesc', 'How the bar that a Brightness key shows looks: a vertical bar at the right edge, as the TV\'s volume bar, a horizontal bar low on the screen, or no bar.'))}</div></div>
       <div class="prot-status"><select id="apps-rk-bar-style" class="pill-sel" ${rkWritable ? '' : 'disabled'} onchange="rkSetBrightnessBarStyle(this.value)">
-        <option value="lg"${rk.brightnessBarStyle !== 'horizontal' ? ' selected' : ''}>${esc(t('apps.remoteKeys.barStyleLg', 'Vertical, like the TV\'s volume bar'))}</option>
-        <option value="horizontal"${rk.brightnessBarStyle === 'horizontal' ? ' selected' : ''}>${esc(t('apps.remoteKeys.barStyleHorizontal', 'Horizontal, low on the screen'))}</option>
+        <option value="lg"${rk.brightnessBarStyle !== 'horizontal' ? ' selected' : ''}>${esc(t('apps.remoteKeys.barStyleLg', 'Vertical'))}</option>
+        <option value="horizontal"${rk.brightnessBarStyle === 'horizontal' ? ' selected' : ''}>${esc(t('apps.remoteKeys.barStyleHorizontal', 'Horizontal'))}</option>
+        <option value="none"${rk.brightnessBarStyle === 'none' ? ' selected' : ''}>${esc(t('apps.remoteKeys.barStyleNone', 'No bar'))}</option>
       </select></div></div>`;
   }
-  list.innerHTML = groups + more + stepRow + barStyleRow;
+  const brightness = stepRow ? `<div class="rk-grp">${esc(t('apps.remoteKeys.brightnessSection', 'Brightness key settings'))}</div>${stepRow}${barStyleRow}` : '';
+  list.innerHTML = groups + more + brightness;
   if (rkOpen) {
     const tile = list.querySelector(`.rk-key[data-key="${CSS.escape(rkOpen)}"]`);
     rkOpen = null;

@@ -1137,50 +1137,56 @@ step(function (next) {
   }));
 });
 
-// The bar's polls are answered from a subscription to the backlight, not a luna call each.
+// 'No bar': the keys still change the brightness, and nothing opens or stays on the TV for them.
 step(function (next) {
-  var reads = 0;
-  var subs = [];
-  function FakeSub(uri, payload, appId, handlers) {
-    this.uri = uri; this.payload = payload; this.handlers = handlers; this.running = false;
-    subs.push(this);
-  }
-  FakeSub.prototype.start = function () { this.running = true; };
-  FakeSub.prototype.stop = function () { this.running = false; };
-  rk.init({ luna: function (uri, payload, cb) {
-      if (uri === 'com.webos.service.settings/getSystemSettings') reads++;
-      return luna(uri, payload, cb);
-    }, subscription: FakeSub, backlightIdleMs: 40, inputNames: {}, stateDir: stateDir, filtersDir: filtersDir });
-  tv.backlight = 40;
-  rk.getBrightness(guard(function (first) {
-    assert.deepEqual(first, { ok: true, level: 40, style: 'lg' }, 'the first ask is made of the settings service');
-    assert.strictEqual(reads, 1);
-    assert.strictEqual(subs.length, 1, 'and starts the subscription');
-    assert.strictEqual(subs[0].uri, 'com.webos.settingsservice/getSystemSettings');
-    assert.deepEqual(subs[0].payload, { category: 'picture', keys: ['backlight'], subscribe: true });
-    assert.ok(subs[0].running);
-    subs[0].handlers.message({ returnValue: true, subscribed: true, settings: { backlight: '55' } });
-    rk.getBrightness(guard(function (second) {
-      assert.deepEqual(second, { ok: true, level: 55, style: 'lg' }, 'once it has answered, the level is its');
-      assert.strictEqual(reads, 1, 'with no further call to the settings service');
-      rk.setBrightnessBarStyle('horizontal', guard(function (h) {
-        assert.ok(h.ok, h.error);
-        rk.getBrightness(guard(function (third) {
-          assert.strictEqual(third.style, 'horizontal', 'a change of style is seen at the next ask');
-          subs[0].handlers.close();
-          rk.getBrightness(guard(function (fourth) {
-            assert.strictEqual(fourth.level, 40, 'after the subscription closes the ask goes to the settings service again');
-            assert.strictEqual(reads, 2);
-            setTimeout(guard(function () {
-              assert.strictEqual(subs[0].running, false, 'it is stopped when no one has asked for a while');
+  var barOpened = function (f) { return f.launched.filter(function (l) { return l.id === 'com.tvweb.inputbar'; }); };
+  bar.calls.length = 0;
+  bar.pokes = 0;
+  bar.allowed = true;
+  bar.installs = true;
+  rk.setRemoteKey('red', 'open', 'action:brightnessUp', guard(function (s) {
+    assert.ok(s.ok, s.error);
+    assert.deepEqual(bar.calls, ['install']);
+    assert.strictEqual(tv.keys.osd, true);
+    rk.setBrightnessBarStyle('none', guard(function (n) {
+      assert.ok(n.ok, n.error);
+      assert.strictEqual(rk.opensInputBar(), false, 'no key needs the bar\'s app now');
+      assert.strictEqual(tv.keys.osd, undefined, 'the filter is not told to open it');
+      assert.strictEqual(tv.keys.osdStyle, undefined);
+      assert.deepEqual(bar.calls, ['install', 'remove'], 'its app is taken off the TV');
+      var f = loadFilter();
+      tv.backlight = 50;
+      f.handle(1004, true, false);
+      assert.strictEqual(tv.backlight, 60, 'the key still changes the brightness');
+      assert.deepEqual(barOpened(f), [], 'and opens no bar');
+      f.handle(1004, false, false);
+      bar.calls.length = 0;
+      rk.setRemoteKey('netflix', 'open', 'action:brightnessDown', guard(function (d) {
+        assert.ok(d.ok, d.error);
+        assert.deepEqual(bar.calls, [], 'a Brightness key set while there is no bar installs no app');
+        bar.installs = false;
+        rk.setBrightnessBarStyle('lg', guard(function (refused) {
+          assert.strictEqual(refused.ok, false, 'a bar is refused when its app cannot be put on the TV');
+          rk.getRemoteKeys(guard(function (r) {
+            assert.strictEqual(r.brightnessBarStyle, 'none', 'and the style is left as it was');
+            bar.installs = true;
+            bar.pokes = 0;
+            rk.setBrightnessBarStyle('horizontal', guard(function (back) {
+              assert.ok(back.ok, back.error);
+              assert.strictEqual(bar.calls[bar.calls.length - 1], 'install', 'a style that shows a bar puts its app back first');
+              assert.strictEqual(bar.pokes, 1, 'and tells the preloader');
+              assert.strictEqual(rk.opensInputBar(), true);
+              assert.strictEqual(tv.keys.osd, true);
+              assert.strictEqual(tv.keys.osdStyle, 'horizontal');
               rk.setBrightnessBarStyle('lg', guard(function () {
-                rk.getBrightness(guard(function () {
-                  assert.strictEqual(subs.length, 2, 'and the next ask starts another');
-                  console.log('  ✓ the bar\'s level comes from a subscription to the backlight, falling back to a read, and stops with no asks');
-                  next();
+                rk.setRemoteKey('red', 'lg', '', guard(function () {
+                  rk.setRemoteKey('netflix', 'lg', '', guard(function () {
+                    console.log('  ✓ no bar: a Brightness key changes the brightness and opens nothing, its app is taken off the TV and put back with the next style');
+                    next();
+                  }));
                 }));
               }));
-            }), 120);
+            }));
           }));
         }));
       }));
