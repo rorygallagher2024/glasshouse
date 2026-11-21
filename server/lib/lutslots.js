@@ -96,30 +96,45 @@ function tableFailure(text) {
  * { returnValue, data (base64 little-endian uint16), dataCount, dataType,
  * source: 'stored' }. It is the file, never the live picture state, and a
  * write sent with dataOpt 0 is not in it. Unlike a modern TV it needs picMode
- * (and optionally profileNo) to name the slot. Anything else, or a missing or
+ * (and optionally profileNo and colorSpace) to name the slot; several matching
+ * files without a colorSpace fail rather than guess, and file names the one served. Anything else, or a missing or
  * wrongly sized file, gets the failure reply the C1 itself gives.
  */
-function readTable(command, picMode, profileNo, cb) {
+function readTable(command, picMode, profileNo, colorSpace, cb) {
   var table = TABLES.hasOwnProperty(command) ? TABLES[command] : null;
   if (!table) return cb(tableFailure(NO_FILE));
   var profile = 'profile' + (profileNo === undefined || profileNo === null ? 0 : profileNo);
-  if (!/^[A-Za-z0-9_]+$/.test(String(picMode || '')) || !/^profile[0-9]+$/.test(profile)) {
+  var space = colorSpace === undefined || colorSpace === null ? '' : String(colorSpace);
+  if (!/^[A-Za-z0-9_]+$/.test(String(picMode || '')) || !/^profile[0-9]+$/.test(profile) ||
+      !/^[A-Za-z0-9]*$/.test(space)) {
     return cb(tableFailure(NO_FILE));
   }
   fs.readdir(dir, function (err, names) {
-    var prefix = picMode + '_' + profile + '_';
-    var found = null;
+    // The app names a slot by its picMode (hdrCinema); the file prefix is
+    // snake case (hdr_cinema), so both spellings are tried.
+    var snake = String(picMode).replace(/([a-z0-9])([A-Z])/g, '$1_$2').toLowerCase();
+    var prefixes = [picMode + '_' + profile + '_'];
+    if (snake !== String(picMode).toLowerCase() || snake !== picMode) {
+      prefixes.push(snake + '_' + profile + '_');
+    }
+    var found = [];
     names = (!err && names) ? names.slice().sort() : [];
     for (var i = 0; i < names.length; i++) {
-      if (names[i].indexOf(prefix) !== 0 || !endsWith(names[i], table.suffix)) continue;
-      if (!found) found = names[i];
-      // Prefer the plain name over a variant such as <prefix>BT709_3D_LUT_DATA.
-      if (names[i] === prefix + table.suffix) { found = names[i]; break; }
+      if (!endsWith(names[i], table.suffix)) continue;
+      for (var j = 0; j < prefixes.length; j++) {
+        if (names[i].indexOf(prefixes[j]) !== 0) continue;
+        var middle = names[i].slice(prefixes[j].length, names[i].length - table.suffix.length);
+        // The middle is '' or a colour space such as BT709_.
+        if (space ? middle === space + '_' : true) found.push(names[i]);
+        break;
+      }
     }
-    if (!found) return cb(tableFailure(NO_FILE));
-    fs.readFile(dir + '/' + found, function (e, data) {
+    // Several variants (BT709 and BT2020) match: do not guess which cube the
+    // caller means.
+    if (found.length !== 1) return cb(tableFailure(NO_FILE));
+    fs.readFile(dir + '/' + found[0], function (e, data) {
       if (e || data.length !== table.bytes) return cb(tableFailure(NO_FILE));
-      cb({ returnValue: true, data: data.toString('base64'), dataCount: table.count, dataType: table.type, source: 'stored' });
+      cb({ returnValue: true, data: data.toString('base64'), dataCount: table.count, dataType: table.type, source: 'stored', file: found[0] });
     });
   });
 }

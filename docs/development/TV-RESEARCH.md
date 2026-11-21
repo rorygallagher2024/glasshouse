@@ -3942,14 +3942,18 @@ them (215622 bytes).
 * `getTemporalPeakControl` and `getGlobalStressReduction` report the stored
   switch, not the live panel value.
 
-Not yet confirmed on a TV: that the file prefix equals the mode name given when
-the calibration starts, and that a stored upload changes the file each time.
+Not yet confirmed on a TV: that a stored upload changes the file each time.
+The prefix is the mode name for SDR (`filmMaker`) and snake case for HDR
+(`hdr_cinema`, while the app sends `hdrCinema`).
 
 ### getExternalPqData from the stored files
 
 `POST /api/externalpq/getExternalPqData` takes the payload a modern LG's
 `externalpq/getExternalPqData` takes (`command`) plus `picMode` and optional
-`profileNo` to pick the slot. A modern TV needs only `command`, so the bare
+`profileNo` and `colorSpace` (`BT709` or `BT2020`) to pick the slot. A
+`picMode` in camelCase (`hdrCinema`) also matches the snake-case file prefix.
+When several files match and no `colorSpace` is given, the reply is the failure
+reply; a good reply adds `file`, the file served. A modern TV needs only `command`, so the bare
 modern payload is not enough here: without `picMode` the reply is the failure
 reply. The reply has the same keys: `returnValue`, `data` (base64,
 little-endian 16-bit), `dataCount` (107811) and `dataType`

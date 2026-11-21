@@ -2144,7 +2144,7 @@ function handleRequest(req, res) {
   if (pathname === '/api/externalpq/getExternalPqData' && req.method === 'POST') {
     if (!authed(u.query, req)) return send(res, 401, JSON.stringify({ ok: false, error: 'unauthorized' }));
     return readJsonBody(req, res, function (body) {
-      lutSlots.readTable(body && body.command, body && body.picMode, body && body.profileNo, function (r) {
+      lutSlots.readTable(body && body.command, body && body.picMode, body && body.profileNo, body && body.colorSpace, function (r) {
         send(res, 200, JSON.stringify(r));
       });
     });
