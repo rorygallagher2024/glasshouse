@@ -101,6 +101,8 @@ var homebarModule = null;
 var iptvModule = null;
 /** @type {typeof import('./screensavers')} */
 var screensaversModule = null;
+/** @type {typeof import('./audiolevels')} */
+var audioLevelsModule = null;
 /** @type {typeof import('./haentity')} */
 var haEntityModule = null;
 /** @type {typeof import('./inputbar')} */
@@ -2694,6 +2696,14 @@ function handleRequest(req, res) {
     });
   }
 
+  // The sound output's levels, for the Music Highway screen saver, which
+  // asks several times a second while it shows.
+  if (pathname === '/api/audio/levels' && req.method === 'GET') {
+    if (!authed(u.query, req)) return send(res, 401, JSON.stringify({ ok: false, error: 'unauthorised' }));
+    if (!audioLevelsModule) return send(res, 503, JSON.stringify({ ok: false, error: 'audio levels not available' }));
+    return send(res, 200, JSON.stringify(audioLevelsModule.read()));
+  }
+
   if (pathname === '/api/stats') {
     return telemetryModule.collectStats(function (s) {
       // PicCap's capture and Hue Sync's streaming, where installed, for the
@@ -2898,6 +2908,7 @@ function init(opts) {
   if (opts.homebar) homebarModule = opts.homebar;
   if (opts.iptv) iptvModule = opts.iptv;
   if (opts.screensavers) screensaversModule = opts.screensavers;
+  if (opts.audioLevels) audioLevelsModule = opts.audioLevels;
   if (opts.haEntity) haEntityModule = opts.haEntity;
   if (opts.inputBar) inputBarModule = opts.inputBar;
   if (opts.updater) updaterModule = opts.updater;
