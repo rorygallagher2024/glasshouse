@@ -101,6 +101,8 @@ var homebarModule = null;
 var iptvModule = null;
 /** @type {typeof import('./screensavers')} */
 var screensaversModule = null;
+/** @type {typeof import('./audiolevels')} */
+var audioLevelsModule = null;
 /** @type {typeof import('./haentity')} */
 var haEntityModule = null;
 /** @type {typeof import('./inputbar')} */
@@ -2645,6 +2647,11 @@ function handleRequest(req, res) {
     if (!remoteKeysModule) return send(res, 200, JSON.stringify({ ok: true, supported: false }));
     return remoteKeysModule.getRemoteKeys(function (rk) { send(res, 200, JSON.stringify(rk || { ok: true, supported: false })); });
   }
+  // The bar's page asks for it while a Brightness key is held.
+  if (pathname === '/api/remotekeys/brightness' && req.method === 'GET') {
+    if (!remoteKeysModule) return send(res, 200, JSON.stringify({ ok: false }));
+    return remoteKeysModule.getBrightness(function (r) { send(res, 200, JSON.stringify(r)); });
+  }
   if (pathname === '/api/remotekeys' && req.method === 'POST') {
     if (!config.allowControl) {
       return send(res, 403, JSON.stringify({ ok: false, error: msg('srv.controlsOff', 'controls disabled in config') }));
@@ -2653,6 +2660,11 @@ function handleRequest(req, res) {
       if (!remoteKeysModule) return send(res, 503, JSON.stringify({ ok: false, error: 'remote keys module unavailable' }));
       if (body && body.brightnessStep !== undefined) {
         return remoteKeysModule.setBrightnessStep(body.brightnessStep, function (r) {
+          send(res, r && r.ok ? 200 : 400, JSON.stringify(r));
+        });
+      }
+      if (body && body.brightnessBarStyle !== undefined) {
+        return remoteKeysModule.setBrightnessBarStyle(body.brightnessBarStyle, function (r) {
           send(res, r && r.ok ? 200 : 400, JSON.stringify(r));
         });
       }
@@ -2694,6 +2706,14 @@ function handleRequest(req, res) {
       var watched = historyModule && historyModule.status().running ? historyModule.totals() : null;
       send(res, 200, prometheusModule.render(s, versionStr, forwarded, clock, watched), 'text/plain; version=0.0.4; charset=utf-8');
     });
+  }
+
+  // The sound output's levels, for the Music Highway screen saver, which
+  // asks several times a second while it shows.
+  if (pathname === '/api/audio/levels' && req.method === 'GET') {
+    if (!authed(u.query, req)) return send(res, 401, JSON.stringify({ ok: false, error: 'unauthorised' }));
+    if (!audioLevelsModule) return send(res, 503, JSON.stringify({ ok: false, error: 'audio levels not available' }));
+    return send(res, 200, JSON.stringify(audioLevelsModule.read()));
   }
 
   if (pathname === '/api/stats') {
@@ -2900,6 +2920,7 @@ function init(opts) {
   if (opts.homebar) homebarModule = opts.homebar;
   if (opts.iptv) iptvModule = opts.iptv;
   if (opts.screensavers) screensaversModule = opts.screensavers;
+  if (opts.audioLevels) audioLevelsModule = opts.audioLevels;
   if (opts.haEntity) haEntityModule = opts.haEntity;
   if (opts.inputBar) inputBarModule = opts.inputBar;
   if (opts.ask) askModule = opts.ask;

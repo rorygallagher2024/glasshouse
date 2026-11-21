@@ -31,10 +31,11 @@ body{font-family:'Manrope',sans-serif;color:#fff;
 #clock{font-family:'Manrope',sans-serif;font-weight:400;font-size:4.4vh;letter-spacing:.01em;
   line-height:1;opacity:.65}
 
-#tabs{display:flex;display:-webkit-flex;align-items:baseline;-webkit-align-items:baseline;flex:0 0 auto;-webkit-flex:0 0 auto;margin:0 4vw 3.2vh 0;
-  /* the bar clips so it can scroll, and at line-height 1 that takes the tails
-     of g and y with it; the padding makes room and the margin gives it back */
-  padding-bottom:1.2vh;white-space:nowrap;overflow:hidden}
+#tabs{display:flex;display:-webkit-flex;align-items:baseline;-webkit-align-items:baseline;flex:0 0 auto;-webkit-flex:0 0 auto;margin:-1.2vh 4vw 3.2vh 0;
+  /* the bar clips so it can scroll, and at line-height 1 that takes tall
+     accents (such as Vietnamese) and the tails of g and y with it; the
+     padding makes room and the negative top margin keeps the baseline level */
+  padding:1.2vh 0;white-space:nowrap;overflow:hidden}
 #tabs.clip-r{-webkit-mask-image:linear-gradient(to right,#000 88%,transparent);mask-image:linear-gradient(to right,#000 88%,transparent)}
 #tabs.clip-l{-webkit-mask-image:linear-gradient(to left,#000 88%,transparent);mask-image:linear-gradient(to left,#000 88%,transparent)}
 #tabs.clip-l.clip-r{-webkit-mask-image:linear-gradient(to right,transparent,#000 12%,#000 88%,transparent);

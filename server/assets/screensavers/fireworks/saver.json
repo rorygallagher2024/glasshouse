@@ -9,7 +9,9 @@
     "pl": "Fajerwerki",
     "pt": "Fogo de artifício",
     "pt-br": "Fogos de artifício",
-    "ru": "Фейерверк"
+    "ru": "Фейерверк",
+    "sv": "Fyrverkeri",
+    "vi": "Pháo hoa"
   },
   "description": {
     "en": "Bursts of colour on black, a few seconds apart.",
@@ -19,7 +21,9 @@
     "pl": "Wybuchy kolorów na czerni co kilka sekund.",
     "pt": "Explosões de cor sobre fundo preto, com alguns segundos de intervalo.",
     "pt-br": "Explosões de cor sobre o preto, com alguns segundos de intervalo.",
-    "ru": "Разноцветные вспышки на чёрном фоне каждые несколько секунд."
+    "ru": "Разноцветные вспышки на чёрном фоне каждые несколько секунд.",
+    "sv": "Färgexplosioner på svart, med några sekunders mellanrum.",
+    "vi": "Những chùm pháo hoa rực rỡ bung nở trên nền đen cách nhau vài giây."
   },
   "license": "MIT",
   "uses": [

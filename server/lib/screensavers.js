@@ -132,7 +132,8 @@ var MAX_SAVER_FILES = 200;
 // What a saver may ask Glasshouse to fill in, and the placeholder for each.
 // "ha" has one placeholder per entity it declares, so it carries no value here.
 // "video-busy" is the address of videoBusy's answer, for a saver that plays video.
-var USES = { level: '__TVWEB_LEVEL__', stats: '__TVWEB_URL__', choice: '__TVWEB_CHOICE__', videos: '__TVWEB_VIDEOS__', 'home-weather': '__TVWEB_HOME_WEATHER__', 'video-busy': '__TVWEB_VIDEO_BUSY__', ha: '', 'ha-list': '__TVWEB_HA_LIST__', 'ha-all': '__TVWEB_HA_ALL__', color: '__TVWEB_COLOR__', art: '__TVWEB_ART__' };
+// "audio" is the address of the sound output's levels and beat (audiolevels.js).
+var USES = { level: '__TVWEB_LEVEL__', stats: '__TVWEB_URL__', audio: '__TVWEB_AUDIO__', choice: '__TVWEB_CHOICE__', videos: '__TVWEB_VIDEOS__', 'home-weather': '__TVWEB_HOME_WEATHER__', 'video-busy': '__TVWEB_VIDEO_BUSY__', ha: '', 'ha-list': '__TVWEB_HA_LIST__', 'ha-all': '__TVWEB_HA_ALL__', color: '__TVWEB_COLOR__', art: '__TVWEB_ART__' };
 var DEFAULT_SAVER_COLOR = 'white';
 var COLOR_PRESETS = [
   { id: 'white', label: msg('srv.saver.color.white', 'White'), bright: '#ffffff', dim: '#a8aeb6' },
@@ -255,8 +256,8 @@ function readSaver(root, name) {
     }
   }
   e.uses = uses;
-  // The stats address carries the dashboard's access token.
-  if (!root.builtin && uses.indexOf('stats') !== -1) {
+  // The stats and audio addresses carry the dashboard's access token.
+  if (!root.builtin && (uses.indexOf('stats') !== -1 || uses.indexOf('audio') !== -1)) {
     return problem(msg('srv.saver.noStats', 'It asks for the TV\'s readings, which only Glasshouse\'s own screen savers are given.'));
   }
   // So does the address of Art's pictures.
@@ -1610,6 +1611,10 @@ function fillSaverQml(e, qml, level, choice, effEnts, entityList) {
   if (e.uses.indexOf('stats') !== -1) {
     qml = qml.replace(/__TVWEB_URL__/g,
       'http://127.0.0.1:' + port + '/api/stats' + (token ? '?k=' + encodeURIComponent(token) : ''));
+  }
+  if (e.uses.indexOf('audio') !== -1) {
+    qml = qml.replace(/__TVWEB_AUDIO__/g,
+      'http://127.0.0.1:' + port + '/api/audio/levels' + (token ? '?k=' + encodeURIComponent(token) : ''));
   }
   effEnts = effEnts || effectiveSaverEntities(e);
   // One address per declared entity, carrying the token like any other read.

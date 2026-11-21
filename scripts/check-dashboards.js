@@ -4237,6 +4237,109 @@ async function visitInputsAndRemote(browser, base, problems) {
 }
 
 /*
+ * Brightness key settings: a section of its own on the Remote tab, there only
+ * while a key is set to Brightness up or down. Brightness step and Level bar
+ * style are its rows, the style offering LG's bar, a horizontal one, a vertical
+ * one or no
+ * bar, and left out where the bar cannot be shown (webOS 11).
+ */
+async function visitBrightnessKeySettings(browser, base, problems) {
+  const page = await browser.newPage();
+  const fail = message => problems.push('Brightness key settings: ' + message);
+  page.on('pageerror', error => fail(error.message));
+  const state = { brightnessKey: false, bar: true, style: 'lg', step: 10 };
+  const writes = [];
+  const keysNow = () => [
+    { key: 'red', title: 'Red', action: state.brightnessKey ? 'open' : 'lg', id: state.brightnessKey ? 'action:brightnessUp' : '', opens: state.brightnessKey ? 'Brightness up' : '' },
+    { key: 'green', title: 'Green', action: 'lg' }
+  ];
+  try {
+    await page.route('**/api/remote/available', route => route.fulfill({ json: { ok: true, available: true } }));
+    await page.route('**/api/apps', async route => {
+      // The page may close with this still on its way.
+      try {
+        const apps = await (await route.fetch()).json();
+        apps.writable = true;
+        apps.quickAccess = null;
+        apps.remoteKeys = { ok: true, supported: true, keys: keysNow(), choices: [],
+          brightnessStep: state.step, brightnessBar: state.bar, brightnessBarStyle: state.style };
+        await route.fulfill({ json: apps });
+      } catch (e) { /* closed */ }
+    });
+    await page.route('**/api/remotekeys', async route => {
+      if (route.request().method() !== 'POST') return route.continue();
+      const set = route.request().postDataJSON();
+      writes.push(set);
+      if (set.brightnessBarStyle !== undefined) state.style = set.brightnessBarStyle;
+      if (set.brightnessStep !== undefined) state.step = set.brightnessStep;
+      await route.fulfill({ json: { ok: true } });
+    });
+    const open = async () => {
+      await page.goto(base + '/?tab=remote');
+      await page.locator('#apps-rk-list .rk-key').first().waitFor();
+    };
+    const heading = page.locator('#apps-rk-list .rk-grp', { hasText: 'Brightness key settings' });
+    const stepSel = page.locator('#apps-rk-step');
+    const styleSel = page.locator('#apps-rk-bar-style');
+
+    // No key set to Brightness: no section, and none of its rows.
+    await open();
+    if (await heading.count() || await stepSel.count() || await styleSel.count()) fail('the section shows with no key set to Brightness');
+
+    // A key set to it: the section, its heading first, then the step and the style.
+    state.brightnessKey = true;
+    await open();
+    await heading.waitFor();
+    if (!await stepSel.isVisible() || !await styleSel.isVisible()) fail('the step or the style row is missing from the section');
+    const [hy, sy, by] = await Promise.all([heading.boundingBox(), stepSel.boundingBox(), styleSel.boundingBox()]);
+    if (!(hy.y < sy.y && sy.y < by.y)) fail('the heading, the step and the style are not in that order');
+    if (await page.locator('#apps-rk-list .rk-key').last().boundingBox().then(b => b.y) > hy.y) fail('the section is above the keys');
+    const options = await styleSel.locator('option').evaluateAll(o => o.map(x => x.value));
+    if (JSON.stringify(options) !== JSON.stringify(['lg', 'horizontal', 'vertical', 'none'])) fail('the style offers ' + options + ', not lg, horizontal, vertical and none');
+    if (await styleSel.inputValue() !== 'lg') fail('the style does not start on the LG-style bar');
+
+    // Each choice is saved and comes back as chosen.
+    await styleSel.selectOption('none');
+    await page.waitForFunction(() => document.querySelector('#apps-rk-bar-style') && document.querySelector('#apps-rk-bar-style').value === 'none');
+    if (JSON.stringify(writes[writes.length - 1]) !== JSON.stringify({ brightnessBarStyle: 'none' })) fail('choosing No bar did not save it');
+    await styleSel.selectOption('horizontal');
+    await page.waitForFunction(() => document.querySelector('#apps-rk-bar-style').value === 'horizontal');
+    if (JSON.stringify(writes[writes.length - 1]) !== JSON.stringify({ brightnessBarStyle: 'horizontal' })) fail('choosing the horizontal bar did not save it');
+    await styleSel.selectOption('vertical');
+    await page.waitForFunction(() => document.querySelector('#apps-rk-bar-style').value === 'vertical');
+    if (JSON.stringify(writes[writes.length - 1]) !== JSON.stringify({ brightnessBarStyle: 'vertical' })) fail('choosing the vertical bar did not save it');
+    await stepSel.selectOption('15');
+    await page.waitForFunction(() => document.querySelector('#apps-rk-step').value === '15');
+    if (JSON.stringify(writes[writes.length - 1]) !== JSON.stringify({ brightnessStep: 15 })) fail('choosing a step did not save it');
+
+    // Where the bar cannot be shown, the step is left in the section alone.
+    state.bar = false;
+    await open();
+    await heading.waitFor();
+    if (!await stepSel.isVisible()) fail('the step is missing where the bar cannot be shown');
+    if (await styleSel.count()) fail('the style is offered where the bar cannot be shown');
+
+    // At phone width the section stays inside the page.
+    state.bar = true;
+    await page.setViewportSize({ width: 390, height: 800 });
+    await open();
+    await heading.waitFor();
+    if (!await styleSel.isVisible()) fail('the style row is not visible at phone width');
+    if (await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth)) fail('the section makes the page scroll sideways at phone width');
+    await page.setViewportSize({ width: 1280, height: 800 });
+
+    // The key put back as LG has it: the section goes.
+    state.brightnessKey = false;
+    await open();
+    if (await heading.count() || await stepSel.count() || await styleSel.count()) fail('the section stays with no key set to Brightness');
+  } catch (e) {
+    fail(e.message);
+  } finally {
+    await page.close();
+  }
+}
+
+/*
  * Home Assistant: Ambient's entity slots on the Screensaver tab: a slot given
  * its first entity shows its Label row at once, though the field picked from
  * still has focus (#1446), and a field tabbed to before a save keeps its focus
@@ -4278,6 +4381,9 @@ async function visitSaverEntitySlots(browser, base, problems) {
       await route.fulfill({ json: { ok: true } });
     });
     await page.goto(base + '/?tab=screensaver');
+    // The slots are in the screen saver's dialog, opened from the tab.
+    await page.locator('#ss-ha-open').click();
+    await page.locator('#ha-modal:not([hidden])').waitFor();
     const first = page.locator('#ss-ent-sensor_1');
     await first.waitFor();
     // Typed and confirmed with Enter: the field keeps focus through the save.
@@ -4631,6 +4737,74 @@ async function visitAdblockCards(browser, base, problems) {
 }
 
 /*
+ * The remote's Motion mode, offered by the Android app's bridge alone: not
+ * in a browser, nor where the phone has no gyroscope. Holding the pad reads
+ * the turning each frame and moves the cursor against it (turned left, it
+ * goes left), letting go stops reading, and a tap clicks.
+ */
+async function visitRemoteMotion(browser, base, problems) {
+  const fail = what => problems.push('Remote motion: ' + what);
+  const open = async bridge => {
+    const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
+    page.on('pageerror', e => fail(e.message));
+    await page.addInitScript(bridge => {
+      if (!bridge) return;
+      window.__motion = { reads: [], started: 0, stopped: 0 };
+      window.GlasshouseApp = {
+        remoteState() {},
+        motionAvailable: () => bridge.available,
+        motionStart() { window.__motion.started++; },
+        motionStop() { window.__motion.stopped++; },
+        motionRead: () => window.__motion.reads.shift() || '0,0'
+      };
+    }, bridge);
+    await page.goto(base + '/?view=remote');
+    await page.waitForFunction(() => !document.getElementById('tab-control').hidden);
+    // The pointer as a TV with LG's network input has it.
+    await page.evaluate(() => applyPointerSettings({ enabled: true, transport: 'http' }));
+    await page.waitForFunction(() => !document.getElementById('rp-mode-touch').hidden);
+    return page;
+  };
+  const offered = page => page.evaluate(() => !document.getElementById('rp-mode-motion').hidden);
+  for (const [label, bridge] of [['in a browser', null], ['without a gyroscope', { available: false }]]) {
+    const page = await open(bridge);
+    try {
+      if (await offered(page)) fail('offered ' + label);
+    } finally { await page.close(); }
+  }
+  const page = await open({ available: true });
+  try {
+    if (!await offered(page)) { fail('not offered in the app'); return; }
+    await page.locator('#remote-modes [data-mode="motion"]').click();
+    if (!await page.locator('#motion-pad').isVisible() || await page.locator('#pointer-pad').isVisible()) fail('Motion does not show its own pad');
+    const held = await page.evaluate(async () => {
+      const sent = [], moves = [];
+      window.sendPointer = body => sent.push(body);
+      window.queuePointerMove = (dx, dy) => moves.push([dx, dy]);
+      const el = document.getElementById('motion-pad');
+      const fire = type => el.dispatchEvent(new PointerEvent(type, { pointerId: 1, pointerType: 'touch', isPrimary: true,
+        button: 0, buttons: type === 'pointerup' ? 0 : 1, bubbles: true, cancelable: true }));
+      const frames = n => new Promise(r => { const step = () => (--n ? requestAnimationFrame(step) : r()); requestAnimationFrame(step); });
+      fire('pointerdown'); fire('pointerup');
+      const clicks = sent.filter(b => b.click).length;
+      // 0.05 rad left a frame, for ten frames: about 3 rad/s, a flick.
+      window.__motion.reads = Array(10).fill('0.05,0');
+      fire('pointerdown');
+      await frames(14);
+      fire('pointerup');
+      const reads = window.__motion.reads.length;
+      return { clicks, reads, dx: moves.reduce((n, m) => n + m[0], 0), dy: moves.reduce((n, m) => n + m[1], 0),
+        clicked: sent.filter(b => b.click).length - clicks, started: window.__motion.started, stopped: window.__motion.stopped };
+    });
+    if (held.clicks !== 1) fail('a tap on the pad sent ' + held.clicks + ' clicks');
+    if (held.reads) fail(held.reads + ' readings were left unread while held');
+    if (held.dx > -300 || held.dy !== 0) fail('half a radian to the left moved the cursor ' + held.dx + ',' + held.dy);
+    if (held.clicked) fail('turning while held clicked');
+    if (held.started !== 2 || held.stopped !== 2) fail('the sensor started ' + held.started + ' and stopped ' + held.stopped + ' times for two holds');
+  } finally { await page.close(); }
+}
+
+/*
  * The remote on its own (?view=remote, #1586): on a phone and in a wide
  * window, only playback, volume, the D-pad, the pointer where its
  * switch is on (Server, Advanced), the keyboard and the way back, in one column,
@@ -4782,7 +4956,7 @@ async function visitRemoteView(browser, base, problems) {
 
 function groups(web, tv) {
   return [
-    { job: 'tabs', tabs: web.map(t => ({ path: '/?tab=' + t, label: 'web ' + t })), visits: [visitHomeAnimations, visitHuesyncSettings, visitInputsAndRemote, visitAdblockCards, visitSaverEntitySlots, visitRemoteView] },
+    { job: 'tabs', tabs: web.map(t => ({ path: '/?tab=' + t, label: 'web ' + t })), visits: [visitHomeAnimations, visitHuesyncSettings, visitInputsAndRemote, visitBrightnessKeySettings, visitAdblockCards, visitSaverEntitySlots, visitRemoteView, visitRemoteMotion] },
     { job: 'tabs', tabs: tv.map(t => ({ path: '/assets/dashboard.html?tab=' + t, label: 'TV ' + t })),
       visits: [visitTvDashboard, visitTvAudio, visitTvPictureWrites, visitPictureUnavailable, visitTvNonOled, visitTvHuesync] },
     { job: 'home', tabs: [], visits: [visitHomePicture, visitHomePreview, visitHomePreviewOptions, visitHomePreviewWebos4, visitHomePreviewSize, visitHomePreviewSizeDetails, visitInputBarBehindHome, visitInputBarSwitchOnOk, visitHomeBarPrewarm, visitHomeBarIconsReady, visitHomeBarTiles, visitHomeBarBesideHome, visitHomeBarScroll, visitHomeUpDown, visitHomeFolderKeys, visitHomePointerOff, visitHomeOrder, visitHomeAvailability, visitHomeSearch, visitHomeWeather, visitHomeWeatherSetting, visitHomeRemoteBattery, visitHomeRemoteBatterySetting] },

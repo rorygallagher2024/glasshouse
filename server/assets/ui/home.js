@@ -378,6 +378,16 @@ function renderHome() {
     soundSel.disabled = !homeWritable();
     renderHomeNavSound(st);
   }
+  const pointerSel = q('home-pointer-sound-sel');
+  if (pointerSel) {
+    const pointerName = (st.layout && st.layout.pointerSound) || 'off';
+    pointerSel.value = pointerName;
+    // Not shown with no Magic Remote paired to point, and unavailable while the pointer is switched off.
+    const noPointer = st.layout && st.layout.showPointer === false;
+    q('home-pointer-sound-row').hidden = !st.supported.ok || st.remoteBatteryAvailable === false;
+    pointerSel.disabled = !homeWritable() || noPointer;
+    q('home-pointer-sound-play').disabled = noPointer || pointerName === 'off' || (pointerName === 'own' && !(st.layout && st.layout.ownSound));
+  }
   const fadeSel = q('home-card-fade-sel');
   if (fadeSel) {
     fadeSel.value = String(st.layout && typeof st.layout.cardFade === 'number' ? st.layout.cardFade : 20);
@@ -1243,6 +1253,10 @@ function homeNavSound(v) {
   homeSaveLayout({ navSound: v });
 }
 
+function homePointerSound(v) {
+  homeSaveLayout({ pointerSound: v });
+}
+
 /*
  * The card icons on the TV (lib/home cardIconNames), read once a visit: each
  * app's row picks one of them, or uploads one under its title's name.
@@ -1447,8 +1461,8 @@ function renderHomeNavSound(st) {
 }
 
 let homeNavPreview = null;
-function homeNavSoundPlay() {
-  const name = q('home-nav-sound-sel').value;
+function homeNavSoundPlay(which) {
+  const name = q(which === 'pointer' ? 'home-pointer-sound-sel' : 'home-nav-sound-sel').value;
   if (name === 'off') return;
   if (homeNavPreview) homeNavPreview.pause();
   homeNavPreview = new Audio(api('/api/home/nav-sound?name=' + encodeURIComponent(name) + '&t=' + Date.now()));

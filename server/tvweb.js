@@ -50,6 +50,7 @@ var privacy = require('./lib/privacy');
 var devtools = require('./lib/devtools');
 var oled = require('./lib/oled');
 var screensavers = require('./lib/screensavers');
+var audioLevels = require('./lib/audiolevels');
 var haEntity = require('./lib/haentity');
 var idlesaver = require('./lib/idlesaver');
 var nosignal = require('./lib/nosignal');
@@ -1112,6 +1113,7 @@ pointer.init({ luna: luna, hasService: lunaTransport.hasService, config: CONFIG,
   authed: function (req) { return routes.authed(url.parse(req.url || '/', true).query, req); } });
 routes.init({
   config: CONFIG,
+  audioLevels: audioLevels,
   pointer: pointer,
   inputBar: inputBar,
   ask: askQuestion,

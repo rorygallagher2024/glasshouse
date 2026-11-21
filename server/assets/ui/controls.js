@@ -1142,23 +1142,27 @@ document.addEventListener('keydown', e => {
 /*
  * The remote's own layout (#remote-pad, the remote view only): Screen,
  * Input and Settings along the top, a ring D-pad, volume and playback
- * rockers beside Back, Home and Mute, and Buttons, Touchpad and Keyboard
+ * rockers beside Back, Home and Mute, and Buttons, Touchpad, Motion (in the
+ * Android app) and Keyboard
  * along the foot. Its volume and mute follow the Control tab's, and its
  * Screen button the header's state.
  */
 const REMOTE_MODE_KEY = 'remoteMode';
+const REMOTE_MODES = ['buttons', 'touch', 'motion', 'keys'];
 // quiet: as the page opens, where the keyboard box is not focused (a phone's keyboard would pop up).
 function remoteMode(mode, quiet) {
   if (!remoteView) return;
   const touchOk = q('disc-pointer') && !q('disc-pointer').hidden;
-  if (mode === 'touch' && !touchOk) mode = 'buttons';
-  if (['buttons', 'touch', 'keys'].indexOf(mode) === -1) mode = 'buttons';
+  // Motion kept from the app, on a page opened in a browser: the touchpad instead.
+  if (mode === 'motion' && !motionApp) mode = 'touch';
+  if ((mode === 'touch' || mode === 'motion') && !touchOk) mode = 'buttons';
+  if (REMOTE_MODES.indexOf(mode) === -1) mode = 'buttons';
   const root = document.documentElement;
-  ['buttons', 'touch', 'keys'].forEach(m => root.classList.toggle('remote-mode-' + m, m === mode));
+  REMOTE_MODES.forEach(m => root.classList.toggle('remote-mode-' + m, m === mode));
   root.classList.remove('remote-inputs');
   if (q('rp-input')) q('rp-input').setAttribute('aria-expanded', 'false');
   document.querySelectorAll('#remote-modes [data-mode]').forEach(b => b.setAttribute('aria-selected', String(b.dataset.mode === mode)));
-  if (mode === 'touch' && q('disc-pointer')) q('disc-pointer').open = true;
+  if ((mode === 'touch' || mode === 'motion') && q('disc-pointer')) q('disc-pointer').open = true;
   if (mode === 'keys' && q('disc-keyboard')) { q('disc-keyboard').open = true; if (!quiet && q('kb-text')) q('kb-text').focus(); }
   try { localStorage.setItem(REMOTE_MODE_KEY, mode); } catch (e) {}
 }
@@ -1215,7 +1219,9 @@ function remoteScreen() {
     }
     if (touch && pointer) {
       touch.hidden = pointer.hidden;
-      if (pointer.hidden && document.documentElement.classList.contains('remote-mode-touch')) remoteMode('buttons');
+      if (q('rp-mode-motion')) q('rp-mode-motion').hidden = pointer.hidden || !motionApp;
+      const root = document.documentElement;
+      if (pointer.hidden && (root.classList.contains('remote-mode-touch') || root.classList.contains('remote-mode-motion'))) remoteMode('buttons');
     }
   };
   const watch = new MutationObserver(mirror);

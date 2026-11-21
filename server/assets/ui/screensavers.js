@@ -14,6 +14,7 @@ const SS_SWITCHING = t('ss.switching',
   'The TV is switching screen savers. The screen may stay dark for up to a minute, then it comes back on its own.');
 const SS_ONLY_IN_APPS = t('ss.onlyInApps',
   'The screen saver can only be started while a webOS app is running, not from an HDMI input or Live TV.');
+const SS_TV_OFF = t('ss.tvOff', 'The TV is off. Switch it on to start a screen saver.');
 
 /*
  * Marks a button as refused, with the reason. Not `disabled`: a disabled button
@@ -131,16 +132,25 @@ async function loadScreensavers() {
   const entityList = active && active.entityList;
   const hasEnts = !!(entities && entities.length);
   const hasList = !!entityList;
-  const entRow = q('ss-entities-row');
-  if (entRow) {
-    entRow.hidden = !hasEnts && !hasList;
-    if (hasEnts) renderSsEntities(active.id, entities, d.haConfigured, locked);
-    else if (hasList) renderSsEntityList(active.id, entityList, d.haConfigured, locked);
-  }
+  // Drawn in their dialog, open or not, so the tab's summary can read them.
+  if (hasEnts) renderSsEntities(active.id, entities, d.haConfigured, locked);
+  else if (hasList) renderSsEntityList(active.id, entityList, d.haConfigured, locked);
+
+  // A Home Assistant screen saver: its options and entities in a dialog, and
+  // a line on the tab saying what it reads.
+  const haSaver = !!(active && (active.needsHa || hasEnts || hasList));
+  ssHaPlaceRows(haSaver);
+  q('ss-ha-row').hidden = !haSaver;
+  if (haSaver) {
+    q('ha-modal-title').textContent = active.label;
+    q('ha-modal-sub').textContent = active.description || '';
+    q('ha-sec-look').hidden = !q('ha-look').querySelector('.ss-level-row:not([hidden])');
+  } else if (!q('ha-modal').hidden) closeHaSaverSettings();
   ssBlockedReason = (entityList && (!entityList.items || entityList.items.length < entityList.min))
     ? t('ss.entities.tooFew', 'Add at least {min} entities before starting this screen saver (OLED burn-in protection).', { min: entityList.min })
     : '';
   syncSsBlockedUi();
+  if (haSaver) q('ss-ha-summary').textContent = haSaverSummary(entities, entityList, d.haConfigured);
 
   const isRandom = d.current === 'random';
   const poolRow = q('ss-pool-row');
@@ -271,10 +281,10 @@ function renderSsEntities(saverId, entities, haConfigured, locked) {
   if (note) {
     if (haConfigured === false) {
       note.textContent = t('ss.haNotConfigured', 'Home Assistant API is not configured. Save the address and access token in the HA and MQTT tab.');
-      note.className = 'pv-sub warn';
+      note.className = 'set-note warn';
     } else {
       note.textContent = t('ss.entities.desc', 'Choose which Home Assistant entities this screen saver reads and optional short display labels. Leave an entity blank to hide it.');
-      note.className = 'pv-sub';
+      note.className = 'set-note';
     }
   }
   if (setup) setup.hidden = haConfigured !== false;
@@ -444,17 +454,17 @@ function renderSsEntityList(saverId, entityList, haConfigured, locked) {
   if (note) {
     if (haConfigured === false) {
       note.textContent = t('ss.haNotConfigured', 'Home Assistant API is not configured. Save the address and access token in the HA and MQTT tab.');
-      note.className = 'pv-sub warn';
+      note.className = 'set-note warn';
     } else if (items.length < entityList.min) {
       note.textContent = t('ss.entityList.statusNeedMore',
         'Add at least {min} entities ({count} of {max} configured). Cycles in order and shifts pixels on every change to prevent OLED burn-in.',
         { min: entityList.min, count: items.length, max: ssListMax });
-      note.className = 'pv-sub warn';
+      note.className = 'set-note warn';
     } else {
       note.textContent = t('ss.entityList.statusReady',
         'Cycling through {count} of {max} entities in order. Leave a label blank to use the Home Assistant name.',
         { count: items.length, max: ssListMax });
-      note.className = 'pv-sub';
+      note.className = 'set-note';
     }
   }
   if (setup) setup.hidden = haConfigured !== false;
@@ -642,7 +652,8 @@ function ssPickKey(ev) {
   if (ev.key === 'Home') return go(0);
   if (ev.key === 'End') return go(opts.length - 1);
   if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); if (opts[at]) pickSsChoice(opts[at].dataset.id); return; }
-  if (ev.key === 'Escape' || ev.key === 'Tab') { if (ev.key === 'Escape') ev.preventDefault(); ssPickOpen(false); q('ss-choice').focus(); }
+  // Escape closes an open list; with it closed, it is left for a dialog around it.
+  if (ev.key === 'Escape' || ev.key === 'Tab') { if (ev.key === 'Escape' && !q('ss-pick-list').hidden) ev.preventDefault(); ssPickOpen(false); q('ss-choice').focus(); }
 }
 
 async function pickSsChoice(id) {
@@ -977,6 +988,52 @@ async function frameLoad(nowOnly) {
 
 function frameChanged() {
   return frameLoad(false);
+}
+
+/*
+ * A Home Assistant screen saver's options (its Readings and Value colour rows)
+ * are moved into its dialog while one is in use, and back where they were for
+ * any other screen saver. A marker keeps their place on the tab.
+ */
+function ssHaPlaceRows(inDialog) {
+  ['ss-choice-row', 'ss-color-row'].forEach(id => {
+    const el = q(id);
+    if (!el) return;
+    if (!el._mark) {
+      el._mark = document.createComment(id);
+      el.parentNode.insertBefore(el._mark, el);
+    }
+    if (inDialog && el.parentNode !== q('ha-look')) q('ha-look').appendChild(el);
+    if (!inDialog && el.parentNode !== el._mark.parentNode) el._mark.parentNode.insertBefore(el, el._mark.nextSibling);
+  });
+}
+
+// What it reads, for the tab: the entities' labels, or how many a list holds.
+function haSaverSummary(entities, entityList, haConfigured) {
+  if (haConfigured === false) return t('ss.haNotConfigured', 'Home Assistant API is not configured. Save the address and access token in the HA and MQTT tab.');
+  if (entityList) {
+    const n = (entityList.items || []).length;
+    const count = n === 1 ? t('ss.ha.listOne', '1 entity, one at a time.') : t('ss.ha.listN', '{n} entities, one at a time.', { n });
+    return ssBlockedReason ? count + ' ' + ssBlockedReason : count;
+  }
+  const names = (entities || []).filter(e => e.entity).map(e => {
+    const hit = ssHaLookup(e.entity);
+    return e.customLabel || (hit && hit.name) || e.entity;
+  });
+  if (!names.length) return t('ss.ha.none', 'No entities chosen yet.');
+  return (names.length > 3
+    ? t('ss.art.andMore', '{names} and {n} more', { names: names.slice(0, 2).join(', '), n: names.length - 2 })
+    : names.join(', ')) + '.';
+}
+
+function openHaSaverSettings() {
+  setModalOpen(q('ha-modal'), q('ha-modal-close'));
+}
+
+function closeHaSaverSettings() {
+  if (typeof ssHaCloseAll === 'function') ssHaCloseAll();
+  ssPickOpen(false);
+  setModalClose(q('ha-modal'));
 }
 
 /*

@@ -59,6 +59,7 @@ console.log('  ✓ chosen, or asked for in the address, it is used on every page
 [HOME, TV, WEB].forEach(function (p) {
   assert.strictEqual(load({ browser: 'es-ES', page: p }).lang(), 'es', p);
   assert.strictEqual(load({ browser: 'fr-FR', page: p }).lang(), 'fr', p);
+  assert.strictEqual(load({ browser: 'vi-VN', page: p }).lang(), 'vi', p);
 });
 assert.strictEqual(load({ browser: 'xx-XX', page: WEB }).lang(), 'en', 'a language without a file');
 console.log('  ✓ a complete language follows the browser everywhere');
@@ -75,6 +76,8 @@ var web = load({ browser: 'en-GB', page: WEB });
 assert.strictEqual(web.complete('de'), false, 'the list marks German as partial on the dashboard');
 assert.strictEqual(web.complete('es'), true);
 assert.strictEqual(web.names.de, 'Deutsch');
+assert.strictEqual(web.complete('vi'), true);
+assert.strictEqual(web.names.vi, 'Tiếng Việt');
 console.log('  ✓ the list knows which languages are partial');
 
 console.log('ALL test-i18n-pick.js assertions passed!');

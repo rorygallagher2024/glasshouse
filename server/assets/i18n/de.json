@@ -818,7 +818,6 @@
  "srv.saver.badEntities": {"text": "{file}: entities benötigt kurze Namen mit jeweils einer Home Assistant-Entitäts-ID wie sensor.outdoor_temperature, bis zu {max} Stück.", "from": "{file}: entities needs short names, each with a Home Assistant entity id such as sensor.outdoor_temperature, up to {max} of them."},
  "srv.saver.haUses": {"text": "{file}: entities und „ha“ oder „ha-all“ in uses gehören zusammen.", "from": "{file}: entities and \"ha\" or \"ha-all\" in uses go together."},
  "srv.saver.undeclaredHa": {"text": "{main} verwendet {placeholder}, und saver.json nennt diese Entität nicht unter entities.", "from": "{main} uses {placeholder}, and saver.json does not name that entity under entities."},
- "ss.entities": {"text": "Home Assistant-Entitäten", "from": "Home Assistant Entities"},
  "ss.entities.desc": {"text": "Wählen Sie die Home Assistant-Entitäten und optional kurze Anzeigenamen aus. Lassen Sie eine Entität leer, um sie auszublenden.", "from": "Choose which Home Assistant entities this screen saver reads and optional short display labels. Leave an entity blank to hide it."},
  "ss.haNotConfigured": {"text": "Die Home Assistant-API ist nicht konfiguriert. Speichern Sie Adresse und Zugriffstoken im Reiter „HA und MQTT“.", "from": "Home Assistant API is not configured. Save the address and access token in the HA and MQTT tab."},
  "ha.cleared": {"text": "Gelöscht.", "from": "Cleared."},
@@ -871,6 +870,7 @@
  "ctl.pointer": {"text": "Zeiger", "from": "Pointer"},
  "ctl.pointer.sub": {"text": "TV-Cursor bewegen", "from": "Move the TV cursor"},
  "ctl.pointer.hint": {"text": "Zum Bewegen wischen. Zum Klicken tippen. Zum Scrollen das Mausrad nutzen.", "from": "Slide to move. Tap to click. Use the wheel to scroll."},
+ "ctl.pointer.motionHint": {"from": "Hold here and point the phone to move. Let go to stop. Tap to click.", "text": "Hier gedrückt halten und das Handy schwenken, um den Zeiger zu bewegen. Loslassen zum Anhalten. Tippen zum Klicken."},
  "ctl.pointer.transport": {"text": "Verbindung", "from": "Connection"},
  "server.experimental.pointer": {"text": "Zeigereingabe", "from": "Pointer input"},
  "server.experimental.pointer.short": {"text": "Fügt unter „Steuerung“ ein Trackpad zum Bewegen, Klicken und Scrollen des TV-Cursors hinzu.", "from": "Adds a trackpad under Control for moving, clicking and scrolling the TV cursor."},
@@ -1011,6 +1011,7 @@
  "rp.input": {"text": "Eingang", "from": "Input"},
  "rp.buttons": {"text": "Tasten", "from": "Buttons"},
  "rp.touchpad": {"text": "Touchpad", "from": "Touchpad"},
+ "rp.motion": {"text": "Bewegung", "from": "Motion"},
  "rp.standby": {"text": "Der Fernseher ist im Standby. Schalten Sie ihn ein, um die Fernbedienung zu nutzen.", "from": "The TV is in standby. Power on to use the remote."},
  "apps.remoteKeys.guideNative": {"text": "Bei diesem Fernseher braucht die Guide-Taste eine Änderung an LGs Tastenverwaltung. Beim Einstellen startet der Bildschirm einmal neu, danach bei jedem Start des Fernsehers erneut.", "from": "On this TV the Guide key needs a change to LG’s key handler. Setting it restarts the TV’s screen once, and again each time the TV starts."},
  "apps.remoteKeys.inputNative": {"text": "Bei diesem Fernseher braucht die Input-Taste eine Änderung an LGs Tastenverwaltung. Beim Einstellen und beim Zurücksetzen auf LGs Liste startet der Bildschirm einmal neu, und die Änderung wird bei jedem Start des Fernsehers erneut vorgenommen.", "from": "On this TV the Input key needs a change to LG’s key handler. Setting it, or setting it back to LG’s list, restarts the TV’s screen once, and the change is made again each time the TV starts."},
@@ -1118,5 +1119,12 @@
  "ss.art.fitTitle": {"text": "Einpassen", "from": "Fit"},
  "ss.art.fitDesc": {"text": "Das ganze Bild auf Schwarz, oder bildschirmfüllend mit beschnittenen Rändern.", "from": "The whole picture on black, or filling the screen with its edges cropped."},
  "ss.art.labelTitle": {"text": "Beschriftung", "from": "Label"},
- "ss.art.labelDesc": {"text": "Der Titel, wer es geschaffen hat und woher es stammt, 20 Sekunden nach jedem Wechsel, die ganze Zeit oder gar nicht. Ein Bildnachweis, den die Lizenz eines Bildes verlangt, bleibt in jedem Fall auf dem Bildschirm.", "from": "The title, who made it and where it is from, for 20 seconds after each change, all the time, or not at all. A credit that a picture’s licence asks for stays on screen either way."}
+ "ss.art.labelDesc": {"text": "Der Titel, wer es geschaffen hat und woher es stammt, 20 Sekunden nach jedem Wechsel, die ganze Zeit oder gar nicht. Ein Bildnachweis, den die Lizenz eines Bildes verlangt, bleibt in jedem Fall auf dem Bildschirm.", "from": "The title, who made it and where it is from, for 20 seconds after each change, all the time, or not at all. A credit that a picture’s licence asks for stays on screen either way."},
+ "ss.ha.listOne": {"text": "1 Entität, eine nach der anderen.", "from": "1 entity, one at a time."},
+ "ss.ha.listN": {"text": "{n} Entitäten, eine nach der anderen.", "from": "{n} entities, one at a time."},
+ "ss.ha.none": {"text": "Noch keine Entitäten gewählt.", "from": "No entities chosen yet."},
+ "ss.ha.reads": {"text": "Liest", "from": "Reads"},
+ "ss.ha.settings": {"text": "Bildschirmschoner-Einstellungen", "from": "Screen saver settings"},
+ "ss.entities2": {"text": "Entitäten", "from": "Entities"},
+ "ss.tvOff": {"text": "Der Fernseher ist aus. Schalten Sie ihn ein, um einen Bildschirmschoner zu starten.", "from": "The TV is off. Switch it on to start a screen saver."}
 }

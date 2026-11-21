@@ -9,7 +9,9 @@
     "pl": "Welony",
     "pt": "Véus",
     "pt-br": "Véus",
-    "ru": "Вуали"
+    "ru": "Вуали",
+    "sv": "Slöjor",
+    "vi": "Dải lụa"
   },
   "description": {
     "en": "Translucent ribbons of light rippling slowly across black.",
@@ -19,7 +21,9 @@
     "pl": "Półprzezroczyste wstęgi światła powoli falujące na czerni.",
     "pt": "Fitas de luz translúcidas que ondulam lentamente sobre fundo preto.",
     "pt-br": "Fitas translúcidas de luz que ondulam lentamente sobre o preto.",
-    "ru": "Полупрозрачные ленты света медленно колышутся на чёрном фоне."
+    "ru": "Полупрозрачные ленты света медленно колышутся на чёрном фоне.",
+    "sv": "Genomskinliga ljusband som böljar långsamt över svart.",
+    "vi": "Những dải sáng trong mờ gợn sóng nhẹ nhàng trên nền đen."
   },
   "license": "MIT",
   "uses": [
