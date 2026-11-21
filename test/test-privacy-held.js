@@ -45,7 +45,20 @@ privacy.reapplyHeld(function () {
     assert.strictEqual(tv.livePlus, 'off');
     assert.strictEqual(tv.eulaStatus.acrAllowed, false);
     console.log('  ✓ held settings are put back off, others left alone');
-    fs.unlinkSync(path.join(dir, 'privacy-held.json'));
-    fs.rmdirSync(dir);
+    var file = path.join(dir, 'privacy-held.json');
+    fs.unlinkSync(file);
+    // Switched off on the Privacy tab: recorded. Switched on again: dropped.
+    tv.eulaStatus = { acrAllowed: true };
+    privacy.setConsent('acrAllowed', false, function (r) {
+      assert.ok(r.ok, JSON.stringify(r));
+      assert.deepEqual(JSON.parse(fs.readFileSync(file, 'utf8')), { 'consent:acrAllowed': true });
+      privacy.setConsent('acrAllowed', true, function (r2) {
+        assert.ok(r2.ok, JSON.stringify(r2));
+        assert.deepEqual(JSON.parse(fs.readFileSync(file, 'utf8')), {});
+        console.log('  ✓ a consent switched off is recorded, and dropped when switched on');
+        fs.unlinkSync(file);
+        fs.rmdirSync(dir);
+      });
+    });
   });
 });

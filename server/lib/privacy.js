@@ -1723,7 +1723,7 @@ function setConsent(ckey, cOn, cb) {
         luna('com.webos.settingsservice/getSystemSettings', { keys: ['eulaStatus'] }, function (v) {
           var now = v && v.settings && v.settings.eulaStatus;
           var applied = !!(now && now[ckey] === cOn);
-          if (applied) plan.changed.forEach(function (k) { rememberHeld('consent', k, cOn); });
+          if (applied) plan.changed.forEach(function (k) { rememberHeld('consent', k, !cOn); });
           console.log('consent: ' + ckey + ' ' + cur[ckey] + ' -> ' + cOn +
                       (plan.changed.length > 1 ? ' (with ' + (plan.changed.length - 1) + ' sharing the agreement)' : '') +
                       (applied ? '' : ' (accepted but not applied)'));
