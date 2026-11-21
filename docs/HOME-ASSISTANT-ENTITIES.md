@@ -37,6 +37,7 @@ Every entity the TV publishes, by category. Which categories are published is se
 | `button` | `button.lg_tv_keyboard_enter` | Keyboard Enter | Presses Enter in the focused text field |
 | `button` | `button.lg_tv_keyboard_backspace` | Keyboard Backspace | Deletes one character in the focused text field |
 | `event` | `event.lg_tv_remote_button` | Remote Button | Fires when a colored button (red, green, yellow, blue) or a streaming button (Netflix, Prime Video, Disney+, LG Channels, Rakuten TV, Alexa) is pressed on the remote |
+| `event` | `event.lg_tv_question_answer` | Question Answer | Fires with the answer to a question sent to `command/ask`: `answer` with the option in `choice`, or `dismissed`, `timeout`, `replaced` or `failed` ([how to ask](HOME-ASSISTANT.md#7-ask-a-question-on-the-tv)) |
 | `button` | `button.lg_tv_play` | Play | Resume media playback |
 | `button` | `button.lg_tv_pause` | Pause | Pause media playback |
 | `button` | `button.lg_tv_play_pause` | Play / Pause | Toggle media playback |

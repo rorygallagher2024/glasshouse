@@ -105,6 +105,8 @@ var screensaversModule = null;
 var haEntityModule = null;
 /** @type {typeof import('./inputbar')} */
 var inputBarModule = null;
+/** @type {typeof import('./ask')} */
+var askModule = null;
 /** @type {typeof import('./updater')} */
 var updaterModule = null;
 /** @type {typeof import('./logs')} */
@@ -2594,6 +2596,16 @@ function handleRequest(req, res) {
     });
   }
 
+  // The question app (lib/ask.js) on the TV: GETs, as it cannot POST from
+  // its file:// origin, so taken only from the TV itself.
+  if ((pathname === '/api/ask/current' || pathname === '/api/ask/answer') && askModule) {
+    if (!fromTV(req)) return send(res, 403, JSON.stringify({ ok: false, error: 'only from the TV' }));
+    if (pathname === '/api/ask/current') return send(res, 200, JSON.stringify({ ok: true, question: askModule.current() }));
+    var askQuery = u.query || {};
+    var taken = askModule.answer(String(askQuery.seq || ''), String(askQuery.choice || ''), String(askQuery.how || ''));
+    return send(res, 200, JSON.stringify({ ok: true, taken: taken }));
+  }
+
   if (pathname.indexOf('/api/home/') === 0 || pathname === '/api/home') {
     if (homeModule) return handleHomeRoute(req, res, u, pathname);
   }
@@ -2890,6 +2902,7 @@ function init(opts) {
   if (opts.screensavers) screensaversModule = opts.screensavers;
   if (opts.haEntity) haEntityModule = opts.haEntity;
   if (opts.inputBar) inputBarModule = opts.inputBar;
+  if (opts.ask) askModule = opts.ask;
   if (opts.updater) updaterModule = opts.updater;
   if (opts.logs) logsModule = opts.logs;
   if (opts.tvApp) tvAppFn = opts.tvApp;

@@ -376,6 +376,39 @@ action:
 
 The temperature is shown as sent, in the unit the weather entity uses. `city` is optional.
 
+### 7. Ask a question on the TV
+`<topicPrefix>/command/ask` shows a question over the picture with a button for each answer, chosen with the remote's arrows and OK or with the pointer. Back dismisses it, and it goes away by itself after `timeout` seconds (30 unless given, at most 600). The question's app is put on the TV the first time one is asked, which takes a few seconds; after that it opens at once.
+
+The answer fires `event.lg_tv_question_answer`: its event type is `answer` with the chosen option's `id` in its `choice` attribute, or `dismissed`, `timeout`, `replaced` (another question came first) or `failed` (the TV would not show it). Its `id` attribute is the question's, so one automation can tell its own question from another's. Up to four options; without any, the buttons are Yes and No (`yes`, `no`). `focus` picks the option focused at first, counted from 0.
+
+```yaml
+alias: "Cinema lights?"
+trigger:
+  - platform: state
+    entity_id: media_player.formuler
+    to: playing
+action:
+  - action: mqtt.publish
+    data:
+      topic: lgtv/command/ask
+      payload: >-
+        {{ {'id': 'cinema', 'title': 'Cinema mode?', 'message': 'Dim the lights by the TV',
+            'options': [{'id': 'yes', 'label': 'Yes'}, {'id': 'no', 'label': 'No'}],
+            'timeout': 25} | to_json }}
+  - wait_for_trigger:
+      - trigger: state
+        entity_id: event.lg_tv_question_answer
+        attribute: event_type
+    timeout: "00:00:35"
+  - condition: template
+    value_template: >-
+      {{ wait.trigger is not none and wait.trigger.to_state.attributes.id == 'cinema'
+         and wait.trigger.to_state.attributes.choice == 'yes' }}
+  - action: scene.turn_on
+    target:
+      entity_id: scene.cinema
+```
+
 ---
 
 ## Universal Media Player Setup
