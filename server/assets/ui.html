@@ -1573,8 +1573,8 @@
     </div>
     <div class="prot-row home-gh-row home-show-row" hidden>
       <div class="prot-main">
-        <div class="prot-title" data-t="home.navSound">Sound when moving</div>
-        <div class="prot-desc" data-t="home.navSoundDesc">A sound each time you move between tiles: a click, a softer rollover, or a sound of your own.</div>
+        <div class="prot-title" data-t="home.navSound">Sound when moving with the buttons</div>
+        <div class="prot-desc" data-t="home.navSoundDesc">A sound each time the arrow keys move focus, and each time OK or Back is pressed: a click, a softer rollover, or a sound of your own.</div>
         <div class="prot-desc home-sound-own" id="home-nav-sound-own" hidden>
           <span id="home-nav-sound-note" role="status"></span>
           <button type="button" class="pill idle" id="home-nav-sound-upload" onclick="q('home-nav-sound-file').click()" data-t="home.navSound.upload">Upload a sound</button>
@@ -1583,8 +1583,8 @@
         <input type="file" id="home-nav-sound-file" accept=".ogg,.wav,.mp3,audio/ogg,audio/wav,audio/mpeg" hidden onchange="homeNavSoundPicked(this)">
       </div>
       <div class="prot-status home-sound-ctl">
-        <button type="button" class="pill idle home-sound-play" id="home-nav-sound-play" onclick="homeNavSoundPlay()" aria-label="Play" data-t-aria-label="home.navSound.play" title="Play" data-t-title="home.navSound.play">&#9654;</button>
-        <select class="pill-sel" id="home-nav-sound-sel" onchange="homeNavSound(this.value)" aria-label="Sound when moving" data-t-aria-label="home.navSound">
+        <button type="button" class="pill idle home-sound-play" id="home-nav-sound-play" onclick="homeNavSoundPlay('nav')" aria-label="Play" data-t-aria-label="home.navSound.play" title="Play" data-t-title="home.navSound.play">&#9654;</button>
+        <select class="pill-sel" id="home-nav-sound-sel" onchange="homeNavSound(this.value)" aria-label="Sound when moving with the buttons" data-t-aria-label="home.navSound">
         <option value="off" data-t="home.navSound.off">Off</option>
         <option value="click" data-t="home.navSound.click">Click</option>
         <option value="rollover" data-t="home.navSound.rollover">Rollover</option>
@@ -1624,17 +1624,24 @@
     </div>
     <div class="prot-row home-gh-row home-show-row" hidden>
       <div class="prot-main">
-        <div class="prot-title" data-t="home.showCec">CEC addresses</div>
-        <div class="prot-desc" data-t="home.showCecDesc">On each input’s tile: the HDMI-CEC address of the device behind it.</div>
-      </div>
-      <div class="prot-status"><button type="button" class="pill idle" id="home-show-cec" onclick="homeShow('showCec')">&mdash;</button></div>
-    </div>
-    <div class="prot-row home-gh-row home-show-row" hidden>
-      <div class="prot-main">
         <div class="prot-title" data-t="home.showPointer">Magic Remote pointer</div>
         <div class="prot-desc" data-t="home.showPointerDesc">Moving the remote shows its pointer on Glasshouse Home. Off, only the arrow keys move around Home, and OK and a click both open the tile in focus.</div>
       </div>
       <div class="prot-status"><button type="button" class="pill idle" id="home-show-pointer" onclick="homeShow('showPointer')">&mdash;</button></div>
+    </div>
+    <div id="home-pointer-sound-row" class="prot-row home-gh-row home-show-row" hidden>
+      <div class="prot-main">
+        <div class="prot-title" data-t="home.pointerSound">Sound when moving with the pointer</div>
+        <div class="prot-desc" data-t="home.pointerSoundDesc">A sound each time the Magic Remote's pointer or wheel moves focus, and each time it clicks: a click, a softer rollover, or a sound of your own.</div>
+      </div>
+      <div class="prot-status home-sound-ctl">
+        <button type="button" class="pill idle home-sound-play" id="home-pointer-sound-play" onclick="homeNavSoundPlay('pointer')" aria-label="Play" data-t-aria-label="home.navSound.play" title="Play" data-t-title="home.navSound.play">&#9654;</button>
+        <select class="pill-sel" id="home-pointer-sound-sel" onchange="homePointerSound(this.value)" aria-label="Sound when moving with the pointer" data-t-aria-label="home.pointerSound">
+        <option value="off" data-t="home.navSound.off">Off</option>
+        <option value="click" data-t="home.navSound.click">Click</option>
+        <option value="rollover" data-t="home.navSound.rollover">Rollover</option>
+        <option value="own" data-t="home.navSound.own">Your own</option>
+      </select></div>
     </div>
     <div class="prot-row home-gh-row home-show-row" hidden>
       <div class="prot-main">
@@ -1674,6 +1681,13 @@
         <div class="prot-desc" data-t="home.pictureDesc">In the top right of Glasshouse Home: the resolution, refresh rate and HDR of what was last on, and the picture mode and brightness it gets.</div>
       </div>
       <div class="prot-status"><button type="button" class="pill idle" id="home-picture" onclick="homePicture()">&mdash;</button></div>
+    </div>
+    <div class="prot-row home-gh-row home-show-row" hidden>
+      <div class="prot-main">
+        <div class="prot-title" data-t="home.showCec">CEC addresses</div>
+        <div class="prot-desc" data-t="home.showCecDesc">On each input’s tile: the HDMI-CEC address of the device behind it.</div>
+      </div>
+      <div class="prot-status"><button type="button" class="pill idle" id="home-show-cec" onclick="homeShow('showCec')">&mdash;</button></div>
     </div>
   </div>
   </div>
