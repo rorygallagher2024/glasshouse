@@ -3208,7 +3208,6 @@
  "srv.saver.badEntities": {"text": "{file}: entities требует коротких имен, каждое с ID сущности Home Assistant, например sensor.outdoor_temperature, до {max} штук.", "from": "{file}: entities needs short names, each with a Home Assistant entity id such as sensor.outdoor_temperature, up to {max} of them."},
  "srv.saver.haUses": {"text": "{file}: entities и \"ha\" или \"ha-all\" в uses используются вместе.", "from": "{file}: entities and \"ha\" or \"ha-all\" in uses go together."},
  "srv.saver.undeclaredHa": {"text": "{main} использует {placeholder}, а saver.json не указывает эту сущность в entities.", "from": "{main} uses {placeholder}, and saver.json does not name that entity under entities."},
- "ss.entities": {"text": "Сущности Home Assistant", "from": "Home Assistant Entities"},
  "ss.entities.desc": {"text": "Выберите сущности Home Assistant и при желании короткие подписи. Оставьте сущность пустой, чтобы скрыть ее.", "from": "Choose which Home Assistant entities this screen saver reads and optional short display labels. Leave an entity blank to hide it."},
  "ss.haNotConfigured": {"text": "API Home Assistant не настроен. Сохраните адрес и токен доступа на вкладке HA и MQTT.", "from": "Home Assistant API is not configured. Save the address and access token in the HA and MQTT tab."},
  "ha.cleared": {"text": "Очищено.", "from": "Cleared."},
@@ -3760,5 +3759,11 @@
  "ss.art.fitTitle": {"text": "Масштаб", "from": "Fit"},
  "ss.art.fitDesc": {"text": "Изображение целиком на чёрном или на весь экран с обрезанными краями.", "from": "The whole picture on black, or filling the screen with its edges cropped."},
  "ss.art.labelTitle": {"text": "Подпись", "from": "Label"},
- "ss.art.labelDesc": {"text": "Название, автор и источник: 20 секунд после каждой смены, всё время или никогда. Указание авторства, которого требует лицензия изображения, остаётся на экране в любом случае.", "from": "The title, who made it and where it is from, for 20 seconds after each change, all the time, or not at all. A credit that a picture’s licence asks for stays on screen either way."}
+ "ss.art.labelDesc": {"text": "Название, автор и источник: 20 секунд после каждой смены, всё время или никогда. Указание авторства, которого требует лицензия изображения, остаётся на экране в любом случае.", "from": "The title, who made it and where it is from, for 20 seconds after each change, all the time, or not at all. A credit that a picture’s licence asks for stays on screen either way."},
+ "ss.ha.listOne": {"text": "1 объект, по очереди.", "from": "1 entity, one at a time."},
+ "ss.ha.listN": {"text": "Объектов: {n}, по очереди.", "from": "{n} entities, one at a time."},
+ "ss.ha.none": {"text": "Объекты пока не выбраны.", "from": "No entities chosen yet."},
+ "ss.ha.reads": {"text": "Показывает", "from": "Reads"},
+ "ss.ha.settings": {"text": "Настройки заставки", "from": "Screen saver settings"},
+ "ss.entities2": {"text": "Объекты", "from": "Entities"}
 }

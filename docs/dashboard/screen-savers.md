@@ -76,7 +76,9 @@ Clock with date used to be a screen saver of its own. A TV that had it in use ke
 
 A digital clock, date, and up to three live Home Assistant readings on pure black, using the TV's 12-hour or 24-hour setting. **Readings** switches between **Names and values** and **Values only**, and **Sensor 1**, **Sensor 2**, and **Sensor 3** can be picked from your Home Assistant entities with an optional custom display **Label** (or cleared to hide) once **Home Assistant API** is saved on the **HA & MQTT** tab. The sensors start blank. Sensors left blank or unavailable stay omitted, leaving the clock and date.
 
-![Screensaver tab with Home Assistant: Ambient selected and three entity slots configured](../screenshots/screensaver-ha-ambient-ui.png)
+With either Home Assistant screen saver chosen, the tab says what it reads, and **Screen saver settings** opens a dialog with its options and entities; on a phone it fills the screen.
+
+![Home Assistant: Ambient's settings dialog: Readings and Value colour, then three sensor slots, each with an entity and a label](../screenshots/screensaver-ha-ambient-ui.png)
 
 ### Home Assistant: Data Display
 
@@ -86,7 +88,7 @@ Cycles sequentially through **2 to 100** configured Home Assistant entities one 
 
 Use **Add entity** to search or enter entity IDs, reorder items with the arrow buttons, set an optional custom display **Label** per entry (blank uses Home Assistant's friendly name), pick a **Value colour** (White by default), and choose how quickly entries advance under **Cycle speed** (every 5, 10, 15, 30, or 60 seconds). Requires **Home Assistant API** on the **HA & MQTT** tab.
 
-![Screensaver tab with Home Assistant: Data Display selected and ordered entities configured](../screenshots/screensaver-ha-display-ui.png)
+![Home Assistant: Data Display's settings dialog: Cycle speed and Value colour, then Add entity and the ordered list of entities with their labels](../screenshots/screensaver-ha-display-ui.png)
 
 ### Starfield
 
