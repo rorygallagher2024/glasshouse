@@ -1544,11 +1544,11 @@ function handleIptvRoute(req, res, u, pathname) {
         if (!stream) return send(res, 404, JSON.stringify({ ok: false, error: 'no-stream' }));
         res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
         res.end(JSON.stringify({ ok: true, url: stream.url, format: stream.format, account: stream.account, maxConnections: stream.maxConnections,
-          switchable: stream.switchable, timeshift: stream.timeshift === true }));
+          switchable: stream.switchable, timeshift: stream.timeshift === true, relay: stream.relay || null }));
       });
     }
     if (pathname === '/api/iptv/relay') {
-      // A tuner's stream with the owner's login: for the TV's own Home only, like the play link.
+      // A channel's stream, with a tuner's login or for Home's own player: for the TV's own Home only, like the play link.
       if (!fromTV(req)) return send(res, 403, JSON.stringify({ ok: false, error: 'forbidden' }));
       return iptvModule.relay(String(qs.pl || ''), String(qs.key || ''), req, res);
     }
