@@ -3343,7 +3343,6 @@
  "home.cardIconLabel": {"text": "Значок карточки", "from": "Card icon"},
  "home.focusPulse": {"text": "Пульсация на приложении в фокусе", "from": "Pulse on the app in focus"},
  "home.focusPulseDesc": {"text": "Рамка приложения, на котором вы находитесь, пульсирует мягким свечением в акцентном цвете Home.", "from": "The ring around the app you are on breathes, with a soft glow, in Home’s accent colour."},
- "home.navSound": {"text": "Звук при перемещении", "from": "Sound when moving"},
  "home.navSound.click": {"text": "Щелчок", "from": "Click"},
  "home.navSound.off": {"text": "Выкл.", "from": "Off"},
  "home.navSound.own": {"text": "Свой", "from": "Your own"},
@@ -3372,7 +3371,6 @@
  "home.cardIconSpec.files": {"text": "PNG, JPEG, WebP или SVG до 10 МБ, или перетащите файл на карточку. Изображение другой формы вписывается целиком, без обрезки.", "from": "PNG, JPEG, WebP or SVG up to 10 MB, or drop one on the card. Another shape is fitted whole, never cropped."},
  "home.cardIconOther": {"text": "Или использовать значок, который уже есть на телевизоре", "from": "Or use an icon already on the TV"},
  "home.navSound.rollover": {"text": "Наведение", "from": "Rollover"},
- "home.navSoundDesc": {"text": "Звук при каждом переходе между плитками: щелчок, более мягкий rollover или ваш собственный звук.", "from": "A sound each time you move between tiles: a click, a softer rollover, or a sound of your own."},
  "home.colours.highlight": {"from": "Tile highlight", "text": "Подсветка плитки"},
  "home.colours.highlightHint": {"from": "The fill colour behind the focused tile on Glasshouse Home. Any colour can be picked on the browser dashboard’s Home tab.", "text": "Цвет фона выбранной плитки на Glasshouse Home. Любой цвет можно выбрать на вкладке Home в браузерной панели."},
  "home.highlight.default": {"from": "Default", "text": "По умолчанию"},
@@ -3776,5 +3774,9 @@
  "ss.ha.reads": {"text": "Показывает", "from": "Reads"},
  "ss.ha.settings": {"text": "Настройки заставки", "from": "Screen saver settings"},
  "ss.entities2": {"text": "Объекты", "from": "Entities"},
- "ss.tvOff": {"text": "Телевизор выключен. Включите его, чтобы запустить заставку.", "from": "The TV is off. Switch it on to start a screen saver."}
+ "ss.tvOff": {"text": "Телевизор выключен. Включите его, чтобы запустить заставку.", "from": "The TV is off. Switch it on to start a screen saver."},
+ "home.navSound": {"text": "Звук при перемещении кнопками", "from": "Sound when moving with the buttons"},
+ "home.navSoundDesc": {"text": "Звук каждый раз, когда стрелки перемещают фокус, и при каждом нажатии OK или «Назад»: щелчок, мягкий звук или свой звук.", "from": "A sound each time the arrow keys move focus, and each time OK or Back is pressed: a click, a softer rollover, or a sound of your own."},
+ "home.pointerSound": {"text": "Звук при перемещении указателем", "from": "Sound when moving with the pointer"},
+ "home.pointerSoundDesc": {"text": "Звук каждый раз, когда указатель или колесо Magic Remote перемещают фокус, и при каждом щелчке: щелчок, мягкий звук или свой звук.", "from": "A sound each time the Magic Remote's pointer or wheel moves focus, and each time it clicks: a click, a softer rollover, or a sound of your own."}
 }
