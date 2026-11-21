@@ -548,4 +548,4 @@ function removeSet(name) {
 
 module.exports = { init: init, status: status, image: image, upload: upload, removeUploads: removeUploads,
   removePictures: removePictures, choose: choose, setVideoSources: setVideoSources, setVideoOptions: setVideoOptions, videoSources: videoSources,
-  parseVideoEntries: parseVideoEntries, receiveJpeg: receiveJpeg, SETS: SETS, MAX_SHUFFLE: MAX_SHUFFLE, MAX_VIDEO_SOURCES: MAX_VIDEO_SOURCES };
+  parseVideoEntries: parseVideoEntries, receiveJpeg: receiveJpeg, validJpeg: validJpeg, SETS: SETS, MAX_SHUFFLE: MAX_SHUFFLE, MAX_VIDEO_SOURCES: MAX_VIDEO_SOURCES };

@@ -1,6 +1,6 @@
 # Screen savers
 
-The **Screensaver** tab, `/?tab=screensaver`, provides sixteen alternatives to LG's default screen saver, alongside a **Random** rotation mode, support for screen savers added on the TV or bundled with homebrew applications.
+The **Screensaver** tab, `/?tab=screensaver`, provides seventeen alternatives to LG's default screen saver, alongside a **Random** rotation mode, support for screen savers added on the TV or bundled with homebrew applications.
 
 ![Screensaver tab: screen saver list with Starfield selected, Brightness toggles, Start screen saver, and Power off after](../screenshots/screensaver.png)
 
@@ -26,6 +26,19 @@ A firmware update restores the LG default.
 ### Video
 
 Plays the muted video playlist configured under **Home → Background → Video**. A [playlist](home.md#which-video-links-work) adds its scenes' names and timed captions. The same list is shared with Glasshouse Home; the screen saver appears on webOS 10 and later once at least one usable video is saved. The playlist repeats in order or random order as configured there, and its captions are placed and styled as set there. With Video chosen, this tab sets the rest of what shows over it: the clock, date, weather and captions can each be switched off, the clock and weather placed in any corner, made one of four sizes and set in Outfit or Manrope, the date, weather and captions set in either, and all of it given one text colour. **Use the default look** puts these back as Glasshouse Home has them. Weather from Open-Meteo is credited in the corner, as on Home. Each video fades out at its end and the next fades in; while the first is still loading, the screen saver says so.
+
+### Art
+
+Shows your own pictures and paintings in the public domain, one at a time, each fading into the next. With Art chosen, this tab sets where its pictures come from:
+
+* **Your pictures:** up to 100 JPEG, PNG or WebP images, added from the browser or dropped on **Add pictures**. Each is made 1920 × 1080 or smaller before it is uploaded, and kept on the TV in `/var/lib/tvweb/art-pictures`, which an update leaves alone.
+* **Collections:** four from [the Cleveland Museum of Art's open access collection](https://www.clevelandart.org/open-access), all of them CC0: European paintings to the 1700s, European paintings of the 1800s, American paintings, and Japanese and Chinese paintings. Very long scrolls and folios, which would be tiny on a TV, are left out.
+
+With both, they take turns. Under **Showing them**, a new picture comes every 5, 10, 15, 30 or 60 minutes, either whole on black or filling the screen, and its label (title, artist, date and museum) shows for 20 seconds after each change, all the time, or not at all. A change applies from the next picture.
+
+Nothing is fetched until a collection is picked. Then the TV fetches one painting at a time from the museum, keeping the next one or two ready, so the screen saver never waits on the network; older ones are deleted. A museum that cannot be reached is said under the settings.
+
+For an OLED, each picture drifts slowly across a few dozen pixels while it is up, too slowly to be seen, and the label moves to another corner with each picture. A painting is still a still picture, so keep **Power off after** set, and choose a shorter time between pictures on an OLED.
 
 ### Clock
 

@@ -231,6 +231,14 @@ every 30 minutes at most and only while the screen is on. Only the search text
 or the place's latitude and longitude are sent. The last reply is kept in
 `/var/lib/tvweb/home-weather-internet.json`.
 
+With a collection picked for the **Art** screen saver, the server connects to
+the Cleveland Museum of Art: `openaccess-api.clevelandart.org` to pick a
+painting, and `openaccess-cdn.clevelandart.org` for its picture, one at a time
+and only while the screen saver asks for more. Nothing about the TV is sent
+beyond the request itself. The next one or two are kept in
+`/var/lib/tvweb/art-cache`, and the owner's own pictures in
+`/var/lib/tvweb/art-pictures`.
+
 With an app's DNS set to a DNS-over-HTTPS address on the Apps tab, the server
 answers DNS on `127.0.53.1` upwards, port 53 over UDP and TCP, reachable only
 on the TV, and posts each of that app's lookups to the address over HTTPS.

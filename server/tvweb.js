@@ -700,6 +700,8 @@ screensavers.init({
 idlesaver.init({ luna: luna, mediaState: telemetry.readMediaState,
   homeVideoBackground: function () { return !!(glasshouseHome && glasshouseHome.videoBackgroundActive()); },
   watching: function () { return !!(iptv && iptv.watching()); } });
+// The Art screen saver's settings and the paintings it fetched ahead.
+require('./lib/art').init();
 // A mount does not outlive a reboot: the plain No Signal screen is mounted again.
 nosignal.init({ luna: luna });
 nosignal.apply();

@@ -2439,6 +2439,19 @@ button.home-look:active{background:none}
 #home-bg-video .set .wall-choice+.wall-choice{margin-top:8px}
 .ss-video-box{max-height:none}
 .ss-video-lbl{margin-top:20px}
+/* Art: each source with what it is under its name, and the owner's pictures small. */
+.ss-pool-box.ss-art-box{max-height:none}
+.ss-art-item{align-items:flex-start;padding:8px}
+.ss-art-item input[type="checkbox"]{margin-top:2px}
+.ss-art-name{display:block;color:var(--w90)}
+.ss-art-sub{display:block;margin-top:2px;font-size:12px;line-height:1.4;color:var(--w60)}
+.ss-art-pics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px 10px;max-width:340px}
+.ss-art-pics .wall-add{font-size:11px}
+.ss-art-pics .wall-actions{margin-top:4px}
+#ss-art-note:empty{display:none}
+#ss-art-note{margin-top:8px}
+#ss-art-where,#ss-art-note{max-width:340px}
+#ss-art-where{margin-top:10px}
 .ss-video-colour{display:flex;align-items:center;gap:10px;margin-top:14px;color:var(--w80);font-size:13px}
 .ss-video-colour input[type=color]{width:40px;height:28px;padding:0;border:1px solid var(--edge);border-radius:var(--r-md);background:none}
 .ss-video-actions{margin:14px 0 8px}

@@ -123,6 +123,9 @@ async function loadScreensavers() {
   q('ss-video-row').hidden = !(active && active.videoStyle);
   if (active && active.videoStyle) renderSsVideo(active.videoStyle, locked);
 
+  q('ss-art-row').hidden = !(active && active.art);
+  if (active && active.art) renderSsArt(active.art, !d.writable);
+
   // Entities or ordered entity list declared by the active screen saver:
   const entities = active && active.entities;
   const entityList = active && active.entityList;
@@ -696,6 +699,140 @@ function ssVideoStyle(key, value) {
 function ssVideoReset() {
   const { showClock, showDate, showWeather, infoPosition, infoSize, clockFont, textFont, textColor } = HOME_VIDEO_STYLE;
   ssVideoSave({ showClock, showDate, showWeather, infoPosition, infoSize, clockFont, textFont, textColor });
+}
+
+/*
+ * The Art saver's pictures: the owner's own, uploaded here, and the museum
+ * collections it may fetch from (lib/art); how long each stays, how it fits
+ * the screen and when its label shows. A change takes effect with the next
+ * picture, as the saver asks for each.
+ */
+let ssArtUploading = false;
+let ssArtState = null;
+
+function renderSsArt(art, locked) {
+  ssArtState = art;
+  const s = art.settings;
+  const pics = art.pictures || [];
+  const dis = locked ? ' dis' : '';
+  const item = (checked, onchange, name, sub) => `<label class="ss-pool-item ss-art-item${dis}">
+      <input type="checkbox" ${checked ? 'checked' : ''} ${locked ? 'disabled' : ''} onchange="${onchange}">
+      <span><span class="ss-art-name">${esc(name)}</span><span class="ss-art-sub">${esc(sub)}</span></span>
+    </label>`;
+  q('ss-art-sources').innerHTML =
+    item(s.mine, 'ssArtSave({ mine: this.checked })', t('ss.art.mine', 'Your pictures'),
+      t('ss.art.mineCount', '{n} added below', { n: pics.length })) +
+    art.collections.map(c => item(c.on, `ssArtCollection('${esc(c.id)}', this.checked)`, c.label, c.detail)).join('');
+
+  const full = pics.length >= art.maxPictures;
+  const busy = locked || ssArtUploading || art.uploading;
+  q('ss-art-pics').innerHTML = `<div class="wall-card${ssArtUploading ? ' busy' : ''}">
+      <button type="button" class="wall-screen" id="ss-art-add" onclick="ssArtChoose()" ${busy || full ? 'disabled' : ''}
+          aria-label="${esc(t('ss.art.add', 'Add pictures'))}">
+        ${full ? '' : `<span class="wall-add">${esc(t('ss.art.add', 'Add pictures'))}</span>`}
+        ${ssArtUploading ? `<span class="wall-sending">${esc(t('home.wall.uploading', 'Uploading…'))}</span>` : ''}
+      </button>
+    </div>` + pics.map((id, i) => `<div class="wall-card has fixed">
+      <button type="button" class="wall-screen" tabindex="-1" disabled aria-label="${esc(t('home.wall.pictureN', 'Picture {n}', { n: i + 1 }))}"
+          style="background-image:url('${esc(api('/api/art/image?id=p-' + encodeURIComponent(id)))}')"></button>
+      <div class="wall-actions"><button type="button" class="wall-link" onclick="ssArtRemove('${esc(id)}')" ${busy ? 'disabled' : ''}>${esc(t('home.wall.remove', 'Remove'))}</button></div>
+    </div>`).join('');
+  const add = q('ss-art-add');
+  add.addEventListener('dragover', e => { if (busy || full) return; e.preventDefault(); add.classList.add('drop'); });
+  add.addEventListener('dragleave', () => add.classList.remove('drop'));
+  add.addEventListener('drop', e => {
+    e.preventDefault();
+    add.classList.remove('drop');
+    const files = e.dataTransfer ? Array.from(e.dataTransfer.files) : [];
+    if (files.length && !busy && !full) ssArtUpload(files, art);
+  });
+
+  const fill = (id, options, value) => {
+    const sel = q(id);
+    if (document.activeElement !== sel) {
+      sel.innerHTML = options.map(([v, label]) => `<option value="${esc(String(v))}">${esc(label)}</option>`).join('');
+      sel.value = String(value);
+    }
+    sel.disabled = locked;
+  };
+  fill('ss-art-minutes', (art.minuteChoices || [5, 10, 15, 30, 60]).map(m => [m, m === 60
+    ? t('ss.art.everyHour', 'A new picture every hour')
+    : t('ss.art.everyMinutes', 'A new picture every {n} minutes', { n: m })]), s.minutes);
+  fill('ss-art-fit', [['fit', t('ss.art.fit', 'The whole picture, on black')], ['fill', t('ss.art.fill', 'Filling the screen')]], s.fit);
+  fill('ss-art-caption', [['brief', t('ss.art.captionBrief', 'Its label for a moment after each change')],
+    ['always', t('ss.art.captionAlways', 'Its label all the time')], ['off', t('ss.art.captionOff', 'No label')]], s.caption);
+
+  const where = [];
+  if (art.collections.some(c => c.on)) {
+    where.push(art.fetching ? t('ss.art.fetching', 'Fetching the next painting…')
+      : t('ss.art.privacy', 'The paintings are from {source}\'s open access collection, in the public domain. The TV fetches them from the museum one at a time, and keeps only the next one or two.', { source: art.collections[0].source }));
+  }
+  if (art.error) where.push(art.error);
+  if (!s.mine && !art.collections.some(c => c.on)) where.push(t('ss.art.nothing', 'Pick your pictures or a collection, or the screen saver has nothing to show.'));
+  q('ss-art-where').textContent = where.join(' ');
+}
+
+async function ssArtSave(settings) {
+  try {
+    const res = await fetch(api('/api/art'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ settings }) });
+    const r = await res.json();
+    if (!r.ok) throw new Error(r.error || t('common.unknownError', 'unknown error'));
+  } catch (e) { showErr(e.message); }
+  loadScreensavers();
+}
+
+function ssArtCollection(id, on) {
+  const ids = ssArtState ? ssArtState.collections.filter(c => c.on && c.id !== id).map(c => c.id) : [];
+  if (on) ids.push(id);
+  ssArtSave({ collections: ids });
+}
+
+function ssArtChoose() {
+  if (ssArtUploading) return;
+  const input = q('ss-art-file');
+  input.value = '';
+  input.click();
+}
+
+function ssArtPicked(input) {
+  const files = Array.from(input.files || []);
+  if (files.length) ssArtUpload(files, ssArtState);
+}
+
+// One after another, as the TV takes one upload at a time.
+async function ssArtUpload(files, art) {
+  if (ssArtUploading || !art) return;
+  const note = q('ss-art-note');
+  const room = Math.max(0, art.maxPictures - (art.pictures || []).length);
+  const take = files.slice(0, room);
+  ssArtUploading = true;
+  renderSsArt(art, false);
+  let done = 0, failed = '';
+  for (const file of take) {
+    note.textContent = t('home.wall.uploadingOf', 'Uploading {n} of {total}…', { n: done + 1, total: take.length });
+    try {
+      const blob = await homePrepareWall(file);
+      const res = await fetch(api('/api/art/upload'), { method: 'POST', headers: { 'Content-Type': 'image/jpeg' }, body: blob });
+      const r = await res.json();
+      if (!res.ok || !r.ok) throw new Error(r.error || t('home.wall.uploadFailed', 'The image could not be uploaded.'));
+      done++;
+    } catch (e) { failed = file.name + ': ' + e.message; }
+  }
+  ssArtUploading = false;
+  const parts = [t('home.wall.uploadedN', '{n} of {total} uploaded.', { n: done, total: files.length })];
+  if (files.length > take.length) parts.push(t('ss.art.room', 'Art holds {max} of your pictures.', { max: art.maxPictures }));
+  if (failed) parts.push(failed);
+  note.textContent = parts.join(' ');
+  loadScreensavers();
+}
+
+async function ssArtRemove(id) {
+  try {
+    const res = await fetch(api('/api/art'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ remove: id }) });
+    const r = await res.json();
+    if (!r.ok) throw new Error(r.error || t('common.unknownError', 'unknown error'));
+  } catch (e) { showErr(e.message); }
+  loadScreensavers();
 }
 
 async function pickSsColor(id) {

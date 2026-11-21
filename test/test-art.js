@@ -1,0 +1,214 @@
+/**
+ * test/test-art.js - The Art screen saver's pictures: the settings and what
+ * is refused, a museum record as a picture (or not), paintings fetched ahead
+ * and only a few kept, the owner's own taken in turn with them, uploads, and
+ * the message with nothing to show.
+ *
+ * Strict ES5: runs on node 0.12.
+ */
+
+var assert = require('assert');
+var events = require('events');
+var fs = require('fs');
+var os = require('os');
+var path = require('path');
+var art = require('../server/lib/art');
+
+console.log('Running test-art.js ...');
+
+// A small JPEG, valid as the server checks it.
+var JPEG = new Buffer('/9j/4AAQSkZJRgABAQAASABIAAD/4QBMRXhpZgAATU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAA6ABAAMAAAABAAEAAKACAAQAAAABAAAACKADAAQAAAABAAAABAAAAAD/7QA4UGhvdG9zaG9wIDMuMAA4QklNBAQAAAAAAAA4QklNBCUAAAAAABDUHYzZjwCyBOmACZjs+EJ+/8AAEQgABAAIAwEiAAIRAQMRAf/EAB8AAAEFAQEBAQEBAAAAAAAAAAABAgMEBQYHCAkKC//EALUQAAIBAwMCBAMFBQQEAAABfQECAwAEEQUSITFBBhNRYQcicRQygZGhCCNCscEVUtHwJDNicoIJChYXGBkaJSYnKCkqNDU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6g4SFhoeIiYqSk5SVlpeYmZqio6Slpqeoqaqys7S1tre4ubrCw8TFxsfIycrS09TV1tfY2drh4uPk5ebn6Onq8fLz9PX29/j5+v/EAB8BAAMBAQEBAQEBAQEAAAAAAAABAgMEBQYHCAkKC//EALURAAIBAgQEAwQHBQQEAAECdwABAgMRBAUhMQYSQVEHYXETIjKBCBRCkaGxwQkjM1LwFWJy0QoWJDThJfEXGBkaJicoKSo1Njc4OTpDREVGR0hJSlNUVVZXWFlaY2RlZmdoaWpzdHV2d3h5eoKDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uLj5OXm5+jp6vLz9PX29/j5+v/bAEMAAgICAgICAwICAwUDAwMFBgUFBQUGCAYGBgYGCAoICAgICAgKCgoKCgoKCgwMDAwMDA4ODg4ODw8PDw8PDw8PD//bAEMBAgICBAQEBwQEBxALCQsQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEP/dAAQAAf/aAAwDAQACEQMRAD8A+O6KKK/Ez+jD/9k=', 'base64');
+
+var dir = fs.mkdtempSync ? fs.mkdtempSync(path.join(os.tmpdir(), 'art-')) : path.join(os.tmpdir(), 'art-' + process.pid);
+if (!fs.existsSync(dir)) fs.mkdirSync(dir);
+
+var asked = [], fetched = [], next = 1;
+function record(id, w, h, url) {
+  return {
+    id: id, title: 'Work ' + id, creation_date: '1888',
+    creators: [{ description: 'Claude Monet (French, 1840–1926)' }],
+    images: { print: { url: url || 'https://openaccess-cdn.clevelandart.org/1.' + id + '/1.' + id + '_print.jpg', width: String(w || 3400), height: String(h || 2400), filesize: '3000000' } }
+  };
+}
+var getJson = function (url, cb) {
+  asked.push(url);
+  setTimeout(function () { cb(null, { info: { total: 50 }, data: [record(next++)] }); }, 0);
+};
+var download = function (url, file, cb) {
+  fetched.push(url);
+  fs.writeFileSync(file, JPEG);
+  setTimeout(function () { cb(null); }, 0);
+};
+function init() {
+  art.init({ stateDir: dir, getJson: getJson, download: download, free: function (d, cb) { cb(1e9); } });
+}
+init();
+
+function later(fn) { setTimeout(fn, 30); }
+function call(fn) { return function (cb) { fn(function (r) { cb(r); }); }; }
+
+// A record is a picture where its print is a JPEG on the museum's CDN and its
+// shape suits a screen.
+var c = art.COLLECTIONS[0];
+var pick = art.clevelandPick(record(7), c);
+assert.strictEqual(pick.key, 'cma-7');
+assert.strictEqual(pick.info.artist, 'Claude Monet', 'the artist without their dates');
+assert.strictEqual(pick.info.date, '1888');
+assert.strictEqual(art.clevelandPick(record(8, 3400, 600), c), null, 'a long scroll is left out');
+assert.strictEqual(art.clevelandPick(record(9, 3400, 2400, 'https://example.com/x.jpg'), c), null, 'only from the museum');
+assert.strictEqual(art.clevelandPick({ id: 10, images: {} }, c), null, 'no print, no picture');
+
+var steps = [
+  // Nothing picked and nothing uploaded: the message says where to add some.
+  function (done) {
+    art.save({ mine: true }, function () {
+      art.next(function (r) {
+        assert.strictEqual(r.ok, false);
+        assert.ok(r.empty);
+        assert.ok(/Screensaver tab/.test(r.message));
+        assert.strictEqual(asked.length, 0, 'nothing asked of a museum until a collection is picked');
+        done();
+      });
+    });
+  },
+  // What is not one of the choices is refused, and nothing changes.
+  function (done) {
+    art.save({ minutes: 7 }, function (r) {
+      assert.strictEqual(r.ok, false);
+      art.save({ collections: ['cma-european', 'nope'] }, function (r2) {
+        assert.strictEqual(r2.ok, false);
+        assert.deepEqual(art.status().settings.collections, []);
+        done();
+      });
+    });
+  },
+  // A collection picked: two paintings come ahead, one at a time.
+  function (done) {
+    art.save({ collections: ['cma-modern'], minutes: 5 }, function (r) {
+      assert.strictEqual(r.ok, true);
+      assert.deepEqual(r.settings.collections, ['cma-modern']);
+      later(function () {
+        assert.strictEqual(fetched.length, 2, 'two fetched ahead');
+        assert.ok(asked.every(function (u) { return /cc0=1/.test(u) && /Modern%20European/.test(u); }), 'public domain, from its department');
+        assert.ok(JSON.parse(fs.readFileSync(path.join(dir, 'art-cache', 'queue.json'))).queue.length === 2);
+        done();
+      });
+    });
+  },
+  // Each served is the next fetched; the queue fills behind it; only the one on
+  // screen and the one fading out stay with what is waiting.
+  function (done) {
+    var ids = [];
+    (function one(n) {
+      if (!n) {
+        assert.ok(ids.every(function (id, i) { return ids.indexOf(id) === i; }), 'no painting twice');
+        later(function () {
+          var files = fs.readdirSync(path.join(dir, 'art-cache')).filter(function (f) { return /\.jpg$/.test(f); });
+          assert.ok(files.length <= 4, 'only a few kept: ' + files.join(' '));
+          assert.ok(art.image(ids[ids.length - 1]), 'the one on screen is still there');
+          assert.strictEqual(art.image(ids[0]), null, 'an old one is gone');
+          done();
+        });
+        return;
+      }
+      art.next(function (r) {
+        assert.strictEqual(r.ok, true);
+        assert.ok(/^c-cma-\d+$/.test(r.id));
+        assert.strictEqual(r.minutes, 5);
+        assert.strictEqual(r.fit, 'fit');
+        assert.strictEqual(r.info.credit, 'The Cleveland Museum of Art');
+        ids.push(r.id);
+        later(function () { one(n - 1); });
+      });
+    })(4);
+  },
+  // A picture of the owner's own, uploaded: taken in turn with the paintings.
+  function (done) {
+    var req = new events.EventEmitter();
+    req.headers = { 'content-length': String(JPEG.length) };
+    art.upload(req, function (r) {
+      assert.strictEqual(r.ok, true);
+      assert.strictEqual(r.pictures.length, 1);
+      var kinds = [];
+      (function one(n) {
+        if (!n) {
+          assert.ok(kinds.indexOf('p') !== -1 && kinds.indexOf('c') !== -1, 'both kinds: ' + kinds.join(''));
+          assert.ok(!/pp|cc/.test(kinds.join('')), 'in turn: ' + kinds.join(''));
+          return done();
+        }
+        art.next(function (r2) {
+          kinds.push(r2.id.charAt(0));
+          later(function () { one(n - 1); });
+        });
+      })(4);
+    });
+    req.emit('data', JPEG);
+    req.emit('end');
+  },
+  // Not a JPEG: refused.
+  function (done) {
+    var req = new events.EventEmitter();
+    var bad = new Buffer('not a picture');
+    req.headers = { 'content-length': String(bad.length) };
+    art.upload(req, function (r) {
+      assert.strictEqual(r.ok, false);
+      assert.strictEqual(art.status().pictures.length, 1);
+      done();
+    });
+    req.emit('data', bad);
+    req.emit('end');
+  },
+  // A picture's address is only one of these two kinds.
+  function (done) {
+    assert.strictEqual(art.image('../../etc/passwd'), null);
+    assert.strictEqual(art.image('p-../x'), null);
+    assert.ok(art.image('p-' + art.status().pictures[0]));
+    done();
+  },
+  // The collection dropped: its paintings go, and only the owner's are shown.
+  function (done) {
+    art.save({ collections: [] }, function () {
+      var files = fs.readdirSync(path.join(dir, 'art-cache')).filter(function (f) { return /\.jpg$/.test(f) && f !== 'queue.json'; });
+      art.next(function (r) {
+        assert.strictEqual(r.id.charAt(0), 'p');
+        assert.ok(files.length <= 2, 'only those on screen stay: ' + files.join(' '));
+        done();
+      });
+    });
+  },
+  // Removed: nothing to show again. Settings survive a restart.
+  function (done) {
+    art.remove(art.status().pictures[0], function (r) {
+      assert.strictEqual(r.pictures.length, 0);
+      init();
+      assert.strictEqual(art.status().settings.minutes, 5, 'kept over a restart');
+      art.next(function (r2) {
+        assert.ok(r2.empty);
+        done();
+      });
+    });
+  },
+  // A museum that does not answer: said on the dashboard, nothing shown.
+  function (done) {
+    getJson = function (url, cb) { setTimeout(function () { cb(new Error('timed out')); }, 0); };
+    init();
+    art.save({ collections: ['cma-asian'] }, function () {
+      later(function () {
+        assert.ok(/timed out/.test(art.status().error));
+        art.next(function (r) {
+          assert.strictEqual(r.ok, false);
+          assert.ok(r.waiting);
+          done();
+        });
+      });
+    });
+  }
+];
+
+(function run(i) {
+  if (i === steps.length) {
+    console.log('test-art.js: all passed');
+    return;
+  }
+  steps[i](function () { run(i + 1); });
+})(0);
