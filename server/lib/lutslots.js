@@ -110,12 +110,20 @@ function readTable(command, picMode, profileNo, colorSpace, cb) {
     return cb(tableFailure(NO_FILE));
   }
   fs.readdir(dir, function (err, names) {
-    // The app names a slot by its picMode (hdrCinema); the file prefix is
-    // snake case (hdr_cinema), so both spellings are tried.
-    var snake = String(picMode).replace(/([a-z0-9])([A-Z])/g, '$1_$2').toLowerCase();
-    var prefixes = [picMode + '_' + profile + '_'];
-    if (snake !== String(picMode).toLowerCase() || snake !== picMode) {
-      prefixes.push(snake + '_' + profile + '_');
+    // The app names a slot by its picMode (hdrFilmMaker); the file prefix is
+    // either that name, full snake case (dolby_cinema_dark), or the HDR token
+    // plus the mode in camelCase (hdr_filmMaker), so all three are tried.
+    var name = String(picMode);
+    var snake = name.replace(/([a-z0-9])([A-Z])/g, '$1_$2').toLowerCase();
+    var tokenMatch = /^(hdr|dolby)([A-Z].*)$/.exec(name);
+    var spellings = [name, snake];
+    if (tokenMatch) {
+      spellings.push(tokenMatch[1] + '_' + tokenMatch[2].charAt(0).toLowerCase() + tokenMatch[2].slice(1));
+    }
+    var prefixes = [];
+    for (var k = 0; k < spellings.length; k++) {
+      var prefix = spellings[k] + '_' + profile + '_';
+      if (prefixes.indexOf(prefix) < 0) prefixes.push(prefix);
     }
     var found = [];
     names = (!err && names) ? names.slice().sort() : [];

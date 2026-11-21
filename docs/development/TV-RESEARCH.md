@@ -3951,10 +3951,12 @@ The prefix is the mode name for SDR (`filmMaker`) and snake case for HDR
 `POST /api/externalpq/getExternalPqData` takes the payload a modern LG's
 `externalpq/getExternalPqData` takes (`command`) plus `picMode` and optional
 `profileNo` and `colorSpace` (`BT709` or `BT2020`) to pick the slot. A
-`picMode` in camelCase (`hdrCinema`) also matches the snake-case file prefix.
-When several files match and no `colorSpace` is given, the reply is the failure
-reply; a good reply adds `file`, the file served. A modern TV needs only `command`, so the bare
-modern payload is not enough here: without `picMode` the reply is the failure
+camelCase `picMode` also matches the file prefix in its other spellings:
+`hdrCinema` gives `hdr_cinema`, `hdrFilmMaker` gives `hdr_filmMaker` and
+`dolbyCinemaDark` gives `dolby_cinema_dark`. When several files match and no
+`colorSpace` is given, the reply is the failure reply; a good reply adds
+`file`, the file served. A modern TV needs only `command`, so the bare modern
+payload is not enough here: without `picMode` the reply is the failure
 reply. The reply has the same keys: `returnValue`, `data` (base64,
 little-endian 16-bit), `dataCount` (107811) and `dataType`
 (`unsigned integer16`, the string CMI writes; the read value is unverified),

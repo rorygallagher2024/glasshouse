@@ -60,13 +60,21 @@ lutslots.readSlots(function (r) {
     fs.writeFileSync(path.join(tmp, 'filmMaker_profile0_BT709_3D_LUT_DATA'), b709);
     fs.writeFileSync(path.join(tmp, 'filmMaker_profile0_BT2020_3D_LUT_DATA'), b2020);
     fs.writeFileSync(path.join(tmp, 'hdr_cinema_profile0_BT2020_3D_LUT_DATA'), b2020);
+    fs.writeFileSync(path.join(tmp, 'hdr_filmMaker_profile0_BT2020_3D_LUT_DATA'), b2020);
+    fs.writeFileSync(path.join(tmp, 'dolby_cinema_dark_profile0_BT2020_3D_LUT_DATA'), b2020);
     lutslots.readTable('GET_3D_LUT_DATA', 'filmMaker', 0, 'BT709', function (v) {
       assert.strictEqual(v.file, 'filmMaker_profile0_BT709_3D_LUT_DATA');
       assert.strictEqual(new Buffer(v.data, 'base64')[0], 197);
       lutslots.readTable('GET_3D_LUT_DATA', 'hdrCinema', 0, undefined, function (h) {
         assert.strictEqual(h.returnValue, true);
         assert.strictEqual(h.file, 'hdr_cinema_profile0_BT2020_3D_LUT_DATA');
-        runCases();
+        lutslots.readTable('GET_3D_LUT_DATA', 'hdrFilmMaker', 0, undefined, function (f) {
+          assert.strictEqual(f.file, 'hdr_filmMaker_profile0_BT2020_3D_LUT_DATA');
+          lutslots.readTable('GET_3D_LUT_DATA', 'dolbyCinemaDark', 0, undefined, function (d) {
+            assert.strictEqual(d.file, 'dolby_cinema_dark_profile0_BT2020_3D_LUT_DATA');
+            runCases();
+          });
+        });
       });
     });
     function runCases() {
