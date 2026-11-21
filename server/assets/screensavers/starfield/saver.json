@@ -10,7 +10,8 @@
     "pt": "Campo de estrelas",
     "pt-br": "Campo de estrelas",
     "ru": "Звёздное поле",
-    "sv": "Stjärnfält"
+    "sv": "Stjärnfält",
+    "vi": "Bầu trời sao"
   },
   "description": {
     "en": "A drifting cosmic starscape with occasional shooting stars.",
@@ -21,7 +22,8 @@
     "pt": "Uma paisagem cósmica à deriva, com estrelas cadentes ocasionais.",
     "pt-br": "Uma paisagem cósmica de estrelas à deriva, com estrelas cadentes ocasionais.",
     "ru": "Плывущий космический пейзаж со звёздами и редкими падающими звёздами.",
-    "sv": "Ett glidande stjärnlandskap med enstaka stjärnfall."
+    "sv": "Ett glidande stjärnlandskap med enstaka stjärnfall.",
+    "vi": "Bầu trời sao vũ trụ trôi nhẹ cùng những vệt sao băng thoáng qua."
   },
   "license": "MIT",
   "uses": [

@@ -13,7 +13,8 @@
     "pt": "Home Assistant: Ambiente",
     "pt-br": "Home Assistant: Ambiente",
     "ru": "Home Assistant: Окружение",
-    "sv": "Home Assistant: Omgivning"
+    "sv": "Home Assistant: Omgivning",
+    "vi": "Home Assistant: Không gian"
   },
   "description": {
     "en": "Time, date and up to three live Home Assistant readings on black.",
@@ -27,7 +28,8 @@
     "pt": "Hora, data e até três leituras do Home Assistant em direto sobre preto.",
     "pt-br": "Hora, data e até três leituras do Home Assistant em tempo real sobre preto.",
     "ru": "Время, дата и до трёх показаний Home Assistant в реальном времени на чёрном фоне.",
-    "sv": "Tid, datum och upp till tre direktvärden från Home Assistant på svart."
+    "sv": "Tid, datum och upp till tre direktvärden från Home Assistant på svart.",
+    "vi": "Thời gian, ngày và tối đa ba chỉ số Home Assistant trực tiếp trên nền đen."
   },
   "license": "MIT",
   "uses": [
@@ -50,7 +52,8 @@
       "pt": "Leituras",
       "pt-br": "Leituras",
       "ru": "Показания",
-      "sv": "Mätvärden"
+      "sv": "Mätvärden",
+      "vi": "Chỉ số"
     },
     "default": "labels",
     "options": [
@@ -68,7 +71,8 @@
           "pt": "Nomes e valores",
           "pt-br": "Nomes e valores",
           "ru": "Названия и значения",
-          "sv": "Namn och värden"
+          "sv": "Namn och värden",
+          "vi": "Tên và giá trị"
         },
         "value": "true"
       },
@@ -86,7 +90,8 @@
           "pt": "Apenas valores",
           "pt-br": "Apenas valores",
           "ru": "Только значения",
-          "sv": "Bara värden"
+          "sv": "Bara värden",
+          "vi": "Chỉ giá trị"
         },
         "value": "false"
       }

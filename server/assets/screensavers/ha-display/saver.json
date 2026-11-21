@@ -13,7 +13,8 @@
     "pt": "Home Assistant: Visor de dados",
     "pt-br": "Home Assistant: Visor de dados",
     "ru": "Home Assistant: Экран данных",
-    "sv": "Home Assistant: Datavisning"
+    "sv": "Home Assistant: Datavisning",
+    "vi": "Home Assistant: Hiển thị dữ liệu"
   },
   "description": {
     "en": "Cycles through 2 to 100 Home Assistant entities one at a time on black.",
@@ -27,7 +28,8 @@
     "pt": "Alterna entre 2 e 100 entidades do Home Assistant uma de cada vez sobre fundo preto.",
     "pt-br": "Alterna entre 2 e 100 entidades do Home Assistant uma por vez sobre fundo preto.",
     "ru": "Поочерёдно показывает от 2 до 100 сущностей Home Assistant на чёрном фоне.",
-    "sv": "Växlar mellan 2 till 100 Home Assistant-entiteter, en i taget, på svart."
+    "sv": "Växlar mellan 2 till 100 Home Assistant-entiteter, en i taget, på svart.",
+    "vi": "Lần lượt xoay vòng từ 2 đến 100 thực thể Home Assistant trên nền đen."
   },
   "license": "MIT",
   "uses": [
@@ -50,7 +52,8 @@
       "pt": "Velocidade do ciclo",
       "pt-br": "Velocidade do ciclo",
       "ru": "Скорость смены",
-      "sv": "Växlingstakt"
+      "sv": "Växlingstakt",
+      "vi": "Tốc độ chuyển"
     },
     "default": "10s",
     "options": [
@@ -68,7 +71,8 @@
           "pt": "A cada 5 segundos",
           "pt-br": "A cada 5 segundos",
           "ru": "Каждые 5 секунд",
-          "sv": "Var 5:e sekund"
+          "sv": "Var 5:e sekund",
+          "vi": "Mỗi 5 giây"
         },
         "value": "5000"
       },
@@ -86,7 +90,8 @@
           "pt": "A cada 10 segundos",
           "pt-br": "A cada 10 segundos",
           "ru": "Каждые 10 секунд",
-          "sv": "Var 10:e sekund"
+          "sv": "Var 10:e sekund",
+          "vi": "Mỗi 10 giây"
         },
         "value": "10000"
       },
@@ -104,7 +109,8 @@
           "pt": "A cada 15 segundos",
           "pt-br": "A cada 15 segundos",
           "ru": "Каждые 15 секунд",
-          "sv": "Var 15:e sekund"
+          "sv": "Var 15:e sekund",
+          "vi": "Mỗi 15 giây"
         },
         "value": "15000"
       },
@@ -122,7 +128,8 @@
           "pt": "A cada 30 segundos",
           "pt-br": "A cada 30 segundos",
           "ru": "Каждые 30 секунд",
-          "sv": "Var 30:e sekund"
+          "sv": "Var 30:e sekund",
+          "vi": "Mỗi 30 giây"
         },
         "value": "30000"
       },
@@ -140,7 +147,8 @@
           "pt": "A cada minuto",
           "pt-br": "A cada minuto",
           "ru": "Каждую минуту",
-          "sv": "Varje minut"
+          "sv": "Varje minut",
+          "vi": "Mỗi phút"
         },
         "value": "60000"
       }

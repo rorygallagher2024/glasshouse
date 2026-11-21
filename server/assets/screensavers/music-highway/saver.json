@@ -9,7 +9,8 @@
     "pl": "Muzyczna autostrada",
     "pt": "Autoestrada musical",
     "pt-br": "Rodovia musical",
-    "ru": "Музыкальная трасса"
+    "ru": "Музыкальная трасса",
+    "vi": "Xa lộ âm nhạc"
   },
   "description": {
     "en": "A neon track that rises, banks and speeds up with what the TV plays, and a craft catching blocks on the beat.",
@@ -19,7 +20,8 @@
     "pl": "Neonowy tor, który wznosi się, przechyla i przyspiesza w rytm tego, co gra telewizor, i pojazd łapiący bloki do rytmu.",
     "pt": "Uma pista néon que sobe, se inclina e acelera com o que a TV toca, e uma nave que apanha blocos ao ritmo.",
     "pt-br": "Uma pista neon que sobe, se inclina e acelera com o que a TV toca, e uma nave que pega blocos no ritmo.",
-    "ru": "Неоновая трасса, которая поднимается, кренится и ускоряется под то, что играет телевизор, и корабль, ловящий блоки в такт."
+    "ru": "Неоновая трасса, которая поднимается, кренится и ускоряется под то, что играет телевизор, и корабль, ловящий блоки в такт.",
+    "vi": "Một đường đua neon nhô lên, nghiêng và tăng tốc theo những gì TV đang phát, cùng một phi thuyền đón các khối theo nhịp."
   },
   "license": "MIT",
   "uses": [
@@ -36,7 +38,8 @@
       "pl": "Bloki",
       "pt": "Blocos",
       "pt-br": "Blocos",
-      "ru": "Блоки"
+      "ru": "Блоки",
+      "vi": "Khối"
     },
     "default": "beat",
     "options": [
@@ -50,7 +53,8 @@
           "pl": "W rytm",
           "pt": "No ritmo",
           "pt-br": "No ritmo",
-          "ru": "В такт"
+          "ru": "В такт",
+          "vi": "Theo nhịp"
         },
         "value": "1"
       },
@@ -64,7 +68,8 @@
           "pl": "Reaguj na każde uderzenie",
           "pt": "Reagir a cada batida",
           "pt-br": "Reagir a cada batida",
-          "ru": "Реагировать на каждый удар"
+          "ru": "Реагировать на каждый удар",
+          "vi": "Phản ứng với từng tiếng gõ"
         },
         "value": "0"
       }

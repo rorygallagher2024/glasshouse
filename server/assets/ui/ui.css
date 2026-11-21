@@ -3002,3 +3002,39 @@ html.glow .sidenav{background-color:var(--bg);background-image:var(--glow-paint)
 /* The page's own background would cover it: the root's shows instead. */
 html.glow body{background:transparent}
 @media (prefers-reduced-motion:reduce){html.glow{transition:none}}
+
+/* Outfit lacks Vietnamese horn and stacked-tone glyphs; use Manrope (which
+   covers them all) for text headings in Vietnamese so words do not mix faces. */
+html[lang="vi"] .src.now .t,
+html[lang="vi"] .src .t,
+html[lang="vi"] .stream-primary,
+html[lang="vi"] .hero .big,
+html[lang="vi"] .r .v,
+html[lang="vi"] .n,
+html[lang="vi"] .cols .v,
+html[lang="vi"] .uptime-val,
+html[lang="vi"] .flash-v,
+html[lang="vi"] .sidenav-title,
+html[lang="vi"] .col-sec,
+html[lang="vi"] .oc-count-top b,
+html[lang="vi"] .pv-h,
+html[lang="vi"] .updpop-t,
+html[lang="vi"] .pv-d>summary,
+html[lang="vi"] .ps-area .n,
+html[lang="vi"] .ps-head,
+html[lang="vi"] .pv-sec,
+html[lang="vi"] #pv-adv>summary,
+html[lang="vi"] .apps-grp-h,
+html[lang="vi"] .perf-big,
+html[lang="vi"] .stor-vol-big,
+html[lang="vi"] .audio-value,
+html[lang="vi"] .pic-mode,
+html[lang="vi"] .hm-nslg-box b,
+html[lang="vi"] .hm-nsplain-txt,
+html[lang="vi"] .tvm-titles h2,
+html[lang="vi"] .tvm-start p:first-child,
+html[lang="vi"] .tvm-ch-head h3,
+html[lang="vi"] .tvm-c-in,
+html[lang="vi"] .tvm-tile-logo::before {
+  font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}

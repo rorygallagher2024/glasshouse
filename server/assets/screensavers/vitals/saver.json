@@ -10,7 +10,8 @@
     "pt": "Estado do painel",
     "pt-br": "Sinais do painel",
     "ru": "Состояние панели",
-    "sv": "Panelens hälsa"
+    "sv": "Panelens hälsa",
+    "vi": "Tình trạng tấm nền"
   },
   "description": {
     "en": "The TV's own readings - panel hours, pixel refresher countdown, temperature.",
@@ -21,7 +22,8 @@
     "pt": "As leituras da própria TV: horas do painel, contagem decrescente da atualização de píxeis e temperatura.",
     "pt-br": "As leituras da própria TV: horas do painel, contagem regressiva do Pixel Refresher e temperatura.",
     "ru": "Собственные показания телевизора: часы работы панели, отсчёт до обновления пикселей, температура.",
-    "sv": "TV:ns egna mätvärden - panelens timmar, nedräkning till pixeluppdatering, temperatur."
+    "sv": "TV:ns egna mätvärden - panelens timmar, nedräkning till pixeluppdatering, temperatur.",
+    "vi": "Chỉ số của chính TV: thời gian bật tấm nền, đếm ngược làm mới điểm ảnh và nhiệt độ."
   },
   "license": "MIT",
   "uses": [
