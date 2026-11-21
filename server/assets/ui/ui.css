@@ -2463,6 +2463,23 @@ button.home-look:active{background:none}
   font:500 11px 'Manrope',sans-serif;letter-spacing:.12em;text-transform:uppercase;color:var(--w60)}
 .ss-art-group:first-child{padding-top:4px}
 .ss-art-from{font-size:11px;letter-spacing:normal;text-transform:none;color:var(--w40,var(--w60));text-align:right}
+.frame-modal{max-width:560px;border-color:var(--w25)}
+.frame-modal-head{position:sticky;top:-24px;z-index:1;display:flex;align-items:center;justify-content:space-between;gap:12px;
+  margin:-24px -28px 8px;padding:20px 28px 12px;background:var(--bg);border-bottom:1px solid var(--w12)}
+.frame-modal-title{font-size:20px;font-weight:500;color:var(--w100)}
+.frame-modal .ss-level-lbl{margin-top:20px}
+.frame-modal .ss-pool-box.ss-art-box,.frame-modal .ss-art-pics,.frame-modal #ss-art-where,.frame-modal #ss-art-note,
+.frame-modal .ss-art-browse,.frame-modal select.pill-sel.ss-sel{max-width:none}
+.frame-modal .ss-art-pics{grid-template-columns:repeat(4,minmax(0,1fr))}
+@media (max-width:560px){
+  #frame-modal{padding:0;align-items:stretch}
+  #frame-modal .modal-card{max-height:none;height:100%;border-radius:0;border:0;padding:24px 16px}
+  .frame-modal-head{margin:-24px -16px 8px;padding:16px}
+  .frame-modal .ss-art-pics{grid-template-columns:repeat(3,minmax(0,1fr))}
+}
+.inputs-frame{margin-top:16px;max-width:540px}
+.inputs-frame .ss-art-now{margin-bottom:10px}
+.ss-art-summary{margin-top:10px;max-width:340px}
 .ss-art-now{display:grid;grid-template-columns:96px minmax(0,1fr);gap:8px 14px;align-items:center;max-width:340px}
 .ss-art-now-pic{width:96px;aspect-ratio:16/9;border-radius:var(--r-sm);border:1px solid var(--w12);background:#000 center/contain no-repeat}
 .ss-art-now-words{min-width:0;font-size:13.5px}

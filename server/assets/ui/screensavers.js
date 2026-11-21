@@ -124,7 +124,7 @@ async function loadScreensavers() {
   if (active && active.videoStyle) renderSsVideo(active.videoStyle, locked);
 
   q('ss-art-row').hidden = !(active && active.art);
-  if (active && active.art) renderSsArt(active.art, !d.writable);
+  if (active && active.art) { ssArtState = Object.assign({}, ssArtState || {}, active.art, { writable: d.writable }); frameShowNow(ssArtState); }
 
   // Entities or ordered entity list declared by the active screen saver:
   const entities = active && active.entities;
@@ -774,8 +774,6 @@ function renderSsArt(art, locked) {
       : n === 60 ? t('ss.art.everyMinute', 'A new picture every minute')
       : n < 60 ? t('ss.art.everySeconds', 'A new picture every {n} seconds', { n })
       : t('ss.art.everyMinutes', 'A new picture every {n} minutes', { n: n / 60 })]), s.seconds);
-  renderSsArtNow(art);
-  ssArtWatchNow();
   fill('ss-art-fit', [['fit', t('ss.art.fit', 'The whole picture, on black')], ['fill', t('ss.art.fill', 'Filling the screen')]], s.fit);
   fill('ss-art-caption', [['brief', t('ss.art.captionBrief', 'Its label for a moment after each change')],
     ['always', t('ss.art.captionAlways', 'Its label all the time')], ['off', t('ss.art.captionOff', 'No label')]], s.caption);
@@ -862,7 +860,7 @@ async function ssArtAddFolder(serverJson, id) {
   } catch (e) { showErr(e.message); return; }
   q('ss-art-browse').hidden = true;
   ssArtPath = [];
-  loadScreensavers();
+  frameChanged();
 }
 
 async function ssArtRemoveFolder(key) {
@@ -871,7 +869,7 @@ async function ssArtRemoveFolder(key) {
     const r = await res.json();
     if (!r.ok) throw new Error(r.error || t('common.unknownError', 'unknown error'));
   } catch (e) { showErr(e.message); }
-  loadScreensavers();
+  frameChanged();
 }
 
 /*
@@ -879,17 +877,18 @@ async function ssArtRemoveFolder(key) {
  * within a couple of seconds; offered only while it is on screen, as the
  * screen saver or the No Signal screen. Kept up to date while the row shows.
  */
-function renderSsArtNow(art) {
-  const box = q('ss-art-now');
+function renderSsArtNow(art, box) {
+  if (!box) return;
+  const writable = art.writable !== undefined ? art.writable : ssWritable;
   const cur = art.current;
   const info = (cur && cur.info) || {};
   const words = cur
     ? [info.title || t('ss.art.yours', 'One of your pictures'), [info.artist, info.date].filter(Boolean).join(', '), info.credit].filter(Boolean)
     : [];
-  const key = JSON.stringify([cur && cur.id, art.showing, art.canGoBack, ssWritable]);
+  const key = JSON.stringify([cur && cur.id, art.showing, art.canGoBack, writable]);
   if (box.dataset.key === key) return;
   box.dataset.key = key;
-  const off = !art.showing || !ssWritable;
+  const off = !art.showing || !writable;
   box.innerHTML = `<div class="ss-art-now-pic"${cur ? ` style="background-image:url('${esc(api('/api/art/image?id=' + encodeURIComponent(cur.id)))}')"` : ''}></div>
     <div class="ss-art-now-words">${words.length && art.showing
       ? words.map((w, i) => `<div class="${i ? 'ss-art-sub' : 'ss-art-name'}">${esc(w)}</div>`).join('')
@@ -900,16 +899,78 @@ function renderSsArtNow(art) {
     </div>`;
 }
 
+/*
+ * Now showing, on whichever of the two tabs shows it, and the line saying
+ * where the pictures come from and how often they change.
+ */
+function frameShowNow(art) {
+  renderSsArtNow(art, q('ss-art-now'));
+  renderSsArtNow(art, q('inputs-art-now'));
+  const sum = q('ss-art-summary');
+  if (sum) sum.textContent = frameSummary(art);
+  ssArtWatchNow();
+}
+
+function frameSummary(art) {
+  const s = art.settings || {};
+  const names = (art.collections || []).filter(c => c.on).map(c => c.label)
+    .concat((art.folders || []).map(f => f.title || f.server));
+  if (s.mine && (art.pictures || []).length) names.unshift(t('ss.art.mine', 'Your pictures'));
+  if (!names.length) return t('ss.art.nothing', 'Pick your pictures or a collection, or the screen saver has nothing to show.');
+  const from = names.length > 3
+    ? t('ss.art.andMore', '{names} and {n} more', { names: names.slice(0, 2).join(', '), n: names.length - 2 })
+    : names.join(', ');
+  const n = s.seconds || 600;
+  const every = n === 3600 ? t('ss.art.everyHour', 'A new picture every hour')
+    : n === 60 ? t('ss.art.everyMinute', 'A new picture every minute')
+    : n < 60 ? t('ss.art.everySeconds', 'A new picture every {n} seconds', { n })
+    : t('ss.art.everyMinutes', 'A new picture every {n} minutes', { n: n / 60 });
+  return t('ss.art.summary', '{from}. {every}.', { from, every });
+}
+
+// Kept up to date while it shows: on either tab, or in the dialog.
 let ssArtNowTimer = null;
 function ssArtWatchNow() {
   if (ssArtNowTimer) return;
-  ssArtNowTimer = setInterval(async () => {
-    if (activeTab !== 'screensaver' || q('ss-art-row').hidden || document.hidden) return;
-    try {
-      const r = await (await fetch(api('/api/art'))).json();
-      if (r && r.ok) { ssArtState = Object.assign({}, ssArtState || {}, r); renderSsArtNow(r); }
-    } catch (e) { /* the next tick tries again */ }
+  ssArtNowTimer = setInterval(() => {
+    if (document.hidden) return;
+    const shown = (activeTab === 'screensaver' && !q('ss-art-row').hidden) ||
+      (activeTab === 'inputs' && q('inputs-frame') && !q('inputs-frame').hidden) || !q('frame-modal').hidden;
+    if (shown) frameLoad(true);
   }, 3000);
+}
+
+/*
+ * The picture frame's state, read again: Now showing on both tabs, and the
+ * dialog's settings where it is open (not on the 3 s refresh, which would
+ * redraw a list someone is scrolling).
+ */
+async function frameLoad(nowOnly) {
+  let r;
+  try { r = await (await fetch(api('/api/art'))).json(); } catch (e) { return null; }
+  if (!r || !r.ok) return null;
+  ssArtState = r;
+  frameShowNow(r);
+  if (!nowOnly && !q('frame-modal').hidden && !ssArtUploading) renderSsArt(r, !r.writable);
+  return r;
+}
+
+function frameChanged() {
+  return frameLoad(false);
+}
+
+function openFrameSettings() {
+  const box = q('frame-modal');
+  box.hidden = false;
+  q('frame-modal-close').focus();
+  if (ssArtState && ssArtState.secondChoices) renderSsArt(ssArtState, ssArtState.writable === false);
+  frameLoad(false);
+}
+
+function closeFrameSettings() {
+  q('frame-modal').hidden = true;
+  q('ss-art-browse').hidden = true;
+  ssArtPath = [];
 }
 
 async function ssArtGo(dir) {
@@ -918,6 +979,8 @@ async function ssArtGo(dir) {
     const r = await res.json();
     if (!r.ok) throw new Error(r.error || t('common.unknownError', 'unknown error'));
   } catch (e) { showErr(e.message); }
+  // The screen takes it up within a couple of seconds.
+  setTimeout(() => frameLoad(true), 2500);
 }
 
 async function ssArtSave(settings) {
@@ -926,7 +989,7 @@ async function ssArtSave(settings) {
     const r = await res.json();
     if (!r.ok) throw new Error(r.error || t('common.unknownError', 'unknown error'));
   } catch (e) { showErr(e.message); }
-  loadScreensavers();
+  frameChanged();
 }
 
 function ssArtCollection(id, on) {
@@ -971,7 +1034,7 @@ async function ssArtUpload(files, art) {
   if (files.length > take.length) parts.push(t('ss.art.room', 'The picture frame holds {max} of your pictures.', { max: art.maxPictures }));
   if (failed) parts.push(failed);
   note.textContent = parts.join(' ');
-  loadScreensavers();
+  frameChanged();
 }
 
 async function ssArtRemove(id) {
@@ -980,7 +1043,7 @@ async function ssArtRemove(id) {
     const r = await res.json();
     if (!r.ok) throw new Error(r.error || t('common.unknownError', 'unknown error'));
   } catch (e) { showErr(e.message); }
-  loadScreensavers();
+  frameChanged();
 }
 
 async function pickSsColor(id) {

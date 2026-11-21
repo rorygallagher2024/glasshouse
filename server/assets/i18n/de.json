@@ -1066,7 +1066,6 @@
  "srv.art.folderEmpty": {"text": "er enthält keine JPEG-Bilder", "from": "it holds no JPEG pictures"},
  "ss.art.folders": {"text": "Netzwerkordner", "from": "Network folders"},
  "inputs.noSignal.art": {"text": "Bilderrahmen", "from": "Picture frame"},
- "inputs.noSignal.artDesc": {"text": "Die Bilder des Bilderrahmens, mit „Kein Signal“ auf der Beschriftung jedes Bildes. Wählen Sie sie im Tab Bildschirmschoner.", "from": "The picture frame’s pictures, with “No Signal” on each picture’s label. Pick them on the Screensaver tab."},
  "srv.art.foldersFull": {"text": "Der Bilderrahmen nimmt bis zu {max} Netzwerkordner. Entfernen Sie einen, um einen weiteren hinzuzufügen.", "from": "The picture frame takes up to {max} network folders. Remove one to add another."},
  "srv.art.full": {"text": "Der Bilderrahmen fasst {max} Ihrer Bilder. Entfernen Sie eines, um ein weiteres hinzuzufügen.", "from": "The picture frame holds {max} of your pictures. Remove one to add another."},
  "srv.saver.noArt": {"text": "Er verlangt die Bilder des Bilderrahmens, die nur Glasshouses eigene Bildschirmschoner erhalten.", "from": "It asks for the picture frame's pictures, which only Glasshouse's own screen savers are given."},
@@ -1099,5 +1098,11 @@
  "ss.art.groupPhotos": {"text": "Fotografie", "from": "Photography"},
  "ss.art.groupPaintings": {"text": "Gemälde", "from": "Paintings"},
  "ss.art.privacy3": {"text": "Bilder von {sources} dürfen mit ihrem Bildnachweis gezeigt werden, den die Beschriftung jedes Bildes trägt und der auf dem Bildschirm bleibt, wo die Lizenz es verlangt. Der Fernseher lädt sie einzeln und behält nur die letzten paar und die nächsten ein oder zwei.", "from": "Pictures from {sources} are free to show with their credit, which each one’s label carries, and stays on screen where its licence asks. The TV fetches them one at a time, and keeps only the last few and the next one or two."},
- "srv.art.hubbleDesc2": {"text": "Bild der Woche: Nebel, Galaxien und Sternhaufen, von ESA/Hubble.", "from": "Picture of the Week: nebulae, galaxies and star clusters, from ESA/Hubble."}
+ "srv.art.hubbleDesc2": {"text": "Bild der Woche: Nebel, Galaxien und Sternhaufen, von ESA/Hubble.", "from": "Picture of the Week: nebulae, galaxies and star clusters, from ESA/Hubble."},
+ "ss.art.settings": {"text": "Bilderrahmen-Einstellungen", "from": "Picture frame settings"},
+ "ss.art.title": {"text": "Bilderrahmen", "from": "Picture frame"},
+ "ss.art.andMore": {"text": "{names} und {n} weitere", "from": "{names} and {n} more"},
+ "ss.art.summary": {"text": "{from}. {every}.", "from": "{from}. {every}."},
+ "inputs.noSignal.artDesc2": {"text": "Die Bilder des Bilderrahmens, mit „Kein Signal“ auf der Beschriftung jedes Bildes.", "from": "The picture frame’s pictures, with “No Signal” on each picture’s label."},
+ "inputs.noSignal.artDescTv": {"text": "Die Bilder des Bilderrahmens, mit „Kein Signal“ auf der Beschriftung jedes Bildes. Wählen Sie sie in den Bilderrahmen-Einstellungen, im Tab Bildschirmschoner oder Eingänge des Dashboards im Browser.", "from": "The picture frame’s pictures, with “No Signal” on each picture’s label. Pick them in Picture frame settings, on the Screensaver or Inputs tab of the dashboard in a browser."}
 }

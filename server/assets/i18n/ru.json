@@ -3708,7 +3708,6 @@
  "srv.art.folderEmpty": {"text": "в ней нет изображений JPEG", "from": "it holds no JPEG pictures"},
  "ss.art.folders": {"text": "Сетевые папки", "from": "Network folders"},
  "inputs.noSignal.art": {"text": "Фоторамка", "from": "Picture frame"},
- "inputs.noSignal.artDesc": {"text": "Изображения фоторамки с надписью «Нет сигнала» на подписи к каждому. Выберите их на вкладке «Заставка».", "from": "The picture frame’s pictures, with “No Signal” on each picture’s label. Pick them on the Screensaver tab."},
  "srv.art.foldersFull": {"text": "Фоторамка принимает до {max} сетевых папок. Удалите одну, чтобы добавить другую.", "from": "The picture frame takes up to {max} network folders. Remove one to add another."},
  "srv.art.full": {"text": "Фоторамка вмещает до {max} ваших изображений. Удалите одно, чтобы добавить другое.", "from": "The picture frame holds {max} of your pictures. Remove one to add another."},
  "srv.saver.noArt": {"text": "Он запрашивает изображения фоторамки, которые получают только заставки самого Glasshouse.", "from": "It asks for the picture frame's pictures, which only Glasshouse's own screen savers are given."},
@@ -3741,5 +3740,11 @@
  "ss.art.groupPhotos": {"text": "Фотография", "from": "Photography"},
  "ss.art.groupPaintings": {"text": "Живопись", "from": "Paintings"},
  "ss.art.privacy3": {"text": "Изображения из {sources} можно показывать с указанием авторства, которое есть в подписи к каждому и остаётся на экране, где этого требует лицензия. Телевизор загружает их по одному и хранит только несколько последних и одно-два следующих.", "from": "Pictures from {sources} are free to show with their credit, which each one’s label carries, and stays on screen where its licence asks. The TV fetches them one at a time, and keeps only the last few and the next one or two."},
- "srv.art.hubbleDesc2": {"text": "Снимок недели: туманности, галактики и звёздные скопления, от ESA/Hubble.", "from": "Picture of the Week: nebulae, galaxies and star clusters, from ESA/Hubble."}
+ "srv.art.hubbleDesc2": {"text": "Снимок недели: туманности, галактики и звёздные скопления, от ESA/Hubble.", "from": "Picture of the Week: nebulae, galaxies and star clusters, from ESA/Hubble."},
+ "ss.art.settings": {"text": "Настройки фоторамки", "from": "Picture frame settings"},
+ "ss.art.title": {"text": "Фоторамка", "from": "Picture frame"},
+ "ss.art.andMore": {"text": "{names} и ещё {n}", "from": "{names} and {n} more"},
+ "ss.art.summary": {"text": "{from}. {every}.", "from": "{from}. {every}."},
+ "inputs.noSignal.artDesc2": {"text": "Изображения фоторамки с надписью «Нет сигнала» на подписи к каждому.", "from": "The picture frame’s pictures, with “No Signal” on each picture’s label."},
+ "inputs.noSignal.artDescTv": {"text": "Изображения фоторамки с надписью «Нет сигнала» на подписи к каждому. Выберите их в настройках фоторамки на вкладке «Заставка» или «Входы» панели в браузере.", "from": "The picture frame’s pictures, with “No Signal” on each picture’s label. Pick them in Picture frame settings, on the Screensaver or Inputs tab of the dashboard in a browser."}
 }

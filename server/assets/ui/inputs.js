@@ -299,7 +299,12 @@ function renderNoSignal() {
     t('inputs.noSignal.iconDesc', 'Shows a subtle disconnected cable icon instead of \u201cNo Signal\u201d.'), mode === 'icon', !writable);
   q('inputs-nosignal-art').hidden = !ns.art && mode !== 'art';
   setInputsCard(q('inputs-nosignal-art'), 'nsart', t('inputs.noSignal.art', 'Picture frame'),
-    t('inputs.noSignal.artDesc', 'The picture frame\u2019s pictures, with \u201cNo Signal\u201d on each picture\u2019s label. Pick them on the Screensaver tab.'), mode === 'art', !writable);
+    t('inputs.noSignal.artDesc2', 'The picture frame\u2019s pictures, with \u201cNo Signal\u201d on each picture\u2019s label.'), mode === 'art', !writable);
+  // Its settings, shared with the Screensaver tab; what it shows now, while it is the No Signal screen.
+  const frame = q('inputs-frame');
+  frame.hidden = !ns.art && mode !== 'art';
+  q('inputs-art-now').hidden = mode !== 'art';
+  if (!frame.hidden && typeof frameLoad === 'function') frameLoad(true);
   const desc = q('inputs-nosignal-desc');
   desc.hidden = !ns.restartPending;
   desc.textContent = ns.restartPending

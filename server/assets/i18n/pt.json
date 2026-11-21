@@ -3694,7 +3694,6 @@
  "srv.art.folderEmpty": {"text": "não contém imagens JPEG", "from": "it holds no JPEG pictures"},
  "ss.art.folders": {"text": "Pastas de rede", "from": "Network folders"},
  "inputs.noSignal.art": {"text": "Moldura de fotos", "from": "Picture frame"},
- "inputs.noSignal.artDesc": {"text": "As imagens da moldura de fotos, com «Sem sinal» na legenda de cada uma. Escolha-as no separador Proteção de ecrã.", "from": "The picture frame’s pictures, with “No Signal” on each picture’s label. Pick them on the Screensaver tab."},
  "srv.art.foldersFull": {"text": "A moldura de fotos aceita até {max} pastas de rede. Remova uma para adicionar outra.", "from": "The picture frame takes up to {max} network folders. Remove one to add another."},
  "srv.art.full": {"text": "A moldura de fotos guarda até {max} das suas imagens. Remova uma para adicionar outra.", "from": "The picture frame holds {max} of your pictures. Remove one to add another."},
  "srv.saver.noArt": {"text": "Pede as imagens da moldura de fotos, que só as proteções de ecrã do próprio Glasshouse recebem.", "from": "It asks for the picture frame's pictures, which only Glasshouse's own screen savers are given."},
@@ -3727,5 +3726,11 @@
  "ss.art.groupPhotos": {"text": "Fotografia", "from": "Photography"},
  "ss.art.groupPaintings": {"text": "Pinturas", "from": "Paintings"},
  "ss.art.privacy3": {"text": "As imagens de {sources} podem ser mostradas com o seu crédito, que a legenda de cada uma traz e que fica no ecrã onde a licença o pede. O televisor obtém-nas uma de cada vez e guarda apenas as últimas e a próxima ou as duas próximas.", "from": "Pictures from {sources} are free to show with their credit, which each one’s label carries, and stays on screen where its licence asks. The TV fetches them one at a time, and keeps only the last few and the next one or two."},
- "srv.art.hubbleDesc2": {"text": "Imagem da semana: nebulosas, galáxias e enxames de estrelas, da ESA/Hubble.", "from": "Picture of the Week: nebulae, galaxies and star clusters, from ESA/Hubble."}
+ "srv.art.hubbleDesc2": {"text": "Imagem da semana: nebulosas, galáxias e enxames de estrelas, da ESA/Hubble.", "from": "Picture of the Week: nebulae, galaxies and star clusters, from ESA/Hubble."},
+ "ss.art.settings": {"text": "Definições da moldura de fotos", "from": "Picture frame settings"},
+ "ss.art.title": {"text": "Moldura de fotos", "from": "Picture frame"},
+ "ss.art.andMore": {"text": "{names} e mais {n}", "from": "{names} and {n} more"},
+ "ss.art.summary": {"text": "{from}. {every}.", "from": "{from}. {every}."},
+ "inputs.noSignal.artDesc2": {"text": "As imagens da moldura de fotos, com «Sem sinal» na legenda de cada uma.", "from": "The picture frame’s pictures, with “No Signal” on each picture’s label."},
+ "inputs.noSignal.artDescTv": {"text": "As imagens da moldura de fotos, com «Sem sinal» na legenda de cada uma. Escolha-as em Definições da moldura de fotos, no separador Proteção de ecrã ou Entradas do painel num navegador.", "from": "The picture frame’s pictures, with “No Signal” on each picture’s label. Pick them in Picture frame settings, on the Screensaver or Inputs tab of the dashboard in a browser."}
 }

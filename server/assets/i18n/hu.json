@@ -3708,7 +3708,6 @@
  "srv.art.folderEmpty": {"text": "nincs benne JPEG-kép", "from": "it holds no JPEG pictures"},
  "ss.art.folders": {"text": "Hálózati mappák", "from": "Network folders"},
  "inputs.noSignal.art": {"text": "Képkeret", "from": "Picture frame"},
- "inputs.noSignal.artDesc": {"text": "A képkeret képei, minden kép feliratán a „Nincs jel” szöveggel. A Képernyővédő lapon választhatja ki őket.", "from": "The picture frame’s pictures, with “No Signal” on each picture’s label. Pick them on the Screensaver tab."},
  "srv.art.foldersFull": {"text": "A képkeret legfeljebb {max} hálózati mappát fogad. Távolítson el egyet, hogy újat adhasson hozzá.", "from": "The picture frame takes up to {max} network folders. Remove one to add another."},
  "srv.art.full": {"text": "A képkeret legfeljebb {max} saját képet tárol. Távolítson el egyet, hogy újat adhasson hozzá.", "from": "The picture frame holds {max} of your pictures. Remove one to add another."},
  "srv.saver.noArt": {"text": "A képkeret képeit kéri, amelyeket csak a Glasshouse saját képernyővédői kapnak meg.", "from": "It asks for the picture frame's pictures, which only Glasshouse's own screen savers are given."},
@@ -3741,5 +3740,11 @@
  "ss.art.groupPhotos": {"text": "Fotográfia", "from": "Photography"},
  "ss.art.groupPaintings": {"text": "Festmények", "from": "Paintings"},
  "ss.art.privacy3": {"text": "A(z) {sources} képei a forrásmegjelöléssel mutathatók, amelyet minden kép felirata tartalmaz, és a képernyőn marad, ahol a licenc ezt kéri. A TV egyenként tölti le őket, és csak az utolsó néhányat és a következő egyet-kettőt tartja meg.", "from": "Pictures from {sources} are free to show with their credit, which each one’s label carries, and stays on screen where its licence asks. The TV fetches them one at a time, and keeps only the last few and the next one or two."},
- "srv.art.hubbleDesc2": {"text": "A hét képe: ködök, galaxisok és csillaghalmazok, az ESA/Hubble-tól.", "from": "Picture of the Week: nebulae, galaxies and star clusters, from ESA/Hubble."}
+ "srv.art.hubbleDesc2": {"text": "A hét képe: ködök, galaxisok és csillaghalmazok, az ESA/Hubble-tól.", "from": "Picture of the Week: nebulae, galaxies and star clusters, from ESA/Hubble."},
+ "ss.art.settings": {"text": "Képkeret beállításai", "from": "Picture frame settings"},
+ "ss.art.title": {"text": "Képkeret", "from": "Picture frame"},
+ "ss.art.andMore": {"text": "{names} és még {n}", "from": "{names} and {n} more"},
+ "ss.art.summary": {"text": "{from}. {every}.", "from": "{from}. {every}."},
+ "inputs.noSignal.artDesc2": {"text": "A képkeret képei, minden kép feliratán a „Nincs jel” szöveggel.", "from": "The picture frame’s pictures, with “No Signal” on each picture’s label."},
+ "inputs.noSignal.artDescTv": {"text": "A képkeret képei, minden kép feliratán a „Nincs jel” szöveggel. A Képkeret beállításaiban választhatja ki őket, a böngészős irányítópult Képernyővédő vagy Bemenetek lapján.", "from": "The picture frame’s pictures, with “No Signal” on each picture’s label. Pick them in Picture frame settings, on the Screensaver or Inputs tab of the dashboard in a browser."}
 }

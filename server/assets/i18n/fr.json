@@ -3694,7 +3694,6 @@
  "srv.art.folderEmpty": {"from": "it holds no JPEG pictures", "text": "il ne contient aucune image JPEG"},
  "ss.art.folders": {"from": "Network folders", "text": "Dossiers réseau"},
  "inputs.noSignal.art": {"from": "Picture frame", "text": "Cadre photo"},
- "inputs.noSignal.artDesc": {"from": "The picture frame’s pictures, with “No Signal” on each picture’s label. Pick them on the Screensaver tab.", "text": "Les images du cadre photo, avec « Aucun signal » sur le cartel de chacune. Choisissez-les dans l’onglet Écran de veille."},
  "srv.art.foldersFull": {"from": "The picture frame takes up to {max} network folders. Remove one to add another.", "text": "Le cadre photo accepte au plus {max} dossiers réseau. Retirez-en un pour en ajouter un autre."},
  "srv.art.full": {"from": "The picture frame holds {max} of your pictures. Remove one to add another.", "text": "Le cadre photo contient au plus {max} de vos images. Retirez-en une pour en ajouter une autre."},
  "srv.saver.noArt": {"from": "It asks for the picture frame's pictures, which only Glasshouse's own screen savers are given.", "text": "Il demande les images du cadre photo, réservées aux écrans de veille de Glasshouse."},
@@ -3727,5 +3726,11 @@
  "ss.art.groupPhotos": {"from": "Photography", "text": "Photographie"},
  "ss.art.groupPaintings": {"from": "Paintings", "text": "Peintures"},
  "ss.art.privacy3": {"from": "Pictures from {sources} are free to show with their credit, which each one’s label carries, and stays on screen where its licence asks. The TV fetches them one at a time, and keeps only the last few and the next one or two.", "text": "Les images de {sources} peuvent être affichées avec leur crédit, que porte le cartel de chacune et qui reste à l’écran là où leur licence le demande. Le téléviseur les récupère une à une et ne garde que les dernières et la ou les deux suivantes."},
- "srv.art.hubbleDesc2": {"from": "Picture of the Week: nebulae, galaxies and star clusters, from ESA/Hubble.", "text": "Image de la semaine : nébuleuses, galaxies et amas d’étoiles, d’ESA/Hubble."}
+ "srv.art.hubbleDesc2": {"from": "Picture of the Week: nebulae, galaxies and star clusters, from ESA/Hubble.", "text": "Image de la semaine : nébuleuses, galaxies et amas d’étoiles, d’ESA/Hubble."},
+ "ss.art.settings": {"from": "Picture frame settings", "text": "Réglages du cadre photo"},
+ "ss.art.title": {"from": "Picture frame", "text": "Cadre photo"},
+ "ss.art.andMore": {"from": "{names} and {n} more", "text": "{names} et {n} autres"},
+ "ss.art.summary": {"from": "{from}. {every}.", "text": "{from}. {every}."},
+ "inputs.noSignal.artDesc2": {"from": "The picture frame’s pictures, with “No Signal” on each picture’s label.", "text": "Les images du cadre photo, avec « Aucun signal » sur le cartel de chacune."},
+ "inputs.noSignal.artDescTv": {"from": "The picture frame’s pictures, with “No Signal” on each picture’s label. Pick them in Picture frame settings, on the Screensaver or Inputs tab of the dashboard in a browser.", "text": "Les images du cadre photo, avec « Aucun signal » sur le cartel de chacune. Choisissez-les dans Réglages du cadre photo, dans l’onglet Écran de veille ou Entrées du tableau de bord dans un navigateur."}
 }

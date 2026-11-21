@@ -3708,7 +3708,6 @@
  "srv.art.folderEmpty": {"text": "non contiene immagini JPEG", "from": "it holds no JPEG pictures"},
  "ss.art.folders": {"text": "Cartelle di rete", "from": "Network folders"},
  "inputs.noSignal.art": {"text": "Cornice digitale", "from": "Picture frame"},
- "inputs.noSignal.artDesc": {"text": "Le immagini della cornice digitale, con «Nessun segnale» sulla didascalia di ciascuna. Sceglile nella scheda Screensaver.", "from": "The picture frame’s pictures, with “No Signal” on each picture’s label. Pick them on the Screensaver tab."},
  "srv.art.foldersFull": {"text": "La cornice digitale accetta fino a {max} cartelle di rete. Rimuovine una per aggiungerne un’altra.", "from": "The picture frame takes up to {max} network folders. Remove one to add another."},
  "srv.art.full": {"text": "La cornice digitale contiene fino a {max} delle tue immagini. Rimuovine una per aggiungerne un’altra.", "from": "The picture frame holds {max} of your pictures. Remove one to add another."},
  "srv.saver.noArt": {"text": "Chiede le immagini della cornice digitale, che ricevono solo i salvaschermo di Glasshouse.", "from": "It asks for the picture frame's pictures, which only Glasshouse's own screen savers are given."},
@@ -3741,5 +3740,11 @@
  "ss.art.groupPhotos": {"text": "Fotografia", "from": "Photography"},
  "ss.art.groupPaintings": {"text": "Dipinti", "from": "Paintings"},
  "ss.art.privacy3": {"text": "Le immagini di {sources} si possono mostrare con il loro credito, che la didascalia di ciascuna riporta e che resta sullo schermo dove la licenza lo chiede. La TV le scarica una alla volta e conserva solo le ultime e la prossima o le prossime due.", "from": "Pictures from {sources} are free to show with their credit, which each one’s label carries, and stays on screen where its licence asks. The TV fetches them one at a time, and keeps only the last few and the next one or two."},
- "srv.art.hubbleDesc2": {"text": "Immagine della settimana: nebulose, galassie e ammassi stellari, da ESA/Hubble.", "from": "Picture of the Week: nebulae, galaxies and star clusters, from ESA/Hubble."}
+ "srv.art.hubbleDesc2": {"text": "Immagine della settimana: nebulose, galassie e ammassi stellari, da ESA/Hubble.", "from": "Picture of the Week: nebulae, galaxies and star clusters, from ESA/Hubble."},
+ "ss.art.settings": {"text": "Impostazioni della cornice digitale", "from": "Picture frame settings"},
+ "ss.art.title": {"text": "Cornice digitale", "from": "Picture frame"},
+ "ss.art.andMore": {"text": "{names} e altri {n}", "from": "{names} and {n} more"},
+ "ss.art.summary": {"text": "{from}. {every}.", "from": "{from}. {every}."},
+ "inputs.noSignal.artDesc2": {"text": "Le immagini della cornice digitale, con «Nessun segnale» sulla didascalia di ciascuna.", "from": "The picture frame’s pictures, with “No Signal” on each picture’s label."},
+ "inputs.noSignal.artDescTv": {"text": "Le immagini della cornice digitale, con «Nessun segnale» sulla didascalia di ciascuna. Sceglile in Impostazioni della cornice digitale, nella scheda Screensaver o Ingressi della dashboard nel browser.", "from": "The picture frame’s pictures, with “No Signal” on each picture’s label. Pick them in Picture frame settings, on the Screensaver or Inputs tab of the dashboard in a browser."}
 }

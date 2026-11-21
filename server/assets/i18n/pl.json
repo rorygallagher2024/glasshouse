@@ -3712,7 +3712,6 @@
  "srv.art.folderEmpty": {"text": "nie zawiera obrazów JPEG", "from": "it holds no JPEG pictures"},
  "ss.art.folders": {"text": "Foldery sieciowe", "from": "Network folders"},
  "inputs.noSignal.art": {"text": "Ramka na zdjęcia", "from": "Picture frame"},
- "inputs.noSignal.artDesc": {"text": "Obrazy z ramki na zdjęcia, z napisem „Brak sygnału” na podpisie każdego. Wybierz je na karcie Wygaszacz.", "from": "The picture frame’s pictures, with “No Signal” on each picture’s label. Pick them on the Screensaver tab."},
  "srv.art.foldersFull": {"text": "Ramka na zdjęcia obsługuje do {max} folderów sieciowych. Usuń jeden, aby dodać kolejny.", "from": "The picture frame takes up to {max} network folders. Remove one to add another."},
  "srv.art.full": {"text": "Ramka na zdjęcia mieści {max} twoich zdjęć. Usuń jedno, aby dodać kolejne.", "from": "The picture frame holds {max} of your pictures. Remove one to add another."},
  "srv.saver.noArt": {"text": "Prosi o obrazy z ramki na zdjęcia, które otrzymują tylko wygaszacze Glasshouse.", "from": "It asks for the picture frame's pictures, which only Glasshouse's own screen savers are given."},
@@ -3745,5 +3744,11 @@
  "ss.art.groupPhotos": {"text": "Fotografia", "from": "Photography"},
  "ss.art.groupPaintings": {"text": "Obrazy", "from": "Paintings"},
  "ss.art.privacy3": {"text": "Obrazy z: {sources} można pokazywać z podpisem autorstwa, który zawiera podpis każdego z nich i który zostaje na ekranie, gdy wymaga tego licencja. Telewizor pobiera je pojedynczo i przechowuje tylko kilka ostatnich oraz jeden lub dwa następne.", "from": "Pictures from {sources} are free to show with their credit, which each one’s label carries, and stays on screen where its licence asks. The TV fetches them one at a time, and keeps only the last few and the next one or two."},
- "srv.art.hubbleDesc2": {"text": "Zdjęcie tygodnia: mgławice, galaktyki i gromady gwiazd, od ESA/Hubble.", "from": "Picture of the Week: nebulae, galaxies and star clusters, from ESA/Hubble."}
+ "srv.art.hubbleDesc2": {"text": "Zdjęcie tygodnia: mgławice, galaktyki i gromady gwiazd, od ESA/Hubble.", "from": "Picture of the Week: nebulae, galaxies and star clusters, from ESA/Hubble."},
+ "ss.art.settings": {"text": "Ustawienia ramki na zdjęcia", "from": "Picture frame settings"},
+ "ss.art.title": {"text": "Ramka na zdjęcia", "from": "Picture frame"},
+ "ss.art.andMore": {"text": "{names} i jeszcze {n}", "from": "{names} and {n} more"},
+ "ss.art.summary": {"text": "{from}. {every}.", "from": "{from}. {every}."},
+ "inputs.noSignal.artDesc2": {"text": "Obrazy z ramki na zdjęcia, z napisem „Brak sygnału” na podpisie każdego.", "from": "The picture frame’s pictures, with “No Signal” on each picture’s label."},
+ "inputs.noSignal.artDescTv": {"text": "Obrazy z ramki na zdjęcia, z napisem „Brak sygnału” na podpisie każdego. Wybierz je w Ustawieniach ramki na zdjęcia, na karcie Wygaszacz lub Wejścia panelu w przeglądarce.", "from": "The picture frame’s pictures, with “No Signal” on each picture’s label. Pick them in Picture frame settings, on the Screensaver or Inputs tab of the dashboard in a browser."}
 }

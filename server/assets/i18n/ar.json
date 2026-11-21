@@ -3694,7 +3694,6 @@
  "srv.art.folderEmpty": {"text": "لا يحتوي على صور JPEG", "from": "it holds no JPEG pictures"},
  "ss.art.folders": {"text": "مجلدات الشبكة", "from": "Network folders"},
  "inputs.noSignal.art": {"text": "إطار الصور", "from": "Picture frame"},
- "inputs.noSignal.artDesc": {"text": "صور إطار الصور، مع «لا توجد إشارة» على بطاقة كل صورة. اخترها في تبويب شاشة التوقف.", "from": "The picture frame’s pictures, with “No Signal” on each picture’s label. Pick them on the Screensaver tab."},
  "srv.art.foldersFull": {"text": "يقبل إطار الصور حتى {max} من مجلدات الشبكة. أزل مجلدًا لإضافة آخر.", "from": "The picture frame takes up to {max} network folders. Remove one to add another."},
  "srv.art.full": {"text": "يتسع إطار الصور لـ {max} من صورك. أزل واحدة لإضافة أخرى.", "from": "The picture frame holds {max} of your pictures. Remove one to add another."},
  "srv.saver.noArt": {"text": "يطلب صور إطار الصور، التي لا تُعطى إلا لشاشات توقف Glasshouse الخاصة.", "from": "It asks for the picture frame's pictures, which only Glasshouse's own screen savers are given."},
@@ -3727,5 +3726,11 @@
  "ss.art.groupPhotos": {"text": "التصوير", "from": "Photography"},
  "ss.art.groupPaintings": {"text": "لوحات", "from": "Paintings"},
  "ss.art.privacy3": {"text": "الصور من {sources} مسموح بعرضها مع نسبتها، التي تحملها بطاقة كل صورة، وتبقى على الشاشة حيث تطلب رخصتها ذلك. يجلبها التلفاز واحدة تلو الأخرى، ولا يحتفظ إلا بآخر بضع صور والتالية أو التاليتين.", "from": "Pictures from {sources} are free to show with their credit, which each one’s label carries, and stays on screen where its licence asks. The TV fetches them one at a time, and keeps only the last few and the next one or two."},
- "srv.art.hubbleDesc2": {"text": "صورة الأسبوع: سُدم ومجرات وعناقيد نجمية، من ESA/Hubble.", "from": "Picture of the Week: nebulae, galaxies and star clusters, from ESA/Hubble."}
+ "srv.art.hubbleDesc2": {"text": "صورة الأسبوع: سُدم ومجرات وعناقيد نجمية، من ESA/Hubble.", "from": "Picture of the Week: nebulae, galaxies and star clusters, from ESA/Hubble."},
+ "ss.art.settings": {"text": "إعدادات إطار الصور", "from": "Picture frame settings"},
+ "ss.art.title": {"text": "إطار الصور", "from": "Picture frame"},
+ "ss.art.andMore": {"text": "{names} و{n} أخرى", "from": "{names} and {n} more"},
+ "ss.art.summary": {"text": "{from}. {every}.", "from": "{from}. {every}."},
+ "inputs.noSignal.artDesc2": {"text": "صور إطار الصور، مع «لا توجد إشارة» على بطاقة كل صورة.", "from": "The picture frame’s pictures, with “No Signal” on each picture’s label."},
+ "inputs.noSignal.artDescTv": {"text": "صور إطار الصور، مع «لا توجد إشارة» على بطاقة كل صورة. اخترها في إعدادات إطار الصور، في تبويب شاشة التوقف أو المداخل في لوحة التحكم على المتصفح.", "from": "The picture frame’s pictures, with “No Signal” on each picture’s label. Pick them in Picture frame settings, on the Screensaver or Inputs tab of the dashboard in a browser."}
 }
