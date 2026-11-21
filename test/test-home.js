@@ -3612,6 +3612,36 @@ step('the weather Home Assistant pushes is kept across a restart, capped, hidden
   });
 });
 
+step('the info lines Home Assistant pushes are capped, kept across a restart and cleared by an empty push', function (done) {
+  start(null);
+  home.setHomeInfo('not json');
+  home.setHomeInfo('{"label":"one"}');
+  assert.deepEqual(home.beat().info, [], 'nothing shown from a push that is not a list');
+  var long = new Array(60).join('x');
+  home.setHomeInfo(JSON.stringify([
+    { icon: 'mdi:trash-can', label: '  Bin   1 ', value: 'in 4 days' },
+    { icon: 'mail', label: long, value: 2 },
+    { label: '', value: '' },
+    { label: 'c' }, { label: 'd' }, { label: 'e' }
+  ]));
+  var lines = home.beat().info;
+  assert.strictEqual(lines.length, 4, 'four at most, empty ones left out');
+  assert.deepEqual(lines[0], { icon: 'trash-can', label: 'Bin 1', value: 'in 4 days' }, 'mdi: dropped, spaces folded');
+  assert.strictEqual(lines[1].label.length, 32, 'labels capped');
+  assert.strictEqual(lines[1].value, '2', 'a number shown as text');
+  home.init(lastInit);
+  home.info(function (r) {
+    assert.strictEqual(r.lines.length, 4, 'kept across a restart');
+    home.setHomeInfo('{"items":[{"label":"Post","value":"Friday"}]}');
+    assert.deepEqual(home.beat().info, [{ icon: '', label: 'Post', value: 'Friday' }], 'a list under items is read too');
+    home.setHomeInfo('');
+    assert.deepEqual(home.beat().info, [], 'an empty push clears them');
+    home.init(lastInit);
+    assert.deepEqual(home.beat().info, [], 'and they stay cleared after a restart');
+    done();
+  });
+});
+
 step('a Weather switch saved off before the source choice stays off', function (done) {
   start({ enabled: false, showWeather: false });
   assert.strictEqual(home.layout().weather, 'off');

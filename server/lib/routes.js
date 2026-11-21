@@ -1330,6 +1330,7 @@ function handleHomeRoute(req, res, u, pathname) {
     // Glasshouse Bar's page, as it opens: whether LG's Home is drawn under it, to be covered.
     if (pathname === '/api/home/bar-open') return reply({ ok: true, lgHomeUnder: homeModule.barOpened() });
     if (pathname === '/api/home/weather') return homeModule.weather(reply);
+    if (pathname === '/api/home/info') return homeModule.info(reply);
     if (pathname === '/api/home/weather/places') {
       return homeModule.weatherPlaces(String(u.query && u.query.q || ''), String(u.query && u.query.lang || ''), reply);
     }

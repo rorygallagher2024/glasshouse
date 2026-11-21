@@ -1939,6 +1939,67 @@ function setWeather(raw) {
   }
 }
 
+/*
+ * Lines from Home Assistant under the clock: text.lg_tv_home_info's command
+ * topic, dispatched by tvweb.js. The payload is a JSON list an automation
+ * sends, each line an icon, a label and a value:
+ *   [{"icon":"trash","label":"Bin 1","value":"in 4 days"}]
+ * Shown until the next push; an empty push, or [], takes them away. A push
+ * that is not such a list is dropped and leaves the lines as they were.
+ */
+var HOME_INFO_MAX = 4;
+var HOME_INFO_LABEL_MAX = 32;
+var HOME_INFO_VALUE_MAX = 40;
+var homeInfo = [];
+
+function homeInfoFile() { return path.join(stateDir, 'home-info.json'); }
+
+function homeInfoText(v, max) {
+  if (typeof v === 'number' && isFinite(v)) v = String(v);
+  if (typeof v !== 'string') return '';
+  return v.replace(/\s+/g, ' ').trim().slice(0, max);
+}
+
+// "mdi:trash-can" and "trash-can" alike: the view draws the names it knows.
+function homeInfoIcon(v) {
+  if (typeof v !== 'string') return '';
+  return v.replace(/^mdi:/, '').toLowerCase().replace(/[^a-z0-9-]/g, '').slice(0, 40);
+}
+
+function setHomeInfo(raw) {
+  var text = String(raw == null ? '' : raw).trim();
+  var parsed = null;
+  if (text) {
+    try { parsed = JSON.parse(text); } catch (e) { return; }
+    if (parsed && !isArray(parsed) && isArray(parsed.items)) parsed = parsed.items;
+    if (!isArray(parsed)) return;
+  }
+  var lines = [];
+  (parsed || []).forEach(function (item) {
+    if (lines.length >= HOME_INFO_MAX || !item || typeof item !== 'object') return;
+    var line = { icon: homeInfoIcon(item.icon), label: homeInfoText(item.label, HOME_INFO_LABEL_MAX),
+                 value: homeInfoText(item.value, HOME_INFO_VALUE_MAX) };
+    if (line.label || line.value) lines.push(line);
+  });
+  homeInfo = lines;
+  try {
+    if (lines.length) writeJsonAtomic(homeInfoFile(), lines, 384);
+    else fs.unlinkSync(homeInfoFile());
+  } catch (e) {
+    if (lines.length) console.error('home: could not keep the info lines: ' + e.message);
+  }
+}
+
+function loadHomeInfo() {
+  var lines = null;
+  try { lines = JSON.parse(fs.readFileSync(homeInfoFile(), 'utf8')); } catch (e) {}
+  homeInfo = isArray(lines) ? lines.slice(0, HOME_INFO_MAX) : [];
+}
+
+function info(cb) {
+  cb({ ok: true, lines: homeInfo });
+}
+
 function loadWeather() {
   var w = null;
   try { w = JSON.parse(fs.readFileSync(weatherFile(), 'utf8')); } catch (e) {}
@@ -3236,7 +3297,7 @@ function beat(body) {
            build: buildId, wallpapers: wallpapers.status(),
            layoutVersion: layoutVersion(), sleeps: sleeps, trace: fs.existsSync(traceFile()),
            // So a push shows within a heartbeat rather than at the next poll.
-           weather: currentWeather(), remoteBattery: remoteBatteryBadge() };
+           weather: currentWeather(), remoteBattery: remoteBatteryBadge(), info: homeInfo };
 }
 
 /*
@@ -3852,6 +3913,7 @@ function init(opts) {
   buildId = opts.build || '';
   nowMs = opts.now || Date.now;
   loadWeather();
+  loadHomeInfo();
   weatherModule = opts.weather || null;
   loadInternetWeather();
   config = null;
@@ -4124,6 +4186,8 @@ module.exports = {
   guide: guide,
   now: now,
   setWeather: setWeather,
+  setHomeInfo: setHomeInfo,
+  info: info,
   weatherPlaces: weatherPlaces,
   weather: weather,
   open: open,

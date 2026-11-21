@@ -376,6 +376,31 @@ action:
 
 The temperature is shown as sent, in the unit the weather entity uses. `city` is optional.
 
+### 7. Your own lines on Glasshouse Home
+Glasshouse Home shows up to four lines of your own beside the clock, each an icon, a label and a value ([Home tab](dashboard/home.md#lines-from-home-assistant)). This sends the next bin collection and the next post delivery whenever one changes and when Home Assistant starts. The list goes straight to the command topic, as `text.set_value` takes 255 characters at most. They stay until the next push; an empty payload takes them away.
+
+```yaml
+alias: "Lines on Glasshouse Home"
+trigger:
+  - platform: state
+    entity_id:
+      - sensor.bin_collection
+      - sensor.post_delivery
+  - platform: homeassistant
+    event: start
+action:
+  - action: mqtt.publish
+    data:
+      topic: lgtv/command/homeInfo
+      payload: >-
+        {{ [
+          {'icon': 'mdi:trash-can', 'label': 'Bin',
+           'value': 'in ' ~ state_attr('sensor.bin_collection', 'days') ~ ' days'},
+          {'icon': 'mdi:mailbox', 'label': 'Post',
+           'value': 'in ' ~ states('sensor.post_delivery') ~ ' days'}
+        ] | to_json }}
+```
+
 ---
 
 ## Universal Media Player Setup

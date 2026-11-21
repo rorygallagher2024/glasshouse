@@ -2063,6 +2063,12 @@ function setupHomeAssistant() {
       return;
     }
 
+    // Lines under Glasshouse Home's clock, kept like the weather.
+    if (action === 'homeInfo') {
+      if (glasshouseHome) glasshouseHome.setHomeInfo(val);
+      return;
+    }
+
     if (action === 'toast') {
       doControl('toast', val, function() {});
       return;

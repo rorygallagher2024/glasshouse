@@ -87,6 +87,12 @@ Preview cards at the top of the **Home** tab switch between five launcher option
 
     Displays current temperature, condition icon, and location level with the clock, sourced from Home Assistant or Open-Meteo. See [Weather badge](#weather-badge).
 
+-   **Lines from Home Assistant**
+
+    ---
+
+    Up to four short lines beside the clock, each an icon, a label and a value sent from Home Assistant: the next bin collection, the post, a share price. See [Lines from Home Assistant](#lines-from-home-assistant).
+
 -   **Badges & labels**
 
     ---
@@ -552,6 +558,12 @@ The weather badge displays the current temperature and an icon level with the cl
 * **Off:** Disables the badge completely.
 
 The badge appears once data is received, is kept when the TV restarts, and is hidden once 3 hours pass without an update (or when an empty value is sent from Home Assistant).
+
+### Lines from Home Assistant
+
+Up to four lines of your own after the weather, or before the clock in the Alternative View: each an icon, a label and a value, such as *Bin 1 · in 4 days* or *PostNord · Friday*. They show whatever was last written to the `text.lg_tv_home_info` entity, a JSON list such as `[{"icon":"trash-can","label":"Bin 1","value":"in 4 days"}]` ([entities](../HOME-ASSISTANT-ENTITIES.md)), and stay, across a restart too, until the next one. An empty value or `[]` takes them away. An automation keeps them current ([example automation](../HOME-ASSISTANT.md#7-your-own-lines-on-glasshouse-home)).
+
+The icon is a [Material Design Icons](https://pictogrammers.com/library/mdi/) name, with or without `mdi:`. Glasshouse Home draws its own outline for names starting with trash, delete, recycle, mail, email, post, chart, trending, finance, cash, car, flash, lightning, power, battery, calendar, thermometer, home, package and truck, and a dot for any other. A line without an icon has none.
 
 ### Remote battery
 
