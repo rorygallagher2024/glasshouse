@@ -2096,6 +2096,10 @@ function setupHomeAssistant() {
       });
       return;
     }
+    if (action === 'askClose') {
+      askQuestion.close(val);
+      return;
+    }
 
     // notify/<type>, the text optionally opening with ":icon:".
     if (action === 'notify' || action.indexOf('notify/') === 0) {

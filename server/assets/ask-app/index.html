@@ -40,8 +40,10 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
 /*
  * A question from Home Assistant (lib/ask.js) over the picture, with a button
  * for each answer. Left and Right move, OK answers, Back dismisses, and it
- * closes itself when its time runs out. The pointer works too. Strict ES5:
- * the TV's own browser runs it.
+ * closes itself when its time runs out. The pointer works too. It asks the
+ * server every second whether its question still stands, and closes when it
+ * was answered elsewhere or replaced by another. Strict ES5: the TV's own
+ * browser runs it.
  *
  * The question is read from the server and the answer handed back with GETs:
  * the server refuses POSTs from this page's file:// origin. With the server
@@ -52,7 +54,8 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
   var PORT = 8080;                // tvweb:port
   var BASE = 'http://localhost:' + PORT;
   var KEY = { left: 37, up: 38, right: 39, down: 40, ok: 13, back: 461, backspace: 8 };
-  var q = null, focus = 0, deadline = 0, tick = null, closing = false, answered = false;
+  var CHECK_MS = 1000;
+  var q = null, focus = 0, deadline = 0, tick = null, check = null, closing = false, answered = false;
 
   function $(id) { return document.getElementById(id); }
   function esc(s) {
@@ -73,6 +76,7 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
     if (closing) return;
     closing = true;
     clearInterval(tick);
+    clearInterval(check);
     document.body.className = '';
     setTimeout(function () { window.close(); }, 160);
   }
@@ -118,6 +122,17 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
     tick = setInterval(countdown, 250);
     countdown();
     document.body.className = 'on';
+    clearInterval(check);
+    check = setInterval(stillAsked, CHECK_MS);
+  }
+  // Answered on a phone, or another question in its place.
+  function stillAsked() {
+    if (answered || closing) return;
+    getJson(BASE + '/api/ask/current', function (j) {
+      if (answered || closing || !j) return;
+      if (!j.question) return close();
+      if (j.question.seq !== q.seq) show(j.question);
+    });
   }
   function load() {
     getJson(BASE + '/api/ask/current', function (j) {

@@ -379,7 +379,9 @@ The temperature is shown as sent, in the unit the weather entity uses. `city` is
 ### 7. Ask a question on the TV
 `<topicPrefix>/command/ask` shows a question over the picture with a button for each answer, chosen with the remote's arrows and OK or with the pointer. Back dismisses it, and it goes away by itself after `timeout` seconds (30 unless given, at most 600). The question's app is put on the TV the first time one is asked, which takes a few seconds; after that it opens at once.
 
-The answer fires `event.lg_tv_question_answer`: its event type is `answer` with the chosen option's `id` in its `choice` attribute, or `dismissed`, `timeout`, `replaced` (another question came first) or `failed` (the TV would not show it). Its `id` attribute is the question's, so one automation can tell its own question from another's. Up to four options; without any, the buttons are Yes and No (`yes`, `no`). `focus` picks the option focused at first, counted from 0.
+The answer fires `event.lg_tv_question_answer`: its event type is `answer` with the chosen option's `id` in its `choice` attribute, or `dismissed`, `timeout`, `replaced` (another question came first), `closed` or `failed` (the TV would not show it). Its `id` attribute is the question's, so one automation can tell its own question from another's. Up to four options; without any, the buttons are Yes and No (`yes`, `no`). `focus` picks the option focused at first, counted from 0.
+
+Sending the question's `id` to `<topicPrefix>/command/askClose` takes it off the screen, with `closed`, as when the same question was answered in a phone notification. An empty payload closes whichever question is up.
 
 ```yaml
 alias: "Cinema lights?"

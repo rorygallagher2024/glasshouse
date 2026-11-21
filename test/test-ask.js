@@ -95,6 +95,16 @@ timers.shift().fn();
 assert.deepEqual(events, [{ event_type: 'timeout', id: 'lost' }]);
 console.log('  ✓ a question left alone times out, from the page or the server');
 
+// Taken away from elsewhere, as when answered on a phone.
+events = [];
+ask.ask({ id: 'phone', title: 'Phone' });
+assert.strictEqual(ask.close('other'), false, 'another question\'s id leaves it');
+assert.strictEqual(ask.close('phone'), true);
+assert.deepEqual(events, [{ event_type: 'closed', id: 'phone' }]);
+assert.strictEqual(ask.current(), null);
+assert.strictEqual(ask.close(''), false);
+console.log('  ✓ askClose takes the question away and the page closes');
+
 // A launch the TV refuses ends the question as failed.
 events = [];
 refuseLaunch = true;

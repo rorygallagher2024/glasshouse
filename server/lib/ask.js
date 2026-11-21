@@ -11,7 +11,10 @@
  * over the picture with a button for each option. The answer goes back on
  * <prefix>/events/ask, the event entity's topic: event_type "answer" with the
  * option's id in "choice", "dismissed" for Back, "timeout" when left alone,
- * or "replaced" when another question came before it was answered.
+ * "replaced" when another question came before it was answered, or "closed"
+ * when <prefix>/command/askClose took it away, as when it was answered
+ * elsewhere. The page asks every second whether its question still stands,
+ * and closes when it does not.
  *
  * The page cannot POST to the server (its file:// origin is refused), so it
  * reads the question and hands back the answer with GETs, which routes.js
@@ -144,6 +147,14 @@ function ask(raw, cb) {
   });
 }
 
+// Takes the question away, as when it was answered on a phone: id, where
+// given, must be the question's. The page closes at its next look.
+function close(id) {
+  id = trimmed(id, MAX_LABEL);
+  if (!pending || (id && id !== pending.id)) return false;
+  return finish('closed');
+}
+
 // What the page shows: the question waiting, or null.
 function current() {
   if (!pending) return null;
@@ -186,11 +197,12 @@ function forgetInstalled() {
 
 module.exports = {
   APP: APP,
-  EVENT_TYPES: ['answer', 'dismissed', 'timeout', 'replaced', 'failed'],
+  EVENT_TYPES: ['answer', 'dismissed', 'timeout', 'replaced', 'closed', 'failed'],
   init: init,
   parse: parse,
   ask: ask,
   current: current,
   answer: answer,
+  close: close,
   forgetInstalled: forgetInstalled
 };
