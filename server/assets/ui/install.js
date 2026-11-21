@@ -11,22 +11,28 @@ let uploading = false;
 const INSTALL_BUSY = { downloading: 1, verifying: 1, installing: 1, elevating: 1 };
 
 let catalogAgain = false;
+let catalogSeq = 0;
 async function loadCatalog(force) {
   // Asked again while a load is out: once more after it, so a change made
   // meanwhile is not lost with the dropped request.
   if (catalogLoading) { catalogAgain = true; return; }
   catalogLoading = true;
+  const seq = ++catalogSeq;
   try {
     const r = await fetch(api('/api/apps/catalog' + (force ? '?force=1' : '')), { cache: 'no-store' });
     const d = await r.json().catch(() => ({}));
-    catalogData = d;
-    if (!r.ok && d.error) showErr(d.error);
+    if (seq !== catalogSeq) {
+      catalogAgain = true;
+    } else {
+      catalogData = d;
+      if (!r.ok && d.error) showErr(d.error);
+    }
   } catch (e) {
-    catalogData = { ok: false, apps: [], error: e.message };
+    if (seq === catalogSeq) catalogData = { ok: false, apps: [], error: e.message };
   } finally {
     catalogLoading = false;
   }
-  renderCatalog();
+  if (seq === catalogSeq) renderCatalog();
   if (catalogAgain) { catalogAgain = false; loadCatalog(); }
 }
 
@@ -67,6 +73,16 @@ function appCategory(a) {
   return 'utility';
 }
 
+function appCategoryLabel(cat) {
+  switch (cat) {
+    case 'multimedia': return t('apps.cat.media', 'Media');
+    case 'game': return t('apps.cat.games', 'Games');
+    case 'amblight': return t('apps.cat.amblight', 'Ambilight');
+    case 'screensaver': return t('apps.cat.screensavers', 'Screensavers');
+    default: return t('apps.cat.utilities', 'Utilities');
+  }
+}
+
 function setCatalogCategory(cat) {
   catalogCategory = cat;
   const container = q('catalog-categories');
@@ -92,7 +108,7 @@ function matchesSearch(a, term) {
  * waiting for its preview, failed or flashing its outcome is always shown,
  * so its progress or error is not hidden with it.
  */
-const CATALOG_PAGE = 10;
+const CATALOG_PAGE = 12;
 const catalogShown = { main: { limit: CATALOG_PAGE, key: '' }, others: { limit: CATALOG_PAGE, key: '' } };
 
 function pagedRows(which, key, apps, row) {
@@ -107,7 +123,7 @@ function pagedRows(which, key, apps, row) {
       <span class="sub">${esc(t('apps.install.shownOf', '{shown} of {total}', { shown: visible.length, total: apps.length }))}</span>
       <button type="button" class="pill idle" onclick="showMoreCatalog('${which}')">${esc(t('apps.install.showMore', 'Show {n} more', { n: Math.min(CATALOG_PAGE, more) }))}</button>
     </div>` : '';
-  return visible.map(row).join('') + footer;
+  return `<div class="catalog-grid">${visible.map(row).join('')}</div>` + footer;
 }
 
 function showMoreCatalog(which) {
@@ -161,31 +177,39 @@ function catalogRow(a, writable, from) {
   // this one, so it is offered as not installed; the preview asks before
   // replacing the store's copy.
   else { label = t('apps.install.button', 'Install'); cls = 'good'; }
+  const titleText = a.title || a.id || '?';
+  const monogram = esc(String(titleText).trim().charAt(0).toUpperCase() || '?');
   const icon = a.iconUri
-    ? `<img src="${esc(a.iconUri)}" width="38" height="38" loading="lazy" referrerpolicy="no-referrer" alt="" style="border-radius:8px;object-fit:contain;background:var(--w06);flex-shrink:0" onerror="this.style.visibility='hidden'">`
-    : '<span style="width:38px;height:38px;flex-shrink:0"></span>';
-  const meta = [a.version ? 'v' + a.version : '', from ? from(a) : '',
-    a.state === 'update' && a.installedVersion ? t('apps.install.have', 'installed: v{version}', { version: a.installedVersion }) : ''
-  ].filter(Boolean).join(' · ');
-  const sizeBadge = (a.size && typeof fmtSize === 'function') ? fmtSize(a.size) : '';
-  const root = a.rootRequired ? ` <span class="pill warn" style="padding:1px 8px">${esc(t('apps.install.rootBadge', 'root'))}</span>` : '';
+    ? `<span class="catalog-card-ico-wrap"><span class="catalog-card-monogram" aria-hidden="true">${monogram}</span><img class="catalog-card-ico" src="${esc(a.iconUri)}" width="46" height="46" loading="lazy" referrerpolicy="no-referrer" alt="" onerror="this.style.display='none'"></span>`
+    : `<span class="catalog-card-ico-wrap"><span class="catalog-card-monogram" aria-hidden="true">${monogram}</span></span>`;
+  const meta = [a.version ? 'v' + a.version : '', from ? from(a) : ''].filter(Boolean).join(' · ');
+  const sizeBadge = (a.size && typeof fmtSize === 'function') ? `<span class="app-badge" title="${esc(t('apps.installed.storageTooltip', 'Storage footprint'))}">${esc(fmtSize(a.size))}</span>` : '';
+  const stateBadge = a.state === 'update'
+    ? `<span class="app-badge catalog-badge-warn">${esc(a.installedVersion ? t('apps.install.have', 'installed: v{version}', { version: a.installedVersion }) : t('apps.install.update', 'Update'))}</span>`
+    : a.state === 'installed' ? `<span class="app-badge catalog-badge-good">${esc(t('apps.install.installed', 'Installed'))}</span>`
+    : a.state === 'hbc' ? `<span class="app-badge">${esc(t('apps.install.hbcBadge', 'Homebrew Channel'))}</span>` : '';
+  const root = a.rootRequired ? `<span class="app-badge catalog-badge-warn">${esc(t('apps.install.rootBadge', 'root'))}</span>` : '';
+  const catPill = `<span class="catalog-pill">${esc(appCategoryLabel(appCategory(a)))}</span>`;
+  const launchBtn = a.installedVersion !== null && a.installedVersion !== undefined && a.state !== 'store' && !uninstalling[a.id]
+    ? `<button type="button" class="pill good" onclick="sendCommand('launchApp','${jsq(a.id)}')" ${writable ? '' : 'disabled'}>${esc(t('apps.launch.button', 'Launch'))}</button>` : '';
   const clickFn = isInstalled
     ? `confirmUninstall('${jsq(a.id)}', '${jsq(a.title || a.id)}');`
     : `startInstall('${jsq(a.id)}', '${jsq(a.repo || '')}');`;
-  return `<div class="prot-row">
-    ${icon}
-    <div class="prot-main">
-      <div class="prot-title">${esc(a.title || a.id)}${root}${meta ? ` <span class="prot-sub">&middot; ${esc(meta)}</span>` : ''}</div>
-      <div class="prot-desc">${esc(a.description || a.id)}</div>
-      ${rowErrorNote(a.id)}
-    </div>
-    <div class="prot-status">
-      ${sizeBadge ? `<span class="app-badge" title="${esc(t('apps.installed.storageTooltip', 'Storage footprint'))}">${esc(sizeBadge)}</span>` : ''}
-      ${a.installedVersion !== null && a.installedVersion !== undefined && a.state !== 'store' && !uninstalling[a.id] ? `<button type="button" class="pill good" onclick="sendCommand('launchApp','${jsq(a.id)}')" ${writable ? '' : 'disabled'}>${esc(t('apps.launch.button', 'Launch'))}</button>` : ''}
-      <div class="catalog-actions">
-        ${a.sourceUrl ? `<a class="pill idle catalog-source" href="${esc(a.sourceUrl)}" target="_blank" rel="noopener noreferrer">${esc(t('apps.install.viewSource', 'View source'))}</a>` : ''}
-        <button type="button" class="pill ${cls}" data-app="${esc(a.id)}" data-repo="${esc(a.repo || '')}" onclick="${clickFn}"${fill} ${off ? 'disabled' : ''}>${esc(label)}</button>
+  return `<div class="catalog-card${a.state === 'installed' ? ' is-installed' : a.state === 'update' ? ' has-update' : ''}">
+    <div class="catalog-card-head">
+      ${icon}
+      <div class="catalog-card-main">
+        <div class="catalog-card-title">${esc(titleText)}</div>
+        ${meta ? `<div class="catalog-card-meta">${esc(meta)}</div>` : ''}
       </div>
+    </div>
+    <div class="catalog-card-badges">${catPill}${stateBadge}${root}${sizeBadge}</div>
+    <div class="catalog-card-desc">${esc(a.description || a.id)}</div>
+    ${rowErrorNote(a.id)}
+    <div class="prot-status">
+      ${launchBtn}
+      ${a.sourceUrl ? `<a class="pill idle catalog-source" href="${esc(a.sourceUrl)}" target="_blank" rel="noopener noreferrer">${esc(t('apps.install.viewSource', 'View source'))}</a>` : ''}
+      <button type="button" class="pill ${cls}" data-app="${esc(a.id)}" data-repo="${esc(a.repo || '')}" onclick="${clickFn}"${fill} ${off ? 'disabled' : ''}>${esc(label)}</button>
     </div>
   </div>`;
 }
@@ -265,6 +289,7 @@ function rowFlashing(id) {
 // The catalog's own copy says what the TV now has, before the reload confirms
 // it, in every list the app is in.
 function setCatalogState(id, version) {
+  catalogSeq++;
   if (!catalogData) return;
   (catalogData.apps || []).concat(catalogData.others || []).forEach(a => {
     if (a.id !== id || a.state === 'hbc') return;

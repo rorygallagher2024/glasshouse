@@ -43,8 +43,9 @@ audio, or in the TV app.
 
 Whether a soundbar or receiver is connected over HDMI ARC or eARC, and which
 audio formats the TV and the receiver say they support: useful when Dolby Atmos
-or DTS doesn't come through. On the web tab it is folded under Sound; the TV
-app lists it below Sound.
+or DTS doesn't come through. On the web tab, the live audio signal path sits at
+the top above Sound while the format support table and DTS status fold below
+Sound; the TV app lists it all below Sound.
 The audio coming in, where the TV sends it, and the return channel it has
 negotiated with the receiver (ARC, eARC or none). The negotiated link is
 separate from the eARC setting.

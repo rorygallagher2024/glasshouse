@@ -54,6 +54,13 @@ once at start (about 170 KB). It goes out with `Cache-Control: no-cache` and an
 ETag hashed from the page, so a browser keeps it and asks each time, and an
 unchanged page comes back as a 304 with no body. The ETag comes from the content
 rather than the version: a deploy of uncommitted changes keeps the version.
+Text assets under `/assets/` (HTML, CSS, JavaScript, JSON and SVG) are cached
+in memory when first read, and go out gzipped to a browser elsewhere on the
+network that accepts it: a translation file of 450 to 540 KB is 120 to 135 KB.
+The compressed copy is made when a request from the network first asks for it
+and then kept beside the file. The TV's own pages get them as they are: over
+loopback fewer bytes save nothing, and `gzipSync` holds the server's thread,
+126 to 161 ms for a translation file on a B8 (webOS 4.4.3, node 0.12.2).
 
 ### What it costs the TV
 
@@ -198,6 +205,31 @@ its own, `lib/iptv-worker.js` with its readers in `lib/iptv-parse.js`:
   its key; two whose links differ only in a token, both rotated, are not
   guessed. A key gone after a refresh is matched again only to the one entry
   with its name and group, else shown as gone.
+- **Enigma2 tuner.** A tuner is a playlist kind (`enigma2`) read through
+  its OpenWebif: `/api/getservices` lists the bouquets (references starting
+  `1:7:`), and each bouquet's `/web/services.m3u` is read as an M3U feed, so a
+  channel's key is the SHA-1 carry of its stream URL and its `tvg-id` is the
+  service reference the guide is matched on. Markers (`1:64:`) are dropped.
+  Picons come from the same host and are the only logos fetched with the
+  tuner's login (Basic, passed to curl through its config on stdin, never in
+  the command line). The guide is `/api/epgmulti` per bouquet that holds a
+  lineup channel, parsed an element at a time and written out a service at a
+  time, since the tuner answers grouped by service and ignores an end time
+  (about 13 MB for three days of a 200-channel bouquet): events are kept for
+  seven days ahead, 2,500 a channel, descriptions cut at 240 characters.
+  The tuner is read one request at a time with a pause between, as Enigma2
+  becomes unresponsive under many rapid requests.
+  The M3U carries the receiver's own streaming port in each channel's URL;
+  `streamPort`, set, replaces it in `streamUrl` for every channel, for a
+  tuner whose channels are to come from a different port instead, such as a
+  transcoding profile on its own port.
+  A tuner whose stream port asks for a login (`streamLogin`) is played through
+  `/api/iptv/relay`, for the TV's own Home only: a `<video>` cannot send a
+  login and drops one written into its URL. The server asks the tuner with
+  Basic auth and pipes the transport stream through unread. Only the tuner's
+  own host name is asked, an answer other than 200 is a 502 (`login` for a
+  401 or 403), a silent tuner is dropped after 20 s, and the recording that
+  lets Home pause is not used for such a channel.
 - **Schedule.** A playlist is read daily between 03:00 and 05:00, the guide
   every six hours (an Xtream login's `xmltv.php` once the lineup goes beyond
   the row's favourites, and its short EPG for the favourites every 30
@@ -718,6 +750,19 @@ forwarder](#forwarding-the-logs-to-syslog) polls at once rather than at its next
 5-second tick, which a C4 (webOS 9.2) powering off beat. The kernel log keeps
 its 30-second schedule.
 
+The System info view counts the power-ons by reason, in
+`/var/lib/tvweb/power-ons.json`. tvpower gives only the last reason, and
+Glasshouse reads it again at every start, so a power-on is known by the boot
+(`/proc/sys/kernel/random/boot_id`) and the second after boot it came on
+(`uptime - ontime`); a reading within 10 seconds of the last in the same boot
+is the same power-on. An `ontime` of 0 is standby and counts nothing. When
+there is no file, the counts start from Glasshouse's log (`tvweb.log.1`, then
+`tvweb.log`): each transition line ending `on by`, and each start line just
+after a boot (up 300 s or less); a start later than that is Glasshouse
+restarting. The power-on in progress is then the log's last, and not counted
+again. The first counted time is kept as `since`, unless the clock had not yet
+been set (before 2024).
+
 ## The thermal sensor lags boot
 
 `/proc/lg/pm/temperature` reads a literal `0` for roughly the first 80 seconds
@@ -898,7 +943,10 @@ the file and leaves `glasshouse.remoteKeys` as an empty map.
 
 Only keys this TV's own filter files name are offered, found by searching them
 for the symbol (`WebOS.Key_webOS_Disneyplus` is in a C5's `appLaunch.js` and
-not a CX's). The compositor's enum knows more names than a given remote sends,
+not a CX's), with the four colour keys offered together when any one of them
+is named, since webOS 4's filters only match `WebOS.Key_webOS_Yellow` and
+`WebOS.Key_webOS_Blue` and pass Red and Green straight to the foreground app.
+The compositor's enum knows more names than a given remote sends,
 and a case on an unknown symbol would never match. Home and Back are not
 offered, since the dashboard's own Home screen changes rely on them; volume,
 mute, channel and power are handled by the microcontroller before any filter
@@ -1008,7 +1056,7 @@ on from it.
 
 ## The input bar
 
-The [input bar](dashboard/inputs.md#input-bar) is a web app of its own,
+The [input bar](dashboard/inputs.md#glasshouse-input-bar) is a web app of its own,
 `com.tvweb.inputbar` (`assets/inputbar-app/`), whose `appinfo.json` asks for
 an overlay window (`"defaultWindowType": "overlay"`, `"transparent": true`)
 with no splash (`"noSplashOnLaunch": true`, `"spinnerOnLaunch": false`). The
@@ -1419,6 +1467,143 @@ answer from the read-back, the set counts as done.
 
 ---
 
+## Performance history
+
+`server/lib/perfhistory.js` keeps the Metrics tab's Performance charts. Every
+5 seconds from server start it reads `/proc/stat`, `/proc/meminfo`,
+`/proc/net/dev` and the SoC temperature and clock, and nothing else: no luna
+call and no process. The processor is split into user and nice, system (with
+irq, softirq and steal) and iowait, each against every core in
+`/sys/devices/system/cpu/present`, so a parked core counts as idle as the
+Overview's figure does; per core, a parked one is null. Memory in use is
+`MemTotal` less `MemAvailable` (free, cached and buffers on kernels without
+it), and cache is cached and buffers less shared memory.
+
+Two rings in memory: an hour of 5-second samples and a day of minutes, each
+the average of its samples. Nothing is written to flash, so a restart starts
+afresh. It follows the live state's `application` and `power` changes as
+events (app, TV off, screen off, TV on), the last 400 within a day, but does
+not start the `application` subscription itself: the events come while
+something else has (Watch time, Glasshouse Home, the MQTT bridge) or from a
+dashboard's polls, which reconcile it.
+
+`GET /api/perf?range=5m|1h|24h` returns the range as columns (`t`, `cpu`,
+`user`, `sys`, `io`, `mem`, `cache`, `rx`, `tx`, `temp`, `mhz`), the latest
+per-core loads, the events in the range and the one before it.
+
+---
+
+## Storage scan
+
+`server/lib/storagescan.js` serves the Metrics tab's Storage view. It reads
+`df -k` and keeps one entry per writable device, named by its best mount
+(`/mnt/lg/appstore`, `/mnt/lg/cmn_data`, `/mnt/lg/db8`, a USB drive under
+`/tmp/usb`). Read-only images (the root filesystem, fonts, certificates show
+as full with nothing free), memory filesystems, loop images and stores under
+16 MB are left out. Each is walked with `du -kx`, which stays on that device;
+a non-zero exit from one unreadable folder keeps the rest, and only a timeout
+(30 s, for a large USB drive) marks the partition as not looked through.
+
+The folders come back as a tree. Each folder below 1/4000 of its partition's
+used space (at least 64 KiB) is folded into one block with its parent's own
+files, and a folder that holds only one other is merged with it, so
+`cryptofs/apps/usr/palm` is one step. Every folder is grouped as `app`
+(`cryptofs`, `developer`, Glasshouse's `var/lib/tvweb`, and anything named
+after a removable app), `lg` (`preload` and `system` on the app partition)
+or `sys`. Folders named after an app from `applicationManager/listApps`
+are totalled per app, a folder inside one already counted for that app not
+counted again.
+
+`GET /api/storage` returns the last scan, starting a new one in the
+background when it is over ten minutes old; the first waits for it.
+`POST /api/storage` scans again. Nothing is deleted.
+
+---
+
+## HDMI link detail
+
+`server/lib/hdmilink.js` reads one receiver's status file from LG's HDMI
+driver (`/proc/lg/hdmi20/port<n>/status`) for the Metrics tab's HDMI view, and
+`GET /api/hdmi` adds it to each input as `link`. Size, refresh and pixel clock
+come from telemetry's `parseTiming` of the same file, which corrects the
+driver's off-by-one heights and, on TMDS, deep colour's inflated totals. The
+rate a mode takes is the pixel clock by the bits a pixel takes on the wire
+(4:2:2 is always 24, 4:2:0 half of 4:4:4) and the link's coding (18/16 on FRL,
+10/8 on TMDS), against the link's rated speed, as HDMI's own tables state
+it. The driver's times are milliseconds since boot and become clock times by
+`/proc/uptime`. Without a lock, a sleeping source's last mode and counts are
+still in the file and are cleared.
+
+The FRL and TMDS character error counters cover a short interval and start
+again, so every 5 seconds each locked receiver's counts are added up from when
+the cable was connected (`Cable Connected Time`); a new connection, or losing
+the lock, starts again. The driver's `PHY Error Count` climbs on a clean link
+too and is not used.
+
+---
+
+## System info
+
+`server/lib/sysinfo.js` reads what the System info view shows beyond
+`/api/stats`, once, at the first `GET /api/sysinfo`: nyx's
+`/var/run/nyx/device_info.json` (board, storage and memory size, serial
+number, Wi-Fi and wired MAC addresses), the Homebrew Channel's
+`appinfo.json`, `cpuinfo_max_freq`, the kernel release and Node.js version.
+Each is null where the TV does not give it, or gives a placeholder. nyx's
+`nduid`, the id LG's servers know the TV by, is not read. The route adds the
+power-on counts (see [Why the TV powered on](#why-the-tv-powered-on)). The
+view shows a row only for a value it has, as models and webOS releases differ.
+
+## Screen glow
+
+`server/lib/screencolour.js` answers `GET /api/screen-colour` with the colours
+on screen, never a picture. It captures the screen with LG's
+`executeOneShot` as a 64x36 BMP (`method: DISPLAY`, which includes HDMI and
+app video), reads the pixels and deletes the file. The service is
+`com.webos.service.capture` on webOS 9 (a C2) and `com.webos.service.tv.capture`
+on webOS 4 (a B8); the first to answer is kept. The answer is the average
+colour, the brightness from 0 to 1, and an accent for each half: the most
+present vivid hue there, in twelve hue bands with each pixel counted by its
+saturation and brightness, or the half's average where nothing is vivid. A
+near-black screen has no accent. One capture serves every request within
+1.5 s.
+
+Which service the TV has is asked once, 15 s after start-up, without a
+capture: `executeOneShot` with no path. A service that is there refuses the
+request (`Invalid argument` on a B8, `ERROR_NOT_ENOUGH_MEMORY` on a C2), and
+the bus answers `Service does not exist` for one that is not. With neither,
+the Server tab's summary has `screenGlowSupported: false`, the route answers
+`{ ok: false, unsupported: true }`, and the dashboard hides the glow's
+switches and says why on the Server tab. A capture that finds both missing
+counts the same. A service that does not answer leaves the question open.
+
+A capture takes about 0.2 s on a C2 and 0.7 s on a B8, mostly the capture
+hardware: one every 3 s added under 1% to a B8's CPU. With no signal on an
+HDMI input the picture is black, and `method: VIDEO` answers
+`REFUSED_PERMISSION_DENIED` until a signal arrives. Protected video captures
+black.
+
+`assets/ui/glow.js` reads it while its browser has the glow on, the Server
+tab allows it (`screenGlow.allowed`, on unless switched off), the page shows
+and the header says the screen is on, and not while the stats'
+`signal_format.game_mode` is set. While PicCap is capturing or Hue Sync is
+streaming, which the route asks as `/api/stats` does for the Ambient Light tab,
+the route answers `{ ok: false, busy }` without a capture, as theirs and ours
+would share the capture hardware, and the glow fades until it stops. After
+three failed reads in a row, as while the server restarts for an update, it
+fades and reads every 30 s rather than every 3 s, and comes back by itself;
+it used to give up for the rest of the visit. Each side's hue is raised to a fixed
+brightness, at least half saturated, so a dim picture still gives a colour;
+the picture's brightness sets how strong it shows. The two colours are
+registered custom properties, faded on the root. With the glow on, the body's
+background is transparent, so the fixed layer behind the page shows over the
+root's. The light is one value, `--glow-paint`, sized in the window's units:
+the layer behind the page paints it, and the sidebar paints it as a
+background fixed to the window, so it runs across the sidebar's edge, and
+into the menu that slides in on a phone, without a seam.
+
+---
+
 ## Counting watch time
 
 `server/lib/history.js` counts, while it is switched on, how long the screen
@@ -1548,7 +1733,7 @@ log shows, while a parse error leaves no process to log anything.
 
 The in-place updater (`server/lib/updater.js`) downloads the release tarball from GitHub directly onto the TV and unpacks it over `/var/lib/tvweb/` without needing a computer or `deploy.sh`.
 
-On a Homebrew Channel install, server files unpacked over `/var/lib/tvweb/` would be taken back to the app's copy, so the updater installs the release's package instead: it reads `<id>.manifest.json` from the release, downloads the `.ipk` it names to `/media/developer/temp/glasshouse-update`, checks the sha256, installs it with `appInstallService/dev/install` (`installer.installOwnPackage`), and runs the new `payload/install.sh` detached, which moves the server over and restarts it. The package carries no services, so `dev/install` costs it no root, and the server keeps running from `/var/lib/tvweb/` until that script restarts it. `dev/install` closes the app while it is open. Package downloads use the same stall limits as other app installs rather than a 30-second total limit. No rollback copy is kept for package updates. `--force` still takes the tarball path.
+On a Homebrew Channel install, server files unpacked over `/var/lib/tvweb/` would be taken back to the app's copy, so the updater installs the release's package instead: it reads `<id>.manifest.json` from the release, downloads the `.ipk` it names to `/media/developer/temp/glasshouse-update`, checks the sha256, installs it with `appInstallService/dev/install` (`installer.installOwnPackage`), and runs the new `payload/install.sh` detached, which moves the server over and restarts it. The package carries no services, so `dev/install` costs it no root, and the server keeps running from `/var/lib/tvweb/` until that script restarts it. `dev/install` closes the app while it is open. Release downloads, the package or the tarball, use the same stall limits as other app installs rather than a 30-second total limit: the tarball is over 22 MB, which GitHub has taken more than 50 seconds to send. No rollback copy is kept for package updates. `--force` still takes the tarball path.
 
 ### Download Client Probing
 The download requires `curl` or `wget` on the TV. LG's stock `/usr/bin/curl` reaches GitHub on tested TVs, but third-party tools or stripped setups might place modern clients in non-standard paths. To ensure reliable downloads across webOS generations, the updater probes executable binaries in prioritized order:
@@ -1704,7 +1889,7 @@ feature off, or `tvwebctl restore-home` before uninstalling, deletes the webOS
 ## Glasshouse Home
 
 `lib/home.js` runs a home screen of Glasshouse's own in place of LG's, opt-in
-from the dashboard's Home tab (webOS 4, 5, 6, 7, 9, 10 and 11; webOS 3, standalone as on webOS 4, webOS 8, and webOS 12 and later with `allowExperimentalHome`). The view is `assets/home.html`,
+from the dashboard's Home tab on every webOS version, standalone on webOS 2 to 6 and laid over LG's Home from webOS 7. `lib/compat.js` says where it has been reported working; elsewhere the dashboard warns and links to a report. The view is `assets/home.html`,
 opened by a small web app whose files are `assets/home-app/index.html` and its
 icons.
 
@@ -1940,7 +2125,7 @@ server's 10-second limit; launches allow 20 seconds for sequential detail reads.
 
 `lib/home-launcher.js` puts another page in the view's place; everything that
 gets the view in front of the TV is unchanged. The app in LG's Home's place
-(or `com.tvweb.home` on webOS 3 to 6, refreshed on server start once it is not in front) opens
+(or `com.tvweb.home` on webOS 2 to 6, refreshed on server start once it is not in front) opens
 `/assets/home.html` as before, and while a launcher is chosen
 and Glasshouse Home is on, the server answers that with a redirect to
 `/home/launcher/`. The heartbeat's reply carries `launcher`, a revision that
@@ -2049,9 +2234,12 @@ The debloating engine (`server/lib/services.js`) manages background system daemo
 
 Custom QML screensavers are staged in `/var/lib/tvweb/screensaver` and bind-mounted over `/usr/palm/applications/com.webos.app.screensaver`.
 
+* **Picture frame screen saver** (id `art`, so settings and files keep their `art` names): `lib/art.js` keeps the settings (`/var/lib/tvweb/art.json`), the owner's pictures and the paintings fetched ahead. The QML asks `/api/art/next` for each picture, through the `art` placeholder (`__TVWEB_ART__`, only for Glasshouse's own, as it carries the token), and is handed an address on this server, `/api/art/image`, never the museum's: Qt's network stack on webOS 4 cannot reach most HTTPS sites, so the TV's curl or wget (`lib/fetch.js`) fetches each painting and the file is checked as a JPEG before it is served. The answer also carries the minutes, fit and label settings, so a change applies without restaging. A collection is a query of the Cleveland Museum of Art's API (`cc0=1&has_image=1&type=Painting` and a department) at a random offset; its print image, 3400 pixels on the long side, is decoded at 1920 × 1080 by the `Image`'s `sourceSize`. Two are fetched ahead (`art-cache/queue.json`); the one on screen and the one fading out are kept, and the last 60 are not picked again. A Rijksmuseum collection is a year span: a random year's paintings from `data.rijksmuseum.nl/search/collection?type=painting&imageAvailable=true&creationDate=<year>`, and one object read as Linked Art from `id.rijksmuseum.nl`, whose `subject_of` carries a IIIF address on `iiif.micr.io` where it is marked public domain; it is fetched at `full/!2400,1400`. The title and date are its English names; the painter is `carried_out_by`, or for an attribution the English creator statement. Network folders are `lib/dlna.js`: an SSDP M-SEARCH for `MediaServer:1`, the description at each LOCATION read for the ContentDirectory control address, and `Browse` with `BrowseDirectChildren` for a folder, its DIDL-Lite read for containers and `object.item.imageItem` items with a JPEG `res`. Only private IPv4 and link-local addresses over HTTP are spoken to. A folder is saved with the server's UDN and description address; where the server no longer answers there, or answers with another UDN, it is looked for again by its UDN. A folder's listing is kept for 10 minutes. Pictures fetched may be up to 8192 pixels on a side and 12 MB, decoded at the screen's size; `autoTransform` turns a photo as its EXIF says, so the saver's `Frame.qml` imports QtQuick 2.5. ESA/Webb and ESA/Hubble have no API. Webb's collection is its `pictureofthemonth`, `nebulae` and `galaxies` categories, with titles of diagrams, annotated ("compass") versions, illustrations and telescope pictures left out; Hubble's is its Picture of the Week (`/images/potw/`, 20 a page, sized from each image's page), as its archive categories hold test charts and diagrams. A random page of an archive category (`/images/archive/category/<cat>/page/<n>/`, 50 images in a `var images = [...]` list with their sizes) gives an image of a shape for the screen, its own page gives its credit line (`class="credit"`), shown whole or the image skipped, and `cdn.<site>/archives/images/publicationjpg/<id>.jpg`, 4000 pixels on its long side, is fetched. Wikimedia Commons is searched with `deepcat:"Featured pictures of <topic>" filetype:bitmap` at a random offset (search stops at 10,000), ten at a time with their `imageinfo` and `extmetadata`; a JPEG whose `License` is `pd`, `cc0`, `cc-by-*` or `cc-by-sa-*` is taken, at its 1920-pixel thumbnail (Wikimedia serves set widths). Pictures whose licence asks for credit carry `mustCredit`, and both views keep a small credit line up while the label is not. NASA's own image library was left out: its records mix public domain with third-party processing under its own copyright, with nothing reliable to tell them apart, and ESA's archives carry its telescopes' images under one licence. The Met was tried and left out: its image server answers non-browsers with a bot check. On a B8 the screen saver takes about 0.3% of one core and 41 MB. Previous and Next: the last five shown are kept (`history`, their files with them), and `go(dir)` raises a command sequence that the screen saver and the No Signal screen ask `/api/art/command` for every 1.5 s; a new one asks `/api/art/next?dir=prev|next`. A view asking within 6 s counts as on screen, which the dashboard shows. While the No Signal screen asks, `remotebuttons` is wanted as `art` and KEY_LEFT (105) and KEY_RIGHT (106) step it; a screen saver cannot be stepped from the remote, as tvpower ends it on the key.
 * **Screen saver folders**: each screen saver is a folder with a `saver.json`, read by `lib/screensavers.js` from `assets/screensavers` (Glasshouse's own) and `/var/lib/tvweb/screensavers` (added on the TV, which an update leaves alone). The folder's name gives the id; for an added one Glasshouse prefixes the id, not the folder, with `user-`, so it never clashes with one of Glasshouse's. The folders are read again whenever the tab asks for the list or a screen saver is picked. Picking one copies its whole folder into the staged `qml/`, its main file as `main.qml`, filling in only the placeholders its `uses` names. Home Assistant's select is built from the same list when discovery is published. The format is in [SCREENSAVER-DESIGN.md](development/SCREENSAVER-DESIGN.md#screen-saver-folders).
 
 * **Homebrew apps' screen savers**: an installed app in `/media/developer/apps/usr/palm/applications` with `assets/screensaver-main.qml` (Custom Screensaver, both Aerial apps) or `assets/screensaver.qml` (Idlegif) is listed as `app-` and its app id, named after the app, its QML checked like an added one's. These apps bind-mount that file over LG's `qml/main.qml` themselves, which does nothing where LG's screen saver is Flutter (webOS 10 and later), and picking anything here unmounts it (#1067). Picked here, only the QML is staged: each loads its other files by their full path in its own folder or `/var/lib/webosbrew`. A marker naming one whose app has gone puts LG's back at the next restage, at start or after an app is removed from the Apps tab.
+
+* **Screen savers that play video**: where LG's screen saver is Flutter (webOS 10 and later), screenmanager ends a screen saver as soon as it sees full-screen video, within a second of an Aerial video starting on a G5 (webOS 11.2), unless the app is in its manual mode. Each staging, which includes the one at the server's start, sends `com.webos.service.screenmanager/setScreenSaverMode` for `com.webos.app.screensaver`: `manual` where a QML file of the screen saver imports `QtMultimedia`, `auto` otherwise and for LG's own. An app's other QML files are read for this, though only its main one is staged: not its `node_modules`, and no further than 1000 entries of its folder, which is the app's to fill (Aerial's 552 are listed in 13 ms on a G5). Every staging rather than once, as Aerial's own page for these TVs sends it at every start, its source saying that screenmanager keeps it in memory until it restarts. screenmanager may not be up when the server starts at boot, so `manual` is asked for up to six times, 10 seconds apart. A G3 (webOS 10.3) ended one tvpower started all the same, 2.4 to 2.6 s after the start, as its first clip reached the decoder, with `manual` set just before. So where LG's screen saver is Flutter, while a screen saver that plays video shows (a web one, or a QML one that plays video), the remote's keys are watched, and if tvpower leaves Screen Saver within 6 s with no key or pointer since it started, the app is launched again directly, as for a refused request: tvpower stays Active under it, so nothing ends it, and a key closes it.
 
 * **Cold Boot vs Quick Start+**: On Quick Start+ suspend-to-RAM, active bind-mounts persist in memory. On a cold boot (such as after the 4-hour OLED Pixel Cleaning cycle or extended standby on webOS 9 and 10), `/var/lib/webosbrew/init.d/50-tvweb` re-applies the bind-mount if `/var/lib/tvweb/screensaver/.tvweb-screensaver` is present.
 * **Making sam read the new manifest**: sam reads an `appinfo.json` only when it scans, and where LG's screen saver is Flutter (webOS 10 and later) ours changes the app's `type`, so sam has to read it again or the launch goes to the wrong runner. `ensureScreensaverRunner` in `lib/screensavers.js` and the boot hook try two things in turn: `applicationManager/blockSystemApp` followed by `releaseBlockSystemApp` for the one app (`samrescan.rereadApp`; the block adds `"forceBlockSystemApp": false` where the TV's `applicationManager.blockSystemApp.schema` names it, as webOS 11.2 requires; on a C5 on webOS 10.3.1 sam reported the new type within the second and kept its pid), then the configd nudge below (webOS 9). They never restart sam, the restart behind the black-picture reports in #366, which they used to fall back to. A switch to one of ours that sam has not taken is undone (unmounted, staged files cleared) and answered with an error, and a switch back to LG's is answered as taking effect from the next restart; the boot hook unmounts ours likewise. A running screen saver is relaunched after either, since neither stops it. The release goes out even when the block got no answer, which may still have been a block sam made, and on a TV whose stock screen saver is not QML the boot hook releases it once at every boot, so a run cut short between the two calls cannot leave it blocked. Custom screen savers are on by default on webOS 10 and 11 (#768) and stay held back on webOS 12 and later unless `allowExperimentalScreensavers` is set; the version is read from `/etc/issue`.

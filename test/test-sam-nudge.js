@@ -124,7 +124,7 @@ apps.refreshLauncher(checked(function (refreshed) {
           assert.strictEqual(h.ok, true, h.error);
           assert.strictEqual(h.hidden, true);
           assert.strictEqual(restarts, 1, 'never restarts sam on webOS 10-11 hide');
-          assert.deepEqual(tv.samCalls, ['block:com.webos.app.music', 'release:com.webos.app.music']);
+          assert.deepEqual(tv.samCalls, ['release:com.webos.app.music', 'block:com.webos.app.music', 'release:com.webos.app.music']);
           apps.getApps(checked(function (g) {
             assert.strictEqual(g.tileHidingNudge, true, 'webOS 10-11 suppresses cold-boot sam-restart warning');
             tv.rereadApply['com.webos.app.music'] = true;

@@ -103,6 +103,7 @@ async function loadHdmi() {
     const act = d.inputs.find(i => i.active);
     q('hdmi-cur').textContent = ': ' + (act ? act.label : t('metrics.hdmi.noInput', 'no active input'));
     renderHdmiGrid();
+    if (typeof renderHdmiLinks === 'function') renderHdmiLinks(d);
   } catch (e) {
     q('hdmi-grid').innerHTML = `<div class="sub">${esc(t('metrics.hdmi.failed', 'Could not read HDMI state \u2014 {error}', { error: e.message }))}</div>`;
   }
@@ -121,6 +122,12 @@ function procPid(p) {
   return typeof p.pid === 'number' ? `<span class="p-pid">${p.pid}</span>` : '';
 }
 
+function usageTone(pct, warn, crit) {
+  if (pct >= crit) return 'bad';
+  if (pct >= warn) return 'warn';
+  return 'good';
+}
+
 async function loadProcesses() {
   try {
     const r = await fetch(api('/api/processes'), { cache: 'no-store' });
@@ -128,9 +135,15 @@ async function loadProcesses() {
     if (!d.ok) throw new Error(d.error || 'failed');
     q('proc-cur').textContent = t('metrics.processes.summary', '{count} running · {mb} MB resident',
       { count: d.count, mb: d.totalMb.toLocaleString() });
-    q('proc-list').innerHTML = d.top.map(p =>
-      `<div class="proc"><div class="p-name">${esc(p.name)}${procPid(p)}</div>` +
-      `<div class="p-mb">${p.mb.toFixed(1)} MB</div></div>`).join('');
+    const ramMb = d.ramMb || (typeof lastMemTotalMb === 'number' ? lastMemTotalMb : 0) || d.totalMb;
+    q('proc-list').innerHTML = d.top.map(p => {
+      const pct = ramMb > 0 ? (p.mb / ramMb) * 100 : null;
+      const pctHtml = pct !== null
+        ? ` <span class="p-pct ${usageTone(pct, 5, 15)}">${pct.toFixed(1)}%</span>`
+        : '';
+      return `<div class="proc"><div class="p-name">${esc(p.name)}${procPid(p)}</div>` +
+        `<div class="p-mb">${p.mb.toFixed(1)} MB${pctHtml}</div></div>`;
+    }).join('');
   } catch (e) {
     q('proc-list').innerHTML =
       `<div class="sub">${esc(t('metrics.processes.failed', 'Could not read the process list \u2014 {error}', { error: e.message }))}</div>`;
@@ -154,7 +167,7 @@ async function loadCpu() {
     q('cpu-list').innerHTML = d.top.length
       ? d.top.map(p =>
           `<div class="proc"><div class="p-name">${esc(p.name)}${procPid(p)}</div>` +
-          `<div class="p-mb">${p.pct.toFixed(1)}%</div></div>`).join('')
+          `<div class="p-mb ${usageTone(p.pct, 10, 25)}">${p.pct.toFixed(1)}%</div></div>`).join('')
       : `<div class="sub">${esc(t('metrics.cpu.idle', 'Nothing used any CPU over the sample.'))}</div>`;
   } catch (e) {
     q('cpu-list').innerHTML =
@@ -169,6 +182,8 @@ async function loadCpu() {
  * two passes over /proc and holds a request open for the sample itself, which
  * is not worth spending on a panel nobody is looking at.
  */
+let metricsSubView = 'overview';
+
 function startCpuPolling() {
   if (cpuTimer) return;
   loadCpu();
@@ -182,26 +197,33 @@ function stopCpuPolling() {
 }
 
 function cpuPanelOpen() {
-  const el = document.getElementById('disc-cpu');
-  return !!(el && el.open);
+  return typeof activeTab !== 'undefined' && activeTab === 'metrics' && metricsSubView === 'performance';
 }
 
-(function wireCpuPanel() {
-  const el = document.getElementById('disc-cpu');
-  if (!el) return;
-  el.addEventListener('toggle', function () {
-    if (el.open) startCpuPolling(); else stopCpuPolling();
-  });
-  if (el.open) startCpuPolling();
-})();
-
-// Only poll while the panel is open; it costs a ps on the TV each time.
-function onProcToggle(el) {
-  /* Same as the HDMI panel: on open only. This one forks `ps`. */
-  if (el.open) loadProcesses();
+function setMetricsSubView(view) {
+  const valid = ['overview', 'performance', 'storage', 'hdmi', 'watch', 'advanced'];
+  // System info was called Advanced, and held the process lists.
+  if (view === 'info') view = 'advanced';
+  metricsSubView = valid.indexOf(view) !== -1 ? view : 'overview';
+  const pane = q('tab-metrics');
+  if (pane) pane.setAttribute('data-metrics-view', metricsSubView);
+  const nav = q('metrics-subnav');
+  if (nav) {
+    nav.querySelectorAll('.home-sub-btn').forEach(btn => {
+      const on = btn.getAttribute('data-metrics-view') === metricsSubView;
+      btn.classList.toggle('on', on);
+      btn.setAttribute('aria-pressed', String(on));
+    });
+  }
+  if (metricsSubView === 'overview' && typeof relayout === 'function') relayout(false);
+  if (cpuPanelOpen()) {
+    loadProcesses();
+    startCpuPolling();
+  } else {
+    stopCpuPolling();
+  }
+  if (typeof perfViewChanged === 'function') perfViewChanged();
+  if (typeof storageViewChanged === 'function') storageViewChanged();
+  if (typeof hdmiViewChanged === 'function') hdmiViewChanged();
+  if (typeof sysinfoViewChanged === 'function') sysinfoViewChanged();
 }
-
-(function wireProcPanel() {
-  const el = document.getElementById('disc-proc');
-  if (el) el.addEventListener('toggle', function () { onProcToggle(el); });
-})();

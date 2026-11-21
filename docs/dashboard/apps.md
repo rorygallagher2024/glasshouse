@@ -8,13 +8,13 @@ The **Apps** tab, `/?tab=apps`, has two groups: **Apps**, for installing and rem
 
 ![Manage applications, listing each installed app with its size and Launch and Uninstall buttons](../screenshots/apps-manage.png)
 
-Lists the apps downloaded from the LG store or installed by hand, with their version, vendor, and storage badge showing disk footprint. Launch opens the application on the TV, while Uninstall deletes an app completely and frees its storage. LG's built-in apps can't be removed this way; they can be [hidden](home.md#hide-home-screen-system-apps) instead.
+Lists the apps downloaded from the LG store or installed by hand in a card grid, with their version, vendor, and storage badge showing disk footprint. Launch opens the application on the TV, while Uninstall deletes an app completely and frees its storage. LG's built-in apps can't be removed this way; they can be [hidden](home.md#hide-home-screen-system-apps) instead.
 
 ### Install homebrew apps
 
 ![Install homebrew apps, with category filters, a search box and the Homebrew Channel catalog, each app with its size and an Install button](../screenshots/apps-install.png)
 
-Lists the Homebrew Channel catalog, with category filters (All, Media, Games, Utilities, Ambilight, Screensavers) and keyword search, and Install, Update or Uninstall for each app, with Launch beside an installed one. The list shows 10 apps at a time, with **Show 10 more** beneath; a search or category looks through the whole catalog. Downloads are checked against the catalog before they are installed, and the dashboard asks first when something needs a decision, such as replacing a copy installed from the LG store.
+Lists the Homebrew Channel catalog, with category filters (All, Media, Games, Utilities, Ambilight, Screensavers) and keyword search, and Install, Update or Uninstall for each app, with Launch beside an installed one. The catalog shows 12 apps at a time in a card grid, with **Show 12 more** beneath; a search or category looks through the whole catalog. Downloads are checked against the catalog before they are installed, and the dashboard asks first when something needs a decision, such as replacing a copy installed from the LG store.
 
 The outlined **View source** control beside Install, Update or Uninstall opens an app's declared source repository in a new browser tab when its catalog provides a valid absolute HTTPS address. It stays available while installation is disabled, in progress or complete. Apps without a valid source address have no source control.
 
@@ -24,7 +24,7 @@ After a [settings backup](server.md#glasshouse) is restored, the apps it listed 
 
 ### Other app catalogs
 
-Catalogs other than the Homebrew Channel's, such as the one a developer keeps for a fork of an app. Pasting a catalog's address and choosing **Add catalog** lists its apps here, each with Install, Update or Uninstall (and Launch, once installed) and the catalog it is from, and they are checked for updates with the rest. A GitHub repository's page can be pasted in place of the address, and the dashboard reads the `repo.json` it keeps, as many such catalogs do. Each catalog shows how many apps it offers, or why it could not be read, and **Remove** takes it off the list; apps installed from it stay on the TV. Their apps show 10 at a time, as the Homebrew Channel's do, with a search box once there are more than 10.
+Catalogs other than the Homebrew Channel's, such as the one a developer keeps for a fork of an app. Pasting a catalog's address and choosing **Add catalog** lists its apps here, each with Install, Update or Uninstall (and Launch, once installed) and the catalog it is from, and they are checked for updates with the rest. A GitHub repository's page can be pasted in place of the address, and the dashboard reads the `repo.json` it keeps, as many such catalogs do. Each catalog shows how many apps it offers, or why it could not be read, and **Remove** takes it off the list; apps installed from it stay on the TV. Their apps show 12 at a time in a card grid, as the Homebrew Channel's do, with a search box once there are more than 12.
 
 These apps are listed apart from the Homebrew Channel's, so an app both list, such as YouTube AdFree and a fork of it, shows in each, and Install or Update installs the one in that list. Where the TV has an LG store app under the same id, as YouTube is for YouTube AdFree and its forks, the catalog's app shows as not installed, and installing it asks before replacing the store's. An app from an added catalog is never given root without asking, as for an install from a URL.
 

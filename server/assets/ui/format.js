@@ -35,7 +35,7 @@ function fmtSize(n) {
 
 /* Standardized interactive toggle pill component helpers */
 function renderToggle(opts) {
-  const cls = 'pill ' + (opts.cls || 'idle');
+  const cls = 'pill pill-toggle ' + (opts.cls || 'idle');
   const id = opts.id ? ' id="' + esc(opts.id) + '"' : '';
   const on = opts.on !== undefined ? ' data-on="' + (opts.on ? '1' : '') + '"' : '';
   const next = opts.next !== undefined ? ' data-next="' + esc(opts.next) + '"' : '';
@@ -49,7 +49,7 @@ function renderToggle(opts) {
 function updateToggle(btnOrId, opts) {
   const b = typeof btnOrId === 'string' ? q(btnOrId) : btnOrId;
   if (!b) return;
-  if (opts.cls !== undefined) b.className = 'pill ' + opts.cls;
+  if (opts.cls !== undefined) b.className = 'pill pill-toggle ' + opts.cls;
   if (opts.label !== undefined) b.textContent = opts.label;
   if (opts.on !== undefined) b.dataset.on = opts.on ? '1' : '';
   if (opts.disabled !== undefined) b.disabled = !!opts.disabled;

@@ -206,6 +206,11 @@ function clientFor() {
 
 function isWget(bin) { return /wget$/.test(bin); }
 
+// A value inside the double quotes of a curl config line.
+function curlConfigQuote(s) {
+  return String(s).replace(/[\r\n]/g, '').replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+}
+
 /*
  * Streams url to sink.push(text) and sink.end(). A gzip body, told by its
  * first bytes rather than its name or headers, is unzipped on the way.
@@ -237,13 +242,26 @@ function downloadOnce(url, opts, sink, cb) {
   var hdrFile = path.join(job.tmp || '/tmp', 'h-' + process.pid + '-' + Date.now());
   var maxBytes = opts.maxBytes || CEIL.downloadBytes;
   var ua = job.ua || 'Glasshouse';
+  /*
+   * A login for this one request (an Enigma2 receiver's OpenWebif asks for
+   * HTTP Basic). curl reads it from its stdin so the password is on no
+   * command line, where every process on the TV can read it; wget has no
+   * such way and gets it as arguments.
+   */
+  var auth = opts.auth && opts.auth.user ? opts.auth : null;
+  var viaStdin = !!auth && !isWget(bin);
   var args = isWget(bin)
-    ? ['-q', '-T', '60', '-U', ua, '-O', '-', '--', url]
+    ? ['-q', '-T', '60', '-U', ua].concat(auth ? ['--user=' + auth.user, '--password=' + (auth.pass || ''), '--auth-no-challenge'] : [])
+        .concat(['-O', '-', '--', url])
     : ['-sS', '-f', '-L', '--max-redirs', '5', '--proto', '=http,https', '--proto-redir', '=http,https',
        '--connect-timeout', '20', '--speed-limit', '256', '--speed-time', '60',
-       '--max-time', String(opts.timeoutS || 600), '-A', ua, '-D', hdrFile, '--', url];
+       '--max-time', String(opts.timeoutS || 600), '-A', ua, '-D', hdrFile].concat(viaStdin ? ['--basic', '-K', '-'] : []).concat(['--', url]);
   var child;
-  try { child = spawn(bin, args, { stdio: ['ignore', 'pipe', 'pipe'] }); } catch (e) { return cb(fail('no-client')); }
+  try { child = spawn(bin, args, { stdio: [viaStdin ? 'pipe' : 'ignore', 'pipe', 'pipe'] }); } catch (e) { return cb(fail('no-client')); }
+  if (viaStdin) {
+    child.stdin.on('error', function () {});
+    child.stdin.end('user = "' + curlConfigQuote(auth.user + ':' + (auth.pass || '')) + '"\n');
+  }
   children.push(child);
   say({ child: child.pid });
   var bytes = 0, unzipped = 0, first = true, gunzip = null, stderr = '', done = false, sinkErr = null;
@@ -351,9 +369,9 @@ function downloadError(bin, code, stderr, hdrFile) {
 }
 
 // A small JSON document, into memory: an account answer or a category list.
-function getJson(url, maxBytes, cb) {
+function getJson(url, maxBytes, cb, auth) {
   var text = '';
-  download(url, { maxBytes: maxBytes, timeoutS: 60 }, { push: function (s) { text += s; } }, function (err) {
+  download(url, { maxBytes: maxBytes, timeoutS: 60, auth: auth }, { push: function (s) { text += s; } }, function (err) {
     if (err) return cb(err);
     var doc;
     try { doc = JSON.parse(text); } catch (e) { return cb(fail('format', { detail: 'json' })); }
@@ -422,35 +440,60 @@ function writeGroups(dir, groups) {
 function playlistJob(cb) {
   var src = job.source;
   if (src.kind === 'xtream') return xtreamPlaylist(src, cb);
+  if (src.kind === 'enigma2') return enigma2Playlist(src, cb);
   m3uPlaylist(src, cb);
 }
 
 function m3uPlaylist(src, cb) {
+  readM3uFeeds([{ url: src.url }], 'm3u', cb);
+}
+
+/*
+ * The entries of one or more M3U downloads, read in turn into one snapshot.
+ * A feed may name the group its entries belong to, carry a login (auth) and
+ * a fix(e) that changes an entry or returns false to leave it out. extraMeta
+ * is added to meta.json.
+ */
+function readM3uFeeds(feeds, kind, cb, extraMeta) {
   var tmp = job.tmp;
   var entriesFile = path.join(tmp, 'entries.tmp');
   var w = new Writer(entriesFile);
   var fresh = [];
   var dupeCount = {};
   var guides = [];
-  var count = 0;
-  var reader = new parse.M3uReader(function (e) {
-    var dupeId = parse.sha1([e.name, e.group, e.tvgId].join('\u0001')).slice(0, 16);
-    var ord = dupeCount[dupeId] = (dupeCount[dupeId] || 0) + 1;
-    var digest = parse.urlDigest(e.url), hint = parse.entryHint(e);
-    fresh.push({ digest: digest, hint: hint });
-    w.line([digest, hint, dupeId, ord, parse.cell(e.group, 120), parse.cell(e.name, 200), parse.cell(e.number, 12), parse.cell(e.tvgId, 200),
-      parse.safeDerivedUrl(e.logo) ? e.logo.replace(/\t/g, '') : '', (e.headers ? 'h' : '') + (e.drm ? 'd' : '') + (e.unsupported ? 'u' : ''),
-      e.shift || '', e.url.replace(/[\t\n]/g, '')].join('\t'));
-    if (++count % 20000 === 0) say({ progress: { entries: count } });
-  }, function (u) { if (parse.safeDerivedUrl(u) && guides.length < 4 && guides.indexOf(u) === -1) guides.push(u); });
-  var sawText = false;
-  download(src.url, { maxBytes: CEIL.downloadBytes, timeoutS: 600 }, {
-    push: function (s) { if (!sawText && /\S/.test(s)) sawText = true; reader.push(s); },
-    end: function () { reader.end(); }
-  }, function (err) {
+  var count = 0, dropped = 0, sawHeader = false, nextFeed = 0;
+
+  function readFeed() {
+    if (nextFeed >= feeds.length) return finishFeeds();
+    var feed = feeds[nextFeed++];
+    var reader = new parse.M3uReader(function (e) {
+      if (feed.group !== undefined) e.group = feed.group;
+      if (feed.fix && feed.fix(e) === false) return;
+      var dupeId = parse.sha1([e.name, e.group, e.tvgId].join('\u0001')).slice(0, 16);
+      var ord = dupeCount[dupeId] = (dupeCount[dupeId] || 0) + 1;
+      var digest = parse.urlDigest(e.url), hint = parse.entryHint(e);
+      fresh.push({ digest: digest, hint: hint });
+      w.line([digest, hint, dupeId, ord, parse.cell(e.group, 120), parse.cell(e.name, 200), parse.cell(e.number, 12), parse.cell(e.tvgId, 200),
+        parse.safeDerivedUrl(e.logo) ? e.logo.replace(/\t/g, '') : '', (e.headers ? 'h' : '') + (e.drm ? 'd' : '') + (e.unsupported ? 'u' : ''),
+        e.shift || '', e.url.replace(/[\t\n]/g, '')].join('\t'));
+      if (++count % 20000 === 0) say({ progress: { entries: count } });
+    }, function (u) { if (parse.safeDerivedUrl(u) && guides.length < 4 && guides.indexOf(u) === -1) guides.push(u); });
+    download(feed.url, { maxBytes: CEIL.downloadBytes, timeoutS: 600, auth: feed.auth }, {
+      push: function (s) { reader.push(s); },
+      end: function () { reader.end(); }
+    }, function (err) {
+      dropped += reader.dropped || 0;
+      sawHeader = sawHeader || !!reader.seenHeader;
+      if (err) { try { w.close(); } catch (e) {} return cb(err); }
+      // Several downloads from one host: a request at a time, a pause between.
+      if (nextFeed < feeds.length) return setTimeout(readFeed, REQUEST_GAP_MS);
+      readFeed();
+    });
+  }
+
+  function finishFeeds() {
     try { w.close(); } catch (e) {}
-    if (err) return cb(err);
-    if (!count) return cb(fail(reader.seenHeader ? 'empty' : 'format', { detail: 'm3u' }));
+    if (!count) return cb(fail(sawHeader ? 'empty' : 'format', { detail: kind }));
     // Keys from the last snapshot, carried where the entry is the same one.
     var old = [];
     if (job.prev) {
@@ -483,12 +526,15 @@ function m3uPlaylist(src, cb) {
     index.close(); urls.close(); keyFile.close();
     try { fs.unlinkSync(entriesFile); } catch (e) {}
     if (guides.length) writeLimited(path.join(tmp, 'guides.txt'), guides.join('\n'), 16384);
-    var meta = { kind: 'm3u', at: Date.now(), channels: count, dropped: reader.dropped, groupsTotal: groups.order.length,
+    var meta = { kind: kind, at: Date.now(), channels: count, dropped: dropped, groupsTotal: groups.order.length,
       groups: groups.list(200), headers: flagged.headers, drm: flagged.drm, guideInPlaylist: guides.length > 0 };
+    if (extraMeta) Object.keys(extraMeta).forEach(function (k) { meta[k] = extraMeta[k]; });
     writeMeta(tmp, meta);
     writeGroups(tmp, groups);
     cb(null, { channels: count, groups: groups.order.length });
-  });
+  }
+
+  readFeed();
 }
 
 function writeMeta(dir, meta) {
@@ -582,6 +628,91 @@ function relabelDupes(file, dupeCount) {
   fs.renameSync(file + '.new', file);
 }
 
+// ---------------------------------------------------------------- Enigma2
+
+/*
+ * A satellite or cable receiver running Enigma2 (OpenATV, OpenPLi, ...), read
+ * through its OpenWebif like a playlist. Its bouquets are the groups. A
+ * bouquet's channels come from the receiver's own M3U export, which already
+ * has each channel's stream URL (its port is the receiver's own setting), its
+ * picon and its service reference; that reference is the channel's guide id,
+ * so the receiver's guide matches every channel it has one for, by id and not
+ * by a name that may differ.
+ */
+var ENIGMA2_BOUQUETS_MAX = 200;
+// The guide the receiver holds is as long as its broadcasters send: asked for a week.
+var ENIGMA2_AHEAD_MS = 7 * 24 * 3600000;
+var ENIGMA2_EVENTS_MAX = 2500;
+var ENIGMA2_DESC_MAX = 240;
+
+function enigma2Url(src, p) {
+  return String(src.server || '').replace(/\/+$/, '') + p;
+}
+
+function enigma2Auth(src) {
+  return src && src.user ? { user: src.user, pass: src.pass || '' } : null;
+}
+
+function withoutUserInfo(u) {
+  return String(u || '').replace(/^(https?:\/\/)[^\/?#@]*@/i, '$1');
+}
+
+// The characters a URL cannot carry as they are, in a picon's name for one.
+function encodeUrlChars(u) {
+  return String(u || '').replace(/[^\x21-\x7e]/g, function (c) {
+    try { return encodeURIComponent(c); } catch (e) { return ''; }
+  });
+}
+
+/*
+ * The receiver's TV bouquets, [{ref, name}]: services whose reference starts
+ * 1:7:, the rest being channels. Also the check that the address and login
+ * are right, which a 401 answers as a login refused.
+ */
+function enigma2Bouquets(src, cb) {
+  var list = [];
+  var reader = new parse.JsonArrayReader(function (s) {
+    if (!s || typeof s !== 'object') return;
+    var ref = String(s.servicereference || ''), name = String(s.servicename || '');
+    if (!/^1:7:/.test(ref) || !name || list.length >= ENIGMA2_BOUQUETS_MAX) return;
+    list.push({ ref: ref, name: name });
+  });
+  download(enigma2Url(src, '/api/getservices'), { maxBytes: 2 * MB, timeoutS: 60, auth: enigma2Auth(src) }, reader, function (err) {
+    if (err) return cb(err);
+    if (reader.notArray() !== null) return cb(fail('format', { detail: 'bouquets' }));
+    cb(null, list);
+  });
+}
+
+function enigma2Playlist(src, cb) {
+  enigma2Bouquets(src, function (err, bouquets) {
+    if (err) return cb(err);
+    if (!bouquets.length) return cb(fail('empty', { detail: 'bouquets' }));
+    var auth = enigma2Auth(src);
+    var feeds = bouquets.map(function (b) {
+      var position = 0;
+      return {
+        url: enigma2Url(src, '/web/services.m3u?bRef=' + encodeURIComponent(b.ref)),
+        auth: auth,
+        group: b.name,
+        fix: function (e) {
+          // A marker is a heading in the bouquet, not a channel.
+          if (/^1:64:/.test(e.tvgId)) return false;
+          // The number of the channel in its bouquet, as the receiver lists it.
+          e.number = String(++position);
+          // A receiver with a login puts a session (-sid:token@) into every address, new on each read: the
+          // channel's key would move with it and the logo would be refused. The login is sent apart instead.
+          e.url = withoutUserInfo(e.url);
+          e.logo = encodeUrlChars(withoutUserInfo(e.logo));
+          return true;
+        }
+      };
+    });
+    say({ progress: { bouquets: bouquets.length } });
+    readM3uFeeds(feeds, 'enigma2', cb, { bouquets: bouquets.length });
+  });
+}
+
 // ---------------------------------------------------------------- selection
 
 /*
@@ -636,14 +767,16 @@ function selectJob(cb) {
     if (ep && ep.length < 2) ep.push(e);
   });
   if (!ok) return cb(fail('no-snapshot'));
-  var rematch = {};
+  var rematch = {}, taken = {};
   Object.keys(wanted).forEach(function (k) {
     if (found[k]) return;
     var w = wanted[k];
     var ng = w.name ? byNameGroup[nameGroupOf(w.name, w.group)] || [] : [];
     var ep = w.epgId ? byEpg[w.epgId] || [] : [];
     var hit = ng.length === 1 ? ng[0] : ep.length === 1 ? ep[0] : null;
-    if (hit && !wanted.hasOwnProperty(hit.key) && !found[hit.key]) {
+    // A key a group section already carries still follows: only a second wanted key may not claim it too.
+    if (hit && !wanted.hasOwnProperty(hit.key) && !taken[hit.key]) {
+      taken[hit.key] = true;
       found[hit.key] = hit;
       rematch[k] = hit.key;
     } else missingKeys.push(k);
@@ -721,6 +854,16 @@ function carryFile(from, to) {
  * cb(got, left, failures).
  */
 var LOGO_RETRY_MS = 24 * 3600000;
+
+// A receiver's picons are behind its login, sent to its own address only.
+function logoAuth(url) {
+  var src = job.source;
+  if (!src || src.kind !== 'enigma2' || !src.user) return null;
+  var host = /^https?:\/\/([^\/?#]+)/i.exec(String(url));
+  var own = /^https?:\/\/([^\/?#]+)/i.exec(String(src.server || ''));
+  return host && own && host[1].toLowerCase() === own[1].toLowerCase() ? enigma2Auth(src) : null;
+}
+
 function fetchLogos(list, dir, prevDir, failedBefore, cb) {
   var got = {}, total = 0, i = 0, fetched = 0, left = 0, seen = {}, now = Date.now();
   var failures = {};
@@ -752,7 +895,7 @@ function fetchLogos(list, dir, prevDir, failedBefore, cb) {
   }
   function download1(l, file) {
     var bufs = [], size = 0;
-    download(l.url, { maxBytes: CEIL.logoBytes, timeoutS: 15, binary: true }, {
+    download(l.url, { maxBytes: CEIL.logoBytes, timeoutS: 15, binary: true, auth: logoAuth(l.url) }, {
       push: function (b) { bufs.push(b); size += b.length; }
     }, function (err) {
       var buf = err ? null : Buffer.concat(bufs, size);
@@ -778,22 +921,26 @@ function fetchLogos(list, dir, prevDir, failedBefore, cb) {
  * schedule/<key>/<YYYYMMDD>.json, a UTC day of one channel each, for the
  * grid; nownext.json for the row, the band and the channel list.
  */
+function writeChannelDays(dir, key, list) {
+  var days = {};
+  list.forEach(function (p) {
+    var d = new Date(p.start), day = d.getUTCFullYear() + pad2(d.getUTCMonth() + 1) + pad2(d.getUTCDate());
+    (days[day] = days[day] || []).push([p.start, p.stop, parse.clip(p.title, 120), parse.clip(p.desc, p.descMax || 400)]);
+  });
+  mkdirs(path.join(dir, 'schedule', key));
+  Object.keys(days).forEach(function (day) {
+    var text = JSON.stringify(days[day]);
+    charge(Buffer.byteLength(text, 'utf8'));
+    fs.writeFileSync(path.join(dir, 'schedule', key, day + '.json'), text, { mode: 384 });
+  });
+}
+
 function writeSchedule(dir, progs, now, carried) {
   mkdirs(path.join(dir, 'schedule'));
   Object.keys(progs).forEach(function (key) {
     var list = progs[key];
     if (!list.length || (carried && carried[key])) return;
-    var days = {};
-    list.forEach(function (p) {
-      var d = new Date(p.start), day = d.getUTCFullYear() + pad2(d.getUTCMonth() + 1) + pad2(d.getUTCDate());
-      (days[day] = days[day] || []).push([p.start, p.stop, parse.clip(p.title, 120), parse.clip(p.desc, p.descMax || 400)]);
-    });
-    mkdirs(path.join(dir, 'schedule', key));
-    Object.keys(days).forEach(function (day) {
-      var text = JSON.stringify(days[day]);
-      charge(Buffer.byteLength(text, 'utf8'));
-      fs.writeFileSync(path.join(dir, 'schedule', key, day + '.json'), text, { mode: 384 });
-    });
+    writeChannelDays(dir, key, list);
   });
   writeNowNext(dir, progs, now);
 }
@@ -871,6 +1018,17 @@ function tidy(list, shiftMs) {
   return out;
 }
 
+// A guide link and the login written into it, apart: { url, auth }, auth null for a bare link.
+function guideLogin(u) {
+  u = String(u || '');
+  var m = /^https?:\/\/([^\/?#@]*)@/i.exec(u);
+  if (!m) return { url: u, auth: null };
+  var colon = m[1].indexOf(':');
+  var user = colon === -1 ? m[1] : m[1].slice(0, colon), pass = colon === -1 ? '' : m[1].slice(colon + 1);
+  try { user = decodeURIComponent(user); pass = decodeURIComponent(pass); } catch (e) { return { url: u, auth: null }; }
+  return { url: withoutUserInfo(u), auth: user ? { user: user, pass: pass } : null };
+}
+
 function guideJob(cb) {
   var now = Date.now(), from = now - GUIDE_BACK_MS, to = now + GUIDE_AHEAD_MS;
   var wanted = job.channels || [];
@@ -879,7 +1037,13 @@ function guideJob(cb) {
     progs[w.key] = [];
     caps[w.key] = w.fav ? { to: to, n: 400, desc: 400 } : { to: Math.min(to, now + GUIDE_LINEUP_AHEAD_MS), n: GUIDE_LINEUP_PROGS, desc: GUIDE_LINEUP_DESC };
   });
-  var urls = (job.urls || []).filter(parse.safeDerivedUrl).slice(0, 4);
+  /*
+   * The owner's own link may carry a login, as the playlist link may. It goes
+   * as HTTP Basic (to curl on its standard input, where a tuner's does) and
+   * the address is asked for without it. A link found in a playlist never
+   * has one: iptv.js leaves those out.
+   */
+  var urls = (job.urls || []).map(guideLogin).filter(function (g) { return parse.safeDerivedUrl(g.url); }).slice(0, 4);
   if (!urls.length) return cb(fail('no-guide'));
   /*
    * Only guide channels that could match an added one are kept: a guide can
@@ -910,7 +1074,7 @@ function guideJob(cb) {
       writeSchedule(job.tmp, progs, now, carried);
       return cb(null, { matched: matched, channels: wanted.length, carried: Object.keys(carried).length });
     }
-    var url = urls[i++];
+    var g = urls[i++];
     map = null;
     var reader = new parse.XmltvReader(function (c) {
       if (!c.id) return;
@@ -935,7 +1099,7 @@ function guideJob(cb) {
         progs[k].push({ start: p.start, stop: p.stop, title: title, desc: p.desc, descMax: cap.desc });
       });
     });
-    download(url, { maxBytes: CEIL.downloadBytes, timeoutS: 1200 }, reader, function (err) {
+    download(g.url, { maxBytes: CEIL.downloadBytes, timeoutS: 1200, auth: g.auth }, reader, function (err) {
       if (err) { lastErr = err; return nextUrl(); }
       if (!map) resolve();
       anyOk = true;
@@ -1103,10 +1267,104 @@ function searchJob(cb) {
   cb(null, { total: total });
 }
 
+/*
+ * An Enigma2 receiver's guide for the lineup's channels, a request for each
+ * bouquet the lineup has channels in. The answer (epgmulti) is every event
+ * the receiver holds for the bouquet, tens of MB for a large one, grouped by
+ * channel, so it is read as it arrives and a channel's days are written as
+ * soon as the next channel starts: memory holds one channel, not the guide.
+ */
+function enigma2EpgJob(cb) {
+  var src = job.source, now = Date.now(), from = now - GUIDE_BACK_MS, to = now + ENIGMA2_AHEAD_MS;
+  var wanted = job.channels || [];
+  var shiftOf = {}, groups = {}, nn = {}, written = {}, eventsRead = 0;
+  wanted.forEach(function (w) {
+    if (!w.epgId) return;
+    shiftOf[w.key] = (w.shift || 0) * 3600000;
+    var g = groups[w.group || ''] = groups[w.group || ''] || {};
+    (g[w.epgId] = g[w.epgId] || []).push(w.key);
+  });
+  var auth = enigma2Auth(src);
+
+  // The lists of one service, tidied for each of its channels and written.
+  function flush(refs, ref, list) {
+    if (!list.length || written[ref]) return;
+    written[ref] = true;
+    (refs[ref] || []).forEach(function (key) {
+      var own = list.map(function (p) { return { start: p.start, stop: p.stop, title: p.title, desc: p.desc, descMax: ENIGMA2_DESC_MAX }; });
+      own = tidy(own, shiftOf[key] || 0);
+      if (!own.length) return;
+      writeChannelDays(job.tmp, key, own);
+      nn[key] = own.filter(function (p) { return p.stop > now - NOWNEXT_BACK_MS && p.start < now + NOWNEXT_AHEAD_MS; }).slice(0, 12);
+    });
+  }
+
+  function readBouquet(refs, bouquet, done) {
+    var current = null, list = [];
+    var reader = new parse.JsonArrayReader(function (ev) {
+      if (!ev || typeof ev !== 'object' || !refs[ev.sref]) return;
+      eventsRead++;
+      if (ev.sref !== current) {
+        if (current !== null) flush(refs, current, list);
+        current = ev.sref;
+        list = [];
+      }
+      var start = parseInt(ev.begin_timestamp, 10) * 1000, length = parseInt(ev.duration_sec, 10) * 1000;
+      if (!(start > 0) || !(length > 0) || start > to || start + length < from || list.length >= ENIGMA2_EVENTS_MAX) return;
+      list.push({ start: start, stop: start + length, title: String(ev.title || ''), desc: String(ev.longdesc || ev.shortdesc || '') });
+    });
+    var url = enigma2Url(src, '/api/epgmulti?bRef=' + encodeURIComponent(bouquet.ref) + '&time=' + Math.floor(from / 1000) +
+      '&endTime=' + Math.floor(to / 1000));
+    download(url, { maxBytes: CEIL.downloadBytes, timeoutS: 900, auth: auth }, reader, function (err) {
+      if (!err && current !== null) flush(refs, current, list);
+      done(err);
+    });
+  }
+
+  enigma2Bouquets(src, function (err, bouquets) {
+    if (err) return cb(err);
+    var byName = {};
+    bouquets.forEach(function (b) { if (!byName.hasOwnProperty(b.name)) byName[b.name] = b; });
+    var todo = Object.keys(groups).map(function (name) {
+      var b = byName[name];
+      // A name cut short in added.json still finds its bouquet.
+      if (!b) bouquets.forEach(function (x) { if (!b && name && x.name.indexOf(name) === 0) b = x; });
+      return b ? { bouquet: b, refs: groups[name] } : null;
+    }).filter(Boolean);
+    var i = 0, failures = 0, lastErr = null;
+    (function next() {
+      if (finished) return;
+      if (i >= todo.length) {
+        if (!Object.keys(written).length) return cb(failures ? lastErr : fail('no-guide'));
+        // A channel the receiver has no guide for keeps the last one it had.
+        var none = wanted.filter(function (w) { return w.epgId && !nn.hasOwnProperty(w.key); }).map(function (w) { return w.key; });
+        var carried = carryGuide(job.prevGuide, job.tmp, none, nn, now);
+        writeNowNext(job.tmp, nn, now);
+        return cb(null, { channels: Object.keys(nn).length - Object.keys(carried).length, carried: Object.keys(carried).length, events: eventsRead });
+      }
+      var item = todo[i++];
+      readBouquet(item.refs, item.bouquet, function (err2) {
+        if (err2) {
+          // A login refused or a receiver that is busy stops the job; one bouquet that failed does not.
+          if (err2.code === 'login' || err2.code === 'busy') return cb(err2);
+          failures++;
+          lastErr = err2;
+        }
+        setTimeout(next, REQUEST_GAP_MS);
+      });
+    })();
+  });
+}
+
 // ---------------------------------------------------------------- start
 
-var JOBS = { playlist: playlistJob, select: selectJob, guide: guideJob, epg: epgJob, nownext: nownextJob,
+var JOBS = { playlist: playlistJob, select: selectJob, guide: guideJob, epg: epgByKind, nownext: nownextJob,
   browse: browseJob, search: searchJob };
+
+function epgByKind(cb) {
+  if (job.source && job.source.kind === 'enigma2') return enigma2EpgJob(cb);
+  epgJob(cb);
+}
 
 function run() {
   process.umask(umask);

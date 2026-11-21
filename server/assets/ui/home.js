@@ -1,10 +1,11 @@
 // The Home tab: Glasshouse Home, a home screen of Glasshouse's own in place of LG's.
 
 let homeStatus = null;
+let homeLauncherActive = false;
 let homeCat = null;      // what the TV's Home lists: apps, devices, picked channels, order
 let homeLayout = null;
 let homeChannels = null; // the TV's whole channel list, for picking
-let homeArmed = null;    // the control waiting for its second press: 'on', 'off' or 'hide'
+let homeArmed = null;    // the control waiting for its second press: 'hide'
 let homeArmTimer = null;
 let homeSaving = false;
 let homeLoadRevision = 0;
@@ -44,7 +45,9 @@ async function homePost(path, body) {
 // The tab, as Game's, only where the server offers Glasshouse Home.
 function setHomeAvailable(st) {
   homeAvailable = st.available !== false;
+  homeLauncherActive = !!(st.enabled || (st.bar && st.bar.enabled));
   if (q('tab-btn-home')) q('tab-btn-home').hidden = !homeAvailable;
+  if (typeof renderInputs === 'function') renderInputs();
 }
 
 async function loadHomeAvailable() {
@@ -65,6 +68,7 @@ async function loadHome(afterSave) {
   setHomeAvailable(homeStatus);
   if (!homeAvailable && activeTab === 'home') return showTab('control');
   renderHome();
+  if (typeof renderInputs === 'function') renderInputs();
 }
 
 function homeWritable() { return !!(!homeSaving && homeStatus && (homeStatus.supported.ok || homeStatus.enabled || homeStatus.restorePending) && homeStatus.writable !== false); }
@@ -94,13 +98,41 @@ function homeLauncherChosen() {
   return homeLaunchersAll().filter(l => l.id === id)[0] || null;
 }
 
+let homeSubView = 'rows';
+
+function setHomeSubView(view) {
+  homeSubView = view || 'rows';
+  syncHomeSubView();
+}
+
+function syncHomeSubView() {
+  const pane = q('homepane');
+  const nav = q('home-subnav');
+  const box = q('home-custom');
+  const useSubnav = !!(box && !box.classList.contains('lg-home') && !homeBarOn());
+  if (nav) {
+    nav.hidden = !useSubnav;
+    const btns = nav.querySelectorAll('button[data-home-view]');
+    for (let i = 0; i < btns.length; i++) {
+      btns[i].classList.toggle('on', btns[i].getAttribute('data-home-view') === homeSubView);
+    }
+  }
+  if (pane) {
+    if (useSubnav) pane.setAttribute('data-home-view', homeSubView);
+    else pane.removeAttribute('data-home-view');
+  }
+}
+
 function renderHomeCustom(autoVal) {
   const st = homeStatus;
   const lg = st.lgHome;
   const inPlace = !!(st.enabled && st.supported.ok);
   const glasshouseOn = inPlace && !homeLauncherOn();
   const box = q('home-custom');
-  if (box) box.classList.toggle('lg-home', !glasshouseOn);
+  if (box) {
+    box.classList.toggle('lg-home', !glasshouseOn);
+    box.classList.toggle('for-bar', homeBarOn());
+  }
   const layout = q('disc-homescreen');
   const tiles = q('disc-system-tiles');
   if (tiles) tiles.hidden = !lg;
@@ -111,6 +143,7 @@ function renderHomeCustom(autoVal) {
   if (layout && (!lg || inPlace)) layout.hidden = true;
   const more = q('home-more');
   if (box) box.hidden = !(glasshouseOn || (more && !more.hidden) || autoVal !== undefined || (layout && !layout.hidden) || (tiles && !tiles.hidden));
+  syncHomeSubView();
 }
 
 function homePreviewTiles(count) {
@@ -142,6 +175,7 @@ function renderLauncherPreview(kind, st) {
     const presets = (st && st.colourPresets) || [];
     const c = (homeLayout && homeLayout.colours) || homeOwnLook(presets) || { text: '#ece7df', accent: '#e9ad55' };
     const alt = !!(homeLayout && homeLayout.view === 'alternative');
+    const hl = (homeLayout && homeLayout.tileHighlight) || homeHighlightDefault();
     const bottom = !!(homeLayout && homeLayout.rowsBottom);
     const preview = !!(homeLayout && homeLayout.livePreview);
     const showClock = !homeLayout || homeLayout.showClock !== false;
@@ -154,7 +188,7 @@ function renderLauncherPreview(kind, st) {
         : `<span class="${cls}"><i class="hm-gh-glyph"></i></span>`;
     }).join('');
     const inputs = [0, 1, 2].map(() => `<span class="hm-gh-tile inp"><i></i></span>`).join('');
-    return `<span class="hm-s hm-s-gh${alt ? ' alt' : ''}${bottom ? ' bottom' : ''}" style="--look-text:${c.text};--look-accent:${c.accent}">
+    return `<span class="hm-s hm-s-gh${alt ? ' alt' : ''}${bottom ? ' bottom' : ''}" style="--look-text:${c.text};--look-accent:${c.accent};--look-highlight:${hl}">
       <span class="hm-gh-head">
         ${showClock ? `<span class="hm-gh-clock">${clock}</span>` : '<span></span>'}
         ${preview ? `<span class="hm-gh-pip"><i></i></span>` : ''}
@@ -244,9 +278,14 @@ function renderHome() {
         ? t('home.isOnDesc', 'It opens in LG’s Home’s place: with the Home and Back buttons, and when the TV wakes on Home.')
         : t('home.isOnPending', 'Switched on, but LG’s Home is still in its place. Switching off and on again tries once more.');
   } else {
-    desc.textContent = t('home.isOffDesc', 'Nothing of LG’s is changed: Glasshouse Home is laid over LG’s Home while on, and switching off takes it away.');
+    desc.textContent = '';
   }
+  desc.hidden = !desc.textContent;
   desc.className = 'pv-sub' + ((st.restorePending || (st.enabled && !st.active && !st.lgHomeOpen)) ? ' warn' : '');
+  const exp = q('home-exp');
+  if (exp) exp.hidden = !st.supported.ok || !(st.enabled || homeLauncherOpen);
+  const notes = q('home-notes');
+  if (notes) notes.hidden = desc.hidden && (!restartNote || restartNote.hidden) && (!exp || exp.hidden);
   const more = q('home-more');
   if (more) {
     // Glasshouse Bar shows the same Apps and Inputs rows as a launcher does.
@@ -302,6 +341,14 @@ function renderHome() {
   // Its size, while it is on and beside the clock. Plain CSS, so offered on every webOS.
   const sizeRow = q('home-preview-size-row');
   if (sizeRow) sizeRow.hidden = !st.supported.ok || !st.layout || st.layout.livePreview !== true || st.layout.previewInTile === true;
+  // Not offered with no remote paired, or one whose battery cannot be read.
+  const batteryRow = q('home-remote-battery-row');
+  if (batteryRow) batteryRow.hidden = !st.supported.ok || st.remoteBatteryAvailable === false;
+  const batterySel = q('home-remote-battery-sel');
+  if (batterySel) {
+    batterySel.value = (st.layout && st.layout.remoteBattery) || 'low';
+    batterySel.disabled = !homeWritable();
+  }
   const sizeSel = q('home-preview-size-sel');
   if (sizeSel) {
     sizeSel.value = (st.layout && st.layout.previewSize) || 'small';
@@ -318,6 +365,25 @@ function renderHome() {
     updateToggle(el, { cls: on && !unused ? 'good' : 'idle', label: on ? t('common.on', 'On') : t('common.off', 'Off') });
     el.disabled = !homeWritable() || unused;
   });
+  HOME_OPT_IN.forEach(([key, id]) => {
+    const el = q(id);
+    if (!el) return;
+    const on = !!st.layout && st.layout[key] === true;
+    updateToggle(el, { cls: on ? 'good' : 'idle', label: on ? t('common.on', 'On') : t('common.off', 'Off') });
+    el.disabled = !homeWritable();
+  });
+  const soundSel = q('home-nav-sound-sel');
+  if (soundSel) {
+    soundSel.value = (st.layout && st.layout.navSound) || 'off';
+    soundSel.disabled = !homeWritable();
+    renderHomeNavSound(st);
+  }
+  const fadeSel = q('home-card-fade-sel');
+  if (fadeSel) {
+    fadeSel.value = String(st.layout && typeof st.layout.cardFade === 'number' ? st.layout.cardFade : 20);
+    fadeSel.disabled = !homeWritable() || !(st.layout && st.layout.appCards === true);
+  }
+  loadHomeCardIcons();
   renderHomeWeather(st);
   const countAlt = q('home-show-count-alt');
   if (countAlt) countAlt.hidden = !altView;
@@ -337,6 +403,15 @@ function renderHome() {
     if (searchBlocked) q('home-search-blocked-text').textContent = searchBlocked.by === 'list'
       ? t('home.searchBlockedList', 'Unavailable: the ad blocker\u2019s hosts list blocks {host}, which LG\u2019s search needs, so the search mark is hidden on Glasshouse Home. Take {host} out of the list to use it. This switch keeps its setting.', { host: searchBlocked.host })
       : t('home.searchBlockedLevel', 'Unavailable: the ad blocker\u2019s Everything setting blocks {host}, which LG\u2019s search needs, so the search mark is hidden on Glasshouse Home. Set the ad blocker to Ads & telemetry or off to use it. This switch keeps its setting.', { host: searchBlocked.host });
+  }
+  // On unless switched off, and for webOS 11 only.
+  const wakeRow = q('home-reopen-wake-row');
+  if (wakeRow) wakeRow.hidden = !st.supported.ok || !(parseInt(st.supported.webos, 10) >= 11);
+  const wakeBtn = q('home-reopen-wake');
+  if (wakeBtn) {
+    const on = !st.layout || st.layout.reopenAfterWake !== false;
+    updateToggle(wakeBtn, { cls: on ? 'good' : 'idle', label: on ? t('common.on', 'On') : t('common.off', 'Off') });
+    wakeBtn.disabled = !homeWritable();
   }
   // Fading, as Picture details.
   [['home-fade', 'fade'], ['home-rows-bottom', 'rowsBottom']].forEach(([id, field]) => {
@@ -375,12 +450,11 @@ function renderHome() {
   }
   /*
    * The choice of launcher: each as a 16:9 miniature TV screen with its name
-   * and a short line beneath. The active one and a card awaiting confirmation
-   * carry a badge on the screen itself so the launcher's name stays visible.
+   * and a short line beneath. The active one carries a badge on the screen
+   * itself so the launcher's name stays visible.
    */
   const lgBtn = q('home-mode-lg');
   const chosenId = homeLauncherOn() ? st.launchers.chosen : null;
-  const again = t('home.pressAgain', 'Press again to confirm');
   const inUse = t('ss.inUse', 'In use');
   const ownKept = homeLaunchersKept().find(l => l.id === 'own');
   let customSub = t('home.customShort', 'Your own web app or page');
@@ -391,40 +465,39 @@ function renderHome() {
       customSub = ownKept.title || customSub;
     }
   }
-  const choice = (el, kind, name, sub, on, armed, hidden, disabled) => {
+  const choice = (el, kind, name, sub, on, hidden, disabled) => {
     if (!el) return;
     el.hidden = hidden;
     el.disabled = disabled;
-    el.className = 'hm-card' + (on ? ' on' : armed ? ' warn' : '');
-    const badge = armed ? again : on ? inUse : '';
+    el.className = 'hm-card' + (on ? ' on' : '');
     el.innerHTML = `<span class="hm-screen">
         ${renderLauncherPreview(kind, st)}
-        <span class="hm-badge"${badge ? '' : ' hidden'}>${esc(badge)}</span>
+        <span class="hm-badge"${on ? '' : ' hidden'}>${on ? esc(inUse) : ''}</span>
       </span>
       <span class="hm-meta">
         <span class="hm-name">${esc(name)}</span>
         <span class="hm-sub">${esc(sub)}</span>
       </span>`;
   };
+  const cardBusy = !homeWritable() || homeLauncherBusy;
   if (btn) {
-    const wantOn = !(st.enabled || st.restorePending);
-    const armed = homeArmed === (wantOn ? 'on' : 'off');
     if (st.restorePending) {
       if (lgBtn) lgBtn.hidden = true;
-      choice(btn, 'gh', t('home.retryRestore', 'Retry restoring LG Home'), t('home.restorePending', 'LG Home restoration is incomplete'), false, armed, false, !homeWritable());
+      choice(btn, 'gh', t('home.retryRestore', 'Retry restoring LG Home'), t('home.restorePending', 'LG Home restoration is incomplete'), false, false, cardBusy);
     } else {
-      choice(lgBtn, 'lg', t('home.lgHome', 'LG Home'), t('home.lgHomeShort', 'LG\u2019s built-in home screen'), !st.enabled && !homeBarOn(), (st.enabled || homeBarOn()) && (armed || homeArmed === 'bar:off'), false, !homeWritable());
-      choice(btn, 'gh', t('home.title', 'Glasshouse Home'), t('home.ghShort', 'Clock, rows, wallpapers & preview'), st.enabled && !chosenId, !st.enabled && armed, false, !homeWritable());
+      choice(lgBtn, 'lg', t('home.lgHome', 'LG Home'), t('home.lgHomeShort', 'LG\u2019s built-in home screen'), !st.enabled && !homeBarOn(), false, cardBusy);
+      choice(btn, 'gh', t('home.title', 'Glasshouse Home'), t('home.ghShort', 'Clock, rows, wallpapers & preview'), st.enabled && !chosenId, false, cardBusy);
     }
   }
   const unavailable = !!st.restorePending || !st.supported.ok;
-  choice(q('home-mode-minimal'), 'minimal', t('home.minimalName', 'Glasshouse Minimal'), t('home.minimalShort', 'Plain text lists on black'), chosenId === 'minimal', homeArmed === 'use:minimal',
-    unavailable || !homeLaunchersAll().some(l => l.id === 'minimal'), !homeWritable() || homeLauncherBusy);
+  choice(q('home-mode-minimal'), 'minimal', t('home.minimalName', 'Glasshouse Minimal'), t('home.minimalShort', 'Plain text lists on black'), chosenId === 'minimal',
+    unavailable || !homeLaunchersAll().some(l => l.id === 'minimal'), cardBusy);
   // Offered where the input bar is: both are overlays over the picture.
-  choice(q('home-mode-bar'), 'bar', t('home.bar.name', 'Glasshouse Bar'), t('home.bar.short', 'Bottom bar over the picture'), homeBarOn(), homeArmed === 'bar:on',
-    !st.bar || !st.bar.offered || !!st.restorePending, !homeWritable() || homeLauncherBusy);
-  choice(q('home-mode-launcher'), 'custom', t('home.custom', 'Custom'), customSub, !!chosenId && chosenId !== 'minimal', homeArmed === 'use:own',
-    unavailable, !homeWritable() || homeLauncherBusy);
+  choice(q('home-mode-bar'), 'bar', t('home.bar.name', 'Glasshouse Bar'), t('home.bar.short', 'Bottom bar over the picture'), homeBarOn(),
+    !st.bar || !st.bar.offered || !!st.restorePending, cardBusy);
+  choice(q('home-mode-launcher'), 'custom', t('home.custom', 'Custom'), customSub, !!chosenId && chosenId !== 'minimal',
+    unavailable, cardBusy);
+  renderHomeCompat(st);
   const hist = q('home-history-note');
   if (hist) hist.hidden = st.history;
   renderHomeRows();
@@ -467,6 +540,11 @@ function homeLookNow() {
   return presets.find(p => p.text === c.text && p.accent === c.accent) || null;
 }
 
+// The view's built-in tile highlight colour when none is chosen.
+function homeHighlightDefault() {
+  return '#141310';
+}
+
 // Each preset as a small Glasshouse Home: the clock in its text, a row's name in the quieter shade, the accent's mark.
 function renderHomeColours() {
   const box = q('home-looks');
@@ -486,13 +564,16 @@ function renderHomeColours() {
       <span class="home-look-name">${esc(names[p.id] || p.id)}</span>
     </button>`).join('');
   const c = (homeLayout && homeLayout.colours) || homeOwnLook(presets) || { text: '#ece7df', accent: '#e9ad55' };
-  const text = q('home-col-text'), accent = q('home-col-accent');
+  const text = q('home-col-text'), accent = q('home-col-accent'), hl = q('home-col-highlight');
   if (text && document.activeElement !== text) text.value = c.text;
   if (accent && document.activeElement !== accent) accent.value = c.accent;
-  [text, accent].forEach(el => { if (el) el.disabled = !can; });
+  const hlNow = (homeLayout && homeLayout.tileHighlight) || homeHighlightDefault();
+  if (hl && document.activeElement !== hl) hl.value = hlNow;
+  [text, accent, hl].forEach(el => { if (el) el.disabled = !can; });
   const reset = q('home-col-reset');
   const fresh = homeDefaultLook(), cur = homeLayout && homeLayout.colours;
-  if (reset) reset.disabled = !can || !!(cur && cur.text === fresh.text && cur.accent === fresh.accent);
+  const hasHl = !!(homeLayout && homeLayout.tileHighlight);
+  if (reset) reset.disabled = !can || (!hasHl && !!(cur && cur.text === fresh.text && cur.accent === fresh.accent));
 }
 
 // The animated background's colour presets, each as a small screen with a
@@ -537,29 +618,40 @@ function homeCustomColours() {
   homeSaveLayout({ colours: { text: q('home-col-text').value, accent: q('home-col-accent').value } });
 }
 
+function homeCustomHighlight() {
+  homeSaveLayout({ tileHighlight: q('home-col-highlight').value });
+}
+
 function homeItem(kind, id) {
-  if (kind === 'app' && id === 'lg-home') return { title: t('home.lgHome', 'LG Home'), lg: true };
+  const customApp = kind === 'app' && homeLayout && homeLayout.appNames && homeLayout.appNames[id];
+  if (kind === 'app' && id === 'lg-home') {
+    const def = t('home.lgHome', 'LG Home');
+    return { title: customApp || def, defTitle: def, lg: true };
+  }
   if (kind === 'iptv') {
     const tv = (homeCat.iptv || []).find(x => x.id === id);
     if (!tv) return null;
     const showLogos = !homeLayout || homeLayout.showTvLogos !== false;
     return { title: tv.name, icon: showLogos ? tv.logo : '', sub: tv.missing ? t('home.tv.gone', 'Not in the playlist any more') : tv.group };
   }
-  const list = kind === 'app' ? homeCat.apps : kind === 'dev' ? homeCat.devices : homeCat.channels;
+  const list = kind === 'app' ? homeCat.apps : homeCat.channels;
   const it = list.find(x => x.id === id);
   if (!it) return null;
-  // The TV's own tuner: no HDMI port, as its tile on Glasshouse Home says.
-  if (kind === 'dev' && it.tuner) return { title: it.name, sub: t('ctl.liveTv', 'Live TV') };
-  if (kind === 'dev' && it.unused) return { title: it.name, sub: t('home.dev.unused', 'Nothing connected'), unused: true };
-  if (kind === 'dev') return { title: it.name, sub: it.via ? t('home.dev.through', 'HDMI {port}, through {via}', { port: it.port, via: it.via }) : t('home.dev.port', 'HDMI {port}', { port: it.port }) };
   if (kind === 'ch') return { title: it.number + ' ' + it.name };
+  if (kind === 'app') {
+    const defTitle = it.defaultTitle || it.title;
+    return { title: customApp || defTitle, defTitle, icon: it.icon };
+  }
   return { title: it.title, icon: it.icon };
 }
 
 function renderHomeRows() {
   const box = q('home-rows');
   if (!box || !homeCat) return;
+  const active = document.activeElement;
+  if (active && active.closest && active.closest('#home-rows') && active.classList.contains('home-app-name')) return;
   const usable = homeWritable();
+  const editable = !homeStatus || homeStatus.writable !== false;
   // Redrawing after each change keeps the rows that were open, and what was typed in the channel search.
   const open = box.children.length ? [...box.querySelectorAll('details[open]')].map(d => d.dataset.kind) : [];
   const filter = q('home-ch-filter') ? q('home-ch-filter').value : '';
@@ -579,6 +671,10 @@ function renderHomeRows() {
       <div class="prot-table">${homeRecRow(usable)}</div>
     </details>`;
     }
+    // Inputs are configured on the Inputs tab; only row order and visibility stay here.
+    if (kind === 'dev') {
+      return `<div class="home-row" data-kind="dev"><div class="home-row-head"><span class="prot-title">${esc(HOME_ROWS.dev())}</span>${rowMove}</div></div>`;
+    }
     const order = homeCat.order[kind] || [];
     // A Last opened row is in the order the server sends; moving a tile means choosing Your order first.
     const recent = homeSort(kind) === 'recent';
@@ -590,14 +686,16 @@ function renderHomeRows() {
       if (id === 'lg-home' && homeLauncherOn()) return '';
       const hidden = kind !== 'ch' && homeLayout.hidden[kind].includes(id);
       const folded = kind === 'app' && (homeLayout.folder || []).includes(id);
-      // Hidden or not, an input with nothing plugged in is left out by the row's switch.
-      const leftOut = kind === 'dev' && it.unused && homeLayout.hideUnused === true;
-      const icon = it.icon ? `<img class="rk-ico" src="${esc(api(it.icon))}" alt="">` : '';
-      return `<div class="prot-row home-tile${hidden || folded || leftOut ? ' home-hidden' : ''}">
-        <div class="prot-main"><div class="prot-title">${icon}<span translate="no">${esc(it.title)}</span></div>
+      const cardButton = kind === 'app' && it.lg !== true && homeLayout.appCards === true;
+      const icon = cardButton ? homeCardIconButton(id, it, editable)
+        : it.icon ? `<img class="rk-ico" src="${esc(api(it.icon))}" alt="">` : '';
+      const titleHtml = kind === 'app'
+        ? `<input type="text" class="inp-name inp-name-in home-app-name" translate="no" maxlength="60" value="${esc(it.title)}" placeholder="${esc(it.defTitle)}" data-app-name="${esc(id)}" data-cur="${esc(it.title)}" data-def="${esc(it.defTitle)}" aria-label="${esc(t('home.appNameLabel', 'App name'))}" ${editable ? '' : 'disabled'} onkeydown="homeAppNameKey(event, this)" onblur="homeRenameApp(this)">`
+        : `<span translate="no">${esc(it.title)}</span>`;
+      return `<div class="prot-row home-tile${hidden || folded ? ' home-hidden' : ''}">
+        <div class="prot-main"><div class="prot-title">${icon}${titleHtml}</div>
           ${it.sub ? `<div class="prot-desc">${esc(it.sub)}</div>` : ''}</div>
         <div class="prot-status">
-          ${leftOut ? `<span class="pill idle">${esc(t('home.leftOut', 'Left out'))}</span>` : ''}
           <button type="button" class="pill idle home-move" ${movable && i > 0 ? '' : 'disabled'} onclick="homeMoveTile('${kind}', ${i}, -1)" aria-label="${esc(t('home.earlier', 'Earlier'))}">↑</button>
           <button type="button" class="pill idle home-move" ${movable && i < order.length - 1 ? '' : 'disabled'} onclick="homeMoveTile('${kind}', ${i}, 1)" aria-label="${esc(t('home.later', 'Later'))}">↓</button>
           ${kind === 'app' ? homePlaceSelect(id, hidden, folded, usable) :
@@ -607,10 +705,16 @@ function renderHomeRows() {
               disabled: !usable, onclick: `homeToggleTile('${kind}', '${jsq(id)}')` })}
         </div></div>`;
     }).join('');
+    const labelsOn = !homeLayout || homeLayout.showAppLabels !== false;
+    const barLabelsRow = kind === 'app' ? `<div class="prot-row home-bar-only">
+      <div class="prot-main"><div class="prot-title">${esc(t('home.showAppLabels', 'App labels'))}</div>
+        <div class="prot-desc">${esc(t('home.showAppLabelsDesc', 'Under each app icon on Glasshouse Home and Glasshouse Bar. Off leaves the icons on their own.'))}</div></div>
+      <div class="prot-status">${renderToggle({ id: 'home-bar-app-labels', cls: labelsOn ? 'good' : 'idle', label: labelsOn ? t('common.on', 'On') : t('common.off', 'Off'),
+        on: labelsOn, disabled: !usable, onclick: "homeShow('showAppLabels')" })}</div></div>` : '';
     return `<details class="home-row" data-kind="${kind}"${open.includes(kind) ? ' open' : ''}>
       <summary><span class="prot-title">${esc(HOME_ROWS[kind]())}</span>
         ${rowMove}</summary>
-      <div class="prot-table">${homeSortRow(kind, usable)}${kind === 'dev' ? homeUnusedRow(usable) : ''}${tiles || `<div class="sub">${esc(kind === 'ch' ? t('home.ch.empty', 'No channels yet. Add them below.') : kind === 'iptv' ? t('home.tv.rowEmpty', 'No channels yet. Add them in Internet TV below, or from the row on the TV.') : t('home.rowEmpty', 'Nothing to show in this row yet.'))}</div>`}</div>
+      <div class="prot-table">${homeSortRow(kind, usable)}${barLabelsRow}${tiles || `<div class="sub">${esc(kind === 'ch' ? t('home.ch.empty', 'No channels yet. Add them below.') : kind === 'iptv' ? t('home.tv.rowEmpty', 'No channels yet. Add them in Internet TV below, or from the row on the TV.') : t('home.rowEmpty', 'Nothing to show in this row yet.'))}</div>`}</div>
       ${kind === 'ch' ? homeChannelPicker() : ''}
     </details>`;
   }).join('');
@@ -637,18 +741,6 @@ function homeRecRow(usable) {
 
 function homeRecommended() {
   homeSaveLayout({ recommended: homeLayout.recommended !== true });
-}
-
-// The Inputs row's one choice of what it shows.
-function homeUnusedRow(usable) {
-  const on = homeLayout.hideUnused === true;
-  // An On and Off pill, as the tab's other switches are.
-  return `<div class="prot-row">
-    <div class="prot-main"><div class="prot-title">${esc(t('home.hideUnused', 'Hide inputs with nothing connected'))}</div>
-      <div class="prot-desc">${esc(t('home.hideUnusedDesc', 'Leaves inputs with nothing plugged in out of the Inputs row, instead of showing them greyed out. They still show while arranging.'))}</div></div>
-    <div class="prot-status">${renderToggle({ id: 'home-hide-unused', cls: on ? 'good' : 'idle', label: on ? t('common.on', 'On') : t('common.off', 'Off'),
-      on, disabled: !usable, onclick: 'homeHideUnused()' })}</div>
-  </div>`;
 }
 
 function homeSort(kind) { return homeLayout.sort && homeLayout.sort[kind] === 'recent' ? 'recent' : 'custom'; }
@@ -775,28 +867,96 @@ function homeSetPlace(id, place) {
   homeSaveLayout({ hidden, folder });
 }
 
+function homeAppNameKey(e, el) {
+  if (e.key === 'Enter') { e.preventDefault(); el.blur(); }
+  else if (e.key === 'Escape') { e.preventDefault(); el.value = el.dataset.cur || ''; el.blur(); }
+}
+
+function homeRenameApp(el) {
+  const id = el.dataset.appName;
+  const cur = el.dataset.cur || '';
+  const def = el.dataset.def || '';
+  const raw = el.value.replace(/\s+/g, ' ').trim();
+  const next = raw || def;
+  if (next === cur) { el.value = cur; return; }
+  el.dataset.cur = next;
+  if (homeLayout) {
+    homeLayout.appNames = Object.assign({}, homeLayout.appNames);
+    if (next === def) delete homeLayout.appNames[id];
+    else homeLayout.appNames[id] = next;
+  }
+  homeSaveLayout({ appNames: { [id]: next === def ? '' : next } });
+}
+
 function homeResetLayout() { homeSaveLayout({ reset: true }); }
+
+/*
+ * A launcher not yet reported working on this TV's webOS (lib/compat): offered,
+ * with a note saying so and links to report how it went, pre-filled with the
+ * TV's model and versions. Nothing is sent unless the issue is submitted.
+ */
+// A warning with links to report how it went: `report` is one feature's
+// { problem, works }, or a list of { name, report } where the note covers several.
+function homeCompatNote(text, report) {
+  // Copy details: the same lines the issue opens with, for someone without a
+  // GitHub account to post elsewhere.
+  const links = (r) => `<a href="${esc(r.problem)}" target="_blank" rel="noopener">${esc(t('compat.reportProblem', 'Report a problem'))}</a>
+    &middot; <a href="${esc(r.works)}" target="_blank" rel="noopener">${esc(t('compat.reportWorks', 'Tell us it works'))}</a>${r.details
+    ? ` &middot; <button type="button" class="link-btn" data-details="${esc(r.details)}" onclick="copyCompatDetails(this)">${esc(t('compat.copyDetails', 'Copy details'))}</button>` : ''}`;
+  const rows = Array.isArray(report)
+    ? report.map((x) => `<span class="home-compat-links">${esc(x.name)}: ${links(x.report)}</span>`).join('')
+    : `<span class="home-compat-links">${links(report)}</span>`;
+  return `<div class="pv-note warn home-compat-note">${esc(text)}${rows}</div>`;
+}
+
+async function copyCompatDetails(btn) {
+  const label = t('compat.copyDetails', 'Copy details');
+  try {
+    await copyToClipboard(btn.dataset.details);
+    btn.textContent = t('compat.copied', 'Copied');
+  } catch (e) {
+    btn.textContent = t('compat.copyFailed', 'Could not copy');
+  }
+  setTimeout(() => { btn.textContent = label; }, 2000);
+}
+
+function renderHomeCompat(st) {
+  const box = q('home-compat');
+  if (!box) return;
+  const v = (st.supported && st.supported.webos) || '?';
+  const home = !!(st.supported && st.supported.untried && st.supported.report);
+  const bar = !!(st.bar && st.bar.offered && st.bar.standing === 'untried' && st.bar.report);
+  // One note where both are untried, as on webOS 8, with each one's links.
+  box.innerHTML = home && bar
+    ? homeCompatNote(t('home.compat.untriedBoth', 'Glasshouse Home, Minimal, custom launchers and Glasshouse Bar have not yet been reported working on webOS {version}. If one misbehaves, choose LG Home to put everything back.', { version: v }),
+        [{ name: t('home.title', 'Glasshouse Home'), report: st.supported.report }, { name: t('home.bar.name', 'Glasshouse Bar'), report: st.bar.report }])
+    : home
+    ? homeCompatNote(t('home.compat.untried', 'Glasshouse Home, Minimal and custom launchers have not yet been reported working on webOS {version}. If one misbehaves, choose LG Home to put everything back.', { version: v }), st.supported.report)
+    : bar
+    ? homeCompatNote(t('home.compat.untriedBar', 'Glasshouse Bar has not yet been reported working on webOS {version}. If it misbehaves, choose LG Home to put everything back.', { version: (st.bar.webos || v) }), st.bar.report)
+    : '';
+  // webOS 11: the Home key is LG's own, and Glasshouse changes its handler for the bar.
+  if (st.bar && st.bar.native) box.innerHTML += `<div class="pv-note">${esc(t('home.bar.native', 'On this TV the Home key needs a change to LG’s key handler for Glasshouse Bar. Choosing the bar, or any other launcher after it, restarts the TV’s screen once, and the change is made again each time the TV starts.'))}</div>`;
+}
 
 function homeBarOn() { return !!(homeStatus && homeStatus.bar && homeStatus.bar.enabled); }
 
-/*
- * Glasshouse Bar, chosen or put back to LG's Home: a second press within five
- * seconds acts, as the other choices.
- */
+function homeShowUpdating(el) {
+  const badge = el && el.querySelector('.hm-badge');
+  if (badge) {
+    badge.textContent = t('apps.service.updating', 'Updating…');
+    badge.hidden = false;
+  } else if (el) {
+    el.textContent = t('apps.service.updating', 'Updating…');
+  }
+}
+
 async function homeChooseBar(on) {
   if (!homeStatus || !homeWritable() || homeLauncherBusy) return;
   if (homeBarOn() === on) return;
-  const want = 'bar:' + (on ? 'on' : 'off');
-  if (homeArmed !== want) {
-    homeArmed = want;
-    clearTimeout(homeArmTimer);
-    homeArmTimer = setTimeout(() => { homeArmed = null; renderHome(); }, 5000);
-    return renderHome();
-  }
-  homeArmed = null;
-  clearTimeout(homeArmTimer);
   homeLauncherBusy = true;
   renderHome();
+  homeShowUpdating(on ? q('home-mode-bar') : q('home-mode-lg'));
   try { await homePost('/api/home/bar', { on }); } catch (e) { showErr(e.message); }
   homeLauncherBusy = false;
   loadHome();
@@ -809,7 +969,7 @@ function homeChooseMode(wantOn) {
   // Custom's settings belong to Custom alone.
   homeLauncherOpen = false;
   if (homeStatus.restorePending) { homeSwitch(); return; }
-  // From the custom launcher to Glasshouse Home: the same place, another page, so no second press.
+  // From the custom launcher to Glasshouse Home: the same place, another page.
   if (wantOn && homeLauncherOn()) { homeLauncherChoose(false); return; }
   if (Boolean(homeStatus.enabled) === Boolean(wantOn)) {
     if (wantOn && !homeStatus.supported.ok) homeSwitch();
@@ -818,35 +978,20 @@ function homeChooseMode(wantOn) {
   homeSwitch();
 }
 
-// The master switch: one press arms it, a second within five seconds acts.
 async function homeSwitch() {
-  if (!homeWritable()) return;
+  if (!homeWritable() || homeLauncherBusy) return;
   const want = homeStatus.enabled || homeStatus.restorePending ? 'off' : 'on';
-  if (homeArmed !== want) {
-    homeArmed = want;
-    clearTimeout(homeArmTimer);
-    homeArmTimer = setTimeout(() => { homeArmed = null; renderHome(); }, 5000);
-    return renderHome();
-  }
-  homeArmed = null;
-  clearTimeout(homeArmTimer);
+  homeLauncherBusy = true;
+  renderHome();
   const btn = q('home-switch');
   const lgBtn = q('home-mode-lg');
-  const activeBtn = want === 'off' && !homeStatus.restorePending && lgBtn ? lgBtn : btn;
-  if (btn) btn.disabled = true;
-  if (lgBtn) lgBtn.disabled = true;
-  const badge = activeBtn && activeBtn.querySelector('.hm-badge');
-  if (badge) {
-    badge.textContent = t('apps.service.updating', 'Updating…');
-    badge.hidden = false;
-  } else if (activeBtn) {
-    activeBtn.textContent = t('apps.service.updating', 'Updating…');
-  }
+  homeShowUpdating(want === 'off' && !homeStatus.restorePending && lgBtn ? lgBtn : btn);
   try {
     // Glasshouse Home's own button: the custom launcher left set up, but not chosen.
     if (want === 'on' && homeStatus.launchers && homeStatus.launchers.chosen) await homePost('/api/home/launcher', { choose: false });
     await homePost(want === 'on' ? '/api/home/enable' : '/api/home/disable');
   } catch (e) { showErr(e.message); }
+  homeLauncherBusy = false;
   loadHome();
 }
 
@@ -864,29 +1009,17 @@ function homeChooseLauncher() {
   if (box && !wasOpen) box.scrollIntoView({ block: 'start', behavior: 'smooth' });
 }
 
-/*
- * A launcher kept: with Glasshouse Home on it swaps at once; from LG's Home it
- * takes a second press, as Glasshouse Home's own button does.
- */
 function homeLauncherUse(id) {
   if (!homeWritable() || homeLauncherBusy) return;
   if (id !== 'own') homeLauncherOpen = false;
   if (homeLauncherOn() && homeStatus.launchers.chosen === id) return;
-  if (homeStatus.enabled) return homeLauncherChoose(id);
-  if (homeArmed !== 'use:' + id) {
-    homeArmed = 'use:' + id;
-    clearTimeout(homeArmTimer);
-    homeArmTimer = setTimeout(() => { homeArmed = null; renderHome(); }, 5000);
-    return renderHome();
-  }
-  homeArmed = null;
-  clearTimeout(homeArmTimer);
   homeLauncherChoose(id);
 }
 
 async function homeLauncherChoose(id) {
   homeLauncherBusy = true;
   renderHome();
+  homeShowUpdating(id === 'minimal' ? q('home-mode-minimal') : id === 'own' ? q('home-mode-launcher') : q('home-switch'));
   try {
     await homePost('/api/home/launcher', { choose: id });
     if (id !== false && !homeStatus.enabled) await homePost('/api/home/enable');
@@ -942,7 +1075,7 @@ async function homeLauncherDone() {
     await homePost('/api/home/launcher', { choose: 'own' });
     note.textContent = t('home.launcher.doneOn', 'Done. The TV’s Home shows it within a few seconds.');
   } else {
-    note.textContent = t('home.launcher.doneOffCustom', 'Done. Press Custom above, then again, to make it the TV’s Home.');
+    note.textContent = t('home.launcher.doneOffCustom', 'Done. Press Custom above to make it the TV’s Home.');
   }
 }
 
@@ -1028,7 +1161,7 @@ function homePreviewOption(field) {
 }
 
 // The details Glasshouse Home shows unless switched off, and their toggles.
-const HOME_SHOW = [['showClock', 'home-show-clock'], ['showLastOn', 'home-show-last'], ['showAppCount', 'home-show-count'], ['showCec', 'home-show-cec'], ['showTvLogos', 'home-show-tv-logos'], ['showPointer', 'home-show-pointer']];
+const HOME_SHOW = [['showClock', 'home-show-clock'], ['showLastOn', 'home-show-last'], ['showAppCount', 'home-show-count'], ['showAppLabels', 'home-show-app-labels'], ['showCec', 'home-show-cec'], ['showTvLogos', 'home-show-tv-logos'], ['showPointer', 'home-show-pointer']];
 
 /*
  * The weather: off, from Home Assistant, or from Open-Meteo for a place found
@@ -1057,6 +1190,10 @@ function renderHomeWeather(st) {
 
 function homePreviewSize(value) {
   homeSaveLayout({ previewSize: value });
+}
+
+function homeRemoteBattery(value) {
+  homeSaveLayout({ remoteBattery: value });
 }
 
 function homeWeatherSource(value) {
@@ -1092,6 +1229,258 @@ function homeShow(key) {
   homeSaveLayout({ [key]: homeLayout[key] === false });
 }
 
+// Off until switched on: apps as cards and the pulse on the one in focus.
+const HOME_OPT_IN = [['appCards', 'home-app-cards'], ['focusPulse', 'home-focus-pulse']];
+function homeOptIn(key) {
+  homeSaveLayout({ [key]: homeLayout[key] !== true });
+}
+
+function homeCardFade(v) {
+  homeSaveLayout({ cardFade: Number(v) });
+}
+
+function homeNavSound(v) {
+  homeSaveLayout({ navSound: v });
+}
+
+/*
+ * The card icons on the TV (lib/home cardIconNames), read once a visit: each
+ * app's row picks one of them, or uploads one under its title's name.
+ */
+let homeCardIcons = null;
+let homeCardIconTarget = null;
+let homeCardIconNote = null;
+async function loadHomeCardIcons() {
+  if (homeCardIcons) return;
+  try {
+    const r = await (await fetch(api('/api/home/card-icons'))).json();
+    homeCardIcons = (r && r.names) || [];
+  } catch (e) { homeCardIcons = []; }
+  // Only the dialog's search offers them; the rows are left as drawn, so an
+  // owner's open section stays open.
+  if (homeCardIconTarget) renderHomeCardIconModal();
+}
+
+// An app title as a card icon is named, as lib/home cardIconKey: "YouTube Music" is youtube_music.
+function homeCardIconKey(title) {
+  return String(title || '').toLowerCase().replace(/&/g, ' and ').replace(/\+/g, ' plus ')
+    .replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '').slice(0, 80);
+}
+
+// An app's card in its row: what Home shows on it, opening the icon dialog.
+function homeCardIconButton(id, it, editable) {
+  const app = ((homeCat && homeCat.apps) || []).find(a => a.id === id);
+  const inner = app && app.card ? `<img src="${esc(api(app.card))}" alt="">`
+    : it.icon ? `<img class="home-card-own" src="${esc(api(it.icon))}" alt="">` : '';
+  return `<button type="button" class="home-card-btn" data-card-app="${esc(id)}" ${editable ? '' : 'disabled'}
+    onclick="homeCardIconOpen(this.dataset.cardApp)" title="${esc(t('home.cardIconEdit', 'Change the card icon'))}"
+    aria-label="${esc(t('home.cardIconEditFor', 'Card icon for {app}', { app: it.title }))}">${inner}</button>`;
+}
+
+function homeCardIconApp(id) {
+  return ((homeCat && homeCat.apps) || []).find(a => a.id === id) || { id, title: '' };
+}
+
+function homeCardIconOpen(id) {
+  homeCardIconTarget = id;
+  homeCardIconNote = null;
+  renderHomeCardIconModal();
+  const box = q('home-card-modal');
+  box.hidden = false;
+  q('home-card-modal-close').focus();
+}
+
+function homeCardIconClose() {
+  q('home-card-modal').hidden = true;
+  homeCardIconTarget = null;
+}
+
+// The dialog for the app it is open for, drawn again after each change.
+function renderHomeCardIconModal() {
+  const id = homeCardIconTarget;
+  if (!id || !q('home-card-modal')) return;
+  const app = homeCardIconApp(id);
+  const chosen = (homeLayout && homeLayout.appIcons && homeLayout.appIcons[id]) || '';
+  const shown = app.card ? (/[?&]name=([a-z0-9_]+)/.exec(app.card) || [])[1] : '';
+  q('home-card-modal-title').textContent = t('home.cardIconEditFor', 'Card icon for {app}', { app: app.title });
+  q('home-card-modal-preview').innerHTML = app.card ? `<img src="${esc(api(app.card))}" alt="">`
+    : app.icon ? `<img class="home-card-own" src="${esc(api(app.icon))}" alt="">` : '';
+  q('home-card-modal-state').textContent = shown
+    ? t('home.cardIconShowing', 'Showing {name}.png', { name: shown })
+    : t('home.cardIconNone', 'No card icon yet: Home shows the app’s own icon on the card.');
+  q('home-card-modal-upload').textContent = shown ? t('home.cardIconReplace', 'Replace') : t('home.cardIconUpload', 'Upload');
+  q('home-card-modal-remove').hidden = !shown;
+  const names = homeCardIcons || [];
+  const list = q('home-card-icon-list');
+  if (list.dataset.count !== String(names.length)) {
+    list.innerHTML = names.map(n => `<option value="${esc(n)}">`).join('');
+    list.dataset.count = String(names.length);
+  }
+  const pick = q('home-card-modal-pick');
+  pick.value = chosen;
+  pick.placeholder = t('home.cardIconSearch', 'Search {count} icons by name', { count: names.length });
+  q('home-card-modal-auto').hidden = !chosen;
+  q('home-card-modal-pickrow').hidden = !names.length;
+  const note = q('home-card-modal-note');
+  note.textContent = homeCardIconNote ? homeCardIconNote.text : '';
+  const busy = !!(homeCardIconNote && homeCardIconNote.busy);
+  ['home-card-modal-upload', 'home-card-modal-remove', 'home-card-modal-pick', 'home-card-modal-auto'].forEach(k => { q(k).disabled = busy || !homeWritable(); });
+}
+
+// One of the icons on the TV by name, or with none (Match by name), the one its title matches.
+function homeSetCardIcon(el) {
+  const id = homeCardIconTarget;
+  if (!id) return;
+  const name = el ? el.value.trim().toLowerCase() : '';
+  if (name && !(homeCardIcons || []).includes(name)) {
+    homeCardIconNote = { id, text: t('home.cardIconUnknown', 'There is no icon named {name} on the TV.', { name }) };
+    return renderHomeCardIconModal();
+  }
+  homeCardIconNote = null;
+  homeLayout.appIcons = Object.assign({}, homeLayout.appIcons);
+  if (name) homeLayout.appIcons[id] = name; else delete homeLayout.appIcons[id];
+  homeSaveLayout({ appIcons: { [id]: name } }).then(() => renderHomeCardIconModal());
+}
+
+function homeCardIconUpload() {
+  const input = q('home-card-icon-file');
+  input.value = '';
+  input.click();
+}
+
+function homeCardIconDrop(e) {
+  e.preventDefault();
+  q('home-card-modal-preview').classList.remove('drag');
+  const file = e.dataTransfer && e.dataTransfer.files[0];
+  if (file) homeCardIconSend(file);
+}
+
+// Any picture, drawn whole on a clear 640 x 360 PNG: the card's 16:9 at over
+// twice the size it is shown, which the server holds icons to.
+async function homePrepareCardIcon(file) {
+  if (!/^image\/(jpeg|png|webp|svg\+xml)$/.test(file.type) || file.size > 10 * 1024 * 1024) {
+    throw new Error(t('home.cardIconChoose', 'Choose a PNG, JPEG, WebP or SVG image up to 10 MB.'));
+  }
+  const url = URL.createObjectURL(file);
+  try {
+    const img = new Image();
+    await new Promise((resolve, reject) => {
+      img.onload = resolve;
+      img.onerror = () => reject(new Error(t('home.wall.unreadable', 'The image could not be opened.')));
+      img.src = url;
+    });
+    const W = 640, H = 360;
+    const w = img.naturalWidth || W, h = img.naturalHeight || H;
+    const scale = Math.min(W / w, H / h);
+    const canvas = document.createElement('canvas');
+    canvas.width = W;
+    canvas.height = H;
+    canvas.getContext('2d').drawImage(img, (W - w * scale) / 2, (H - h * scale) / 2, w * scale, h * scale);
+    const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+    if (!blob || blob.size > 1024 * 1024) throw new Error(t('home.wall.tooLarge', 'The prepared image is too large. Choose a smaller image.'));
+    return blob;
+  } finally { URL.revokeObjectURL(url); }
+}
+
+function homeCardIconPicked(input) {
+  if (input.files[0]) homeCardIconSend(input.files[0]);
+}
+
+async function homeCardIconSend(file) {
+  const id = homeCardIconTarget;
+  if (!file || !id || !homeWritable()) return;
+  const app = homeCardIconApp(id);
+  const chosen = (homeLayout.appIcons || {})[id];
+  // Its chosen icon is replaced; otherwise it is named for its title, which it
+  // then takes by name, or for its app id where the title has no letters for one.
+  const byTitle = homeCardIconKey(app.title);
+  const name = chosen || byTitle || ('app_' + homeCardIconKey(id)).slice(0, 80);
+  homeCardIconNote = { id, text: t('home.cardIconUploading', 'Uploading…'), busy: true };
+  renderHomeCardIconModal();
+  try {
+    const blob = await homePrepareCardIcon(file);
+    const res = await fetch(api('/api/home/card-icons/upload?name=' + encodeURIComponent(name)), {
+      method: 'POST', headers: { 'Content-Type': 'image/png' }, body: blob
+    });
+    const r = await res.json();
+    if (!res.ok || !r.ok) throw new Error(r.error || t('home.wall.uploadFailed', 'The image could not be uploaded.'));
+    homeCardIcons = r.names || homeCardIcons;
+    if (!chosen && !byTitle) await homeSaveLayout({ appIcons: { [id]: name } });
+    homeCardIconNote = { id, text: t('home.cardIconDone', 'Uploaded. Home shows it within a few seconds.') };
+  } catch (e) { homeCardIconNote = { id, text: e.message }; }
+  await loadHome();
+  renderHomeCardIconModal();
+}
+
+async function homeCardIconRemove() {
+  const id = homeCardIconTarget;
+  const app = homeCardIconApp(id);
+  const name = app.card ? (/[?&]name=([a-z0-9_]+)/.exec(app.card) || [])[1] : '';
+  if (!id || !name || !homeWritable()) return;
+  homeCardIconNote = null;
+  try {
+    const r = await homePost('/api/home/card-icons/remove', { name });
+    homeCardIcons = r.names || [];
+  } catch (e) { homeCardIconNote = { id, text: e.message }; }
+  await loadHome();
+  renderHomeCardIconModal();
+}
+
+// The own sound: its file on the TV, shown with Upload and Remove while it is chosen.
+function renderHomeNavSound(st) {
+  const name = (st.layout && st.layout.navSound) || 'off';
+  const own = st.layout && st.layout.ownSound;
+  const box = q('home-nav-sound-own');
+  if (!box) return;
+  const usable = homeWritable();
+  q('home-nav-sound-play').disabled = name === 'off' || (name === 'own' && !own);
+  box.hidden = name !== 'own';
+  q('home-nav-sound-upload').disabled = !usable;
+  q('home-nav-sound-remove').hidden = !own;
+  q('home-nav-sound-remove').disabled = !usable;
+  const note = q('home-nav-sound-note');
+  if (!note.dataset.busy) {
+    note.textContent = own
+      ? t('home.navSound.ownFile', '{type}, {size} KB', { type: own.type.replace('audio/', '').replace('mpeg', 'mp3').toUpperCase(), size: Math.max(1, Math.round(own.size / 1024)) })
+      : t('home.navSound.ownNone', 'No sound uploaded yet.');
+  }
+}
+
+let homeNavPreview = null;
+function homeNavSoundPlay() {
+  const name = q('home-nav-sound-sel').value;
+  if (name === 'off') return;
+  if (homeNavPreview) homeNavPreview.pause();
+  homeNavPreview = new Audio(api('/api/home/nav-sound?name=' + encodeURIComponent(name) + '&t=' + Date.now()));
+  homeNavPreview.play().catch(() => {});
+}
+
+async function homeNavSoundPicked(input) {
+  const file = input.files[0];
+  input.value = '';
+  if (!file || !homeWritable()) return;
+  const note = q('home-nav-sound-note');
+  note.dataset.busy = '1';
+  note.textContent = t('home.cardIconUploading', 'Uploading…');
+  try {
+    if (file.size > 512 * 1024) throw new Error(t('home.navSound.tooLarge', 'Choose an OGG, WAV or MP3 file of up to 512 KB.'));
+    const res = await fetch(api('/api/home/nav-sound/upload'), {
+      method: 'POST', headers: { 'Content-Type': 'application/octet-stream' }, body: file
+    });
+    const r = await res.json();
+    if (!res.ok || !r.ok) throw new Error(r.error || t('home.navSound.uploadFailed', 'The sound could not be uploaded.'));
+    delete note.dataset.busy;
+  } catch (e) { note.textContent = e.message; setTimeout(() => { delete note.dataset.busy; }, 8000); }
+  await loadHome();
+}
+
+async function homeNavSoundRemove() {
+  if (!homeWritable()) return;
+  try { await homePost('/api/home/nav-sound/remove', {}); }
+  catch (e) { q('home-nav-sound-note').textContent = e.message; }
+  await loadHome();
+}
+
 function homeSearch() {
   homeSaveLayout({ search: homeLayout.search !== true });
 }
@@ -1112,12 +1501,95 @@ function homeAnim(style) {
  */
 const HOME_ANIMS = ['waves', 'particles', 'aquarium', 'aurora', 'glow', 'stars', 'ripples'];
 const homeBgLast = { scene: 'waves', set: 'landscape' };
+let homeBgSelectedKind = null;
+// The Video wallpaper's and screen saver's own look, as lib/home-wallpapers keeps it.
+// The Screen savers tab sets the rest of it (ui/screensavers.js).
+const HOME_VIDEO_STYLE = { showClock: true, showDate: true, showWeather: true, showCaptions: true,
+  infoPosition: 'top-right', captionPosition: 'top-left', clockFont: 'Outfit', textFont: 'Manrope', captionFont: 'Manrope',
+  textColor: '#ece7df', infoSize: 100, captionSize: 32 };
+// Sizes in Home's 1920-wide pixels; 100 and 32 are Home's own clock and caption.
+const HOME_VIDEO_SIZES = { infoSize: [72, 86, 100, 128], captionSize: [24, 32, 40, 48] };
+
+// The four corners, sizes and faces, as both tabs offer them.
+function homeVideoChoices() {
+  return {
+    corners: [['top-left', t('home.video.topLeft', 'Top left')], ['top-right', t('home.video.topRight', 'Top right')],
+      ['bottom-left', t('home.video.bottomLeft', 'Bottom left')], ['bottom-right', t('home.video.bottomRight', 'Bottom right')]],
+    sizes: [t('home.video.small', 'Small'), t('home.video.medium', 'Medium'), t('home.video.large', 'Large'), t('home.video.extraLarge', 'Extra large')],
+    fonts: [['Outfit', 'Outfit'], ['Manrope', 'Manrope']]
+  };
+}
+
+function homeVideoStyle() {
+  return Object.assign({}, HOME_VIDEO_STYLE, (homeStatus && homeStatus.wallpapers && homeStatus.wallpapers.videoStyle) || {});
+}
+
+function homeVideoCount() {
+  const count = q('home-video-urls').value.split(/\r?\n/).filter(value => value.trim()).length;
+  const max = (homeStatus && homeStatus.wallpapers && homeStatus.wallpapers.maxVideoSources) || 50;
+  q('home-video-count').textContent = t('home.video.sourceCount', '{count} links, up to {max} videos', { count, max });
+}
+
+// Shuffle and the look save as they are changed; the links wait for Save, as reading a playlist takes a moment.
+async function homeVideoOptions(patch) {
+  if (!homeWritable() || homeWallUploading) return;
+  homeWallUploading = 'video-options';
+  renderHomeBg();
+  try {
+    const r = await homePost('/api/home/wallpapers', patch);
+    if (r.wallpapers) homeStatus.wallpapers = r.wallpapers;
+  } catch (e) { showErr(e.message); }
+  finally {
+    homeWallUploading = false;
+    renderHomeBg();
+  }
+}
+
+function homeVideoShuffle() {
+  homeVideoOptions({ videoShuffle: !(homeStatus.wallpapers || {}).videoShuffle });
+}
+
+function homeVideoShow(key) {
+  homeVideoOptions({ videoStyle: { [key]: homeVideoStyle()[key] === false } });
+}
+
+function homeVideoStyleSet(patch) {
+  homeVideoOptions({ videoStyle: patch });
+}
+
+function renderHomeVideo(busy) {
+  const walls = homeStatus.wallpapers || {}, style = homeVideoStyle();
+  const videoUrls = q('home-video-urls');
+  if (!videoUrls) return;
+  if (document.activeElement !== videoUrls) videoUrls.value = (walls.videoInputs || walls.videoUrls || []).join('\n');
+  homeVideoCount();
+  videoUrls.disabled = busy;
+  q('home-video-save').disabled = busy;
+  q('home-video-save').textContent = homeWallUploading === 'video' ? t('home.video.saving', 'Reading the playlist…') : t('home.video.save', 'Save videos');
+  const pill = (el, on) => {
+    updateToggle(el, { cls: on ? 'good' : 'idle', label: on ? t('common.on', 'On') : t('common.off', 'Off') });
+    el.disabled = busy;
+  };
+  pill(q('home-video-shuffle'), !!walls.videoShuffle);
+  pill(q('home-video-show-captions'), style.showCaptions !== false);
+  const { corners, sizes, fonts } = homeVideoChoices();
+  const choices = (id, key, options) => {
+    q(id).innerHTML = options.map(([value, label]) =>
+      `<button type="button" class="${style[key] === value ? 'on' : ''}" ${busy ? 'disabled' : ''} aria-pressed="${style[key] === value}"
+        onclick="homeVideoStyleSet(${esc(JSON.stringify({ [key]: value }))})">${esc(label)}</button>`).join('');
+  };
+  choices('home-video-caption-position', 'captionPosition', corners);
+  choices('home-video-caption-size', 'captionSize', HOME_VIDEO_SIZES.captionSize.map((size, i) => [size, sizes[i]]));
+  choices('home-video-caption-font', 'captionFont', fonts);
+}
 
 function homeBgKind() {
   const anim = (homeLayout && homeLayout.wallAnim) || 'off';
-  if (anim !== 'off') return 'animated';
   const choice = (homeStatus && homeStatus.wallpapers && homeStatus.wallpapers.choice) || 'own';
-  return choice === 'black' ? 'none' : 'pictures';
+  const saved = anim !== 'off' ? 'animated' : choice === 'black' ? 'none' : choice === 'video' ? 'video' : 'pictures';
+  // A kind picked here that the TV has not taken yet (Video before its first Save) shows until it does.
+  if (homeBgSelectedKind === saved) homeBgSelectedKind = null;
+  return homeBgSelectedKind || saved;
 }
 
 function renderHomeBg() {
@@ -1127,12 +1599,14 @@ function renderHomeBg() {
   const anim = (homeLayout && homeLayout.wallAnim) || 'off';
   const choice = (homeStatus.wallpapers && homeStatus.wallpapers.choice) || 'own';
   if (anim !== 'off') homeBgLast.scene = anim;
-  if (choice !== 'black') homeBgLast.set = choice;
-  const kinds = [['none', t('home.bg.none', 'None')], ['pictures', t('home.bg.pictures', 'Pictures')], ['animated', t('home.bg.animated', 'Animated')]];
+  if (choice !== 'black' && choice !== 'video') homeBgLast.set = choice;
+  const kinds = [['none', t('home.bg.none', 'None')], ['pictures', t('home.bg.pictures', 'Pictures')], ['animated', t('home.bg.animated', 'Animated')], ['video', t('home.bg.video', 'Video')]];
   kindBox.innerHTML = kinds.map(([k, label]) => `<button type="button" class="${k === kind ? 'on' : ''}" ${busy ? 'disabled' : ''}
     aria-pressed="${k === kind}" onclick="homeBgChoose('${k}')">${esc(label)}</button>`).join('');
   q('home-bg-pictures').hidden = kind !== 'pictures';
   q('home-bg-animated').hidden = kind !== 'animated';
+  q('home-bg-video').hidden = kind !== 'video';
+  renderHomeVideo(busy);
   const dark = document.querySelector('#homepane .home-dark') || document.querySelector('.home-dark');
   if (dark) dark.hidden = kind === 'none';
   const names = { waves: t('home.anim.waves', 'Light waves'), particles: t('home.anim.particles', 'Particles'),
@@ -1145,12 +1619,46 @@ function renderHomeBg() {
 
 async function homeBgChoose(kind) {
   if (!homeWritable() || homeWallUploading || kind === homeBgKind()) return;
+  homeBgSelectedKind = kind;
+  renderHomeBg();
   const choice = (homeStatus.wallpapers && homeStatus.wallpapers.choice) || 'own';
   if (kind === 'animated') return homeSaveLayout({ wallAnim: homeBgLast.scene });
   if (homeLayout && homeLayout.wallAnim && homeLayout.wallAnim !== 'off') await homeSaveLayout({ wallAnim: 'off' });
   if (kind === 'none' && choice !== 'black') return homeWallSet('black');
-  if (kind === 'pictures' && choice === 'black') return homeWallSet(homeBgLast.set);
+  if (kind === 'video') {
+    const walls = homeStatus.wallpapers || {};
+    q('home-video-urls').value = (walls.videoInputs || walls.videoUrls || []).join('\n');
+    // With videos saved, they play now; without, the section waits for its first Save.
+    if ((walls.videoUrls || []).length && choice !== 'video') return homeWallSet('video');
+    renderHomeBg();
+    return;
+  }
+  if (kind === 'pictures' && (choice === 'black' || choice === 'video')) return homeWallSet(homeBgLast.set);
   renderHomeBg();
+}
+
+async function homeVideoSave() {
+  if (!homeWritable() || homeWallUploading) return;
+  const note = q('home-video-note');
+  const urls = q('home-video-urls').value.split(/\r?\n/).map(value => value.trim()).filter(Boolean);
+  note.textContent = '';
+  homeWallUploading = 'video';
+  renderHomeBg();
+  try {
+    if (homeLayout && homeLayout.wallAnim && homeLayout.wallAnim !== 'off') await homeSaveLayout({ wallAnim: 'off' });
+    const r = await homePost('/api/home/wallpapers', { videoUrls: urls, videoShuffle: !!(homeStatus.wallpapers || {}).videoShuffle });
+    const n = ((r.wallpapers || {}).videoUrls || []).length;
+    note.textContent = n ? t('home.video.saved', '{count} videos ready.', { count: n }) : '';
+  } catch (e) { note.textContent = e.message; }
+  finally {
+    homeWallUploading = false;
+    await loadHome();
+    renderHomeWalls();
+  }
+}
+
+function homeReopenWake() {
+  homeSaveLayout({ reopenAfterWake: homeLayout.reopenAfterWake === false });
 }
 
 function homeRowsBottom() {
@@ -1167,19 +1675,19 @@ function homeMotion(key) {
   homeSaveLayout({ [key]: homeLayout[key] === false });
 }
 
-// A group shows only while it has a row to show: LG's Home leaves only Starting up.
+// A group shows only while it has a row to show: LG's Home leaves only Starting
+// up, and Glasshouse Bar, which leaves LG's Home in place, the rows it follows
+// too (home-bar-row: Smooth scrolling).
 function homeGroupsShown() {
   const lgHome = q('home-custom').classList.contains('lg-home');
+  const bar = homeBarOn();
   document.querySelectorAll('#home-custom .home-group').forEach(g => {
-    const shown = [...g.querySelectorAll('.prot-row')].filter(r => !r.hidden && !(lgHome && r.classList.contains('home-gh-row')));
+    const shown = [...g.querySelectorAll('.prot-row')].filter(r => !r.hidden &&
+      !(lgHome && r.classList.contains('home-gh-row') && !(bar && r.classList.contains('home-bar-row'))));
     g.hidden = !shown.length;
     // Hidden rows can come last, so the last shown one is marked to drop its line.
     g.querySelectorAll('.prot-row').forEach(r => r.classList.toggle('last', r === shown[shown.length - 1]));
   });
-}
-
-function homeHideUnused() {
-  homeSaveLayout({ hideUnused: homeLayout.hideUnused !== true });
 }
 
 // Added channels are the Channels row; this finds more to add. Built once, then only its list redraws.
@@ -1289,9 +1797,9 @@ function renderHomeWalls() {
   if (choiceBox) {
     const label = { black: t('home.wall.setBlack', 'Black'), landscape: t('home.wall.setLandscape', 'Landscape'),
       abstract: t('home.wall.setAbstract', 'Abstract'), own: t('home.wall.setOwn', 'Your own'),
-      shuffle: t('home.wall.setShuffle', 'Your own, shuffled') };
+      shuffle: t('home.wall.setShuffle', 'Your own, shuffled'), video: t('home.bg.video', 'Video') };
     // Black is the background's None, chosen above.
-    choiceBox.innerHTML = (walls.choices || ['black', 'landscape', 'abstract', 'own']).filter(name => name !== 'black').map(name =>
+    choiceBox.innerHTML = (walls.choices || ['black', 'landscape', 'abstract', 'own']).filter(name => name !== 'black' && name !== 'video').map(name =>
       `<button type="button" class="${name === choice ? 'on' : ''}${name === getting ? ' busy' : ''}" ${busy ? 'disabled' : ''}
         aria-pressed="${name === choice}" onclick="homeWallSet('${name}')">${esc(name === getting ? t('home.wall.examplesBusy', 'Downloading…') : label[name] || name)}</button>`).join('');
   }

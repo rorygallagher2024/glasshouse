@@ -581,6 +581,30 @@ test('checkIds refuses an id already present in the system apps', function (done
   done();
 });
 
+test('checkIds lets a package replace LG\'s placeholder stub of an app', function (done) {
+  var ctx = setup();
+  var dir = path.join(ctx.dir, 'system', 'com.example.app');
+  fs.mkdirSync(dir);
+  fs.writeFileSync(path.join(dir, 'appinfo.json'), JSON.stringify({ id: 'com.example.app', type: 'stub', version: '0.0.1', vendor: 'LG Electronics, Inc.' }));
+  assert.strictEqual(installer.checkIds({ package: 'com.example.app', apps: [{ id: 'com.example.app' }], services: [] }), null);
+  done();
+});
+
+test('checkIds still refuses a real system app, with or without an appinfo.json', function (done) {
+  var ctx = setup();
+  var real = path.join(ctx.dir, 'system', 'com.example.real');
+  fs.mkdirSync(real);
+  fs.writeFileSync(path.join(real, 'appinfo.json'), JSON.stringify({ id: 'com.example.real', type: 'web', version: '1.2.3' }));
+  var broken = path.join(ctx.dir, 'system', 'com.example.broken');
+  fs.mkdirSync(broken);
+  fs.writeFileSync(path.join(broken, 'appinfo.json'), '{ not json');
+  ['com.example.real', 'com.example.broken'].forEach(function (id) {
+    var err = installer.checkIds({ package: id, apps: [{ id: id }], services: [] });
+    assert.ok(/already part of the TV system/.test(err), id + ': ' + err);
+  });
+  done();
+});
+
 test('checkIds refuses the Homebrew Channel and the dashboard\'s HBC package', function (done) {
   setup();
   ['org.webosbrew.hbchannel', 'io.github.rorygallagher2024.lg-webos-dashboard'].forEach(function (p) {

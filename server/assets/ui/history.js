@@ -62,10 +62,11 @@ function watchName(key, titles) {
 // Shown only while counting is on; the switch is on the Server tab.
 function renderWatchTime(d) {
   const block = q('watchblock');
-  if (block.hidden === !!d.enabled) {
-    block.hidden = !d.enabled;
-    relayout(true);   // which group heads its column can change
+  if (q('metrics-sub-watch')) q('metrics-sub-watch').hidden = !d.enabled;
+  if (!d.enabled && typeof metricsSubView !== 'undefined' && metricsSubView === 'watch' && typeof setMetricsSubView === 'function') {
+    setMetricsSubView('overview');
   }
+  block.hidden = !d.enabled;
   if (!d.enabled) return;
 
   const days = watchByDay(d.hours || {});

@@ -301,6 +301,25 @@ Aerial's own
 and hides the QML there (#1378). Taking Aerial's mount off first, and then
 mounting, leaves its folder as it was.
 
+On a G5 (OLED65G56LS, webOS 11.2.0) with Aerial Screensaver 3.0.4's
+`screensaver-main.qml` as the screen saver, tvpower went from `Screen Saver`
+back to `Active` 1.0 to 1.4 s after the screen saver's window showed, as its
+first video (3840x2160 HEVC) started. The same QML started with `qml-runner`
+by hand, outside tvpower's screen saver state, went on playing. After
+
+    luna-send -n 1 luna://com.webos.service.screenmanager/setScreenSaverMode \
+      '{"appId":"com.webos.app.screensaver","mode":"manual"}'
+
+the screen saver stayed up with its video playing, 15 minutes when left.
+screenmanager's strings give `mode` as `auto` or `manual`, and have "full
+screen playing" and "appId(%s) is manual mode" beside them. Aerial's web page
+for these TVs sends `manual` at every start, and its source says why:
+screenmanager ends the screen saver when it sees full-screen video, except for
+an app in manual mode, and keeps the mode in memory until it restarts. Its QML
+does not send it. Whether the mode outlasts a reboot was not seen: Glasshouse
+sent it again 43 s after each of two boots, and the screen saver stayed up
+after both.
+
 ## HDMI CEC devices (G3, webOS 9.2.2)
 
 `com.webos.service.eim/getAllInputStatus` returns CEC devices in each HDMI
@@ -1013,6 +1032,45 @@ Reported on PR #910 on 27 October 2026.
 - **Exiting an app lands on the last input**, from LG's Exit dialog or Back on
   LG's Apps, not on Home.
 
+## LG's Home after an app closes (OLED55C16LA, webOS 6.5.3, firmware 03.53.45)
+
+- **sam opens LG's Home about 1 s after the app in front closes.** The app's
+  window went at 8932.21 s and `last_input_handler` launched
+  `com.webos.app.home` (`mode: "last_input"`) at 8933.23 s, with
+  `lastInputApp` at `com.webos.app.hdmi1`.
+- **sam skips it when another full-screen app is starting.** Glasshouse Home
+  launched on the closing app's `close` event from
+  `applicationManager/getAppLifeEvents` was in front 0.12 s after it, and
+  `last_input_handler` launched nothing in 10 of 10 closes. sam's strings
+  name the case `skip_launching_last_input_app`.
+- **An app left for another gets `background`, not `close`.** Opening NPO
+  Start over the Glasshouse app gave the Glasshouse app `background`; `close`
+  came only from closing it. Switching inputs (Live TV to HDMI 1, HDMI 1 to
+  HDMI 3 and back) gave the input left `background` each time.
+- **An app opening another and exiting sends `close` while the other
+  starts.** Launching Netflix over YouTube and closing YouTube at once gave
+  `launch netflix`, then `close youtube.leanback.v4`, then
+  `foreground netflix` about 0.5 s later. A preload sends `preload` and
+  `background` (status `preload`), not `launch`.
+- **Switching off, tvpower's steps come before any close.** With the remote's
+  power key, `getPowerState` replied `Request Power Off`, `Request Active
+  Standby`, `Request Suspend` and `Prepare Suspend`, each with state `Active`
+  and `onOff: "off"`, within 0.14 s. sam's closes followed 0.2 to 0.5 s after
+  the first: `windowPolicy` for inputs behind the app in front, `powerOff`
+  for Glasshouse Home, none for AirPlay. State `Suspend` came 1.74 s after
+  the first step. LG's YouTube in front got `background`; a sideloaded
+  YouTube build got `close`, 1.5 s before `Suspend`.
+- **LG's Home takes the screen back while it starts.** Covered about 0.1 s
+  after it showed, its card window went invisible and visible again about
+  0.5 s later with no launch in sam, and sam named it in front. Covering it
+  again at once repeated this up to seven times after one close; covering it
+  once it had been in front 0.6 s did not, in 12 of 12. Its QML shows its
+  window from several launch handlers (`launching`, `relaunching`, the
+  registerApp `relaunch` event, and a launch mode kept until it is ready),
+  and hides it on `background`, so a handler still to run shows it again.
+  Its own `printLog` lines go to a `com.webos.app.home` PmLog context that
+  the firmware does not register, so they are not in `/var/log/messages`.
+
 ## Glasshouse Home's frames (C2, webOS 9.2.2; B8, webOS 4.4.3)
 
 Measured with `scripts/tv.sh <tv> frames` (testing.md), in Alternative View:
@@ -1359,6 +1417,32 @@ off it fired as the TV resumed, 250 ms after the server saw the screen on in
 one wake and before it did in another, and took the view, which had not yet
 had a chance to beat, for hung (#1277).
 
+## Switching off without Active Standby (webOS 4.4.3, 49SK8500PLA; webOS 5.6.2, OLED48CX8LC)
+
+An LCD, and an OLED that is not running panel care, go from Active to Suspend
+at once. Glasshouse logs `Active -> Suspend` and `TV switched off` 10 to 25 ms
+apart, and the system is asleep after that: the clock since boot moved 2 s
+across a 140 s standby, and the watchdog reported `resumed after 140s
+suspended`. Home Assistant saw nothing of the "off" status published in those
+milliseconds, only the broker's will once the connection had been silent for
+its keepalive.
+
+Changing the will as the TV switches off does not finish in that time either:
+on the 49SK8500PLA, switched off at 20:09:39, the broker published the old
+will, `offline`, at 20:09:54 (keepalive 10 s). The OLED48CX8LC did the same
+twice: the reconnect with the new will was logged 3.3 s after the switch-off,
+and the will that came out 15 s later was still `offline`. After a Wake-on-LAN
+into Active Standby, which leaves seconds before it sleeps again, the change
+did take and the will came out as `asleep`.
+
+What a TV has written in its last moments before it sleeps stays in its send
+buffer and goes out as it wakes. On the OLED48CX8LC an off published at the
+reconnect just before it slept reached the broker a second before the TV's own
+power answer, which showed Power off for that second.
+
+An OLED running panel care (OLED48C31LA, webOS 11.2.0) goes Active to Active
+Standby first and stays up for 6 to 15 s before Suspend, and its "off" arrives.
+
 ## Keeping a TV awake while off (webOS 4.4.3, B8)
 
 The question was whether the B8 could stay reachable while switched off, as
@@ -1428,6 +1512,17 @@ saver, standby and wake cycles left the picture intact (YouTube reached the
 MAIN sink with `activation: true`). The same calls have run at every boot of an
 LG Home replacement on that C5 since 2026-10-11. A reboot between the two calls
 would leave the app blocked, so they stay together and the release is retried.
+
+Not every sam with the block has the release. A G3 (OLED77G3PUA, webOS 8.4.0,
+firmware 13.40.76) took `blockSystemApp` for `com.webos.app.home` and answered
+`releaseBlockSystemApp` with `Unknown method "releaseBlockSystemApp" for
+category "/"` (-1); LG's Home then answered a launch with -101 "not exist"
+until a reboot cleared the block, and `blockedSystemAppList` was not on disk
+(#1493). A C2 (webOS 9.2.2) answers the release the same way, though
+`/etc/palm/schemas/sam/applicationManager.blockSystemApp.schema` is there, so
+the schema does not say the release is. A release of an app that is not
+blocked changes nothing (a C5 answers `returnValue: true`), so it is asked
+first, and nothing is blocked where it is unknown.
 
 webOS 11 changes the block's parameters. On a G3 (OLED65G36LA, webOS 11.2.0,
 firmware 43.21.71) `/etc/palm/schemas/sam/applicationManager.blockSystemApp.schema`
@@ -1704,6 +1799,14 @@ app in front. Remote Keys puts its own filter first.
   On a CX (webOS 5.5), the microphone button set to an app through the filter
   opened it on a press and on a hold alike, and set back to LG's own it started
   voice control again (#1034).
+- **Red and Green pass straight through on webOS 4.** On a B8 (webOS 4.4.3),
+  `/usr/lib/qt5/qml/KeyFilters/` matches `WebOS.Key_webOS_Yellow`
+  (`appLaunch.js`, a 5 s hold calling `global.launchAGP`) and
+  `WebOS.Key_webOS_Blue` (`systemUi.js`, `magnifier.blueReleased()`), while
+  `WebOS.Key_webOS_Red` and `WebOS.Key_webOS_Green` have no filter case and
+  reach the foreground app directly, though `libwebosglobalplugin.so` and
+  `/usr/share/X11/xkb/keycodes/lg` (`IR_KEY_RED`..`IR_KEY_BLUE`, 406–409)
+  define all four.
 - **Filters get the compositor's timers.** `StarfishKeyFilter.qml` hands every
   filter `genericTimer` (`set(ms, callback)`, `cancel`, `isRunning`), as LG's
   `appLaunch.js` uses it. On a change to the key it cancels every
@@ -1863,7 +1966,10 @@ manager launched only HDMI 4 in nine minutes of the same file, and set back to
   and nothing opened; `getAppInfo` on a blocked app returns `returnValue:
   false`, a second block `errorCode` 1 "already blocked: <id>", and a release
   of an app not blocked `returnValue: true`. The adapter launched the view up
-  to 13 s after a press.
+  to 13 s after a press. A C3 (webOS 11.2.0) refused the block outright,
+  `errorCode` 1 "exist in listLaunchPoint: amazon.alexa.view": the view has a
+  launch point there (`hidden: false`), and sam will not block an app that
+  has one (#1498).
 - **Toasts can be refused, not closed.** `notification/closeToast` with a
   toast's id returned true and the toast stayed its 5 s. After
   `notification/disable` (`exceptions` optional), `createToast` was answered
@@ -1879,6 +1985,91 @@ manager launched only HDMI 4 in nine minutes of the same file, and set back to
   back nine times, five of them with no message to the subscriber, the last
   60 s after power-on.
 
+## The Guide key's launch, native key filters (OLED48C31LA, webOS 11.2.0, firmware 44.00.92)
+
+- **The key's value is read for `id` and `fgAppIdsForByPass` alone.** With
+  `com.webos.keyaction.tvGuide` set to `com.webos.app.livetv` the key opened Live
+  TV at once, with no restart of anything. Set to `com.webos.app.home` with
+  `params` `{ glasshouse: "guide" }`, or to `com.webos.app.tvhotkey` with
+  `params` `{ activateType: "sleep" }` (the form LG's own entries for `sleep`,
+  `aspectRatio` and `muteX3` take, whose handlers do read `params`), it opened the
+  app and nothing of the parameters reached it.
+- **The launch passes a fixed `{}`.** In `libappLaunch.so` (388,132 bytes, 32-bit
+  ARM, Thumb-2, run by `surface-manager` as `surface-manager-daemon.service`) the
+  Guide branch of `handleHotkeys`, which logs "handle TVGUide", reads `action` and
+  `id` from the value kept for `tvGuide` and calls the launcher with the launch
+  parameters as a literal `{}`, a string 57 places share, each through a literal
+  of its own.
+- **An app already in front is not launched again.** The same branch asks
+  `isForegroundApp` for the app it opens and ends the key if it is in front, so
+  with Glasshouse Home in front the key did nothing at all.
+- **Two changes make the key work.** The literal of the Guide branch pointing at
+  `{"glasshouse":"guide"}` in padding at the end of `.rodata` instead of `{}`, and
+  the `bne` after `isForegroundApp` a `nop`. Glasshouse Home reads the parameter
+  from `PalmSystem.launchParams` at a relaunch, closes its player, and opens its
+  guide. A change to the file on disk is not needed: the library is read when
+  `surface-manager` starts, and a copy bind mounted over it, with the service
+  restarted, was in use after, and was gone after a restart of the TV.
+- **The rootfs is read only.** `/` is squashfs `ro` and `/usr` an `ro` overlay.
+  `mount --bind` of a file over `/usr/lib/libappLaunch.so.1` (a link to
+  `libappLaunch.so.1.0.0`) worked, and a second one over the first, while an
+  `umount` of the first answered "target is busy".
+- **After the restart the screen shows LG's Home first.** Glasshouse Home had the
+  place again 33 to 37 s after each of two restarts of the service.
+
+## The Input key's launch, native key filters (OLED48C31LA, webOS 11.2.0, firmware 44.00.92)
+
+- **The Input key reads no value.** In `libappLaunch.so` its handler
+  (`IR_KEY_INPUT_HUB`, then `showInputPicker`, and `IR_FRONTKEY_INPUT_SELECT` for
+  the key on the TV) launches `com.webos.app.quickinputpicker` through
+  `applicationManager/launch` with a text kept in `.rodata`,
+  `{"id": "com.webos.app.quickinputpicker"}`, which only two places in
+  `handleHotkeys` use. Nothing in configd or `other.mapping_info` names the key.
+- **One text, both launches.** The text replaced, in a copy of the library, by
+  `{"id": "com.tvweb.inputbar"}` (shorter, with zeros after it) made the Input key
+  open Glasshouse's input bar, with the bar's app installed and nothing else
+  changed. The text is 41 bytes with its end, so an id of up to 30 characters
+  fits, which takes all but two of the 30 apps and inputs a C5 offers.
+- **It is the picker's id, not the key's.** With the text changed the picker also
+  opens the bar from the key on the TV and wherever else LG's code opens it, so the
+  change is made only while the Input key is set to the bar.
+
+## The Home key's launch, native key filters (OLED48C31LA, webOS 11.2.0, firmware 44.00.92)
+
+- **Settings and category do not choose the app.** `general.defaultApps.home`
+  set with `applicationManager/setDefaultApp` to another app was accepted and
+  read back, an app declaring `appCategory: ["home"]` was installed, and the
+  Home key still opened `com.webos.app.home` each time. sam keeps the default
+  apps in the system profile (`OnSystemProfileDefaultAppsChanged`), whose
+  `defaultApps.categories.home` is `com.webos.app.home` in
+  `/etc/webos-profile/platform/dynamic/senior_normal/profile.json`. A profile of
+  its own in that folder (a copy of the folder mounted over it, with
+  `debug/rescan` and `enableProfile`, which answered true) was not found by
+  `getProfiles` and changed nothing.
+- **The id is not in the library.** `libsystemUI.so`'s `handleHomeKeys` calls
+  `launchHomeApp`, which builds `{"launchType":"homeKey","activateType":...,
+  "category":"home","params":...}` and passes it to the launcher's
+  `launchDefaultApp`, slot 0x5c of an object's table. No text there names
+  `com.webos.app.home`, and `ls-monitor` on the public bus shows nothing of the
+  call.
+- **A call that launches by id sits next to it.** The function after
+  `launchHomeApp` launches LG's settings for an always-on display, through slot
+  0xc0 with an id (`com.palm.app.settings`, 21 characters) and parameters
+  (`{"target":"LightingSettings"}`, 29) it builds from literals. With the id and
+  parameters made `com.tvweb.homebar` and `{"glasshouse":"bar"}` (their lengths
+  set in the code and the literals pointed at padding after `.eh_frame`) and
+  `launchHomeApp` made to call it and return, the Home key opened Glasshouse
+  Bar from an app, and LG's Home showed when the app closed.
+- **With the home app in front the key is not launched.** `handleHomeKeys`
+  compares the id of the app in front with the home app's, and where they are
+  the same sends the key to that app (LG's Home scrolled to the top) and does
+  not call `launchHomeApp`. The branch is a `beq.w` after a `memcmp`, 4 bytes
+  that a `nop.w` makes fall through, and then the Home key from LG's Home opens
+  the bar too, 57 bytes changed in all. With Glasshouse Home in front the bar's
+  own check closes it unseen.
+- **The compositor's restart leaves no app.** With Glasshouse Home off nothing
+  opens LG's Home after it, and the screen stays black until an app is launched.
+
 ## Promoted stub apps (G3, webOS 9.2.2)
 
 On 18 October 2026, with a network-wide ad blocker in the house switched off,
@@ -1890,6 +2081,18 @@ and `com.miniclip.eightballpool` (8 Ball Pool). Both have `type: "stub"`,
 14 September and 6 October, their `appinfo.json` the minute they arrived. The
 notification list showed "Some apps are available for update" the same
 minute. Neither name is on Glasshouse's ad-blocking list.
+
+## LG's placeholder for YouTube (UM7290, webOS 4.10.2)
+
+A 55UM7290PTD has `/mnt/otncabi/usr/palm/applications/youtube.leanback.v4`:
+an `appinfo.json` with `type: "stub"`, version 0.0.1 and vendor `LG Electronics,
+Inc.`, the placeholder for the store's YouTube. The installer's check for an
+id that is already part of the TV system found it, so YouTube Foxtended
+(`youtube.leanback.v4`, a Homebrew Channel app that replaces YouTube on these
+TVs) was refused with "already part of the TV system". Installing it with
+`com.webos.appInstallService/dev/install` works, and puts the real app under
+`/media/developer/apps`, next to the placeholder. The installer now skips an
+id whose folder holds only a stub.
 
 ## Home screen (webOS 10 and 11)
 
@@ -2177,6 +2380,18 @@ about:blank`) in front.
   compositor's 120 s timer closes a Home window with nothing under it, sam
   launches the last app (`LAUNCH_LASTAPP on_foreground_null`). A Home that
   comes back that way closes the screen saver as it opens.
+- **G3 (webOS 10.3):** with `option.screenSaverTimer` at 10, Glasshouse
+  Home's video background let go 5 s before 10 minutes after the last key
+  brought no screen saver in the minute after: the timer had not run while
+  the video played. Started from Home at that time instead, the screen saver
+  came at once.
+- **G3 (webOS 10.3): a video screen saver started by tvpower is ended as
+  its video starts.** tvpower went from Screen Saver back to Active 2.4 to
+  2.6 s after `turnOnScreenSaver`, in the same millisecond as the Video
+  screen saver's first clip (4K Dolby Vision) reached the media pipeline,
+  from Home and from the Homebrew Channel alike, and with screenmanager's
+  `setScreenSaverMode` `manual` sent just before. The same app launched
+  through sam, with tvpower left Active, played on until a key.
 
 ## sam losing the screen saver app (webOS 9.2.2, C2)
 
@@ -2414,6 +2629,12 @@ the compositor gave the view the keys and they were lost in the web engine.
 every time. On that TV `preloadmanager/setPreloadPolicy` failed each time it
 was asked.
 
+The same wake on an OLED48C31LA (C3, webOS 11.2.0, firmware 44.00.92) kept the
+remote working with Glasshouse Home left as it was, so the close and open
+shown as Home going and coming back after each wake was only a cost there.
+LG numbers firmware per model year, so no number tells which TVs need it, and
+the dashboard's Reopen Home after a wake switch skips it.
+
 ## WebAppMgr stopped (G4, webOS 11.2.0)
 
 Seen on 23 October 2026 on an OLED65G4KNA with Glasshouse Home switched on.
@@ -2609,6 +2830,35 @@ Measured on 26 October 2026 on a 50QNED72B6B (43.11.85), Quick Start+ off.
   `com.webos.app.home` from there brought Glasshouse Home to the front.
 - **With Quick Start+ on**, a wake by the remote from Active Standby or
   Suspend had Glasshouse Home in front with no Live TV before it.
+
+## What the TV opens after Wake-on-LAN (G3, webOS 10.3.0)
+
+Measured on 19 November 2026 on an OLED65G39LA (firmware 33.31.24) on
+Wi-Fi, Quick Start+ on, `homeAutoLaunch` `on`, a PS5 on HDMI 2 with
+SIMPLINK on.
+
+- **Woken from Suspend by a magic packet the reason is `wakeOnWiFi`.**
+  bootd launched `com.webos.app.home` as its first app and, 0.03 s later,
+  the last input (`com.webos.app.hdmi2`, caller `com.webos.bootManager`),
+  which was in front 0.2 s in; the PS5 woke over HDMI-CEC. Its `Input App`
+  action ran because `Last App Booting` stayed off. With the remote
+  (`remoteKey`) the same TV woke on Home with no input launched.
+- **`Last App Booting` follows `firstAppByPowerOnReason`.** With
+  `/var/luna/preferences/bootd.json`, a copy of `/etc/palm/bootd.json` with
+  `wakeOnWiFi` and `wakeOnLan` mapped to `com.webos.app.home`, read after a
+  reboot, a wake from Suspend logged `Trigger 'Last App Booting'` and
+  `doExtAppLaunching`, had `com.webos.app.home` in front 1.1 s in and
+  launched no input.
+- **bootd reads `fullHomeBootingPowerOnReasons` once, about 10 s into a
+  boot.** `com.webos.service.config/setConfigs` adding `wakeOnWiFi` returned
+  true and `getConfigs` gave the new list, but a wake still launched the
+  input; after a reboot bootd's own request at 10.2 s still got LG's list,
+  though `getConfigs` gave the new one later.
+- **A magic packet sent to the TV's IP address does not wake it** from
+  Suspend: the sender has no ARP answer for it. Sent to the network's
+  broadcast address it woke in about 3 s.
+- **Auto Power Sync (`simplinkAutoPowerOn`) is not what wakes the device.**
+  The input put in front does.
 
 ## What the TV opens as it starts (C9, webOS 4.10.0)
 
@@ -3327,6 +3577,20 @@ re-wrote that input's EDID and hot-plugged it, and the app stayed in front.
 - On a B8 (webOS 4.4.3), 773 written to the remote's input device
   (`LGE RCU`, `event1`) reaches a reader of that device but opens nothing in
   the compositor; 125 written there opens LG's ribbon.
+- Read from the remote, a press opens Glasshouse Home about a second after
+  LG's ribbon, which shows each time, Glasshouse Home open or not; its tiles
+  were up 3.3 s after the ribbon (0.142.0, #1222).
+- `surface-manager` holds `/dev/input/event0` to `event8` open, and
+  `/dev/uinput` for writing. The input devices are `CHECK INPUT` (`event0`),
+  `LGE RCU` (`event1`), `Bluetooth-manager` (`event2`) and `LGE M-RCU -
+  Builtin [0]` (`event3`, also `mouse0` and `js0`, the Magic Remote's pointer).
+  `/dev/uinput` is there (`crw-------`, root). Taking Home before the ribbon
+  would need `EVIOCGRAB` on these and every other key written back through
+  uinput; the TV's Python is a stripped 2.7 with no `fcntl` module, and node
+  has no `ioctl`, so it would need a native program. Not tried.
+- `/usr/lib/qml` does not exist; `/usr/lib/qt5/qml` has `WebOSCompositor`,
+  `FavoriteChannels` (whose `SuperRibbon` names the ribbon) and LG's other QML
+  modules.
 
 ## A web app as the screen saver (OLED65C5PUA, webOS 10.3.1)
 
@@ -3409,7 +3673,13 @@ HDMI 3 in front.
   `document.hidden` true. A later launch reaches it as a relaunch
   (`APP_RELAUNCH`), and the window was shown 0.35 s after it. WebAppMgr waits
   for a new frame first (`Not PageFrameSwapped; Pending Show()`): a page with
-  nothing new to draw was shown 2.1 s later.
+  nothing new to draw was shown 2.1 s later. On a B8 (webOS 4.4.3), a normal
+  `launch` arriving 50–250 ms into a `"preload": "full"` start—or a preload
+  arriving 40–100 ms into a normal cold launch—leaves the app hidden with
+  `PalmSystem.launchParams` set to `{"preload":"full"}`; once running in front,
+  a `"preload": "full"` launch emits no `webOSRelaunch`. On the same B8, a single
+  relaunch with `params` dispatches duplicate `webOSRelaunch` events 1–19 ms
+  apart, each carrying `ev.detail` populated from `params`.
 - Launching a card window already on screen, as Glasshouse Home is, redraws
   it, which shows as a flash on each press.
 - In the compositor's key filters, `global.isForegroundApp(id)` is true for
@@ -3588,11 +3858,43 @@ and filesystem do (#1369).
 
 LG's AirPlay app, `airplay`, has `"visible": false` in its appinfo, and on the C2
 no launch point at all, as on a B4 with webOS 10.3.2 (#1435); on a B8 with
-webOS 4.4.3 its tile is a bookmark that `airplay-adaptor` adds. Home Hub opens
+webOS 4.4.3 its tile is a bookmark that `airplay-adaptor` adds, and its
+`AirPlay_Icon-115x115.png` (8-bit gray+alpha) draws pure black (`0`) on a
+transparent background with `iconColor` and `bgColor` empty on its launch
+point. Home Hub opens
 it with `airplay.service/showAirplayPage`, which is in the public group. On the
 C2 that call and a plain `applicationManager/launch` of `airplay` open the same
 page: the Wi-Fi network, the TV's AirPlay name, How to Use AirPlay, and AirPlay
 and Apple Home, which holds its settings.
+
+## Screen Share without a phone (C2, webOS 9.2.2)
+
+`com.webos.app.miracast` ("Screen Share", a web app, `visible: false`) is
+LG's Miracast receiver. Launched on its own it came to the front and closed
+itself within 3 s, as owners saw from Glasshouse's tiles on a CX (webOS 5.6.2,
+#1500) and a C5 (webOS 10.3.1, #1502): its script closes the window when no
+connection comes. LG's Home Hub (`com.webos.app.homeconnect`) does not launch
+it either; its Screen Share entry is its own mobile guide panel, which a
+launch with `{ "actionType": "mobileGuide" }` opens (`onParamsCall` in its
+`main.js`, beside `iotConnectionGuide` and `iotPanel`). Launched that way, Home
+Hub stayed in front.
+
+## AV and Component inputs (32LM637B, webOS 4.5)
+
+eim's `getAllInputStatus` lists them beside HDMI as `AV_1` and `COMP_1`, each
+with `port: 1`, `connected` saying whether anything is plugged in, the label
+the owner gave it, and an app of its own: `com.webos.app.externalinput.av1`
+and `com.webos.app.externalinput.component`, not `com.webos.app.av1` (#1468).
+There is no `hdmiPlugIn` and no `subList` for them.
+
+## Quick Access defaults (C2, webOS 9.2.2)
+
+LG's settings screen offers no way to change Quick Access key 9, which opens
+Quick Help: `magicNum9` holds `{ "override": true, "id":
+"com.webos.app.self-diagnosis", "params": { "from": "magicNum" } }`. Once
+written empty, as Glasshouse's None does, nothing offered puts it back (#1539).
+`settingsservice/resetSystemSettings` with `{ "category": "option", "keys":
+["magicNum9"] }` does: the key read back as that same value at once.
 
 ## Holding down LG's account client (C2, webOS 9.2.2; B4, webOS 10.3.2)
 
@@ -3605,3 +3907,23 @@ refuses to start any service named in
 one that is not running fails at once. The C2 has neither file. On the C2 the
 hub starts `/usr/sbin/accountmanager` on demand, and with a program that exits
 at once mounted over it, the same call was still waiting after 90 s.
+
+## LG Guide covering Glasshouse Home (C3, webOS 10.2.2)
+
+On 16 November 2026, LG's broadcast Guide was visible while
+`applicationManager/getForegroundAppInfo` still named `com.webos.app.home`,
+with category `home`. `surfacemanager/getForegroundWindowInfo` listed Home as
+`_WEBOS_WINDOW_TYPE_CARD`, `com.webos.app.livemenu` as
+`_WEBOS_WINDOW_TYPE_OVERLAY`, and the volume window as
+`_WEBOS_WINDOW_TYPE_VOLUME`. `getFocusedWindowInfo` named `livemenu`, with
+`type: overlaySurface`.
+
+That evening's Glasshouse log recorded three “view not answering” recoveries
+which gave LG's Home its place. Checking only for a different foreground card
+does not recognise this Guide state. Recovery checks match a focused overlay
+to the foreground window list and keep checking after it closes; an unfocused
+or merely cached overlay does not exempt a stopped Home view.
+
+With the correction installed, navigating Guide for at least 30 s kept it
+open. Successive watchdog checks logged that the view was behind
+`com.webos.app.livemenu`, rather than restoring LG's Home.

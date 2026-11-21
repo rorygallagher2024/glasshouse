@@ -305,6 +305,17 @@ var PARTS = [
     }
   },
   {
+    // How many points one press of a Brightness key moves the picture, kept with the remote keys.
+    id: 'brightnessStep',
+    valid: function (v) { return typeof v === 'number' && v % 1 === 0 && v >= 1 && v <= 50; },
+    read: function (cb) {
+      remoteKeys.getRemoteKeys(function (r) {
+        cb(r && r.supported && typeof r.brightnessStep === 'number' ? r.brightnessStep : undefined);
+      });
+    },
+    write: function (v, cb) { remoteKeys.setBrightnessStep(v, cb); }
+  },
+  {
     // { '1'..'9': what the key opens, '' for nothing }.
     id: 'quickAccess',
     action: 'quickAccess',
@@ -374,7 +385,7 @@ var NOT_CARRIED = {
   input: 'action', sendText: 'action', launch_app: 'action', launchApp: 'action', launch_url: 'action',
   launchUrl: 'action', close_app: 'action', closeApp: 'action', playback: 'action', media: 'action',
   resetAdId: 'action', clearAdCookies: 'action', privacyAllOff: 'action', sleepTimer: 'action',
-  piccap: 'action', huesync: 'action', huesyncSetting: 'external Hue Sync app settings, not stored by Glasshouse', serviceMenuOpen: 'action', tvAppInstall: 'action', tvAppRemove: 'action',
+  piccap: 'action', huesync: 'action', huesyncSetting: 'external Hue Sync app settings, not stored by Glasshouse', serviceMenuOpen: 'action', serviceMenuPin: 'action', tvAppInstall: 'action', tvAppRemove: 'action',
   rcu: 'action', keyboardText: 'action', keyboardKey: 'action', screensaver: 'action', toast: 'action',
   screensaverRandomPool: 'choose',
   powerOn: 'action', powerOff: 'action', reboot: 'action', refresherSchedule: 'action', refresherCancel: 'action',
@@ -402,7 +413,7 @@ var NOT_CARRIED = {
   // The adBlock part's control under its other names.
   adblock: 'carried', toggleAdBlock: 'carried',
   updateAutoCheck: 'carried', setPrometheusEnabled: 'carried', setNtpServer: 'carried', setNtpEnabled: 'carried',
-  setHistoryEnabled: 'carried', setBackupDaily: 'carried',
+  setHistoryEnabled: 'carried', setBackupDaily: 'carried', setScreenGlowAllowed: 'carried',
   // One of lgsettings.js's rows: carried by its section.
   lgSetting: 'carried'
 };

@@ -7,7 +7,7 @@ The **Control** tab, `/?tab=control`, turns the TV into a locally controlled dev
 ![The D-pad opened: arrows around OK, with Back and Home below](../screenshots/control-dpad.png)
 
 * **D-pad navigation:** Directional arrows (Up, Down, Left, Right), OK/Select, Back, Home and Settings (LG's quick settings) to navigate webOS menus and built-in interfaces.
-* **Pointer:** Moves the TV cursor as you drag over its pad; tap the pad or press **Click** to click, and use the mouse wheel or two-finger scroll to scroll. A WebSocket opens only while this section is open. Choose WebSocket or HTTP and the update rate under **Server → Advanced → Pointer input**.
+* **Pointer:** Moves the TV cursor as you drag over its pad; tap the pad or press **Click** to click, and use the mouse wheel or two-finger scroll to scroll. Moving, clicking or scrolling dismisses a Glasshouse screen saver. A WebSocket opens only while this section is open. Choose WebSocket or HTTP and the update rate under **Server → Advanced → Pointer input**.
 * **Keyboard box:** types into the text field selected on the TV, such as a search box or a web address, as you type, backspace included, up to 500 characters at a time. **Enter** submits it and empties the box. On webOS 6 and later the note under it says whether LG's on-screen keyboard is up, and a line below says which way the last change was typed. Where the TV has a field of LG's in focus, or LG's keyboard is up, the text goes through LG's input method. Otherwise the server picks a way by the app in front:
   * **A web app, such as YouTube:** the keys are sent to the app's page through the web app debugger, so capitals, digits and any other character arrive as typed, and Enter is pressed in the page. This needs the debugger running, which is Developer Mode's (the **Web app debugger** switch under System is about whether it is also open to the network, and does not affect this). Open the app's own search or keyboard first so that its field is in focus. Without Developer Mode nothing is sent, as web apps ignore key presses from here, and the note under the box says so.
   * **YouTube on newer TVs** is not a web app but runs on Google's Cobalt, and took none of the key presses on a C2 (webOS 9.2). Nothing is sent, and the note under the box says to use the keyboard YouTube shows on the TV.
@@ -17,6 +17,20 @@ The **Control** tab, `/?tab=control`, turns the TV into a locally controlled dev
 * **Media playback:** Dedicated transport controls (Play, Pause, Stop, Rewind, Fast Forward) for active media players.
 * **Volume and mute:** Volume slider, precision step buttons (`+` and `-`), and a one-click mute toggle.
 * **Source selection:** One-click switching across active TV inputs, including HDMI ports and Live TV, with an active indicator marking the current display source.
+
+## The remote on its own
+
+![The remote over the Control tab, the page faded behind it](../screenshots/control-remote.png){ width="520" }
+![The remote as a sheet on a phone: Screen off, Input and Settings, a ring D-pad, volume, Back, Home, Mute and playback](../screenshots/control-remote-phone.png){ width="180" }
+![The remote's Touchpad on a phone](../screenshots/control-remote-touchpad-phone.png){ width="180" }
+
+**Remote**, at the top right of every tab, brings up the remote over the page with the page faded behind it: a panel in the middle on a computer, a sheet from the bottom on a phone. It is laid out as a remote: **Screen off** (or **Screen on**), **Input** and Settings along the top, a ring D-pad around **OK**, volume up and down with the level between them on the left, **Back**, **Home** and **Mute** in the middle, and play or pause, rewind and fast forward on the right. **Input** shows the TV's sources in place of the buttons until one is picked. Along the foot, **Buttons**, **Touchpad** (where the pointer's switch is on) and **Keyboard** switch what fills the middle, and the choice is kept. **×**, a tap outside it, **Esc** or the phone's **Back** closes it, and the page is as it was. On Android, a press gives a short buzz where the browser allows it.
+
+The same remote is a page of its own at `/?view=remote`, for an icon on a phone's Home Screen (open it there, then Share, Add to Home Screen) or a shortcut in the Mac's Dock. It signs in as the dashboard does on that device, and has **Full dashboard** at its foot. The Glasshouse Android app opens it from each TV's card, steps the TV's volume with the phone's volume keys while it shows, and turns its pull-to-refresh off then. The computer keyboard works as the remote in both. Neither changes the tab the full dashboard opens on.
+
+**Touchpad** moves the cursor further the faster a finger moves, so one swipe can cross the screen and a slow one places it. A tap clicks, and two fingers scroll.
+
+`?open=dpad`, `?open=pointer` and `?open=keyboard` open the full Control tab with that section expanded.
 
 ## Ambient Light
 

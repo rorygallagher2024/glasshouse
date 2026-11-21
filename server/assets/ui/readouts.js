@@ -35,20 +35,46 @@ function headroom(pct, warn) {
   return 'var(--green)';
 }
 
+function toggleSourceMenu(e) {
+  if (e) e.stopPropagation();
+  const btn = q('source'), menu = q('source-menu');
+  if (!btn || !menu || !btn.classList.contains('has-menu')) return;
+  const open = !menu.hidden;
+  menu.hidden = open;
+  btn.setAttribute('aria-expanded', String(!open));
+}
+
+function closeSourceMenu() {
+  const btn = q('source'), menu = q('source-menu');
+  if (menu && !menu.hidden) menu.hidden = true;
+  if (btn) btn.setAttribute('aria-expanded', 'false');
+}
+
+function pickSourceInput(k) {
+  closeSourceMenu();
+  sendCommand('input', k);
+}
+
+if (typeof document !== 'undefined') {
+  document.addEventListener('click', e => {
+    const menu = q('source-menu'), btn = q('source');
+    if (menu && !menu.hidden && !menu.contains(e.target) && (!btn || !btn.contains(e.target))) {
+      closeSourceMenu();
+    }
+  });
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') closeSourceMenu();
+  });
+}
+
 q('readouts').innerHTML = ROWS.map(r =>
   `<div class="r" id="row-${r.k}">
      <div><div class="lbl">${r.label}</div><div class="sub" id="sub-${r.k}"></div></div>
      <div class="track"><b id="bar-${r.k}" style="width:0%"></b></div>
      <div class="v num" id="val-${r.k}">—</div>
-   </div>`).join('') +
-  /* The TV's address and DNS name have a row of their own, without a bar: a
-     name is too long for the narrow column the other rows' details sit in. */
-  `<div class="r r-text" id="row-addr" hidden>
-     <div class="lbl">${t('metrics.addresses', 'Addresses')}</div>
-     <div class="sub" id="sub-addr"></div>
-   </div>`;
+   </div>`).join('');
 
-let hist = [], lastOk = 0, muted = false, installedApps = [], lastAppId = '';
+let hist = [], lastOk = 0, muted = false, installedApps = [], lastAppId = '', lastMemTotalMb = 0;
 
 const POPULAR_APPS = [
   'youtube.leanback.v4', 'netflix', 'amazon', 'com.apple.appletv',
@@ -274,6 +300,7 @@ async function tick() {
     lastOk = Date.now();
 
     renderKeyboardHint(d);
+    glowNoteStats(d);
     const hk = hdmiKey(d);
     if (lastHdmiKey !== null && hk !== lastHdmiKey && hdmiLoaded) loadHdmi();
     lastHdmiKey = hk;
@@ -323,11 +350,6 @@ async function tick() {
     if (nothingSeen) q('source').textContent = deviceName || '—';
     q('source').parentElement.classList.toggle('last', asleep && !nothingSeen);
     q('source').parentElement.classList.toggle('blank', nothingSeen);
-    const vol = q('hdr-volume');
-    if (vol) {
-      vol.hidden = asleep || typeof d.volume !== 'number';
-      vol.textContent = d.muted ? t('header.muted', 'Muted') : t('header.volume', 'Volume {n}', { n: d.volume });
-    }
     const sleepEl = q('hdr-sleep');
     if (sleepEl) {
       const sl = d.sleepTimer && d.sleepTimer !== 'off' ? d.sleepTimer : '';
@@ -444,6 +466,7 @@ async function tick() {
     const primList = [resStr, drBadge, modeBadge].filter(Boolean);
     q('stream-primary').innerHTML = primList.length ? primList.join('  ') : '&mdash;';
 
+    if (typeof hdmiStats === 'function') hdmiStats(d);
     renderHdmiDiag(d.hdmi_diag, d.colorimetry || (d.picture_engine && d.picture_engine.colorimetry) || '');
 
     // temp is null in two different situations: the sensor is warming up
@@ -482,6 +505,7 @@ async function tick() {
       (parked ? '  ·  ' + t('metrics.cpu.parked', '{n} parked', { n: parked }) : '');
     row('cpu', d.load + '<small>%</small>', d.load, cores, 85);
 
+    lastMemTotalMb = d.mem.total ? d.mem.total / 1024 : 0;
     const mu = d.mem.total ? 100 * (d.mem.total - d.mem.avail) / d.mem.total : 0;
     row('mem', mu.toFixed(0) + '<small>%</small>', mu,
         mb(d.mem.total - d.mem.avail) + ' / ' + mb(d.mem.total) + ' MB', 90);
@@ -506,50 +530,8 @@ async function tick() {
     row('net', rx.toFixed(0) + '<small>kB/s</small>', Math.min(100, rx / 20),
         netParts.join('  ·  ') || t('metrics.net.connected', 'Connected'), 101);
 
-    q('row-addr').hidden = !d.address;
-    q('sub-addr').innerHTML = [d.hostname, d.address, d.address6].filter(Boolean).map(esc).join('<br>');
-
-    // Hardware & System Specifications
-    let hasHw = false;
-    const osVer = (d.system && d.system.webos) || (d.hardware && d.hardware.webos);
-    if (osVer) {
-      q('spec-os-item').hidden = false;
-      q('spec-os').textContent = osVer;
-      hasHw = true;
-    } else {
-      q('spec-os-item').hidden = true;
-    }
-    const fwVer = (d.system && d.system.firmware) || (d.device && d.device.firmware);
-    if (fwVer) {
-      q('spec-fw-item').hidden = false;
-      q('spec-fw').textContent = fwVer;
-      hasHw = true;
-    } else {
-      q('spec-fw-item').hidden = true;
-    }
-    if (d.hardware && d.hardware.soc_arch) {
-      q('spec-arch-item').hidden = false;
-      q('spec-arch').textContent = d.hardware.soc_arch;
-      hasHw = true;
-    } else {
-      q('spec-arch-item').hidden = true;
-    }
-    if (d.panel_silicon && d.panel_silicon.cell && /[1-9a-zA-Z]/.test(d.panel_silicon.cell)) {
-      q('spec-silicon-item').hidden = false;
-      q('spec-silicon').textContent = d.panel_silicon.cell;
-      hasHw = true;
-    } else {
-      q('spec-silicon-item').hidden = true;
-    }
-    if (d.panel_silicon && d.panel_silicon.tcon_firmware) {
-      q('spec-tcon-item').hidden = false;
-      q('spec-tcon').textContent = d.panel_silicon.tcon_firmware;
-      hasHw = true;
-    } else {
-      q('spec-tcon-item').hidden = true;
-    }
-    // The remote has its own section now, so System info stands on its own.
-    if (q('disc-hwinfo')) q('disc-hwinfo').hidden = !hasHw;
+    // System info: what the TV is, what it runs and how it is connected.
+    if (typeof sysinfoStats === 'function') sysinfoStats(d);
 
     /* The ambient sensor is a reading rather than panel wear, so it stays on
        the System tab while the panel figures live with the protections. */
@@ -626,6 +608,17 @@ async function tick() {
       if (q('vol-fill')) q('vol-fill').style.width = (level ? v : 0) + '%';
       q('vol').textContent = muted ? t('ctl.muted', 'MUTED') : level ? v : '—';
       if (q('vol-wrap')) q('vol-wrap').classList.toggle('muted', muted);
+      const hdrVol = q('hdr-vol'), hdrVolVal = q('hdr-vol-val'), hdrVolFill = q('hdr-vol-fill');
+      if (hdrVol && hdrVolVal) {
+        const showHdrVol = !asleep && ctl !== 'none' && (level || muted);
+        hdrVol.hidden = !showHdrVol;
+        hdrVol.classList.toggle('muted', muted);
+        hdrVol.classList.toggle('can-slide', level && !settling);
+        hdrVol.disabled = settling;
+        hdrVol.setAttribute('aria-pressed', String(muted));
+        hdrVolVal.textContent = muted ? t('ctl.muted', 'MUTED') : String(v);
+        if (hdrVolFill) hdrVolFill.style.width = (level ? v : 0) + '%';
+      }
     }
     q('mute').classList.toggle('on', muted);
 
@@ -641,6 +634,23 @@ async function tick() {
 
     const inLeased = getLease('input', d.app);
     const activeApp = inLeased !== undefined ? inLeased : d.app;
+    const srcBtn = q('source'), srcMenu = q('source-menu');
+    if (srcBtn && srcMenu) {
+      if (d.inputs && !srcMenu.dataset.built) {
+        const inKeys = Object.keys(d.inputs);
+        srcMenu.innerHTML = inKeys.map(k =>
+          `<button type="button" role="menuitem" data-src-in="${esc(k)}" onclick="pickSourceInput('${jsq(k)}')"><span>${esc(d.inputs[k])}</span></button>`
+        ).join('') +
+          `<button type="button" role="menuitem" data-src-in="livetv" onclick="pickSourceInput('livetv')"><span>${esc(t('ctl.liveTv', 'Live TV'))}</span></button>`;
+        srcMenu.dataset.built = '1';
+      }
+      const canSwitch = !!(d.inputs && !asleep && !isComp);
+      srcBtn.classList.toggle('has-menu', canSwitch);
+      if (!canSwitch) closeSourceMenu();
+      for (const b of srcMenu.querySelectorAll('button[data-src-in]')) {
+        b.classList.toggle('on', !!(activeApp && b.getAttribute('data-src-in') === activeApp));
+      }
+    }
     if (activeApp) {
       lastAppId = activeApp;
       const inBtns = q('inputs') ? q('inputs').querySelectorAll('button') : [];
@@ -649,16 +659,16 @@ async function tick() {
         const isCur = b.id === 'in_' + activeApp;
         b.classList.toggle('on', isCur);
         if (isCur) {
-          if (q('currapp-lbl')) q('currapp-lbl').textContent = b.textContent.toUpperCase();
+          if (q('currapp-lbl')) q('currapp-lbl').textContent = b.textContent;
           foundInBtn = true;
         }
       }
       if (!foundInBtn && q('currapp-lbl')) {
-        q('currapp-lbl').textContent = (d.app_name || d.display_title || activeApp).toUpperCase();
+        q('currapp-lbl').textContent = (d.app_name || d.display_title || activeApp);
       }
     } else {
-      if (q('currapp-lbl')) q('currapp-lbl').textContent = isComp ? t('ctl.app.maintenance', 'MAINTENANCE')
-        : (ps.label ? ps.label.toUpperCase() : t('ctl.app.standby', 'STANDBY'));
+      if (q('currapp-lbl')) q('currapp-lbl').textContent = isComp ? t('ctl.app.maintenance', 'Maintenance')
+        : (ps.label || t('ctl.app.standby', 'Standby'));
       const inBtns = q('inputs') ? q('inputs').querySelectorAll('button') : [];
       for (let b of inBtns) {
         b.classList.toggle('on', false);
@@ -682,7 +692,6 @@ async function tick() {
        rather than leaving a button that does nothing when pressed. */
     // The tab is about the panel, so an LCD set has no use for it.
     isOledSet = !!d.oled;
-    if (q('tab-btn-servicemenu')) q('tab-btn-servicemenu').hidden = false;
     if (q('tab-btn-oledcare')) q('tab-btn-oledcare').hidden = !isOledSet;
     // If it was showing when the set turned out not to be an OLED, leave it.
     if (!isOledSet && activeTab === 'oledcare') showTab('control');
@@ -692,7 +701,10 @@ async function tick() {
     if (!ambientAvailable && activeTab === 'ambient') showTab('control');
 
     const ssOnInput = /^hdmi[1-4]$/.test(d.app || '') || d.app === 'livetv';
-    refuseScreensaver(q('btn_ss'), ssOnInput ? SS_ONLY_IN_APPS : '');
+    // In standby, with the screen off or during pixel compensation the TV
+    // refuses ("Invalid State change Request"), so the buttons say why first.
+    const ssTvOff = isStandby || isScreenOff || isComp;
+    refuseScreensaver(q('btn_ss'), ssTvOff && !d.screenSaver ? SS_TV_OFF : ssOnInput ? SS_ONLY_IN_APPS : '');
     /* Same control on the Screensaver tab, where it says which way it will go:
        there is one command and the TV decides, so the label follows the TV. */
     if (q('ss-toggle')) {
@@ -707,6 +719,7 @@ async function tick() {
       refuseScreensaver(q('ss-toggle'),
         !ssWritable ? t('common.controlsOff', 'Controls are disabled in config.json.')
         : ssSwitching ? SS_SWITCHING
+        : (ssTvOff && !ssOn) ? SS_TV_OFF
         : ssBlocked ? ssBlocked
         : (ssOnInput && !ssOn) ? SS_ONLY_IN_APPS : '');
     }

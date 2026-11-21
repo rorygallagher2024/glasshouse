@@ -87,8 +87,11 @@ async function loadOledCare() {
     (v >= 100 ? Math.round(v).toLocaleString() : (Math.round(v * 10) / 10).toString());
   q('oc-hours').textContent = d.panelHours === null ? '—' : Number(d.panelHours).toLocaleString();
   const inHours = v => hrs(v) === null ? '\u2014' : t('oled.hoursShort', '{n} h', { n: hrs(v) });
-  q('oc-comp').textContent = inHours(d.hoursUntilComp);
-  q('oc-refr').textContent = inHours(d.hoursUntilRefresher);
+  // At 0 a pass is due, not late: the TV runs it the next time it is switched off.
+  const due = v => v !== null && v !== undefined && v <= 0;
+  const idle = st => !st || /^idle$/i.test(st);
+  q('oc-comp').textContent = due(d.hoursUntilComp) ? t('oled.due', 'Due') : inHours(d.hoursUntilComp);
+  q('oc-refr').textContent = due(d.hoursUntilRefresher) ? t('oled.due', 'Due') : inHours(d.hoursUntilRefresher);
 
   const compBar = q('oc-comp-bar');
   if (compBar) {
@@ -120,8 +123,11 @@ async function loadOledCare() {
     }
   }
   // compStatus and refresherStatus are the TV's own words, in English.
-  q('oc-comp-sub').textContent = d.compStatus ? d.compStatus : t('oled.comp.sub', '4-hour short cycle');
-  q('oc-refr-sub').textContent = d.refresherStatus ? d.refresherStatus : t('oled.refresher.sub', '2,000-hour calibration');
+  const dueSub = t('oled.due.sub', 'Runs the next time the TV is switched off');
+  q('oc-comp-sub').textContent = due(d.hoursUntilComp) && idle(d.compStatus) ? dueSub
+    : d.compStatus ? d.compStatus : t('oled.comp.sub', '4-hour short cycle');
+  q('oc-refr-sub').textContent = due(d.hoursUntilRefresher) && idle(d.refresherStatus) ? dueSub
+    : d.refresherStatus ? d.refresherStatus : t('oled.refresher.sub', '2,000-hour calibration');
   const counts = [
     { n: d.compCycles, name: t('oled.cycles.comp', 'Short cycles completed'),
       desc: t('tv.oled.shortCyclesCompleted.hint', 'How many short compensation passes the panel has run.') },

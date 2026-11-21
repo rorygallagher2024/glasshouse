@@ -44,18 +44,30 @@ async function waitForServer() {
   if (!want && p.get('controls') === '1') want = 'control';
   // ?open= names a disclosure inside Metrics or Control, so it has to pick that tab too -
   // otherwise the link opens something on a panel that is not showing.
-  if (!want && p.get('open')) want = p.get('open') === 'dpad' ? 'control' : 'metrics';
+  if (!want && p.get('open')) want = /^(dpad|pointer|keyboard)$/.test(p.get('open')) ? 'control' : 'metrics';
+  if (remoteView) want = 'control';
   if (!want) { try { want = localStorage.getItem('tab'); } catch (e) { /* private window */ } }
   showTab(want || 'control');
   if (p.get('expand') === '1') document.querySelectorAll('.pv-d').forEach(d => d.open = true);
 })();
 
 const openSection = new URLSearchParams(location.search).get('open');
-if ((openSection === 'metrics' || openSection === 'system') && q('disc-hwinfo')) q('disc-hwinfo').open = true;
+if (openSection === 'metrics' || openSection === 'system' || openSection === 'info') {
+  if (typeof setMetricsSubView === 'function') setMetricsSubView('advanced');
+} else if (openSection === 'hdmi') {
+  if (typeof setMetricsSubView === 'function') setMetricsSubView('hdmi');
+} else if (openSection === 'storage' || openSection === 'disk') {
+  if (typeof setMetricsSubView === 'function') setMetricsSubView('storage');
+} else if (openSection === 'processes' || openSection === 'performance') {
+  if (typeof setMetricsSubView === 'function') setMetricsSubView('performance');
+} else if (openSection === 'watch') {
+  if (typeof setMetricsSubView === 'function') setMetricsSubView('watch');
+}
 
-if (openSection === 'processes' && q('disc-proc')) q('disc-proc').open = true;
-
-if (openSection === 'dpad' && q('disc-dpad')) q('disc-dpad').open = true;
+// The Control tab's remote sections, named by ?open=, or all three in the remote view.
+['dpad', 'pointer', 'keyboard'].forEach(name => {
+  if ((remoteView || openSection === name) && q('disc-' + name)) q('disc-' + name).open = true;
+});
 
 /*
  * Fill the column containers. Runs when the number of columns changes and once
@@ -140,8 +152,10 @@ function layoutHost(host, n, force) {
 function relayout(force) {
   const w = window.innerWidth;
   if (typeof updateDpadMobileDefault === 'function') updateDpadMobileDefault();
-  layoutHost(document.querySelector('.col-controls'), w >= 820 ? 2 : 1, force);
-  layoutHost(document.querySelector('.col-telemetry'), w >= 1280 ? 3 : (w >= 820 ? 2 : 1), force);
+  // The remote view is one column, however wide its window.
+  layoutHost(document.querySelector('.col-controls'), !remoteView && w >= 820 ? 2 : 1, force);
+  // Two columns at most: the third held the HDMI ports, now a view of their own.
+  layoutHost(document.querySelector('.col-telemetry'), w >= 820 ? 2 : 1, force);
 }
 
 let resizeTimer = null;
@@ -179,3 +193,36 @@ document.addEventListener('visibilitychange', () => {
 tick();
 startPolling();
 loadUpdate();   // reads what the server already knows; it does not reach GitHub
+
+/*
+ * Rows in a two-column table go in pairs. Where a run of them ends on one of
+ * its own, that one takes the whole width, so its rule meets the page's edge
+ * rather than stopping half way. Which rows show differs between TVs, so this
+ * is worked out on the page as they show and hide.
+ */
+const PAIRED_TABLES = '#advpane .prot-table,#serverpane .prot-table,#inputspane .prot-table,#audiopane .prot-table,' +
+  '#ambientpane .prot-table,#privpane .prot-table,#appspane .prot-table:not(.catalog-grid),#picpane .prot-table,' +
+  '#homepane .home-custom-table,#hw-specs';
+function pairRows() {
+  document.querySelectorAll(PAIRED_TABLES).forEach(tbl => {
+    let run = [];
+    const close = () => { if (run.length % 2) run[run.length - 1].classList.add('row-alone'); run = []; };
+    for (const c of tbl.children) c.classList.remove('row-alone');
+    if (getComputedStyle(tbl).display !== 'grid') return;
+    for (const c of tbl.children) {
+      if (c.hidden || getComputedStyle(c).display === 'none') continue;
+      if (getComputedStyle(c).gridColumnEnd === '-1') close();
+      else run.push(c);
+    }
+    close();
+  });
+}
+let pairQueued = false;
+if (typeof MutationObserver === 'function') {
+  new MutationObserver(() => {
+    if (pairQueued) return;
+    pairQueued = true;
+    requestAnimationFrame(() => { pairQueued = false; pairRows(); });
+  }).observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ['hidden'] });
+  pairRows();
+}

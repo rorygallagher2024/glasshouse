@@ -3,7 +3,8 @@
  * the channels added from them, and the worker jobs that read them
  *
  * The owner gives Glasshouse the M3U link or Xtream login they gave IPTV
- * Smarters or TiviMate. Everything that reads the provider's data runs in a
+ * Smarters or TiviMate, or the address of an Enigma2 satellite tuner, whose
+ * OpenWebif gives the bouquets, logos and guide. Everything that reads the provider's data runs in a
  * worker process (lib/iptv-worker.js), never here: this server is one node
  * thread that also answers the remote, the dashboards and MQTT, and a
  * provider's playlist runs to tens of MB, its guide to hundreds. Here are only
@@ -38,6 +39,9 @@ var crypto = require('crypto');
 var lineupLib = require('./iptv-lineup');
 var memory = require('./iptv-memory');
 var timeshift = require('./iptv-timeshift');
+var http = require('http');
+var urlLib = require('url');
+var toBuffer = require('./util').toBuffer;
 var spawn = require('child_process').spawn;
 var execFile = require('child_process').execFile;
 
@@ -74,6 +78,8 @@ var GUIDE_EVERY_MS = 6 * HOUR;
 // New logos a select job the owner is waiting on fetches; the worker's own batch otherwise.
 var USER_SELECT_LOGOS = 12;
 var EPG_EVERY_MS = 30 * MINUTE;
+// An Enigma2 receiver's whole guide in one read, rather than a request a channel.
+var ENIGMA2_EPG_EVERY_MS = 6 * HOUR;
 var BACKOFF_MS = [15 * MINUTE, HOUR, 6 * HOUR, 24 * HOUR];
 // Home renews its lease while it plays; background jobs wait while it lasts,
 // but none more than this past due.
@@ -98,6 +104,7 @@ var catchupMs = null;
 var procDir = '/proc';
 /** @type {function(): void} */
 var changedFn = function () {};
+var frontFn = null;
 
 var config = { playlists: [] };
 var selection = lineupLib.empty();
@@ -120,6 +127,12 @@ var nownextTimer = null;
 var leaseUntil = 0;
 // The lease of a stream played full screen, rather than previewed.
 var fullUntil = 0;
+// The channel's player is up, playing or paused, which keeps it as the one shown.
+var shownUntil = 0;
+// Home has Internet TV in front, its guide or a channel, as its heartbeat says.
+var FRONT_MS = 15000;
+var frontUntil = 0;
+var playing = null;   // 'playlist:key' of the channel Home plays full screen
 // Background jobs waiting, and the one running, and the interactive one.
 var queue = [];
 var running = { background: null, interactive: null };
@@ -273,8 +286,23 @@ function httpUrl(v) {
   return /^https?:\/\/[^\s\/?#]+/i.test(u) && !/\s/.test(u) ? u : '';
 }
 
+// An Enigma2 receiver's address as its OpenWebif answers: scheme, host and port, no path and no login.
+function enigma2Server(v) {
+  var u = str(v, 2048).replace(/\s+/g, '');
+  if (u && !/^[a-z][a-z0-9+.\-]*:\/\//i.test(u)) u = 'http://' + u;
+  var m = /^https?:\/\/[^\/?#]*/i.exec(u);
+  return m && m[0].indexOf('@') === -1 ? m[0] : '';
+}
+
+// A TCP port from a dashboard field, or 0 for none chosen.
+function portNumber(v) {
+  var s = typeof v === 'number' ? String(v) : str(v, 5);
+  var n = /^[0-9]{1,5}$/.test(s) ? Number(s) : 0;
+  return n >= 1 && n <= 65535 ? n : 0;
+}
+
 function validStored(p) {
-  return p && typeof p.id === 'string' && /^p[0-9a-f]{6,12}$/.test(p.id) && (p.kind === 'm3u' || p.kind === 'xtream');
+  return p && typeof p.id === 'string' && /^p[0-9a-f]{6,12}$/.test(p.id) && (p.kind === 'm3u' || p.kind === 'xtream' || p.kind === 'enigma2');
 }
 
 function hostOf(u) {
@@ -494,6 +522,7 @@ function hasRoom(job, cb) {
 function stamp() { return nowMs().toString(36) + crypto.randomBytes(2).toString('hex'); }
 
 function sourceOf(p) {
+  if (p.kind === 'enigma2') return { kind: 'enigma2', server: p.server, user: p.user || '', pass: p.pass || '' };
   return p.kind === 'xtream' ? { kind: 'xtream', server: p.server, user: p.user, pass: p.pass } : { kind: 'm3u', url: p.url };
 }
 
@@ -522,6 +551,8 @@ function guideUrls(p) {
 
 function hasEpg(p) {
   var added = cache.added[p.id];
+  // An Enigma2 receiver has its own guide, for every channel of the lineup.
+  if (p.kind === 'enigma2') return !p.guide && !!added && lineupOf(p.id).some(function (c) { return added.channels[c.key]; });
   return p.kind === 'xtream' && !p.guide && !!added && favouritesOf(p.id).some(function (c) { return added.channels[c.key]; });
 }
 
@@ -545,6 +576,8 @@ function makeJob(type, p) {
     job.keys = lineupLib.trackedKeys(selection, p.id);
     job.groups = lineupLib.groupSectionsOf(selection, p.id);
     job.favs = favouritesOf(p.id).map(function (c) { return c.key; });
+    // Its picons are behind its login.
+    if (p.kind === 'enigma2') job.source = sourceOf(p);
     if (!job.keys.length && !job.groups.length && !cur.sel) return null;
   } else if (type === 'guide' || type === 'epg') {
     var added = cache.added[p.id];
@@ -552,7 +585,7 @@ function makeJob(type, p) {
     var inLineup = lineupOf(p.id).filter(function (c) { return added.channels[c.key]; });
     var asJob = function (c) {
       var a = added.channels[c.key];
-      return { key: c.key, epgId: a.epgId || '', name: a.name || '', shift: a.shift || 0, fav: !!c.fav };
+      return { key: c.key, epgId: a.epgId || '', name: a.name || '', group: a.group || '', shift: a.shift || 0, fav: !!c.fav };
     };
     job.prevGuide = cur.guide ? path.join(plDir(p.id), cur.guide) : null;
     if (type === 'guide') {
@@ -560,9 +593,14 @@ function makeJob(type, p) {
       job.urls = guideUrls(p);
       if (!job.urls.length) return null;
     } else {
-      if (p.kind !== 'xtream') return null;
-      job.channels = inLineup.filter(function (c) { return c.fav; }).map(asJob);
-      job.carry = inLineup.filter(function (c) { return !c.fav; }).map(function (c) { return c.key; });
+      if (p.kind !== 'xtream' && p.kind !== 'enigma2') return null;
+      if (p.kind === 'enigma2') {
+        job.channels = inLineup.map(asJob);
+        job.carry = [];
+      } else {
+        job.channels = inLineup.filter(function (c) { return c.fav; }).map(asJob);
+        job.carry = inLineup.filter(function (c) { return !c.fav; }).map(function (c) { return c.key; });
+      }
       job.source = sourceOf(p);
     }
     if (!job.channels.length) return null;
@@ -782,7 +820,7 @@ function finished(job, err, result, item) {
     }
   } else if (job.type === 'guide' || job.type === 'epg') {
     p.state.guide = { ok: t, step: 0, error: null, source: job.type };
-    p.due.epg = t + EPG_EVERY_MS;
+    p.due.epg = t + (p.kind === 'enigma2' ? ENIGMA2_EPG_EVERY_MS : EPG_EVERY_MS);
     if (job.type === 'guide' || !guideUrls(p).length) p.due.guide = t + GUIDE_EVERY_MS;
   }
   try { saveConfig(); } catch (e) { console.error('iptv: could not save its settings: ' + (e.code || e.message)); }
@@ -988,7 +1026,12 @@ function itemOf(c) {
   var item = { id: c.id, pl: c.pl, key: c.key, name: c.name, group: c.group || '', number: c.number ? String(c.number) : '' };
   var added = cache.added[c.pl];
   var a = added && added.channels && added.channels[c.key];
-  if (a && a.logo) item.logo = '/api/iptv/logo?pl=' + encodeURIComponent(c.pl) + '&id=' + encodeURIComponent(a.logo);
+  if (a && a.logo) {
+    item.logo = '/api/iptv/logo?pl=' + encodeURIComponent(c.pl) + '&id=' + encodeURIComponent(a.logo);
+    // A receiver's picons are full-colour pictures on a transparent box, which Home would draw as white shapes.
+    var owner = playlist(c.pl);
+    if (owner && owner.kind === 'enigma2') item.logo += '&look=plate';
+  }
   if (c.sid) item.sid = c.sid;
   if (c.fav) item.fav = true;
   if (c.renamed) { item.renamed = true; item.provName = c.provName; }
@@ -1056,7 +1099,10 @@ function publicPlaylist(p) {
   var bg = running.background;
   var out = {
     id: p.id, label: p.label, kind: p.kind,
-    host: hostOf(p.kind === 'xtream' ? p.server : p.url),
+    takeOver: p.kind === 'enigma2' && p.takeOver === true,
+    streamLogin: p.kind === 'enigma2' && p.streamLogin === true,
+    streamPort: p.kind === 'enigma2' ? p.streamPort || 0 : 0,
+    host: hostOf(p.kind === 'm3u' ? p.url : p.server),
     hasGuideLink: !!p.guide,
     channels: meta ? meta.channels : null,
     groups: meta ? meta.groupsTotal : null,
@@ -1116,7 +1162,7 @@ function playlistsAction(body, cb) {
     var p = action === 'edit' ? playlist(body.id) : null;
     if (action === 'edit' && !p) return cb({ ok: false, error: 'no-playlist' });
     if (action === 'add' && config.playlists.length >= MAX_PLAYLISTS) return cb({ ok: false, error: 'too-many' });
-    var kind = body.kind === 'xtream' ? 'xtream' : body.kind === 'm3u' ? 'm3u' : (p && p.kind);
+    var kind = body.kind === 'xtream' ? 'xtream' : body.kind === 'enigma2' ? 'enigma2' : body.kind === 'm3u' ? 'm3u' : (p && p.kind);
     if (!kind) return cb({ ok: false, error: 'kind' });
     var label = str(body.label, 40) || (p && p.label) || '';
     var next = { id: p ? p.id : newId(), kind: kind, label: label, generation: p ? (p.generation || 0) + 1 : 1,
@@ -1125,6 +1171,35 @@ function playlistsAction(body, cb) {
       next.url = body.url !== undefined && body.url !== '' ? httpUrl(body.url) : p && p.kind === 'm3u' ? p.url : '';
       if (!next.url) return cb({ ok: false, error: 'url' });
       if (!label) next.label = hostOf(next.url);
+    } else if (kind === 'enigma2') {
+      /*
+       * A receiver's OpenWebif asks for a login only when its owner has set
+       * one, so none is not an error. A login is cleared with noLogin; an
+       * empty field keeps the one there is, as for an Xtream login.
+       */
+      next.server = body.server !== undefined && body.server !== '' ? enigma2Server(body.server) : p && p.kind === 'enigma2' ? p.server : '';
+      if (!next.server) return cb({ ok: false, error: 'server' });
+      next.user = body.user !== undefined && body.user !== '' ? str(body.user, 200) : p && p.kind === 'enigma2' ? p.user || '' : '';
+      next.pass = body.pass !== undefined && body.pass !== '' ? str(body.pass, 200) : p && p.kind === 'enigma2' ? p.pass || '' : '';
+      if (body.noLogin === true) { next.user = ''; next.pass = ''; }
+      // Whether a channel may take over the tuner showing live TV when none is free (enigma2Free).
+      if (body.takeOver === true || (body.takeOver === undefined && p && p.takeOver === true)) next.takeOver = true;
+      // Whether the tuner's stream port asks for the same login (relayStream).
+      if (body.streamLogin === true || (body.streamLogin === undefined && p && p.streamLogin === true)) next.streamLogin = true;
+      if (body.noLogin === true) delete next.streamLogin;
+      if (next.streamLogin && !next.user) return cb({ ok: false, error: 'login' });
+      if (next.pass && !next.user) return cb({ ok: false, error: 'login' });
+      /*
+       * The bouquets' M3U carries the receiver's main streaming port, not a
+       * transcoding profile on a port of its own (often 8002). Set, it
+       * replaces the port in every channel's stream URL (streamUrl).
+       */
+      if (body.streamPort !== undefined) {
+        var sp = body.streamPort === '' || body.streamPort === null ? 0 : portNumber(body.streamPort);
+        if (body.streamPort !== '' && body.streamPort !== null && !sp) return cb({ ok: false, error: 'streamPort' });
+        next.streamPort = sp;
+      } else next.streamPort = p && p.kind === 'enigma2' ? p.streamPort || 0 : 0;
+      if (!label) next.label = hostOf(next.server);
     } else {
       next.server = body.server !== undefined && body.server !== '' ? httpUrl(body.server) : p && p.kind === 'xtream' ? p.server : '';
       if (next.server) next.server = next.server.replace(/\/+(player_api\.php.*|get\.php.*)?$/i, '');
@@ -1341,6 +1416,7 @@ function streamUrl(id, key) {
     if (st.size > 4096) return null;
     var url = String(fs.readFileSync(f, 'utf8')).replace(/\s+$/, '');
     if (!/^https?:\/\//i.test(url)) return null;
+    if (p.kind === 'enigma2' && p.streamPort) url = url.replace(/^(https?:\/\/[^\/:]+)(?::\d+)?/i, '$1:' + p.streamPort);
     var account = cache.meta[id] && cache.meta[id].account;
     // An Xtream panel serves a live channel as HLS or as MPEG-TS, by the URL's
     // extension; the owner can choose either for a channel (setOutput).
@@ -1459,6 +1535,108 @@ function schedulePath(id, key, day) {
 }
 
 /*
+ * A request to a receiver's OpenWebif from here, for the one thing that
+ * cannot wait for a job: making a tuner free as a channel starts. The login
+ * goes to curl on its stdin, as in the worker, never in a command line.
+ * cb(parsed JSON or null).
+ */
+function enigma2Get(p, pathQuery, cb) {
+  var bins = clientsFn().filter(function (b) { try { return fs.statSync(b).isFile(); } catch (e) { return false; } });
+  if (!bins.length || !p.server) return cb(null);
+  var bin = bins[0], url = p.server + pathQuery, args, config = null;
+  if (/wget$/.test(bin)) {
+    args = ['-q', '-T', '8', '-U', 'Glasshouse/' + version, '-O', '-'];
+    if (p.user) args.push('--user=' + p.user, '--password=' + (p.pass || ''), '--auth-no-challenge');
+    args.push('--', url);
+  } else {
+    args = ['-fsS', '--max-time', '8', '-A', 'Glasshouse/' + version];
+    if (p.user) {
+      args.push('--basic', '-K', '-');
+      config = 'user = "' + String(p.user + ':' + (p.pass || '')).replace(/[\\"]/g, '\\$&') + '"\n';
+    }
+    args.push('--', url);
+  }
+  var out = '', done = false;
+  function finish(v) { if (!done) { done = true; cb(v); } }
+  var child;
+  try { child = spawn(bin, args, { stdio: ['pipe', 'pipe', 'ignore'] }); } catch (e) { return finish(null); }
+  child.on('error', function () { finish(null); });
+  child.stdout.on('data', function (d) { if (out.length < 262144) out += d; });
+  child.on('close', function (code) {
+    if (code !== 0) return finish(null);
+    try { finish(JSON.parse(out)); } catch (e) { finish(null); }
+  });
+  try { child.stdin.on('error', function () {}); child.stdin.end(config || ''); } catch (e) {}
+}
+
+/*
+ * Before a channel from a receiver starts, with the owner's takeOver on: when
+ * every tuner is busy and one of them only shows live TV, that tuner is moved
+ * to the channel (zap), and the stream, from the same transponder, shares it.
+ * A free tuner is used as it is, and a tuner recording, or one streaming for
+ * another viewer, is never touched. Anything unexpected from the receiver
+ * leaves things as they are. cb() when the stream may be asked for.
+ */
+var ZAP_SETTLE_MS = 1500;
+function enigma2Free(p, streamUrlText, cb) {
+  var m = /^https?:\/\/[^\/]+\/(.+)$/.exec(streamUrlText);
+  var ref = m ? m[1] : '';
+  try { ref = decodeURIComponent(ref); } catch (e) { ref = ''; }
+  if (!/^1:0:[0-9A-Fa-f]+:[0-9A-Fa-f:]+$/.test(ref)) return cb();
+  enigma2Get(p, '/api/about', function (about) {
+    var tuners = about && about.info && isArray(about.info.tuners) ? about.info.tuners : null;
+    if (!tuners || !tuners.length) return cb();
+    var busy = function (t) { return !!(t.rec || t.live || t.stream); };
+    if (tuners.some(function (t) { return !busy(t); })) return cb();
+    if (!tuners.some(function (t) { return t.live && !t.rec; })) return cb();
+    console.log('iptv: ' + p.id + ' has no free tuner, moving the one showing live TV');
+    enigma2Get(p, '/api/zap?sRef=' + encodeURIComponent(ref), function () { setTimeout(cb, ZAP_SETTLE_MS); });
+  });
+}
+
+/*
+ * A tuner's stream passed on to Home with the owner's login, for a tuner
+ * whose stream port asks for one: a <video> cannot send a login, and one in
+ * its URL is dropped by the browser. Only the tuner's own host is asked, so
+ * the login cannot go elsewhere through a channel's address, and nothing is
+ * kept or parsed: the transport stream is piped through as it arrives.
+ */
+var RELAY_CONNECT_MS = 10000;
+var RELAY_IDLE_MS = 20000;
+function relayStream(id, key, req, res) {
+  function refuse(code, why) {
+    if (res.headersSent) return res.end();
+    res.writeHead(code, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
+    res.end(JSON.stringify({ ok: false, error: why }));
+  }
+  var p = playlist(id), s = streamUrl(id, key);
+  if (!p || p.kind !== 'enigma2' || p.streamLogin !== true || !p.user || !s) return refuse(404, 'no-stream');
+  var target = urlLib.parse(s.url), tuner = urlLib.parse(p.server || '');
+  if (!target.hostname || target.protocol !== 'http:' || target.hostname.toLowerCase() !== String(tuner.hostname || '').toLowerCase()) return refuse(403, 'forbidden');
+  var upstream = http.request({
+    host: target.hostname, port: target.port || 80, path: target.path, method: 'GET', agent: false,
+    headers: { Authorization: 'Basic ' + toBuffer(p.user + ':' + (p.pass || ''), 'utf8').toString('base64'), 'User-Agent': 'Glasshouse/' + version, Connection: 'close' }
+  }, function (up) {
+    if (up.statusCode !== 200) {
+      up.resume();
+      console.log('iptv: relay for ' + id + ' answered ' + up.statusCode);
+      return refuse(502, up.statusCode === 401 || up.statusCode === 403 ? 'login' : 'http');
+    }
+    up.socket.setTimeout(RELAY_IDLE_MS, function () { upstream.abort(); });
+    res.writeHead(200, { 'Content-Type': 'video/MP2T', 'Cache-Control': 'no-store' });
+    up.on('end', function () { res.end(); });
+    up.on('error', function () { res.end(); });
+    up.pipe(res, { end: false });
+  });
+  upstream.setTimeout(RELAY_CONNECT_MS, function () { upstream.abort(); });
+  upstream.on('error', function () { refuse(502, 'network'); });
+  function closed() { upstream.abort(); }
+  req.on('close', closed);
+  res.on('close', closed);
+  upstream.end();
+}
+
+/*
  * The URL Home plays a channel from: the provider's, or, for a channel played
  * full screen while live TV may pause, the recording's on the TV
  * (lib/iptv-timeshift). MPEG-TS only: an HLS channel's player fetches its
@@ -1468,8 +1646,24 @@ function schedulePath(id, key, day) {
 function playUrl(id, key, full, cb) {
   var s = streamUrl(id, key);
   if (!s) return cb(null);
+  var owner = playlist(id);
+  if (owner && owner.kind === 'enigma2' && owner.takeOver === true) {
+    return enigma2Free(owner, s.url, function () { deliverStream(id, key, full, s, cb); });
+  }
+  deliverStream(id, key, full, s, cb);
+}
+
+function deliverStream(id, key, full, s, cb) {
   var at = id + ':' + key;
+  if (full) playing = at;
   timeshift.release(at);
+  // The tuner's stream port wants a login the player cannot send: Home plays it through the TV's relay.
+  var owner = playlist(id);
+  if (owner && owner.kind === 'enigma2' && owner.streamLogin === true) {
+    s.url = '/api/iptv/relay?pl=' + encodeURIComponent(id) + '&key=' + encodeURIComponent(key);
+    s.format = 'ts';
+    return cb(s);
+  }
   var local = timeshift.current(at);
   if (local) { s.url = local; s.timeshift = true; return cb(s); }
   if (!full || config.timeshift !== true || s.format !== 'ts') return cb(s);
@@ -1477,6 +1671,46 @@ function playUrl(id, key, full, cb) {
     if (r) { s.url = r.url; s.timeshift = true; }
     cb(s);
   });
+}
+
+/*
+ * The channel Home is playing full screen, or null when none is: its name as
+ * the lineup gives it, the id of its logo and the guide's programme on now,
+ * when it has them. Home
+ * Assistant shows them as the media player's title and picture.
+ */
+function nowPlaying() {
+  if (!playing || nowMs() >= shownUntil) return null;
+  var cut = playing.indexOf(':');
+  var pl = playing.slice(0, cut);
+  var added = cache.added[pl];
+  var a = added && added.channels && added.channels[playing.slice(cut + 1)];
+  var l = getLineup().byId[playing];
+  var name = (l && l.name) || (a && a.name) || null;
+  if (!name) return null;
+  // The guide's programme on now, when the playlist has a guide: times in ms.
+  var nn = cache.nownext[pl];
+  var list = nn && nn.ch && nn.ch[playing.slice(cut + 1)];
+  var t = nowMs(), prog = null;
+  for (var i = 0; list && i < list.length; i++) {
+    if (list[i][0] <= t && list[i][1] > t) prog = { title: list[i][2], start: list[i][0], end: list[i][1] };
+  }
+  return { id: playing, name: name, pl: pl, logo: (a && a.logo) || null, programme: prog, at: t, pausable: config.timeshift === true };
+}
+
+/*
+ * The lineup's playable channels for Home Assistant's media browser: the id to
+ * play them by ('playlist:key'), the name, and the id of the logo.
+ */
+function haChannels() {
+  var out = [];
+  getLineup().channels.forEach(function (c) {
+    if (c.missing || c.unplayable || c.pending || out.length >= 500) return;
+    var added = cache.added[c.pl];
+    var a = added && added.channels && added.channels[c.key];
+    out.push({ id: c.pl + ':' + c.key, name: c.name, pl: c.pl, logo: (a && a.logo) || null });
+  });
+  return out;
 }
 
 // How far behind live the recording of a channel plays, and the room left; null without one.
@@ -1503,9 +1737,28 @@ function timeshiftStatus(cb) {
   timeshift.stick(function (stick) { cb({ ok: true, on: config.timeshift === true, stick: stick }); });
 }
 
-function lease(on, full) {
+/*
+ * open: Home's player is up on a channel, as it is while that is paused and
+ * the lease no longer says full screen. A view that does not send it has the
+ * player up only while it is full screen.
+ */
+/*
+ * Home says, with each heartbeat, whether Internet TV is in front: its guide
+ * or a channel's player. Changes are told to onFront, which Home Assistant's
+ * media player follows.
+ */
+function front(on) {
+  var was = nowMs() < frontUntil;
+  frontUntil = on ? nowMs() + FRONT_MS : 0;
+  if (on !== was && frontFn) { try { frontFn(); } catch (e) {} }
+}
+
+function lease(on, full, open) {
+  var shown = on && (full || open === true);
+  if (!shown) playing = null;
   leaseUntil = on ? nowMs() + LEASE_MS : 0;
   fullUntil = on && full ? leaseUntil : 0;
+  shownUntil = shown ? leaseUntil : 0;
   timeshift.leased(leaseUntil);
   if (!on) pump();
   return { ok: true, until: leaseUntil };
@@ -1562,7 +1815,7 @@ function streamEvent(body) {
 
 /**
  * @param {{ stateDir?: string, launch?: function(function(): void): void, clients?: function(): string[],
- *   version?: string, nowMs?: function(): number, onChange?: function(): void, catchupMs?: number,
+ *   version?: string, nowMs?: function(): number, onChange?: function(): void, onFront?: function(): void, catchupMs?: number,
  *   procDir?: string, nodePath?: string, usbRoot?: string, mountsFile?: string, timeshiftChunkBytes?: number,
  *   timeshiftMaxBytes?: number, timeshiftSpareBytes?: number, timeshiftMinBytes?: number }} opts
  */
@@ -1574,6 +1827,7 @@ function init(opts) {
   if (opts.version) version = opts.version;
   if (opts.nowMs) nowMs = opts.nowMs;
   if (opts.onChange) changedFn = opts.onChange;
+  if (opts.onFront) frontFn = opts.onFront;
   if (typeof opts.catchupMs === 'number') catchupMs = opts.catchupMs;
   if (opts.procDir) procDir = opts.procDir;
   if (opts.nodePath) nodePath = opts.nodePath;
@@ -1652,15 +1906,20 @@ module.exports = {
   logoPath: logoPath,
   streamUrl: streamUrl,
   playUrl: playUrl,
+  relay: relayStream,
   timeshiftStats: timeshiftStats,
   setTimeshift: setTimeshift,
   timeshiftStatus: timeshiftStatus,
   schedulePath: schedulePath,
   lease: lease,
+  front: front,
+  inFront: function () { return nowMs() < frontUntil; },
   streamEvent: streamEvent,
   setOutput: setOutput,
   // Home is showing a stream full screen: lib/idlesaver leaves the screen saver held off.
   watching: function () { return nowMs() < fullUntil; },
+  nowPlaying: nowPlaying,
+  haChannels: haChannels,
   revision: function () { return revision; },
   hasPlaylists: function () { return config.playlists.length > 0; },
   _state: function () { return { config: config, selection: selection, current: current, queue: queue, running: running, cache: cache }; },

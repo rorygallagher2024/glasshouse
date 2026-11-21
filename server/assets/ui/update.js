@@ -114,6 +114,19 @@ function renderUpdate(d) {
       disabled: !d.writable
     });
   }
+  if (typeof d.screenGlowAllowed === 'boolean') {
+    // A TV with no capture service has nothing to switch: the row says so.
+    const none = d.screenGlowSupported === false;
+    q('srv-glow').hidden = none;
+    q('srv-glow-none').hidden = !none;
+    updateToggle('srv-glow', {
+      cls: d.screenGlowAllowed ? 'good' : 'idle',
+      label: d.screenGlowAllowed ? t('common.on', 'On') : t('common.off', 'Off'),
+      on: d.screenGlowAllowed,
+      disabled: !d.writable
+    });
+    glowAllowed(d.screenGlowAllowed && !none);
+  }
   if (d.watchHistory) {
     updateToggle('srv-watch', {
       cls: d.watchHistory.enabled ? 'good' : 'idle',
@@ -179,20 +192,6 @@ function renderUpdate(d) {
     rate.value = String(d.pointer.updatesPerSecond);
     rate.disabled = !d.writable;
     applyPointerSettings(Object.assign({ allowControl: !!d.writable }, d.pointer));
-  }
-
-  // Offered where the input bar has not been tried; where it has, it needs no switch.
-  const barRow = q('exp-inputbar-row');
-  if (barRow) {
-    barRow.hidden = !(d.inputBar && d.inputBar.standing === 'experimental');
-    if (d.inputBar) {
-      updateToggle('exp-inputbar', {
-        cls: d.inputBar.experimental ? 'good' : 'idle',
-        label: d.inputBar.experimental ? t('common.on', 'On') : t('common.off', 'Off'),
-        on: d.inputBar.experimental,
-        disabled: !d.writable
-      });
-    }
   }
 
   msg.textContent = (d.state === 'error' || d.state === 'offline') ? (d.error || t('server.checkFailed', 'the check failed'))
@@ -763,6 +762,13 @@ async function toggleWatchTime() {
   if (r && r.ok) renderUpdate(r); else loadUpdate();
 }
 
+async function toggleScreenGlowAllowed() {
+  const b = q('srv-glow');
+  b.disabled = true;
+  const r = await sendCommand('setScreenGlowAllowed', !b.dataset.on);
+  if (r && r.ok) renderUpdate(r); else loadUpdate();
+}
+
 // Stopping keeps what is there; this deletes it.
 async function clearWatchTime() {
   if (!confirm(t('server.watch.clearConfirm', 'Delete all watch time kept on the TV?'))) return;
@@ -918,13 +924,6 @@ async function savePointerSettings() {
 }
 q('exp-pointer-transport').addEventListener('change', savePointerSettings);
 q('exp-pointer-rate').addEventListener('change', savePointerSettings);
-
-async function toggleExpInputBar() {
-  const b = q('exp-inputbar');
-  b.disabled = true;
-  const r = await sendCommand('setInputBarAllowed', !b.dataset.on);
-  if (r && r.ok) renderUpdate(r); else loadUpdate();
-}
 
 async function toggleNetworkDebugger() {
   const b = q('srv-devtools');

@@ -1,28 +1,71 @@
 # Inputs
 
-The **Inputs** tab, `/?tab=inputs`, is about the TV's HDMI inputs: which ones are offered, the bar that switches between them, and what an input with nothing coming in shows. Switching to an input is on the [Control](control.md) tab.
+The **Inputs** tab (`/?tab=inputs`) controls how the remote's **Input** key behaves, which inputs Glasshouse shows, and what appears on screen when an input has nothing connected. Switching directly to an input is on the [Control](control.md) tab.
+
+## Glasshouse Input bar
+
+**Glasshouse Input bar** replaces LG's stock input list with a sleek overlay bar over whatever is playing, opened by the **Input** key (or any key set to **Input bar** under [Remote keys](remote.md#remote-keys)).
+
+### Choosing the input bar
+
+* **When you press Input on the remote:** Preview cards choose between **LG's list** and **Glasshouse Input bar**. This is the same setting as the **Input** key under [Remote keys](remote.md#remote-keys), where you can also assign the bar to any other remote key.
+* **Switch only on OK:** Off by default, so the TV switches a second after your last press. Switched on, moving along the bar only picks an input, and **OK** switches to it.
+* **Transparent tiles:** Off by default so the bar's tiles stay opaque and stepping through inputs does not repaint translucent tiles or shadows over the picture. Switch it on if you prefer the picture to show subtly through the bar.
+
+### How it works
+
+* **Stepping & switching:** Pressing **Input** opens the bar on the current input (marked with a green dot). Over Glasshouse Home or another launcher, it starts on the last watched input with **OK** switching straight back to it. Each press moves to the next input, wrapping round to the first, and the TV switches a second after the last press.
+* **Navigation:** **Left** and **Right** step horizontally (**Up** and **Down** move between rows in the two-row layout), **OK** switches at once, and **Back** closes it. With the Magic Remote pointer, hovering focuses a tile and clicking switches immediately.
+* **Auto-close:** Left alone, the bar closes after 3 seconds on the input already on screen, or after 6 seconds on another input highlighted by the pointer.
+* **Two-row layout:** When **6 or more** inputs are shown, the bar automatically stacks them into two rows so every source fits on screen without horizontal scrolling.
+
+### What the bar shows
+
+Each tile shows its name, subtitle (such as HDMI port or source type), and an automatic icon, in the order configured under [Your inputs](#your-inputs):
+
+* **Live TV** tuner (when broadcast or cable channels are tuned).
+* **HDMI ports & SIMPLINK (CEC) devices**, including devices connected through an AV receiver or soundbar, waking and routing them on selection.
+* **USB storage** attached to the TV, and **Media Servers** discovered over DLNA/UPnP when **Show media servers** is switched on under [Your inputs](#your-inputs).
+* **AV** and **Component**, on TVs that have those inputs, with their connection shown as for HDMI.
+* **AirPlay**, **Screen Share**, and **All Inputs** (LG's Input Hub / Home Hub), wherever the TV includes them.
+
+### Supported TVs & background preloading
+
+* **Supported versions:** Offered without any experimental switch on **webOS 4 to 10**, where the compositor filter can hand further **Input** presses to the bar. Not offered before webOS 4. On webOS 11, whose remote keys are compiled inside LG's compositor, it is offered only on a TV whose key handler Glasshouse knows how to change (an OLED48C31LA on firmware 44.00.92 so far): choosing the bar changes a few bytes of LG's `libappLaunch.so.1` in a copy mounted over it and restarts the TV's screen once, which takes about 35 s, and again each time the TV starts, and choosing **LG's list** puts it back with another restart.
+* **Fast opening:** Choosing the bar installs a hidden companion app (`com.tvweb.inputbar`) with no Home tile and keeps it preloaded in the background while the TV is on so it appears in roughly 0.4 s. Setting the last key that used it back to LG's (or uninstalling Glasshouse) removes the app.
 
 ## Your inputs
 
-The inputs [Glasshouse Home](home.md)'s Inputs row and the [input bar](#input-bar) offer, in Glasshouse Home's order, each with **Shown** or **Hidden**, and **Hide inputs with nothing connected**. Hiding one here hides it on both, and a change made on the Home tab shows here. The order is set on the Home tab.
+Shows when **Glasshouse Input bar** or a Glasshouse launcher ([Glasshouse Home](home.md), [Glasshouse Bar](home.md#glasshouse-bar), [Glasshouse Minimal](home.md#glasshouse-minimal), or [Custom](home.md#custom-launcher)) is active. Any change here updates both the Input bar and the TV launcher, even when Glasshouse Home itself is switched off.
 
-## Input bar
-
-A strip of the HDMI inputs over the picture, in place of LG's list of inputs, opened by the **Input** key once **Input bar** is chosen for it here, or by any key set to **Input bar** under [Remote keys](remote.md#remote-keys). Each input shows its device's name, its port and an icon for the kind of device it is, from the name: a console, a handheld, a streaming box, a sound bar, a disc player, a computer or a cable box, or an HDMI plug for any other. The one on screen is marked with a dot.
-
-* The first press opens it on the input on screen. Over Glasshouse Home or a launcher, it opens on the input last watched, which is not marked, and **OK** switches to it. Each further press moves to the next input, round to the first, and the TV switches to it a second after the last press, as LG's does.
-* **Left** and **Right** move too, **OK** switches at once and **Back** closes it. With the Magic Remote's pointer, hovering an input picks it and clicking switches, without the second's wait.
-* Left alone, it closes after 3 seconds on the input already on screen, or after 6 on another one the pointer left it on.
-* A device behind a receiver is switched to as Glasshouse Home's tile does, waking it through the receiver.
-
-It shows the inputs [Glasshouse Home](home.md)'s Inputs row shows, in its order, without the hidden ones, and without those with nothing connected where that row leaves them out. They are chosen under [Your inputs](#your-inputs), with Glasshouse Home switched off too. A change made either place is made in both.
-
-Choosing it for a key installs its app, a web app with no tile on the Home screen, `com.tvweb.inputbar`; setting the last key that used it to anything else removes it, as does uninstalling Glasshouse. While a key opens it and the TV is on, Glasshouse keeps the app loaded in the background, hidden and taking no keys, so a press shows it in about 0.4 s on a C1 rather than 0.7 s or more.
-
-It is offered on webOS 4, 6 and 9, where it has been tried (a B8 with 4.4.3, a C1 with 6.5.3 and a C2 with 9.2.2), and on webOS 5, 7, 8 and 10 once switched on under **Server** → **Advanced** → **Experimental features**: see [Experimental features](../experimental.md#input-bar). webOS 11's remote keys are LG's own, and cannot hand the bar the further presses, so it is not offered there.
-
-**The Input key opens** chooses between **LG's list** and the **Input bar** for the remote's Input key. It is the same setting as the Input key's under [Remote keys](remote.md#remote-keys), where any other key can be set to the bar too; the tab names the other keys that open it.
+* **Order:** Choose **Your order** to keep your manual arrangement, or **Last opened** to automatically bubble recently used inputs to the front.
+* **Hide inputs with nothing connected:** Completely omits disconnected HDMI ports instead of showing them dimmed (labelled **Left out**). They still show dimmed in arrange mode on Glasshouse Home and reappear automatically when a cable or device is connected.
+* **Show media servers:** Off by default so speakers and network devices broadcasting DLNA do not clutter your inputs list. Switch it on to show discovered DLNA media servers across your inputs; leave it off to omit all current and future media servers.
+* **Input cards:** Each input card lets you:
+  * **Rename** the input inline by clicking its name (HDMI ports and extra sources keep their physical port or source type in the subtitle; clearing the name restores the TV's own name).
+  * **Reorder** with `←` and `→` when **Order** is set to **Your order**.
+  * **Show or hide** each tile individually using the **Shown** / **Hidden** pill.
 
 ## No Signal screen
 
-**Just “No Signal”** leaves the animated picture and the line of advice off LG's No Signal screen, the one an input with nothing coming in shows, so only the words “No Signal” drift over the screen. LG's other messages there, such as a scrambled channel, are unchanged. Switching it on or off takes effect at once on an input with nothing coming in, and otherwise the next time no input is on screen, such as at the Home screen: the TV's input app has to restart to pick it up, which would blank an input's picture for a moment. Offered where the TV's No Signal screen is one Glasshouse knows: tried on a B8 (webOS 4.4.3) and a C2 (webOS 9.2.2). It is kept across restarts. On the TV app the switch is in the Screen saver section.
+Offered on TVs whose No Signal overlay Glasshouse knows how to replace (tried on a B8 running webOS 4.4.3 and a C2 running webOS 9.2.2):
+
+* **LG's screen:** LG's default No Signal graphic, text, and help banner.
+* **Just “No Signal”:** Strips out the animated picture and help text so only the words “No Signal” drift quietly across a black screen.
+* **Disconnected cable:** Hides the “No Signal” text as well and shows a subtle disconnected HDMI cable icon instead.
+* **Picture frame:** Shows the [Picture frame screen saver](screen-savers.md#picture-frame)'s pictures, your own and the collections picked there, each fading into the next. Each picture's label starts with LG's own “No Signal”, and shows as the picture frame's does: for a moment after each change, always, or never. Until the first picture is in, or with nothing picked, LG's “No Signal” stays on screen. Pictures are asked for only while the screen shows. With it chosen, **Now showing**, with **Previous** and **Next**, is under the cards, and **Picture frame settings** opens the dialog where its pictures are picked, the same one the Screensaver tab opens. The remote's left and right step back and forward through them too, where Glasshouse can read the remote's keys. Tried on a B8 running webOS 4.4.3.
+
+Switching modes takes effect immediately when an idle input is already on screen, and otherwise the next time no HDMI input is active (such as at Home), so restarting the input app never interrupts what you are watching. LG's other messages, such as a scrambled channel notice, remain untouched. The chosen mode is preserved across restarts and is also available in the TV app under **Screen saver**.
+
+## webOS versions
+
+**Glasshouse Input bar** is offered on webOS 4 to 10, and on webOS 11 for the TVs described above; [why not elsewhere](../tested-tvs.md#why-some-versions-are-not-offered). Where no one has yet reported it working on the TV's version, a note above the choice says so, with links to report a problem or that it works; see [Launchers and overlays by webOS version](../tested-tvs.md#launchers-and-overlays-by-webos-version).
+
+## TVs without the Input bar
+
+On TVs where **Glasshouse Input bar** cannot be offered (for example, **webOS 3**, or a **webOS 11** TV whose key handler Glasshouse does not know):
+
+* **When you press Input on the remote** is hidden automatically.
+* **Your inputs** still appears if you have enabled [Glasshouse Home](home.md), [Glasshouse Minimal](home.md#glasshouse-minimal), or a [Custom](home.md#custom-launcher) launcher on the **Home** tab, so you can rename, reorder, and hide inputs there.
+* **No Signal screen** appears if supported on your webOS version.
+* If none of those sections apply (for instance, **LG Home** is active on webOS 11), the tab simply states: *"Nothing about this TV’s inputs can be changed from here."*

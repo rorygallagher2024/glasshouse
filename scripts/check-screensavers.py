@@ -16,7 +16,8 @@ It also checks each screen saver folder, as the server reads them
 (docs/development/SCREENSAVER-DESIGN.md has the format): its saver.json
 parses, is format 1 and has a name, a description and a version;
 its main file is there; and every placeholder its QML uses is one it asks for
-in uses. Glasshouse's own, in server/assets/screensavers, also need Spanish and
+in uses. Web runtime savers use web/index.html as their main file. Glasshouse's
+own, in server/assets/screensavers, also need Spanish and
 the MIT license. The ones in server/screensavers are installed into the TV's
 folder for added screen savers, as an example of one, so they are checked as
 anyone's would be.
@@ -107,7 +108,7 @@ def check(path):
 SAVERS = pathlib.Path('server/assets/screensavers')
 EXAMPLES = pathlib.Path('server/screensavers')
 # "ha" has one placeholder per entity the saver declares, so it has none here.
-USES = {'level': '__TVWEB_LEVEL__', 'stats': '__TVWEB_URL__', 'choice': '__TVWEB_CHOICE__', 'ha': '', 'ha-list': '__TVWEB_HA_LIST__', 'ha-all': '__TVWEB_HA_ALL__', 'color': '__TVWEB_COLOR__'}
+USES = {'level': '__TVWEB_LEVEL__', 'stats': '__TVWEB_URL__', 'choice': '__TVWEB_CHOICE__', 'videos': '__TVWEB_VIDEOS__', 'home-weather': '__TVWEB_HOME_WEATHER__', 'video-busy': '__TVWEB_VIDEO_BUSY__', 'ha': '', 'ha-list': '__TVWEB_HA_LIST__', 'ha-all': '__TVWEB_HA_ALL__', 'color': '__TVWEB_COLOR__', 'art': '__TVWEB_ART__'}
 
 def check_folder(d, own):
     """Problems with one saver folder's saver.json, and its main QML file."""
@@ -134,6 +135,8 @@ def check_folder(d, own):
         bad.append('saver.json: Glasshouse\'s own screen savers are MIT')
     if not own and 'stats' in m.get('uses', []):
         bad.append('saver.json: only Glasshouse\'s own screen savers are given stats')
+    if not own and 'art' in m.get('uses', []):
+        bad.append('saver.json: only Glasshouse\'s own screen savers are given art')
     entities = m.get('entities')
     if entities is not None:
         if not isinstance(entities, dict) or not entities or len(entities) > 24:
@@ -161,15 +164,22 @@ def check_folder(d, own):
         bad.append('saver.json: entityList and "ha-list" in uses go together')
     if 'id' in m:
         bad.append('saver.json: no id - the folder name is the id')
-    main = m.get('main', 'main.qml')
+    runtime = m.get('runtime', 'qml')
+    if runtime not in ('qml', 'web'):
+        bad.append('saver.json: runtime must be qml or web')
+    main = m.get('main', 'web/index.html' if runtime == 'web' else 'main.qml')
+    if runtime == 'web' and main != 'web/index.html':
+        bad.append('saver.json: web runtime main must be web/index.html')
+    if runtime == 'qml' and not re.match(r'^[\w.-]+\.qml$', str(main)):
+        bad.append('saver.json: qml runtime main must be a .qml file')
     uses = m.get('uses', [])
     for u in uses:
         if u not in USES:
             bad.append('saver.json: unknown use "%s"' % u)
-    qml = d / main
-    if not qml.is_file():
+    main_path = d / main
+    if not main_path.is_file():
         return bad + ['%s missing' % main], []
-    src = qml.read_text(encoding='utf-8')
+    src = main_path.read_text(encoding='utf-8')
     for u, ph in USES.items():
         if ph and ph in src and u not in uses:
             bad.append('%s uses %s without "%s" in uses' % (main, ph, u))

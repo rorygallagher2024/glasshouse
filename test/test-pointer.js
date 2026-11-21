@@ -43,7 +43,9 @@ MockSocket.prototype.destroy = function () { this.destroyed = true; };
 
 var mockSocket = new MockSocket();
 var lunaCalls = 0;
+var activityCalls = 0;
 pointer.init({
+  onActivity: function () { activityCalls++; },
   config: { pointer: { enabled: true } },
   luna: function (uri, payload, cb) {
     lunaCalls++;
@@ -58,6 +60,7 @@ pointer.init({
 assert.strictEqual(pointer.isSupported(), true);
 pointer.send({ move: [{ dx: 5, dy: -6 }], click: true }, function (result) {
   assert.deepEqual(result, { ok: true, count: 2 });
+  assert.strictEqual(activityCalls, 1, 'a successful batch reports activity once');
   assert.strictEqual(mockSocket.writes.length, 1);
   var data = mockSocket.writes[0];
   var firstLength = data.readUInt32BE(0);
@@ -66,12 +69,14 @@ pointer.send({ move: [{ dx: 5, dy: -6 }], click: true }, function (result) {
   assert.strictEqual(data.slice(second + 4).toString(), 'type:click\n\n');
   pointer.send({ scroll: { dx: 0, dy: 2 } }, function (secondResult) {
     assert.strictEqual(secondResult.ok, true);
+    assert.strictEqual(activityCalls, 2, 'scrolling also reports activity');
     assert.strictEqual(lunaCalls, 1, 'the socket is reused');
     pointer.stop();
     assert.strictEqual(mockSocket.destroyed, true);
 
     var nowMs = 1000, failCalls = 0;
     pointer.init({
+      onActivity: function () { assert.fail('failed input must not report activity'); },
       config: { pointer: { enabled: true } },
       now: function () { return nowMs; },
       retryMs: 5000,

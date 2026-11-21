@@ -217,16 +217,23 @@ MiniMQTT.prototype._parse = function() {
          * packet at all since the one before last means the broker is gone.
          * Date.now() also runs through standby, so the first round after a
          * resume finds the gap and reconnects.
+         *
+         * Both intervals follow opts.keepAlive, the same value sent in the
+         * CONNECT packet: pinging less often than promised there left the
+         * broker's own 1.5x-keepAlive timeout firing before this client's
+         * ping even went out, so its will published well before this side
+         * noticed anything wrong.
          */
+        var keepAliveMs = (self.opts.keepAlive || 60) * 1000;
         this.pingTimer = setInterval(function() {
           if (!self.client || !self.connected) return;
-          if (Date.now() - self.lastRx > 45000) {
+          if (Date.now() - self.lastRx > keepAliveMs * 1.5) {
             console.log('mqtt: no answer from ' + self.opts.host + ' - reconnecting');
             return self.client.destroy();
           }
           self.pingStart = Date.now();
           self.client.write(toBuffer([0xc0, 0x00])); // PINGREQ
-        }, 30000);
+        }, keepAliveMs);
         // Resubscribe to all saved subscriptions
         for (var i = 0; i < this.subscriptions.length; i++) {
           this._sendSubscribe(this.subscriptions[i]);

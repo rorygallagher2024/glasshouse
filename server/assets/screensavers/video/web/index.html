@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<title>Video Screen Saver</title>
+<style>
+@font-face{font-family:'Outfit';src:url('fonts/Outfit-Light.ttf') format('truetype');font-weight:300}
+@font-face{font-family:'Outfit';src:url('fonts/Outfit-Regular.ttf') format('truetype');font-weight:400}
+@font-face{font-family:'Manrope';src:url('fonts/Manrope-Regular.ttf') format('truetype');font-weight:400}
+@font-face{font-family:'Manrope';src:url('fonts/Manrope-SemiBold.ttf') format('truetype');font-weight:600}
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#000;color:#ece7df}
+body{font-family:'Manrope',sans-serif;-webkit-font-smoothing:antialiased}
+video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;background:#000;opacity:0;transition:opacity 1.5s ease}
+#loading{position:absolute;left:5.83%;bottom:6.67%;z-index:2;color:#a39d93;font-size:22px;opacity:.6}
+#loading[hidden]{display:none}
+#shade{position:absolute;inset:0;background:#000;opacity:__TVWEB_LAYER_OPACITY__;pointer-events:none}
+#topbar{position:absolute;display:flex;align-items:flex-start;z-index:2;text-shadow:0 1px 12px rgba(0,0,0,.55)}
+#clock{flex:0 0 420px;text-align:right}
+#time{font-family:'Outfit',sans-serif;font-size:100px;line-height:1;font-weight:300;letter-spacing:-2px;font-variant-numeric:tabular-nums}
+#date{margin-top:8px;color:#a39d93;font-size:23px;line-height:1.2}
+#weather{flex:0 0 auto;margin-left:48px;text-align:right}
+#wxMain{display:flex;align-items:center}
+#wxIcon{width:72px;height:72px;margin-right:20px;stroke:#ece7df;stroke-width:1.3;fill:none;stroke-linecap:round;stroke-linejoin:round}
+#temp{font-family:'Outfit',sans-serif;font-size:100px;line-height:1;font-weight:300;letter-spacing:-2px}
+#wxLine{margin-top:8px;color:#a39d93;font-size:23px;line-height:1.2;white-space:nowrap}
+#city:not(:empty)+#conditions:not(:empty):before{content:' · ';margin:0 .15em}
+#caption{position:absolute;left:4%;top:4%;z-index:2;width:34%;text-align:left;color:#ece7df;font-family:'Manrope',sans-serif;font-size:1.65vw;line-height:1.35;font-weight:400;white-space:normal;overflow-wrap:break-word;text-shadow:0 2px 8px #000,0 0 18px #000;pointer-events:none}
+/* Open-Meteo's data is CC BY 4.0: credited where it is shown, as Home does. */
+#credit{position:absolute;right:112px;bottom:12px;z-index:2;color:#ece7df;font-size:16px;font-weight:300;opacity:.45}
+#credit:empty{display:none}
+#issue{position:absolute;left:5.83%;bottom:6.67%;z-index:2;max-width:72%;color:#a39d93;font-size:22px;text-shadow:0 2px 8px #000,0 0 18px #000}
+</style>
+</head>
+<body>
+<video id="video" muted playsinline></video><div id="shade"></div>
+<div id="topbar"><section id="clock"><div id="time">--:--</div><div id="date"></div></section>
+<section id="weather" hidden><div id="wxMain"><svg id="wxIcon" viewBox="0 0 24 24" aria-hidden="true"><g id="wxShape"></g></svg><div id="temp"></div></div><div id="wxLine"><span id="city"></span><span id="conditions"></span></div></section></div>
+<div id="caption"></div><div id="loading" hidden>Loading</div><div id="issue"></div><div id="credit"></div>
+<script src="video-order.js"></script>
+<script>
+var list=__TVWEB_VIDEOS__,weatherUrl="__TVWEB_HOME_WEATHER__",busyUrl="__TVWEB_VIDEO_BUSY__",video=document.getElementById('video'),idx=-1,failures=0,order=[],orderAt=0,style=list&&list.style||{};
+var items=list&&list.items?list.items:[];
+function place(el,corner,x,y){var right=corner.indexOf('right')!==-1,bottom=corner.indexOf('bottom')===0;el.style.left=right?'':x+'px';el.style.right=right?x+'px':'';el.style.top=bottom?'':y+'px';el.style.bottom=bottom?y+'px':'';}
+function applyStyle(){var info=document.getElementById('topbar'),clockBox=document.getElementById('clock'),time=document.getElementById('time'),date=document.getElementById('date'),weather=document.getElementById('weather'),captionBox=document.getElementById('caption'),size=Math.max(48,Math.min(144,Number(style.infoSize)||100)),clockFont=style.clockFont==='Manrope'?'Manrope':'Outfit',textFont=style.textFont==='Outfit'?'Outfit':'Manrope',color=/^#[0-9a-f]{6}$/i.test(style.textColor||'')?style.textColor:'#ece7df',infoPos=style.infoPosition||'top-right',capPos=style.captionPosition||'top-left',right=infoPos.indexOf('right')!==-1,bottom=infoPos.indexOf('bottom')===0;
+place(info,infoPos,112,bottom?86:72);info.style.width='auto';info.style.height='auto';info.style.padding='0';info.style.alignItems=bottom?'flex-end':'flex-start';info.style.justifyContent=right?'flex-end':'flex-start';clockBox.style.textAlign=right?'right':'left';document.getElementById('wxLine').style.textAlign=right?'right':'left';
+time.style.fontFamily=clockFont+',sans-serif';time.style.fontSize=size+'px';document.getElementById('temp').style.fontFamily=clockFont+',sans-serif';document.getElementById('temp').style.fontSize=size+'px';date.style.fontFamily=textFont+',sans-serif';date.style.fontSize=Math.round(size*.23)+'px';document.getElementById('wxLine').style.fontFamily=textFont+',sans-serif';document.getElementById('wxLine').style.fontSize=Math.round(size*.23)+'px';
+time.style.color=color;document.getElementById('temp').style.color=color;date.style.color=color;date.style.opacity='.68';document.getElementById('wxLine').style.color=color;document.getElementById('wxLine').style.opacity='.68';document.getElementById('wxIcon').style.stroke=color;document.getElementById('wxIcon').style.width=Math.round(size*.72)+'px';document.getElementById('wxIcon').style.height=Math.round(size*.72)+'px';document.getElementById('wxIcon').style.marginRight=Math.round(size*.2)+'px';
+time.style.display=style.showClock===false?'none':'';date.style.display=style.showDate===false?'none':'';clockBox.style.display=style.showClock===false&&style.showDate===false?'none':'';weather.hidden=style.showWeather===false||!document.getElementById('temp').textContent;
+place(captionBox,capPos,0,0);captionBox.style.left=capPos.indexOf('right')!==-1?'auto':'4%';captionBox.style.right=capPos.indexOf('right')!==-1?'4%':'auto';captionBox.style.top=capPos.indexOf('bottom')===0?'auto':'4%';captionBox.style.bottom=capPos.indexOf('bottom')===0?'4%':'auto';captionBox.style.textAlign=capPos.indexOf('right')!==-1?'right':'left';captionBox.style.fontFamily=(style.captionFont==='Outfit'?'Outfit':'Manrope')+',sans-serif';captionBox.style.fontSize=(Math.max(18,Math.min(56,Number(style.captionSize)||32)))+'px';captionBox.style.color=color;captionBox.style.display=style.showCaptions===false?'none':'';clearCaption();}
+// Moved past the clock and weather where both are in the same corner, or the caption's width reaches them.
+function clearCaption(){var box=document.getElementById('caption'),info=document.getElementById('topbar'),pos=style.captionPosition||'top-left',bottom=pos.indexOf('bottom')===0;if(!box.textContent)return;box.style.top=bottom?'auto':'4%';box.style.bottom=bottom?'4%':'auto';var c=box.getBoundingClientRect(),r=info.getBoundingClientRect(),gap=24;if(!c.width||!r.width||!r.height||r.right<=c.left||r.left>=c.right)return;if(bottom&&r.top<c.bottom+gap&&r.bottom>c.top)box.style.bottom=Math.round(window.innerHeight-r.top+gap)+'px';if(!bottom&&r.bottom>c.top-gap&&r.top<c.bottom)box.style.top=Math.round(r.bottom+gap)+'px';}
+function clock(){var d=new Date(),p=function(n){return n<10?'0'+n:n},loc=navigator.language||undefined;document.getElementById('time').textContent=p(d.getHours())+':'+p(d.getMinutes());document.getElementById('date').textContent=d.toLocaleDateString(loc,{weekday:'long'})+' '+d.getDate()+' '+d.toLocaleDateString(loc,{month:'long'});}
+function caption(){var item=items[idx],text=item&&item.title||'',s=video.currentTime||0,points=item&&item.pointsOfInterest||[];for(var i=0;i<points.length;i++){if(Number(points[i].at)>s)break;text=points[i].text||text;}var box=document.getElementById('caption');if(box.textContent!==text){box.textContent=text;clearCaption();}if(video.duration&&video.duration-s<1.6)video.style.opacity=0;}
+function nextVideoIndex(){if(items.length<2)return 0;if(!list.shuffle)return(idx+1)%items.length;if(!order.length||orderAt>=order.length){order=window.TVWebVideoOrder.shuffled(items.length,Math.random,idx);orderAt=0;}return order[orderAt++];}
+function play(next){if(!items.length){document.getElementById('issue').textContent='No videos are configured.';return;}idx=typeof next==='number'?next:nextVideoIndex();var item=items[idx];video.oncanplay=function(){failures=0;document.getElementById('issue').textContent='';video.style.opacity=1;var p=video.play();if(p&&p.catch)p.catch(function(e){document.getElementById('issue').textContent='Video playback failed: '+e;});};video.onended=function(){play(nextVideoIndex());};video.onerror=function(){document.getElementById('issue').textContent='The browser could not load this video (media error '+(video.error?video.error.code:'unknown')+').';if(++failures<items.length){play(nextVideoIndex());}else{setTimeout(function(){failures=0;play(nextVideoIndex());},30000);}};video.src=item.url;video.load();caption();}
+// An app holding the TV's one video decoder, such as Kodi paused (#1599): the clock and weather on black, and no video, which would take the decoder from it. Asked again every 15 s; no answer plays as before.
+function start(){var x=new XMLHttpRequest(),done=false,go=function(busy){if(done)return;done=true;if(busy){clearTimeout(firstPlay);document.getElementById('loading').hidden=true;setTimeout(start,15000);}else play();};x.onreadystatechange=function(){if(x.readyState!==4)return;var d=null;try{d=JSON.parse(x.responseText);}catch(e){}go(!!(d&&d.busy===true));};x.timeout=3000;x.ontimeout=x.onerror=function(){go(false);};try{x.open('GET',busyUrl,true);x.send();}catch(e){go(false);}}
+var WX_CLOUD='<path d="M7 17h10a4 4 0 0 0 .4-8A5.5 5.5 0 0 0 6.6 8.6 4.2 4.2 0 0 0 7 17z"/>',WX_CLOUD_UP='<path d="M7 14h10a4 4 0 0 0 .4-8A5.5 5.5 0 0 0 6.6 5.6 4.2 4.2 0 0 0 7 14z"/>',WX_SUN='<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>';
+var WX_PARTS={'clear-night':'<path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/>',sunny:WX_SUN,partlycloudy:'<circle cx="8" cy="8" r="3"/><path d="M8 2v1.5M2 8h1.5M3.8 3.8l1 1M12.2 3.8l-1 1"/><path d="M9 19h9a3.5 3.5 0 0 0 .3-7 4.8 4.8 0 0 0-9.2-.9A3.9 3.9 0 0 0 9 19z"/>',cloudy:WX_CLOUD,fog:'<path d="M4 9h16M3 13h18M5 17h14"/>',rainy:WX_CLOUD_UP+'<path d="M9 17l-1 3M13 17l-1 3M17 17l-1 3"/>',pouring:WX_CLOUD_UP+'<path d="M8 16l-1.5 5M11.5 16L10 21M15 16l-1.5 5M18.5 16L17 21"/>',snowy:WX_CLOUD_UP+'<path d="M9 18v.01M12 20v.01M15 18v.01M9 21v.01M15 21v.01"/>','snowy-rainy':WX_CLOUD_UP+'<path d="M9 17l-1 3M15 17l-1 3M12 19v.01"/>',hail:WX_CLOUD_UP+'<circle cx="9" cy="18.5" r="1"/><circle cx="13" cy="20" r="1"/><circle cx="16" cy="17.5" r="1"/>',lightning:WX_CLOUD_UP+'<path d="M13 14l-3 4h4l-3 4"/>','lightning-rainy':WX_CLOUD_UP+'<path d="M12 14l-2.5 3.5h3.5L10.5 21M16 16l-1 3"/>',windy:'<path d="M3 9h11a2.5 2.5 0 1 0-2.5-2.5M3 13h15a2.5 2.5 0 1 1-2.5 2.5M3 17h7"/>',exceptional:'<path d="M12 3l9.5 17h-19z"/><path d="M12 10v4M12 17v.01"/>'};
+WX_PARTS['windy-variant']=WX_PARTS.windy;
+var WX_LABELS={'clear-night':'Clear night',cloudy:'Cloudy',fog:'Fog',hail:'Hail',lightning:'Lightning','lightning-rainy':'Thunderstorms',partlycloudy:'Partly cloudy',pouring:'Pouring rain',rainy:'Rainy',snowy:'Snowy','snowy-rainy':'Snow and rain',sunny:'Sunny',windy:'Windy','windy-variant':'Windy',exceptional:'Severe weather'};
+function refreshWeather(){var x=new XMLHttpRequest();x.onreadystatechange=function(){if(x.readyState!==4)return;try{var d=JSON.parse(x.responseText);if(d&&d.ok){document.getElementById('wxShape').innerHTML=WX_PARTS[d.condition]||'<path d="M10 14.5V5a2 2 0 0 1 4 0v9.5a4 4 0 1 1-4 0z"/>';document.getElementById('temp').textContent=Math.round(d.temp)+'°';document.getElementById('city').textContent=d.city||'';document.getElementById('conditions').textContent=WX_LABELS[d.condition]||'';document.getElementById('credit').textContent=d.source==='internet'&&style.showWeather!==false?'Weather data by Open-Meteo.com':'';applyStyle();}}catch(e){}};x.open('GET',weatherUrl,true);x.send();}
+video.addEventListener('timeupdate',caption);var firstPlay=setTimeout(function(){document.getElementById('loading').hidden=false;},1500);video.addEventListener('playing',function(){clearTimeout(firstPlay);document.getElementById('loading').hidden=true;});clock();applyStyle();refreshWeather();setInterval(clock,1000);setInterval(refreshWeather,600000);start();
+</script>
+</body>
+</html>

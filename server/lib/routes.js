@@ -14,6 +14,7 @@ var listenDualStack = require('./util').listenDualStack;
 var allocBuffer = require('./util').allocBuffer;
 var hostPort = require('./util').hostPort;
 var sendIconFile = require('./iconserver').sendIconFile;
+var artModule = require('./art');
 var writeJsonAtomic = require('./util').writeJsonAtomic;
 var unlinkQuiet = require('./util').unlinkQuiet;
 var existsQuiet = require('./util').existsQuiet;
@@ -122,6 +123,27 @@ var syslogModule = null;
 var ntpModule = null;
 /** @type {typeof import('./history')} */
 var historyModule = null;
+var perfHistoryModule = null;
+var storageScanModule = null;
+/** @type {typeof import('./sysinfo')} */
+var sysinfoModule = null;
+/** @type {typeof import('./screencolour')} */
+var screenColourModule = null;
+/** @type {typeof import('./power')} */
+var powerModule = null;
+
+// HDMI inputs the TV's input service calls plugged in, with no powered source
+// on the cable and no picture, as the HDMI view sees them (telemetry).
+function markNoSignal(c, done) {
+  if (!c || !Array.isArray(c.devices) || !telemetryModule || typeof telemetryModule.hdmiSignalByInput !== 'function') return done();
+  telemetryModule.hdmiSignalByInput(function (byInput) {
+    c.devices.forEach(function (d) {
+      var sig = d && !d.unused && !d.kind && d.port ? byInput[d.port] : null;
+      if (sig && !sig.powered && !sig.locked) d.noSignal = true;
+    });
+    done();
+  });
+}
 /** @type {typeof import('./sshkeys')} */
 var sshKeysModule = null;
 /** @type {typeof import('./screentime')} */
@@ -224,7 +246,7 @@ function setupPending() {
  * those decide who may reach this server at all, and a UI that can widen its
  * own exposure defeats the point of setting them. The one exception is host,
  * from the TV itself during setup - see setNetworkAccess. Experimental feature
- * toggles (allowTileHiding, allowExperimentalScreensavers, allowExperimentalInputBar), allowNetworkDebugger and
+ * toggles (allowTileHiding, allowExperimentalScreensavers), allowNetworkDebugger and
  * prometheus.enabled are writable from the Server tab, and iconServer from the
  * MQTT tab: its port answers nothing but the icons the dashboard serves.
  */
@@ -285,6 +307,9 @@ function validateSettings(j) {
   var iv = parseInt(m.telemetryIntervalMs, 10);
   if (!(iv >= 1000 && iv <= 600000)) e.push('telemetry interval must be between 1000 and 600000 ms');
   else out.mqtt.telemetryIntervalMs = iv;
+
+  // The media_player entity, for owners with the separate integration that reads it. A form without it keeps what is saved.
+  if (typeof m.universalMediaPlayer === 'boolean') out.mqtt.universalMediaPlayer = m.universalMediaPlayer;
 
   out.mqtt.entities = {};
   var me = (m && m.entities) || {};
@@ -397,6 +422,11 @@ function lanOrigin() {
   if (!networkOpen()) return null;
   var ip4 = localAddress4();
   return ip4 ? 'http://' + hostPort(ip4, config.port) : null;
+}
+
+// Off only where switched off on the Server tab.
+function screenGlowAllowed() {
+  return !(config.screenGlow && config.screenGlow.allowed === false);
 }
 
 function prometheusEnabled() {
@@ -625,6 +655,24 @@ function missingAssetsPage() {
 }
 
 /*
+ * The apps LG keeps ready, each marked noIcon where it has none to show, such
+ * as Yandex Alice on a C2, so the page does not ask for one and get a 404.
+ */
+function preloadWithIcons(cb) {
+  preloadModule.getPreload(function (pRes) {
+    var apps = (pRes && pRes.apps) || [];
+    var left = apps.length;
+    if (!left) return cb(pRes);
+    apps.forEach(function (a) {
+      appsModule.getIconPath(a.id, function (p) {
+        if (!p) a.noIcon = true;
+        if (--left === 0) cb(pRes);
+      });
+    });
+  });
+}
+
+/*
  * ui.html names its stylesheet and scripts under assets/ui/, and they are put
  * back inline here, so the browser still gets one page in one gzipped response
  * that is never cached apart from it. The scripts become a single <script> in
@@ -713,6 +761,9 @@ function updateSummary() {
   s.isWebos10 = !!(screensaversModule && screensaversModule.experimental && screensaversModule.experimental());
   s.homeLayout = homeScreenModule ? homeScreenModule.experimental() : null;
   s.prometheusEnabled = prometheusEnabled();
+  s.screenGlowAllowed = screenGlowAllowed();
+  // Where the TV has no capture service, the glow is not offered; null while unknown.
+  s.screenGlowSupported = screenColourModule ? screenColourModule.supported() : false;
   s.clockHour12 = clockHour12();
   s.watchHistory = historyModule ? historyModule.status() : null;
   s.backupDaily = backupModule ? backupModule.dailyStatus() : null;
@@ -1137,6 +1188,7 @@ function getSettingsPayload() {
       topicPrefix: mc.topicPrefix || 'lgtv',
       discoveryPrefix: mc.discoveryPrefix || 'homeassistant',
       telemetryIntervalMs: mc.telemetryIntervalMs || 10000,
+      universalMediaPlayer: mc.universalMediaPlayer === true,
       entities: {
         controls: !mc.entities || mc.entities.controls !== false,
         oled: !mc.entities || mc.entities.oled !== false,
@@ -1245,14 +1297,19 @@ function handleHomeRoute(req, res, u, pathname) {
     }
     if (pathname === '/api/home/catalogue') {
       return homeModule.catalogue(function (c) {
-        var st = homeModule.viewStatus();
-        c.ok = true;
-        c.layout = st.layout;
-        c.enabled = st.enabled;
-        c.supported = st.supported;
-        c.wallpapers = st.wallpapers;
-        c.layoutVersion = homeModule.layoutVersion();
-        reply(c);
+        // The Inputs tab's state for each HDMI input agrees with the HDMI
+        // view: plugged in by the TV's input service, but with no powered
+        // source on the cable and no picture, it is no signal, not connected.
+        markNoSignal(c, function () {
+          var st = homeModule.viewStatus();
+          c.ok = true;
+          c.layout = st.layout;
+          c.enabled = st.enabled;
+          c.supported = st.supported;
+          c.wallpapers = st.wallpapers;
+          c.layoutVersion = homeModule.layoutVersion();
+          reply(c);
+        });
       });
     }
     if (pathname === '/api/home/channels') {
@@ -1261,7 +1318,15 @@ function handleHomeRoute(req, res, u, pathname) {
     // A custom launcher's own saved values (Glasshouse.storage).
     if (pathname === '/api/home/store' && homeLauncherModule) return homeLauncherModule.store(reply);
     if (pathname === '/api/home/guide') return homeModule.guide(function (g) { reply({ ok: true, guide: g }); });
-    if (pathname === '/api/home/now') return homeModule.now(reply);
+    if (pathname === '/api/home/now') {
+      // homeInFront: Glasshouse Bar, opened by a remote key, does nothing over Glasshouse Home (#1499).
+      return homeModule.now(function (r) {
+        if (r && typeof r === 'object' && typeof homeModule.viewInFront === 'function') r.homeInFront = homeModule.viewInFront();
+        reply(r);
+      });
+    }
+    // Glasshouse Bar's page, as it opens: whether LG's Home is drawn under it, to be covered.
+    if (pathname === '/api/home/bar-open') return reply({ ok: true, lgHomeUnder: homeModule.barOpened() });
     if (pathname === '/api/home/weather') return homeModule.weather(reply);
     if (pathname === '/api/home/weather/places') {
       return homeModule.weatherPlaces(String(u.query && u.query.q || ''), String(u.query && u.query.lang || ''), reply);
@@ -1286,6 +1351,23 @@ function handleHomeRoute(req, res, u, pathname) {
         send(res, status, JSON.stringify({ ok: false, error: error }));
       }, /\.png$/i.test(snapshot) ? 'image/png' : 'image/jpeg', 'private, no-cache');
     }
+    if (pathname === '/api/home/card-icon') {
+      var cardPath = homeModule.cardIconPath(u.query && u.query.name);
+      if (!cardPath) return send(res, 404, JSON.stringify({ ok: false, error: 'icon not found' }));
+      return sendIconFile(req, res, cardPath, function (status, error) {
+        send(res, status, JSON.stringify({ ok: false, error: error }));
+      }, 'image/png');
+    }
+    if (pathname === '/api/home/nav-sound') {
+      var navSound = homeModule.navSoundFile(u.query && u.query.name);
+      if (!navSound) return send(res, 404, JSON.stringify({ ok: false, error: 'no sound' }));
+      return sendIconFile(req, res, navSound.path, function (status, error) {
+        send(res, status, JSON.stringify({ ok: false, error: error }));
+      }, navSound.type, 'no-cache');
+    }
+    if (pathname === '/api/home/card-icons') {
+      return reply({ ok: true, names: homeModule.cardIconNames() });
+    }
     if (pathname === '/api/home/icon') {
       return homeModule.iconPath(u.query && u.query.id, function (iconPath) {
         if (!iconPath) return send(res, 404, JSON.stringify({ ok: false, error: 'icon not found' }));
@@ -1305,6 +1387,28 @@ function handleHomeRoute(req, res, u, pathname) {
         if (!r.ok) return refuseUpload(req, res, r.error, r.status || 400);
         reply(r);
       });
+    }
+    if (pathname === '/api/home/card-icons/upload') {
+      if (!postGuard(req, res, 'image/png', true)) return;
+      return homeModule.uploadCardIcon(String(u.query && u.query.name || ''), req, function (r) {
+        if (!r.ok) return refuseUpload(req, res, r.error, r.status || 400);
+        reply(r);
+      });
+    }
+    if (pathname === '/api/home/card-icons/remove') {
+      return readJsonBody(req, res, function (body) {
+        homeModule.removeCardIcon(String(body && body.name || ''), function (r) { send(res, r.ok ? 200 : 400, JSON.stringify(r)); });
+      }, 1024);
+    }
+    if (pathname === '/api/home/nav-sound/upload') {
+      if (!postGuard(req, res, 'application/octet-stream', true)) return;
+      return homeModule.uploadNavSound(req, function (r) {
+        if (!r.ok) return refuseUpload(req, res, r.error, r.status || 400);
+        reply(r);
+      });
+    }
+    if (pathname === '/api/home/nav-sound/remove') {
+      return readJsonBody(req, res, function () { homeModule.removeNavSound(reply); }, 1024);
     }
     if (pathname === '/api/home/launcher/upload' && homeLauncherModule) {
       // It runs as the TV's Home app, so it is held to what a sideloaded package is.
@@ -1330,10 +1434,12 @@ function handleHomeRoute(req, res, u, pathname) {
     if (pathname === '/api/home/store' && homeLauncherModule) {
       return readJsonBody(req, res, function (body) { homeLauncherModule.setStore(body, reply); }, homeLauncherModule.MAX_STORE + 1024);
     }
+    if (pathname === '/api/home/wallpapers') {
+      return readJsonBody(req, res, function (body) { homeModule.setWallpapers(body, reply); }, 128 * 1024);
+    }
     return readJsonBody(req, res, function (body) {
       if (pathname === '/api/home/layout') return homeModule.setLayout(body, reply);
       if (pathname === '/api/home/start-layout') return homeModule.setHideLgHomeAtStart(body, reply);
-      if (pathname === '/api/home/wallpapers') return homeModule.setWallpapers(body, reply);
       // Glasshouse Bar leaves LG's Home its place, so it is switched off first.
       if (pathname === '/api/home/enable') {
         if (!homebarModule || !homebarModule.enabled()) return homeModule.enable(reply);
@@ -1344,6 +1450,7 @@ function handleHomeRoute(req, res, u, pathname) {
       }
       if (pathname === '/api/home/disable') return homeModule.disable(reply);
       if (pathname === '/api/home/open') return homeModule.open(body, reply);
+      if (pathname === '/api/home/idle-saver') return homeModule.startIdleSaver(reply);
       if (pathname === '/api/home/launcher' && homeLauncherModule) {
         if (typeof body.address === 'string') return homeLauncherModule.setAddress(body.address, reply);
         if (typeof body.remove === 'string') return homeLauncherModule.remove(body.remove, reply);
@@ -1441,6 +1548,11 @@ function handleIptvRoute(req, res, u, pathname) {
           switchable: stream.switchable, timeshift: stream.timeshift === true }));
       });
     }
+    if (pathname === '/api/iptv/relay') {
+      // A tuner's stream with the owner's login: for the TV's own Home only, like the play link.
+      if (!fromTV(req)) return send(res, 403, JSON.stringify({ ok: false, error: 'forbidden' }));
+      return iptvModule.relay(String(qs.pl || ''), String(qs.key || ''), req, res);
+    }
     if (pathname === '/api/iptv/timeshift') {
       if (qs.pl === undefined) return iptvModule.timeshiftStatus(reply);
       var ts = iptvModule.timeshiftStats(String(qs.pl || ''), String(qs.key || ''));
@@ -1456,7 +1568,7 @@ function handleIptvRoute(req, res, u, pathname) {
       if (pathname === '/api/iptv/playlists') return iptvModule.playlistsAction(body, reply);
       if (pathname === '/api/iptv/selection') return iptvModule.setSelection(body, reply);
       if (pathname === '/api/iptv/lineup') return iptvModule.setLineup(body, reply);
-      if (pathname === '/api/iptv/lease') return reply(iptvModule.lease(body && body.on === true, body && body.full === true));
+      if (pathname === '/api/iptv/lease') return reply(iptvModule.lease(body && body.on === true, body && body.full === true, body && body.open === true));
       if (pathname === '/api/iptv/event') return reply(iptvModule.streamEvent(body));
       if (pathname === '/api/iptv/output') return reply(iptvModule.setOutput(body));
       if (pathname === '/api/iptv/timeshift') return reply(iptvModule.setTimeshift(body));
@@ -1467,6 +1579,40 @@ function handleIptvRoute(req, res, u, pathname) {
   send(res, 404, JSON.stringify({ ok: false, error: 'not found' }));
 }
 
+// An asset's gzipped copy, or null where it is no smaller. On this thread
+// rather than zlib's worker pool: see loadUI.
+function gzipAsset(file, buf) {
+  try {
+    var gz = zlib.gzipSync(buf);
+    return gz.length < buf.length ? gz : null;
+  } catch (e) {
+    console.warn('assets: could not gzip ' + file + ': ' + e.message + '; serving uncompressed');
+    return null;
+  }
+}
+
+function acceptsGzip(acceptEncoding) {
+  if (!acceptEncoding) return false;
+  var encodings = String(acceptEncoding).split(',');
+  var wildcardAccepted = false;
+  for (var i = 0; i < encodings.length; i++) {
+    var parts = encodings[i].split(';');
+    var coding = parts[0].replace(/^\s+|\s+$/g, '').toLowerCase();
+    if (coding !== 'gzip' && coding !== '*') continue;
+    var quality = 1;
+    for (var j = 1; j < parts.length; j++) {
+      var parameter = parts[j].replace(/^\s+|\s+$/g, '');
+      if (!/^q\s*=/i.test(parameter)) continue;
+      var value = parameter.slice(parameter.indexOf('=') + 1).replace(/^\s+|\s+$/g, '');
+      quality = /^(0(?:\.\d*)?|1(?:\.0*)?)$/.test(value) ? Number(value) : 0;
+      break;
+    }
+    if (coding === 'gzip') return quality > 0;
+    wildcardAccepted = quality > 0;
+  }
+  return wildcardAccepted;
+}
+
 function handleRequest(req, res) {
   var u = parseUrl(req.url);
   var pathname = u.pathname;
@@ -1474,7 +1620,7 @@ function handleRequest(req, res) {
 
   if (pathname === '/' || pathname === '/index.html') {
     if (UI_HTML) {
-      var gzip = !!UI_HTML_GZ && (req.headers['accept-encoding'] || '').indexOf('gzip') !== -1;
+      var gzip = !!UI_HTML_GZ && acceptsGzip(req.headers && req.headers['accept-encoding']);
       // no-cache, not no-store: the browser keeps the page and asks each
       // time, and an unchanged one comes back as a 304 with no body.
       var uiHeaders = {
@@ -1546,34 +1692,51 @@ function handleRequest(req, res) {
     if (!file) return send(res, 404, JSON.stringify({ ok: false, error: 'not found' }));
     var ext = path.extname(file).toLowerCase();
     var mime = MIME[ext] || 'application/octet-stream';
+    // Node 0.10 has no gzipSync, and there nothing is compressed or varies.
+    var compressible = (ext === '.html' || ext === '.css' || ext === '.js' || ext === '.json' || ext === '.svg') &&
+      typeof zlib.gzipSync === 'function';
     // The strings and their translations change with each release as the pages
     // do, so a day-old copy beside a new page would show text the page no
     // longer has, or miss text it now does.
     // So is the script a custom launcher is given: a launcher written for a
-    // newer one calls what an older copy lacks.
-    var fresh = ext === '.html' || ext === '.json' || /(^|\/)(i18n|home-kit)\.js$/.test(file);
+    // newer one calls what an older copy lacks, and the playlist order Home calls.
+    var fresh = ext === '.html' || ext === '.json' || /(^|\/)(i18n|home-kit|video-order)\.js$/.test(file);
     var cacheHdr = fresh ? 'no-cache' : 'public, max-age=86400';
-    var respondWithBuf = function (buf) {
-      var etag = '"' + (displayVersionStr || '1') + '-' + buf.length.toString(16) + '"';
+    var respondWithEntry = function (entry) {
+      var etag = '"' + (displayVersionStr || '1') + '-' + entry.raw.length.toString(16) + '"';
+      var assetHeaders = { 'ETag': etag, 'Cache-Control': cacheHdr };
+      if (compressible) assetHeaders['Vary'] = 'Accept-Encoding';
       if (req.headers && req.headers['if-none-match'] === etag) {
-        res.writeHead(304, { 'ETag': etag, 'Cache-Control': cacheHdr });
+        res.writeHead(304, assetHeaders);
         return res.end();
       }
-      res.writeHead(200, {
-        'Content-Type': mime,
-        'Content-Length': buf.length,
-        'Cache-Control': cacheHdr,
-        'ETag': etag
-      });
-      res.end(buf);
+      /*
+       * Only for a browser elsewhere on the network. The TV's own pages come
+       * over loopback, where fewer bytes save nothing, and gzipSync holds this
+       * thread: 126 to 161 ms for a translation file and 78 ms for home.html on
+       * a B8 (webOS 4.4.3, node 0.12.2), once each after a start. So it is done
+       * when a request from the network first asks for it, not as a file is read.
+       */
+      var wantGz = compressible && !fromTV(req) && acceptsGzip(req.headers && req.headers['accept-encoding']);
+      if (wantGz && entry.gz === undefined) entry.gz = gzipAsset(file, entry.raw);
+      var useGz = wantGz && !!entry.gz;
+      var outBuf = useGz ? entry.gz : entry.raw;
+      assetHeaders['Content-Type'] = mime;
+      assetHeaders['Content-Length'] = outBuf.length;
+      if (useGz) assetHeaders['Content-Encoding'] = 'gzip';
+      res.writeHead(200, assetHeaders);
+      res.end(outBuf);
     };
     if (ASSET_CACHE[file]) {
-      return respondWithBuf(ASSET_CACHE[file]);
+      return respondWithEntry(ASSET_CACHE[file]);
     }
     return fs.readFile(file, function (e, buf) {
       if (e) return send(res, 500, JSON.stringify({ ok: false, error: 'read failed' }));
-      ASSET_CACHE[file] = buf;
-      respondWithBuf(buf);
+      // gz: undefined until a request from the network wants it, then the
+      // compressed copy, or null where gzip saves nothing.
+      var entry = { raw: buf, gz: undefined };
+      ASSET_CACHE[file] = entry;
+      respondWithEntry(entry);
     });
   }
 
@@ -1673,6 +1836,72 @@ function handleRequest(req, res) {
       noSignal: nosignal.status(),
       inputBar: inputBarModule ? inputBarModule.summary() : null
     }));
+  }
+
+  // For a screen saver that plays video: whether an app holds the decoder (#1599).
+  if (pathname === '/api/screensaver/video-busy' && req.method === 'GET') {
+    if (!authed(u.query, req)) return send(res, 401, JSON.stringify({ ok: false, error: 'unauthorised' }));
+    return screensaversModule.videoBusy(function (r) { send(res, 200, JSON.stringify(r)); });
+  }
+
+  /* The Art screen saver's pictures (lib/art). next is what the screen saver
+     asks for each picture; image serves one, the owner's or one fetched. */
+  // Whether Next or Previous was asked for, polled by the views on screen.
+  if (pathname === '/api/art/command' && req.method === 'GET') {
+    return send(res, 200, JSON.stringify(artModule.poll(String(u.query && u.query.view || ''))));
+  }
+  if (pathname === '/api/art/next' && req.method === 'GET') {
+    var artDir = String(u.query && u.query.dir || '');
+    return artModule.next(function (r) {
+      if (r.ok) {
+        r.image = '/api/art/image?id=' + encodeURIComponent(r.id) + (config.token ? '&k=' + encodeURIComponent(config.token) : '');
+      }
+      send(res, 200, JSON.stringify(r));
+    }, artDir === 'prev' ? 'prev' : 'next');
+  }
+  if (pathname === '/api/art/image' && req.method === 'GET') {
+    var artFile = artModule.image(String(u.query && u.query.id || ''));
+    if (!artFile) return send(res, 404, JSON.stringify({ ok: false, error: 'no such picture' }));
+    return sendIconFile(req, res, artFile, function (status, error) {
+      send(res, status, JSON.stringify({ ok: false, error: error }));
+    }, 'image/jpeg');
+  }
+  // Media servers on the network, and one's folders, to add one to Art.
+  if (pathname === '/api/art/servers' && req.method === 'GET') {
+    return artModule.findServers(function (r) { send(res, 200, JSON.stringify(r)); });
+  }
+  if (pathname === '/api/art/browse' && req.method === 'GET') {
+    return artModule.browseFolder(String(u.query && u.query.udn || ''), String(u.query && u.query.id || '0'), function (r) {
+      send(res, r.ok ? 200 : 400, JSON.stringify(r));
+    });
+  }
+  if (pathname === '/api/art' && req.method === 'GET') {
+    var artStatus = artModule.status();
+    artStatus.writable = !!config.allowControl || fromTV(req);
+    return send(res, 200, JSON.stringify(artStatus));
+  }
+  if ((pathname === '/api/art' || pathname === '/api/art/upload') && req.method === 'POST') {
+    if (!config.allowControl && !fromTV(req)) {
+      return send(res, 403, JSON.stringify({ ok: false, error: msg('srv.controlsOff', 'controls disabled in config') }));
+    }
+    if (pathname === '/api/art/upload') {
+      if (!postGuard(req, res, 'image/jpeg', true)) return;
+      return artModule.upload(req, function (r) {
+        if (!r.ok) return refuseUpload(req, res, r.error, r.status || 400);
+        send(res, 200, JSON.stringify(r));
+      });
+    }
+    return readJsonBody(req, res, function (body) {
+      function done(r) { send(res, r && r.ok === false ? 400 : 200, JSON.stringify(r)); }
+      if (body && body.removeAll === true) return artModule.remove(undefined, done);
+      if (body && body.addFolder && typeof body.addFolder === 'object') {
+        return artModule.addFolder(String(body.addFolder.udn || ''), String(body.addFolder.id || ''), String(body.addFolder.title || ''), done);
+      }
+      if (body && typeof body.removeFolder === 'string') return artModule.removeFolder(body.removeFolder, done);
+      if (body && typeof body.go === 'string') return artModule.go(body.go, done);
+      if (body && typeof body.remove === 'string') return artModule.remove(body.remove, done);
+      artModule.save(body && body.settings, done);
+    }, 4096);
   }
 
   if (pathname === '/api/screensaver') {
@@ -2068,6 +2297,42 @@ function handleRequest(req, res) {
     });
   }
 
+  // The Performance view's charts: the processor, memory, network and
+  // temperature over the last 5 minutes, hour or day.
+  // The System info view's fixed facts, and how the TV has been powered on.
+  if (pathname === '/api/sysinfo' && sysinfoModule) {
+    var si = {};
+    var facts = sysinfoModule.read();
+    for (var sk in facts) si[sk] = facts[sk];
+    si.ok = true;
+    si.powerOns = powerModule && typeof powerModule.powerOns === 'function' ? powerModule.powerOns() : null;
+    return send(res, 200, JSON.stringify(si));
+  }
+  // The colours on screen, for the dashboard's glow: colours only, no picture.
+  if (pathname === '/api/screen-colour' && screenColourModule) {
+    if (!screenGlowAllowed()) return send(res, 200, JSON.stringify({ ok: false, off: true }));
+    /*
+     * PicCap and Hue Sync stream from the TV's capture hardware themselves, and
+     * a capture of ours beside theirs could stall their stream. While either is
+     * capturing, the glow waits. Their status is asked as the stats ask it for
+     * the Ambient Light tab, from the same caches.
+     */
+    return piccapStatusFn(function (pc) {
+      huesyncStatusFn(function (hs) {
+        var busy = pc && pc.running ? 'piccap' : hs && hs.streaming ? 'huesync' : null;
+        if (busy) return send(res, 200, JSON.stringify({ ok: false, busy: busy }));
+        screenColourModule.read(function (c) { send(res, 200, JSON.stringify(c)); });
+      });
+    });
+  }
+  if (pathname === '/api/storage' && storageScanModule) {
+    // A rescan only by POST, so a page load never forces one.
+    return storageScanModule.query(req.method === 'POST', function (d) { send(res, 200, JSON.stringify(d)); });
+  }
+  if (pathname === '/api/perf' && perfHistoryModule) {
+    return send(res, 200, JSON.stringify(perfHistoryModule.query(String(u.query.range || '5m'))));
+  }
+
   if (pathname === '/api/cpu') {
     return telemetryModule.collectCpuProcesses(function (r) { send(res, 200, JSON.stringify(r)); });
   }
@@ -2179,7 +2444,7 @@ function handleRequest(req, res) {
       servicesModule.getServices(function (sRes) {
         if (sRes && sRes.services) d.services = sRes.services;
         if (!preloadModule) return send(res, 200, JSON.stringify(d));
-        preloadModule.getPreload(function (pRes) {
+        preloadWithIcons(function (pRes) {
           d.preload = (pRes && pRes.apps) || [];
           if (!quickAccessModule) return send(res, 200, JSON.stringify(d));
           quickAccessModule.getQuickAccess(function (qa) {
@@ -2341,9 +2606,25 @@ function handleRequest(req, res) {
     }
     return readJsonBody(req, res, function (body) {
       if (!quickAccessModule) return send(res, 503, JSON.stringify({ ok: false, error: 'quick access module unavailable' }));
-      quickAccessModule.setQuickAccess(body && body.key, body && body.id, function (r) {
-        send(res, r && r.ok ? 200 : 400, JSON.stringify(r));
-      });
+      var reply = function (r) { send(res, r && r.ok ? 200 : 400, JSON.stringify(r)); };
+      // { key, lg: true }: the key as LG has it (#1539).
+      if (body && body.lg === true) return quickAccessModule.resetQuickAccess(body.key, reply);
+      quickAccessModule.setQuickAccess(body && body.key, body && body.id, reply);
+    });
+  }
+
+  if (pathname === '/api/remote/available' && req.method === 'GET') {
+    var remoteAvailable = function (available) {
+      send(res, 200, JSON.stringify({ ok: true, available: available }));
+    };
+    var checkRemoteKeys = function () {
+      if (!remoteKeysModule) return remoteAvailable(false);
+      remoteKeysModule.isSupported(remoteAvailable);
+    };
+    if (!quickAccessModule) return checkRemoteKeys();
+    return quickAccessModule.isSupported(function (supported) {
+      if (supported) return remoteAvailable(true);
+      checkRemoteKeys();
     });
   }
 
@@ -2358,6 +2639,11 @@ function handleRequest(req, res) {
     }
     return readJsonBody(req, res, function (body) {
       if (!remoteKeysModule) return send(res, 503, JSON.stringify({ ok: false, error: 'remote keys module unavailable' }));
+      if (body && body.brightnessStep !== undefined) {
+        return remoteKeysModule.setBrightnessStep(body.brightnessStep, function (r) {
+          send(res, r && r.ok ? 200 : 400, JSON.stringify(r));
+        });
+      }
       remoteKeysModule.setRemoteKey(body && body.key, body && body.action, body && body.id, function (r) {
         send(res, r && r.ok ? 200 : 400, JSON.stringify(r));
       });
@@ -2617,6 +2903,11 @@ function init(opts) {
   if (opts.syslog) syslogModule = opts.syslog;
   if (opts.ntp) ntpModule = opts.ntp;
   if (opts.history) historyModule = opts.history;
+  if (opts.perfHistory) perfHistoryModule = opts.perfHistory;
+  if (opts.storageScan) storageScanModule = opts.storageScan;
+  if (opts.sysinfo) sysinfoModule = opts.sysinfo;
+  if (opts.screenColour) screenColourModule = opts.screenColour;
+  if (opts.power) powerModule = opts.power;
   if (opts.sshKeys) sshKeysModule = opts.sshKeys;
   if (opts.screentime) screentimeModule = opts.screentime;
   if (opts.backup) backupModule = opts.backup;

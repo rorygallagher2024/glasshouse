@@ -136,7 +136,7 @@ Node-RED, Telegraf into InfluxDB, or scripts subscribing to that topic work the 
 
 ![Home Assistant API settings showing the toggle, address, saved token, and the Connection box with Home Assistant reachable](screenshots/ha-api.png)
 
-Once enabled and connected, two Home Assistant screen savers unlock on the **Screensaver** tab (while off or unconfigured, both stay greyed out so non-Home-Assistant setups cannot pick them by mistake):
+Once enabled and connected, two Home Assistant screen savers appear on the **Screensaver** tab (while off or unconfigured, they stay hidden):
 
 * [**Home Assistant: Ambient**](dashboard/screen-savers.md#home-assistant-ambient) — shows the TV clock, date, and up to three configurable entities with optional custom display labels.
 * [**Home Assistant: Data Display**](dashboard/screen-savers.md#home-assistant-data-display) — cycles sequentially through 2 to 100 entities one at a time on black.
@@ -380,7 +380,19 @@ The temperature is shown as sent, in the unit the weather entity uses. `city` is
 
 ## Universal Media Player Setup
 
-Home Assistant's MQTT discovery has no `media_player` platform, so Glasshouse cannot create one itself. Home Assistant's `universal` media player puts the discovered power, volume, mute, playback and input controls together in one, for a media control card on a dashboard. It takes a title only from another media player, so it shows none. Play and pause are sent as the remote's Play and Pause keys, so they work only in apps that act on those keys: the TV's own player does, and the Jellyfin app resumes with Play but ignores Pause.
+Home Assistant's own MQTT discovery has no `media_player` platform, so Glasshouse cannot create one through discovery alone. Two ways to still get one media control card:
+
+### Through a separate integration
+
+With [grzegorz914/homeassistant-mqtt-media-player](https://github.com/grzegorz914/homeassistant-mqtt-media-player) (v0.10.3 or newer) installed through HACS, turning on **Media player** under **Published TV entities** on the dashboard's MQTT tab (`universalMediaPlayer` under `mqtt` in `config.json`) publishes one real `media_player` entity: power, volume, mute, sound output, play/pause/stop/skip, the current app or input's icon as the card's cover (through the icon server, so `iconServer` needs to be on too), and a media browser of the TV's inputs and installed apps with the same icons. **Save & restart** applies it, and a change made in `config.json` needs the server restarted.
+
+Where Internet TV has a lineup, **IPTV** is one of the card's sources, and picking it opens Internet TV's guide on Glasshouse Home. A channel is picked in the media browser.
+
+While the TV is off, in Active Standby or asleep, the card shows off with only power left, at the moment **Power** reads off. Switching it on sends a Wake-on-LAN packet to the TV's MAC address, which Glasshouse gives the integration once it knows it, so the TV needs Wake-on-LAN or Wake on Wi-Fi turned on.
+
+### Through Home Assistant's own universal media player
+
+Home Assistant's `universal` media player puts the discovered power, volume, mute, playback and input controls together in one, for a media control card on a dashboard, with no other integration to install. It takes a title only from another media player, so it shows none. Play and pause are sent as the remote's Play and Pause keys, so they work only in apps that act on those keys: the TV's own player does, and the Jellyfin app resumes with Play but ignores Pause.
 
 Add the following to `configuration.yaml`. Power uses the `LG TV` switch from [Switched off, and back on](#switched-off-and-back-on). The entity IDs start with the TV's `device.id`: for one set to `lg_c9`, `select.lg_tv_input_source` is `select.lg_c9_input_source`.
 
@@ -457,12 +469,12 @@ media_player:
 
 ## Switched off, and back on
 
-When the TV is switched off, its entities stay available and show a switched-off TV: **Power** reads off, readings of what is on screen (active app, player state, video signal, HDMI details) read `Off`, and settings that still hold, such as picture mode and volume, keep theirs. While the TV is still up in Active Standby (with **Stay connected when off** on, or during panel compensation), live measurements such as SoC temperature keep reporting, once a minute rather than every 10 seconds, and controls keep working. With **Stay connected when off**, it still sleeps for five hours every night (01:00 to 06:00 unless moved under **Advanced &rarr; Nightly power-down**). Once it is asleep in standby, both are greyed out: a measurement would be stale, and nothing on the TV could act on a control. Everything goes unavailable only if the server stops while the TV is on.
+When the TV is switched off, its entities stay available and show a switched-off TV: **Power** reads off, readings of what is on screen (active app, player state, video signal, HDMI details) read `Off`, and settings that still hold, such as picture mode and volume, keep theirs. While the TV is still up in Active Standby (with **Stay connected when off** on, or during panel compensation), live measurements such as SoC temperature keep reporting, once a minute rather than every 10 seconds, and controls keep working. With **Stay connected when off**, it still sleeps for five hours every night (01:00 to 06:00 unless moved under **Advanced &rarr; Nightly power-down**). Once it is asleep in standby, both are greyed out: a measurement would be stale, and nothing on the TV could act on a control. Everything, Power included, goes unavailable if the server stops while the TV is on, and so it does for a TV that goes from Active straight to Suspend, as an LCD does: it is asleep within milliseconds, too soon to tell the broker, so Home Assistant learns of it once the connection has been silent for about 15 seconds.
 
 A TV in standby is asleep and cannot receive commands, so it is switched back on over the network with Wake-on-LAN.
 
 1. Turn on **Wake-on-LAN** on the TV: in the web dashboard under **System &rarr; Power**, on the TV dashboard under **System &rarr; Power**, or in LG's menu under **Settings &rarr; General &rarr; Mobile TV On**. Wake-on-LAN works over Ethernet and, on most models, Wi-Fi.
-2. In Home Assistant, add the **Wake on LAN** integration (**Settings &rarr; Devices &amp; services &rarr; Add integration &rarr; Wake on LAN**) with the TV's MAC address. The address is listed under **Connections** on the TV's device page in Home Assistant, and as the **MAC Address** sensor.
+2. In Home Assistant, add the **Wake on LAN** integration (**Settings &rarr; Devices &amp; services &rarr; Add integration &rarr; Wake on LAN**) with the TV's MAC address. The address is listed under **Connections** on the TV's device page in Home Assistant, and as the **MAC Address** sensor. A TV has one MAC address for Ethernet and another for Wi-Fi: use the one Glasshouse lists, which is the connection in use. As the broadcast address, give the network's (`192.168.1.255` on a `192.168.1.x` network), not the TV's own: a TV asleep does not answer at its address, so a packet sent there never leaves Home Assistant.
 
 This creates a button that wakes the TV from standby. To make one switch that shows whether the TV is on and turns it on or off, add a template switch to `configuration.yaml`, with the TV's MAC address. If it already has a `template:` key, add the `switch:` entry under it:
 

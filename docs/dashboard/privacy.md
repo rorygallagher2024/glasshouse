@@ -50,7 +50,7 @@ The **Privacy** tab (`/?tab=privacy`) surfaces the TV's telemetry, advertising, 
 
 ## On-TV ad & telemetry blocker
 
-The built-in blocker runs directly on the TV without needing an external DNS sinkhole (such as Pi-hole), and automatically re-applies on boot.
+Three tier cards (**Off**, **Ads & telemetry**, **Everything**) show what each level allows or blocks at a glance. The built-in blocker runs directly on the TV without needing an external DNS sinkhole (such as Pi-hole), and automatically re-applies on boot.
 
 Apps already running, and those started before the clock synced, get the
 current list in their sandboxes too, and lose it again when blocking is

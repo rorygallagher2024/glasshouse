@@ -29,6 +29,8 @@ var SETTLE_MS = 3000;
 // discoverServices answers before the services can be read.
 var DISCOVER_MS = 2000;
 var discoverMs = DISCOVER_MS;
+// The steps some remotes give instead of a percentage (deviceLevelFrom).
+var STEPS = ['high', 'mid', 'low'];
 var settleMs = SETTLE_MS;
 /*
  * The Bluetooth read connects to the remote alongside lginput2's own
@@ -51,7 +53,8 @@ var isOnFn = function () { return true; };
 var busy = false;
 // When the next read is wanted; 0 is at the next chance.
 var dueAt = 0;
-// { level: 0-100, at: Unix ms, mac: string|null } once read.
+// { level: 0-100, at: Unix ms, mac: string|null, source, step } once read;
+// step is 'high', 'mid' or 'low' when the remote gave only that.
 var last = null;
 var stateFile = null;
 var connected = false;
@@ -150,13 +153,36 @@ function deviceLevelFrom(info) {
   return null;
 }
 
-function saveLevel(level, mac, source) {
+// 'high', 'mid' or 'low' where getDeviceInfo gave a step rather than a
+// percentage, so the level deviceLevelFrom stands in for it can be told apart.
+function deviceStepFrom(info) {
+  var n = info && info.returnValue ? info.batteryLevel : null;
+  if (typeof n !== 'string') return null;
+  var step = n.toLowerCase();
+  return STEPS.indexOf(step) !== -1 ? step : null;
+}
+
+/*
+ * The step a saved reading stands in for. A file from before steps were kept
+ * has no step field: there getDeviceInfo's 100, 50 or 10 is taken as the step,
+ * as a step remote would otherwise show a percentage until its next read. A
+ * webOS 4 remote's true 100, 50 or 10 then reads High, Medium or Low until then.
+ */
+function savedStep(saved) {
+  if (STEPS.indexOf(saved.step) !== -1) return saved.step;
+  if (saved.step !== undefined || saved.source !== 'mrcu') return null;
+  return { 100: 'high', 50: 'mid', 10: 'low' }[saved.level] || null;
+}
+
+function saveLevel(level, mac, source, step) {
+  step = step || null;
   var changed = !last || last.level !== level || !sameAddress(last.mac, mac);
-  last = { level: level, at: Date.now(), mac: mac, source: source };
+  last = { level: level, at: Date.now(), mac: mac, source: source, step: step };
   if (stateFile) {
     try {
       util.writeJsonAtomic(stateFile, {
-        level: last.level, at: last.at, mac: last.mac, source: last.source, lowStrength: lowStrength
+        level: last.level, at: last.at, mac: last.mac, source: last.source, step: last.step,
+        lowStrength: lowStrength
       });
     } catch (e) {}
   }
@@ -179,6 +205,8 @@ function read(done) {
   var address = identity && identity.mac;
   var source = 'mrcu';
   var status = 'unavailable';
+  // The step getDeviceInfo gave in place of a percentage, if it did.
+  var step = null;
 
   function finish(level) {
     function end() {
@@ -190,7 +218,7 @@ function read(done) {
       }
       var current = getRemoteInfo();
       if (current && current.mac && !sameAddress(current.mac, address)) level = null;
-      if (level !== null) saveLevel(level, address, source);
+      if (level !== null) saveLevel(level, address, source, source === 'mrcu' ? step : null);
       done(level);
     }
     // Always given back, whatever failed after connecting.
@@ -212,6 +240,7 @@ function read(done) {
           info.bdAddress !== '00:00:00:00:00:00') {
         address = info.bdAddress;
       }
+      step = deviceStepFrom(info);
       onResult(deviceLevelFrom(info));
     });
   }
@@ -321,7 +350,7 @@ function start(isOn) {
         var dl = deviceLevelFrom(info);
         if (dl !== null) {
           var mac = (info && typeof info.bdAddress === 'string' && info.bdAddress !== '00:00:00:00:00:00') ? info.bdAddress : null;
-          if (!remote || !remote.mac || sameAddress(remote.mac, mac)) saveLevel(dl, mac, 'mrcu');
+          if (!remote || !remote.mac || sameAddress(remote.mac, mac)) saveLevel(dl, mac, 'mrcu', deviceStepFrom(info));
         }
       }
     });
@@ -345,6 +374,7 @@ function details(remote) {
   return {
     batteryUpdatedAt: available && last ? last.at : null,
     batterySource: available && last ? last.source || null : null,
+    batteryStep: available && last ? last.step || null : null,
     batteryStatus: available ? 'available' : sameAddress(attemptedMac, remote && remote.mac)
       ? attemptedStatus : 'waiting'
   };
@@ -383,7 +413,8 @@ function init(opts) {
   var saved = stateFile ? util.readJson(stateFile, null) : null;
   if (saved && validLevel(saved.level)) {
     var at = typeof saved.at === 'number' && isFinite(saved.at) && saved.at > 0 ? saved.at : null;
-    last = { level: saved.level, at: at, mac: saved.mac || null, source: saved.source || null };
+    last = { level: saved.level, at: at, mac: saved.mac || null, source: saved.source || null,
+      step: savedStep(saved) };
     if (typeof saved.lowStrength === 'boolean') lowStrength = saved.lowStrength;
   } else {
     last = null;
@@ -409,6 +440,7 @@ module.exports = {
   firmware: function () { return firmware; },
   remoteAddress: remoteAddress,
   levelFrom: levelFrom,
-  deviceLevelFrom: deviceLevelFrom
+  deviceLevelFrom: deviceLevelFrom,
+  deviceStepFrom: deviceStepFrom
 };
 

@@ -33,9 +33,22 @@ body{font-family:'Manrope',sans-serif;color:#ece7df;-webkit-font-smoothing:antia
 #wall .layer{position:absolute;left:-3%;top:-3%;right:-3%;bottom:-3%;background-position:center;background-size:cover;
   background-repeat:no-repeat;opacity:0;-webkit-transition:opacity 2.4s ease;transition:opacity 2.4s ease;
   -webkit-animation:drift 180s steps(360) infinite alternate;animation:drift 180s steps(360) infinite alternate}
-/* At rest while covered: the wallpaper is not drawn or animated under the screen
-   saver or another app. */
-html.resting #wall{visibility:hidden}
+/* The video is never drawn at partial opacity: on webOS 4 it is a hardware
+   plane under the page, seen through a hole the <video> punches, and a hole
+   at 70% showed nothing at all (a B8, webOS 4.4.3). It is dimmed and faded
+   by the black shade over it instead, and hidden while nothing is loaded. */
+#wall video{position:absolute;left:0;top:0;width:100%;height:100%;object-fit:cover;visibility:hidden}
+#wallShade{position:absolute;left:0;top:0;width:100%;height:100%;background:#000;opacity:1;display:none;
+  -webkit-transition:opacity 2.4s ease;transition:opacity 2.4s ease}
+/* The caption sits above the scrim, after it in the page, with no z-index of its
+   own: Home's panels drawn later (search, the guide, adding channels) cover it. */
+#wall-caption{position:absolute;left:4%;top:4%;width:34%;text-align:left;color:#ece7df;
+  font-family:'Manrope',sans-serif;font-size:1.65vw;line-height:1.35;white-space:normal;overflow-wrap:break-word;
+  text-shadow:0 2px 8px #000,0 0 18px #000;pointer-events:none}
+/* At rest while covered: the wallpaper is not animated under the screen saver or
+   another app. It stays shown, still, so that it is there the moment Home is
+   uncovered rather than coming in over a black screen a beat later; paused, it
+   is not drawn again. */
 html.resting #wall .layer{-webkit-animation-play-state:paused;animation-play-state:paused}
 @-webkit-keyframes drift{from{-webkit-transform:scale(1) translate(0,0)}to{-webkit-transform:scale(1.04) translate(-1.2%,-.8%)}}
 @keyframes drift{from{transform:scale(1) translate(0,0)}to{transform:scale(1.04) translate(-1.2%,-.8%)}}
@@ -54,12 +67,21 @@ html.resting #wall .layer{-webkit-animation-play-state:paused;animation-play-sta
    which is sized for the digits alone. */
 #mer{font-size:.28em;letter-spacing:0;margin-left:.1em;opacity:.75;font-weight:400}
 #date{margin-top:22px;font-size:28px;color:#a39d93;white-space:nowrap}
+/* The remote's battery after the date, while the layout's remoteBattery and
+   its level show it: a remote's outline and the percentage, warm orange once
+   low (not the accent, which a chosen colour replaces). */
+#rbat{display:inline-block}
+#rbat.none{display:none}
+#rbat:before{content:"\00b7";margin:0 .4em}
+#rbat svg{width:.8em;height:.8em;vertical-align:-.08em;margin-right:.25em}
+#rbat.low{color:#ff8a4c}
 /* Switched off, the clock keeps its space, so the rows and Last watched stay put. */
 .no-clock #when{visibility:hidden}
 #source{-webkit-flex:1 1 auto;flex:1 1 auto;min-width:0;padding-left:24px;border-left:1px solid #2a2825;padding-bottom:2px}
 #source.none{visibility:hidden}
 #srcKind{font-size:23px;color:#e9ad55}
-#srcTitle{font-family:'Outfit',sans-serif;font-size:70px;line-height:1;font-weight:400;letter-spacing:-1px;margin:8px 0 12px;
+/* Room below the line for descenders, which overflow:hidden cut at line-height 1 ("g" in "Logik"); the margin gives it back. */
+#srcTitle{font-family:'Outfit',sans-serif;font-size:70px;line-height:1;font-weight:400;letter-spacing:-1px;margin:8px 0 4px;padding-bottom:8px;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #srcVia{font-size:26px;color:#a39d93}
 
@@ -202,8 +224,8 @@ html.resting #wall .layer{-webkit-animation-play-state:paused;animation-play-sta
 .alternative #clock{font-variant-numeric:tabular-nums;-webkit-font-feature-settings:"tnum";font-feature-settings:"tnum"}
 .alternative:not(.arranging) .row > h2{display:none}
 .alternative .row{margin-bottom:10px}
-.alternative .tile{border-radius:18px;margin-right:12px;background:rgba(20,15,29,.45)}
-.alternative .tile.focus{background:rgba(34,25,48,.86)}
+.alternative .tile{border-radius:18px;margin-right:12px;background:rgba(12,11,10,.45)}
+.alternative .tile.focus{background:rgba(20,19,16,.86)}
 .alternative .app{width:160px;padding:12px}
 .alternative .app img,.alternative .app .mono{width:100px;height:100px;border-radius:16px}
 .alternative .app .mono{line-height:100px}
@@ -211,7 +233,7 @@ html.resting #wall .layer{-webkit-animation-play-state:paused;animation-play-sta
 .alternative .app .fold{width:100px;height:100px;padding:9px}
 .alternative .app .fold i,.alternative .app .fold i img{width:37px;height:37px}
 .alternative .app .fold i{line-height:37px;font-size:18px}
-.alternative .dev{width:420px;height:108px}
+.alternative .dev{width:420px;min-height:128px}
 .alternative .dev .nm{font-size:26px}
 .alternative .dev .path,.alternative .dev .st{font-size:17px}
 .row{-webkit-flex:0 0 auto;flex:0 0 auto}
@@ -252,8 +274,53 @@ html.resting #wall .layer{-webkit-animation-play-state:paused;animation-play-sta
 .app img,.app .mono{display:block;width:112px;height:112px;margin:0 auto;border-radius:14px}
 .app .mono{background:#2a2825;color:#ece7df;font-family:'Outfit',sans-serif;font-size:44px;font-weight:300;line-height:112px}
 .app .nm{font-size:21px;font-weight:600;margin-top:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.no-app-labels .app{width:140px}
+.no-app-labels.alternative .app{width:124px}
+.no-app-labels .app .nm{display:none}
+/* Dark monochrome icons on transparent (AirPlay on webOS 4) sit on warm white
+   so a black background never swallows them. */
+.app img.dark-ico,.chip img.dark-ico{background:#ece7df}
 
-.dev{width:470px;height:124px;display:-webkit-flex;display:flex;-webkit-flex-direction:column;flex-direction:column;
+/* Apps as wide cards (layout appCards): a dark 16:9 card with the app's logo
+   from the card icon folder, or its own icon centred where it has none. The
+   ring and the lift are on the card; the name shows under the one in focus. */
+.cards .app{width:300px;padding:12px 12px 10px}
+.cards .tile.app,.cards .tile.app.focus{background:none;outline-color:transparent}
+.cards .app .card{position:relative;width:276px;height:155px;margin:0 auto;border-radius:18px;background:#000;
+  display:-webkit-flex;display:flex;-webkit-align-items:center;align-items:center;-webkit-justify-content:center;justify-content:center;
+  -webkit-transition:-webkit-transform .15s;transition:transform .15s}
+/* The ring is a rounded border on a layer just outside the card, not an
+   outline: an outline's offset corner is tighter than the card's and drew
+   rough on a G3 (webOS 10.3). 24px is the card's 18px plus the 6px gap. */
+.cards .app .card:after{content:'';position:absolute;top:-6px;left:-6px;right:-6px;bottom:-6px;border:3px solid transparent;
+  border-radius:24px;pointer-events:none;-webkit-transition:border-color .12s;transition:border-color .12s}
+.cards .app .card img.logo{width:100%;height:100%;margin:0;border-radius:18px;object-fit:contain}
+.cards .app .card img,.cards .app .card .mono{width:92px;height:92px;line-height:92px;font-size:38px}
+.cards .app.focus .card{-webkit-transform:scale(1.06);transform:scale(1.06)}
+.cards .app.focus .card:after{border-color:#ece7df}
+/* Room for the focus glow above and below the cards: the row's box hides what
+   is outside it, which cut the glow off square. The negative margin keeps the
+   rows where they were. The sides stay as they are, as scrolling counts on
+   their 22px; the glow is kept within them. */
+.cards .row[data-key="app"] .wrap{padding-top:36px;padding-bottom:36px;margin-top:-30px;margin-bottom:-30px}
+/* The shading where the cards run on: a soft oval behind the arrow, clear
+   well inside every side. The row is taller than the cards, for the glow, and
+   stops short of the screen's edge, so a shade still dark at its sides showed
+   as a straight line above and below the cards. */
+.cards .row[data-key="app"] .wrap .edge{width:200px}
+.cards .row[data-key="app"] .wrap .edge.l{background:radial-gradient(ellipse 50% 40% at 50% 50%,rgba(0,0,0,.6),rgba(0,0,0,.3) 50%,rgba(0,0,0,.08) 80%,rgba(0,0,0,0))}
+.cards .row[data-key="app"] .wrap .edge.r{background:radial-gradient(ellipse 50% 40% at 50% 50%,rgba(0,0,0,.6),rgba(0,0,0,.3) 50%,rgba(0,0,0,.08) 80%,rgba(0,0,0,0))}
+.cards .row[data-key="app"] .wrap .edge.l:after{left:76px}
+.cards .row[data-key="app"] .wrap .edge.r:after{right:76px}
+.cards .app .nm{font-size:24px;margin-top:14px;opacity:0;-webkit-transition:opacity .12s;transition:opacity .12s}
+.cards .app.focus .nm,.arranging.cards .app .nm{opacity:1}
+.no-app-labels.cards .app{width:300px}
+.alternative.cards .app{width:268px}
+.alternative.cards .app .card{width:244px;height:137px}
+/* The pulse on the app in focus (layout focusPulse) and how see-through the
+   cards are (layout cardFade) follow the owner's choices: see applyCardLook. */
+
+.dev{width:470px;min-height:142px;display:-webkit-flex;display:flex;-webkit-flex-direction:column;flex-direction:column;
   -webkit-justify-content:space-between;justify-content:space-between}
 .dev .dhead{display:-webkit-flex;display:flex;-webkit-align-items:center;align-items:center;min-width:0}
 .dev .dtx{-webkit-flex:1 1 auto;flex:1 1 auto;min-width:0}
@@ -262,7 +329,7 @@ html.resting #wall .layer{-webkit-animation-play-state:paused;animation-play-sta
 .alternative .dev .dico{width:46px;height:46px;margin-right:14px}
 .dev .nm{font-family:'Outfit',sans-serif;font-size:30px;font-weight:400;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .dev .path{font-size:20px;color:#a39d93;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.dev .st{font-size:19px;color:#6b665e;display:-webkit-flex;display:flex;-webkit-justify-content:space-between;justify-content:space-between}
+.dev .st{margin-top:12px;font-size:19px;color:#6b665e;display:-webkit-flex;display:flex;-webkit-justify-content:space-between;justify-content:space-between}
 .dev .st em{font-style:normal}
 .dev.last .st em{color:#e9ad55}
 .row .dev.unused{opacity:.3}
@@ -305,9 +372,13 @@ html.resting #wall .layer{-webkit-animation-play-state:paused;animation-play-sta
   font-size:20px;color:#a39d93;padding:14px 22px;border-radius:6px;background:#141310;border-left:3px solid #e9ad55}
 .arranging #banner{display:-webkit-flex;display:flex}
 #banner b{color:#ece7df;font-weight:600;margin-right:8px}
-#banner .keys{-webkit-flex:1 1 auto;flex:1 1 auto;margin-left:34px}
-#banner .btn{margin-left:12px;padding:8px 18px;border-radius:5px;color:#ece7df;background:#231d12;outline:2px solid transparent}
+#banner .keys{-webkit-flex:1 1 auto;flex:1 1 auto;margin-left:34px;font-size:18px;line-height:1.35}
+#banner .btn{margin-left:12px;padding:8px 18px;border-radius:5px;color:#ece7df;background:#231d12;outline:2px solid transparent;white-space:nowrap}
 #banner .btn.focus{outline-color:#e9ad55}
+#btnHide::before,#btnFolder::before,#btnReset::before{content:'';display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:9px;vertical-align:1px}
+#btnHide::before{background:#e05252}
+#btnFolder::before{background:#46b868}
+#btnReset::before{background:#d9b343}
 
 #toast{position:absolute;z-index:1;left:112px;bottom:26px;font-size:23px;color:#ece7df;padding:14px 22px;border-radius:6px;
   background:#141310;border-left:3px solid #e9ad55;opacity:0;-webkit-transform:translateY(8px);transform:translateY(8px);
@@ -315,7 +386,7 @@ html.resting #wall .layer{-webkit-animation-play-state:paused;animation-play-sta
 #toast.show{opacity:1;-webkit-transform:none;transform:none}
 .playing #toast{z-index:6}
 #toast small{display:block;font-size:18px;color:#a39d93;margin-top:4px}
-.arranging #toast{bottom:96px}
+.arranging #toast{bottom:112px}
 
 /* Recent apps: Back's panel, in place of the one in LG's Home. The
    snapshots are the panel: each a small copy of the screen as it was left,
@@ -471,7 +542,7 @@ html.resting #wall .layer{-webkit-animation-play-state:paused;animation-play-sta
    stream is not opened twice. The band and the channel list are drawn over
    it and go when not in use: nothing still stays on the panel. */
 .playing #now{z-index:4}
-.playing #rows,.playing #rail,.playing #wall,.playing #scrim,
+.playing #rows,.playing #rail,.playing #wall,.playing #wall-caption,.playing #scrim,
 .playing #when,.playing #source,.playing #plate,.playing #weather,.playing #wxCredit{visibility:hidden}
 #preview.full{position:absolute;left:0;top:0;width:1920px;height:1080px;margin:0;box-shadow:none;
   -webkit-transform-origin:0 0;transform-origin:0 0}
@@ -519,17 +590,22 @@ html.resting #wall .layer{-webkit-animation-play-state:paused;animation-play-sta
 #clGroup{font-family:'Outfit',sans-serif;font-size:44px;font-weight:300;letter-spacing:-.4px;overflow:hidden;text-overflow:ellipsis;min-width:0}
 #clCount{margin-left:22px;font-size:23px;color:#a39d93;-webkit-flex:0 0 auto;flex:0 0 auto}
 #clCount i{font-style:normal;color:#6b665e;margin:0 10px}
-#clWrap{position:absolute;left:100px;right:44px;top:170px;bottom:300px;overflow:hidden;padding:6px 12px}
+#clWrap{position:absolute;left:100px;right:44px;top:170px;bottom:70px;overflow:hidden;padding:6px 12px}
 #clItems{-webkit-transition:-webkit-transform .2s cubic-bezier(.2,.7,.2,1);transition:transform .2s cubic-bezier(.2,.7,.2,1)}
 .cl{position:relative;display:-webkit-flex;display:flex;-webkit-align-items:center;align-items:center;height:112px;padding:0 20px;margin-bottom:6px;
-  border-radius:6px;outline:2px solid transparent;opacity:.72}
-.cl.focus{background:rgba(20,19,16,.86);outline-color:#ece7df;opacity:1}
-.cl .glyph{-webkit-flex:0 0 auto;flex:0 0 auto;width:96px;height:34px;display:-webkit-flex;display:flex;-webkit-align-items:flex-end;align-items:flex-end;overflow:hidden}
-.cl .glyph img{display:block;max-width:84px;max-height:34px}
+  border-radius:6px;opacity:.72}
+/* The frame is drawn apart so it can fade to the right, as the list's own background does. */
+.cl:after{content:"";position:absolute;left:0;top:0;right:0;bottom:0;border-radius:6px;outline:2px solid transparent;outline-offset:-2px;pointer-events:none;
+  -webkit-mask-image:linear-gradient(90deg,#000 0,#000 55%,transparent 100%);mask-image:linear-gradient(90deg,#000 0,#000 55%,transparent 100%);
+  -webkit-transition:outline-color .12s;transition:outline-color .12s}
+.cl.focus{opacity:1}
+.cl.focus:after{outline-color:#ece7df}
+.cl .glyph{-webkit-flex:0 0 auto;flex:0 0 auto;width:104px;height:46px;margin-right:2px;display:-webkit-flex;display:flex;-webkit-align-items:center;align-items:center;overflow:hidden}
+.cl .glyph img{display:block;max-width:92px;max-height:46px}
 .cl .n{-webkit-flex:0 0 auto;flex:0 0 auto;width:56px;font-family:'Outfit',sans-serif;font-size:30px;font-weight:300;color:#a39d93}
 .cl .c{-webkit-flex:1 1 auto;flex:1 1 auto;min-width:0}
-.cl .nm{font-size:25px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.cl .pg{font-size:21px;color:#a39d93;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cl .nm{font-size:25px;line-height:30px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cl .pg{font-size:21px;line-height:25px;color:#a39d93;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .cl .bar{height:2px;background:#2a2825;margin-top:10px}
 .cl .bar i{display:block;height:100%;background:#a39d93}
 .cl.focus .bar i{background:#ece7df}
@@ -556,11 +632,12 @@ html.resting #wall .layer{-webkit-animation-play-state:paused;animation-play-sta
 .gr.focus .gnm{color:#ece7df}
 .gr .gnm em{font-style:normal;color:#6b665e;margin-right:12px;font-variant-numeric:tabular-nums}
 .gr .lane{position:relative;-webkit-flex:1 1 auto;flex:1 1 auto;overflow:hidden}
-.gc{position:absolute;top:5px;bottom:5px;padding:9px 14px 0;background:#100f0d;border-radius:4px;overflow:hidden;outline:2px solid transparent;outline-offset:-2px;white-space:nowrap}
+.gc{position:absolute;top:5px;bottom:5px;padding:9px 14px 0;background:#100f0d;border-radius:4px;overflow:hidden;outline:2px solid transparent;outline-offset:-2px;white-space:nowrap;
+  -webkit-transition:background-color .12s,outline-color .12s;transition:background-color .12s,outline-color .12s}
 .gc.past{background:#080807}
 .gc.past b{color:#6b665e}
 .gc.live{background:#1a1814}
-.gc.focus{background:#24211b;outline-color:#ece7df}
+.gc.focus{background:rgba(20,19,16,.86);outline-color:#ece7df}
 .gc b{display:block;font-size:21px;font-weight:600;overflow:hidden;text-overflow:ellipsis}
 .gc i{display:block;font-style:normal;font-size:17px;color:#6b665e;margin-top:3px;overflow:hidden;text-overflow:ellipsis}
 .gc.none b{font-weight:400;color:#6b665e}
@@ -628,13 +705,14 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
 </head>
 <body>
 <div id="stage" class="no-search no-clock">
-  <div id="wall"><canvas id="anim" width="0" height="0"></canvas><div class="layer"></div><div class="layer"></div></div>
+  <div id="wall"><canvas id="anim" width="0" height="0"></canvas><div class="layer"></div><div class="layer"></div><video id="wallVideo" muted playsinline></video><div id="wallShade"></div></div>
   <div id="scrim"></div>
+  <div id="wall-caption"></div>
 
   <section id="now">
     <div id="when">
       <div id="clock"><span id="hm">&mdash;</span><span id="mer" hidden></span></div>
-      <div id="date">&mdash;</div>
+      <div id="date"><span id="dateText">&mdash;</span><span id="rbat" class="none"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><rect x="7" y="2" width="10" height="20" rx="5"/><circle cx="12" cy="8" r="1.6"/><path d="M10 14h4M10 17.5h4"/></svg><span id="rbatPct"></span></span></div>
     </div>
     <div id="source" class="none">
       <div id="srcKind">&mdash;</div>
@@ -704,7 +782,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
 
   <div id="banner">
     <span><b data-t="home.arrange.title">Arranging</b><span id="bannerState">&mdash;</span></span>
-    <span class="keys" data-t="home.arrange.keys">OK picks a tile up or puts it down. Held, the arrows move it or its row, and Back hides or shows it, or removes a channel. Left of a row, OK sets its order.</span>
+    <span class="keys" data-t="home.arrange.keys">OK picks up or puts down. Held, arrows move it or its row; put down, Up or Down reaches this bar. Green moves an app in or out of More apps, and Red or Back hides or removes it. Left of a row, OK sets its order.</span>
     <span class="btn" id="btnHide" data-t="home.arrange.hide">Hide or show</span>
     <span class="btn" id="btnFolder" data-t="home.arrange.folder">Into or out of More apps</span>
     <span class="btn" id="btnReset" data-t="home.arrange.reset">Reset</span>
@@ -733,6 +811,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
 
 <script src="/assets/i18n.js"></script>
 <script src="/assets/devicons.js"></script>
+<script src="/assets/video-order.js"></script>
 <script>
 /*
  * Glasshouse Home's view. Everything comes from /api/home/*: the layout shared
@@ -759,13 +838,26 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
   var ADD_TILE = 'iptv-add';
   // The More apps tile, last in the Apps row while any app is in the folder.
   var FOLDER_TILE = 'more-apps';
-  // Tiles per line in the More apps grid: 9 of 176px fill the 1696px between the margins.
-  var FOLDER_COLS = 9;
   // Held this long, OK arranges the tiles rather than opening one.
   var LONG_PRESS_MS = 800;
   var BEAT_MS = 5000;
+  var iptvWasUp = false;
+  /*
+   * Under the screen saver the page is covered, not hidden: no visibilitychange
+   * or relaunch says when it ends, so the heartbeat is how the page hears it,
+   * and comes this often meanwhile. At BEAT_MS the background stayed hidden up
+   * to 5 s after the screen saver ended (a C4, webOS 10.3).
+   */
+  var SAVER_BEAT_MS = 1000;
+  var beatTimer = null;
   var CLOSE_BEHIND_MS = 120000;
   var coveredSince = 0;
+  /*
+   * The screen saver up at the last beat. The key that ends it reaches the
+   * page too, before the next beat says it has gone: Back there opened
+   * Recents and OK the app in focus. That key only wakes the screen.
+   */
+  var saverUp = false;
   function rest(on) {
     var cl = document.documentElement.classList;
     if (on === cl.contains('resting')) return;
@@ -774,6 +866,13 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     // in front), so the live preview and the animated background stop here as
     // well: under the screen saver the preview kept the tuner playing (#1209).
     followPreview();
+    if (on) unloadWallVideo();
+    else {
+      // Uncovered by a key Home did not see, such as the one ending the screen saver.
+      wallVideoInputAt = Date.now();
+      scheduleWallVideoIdle();
+      updateWall();
+    }
     if (!anim) return;
     if (on) animStop();
     else animRun();
@@ -785,7 +884,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
   var lastOn = { kind: null };
   // last: the tile focused last, which the bar's Hide or show acts on. rail:
   // the search mark in the left gutter has the focus.
-  var state = { row: 0, col: {}, arranging: false, held: false, bar: -1, last: null, rail: false };
+  var state = { row: 0, col: {}, arranging: false, held: false, bar: -1, barFrom: '', last: null, rail: false };
   var BAR = ['btnHide', 'btnFolder', 'btnReset', 'btnDone'];
   var build = null;
   var okDownAt = 0, okTimer = null, okLong = false, okInRecents = false, okInFolder = false, backDown = false;
@@ -801,6 +900,11 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
   // takes about a minute (a B8, webOS 4.4.3): the logo stays until then.
   var pageOpenedAt = Date.now(), STARTING_MS = 60000;
   var wallSlots = null, wallRevision = '', wallChoice = '', wallPictures = [];
+  var wallVideoSources = [], wallVideoItems = [], wallVideoShuffle = false, wallVideoStyle = null, wallVideoRevision = '', wallVideoKey = '', wallVideoIndex = -1;
+  var wallVideoNeedsRestart = false;
+  var wallVideoEl = $('wallVideo');
+  // The last key, pointer move or return to Home, for letting the video go when idle.
+  var wallVideoInputAt = Date.now(), wallVideoIdleTimer = null;
 
   function $(id) { return document.getElementById(id); }
   function pad(n) { return (n < 10 ? '0' : '') + n; }
@@ -882,7 +986,9 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
 
   function byId(kind, id) {
     if (kind === 'app') {
-      if (id === LG_HOME_TILE) return { id: LG_HOME_TILE, title: t('home.lgHome', 'LG Home'), lg: true };
+      if (id === LG_HOME_TILE) {
+        return { id: LG_HOME_TILE, title: (layout && layout.appNames && layout.appNames[id]) || t('home.lgHome', 'LG Home'), lg: true };
+      }
       return find(data.apps, id);
     }
     if (kind === 'rec') return find(data.recommended, id);
@@ -922,7 +1028,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     if (kind === 'iptv' && data.sources && data.sources.iptv && (state.arranging || (!out.length && !hasLineup))) {
       out.push({ id: ADD_TILE, add: true, name: t('home.tv.addTitle', 'Add channels') });
     } else if (kind === 'iptv' && (out.length || hasLineup) && !state.arranging) {
-      out.push({ id: GUIDE_TILE, guide: true, name: t('home.tv.guide', 'Guide') });
+      out.push({ id: GUIDE_TILE, guide: true, name: t('home.tv.guide', 'IPTV Guide') });
     }
     return out;
   }
@@ -1012,7 +1118,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     }
     if (kind === 'dev') {
       var ports = [];
-      items('dev').forEach(function (d) { if (!d.unused && !d.tuner && ports.indexOf(d.port) === -1) ports.push(d.port); });
+      items('dev').forEach(function (d) { if (!d.unused && !d.tuner && d.port && ports.indexOf(d.port) === -1) ports.push(d.port); });
       return ports.length === 1 ? t('home.row.inputsNoteOne', 'Devices on HDMI {port}', { port: ports[0] })
         : t('home.row.inputsNote', 'Devices on {n} HDMI inputs', { n: ports.length });
     }
@@ -1106,15 +1212,64 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
   var hiddenLabel = '<span class="hid">' + esc(t('home.hidden', 'Hidden')) + '</span>';
   var folderLabel = '<span class="fld">' + esc(t('home.folder.label', 'In More apps')) + '</span>';
 
+  var darkIconCache = {};
+  function isDarkIcon(img) {
+    try {
+      var canvas = document.createElement('canvas');
+      canvas.width = 24;
+      canvas.height = 24;
+      var ctx = canvas.getContext('2d');
+      if (!ctx) return false;
+      ctx.drawImage(img, 0, 0, 24, 24);
+      var data = ctx.getImageData(0, 0, 24, 24).data;
+      var trans = 0, vis = 0, dark = 0;
+      for (var i = 0; i < data.length; i += 4) {
+        var a = data[i + 3];
+        if (a < 32) { trans++; continue; }
+        if (a >= 64) {
+          vis++;
+          if ((data[i] + data[i + 1] + data[i + 2]) / 3 < 70) dark++;
+        }
+      }
+      return trans > 60 && vis > 0 && dark === vis;
+    } catch (e) { return false; }
+  }
+  function isAppImg(el) {
+    if (!el || el.tagName !== 'IMG') return false;
+    var p = el.parentNode;
+    if (!p) return false;
+    var c = p.className || '';
+    if (/(^| )app( |$)|(^| )chip( |$)/.test(c)) return true;
+    return !!(p.parentNode && /(^| )fold( |$)/.test(p.parentNode.className || ''));
+  }
+  document.addEventListener('load', function (e) {
+    var img = e.target;
+    if (!isAppImg(img)) return;
+    var src = img.getAttribute('src');
+    if (!src || img.naturalWidth === 0) return;
+    if (!(src in darkIconCache)) darkIconCache[src] = isDarkIcon(img);
+    if (darkIconCache[src] && img.className.indexOf('dark-ico') === -1) {
+      img.className = (img.className ? img.className + ' ' : '') + 'dark-ico';
+    }
+  }, true);
+  function appImgTag(src) {
+    return '<img' + (darkIconCache[src] ? ' class="dark-ico"' : '') + ' src="' + esc(src) + '" alt="">';
+  }
   function appIcon(a) {
-    return a.icon ? '<img src="' + esc(a.icon) + '" alt="">' :
+    return a.icon ? appImgTag(a.icon) :
       '<span class="mono">' + esc(a.lg ? 'LG' : String(a.title).charAt(0)) + '</span>';
+  }
+  function cardsOn() { return !!(layout && layout.appCards === true); }
+  // As a card, its logo from the card icon folder, or its own icon on the card.
+  function appArt(a) {
+    if (!cardsOn()) return appIcon(a);
+    return '<div class="card">' + (a.card ? '<img class="logo" src="' + esc(a.card) + '" alt="">' : appIcon(a)) + '</div>';
   }
   // The first four of the folder's icons, as the tile that opens it.
   function folderIcon(inside) {
     var html = '';
     inside.slice(0, 4).forEach(function (a) {
-      html += '<i>' + (a.icon ? '<img src="' + esc(a.icon) + '" alt="">' : esc(a.lg ? 'LG' : String(a.title).charAt(0))) + '</i>';
+      html += '<i>' + (a.icon ? appImgTag(a.icon) : esc(a.lg ? 'LG' : String(a.title).charAt(0))) + '</i>';
     });
     return '<span class="fold">' + html + '</span>';
   }
@@ -1122,26 +1277,46 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
   // Input tile icons, shared with the input bar (devicons.js).
   var devIcon = window.glasshouseDevIcon;
 
+  function devTileHtml(d, i, cls, path, status, cec) {
+    return '<div class="' + cls + '" data-c="' + i + '"><div class="dhead">' + devIcon(d) + '<div class="dtx"><div class="nm">' + esc(d.name) + '</div>' +
+      '<div class="path">' + esc(path) + '</div></div></div>' +
+      '<div class="st"><em>' + esc(status) + '</em><span>' + (cec ? esc(cec) : '') + '</span></div>' +
+      hiddenLabel + '</div>';
+  }
+
   var TILE = {
     app: function (a, i) {
       if (a.folder) {
-        return '<div class="tile app" data-c="' + i + '">' + folderIcon(a.folder) + '<div class="nm">' + esc(a.title) + '</div></div>';
+        var fold = folderIcon(a.folder);
+        return '<div class="tile app" data-c="' + i + '">' + (cardsOn() ? '<div class="card">' + fold + '</div>' : fold) +
+          '<div class="nm">' + esc(a.title) + '</div></div>';
       }
       var cls = 'tile app' + (hidden('app', a.id) ? ' hidden' : inFolder('app', a.id) ? ' folded' : '');
-      return '<div class="' + cls + '" data-c="' + i + '">' + appIcon(a) + '<div class="nm">' + esc(a.title) + '</div>' +
+      return '<div class="' + cls + '" data-c="' + i + '">' + appArt(a) + '<div class="nm">' + esc(a.title) + '</div>' +
         hiddenLabel + folderLabel + '</div>';
     },
     dev: function (d, i) {
       if (d.tuner) return tunerTileHtml(d, i);
-      var last = layout.showLastOn !== false && lastOn.kind === 'input' && lastOn.port === d.port &&
+      var last = layout.showLastOn !== false && lastOn.kind === 'input' && d.port && lastOn.port === d.port &&
         (!lastOn.devices || lastOn.devices.indexOf(d.id) !== -1);
+      // AV and Component are inputs as HDMI is, with a connection of their own.
+      var analog = d.kind === 'av' || d.kind === 'component';
+      var isExtra = !!d.kind && !analog;
       var cls = 'tile dev' + (last ? ' last' : '') + (d.unused ? ' unused' : '') + (hidden('dev', d.id) ? ' hidden' : '');
-      var path = d.unused ? '' : d.via ? t('home.dev.through', 'HDMI {port}, through {via}', { port: d.port, via: d.via })
-                       : t('home.dev.port', 'HDMI {port}', { port: d.port });
-      return '<div class="' + cls + '" data-c="' + i + '"><div class="dhead">' + devIcon(d) + '<div class="dtx"><div class="nm">' + esc(d.name) + '</div>' +
-        '<div class="path">' + esc(path) + '</div></div></div>' +
-        '<div class="st"><em>' + esc(last ? t('home.dev.last', 'Last watched') : d.unused ? t('home.dev.unused', 'Nothing connected') : t('home.dev.connected', 'Connected')) + '</em>' +
-        '<span>' + (d.address && layout.showCec !== false ? esc(t('home.dev.cec', 'CEC {address}', { address: d.address })) : '') + '</span></div>' + hiddenLabel + '</div>';
+      var path = d.unused ? ''
+        : d.kind === 'av' ? t('inputs.kind.av', 'AV')
+        : d.kind === 'component' ? t('inputs.kind.component', 'Component')
+        : d.kind === 'dms' ? (d.address || 'Media Server')
+        : d.kind === 'usb' ? 'USB'
+        : isExtra ? ''
+        : d.via ? t('home.dev.through', 'HDMI {port}, through {via}', { port: d.port, via: d.via })
+        : t('home.dev.port', 'HDMI {port}', { port: d.port });
+      var status = isExtra && d.kind !== 'dms' && d.kind !== 'usb' ? ''
+        : last ? t('home.dev.last', 'Last watched')
+        : d.unused ? t('home.dev.unused', 'Nothing connected')
+        : t('home.dev.connected', 'Connected');
+      var cec = !isExtra && d.address && layout.showCec !== false ? t('home.dev.cec', 'CEC {address}', { address: d.address }) : '';
+      return devTileHtml(d, i, cls, path, status, cec);
     },
     ch: function (c, i) {
       var cls = 'tile ch' + (hidden('ch', c.id) ? ' hidden' : '');
@@ -1159,7 +1334,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
       if (c.guide) {
         return '<div class="tile ch tv add" data-c="' + i + '"><div class="glyph"><svg viewBox="0 0 48 36" width="48" height="36" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">' +
           '<path d="M2 6h10M18 6h28M2 18h22M30 18h16M2 30h6M14 30h32"/></svg></div>' +
-          '<div class="nm">' + esc(c.name) + '</div><div class="prog quiet">' + esc(t('home.tv.guideDesc', 'What is on now and later')) + '</div></div>';
+          '<div class="nm">' + esc(c.name) + '</div></div>';
       }
       if (c.add) {
         return '<div class="tile ch tv add" data-c="' + i + '"><div class="glyph"><span class="mono">+</span></div>' +
@@ -1193,10 +1368,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     var last = layout.showLastOn !== false && lastOn.kind === 'channel';
     var cls = 'tile dev tuner' + (last ? ' last' : '') + (hidden('dev', d.id) ? ' hidden' : '');
     var path = d.channel ? d.channel.number + ' ' + d.channel.name : '';
-    return '<div class="' + cls + '" data-c="' + i + '"><div><div class="nm">' + esc(d.name) + '</div>' +
-      '<div class="path">' + esc(path) + '</div></div>' +
-      '<div class="st"><em>' + esc(last ? t('home.dev.last', 'Last watched') : t('ctl.liveTv', 'Live TV')) + '</em><span></span></div>' +
-      hiddenLabel + '</div>';
+    return devTileHtml(d, i, cls, path, last ? t('home.dev.last', 'Last watched') : t('ctl.liveTv', 'Live TV'), '');
   }
 
   // noScroll: focus only, as the pointer does, leaving each row where it is.
@@ -1576,7 +1748,8 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
 
   /*
    * The Magic Remote's wheel scrolls the row under the pointer, or the row in
-   * focus, a tile a notch. Older engines only fire mousewheel, whose
+   * focus, a tile a notch. In the guide and the player's channel list it moves
+   * the focus a row a notch. Older engines only fire mousewheel, whose
    * wheelDelta has the opposite sign to deltaY.
    */
   function onWheel(e) {
@@ -1585,6 +1758,9 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     var d = e.deltaY !== undefined ? e.deltaY : -e.wheelDelta;
     if (e.deltaX && Math.abs(e.deltaX) > Math.abs(d || 0)) d = e.deltaX;
     if (!d) return;
+    // In the guide and the player's channel list a notch is Down or Up.
+    if (guide.open) return guideKey(d > 0 ? KEY.down : KEY.up);
+    if (player.open) return player.list ? playerKey(d > 0 ? KEY.down : KEY.up) : undefined;
     var key = hoverKey || (recents.open ? 'recents' : rowKey());
     var m = measure(key), tile = m && m.track.querySelector('.tile');
     if (!tile) return;
@@ -1606,7 +1782,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     $('hm').textContent = p[0];
     $('mer').textContent = p[1];
     $('mer').hidden = !p[1];
-    $('date').textContent = dateText(d);
+    $('dateText').textContent = dateText(d);
     if (guide.open) return renderGuideStrip();
     var kind = '', title = '', via = '', pv = $('preview').className && !inTile() ? tilePreview.target : null;
     if (pv) {
@@ -1651,6 +1827,8 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     $('srcKind').textContent = kind || ' ';
     $('srcTitle').textContent = title || ' ';
     $('srcVia').textContent = via || ' ';
+    // Last watched or the preview coming or going moves what the caption keeps clear of.
+    clearWallCaption();
   }
 
   /*
@@ -1692,7 +1870,10 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
   function renderPicture() {
     var p = picture;
     var s = p && p.signal;
-    var showNoSignal = lastOn.kind === 'input' && (!p || p.signalKnown !== false);
+    // The last HDMI input can still have no signal while Home itself is
+    // showing a working video wallpaper; do not put a contradictory notice
+    // over that picture.
+    var showNoSignal = lastOn.kind === 'input' && wallChoice !== 'video' && (!p || p.signalKnown !== false);
     if (!p || !(s || p.mode || showNoSignal)) { $('plate').className = 'none'; return; }
     var sig = [];
     if (s) {
@@ -1794,6 +1975,24 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
 
   // Drawn again only when it changes: the heartbeat brings it every 5 s.
   var shownWeather = null;
+  /*
+   * The remote's battery after the date. The server sends it with each
+   * heartbeat only while the layout's remoteBattery shows it (lib/home.js,
+   * remoteBatteryBadge), so null hides it. A remote that reports only High,
+   * Medium or Low comes as that step, not a percentage.
+   */
+  function renderRemoteBattery(b) {
+    var el = $('rbat');
+    var steps = { high: t('home.remoteBattery.high', 'High'), mid: t('home.remoteBattery.mid', 'Medium'),
+                  low: t('home.remoteBattery.lowStep', 'Low') };
+    var text = b && steps[b.step] ? steps[b.step]
+      : b && typeof b.level === 'number' ? t('home.remoteBattery.level', '{level}%', { level: b.level }) : '';
+    if (!text) { el.className = 'none'; return; }
+    $('rbatPct').textContent = text;
+    el.setAttribute('aria-label', t('home.remoteBattery.ariaText', 'Remote battery: {level}', { level: text }));
+    el.className = b.low ? 'low' : '';
+  }
+
   function renderWeather(w) {
     var key = w && typeof w.temp === 'number' ? JSON.stringify([w.condition, w.temp, w.city, w.source]) : '';
     if (key === shownWeather) return;
@@ -1994,7 +2193,57 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
       if (outside) state.col[kind] = dc > 0 ? span[0] : span[1];
       else state.col[kind] = Math.max(state.arranging ? -1 : 0, Math.min(items(kind).length - 1, c + dc));
     }
+    if (state.row !== fromRow || colOf(rowKey()) !== fromCol) navTick();
     applyFocus();
+  }
+
+  /*
+   * The sound as focus moves (layout navSound, lib/home navSoundFile), loaded
+   * at the first move after it is chosen. The context is made then too, as
+   * that follows a key. It plays whenever focus lands on another tile, from a
+   * key or from the Magic Remote's pointer.
+   */
+  var navAudio = null, navBuffer = null, navBufferFor = '';
+  // key: the sound's name, and for the own sound its revision, so one replaced is loaded again.
+  function loadNavSound(name, key) {
+    navBufferFor = key;
+    navBuffer = null;
+    var x = new XMLHttpRequest();
+    x.open('GET', '/api/home/nav-sound?name=' + encodeURIComponent(name) + '&v=' + encodeURIComponent(key));
+    x.responseType = 'arraybuffer';
+    x.onload = function () {
+      if (x.status !== 200 || !navAudio) return;
+      try {
+        navAudio.decodeAudioData(x.response, function (b) { if (navBufferFor === key) navBuffer = b; }, function () {});
+      } catch (e) {}
+    };
+    x.send();
+  }
+  function navTick() {
+    var name = layout && layout.navSound;
+    if (name !== 'click' && name !== 'rollover' && name !== 'own') return;
+    try {
+      var Ctx = window.AudioContext || window.webkitAudioContext;
+      if (!Ctx) return;
+      if (!navAudio) navAudio = new Ctx();
+      if (navAudio.state === 'suspended' && navAudio.resume) navAudio.resume();
+      var key = name === 'own' ? 'own@' + (layout.ownSound ? layout.ownSound.rev : '') : name;
+      if (name === 'own' && !layout.ownSound) return;
+      if (navBufferFor !== key) loadNavSound(name, key);
+      if (!navBuffer) return;
+      var src = navAudio.createBufferSource();
+      src.buffer = navBuffer;
+      // The bundled sounds at half volume (-6 dB): at full, every move cut
+      // through what was playing. An owner's own file plays as they made it.
+      if (name === 'own' || !navAudio.createGain) src.connect(navAudio.destination);
+      else {
+        var gain = navAudio.createGain();
+        gain.gain.value = 0.5;
+        src.connect(gain);
+        gain.connect(navAudio.destination);
+      }
+      src.start(0);
+    } catch (e) {}
   }
 
   // Medium or Large beside the clock; in the tile, the tile sets its size.
@@ -2007,8 +2256,13 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     $('stage').className = (state.arranging ? 'arranging' : '') + (recents.open ? ' recents' : '') +
       (finder.open ? ' finding' : '') + (finder.typing ? ' typing' : '') + (searchOn() ? '' : ' no-search') + (folder.open ? ' folder' : '') +
       (!layout || layout.showClock === false ? ' no-clock' : '') + (layout && layout.rowsBottom === true ? ' rows-bottom' : '') +
-      (layout && layout.view === 'alternative' ? ' alternative' : '') + (player.open ? ' playing' : '') + (adder.open ? ' adding' : '') +
+      (layout && layout.view === 'alternative' ? ' alternative' : '') + (layout && layout.showAppLabels === false ? ' no-app-labels' : '') +
+      (cardsOn() ? ' cards' : '') + (layout && layout.focusPulse === true ? ' pulse' : '') +
+      (player.open ? ' playing' : '') + (adder.open ? ' adding' : '') +
       (adder.open && adder.typing ? ' adtyping' : '') + (guide.open ? ' guiding' : '') + previewSizeClass();
+    // Home Assistant's media player shows IPTV while the guide or a player is up: told at once, not at the next heartbeat.
+    var iptvUp = !!(player.open || guide.open);
+    if (iptvUp !== iptvWasUp) { iptvWasUp = iptvUp; beat(); }
     applyPointer(false);
     followPreview();
   }
@@ -2029,6 +2283,8 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
    */
   var PREVIEW_DWELL_MS = 400;
   var PREVIEW_START_MS = 4000;
+  // How long an input or channel waits after the video background lets the decoder go.
+  var PREVIEW_HANDOFF_MS = 400;
   var PREVIEW_SIGNAL_MS = 1000;
   var PREVIEW_SIGNAL_TRIES = 3;
   // A G3's decoder had no format for an HD channel 1.8 s after the picture
@@ -2037,7 +2293,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
   var PREVIEW_CHANNEL_POLL_MS = 400;
   var PREVIEW_CHANNEL_TRIES = 15;
   // target: { key, row, item, port } - port for an input, 0 for a channel.
-  var tilePreview = { target: null, gen: 0, timer: null, playing: false, blank: false, info: null, details: false, opened: null, inTile: false };
+  var tilePreview = { target: null, gen: 0, timer: null, playing: false, blank: false, info: null, details: false, opened: null, inTile: false, opening: null };
 
   // What a tile previews: a connected input, a TV channel, or the TV's tile,
   // which shows the channel it was last on. col is the tile's place in its row.
@@ -2088,7 +2344,9 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     var onRows = state.bar < 0 && !state.rail;
     var row = rowKey(), col = colOf(row), it = onRows ? items(row)[col] : null;
     var target = tileTarget(row, it, col);
-    if (!target && layout.previewAlways === true) target = keptTarget();
+    // Kept with Preview always, but not over a video background: the two
+    // cannot share the decoder, and the video would never play.
+    if (!target && layout.previewAlways === true && !(wallChoice === 'video' && wallVideoSources.length)) target = keptTarget();
     if (!target) { tilePreview.opened = null; return null; }
     // A guide or catalogue reply can repaint Home before the input opens.
     // Keep that tile released until focus moves away or Home returns.
@@ -2195,7 +2453,8 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
    * Always, whatever was playing: a stream set as the video's src has no
    * <source> children, and returning early on that left it connected.
    */
-  function releaseVideo() {
+  // keepWall: a reconnect lets the stream go only to open it again.
+  function releaseVideo(keepWall) {
     var v = $('pvVideo');
     v.onplaying = v.onerror = v.onwaiting = v.onstalled = v.ontimeupdate = v.onloadedmetadata = v.onended = null;
     try { v.pause(); } catch (e) {}
@@ -2203,6 +2462,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     // Hiding the element keeps the input, tuner or stream; emptied and loaded, it lets it go.
     if (v.getAttribute('src') !== null) v.removeAttribute('src');
     try { v.load(); } catch (e) {}
+    if (!keepWall) wallVideoResume();
   }
 
   function stopPreview() {
@@ -2342,32 +2602,58 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
 
   function startPreview(target) {
     if (target.tv) return startTvPreview(target);
-    var gen = tilePreview.gen, v = $('pvVideo'), s = document.createElement('source');
+    var gen = tilePreview.gen, v = $('pvVideo'), retried = false;
     var current = function () { return gen === tilePreview.gen; };
     v.muted = previewMuted();
     v.defaultMuted = v.muted;
-    s.setAttribute('type', target.port ? 'service/webos-external' :
-                   oldBroadcast() ? 'service/webos-broadcast' : 'service/webos-broadcast-preview');
-    s.setAttribute('src', target.port ? 'ext://hdmi:' + target.port : 'tv://' + target.item.id);
-    v.appendChild(s);
-    v.onplaying = function () {
-      if (!current() || tilePreview.playing) return;
-      tilePreview.playing = true;
-      if (target.port) checkSignal(target.port, gen, PREVIEW_SIGNAL_TRIES);
-      // The decoder reports the channel's format a moment after it plays.
-      else setTimeout(function () { if (current()) loadPreviewInfo(target, gen); }, PREVIEW_CHANNEL_INFO_MS);
+    /*
+     * Opened in the same turn as the video background let the decoder go, an
+     * input could fail at once, and with no retry the preview ended and the
+     * background came back (a C2, webOS 9, over a video background). So the
+     * preview waits a moment after the background, and an open that fails
+     * tries once more before it gives up.
+     */
+    var open = function () {
+      tilePreview.opening = null;
+      if (!current()) return;
+      var s = document.createElement('source');
+      s.setAttribute('type', target.port ? 'service/webos-external' :
+                     oldBroadcast() ? 'service/webos-broadcast' : 'service/webos-broadcast-preview');
+      s.setAttribute('src', target.port ? 'ext://hdmi:' + target.port : 'tv://' + target.item.id);
+      v.appendChild(s);
+      v.onplaying = function () {
+        if (!current() || tilePreview.playing) return;
+        tilePreview.playing = true;
+        if (target.port) checkSignal(target.port, gen, PREVIEW_SIGNAL_TRIES);
+        // The decoder reports the channel's format a moment after it plays.
+        else setTimeout(function () { if (current()) loadPreviewInfo(target, gen); }, PREVIEW_CHANNEL_INFO_MS);
+      };
+      v.onerror = function () {
+        if (!current()) return;
+        if (retried) return blankPreview();
+        retried = true;
+        // Let go and open again, with the background still away.
+        releaseVideo(true);
+        afterHandoff();
+      };
+      v.load();
+      // Promise or undefined, by engine; the events say how it went.
+      var played = v.play();
+      if (played && played.then) played.then(null, function () {});
     };
-    v.onerror = function () { if (current()) blankPreview(); };
-    v.load();
-    // Promise or undefined, by engine; the events say how it went.
-    var played = v.play();
-    if (played && played.then) played.then(null, function () {});
+    // previewHoldsVideo counts the wait, so nothing brings the background back in it.
+    var afterHandoff = function () {
+      tilePreview.opening = gen;
+      setTimeout(open, PREVIEW_HANDOFF_MS);
+    };
+    if (wallVideoYield()) afterHandoff();
+    else open();
     $('preview').className = 'on';
     tilePreview.inTile = inTile();
     placePreview();
     $('now').className = tilePreview.inTile ? '' : 'previewing';
     renderNow();
-    tilePreview.timer = setTimeout(function () { if (current() && !tilePreview.playing) blankPreview(); }, PREVIEW_START_MS);
+    tilePreview.timer = setTimeout(function () { if (current() && !tilePreview.playing) blankPreview(); }, PREVIEW_START_MS + 2 * PREVIEW_HANDOFF_MS);
   }
 
   function checkSignal(port, gen, tries) {
@@ -2414,6 +2700,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     if (!hasLogo(it)) return named ? nameHtml(it) : '';
     var look = null;
     try { look = window.localStorage.getItem(LOGO_KEY + it.logo); } catch (e) {}
+    if (!look && /[?&]look=plate$/.test(it.logo)) look = 'plate';
     return '<img src="' + esc(it.logo) + '" alt=""' + (named ? ' data-name="' + esc(it.name) + '"' : '') +
       (look ? ' class="' + look + '"' : ' data-judge="1" style="visibility:hidden"') + '>';
   }
@@ -2643,7 +2930,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
   function lease(on) {
     clearInterval(tvStream.leaseTimer);
     tvStream.leaseTimer = null;
-    var send = function () { postJson('/api/iptv/lease', { on: on, full: on && player.open && !tvStream.paused }); };
+    var send = function () { postJson('/api/iptv/lease', { on: on, full: on && player.open && !tvStream.paused, open: on && player.open }); };
     send();
     if (on) tvStream.leaseTimer = setInterval(send, 60000);
   }
@@ -2743,6 +3030,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
       if (tvStream.pastCache) extra.push('gh=' + Date.now());
       if (tvStream.timeshift && tvStream.seekTo !== null) extra.push(tvStream.seekTo > 0 ? 'behind=' + tvStream.seekTo : 'live=1');
       tvStream.seekTo = null;
+      wallVideoYield();
       v.src = extra.length ? r.url + (r.url.indexOf('?') === -1 ? '?' : '&') + extra.join('&') : r.url;
       v.load();
       var played = v.play();
@@ -2819,7 +3107,12 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     if (tilePreview.target && tilePreview.target.tv) tilePreview.playing = false;
     // Its own generation: a stop or another play meanwhile strands it.
     var retryGen = ++tvStream.gen;
-    releaseVideo();
+    /*
+     * The video background stays away until the retry: brought back in the wait,
+     * it took the decoder again and every retry failed with code 4 (a G3, webOS 10),
+     * leaving a preview over a video background at "No picture".
+     */
+    releaseVideo(true);
     tvStream.item = it;
     tvStream.onState = cb;
     if (cb) cb('reconnecting');
@@ -2844,7 +3137,9 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
    * numbers reach the same channels however the row would reorder itself.
    */
   var player = { open: false, okDown: false, list: false, items: [], idx: 0, bandTimer: null, listTimer: null, group: 0, groups: [], lcol: 0,
-    digits: '', digitTimer: null, failed: false, askLive: false, askTimer: null, askZap: null };
+    digits: '', digitTimer: null, failed: false, askLive: false, askTimer: null, askZap: null,
+    // Opened from the guide: where it was, for Back to put it back (guideReturn).
+    fromGuide: null };
   var BAND_MS = 5000, LIST_IDLE_MS = 10000, DIGIT_MS = 2000, ZAP_DWELL_MS = 600, EXPAND_MS = 280;
   var zapTimer = null;
 
@@ -2886,6 +3181,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
   function sectionOf(it) { return tvLineup && it.sid ? it.sid : it.group || ''; }
 
   function openPlayer(it) {
+    player.fromGuide = null;
     var adopt = tilePreview.target && tilePreview.target.tv && tilePreview.target.item.id === it.id && tilePreview.playing && !tilePreview.blank &&
       // An MPEG-TS preview opens again full screen when live TV may pause: from the recording, which can.
       !(data && data.iptvStatus && data.iptvStatus.timeshift && tvStream.format === 'MPEG-TS' && !tvStream.timeshift);
@@ -3003,9 +3299,11 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
 
   // Back to Home, the tile in focus. With Live preview on, the picture
   // shrinks back to the preview and goes on playing there.
-  function closePlayer() {
+  function closePlayer(toGuide) {
     if (!player.open) return;
     var it = playerChannel();
+    var back = toGuide ? player.fromGuide : null;
+    player.fromGuide = null;
     player.open = false;
     player.list = false;
     clearTimeout(player.bandTimer);
@@ -3026,7 +3324,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
       }
     }
     // A paused picture is not left playing on the row.
-    var keep = layout.livePreview === true && tvStream.playing && !tvStream.paused && !document.hidden && it;
+    var keep = !back && layout.livePreview === true && tvStream.playing && !tvStream.paused && !document.hidden && it;
     if (keep) {
       tvStream.muted = previewMuted();
       $('pvVideo').muted = tvStream.muted;
@@ -3045,16 +3343,25 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     stageClass();
     render();
     renderNow();
+    if (back) guideReturn(back, it);
   }
 
   function showBand(stay) {
+    if (player.list) return;
     renderBand();
-    $('player').className = 'band' + (player.list ? ' list' : '');
+    $('player').className = 'band';
     clearTimeout(player.bandTimer);
     if (stay && (player.failed || tvStream.paused || tvStream.seekTarget !== null)) return;
     player.bandTimer = setTimeout(function () {
-      if (player.open) $('player').className = player.list ? 'list' : '';
+      if (player.open && !player.list) $('player').className = '';
     }, BAND_MS);
+  }
+
+  function toggleBand() {
+    if (/\bband\b/.test($('player').className)) {
+      clearTimeout(player.bandTimer);
+      $('player').className = '';
+    } else showBand();
   }
 
   function renderBand() {
@@ -3275,8 +3582,9 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     player.lcol = Math.max(0, indexIn(groupItems(), playerChannel().id));
     player.list = true;
     renderList();
-    $('player').className = 'list band';
-    showBand();
+    // The band and the list are not shown together.
+    clearTimeout(player.bandTimer);
+    $('player').className = 'list';
     listIdle();
   }
 
@@ -3291,8 +3599,8 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     player.listTimer = setTimeout(function () { if (player.open && player.list) closeList(); }, LIST_IDLE_MS);
   }
 
-  // A section can hold hundreds of channels: only those near the focus are drawn.
-  var LIST_WINDOW = 40;
+  // Seven channels are drawn, the focus on the middle one. At either end of the section the list stops and the focus moves instead.
+  var LIST_ROWS = 7, LIST_MIDDLE = 3;
   function renderList() {
     var list = groupItems(), g = player.groups[player.group];
     $('clGroup').textContent = sectionName(g);
@@ -3300,8 +3608,8 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
       esc(list.length === 1 ? t('home.tv.oneChannel', '1 channel') : t('home.tv.channels', '{n} channels', { n: list.length })) +
       (player.groups.length > 1 ? '<i>›</i>' : '');
     var html = '', on = playerChannel();
-    var from = Math.max(0, Math.min(player.lcol - 12, list.length - LIST_WINDOW));
-    list.slice(from, from + LIST_WINDOW).forEach(function (it, n) {
+    var from = Math.max(0, Math.min(player.lcol - LIST_MIDDLE, list.length - LIST_ROWS));
+    list.slice(from, from + LIST_ROWS).forEach(function (it, n) {
       var i = from + n, now = tvNow(it.id);
       html += '<div class="cl' + (i === player.lcol ? ' focus' : '') + (on && it.id === on.id ? ' on' : '') + '" data-l="' + i + '">' +
         '<div class="glyph">' + glyphHtml(it) + '</div><div class="n">' + esc(it.number || String(indexIn(player.items, it.id) + 1)) + '</div>' +
@@ -3310,10 +3618,6 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     });
     $('clItems').innerHTML = html;
     wireGlyphs($('clItems'));
-    var row = $('clItems').children[player.lcol - from];
-    var view = $('clWrap').clientHeight - 12;
-    var y = row ? Math.max(0, row.offsetTop + row.offsetHeight - view) : 0;
-    $('clItems').style.webkitTransform = $('clItems').style.transform = 'translateY(' + (-y) + 'px)';
   }
 
   function clearDigits() {
@@ -3354,11 +3658,20 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     if (k === KEY.back) {
       if (player.digits) return clearDigits();
       if (player.list) return closeList();
+      // Back closes the band as it closes the list, and leaves for Home only with neither open.
+      if (/\bband\b/.test($('player').className)) return toggleBand();
       if (tsBehindLive()) return askLive();
-      return closePlayer();
+      return closePlayer(true);
     }
     if (k >= 48 && k <= 57) return digit(k - 48);
     if (k >= 96 && k <= 105) return digit(k - 96);
+    if ((k === KEY.chUp || k === KEY.chDown) && player.list && player.groups.length > 1) {
+      listIdle();
+      player.group = (player.group + (k === KEY.chUp ? 1 : -1) + player.groups.length) % player.groups.length;
+      player.lcol = 0;
+      navTick();
+      return renderList();
+    }
     if (k === KEY.chUp) return zapTo(player.idx + 1);
     if (k === KEY.chDown) return zapTo(player.idx - 1);
     if (k === KEY.info) return showBand();
@@ -3369,29 +3682,30 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     if (k === KEY.yellow && !player.list && tvStream.switchable && tvStream.item === playerChannel()) return switchFormat();
     if (player.list) {
       listIdle();
-      var list = groupItems();
+      var list = groupItems(), listAt = player.group + '|' + player.lcol;
       if (k === KEY.up) player.lcol = Math.max(0, player.lcol - 1);
       else if (k === KEY.down) player.lcol = Math.min(list.length - 1, player.lcol + 1);
-      else if ((k === KEY.left || k === KEY.right) && player.groups.length > 1) {
-        player.group = (player.group + (k === KEY.left ? -1 : 1) + player.groups.length) % player.groups.length;
-        player.lcol = 0;
-      } else if (k === KEY.ok) {
+      else if (k === KEY.right) return closeList();
+      else if (k === KEY.ok) {
         var pick = list[player.lcol];
         if (pick && pick.id !== playerChannel().id) { closeList(); return zapTo(indexIn(player.items, pick.id)); }
         return closeList();
       }
+      if (player.group + '|' + player.lcol !== listAt) navTick();
       return renderList();
     }
     if (k === KEY.ok) {
       if (player.failed) { showBand(); return startPlayerStream(); }
-      return openList();
+      // OK shows and hides the band. A recording keeps Left and Right for seeking, so its list is on OK.
+      if (tsCanSeek()) return openList();
+      return toggleBand();
     }
     // Up and down change channel, as channel up and down do.
     if (k === KEY.up) return zapTo(player.idx + 1);
     if (k === KEY.down) return zapTo(player.idx - 1);
     // In a recording, left and right go back and forward; OK opens the list.
     if ((k === KEY.left || k === KEY.right) && tsCanSeek()) return tsSeek(k === KEY.left ? TS_STEP_S : -TS_STEP_S);
-    if (k === KEY.left || k === KEY.right) return openList();
+    if (k === KEY.left) return openList();
   }
 
   function otherFormat() { return tvStream.format === 'MPEG-TS' ? 'HLS' : 'MPEG-TS'; }
@@ -3414,6 +3728,21 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     });
   }
 
+  // The channel list's row under the pointer is the focus.
+  function playerPointer(target) {
+    if (!player.list) return;
+    var row = target;
+    while (row && row !== document.body && !(row.className && /\bcl\b/.test(row.className))) row = row.parentNode;
+    if (!row || row === document.body || +row.getAttribute('data-l') === player.lcol) return;
+    // Only the focus mark moves: drawing the list again would scroll it from under the pointer.
+    var rows = $('clItems').children;
+    for (var i = 0; i < rows.length; i++) rows[i].className = rows[i].className.replace(/ ?\bfocus\b/, '');
+    row.className += ' focus';
+    player.lcol = +row.getAttribute('data-l');
+    navTick();
+    listIdle();
+  }
+
   function playerClick(target) {
     var row = target;
     while (row && row !== document.body && !(row.className && /\bcl\b/.test(row.className))) row = row.parentNode;
@@ -3421,9 +3750,10 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
       player.lcol = +row.getAttribute('data-l');
       return playerKey(KEY.ok);
     }
-    if (player.list) return closeList();
+    // With the list open, a click off its rows is OK on the focused channel: the remote's OK arrives as a click wherever the pointer rests, after the wheel moved the focus.
+    if (player.list) return playerKey(KEY.ok);
     if (player.failed) return startPlayerStream();
-    openList();
+    playerKey(KEY.ok);
   }
 
   // ---------------------------------------------------------------- guide
@@ -3454,7 +3784,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     return all.filter(function (x) { return sectionOf(x) === key; });
   }
 
-  function openGuide(fromId) {
+  function openGuide(fromId, keepRead) {
     var all = guideAll();
     if (!all.length) return;
     stopPreview();
@@ -3470,7 +3800,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     guide.start = Math.floor(Date.now() / HALF_HOUR) * HALF_HOUR;
     guide.at = Date.now();
     // Read afresh each time it opens: the server refreshes the guide meanwhile.
-    clearGuideCache();
+    if (!keepRead) clearGuideCache();
     stageClass();
     renderGuide();
   }
@@ -3566,7 +3896,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     var tabs = $('gTabs');
     tabs.className = guide.tabs ? 'focus' : '';
     tabs.innerHTML = guide.groups.map(function (g, i) {
-      return '<span' + (i === guide.group ? ' class="on"' : '') + '>' + esc(i === 0 ? t('home.tv.guideAll', 'All') : g === '*' ? t('home.tv.guideFavourites', 'Favourites') : sectionName(g)) + '</span>';
+      return '<span data-gt="' + i + '"' + (i === guide.group ? ' class="on"' : '') + '>' + esc(i === 0 ? t('home.tv.guideAll', 'All') : g === '*' ? t('home.tv.guideFavourites', 'Favourites') : sectionName(g)) + '</span>';
     }).join('');
     // A lineup of many sections runs past the edge: the chosen tab is kept in view.
     var onTab = tabs.children[guide.group];
@@ -3612,7 +3942,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
   function renderGuideStrip() {
     var it = guide.list[guide.row], p = it && !guide.tabs ? guideFocus(it) : null;
     $('source').className = it ? '' : 'none';
-    $('srcKind').textContent = p && p.start <= Date.now() && Date.now() < p.end ? t('home.tv.onNow', 'On now') : t('home.tv.guide', 'Guide');
+    $('srcKind').textContent = p && p.start <= Date.now() && Date.now() < p.end ? t('home.tv.onNow', 'On now') : t('home.tv.guide', 'IPTV Guide');
     $('srcTitle').textContent = p ? p.title : it ? it.name : ' ';
     $('srcVia').textContent = it ? (p ? t('home.tv.guideVia', '{name}, {from} to {to}', { name: it.name, from: hm(new Date(p.start)), to: hm(new Date(p.end)) })
       : tvUnplayable(it) || t('home.tv.guideNone', 'No guide for these hours')) : ' ';
@@ -3637,21 +3967,40 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     guide.start = Math.max(min, Math.min(max, guide.start + ms));
   }
 
+  // The sound as the guide's focus moves: a row, a programme, a tab or the hours shown.
+  function guidePlace() { return [guide.row, guide.at, guide.group, guide.tabs, guide.start].join('|'); }
+
+  function guideSetGroup(i) {
+    guide.group = i;
+    guide.list = guideTabList(guide.groups[i]);
+    guide.row = 0;
+    guide.top = 0;
+  }
+
+  // The tab under the pointer, if it is on the tabs.
+  function guideTabAt(target) {
+    while (target && target !== document.body) {
+      if (target.getAttribute && target.getAttribute('data-gt') !== null) return +target.getAttribute('data-gt');
+      target = target.parentNode;
+    }
+    return -1;
+  }
+
   function guideKey(k) {
     if (k === KEY.back) return closeGuide();
+    var placed = guidePlace();
     if (k === KEY.chUp || k === KEY.chDown) {
       if (!guide.list.length) return;
       guidePage(k === KEY.chUp ? -1 : 1);
+      if (guidePlace() !== placed) navTick();
       return renderGuide();
     }
     var it = guide.list[guide.row];
     if (guide.tabs) {
       if (k === KEY.left || k === KEY.right) {
-        guide.group = (guide.group + (k === KEY.left ? -1 : 1) + guide.groups.length) % guide.groups.length;
-        guide.list = guideTabList(guide.groups[guide.group]);
-        guide.row = 0;
-        guide.top = 0;
+        guideSetGroup((guide.group + (k === KEY.left ? -1 : 1) + guide.groups.length) % guide.groups.length);
       } else if (k === KEY.down || k === KEY.ok) guide.tabs = false;
+      if (guidePlace() !== placed) navTick();
       return renderGuide();
     }
     if (k === KEY.up) {
@@ -3672,6 +4021,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     } else if (k === KEY.ok) return guideOpen(it);
     else if (k === KEY.info) return closeGuide();
     else return;
+    if (guidePlace() !== placed) navTick();
     renderGuide();
   }
 
@@ -3681,13 +4031,43 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     var p = guideFocus(it), now = Date.now();
     if (p && p.start > now) return toast(p.title, t('home.tv.startsAt', 'Starts at {time}', { time: hm(new Date(p.start)) }));
     if (p && p.end <= now) return toast(p.title, t('home.tv.finished', 'That has finished'));
+    var back = { group: guide.groups[guide.group], fromTop: guide.row - guide.top, start: guide.start };
     guide.open = false;
     stageClass();
     openPlayer(it);
+    player.fromGuide = back;
+  }
+
+  /*
+   * Back from a channel picked in the guide: the guide as it was left, its
+   * tab, place and hours, on the channel now playing, which may have been
+   * changed meanwhile. What it has read is kept unless it is getting old.
+   */
+  var GUIDE_KEEP_MS = 10 * 60000;
+  function guideReturn(back, it) {
+    if (!it) return;
+    openGuide(it.id, Date.now() - guide.loadedAt < GUIDE_KEEP_MS);
+    if (!guide.open) return;
+    var g = guide.groups.indexOf(back.group), list = g === -1 ? null : guideTabList(back.group);
+    var row = list ? indexIn(list, it.id) : -1;
+    if (row !== -1) {
+      guide.group = g;
+      guide.list = list;
+      guide.row = row;
+    }
+    guide.top = Math.max(0, guide.row - back.fromTop);
+    // Hours ahead stay as they were; ones gone by move on to now.
+    guide.start = Math.max(back.start, guide.start);
+    renderGuide();
   }
 
   // The row under the pointer, and the programme in it, are the focus.
   function guidePointer(target) {
+    // Over the tabs the focus is the tabs, as Up from the first row leaves it.
+    if (within(target, 'gTabs')) {
+      if (!guide.tabs) { navTick(); guide.tabs = true; renderGuide(); }
+      return;
+    }
     var at = null;
     while (target && target !== document.body && !(target.className && /\bgr\b/.test(target.className))) {
       if (target.getAttribute && target.getAttribute('data-s')) at = Math.max(+target.getAttribute('data-s'), guide.start);
@@ -3696,6 +4076,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     if (!target || target === document.body) return;
     var r = +target.getAttribute('data-g');
     if (r !== guide.row || guide.tabs || (at !== null && at !== guide.at)) {
+      navTick();
       guide.row = r;
       guide.tabs = false;
       if (at !== null) guide.at = at;
@@ -3705,6 +4086,13 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
 
   function guideClick(target) {
     if (!within(target, 'guide')) return closeGuide();
+    var tab = guideTabAt(target);
+    if (tab !== -1) {
+      if (tab !== guide.group) { navTick(); guideSetGroup(tab); }
+      guide.tabs = true;
+      return renderGuide();
+    }
+    if (within(target, 'gTabs')) return;
     guidePointer(target);
     guideKey(KEY.ok);
   }
@@ -3994,16 +4382,28 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     });
   }
 
+  /*
+   * Tiles per line in the More apps grid, as laid out: 9 small tiles fit, but
+   * only 5 cards, and the keys must follow the lines the grid shows.
+   */
+  function folderCols() {
+    var tiles = $('folderGrid').querySelectorAll('.tile'), cols = 0;
+    while (cols < tiles.length && tiles[cols].offsetTop === tiles[0].offsetTop) cols++;
+    return cols || 1;
+  }
+
   function folderKey(k) {
     var n = folder.apps.length, c = folder.col;
     if (k === KEY.back) return closeFolder();
     if (!n) return;
     if (k === KEY.ok) return openFromFolder(folder.apps[c]);
-    if (k === KEY.left && c % FOLDER_COLS > 0) c--;
-    else if (k === KEY.right && c % FOLDER_COLS < FOLDER_COLS - 1 && c + 1 < n) c++;
-    else if (k === KEY.up && c - FOLDER_COLS >= 0) c -= FOLDER_COLS;
+    var cols = folderCols();
+    if (k === KEY.left && c % cols > 0) c--;
+    else if (k === KEY.right && c % cols < cols - 1 && c + 1 < n) c++;
+    else if (k === KEY.up && c - cols >= 0) c -= cols;
     // Down from above a short last line goes to its last tile.
-    else if (k === KEY.down && Math.floor(c / FOLDER_COLS) < Math.floor((n - 1) / FOLDER_COLS)) c = Math.min(n - 1, c + FOLDER_COLS);
+    else if (k === KEY.down && Math.floor(c / cols) < Math.floor((n - 1) / cols)) c = Math.min(n - 1, c + cols);
+    if (c !== folder.col) navTick();
     folder.col = c;
     focusFolder();
   }
@@ -4055,10 +4455,12 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     // Decoded off the page's thread: decoded on it, the screenshots of five
     // apps held the page 300 to 350 ms as Recent apps opened on a C2 (9.2.2).
     recents.apps.forEach(function (a, i) {
-      var mono = '<span class="mono">' + esc(String(a.title).charAt(0)) + '</span>';
+      var app = find(data.apps, a.id);
+      var title = (app && app.title) || (layout && layout.appNames && layout.appNames[a.id]) || a.title;
+      var mono = '<span class="mono">' + esc(String(title).charAt(0)) + '</span>';
       var shot = a.image ? '<img src="/api/home/recents/image?id=' + encodeURIComponent(a.id) + '&v=' + encodeURIComponent(a.imageVersion || recents.stamp) + '" alt="" decoding="async">' : mono;
       html += '<div class="tile rc" data-c="' + i + '"><div class="shot">' + shot + '</div>' +
-        '<div class="nm">' + esc(a.title) + '</div><span class="x">' + esc(t('home.recents.close', 'Close')) + '</span></div>';
+        '<div class="nm">' + esc(title) + '</div><span class="x">' + esc(t('home.recents.close', 'Close')) + '</span></div>';
     });
     $('recentsTrack').innerHTML = html || '<div class="empty"><b>' + esc(t('home.recents.none', 'Nothing is open')) + '</b>' +
       esc(t('home.recents.noneDesc', 'Apps stay here while they are open.')) + '</div>';
@@ -4334,7 +4736,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
       var mono = '<span class="mono">' + esc(String(hit.title).charAt(0)) + '</span>';
       var chips = '';
       hit.apps.forEach(function (a, c) {
-        chips += '<span class="chip" data-c="' + c + '">' + (a.icon ? '<img src="' + esc(a.icon) + '" alt="">' : '<span class="mono">' + esc(String(a.title).charAt(0)) + '</span>') +
+        chips += '<span class="chip" data-c="' + c + '">' + (a.icon ? appImgTag(a.icon) : '<span class="mono">' + esc(String(a.title).charAt(0)) + '</span>') +
           '<span class="nm">' + esc(a.title) + '</span></span>';
       });
       html += '<div class="hit" data-r="' + i + '"><div class="poster">' + (hit.poster ? '<img src="' + esc(hit.poster) + '" alt="">' : mono) + '</div>' +
@@ -4590,6 +4992,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     if (!last) return;
     var kind = last.kind, it = byId(kind, last.id);
     if (!it) return;
+    state.held = false;
     if (kind === 'ch') {
       layout.channels = layout.channels.filter(function (id) { return id !== it.id; });
       data.order.ch = data.order.ch.filter(function (id) { return id !== it.id; });
@@ -4618,6 +5021,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     var last = state.last;
     if (!last || last.kind !== 'app') return toast(t('home.arrange.folderAppsOnly', 'Only apps go into More apps'));
     if (!byId('app', last.id)) return;
+    state.held = false;
     if (!layout.folder) layout.folder = [];
     if (inFolder('app', last.id)) leaveFolder(last.id);
     else {
@@ -4645,8 +5049,8 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
   }
 
   function pressBar(b) {
-    if (BAR[b] === 'btnHide') { state.bar = -1; toggleHidden(); }
-    else if (BAR[b] === 'btnFolder') { state.bar = -1; toggleFolder(); }
+    if (BAR[b] === 'btnHide') { state.bar = -1; state.barFrom = ''; toggleHidden(); }
+    else if (BAR[b] === 'btnFolder') { state.bar = -1; state.barFrom = ''; toggleFolder(); }
     else if (BAR[b] === 'btnReset') resetLayout();
     else setArranging(false);
   }
@@ -4655,16 +5059,20 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     if (state.bar >= 0) {
       if (k === KEY.left) state.bar = Math.max(0, state.bar - 1);
       else if (k === KEY.right) state.bar = Math.min(BAR.length - 1, state.bar + 1);
-      else if (k === KEY.up) state.bar = -1;
+      else if (k === KEY.up || (state.barFrom === 'up' && k === KEY.down)) { state.bar = -1; state.barFrom = ''; }
       else if (k === KEY.ok) return pressBar(state.bar);
       return applyFocus();
     }
     if (k === KEY.left) return state.held ? shiftTile(-1) : move(0, -1);
     if (k === KEY.right) return state.held ? shiftTile(1) : move(0, 1);
-    if (k === KEY.up) return state.held ? shiftRow(-1) : move(-1, 0);
+    if (k === KEY.up) {
+      if (state.held) return shiftRow(-1);
+      if (state.row === 0) { state.bar = 0; state.barFrom = 'up'; return applyFocus(); }
+      return move(-1, 0);
+    }
     if (k === KEY.down) {
       if (state.held) return shiftRow(1);
-      if (state.row === layout.rows.length - 1) { state.bar = 0; return applyFocus(); }
+      if (state.row === layout.rows.length - 1) { state.bar = 0; state.barFrom = 'down'; return applyFocus(); }
       return move(1, 0);
     }
     if (k === KEY.ok) return pickUp();
@@ -4676,6 +5084,14 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
   // ---------------------------------------------------------------- input
 
   function onKeyDown(e) {
+    if (saverUp) {
+      e.preventDefault();
+      saverUp = false;
+      if (e.keyCode === KEY.back) backDown = true;
+      // Heard now rather than at the next beat, so Home's background comes back at once.
+      scheduleBeat(0);
+      return;
+    }
     stopPointing();
     landAll();
     if (!data || !layout) return;
@@ -4740,7 +5156,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
       if (recents.open || recents.loading) return closeRecents();
       if (state.arranging && state.held) { state.held = false; return toggleHidden(); }
       if (state.arranging) return setArranging(false);
-      if (data && data.supported && data.supported.standalone) {
+      if (data && data.supported && data.supported.standalone && !data.supported.lgHomeOnClose) {
         return window.close();
       }
       return openRecents();
@@ -4790,7 +5206,8 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
   }
   // Focuses the tile under the pointer, without moving its row.
   function hoverTile(target) {
-    if (layoutBusy || !data || !layout || player.open) return;
+    if (layoutBusy || !data || !layout) return;
+    if (player.open) return playerPointer(target);
     if (guide.open) return guidePointer(target);
     if (adder.open) {
       var adRow = target;
@@ -4806,18 +5223,20 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
       var inFolder = tileAt(target);
       if (inFolder && inFolder.hasAttribute('data-f') && +inFolder.getAttribute('data-f') !== folder.col) {
         folder.col = +inFolder.getAttribute('data-f');
+        navTick();
         focusFolder();
       }
       return;
     }
     if (!state.arranging && searchOn() && within(target, 'rail')) {
-      if (!state.rail) { state.rail = true; state.bar = -1; applyFocus(false, true); }
+      if (!state.rail) { state.rail = true; state.bar = -1; navTick(); applyFocus(false, true); }
       return;
     }
     var tile = tileAt(target);
     if (recents.open) {
       if (tile && /\brc\b/.test(tile.className) && (+tile.getAttribute('data-c') !== recents.col || recents.onAll)) {
         recents.col = +tile.getAttribute('data-c'); recents.onAll = false; recents.onX = false;
+        navTick();
         focusRecents(false, true);
       }
       return;
@@ -4829,6 +5248,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     var r = +rowEl.getAttribute('data-row'), c = +tile.getAttribute('data-c'), kind = layout.rows[r];
     if (state.row !== r || colOf(kind) !== c || state.bar >= 0 || state.rail) {
       state.row = r; state.col[kind] = c; state.bar = -1; state.rail = false;
+      navTick();
       applyFocus(false, true);
     }
   }
@@ -4886,6 +5306,8 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
    * finds the last launch's parameters still there.
    */
   var guideAsked = false;
+  // A channel Home Assistant asked to play: { pl, key, at }, opened once the lineup has it.
+  var playAsked = null;
   var LOADED_KEY = 'glasshouse.home.loaded';
   /*
    * Each launch replaces the last one's request, so a Home press after Guide
@@ -4902,6 +5324,22 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
       if (seen) return;
     }
     guideAsked = p.glasshouse === 'guide';
+    playAsked = p.glasshouse === 'play' && /^[0-9A-Za-z_-]{1,40}$/.test(String(p.pl || '')) && /^[a-z][0-9a-z]{1,24}$/.test(String(p.key || ''))
+      ? { pl: String(p.pl), key: String(p.key), at: Date.now() } : null;
+  }
+  function openAskedPlay() {
+    var want = playAsked;
+    if (!want || !data || !layout) return;
+    if (Date.now() - want.at > 20000) { playAsked = null; return; }
+    var found = null, items = lineupItems();
+    for (var i = 0; i < items.length; i++) if (items[i].pl === want.pl && items[i].key === want.key) { found = items[i]; break; }
+    // The lineup may still be on its way.
+    if (!found) return setTimeout(openAskedPlay, 700);
+    playAsked = null;
+    if (adder.open) closeAdder();
+    if (guide.open) closeGuide();
+    if (finder.open) { closeSearch(); state.rail = false; }
+    openPlayer(found);
   }
   function openAskedGuide() {
     if (!guideAsked || !data || !layout) return;
@@ -4932,8 +5370,80 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     wallAvailable = !!(w && w.available);
     wallSlots = w && w.slots;
     wallRevision = w && w.revision || '';
+    var wasChoice = wallChoice;
     wallChoice = w && w.choice || '';
     wallPictures = w && w.pictures || [];
+    wallVideoSources = w && w.videoUrls || [];
+    wallVideoItems = w && w.videoItems || wallVideoSources.map(function (source) { return { url: source, title: '', pointsOfInterest: [] }; });
+    wallVideoShuffle = !!(w && w.videoShuffle);
+    wallVideoStyle = w && w.videoStyle || {};
+    applyWallVideoCaptionStyle();
+    var videoRevision = w && w.videoRevision || '';
+    // Videos chosen or changed on a dashboard play at once, as if a key had been pressed.
+    if (wallChoice === 'video' && (wasChoice !== 'video' || videoRevision !== wallVideoRevision)) wallVideoInputAt = Date.now();
+    wallVideoRevision = videoRevision;
+    scheduleWallVideoIdle();
+  }
+
+  function applyWallVideoCaptionStyle() {
+    var el = $('wall-caption'), style = wallVideoStyle || {};
+    if (!el) return;
+    var pos = style.captionPosition || 'top-left', right = pos.indexOf('right') !== -1, bottom = pos.indexOf('bottom') === 0;
+    // 'auto', not '': an empty value falls back to the stylesheet's left and top.
+    el.style.left = right ? 'auto' : '4%';
+    el.style.right = right ? '4%' : 'auto';
+    el.style.top = bottom ? 'auto' : '4%';
+    el.style.bottom = bottom ? '4%' : 'auto';
+    el.style.textAlign = right ? 'right' : 'left';
+    el.style.fontFamily = style.captionFont === 'Outfit' ? 'Outfit,sans-serif' : 'Manrope,sans-serif';
+    // In Home's text colour, from its Colours, as the rest of Home is.
+    el.style.fontSize = (Number(style.captionSize) || 32) + 'px';
+    el.style.display = style.showCaptions === false ? 'none' : '';
+    clearWallCaption();
+  }
+
+  /*
+   * Lined up with Home's own text on its side of the screen, and moved clear
+   * of Home's clock, weather and tiles where its corner has them. Both vary
+   * with Home's layout, so they are measured: at a fixed 4% the caption sat
+   * apart from Last watched's text above it in the alternative view.
+   */
+  function clearWallCaption() {
+    var el = $('wall-caption'), style = wallVideoStyle || {};
+    if (!el || !el.textContent) return;
+    var pos = style.captionPosition || '', bottom = pos.indexOf('bottom') === 0, right = pos.indexOf('right') !== -1;
+    var width = window.innerWidth, height = window.innerHeight, gap = 24, edge = null, side = null;
+    var shown = function (m) {
+      // An empty #source keeps its place, hidden.
+      var r = m && window.getComputedStyle(m).visibility !== 'hidden' && m.getBoundingClientRect();
+      return r && r.width && r.height && r.bottom > 0 && r.top < height ? r : null;
+    };
+    var now = [$('when'), $('weather'), $('source'), $('plate'), $('preview')];
+    // Where the text starts in the marks on the caption's half of the screen.
+    for (var n = 0; n < now.length; n++) {
+      var nr = shown(now[n]), cs = nr && window.getComputedStyle(now[n]), inset = null;
+      if (!nr) continue;
+      if (right && nr.right > width / 2) inset = width - nr.right + (parseFloat(cs.paddingRight) || 0) + (parseFloat(cs.borderRightWidth) || 0);
+      if (!right && nr.left < width / 2) inset = nr.left + (parseFloat(cs.paddingLeft) || 0) + (parseFloat(cs.borderLeftWidth) || 0);
+      if (inset !== null) side = side === null ? inset : Math.min(side, inset);
+    }
+    var at = side === null ? '4%' : Math.round(side) + 'px';
+    el.style.left = right ? 'auto' : at;
+    el.style.right = right ? at : 'auto';
+    el.style.top = bottom ? 'auto' : '4%';
+    el.style.bottom = bottom ? '4%' : 'auto';
+    var box = el.getBoundingClientRect();
+    if (!box.width) return;
+    var marks = bottom ? document.querySelectorAll('#rows .tile') : now;
+    for (var i = 0; i < marks.length; i++) {
+      var r = shown(marks[i]);
+      if (!r || r.right <= box.left || r.left >= box.right) continue;
+      if (bottom) edge = edge === null ? r.top : Math.min(edge, r.top);
+      else edge = edge === null ? r.bottom : Math.max(edge, r.bottom);
+    }
+    if (edge === null) return;
+    if (bottom && edge < box.bottom + gap) el.style.bottom = Math.round(height - edge + gap) + 'px';
+    if (!bottom && edge > box.top - gap) el.style.top = Math.round(edge + gap) + 'px';
   }
 
   /*
@@ -4966,6 +5476,43 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
   function updateWall() {
     syncAnim();
     var slot = wallSlot(), shuffled = wallChoice === 'shuffle';
+    if ($('wallShade')) $('wallShade').style.display = wallChoice === 'video' && anim.style === 'off' ? 'block' : 'none';
+    if (wallChoice === 'video') {
+      var videoLayers = $('wall').querySelectorAll('.layer');
+      if (anim.style !== 'off' || !wallAvailable || !wallVideoSources.length || document.hidden ||
+          document.documentElement.classList.contains('resting') || previewHoldsVideo() || wallVideoIdle()) {
+        unloadWallVideo();
+        if (anim.style !== 'off' || !wallVideoSources.length) wallVideoKey = '';
+        for (var blankVideo = 0; blankVideo < videoLayers.length; blankVideo++) { videoLayers[blankVideo].style.opacity = 0; videoLayers[blankVideo].style.backgroundImage = ''; }
+        return;
+      }
+      var videoKey = wallVideoRevision;
+      if (videoKey !== wallVideoKey) {
+        wallVideoKey = videoKey;
+        wallVideoIndex = -1;
+        wallVideoOrder = [];
+        wallVideoOrderAt = 0;
+        playWallVideo(nextWallVideoIndex(), slot.strength);
+      } else if (wallVideoEl) {
+        // The strength follows the time of day, but not into a clip still
+        // loading or fading out at its end.
+        var fadingOut = wallVideoEl.duration && wallVideoEl.duration - (wallVideoEl.currentTime || 0) < WALL_VIDEO_FADE_S;
+        if (wallVideoPlaying && !fadingOut) wallVideoShow(slot.strength);
+        // Back from the screen saver, its player can still have the decoder: a
+        // play refused or a picture that never comes is tried again here, at
+        // the heartbeat, rather than leaving Home black.
+        if (wallVideoNeedsRestart || (!wallVideoPlaying && Date.now() - wallVideoLoadedAt > WALL_VIDEO_START_MS)) restartWallVideo(slot.strength);
+        else if (wallVideoEl.paused) {
+          var resumed = wallVideoEl.play();
+          if (resumed && typeof resumed.catch === 'function') resumed.catch(function () {});
+        }
+      }
+      for (var v = 0; v < videoLayers.length; v++) { videoLayers[v].style.opacity = 0; videoLayers[v].style.backgroundImage = ''; }
+      wallShown = null;
+      return;
+    }
+    unloadWallVideo();
+    wallVideoKey = '';
     var picture = shuffled && anim.style === 'off' && wallAvailable ? shufflePick() : null;
     if (anim.style !== 'off' || !wallAvailable || (shuffled ? !picture : wallSlots && !wallSlots[slot.key])) {
       var blank = $('wall').querySelectorAll('.layer');
@@ -4992,6 +5539,212 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
       wallFront = 1 - wallFront;
     };
     img.src = src;
+  }
+
+  /*
+   * The wallpaper video and the preview's <video> (an Internet TV channel, a
+   * channel or an input) cannot both have the TV's video decoder: with a 4K
+   * HEVC wallpaper playing, an Internet TV stream never started. Paused, the
+   * wallpaper keeps the decoder; emptied and loaded, it lets it go, and plays
+   * again from the same video once the preview's is released.
+   */
+  function previewHoldsVideo() {
+    var v = $('pvVideo');
+    if (tilePreview.opening !== null && tilePreview.opening === tilePreview.gen) return true;
+    return !!v && (v.getAttribute('src') !== null || !!v.firstChild);
+  }
+
+  /*
+   * How much of the wallpaper video shows, 0 to 1, through the shade over it
+   * (see #wallShade). 0 is a fade to black that leaves the video in place;
+   * wallVideoHide takes it away at once, for a clip let go or not yet loaded.
+   */
+  function wallVideoShow(strength) {
+    var shade = $('wallShade');
+    if (shade) shade.style.opacity = 1 - strength;
+    if (wallVideoEl && strength > 0) wallVideoEl.style.visibility = 'visible';
+  }
+  function wallVideoHide() {
+    var shade = $('wallShade');
+    if (shade) shade.style.opacity = 1;
+    if (wallVideoEl) wallVideoEl.style.visibility = 'hidden';
+  }
+
+  function unloadWallVideo() {
+    if (!wallVideoEl) return;
+    wallVideoHide();
+    if ($('wall-caption')) $('wall-caption').textContent = '';
+    if (wallVideoEl.getAttribute('src') === null) return;
+    wallVideoNeedsRestart = true;
+    wallVideoLeftAt = wallVideoEl.currentTime || 0;
+    wallVideoLeftWhen = Date.now();
+    wallVideoEl.oncanplay = wallVideoEl.onplaying = wallVideoEl.onerror = wallVideoEl.onended = wallVideoEl.ontimeupdate = wallVideoEl.onloadedmetadata = null;
+    wallVideoPlaying = false;
+    try { wallVideoEl.pause(); } catch (e) {}
+    wallVideoEl.removeAttribute('src');
+    try { wallVideoEl.load(); } catch (e) {}
+  }
+
+  // Before the preview's <video> takes a stream or an input.
+  // True when the background had a video loaded, which may still hold the decoder.
+  function wallVideoYield() {
+    if (wallChoice !== 'video') return false;
+    var held = !!wallVideoEl && wallVideoEl.getAttribute('src') !== null;
+    unloadWallVideo();
+    return held;
+  }
+
+  // After it lets one go: a stream changing channel takes the next in the same
+  // turn, so the wallpaper comes back only if nothing has by the next one.
+  function wallVideoResume() {
+    if (wallChoice !== 'video') return;
+    setTimeout(function () { if (!previewHoldsVideo()) updateWall(); }, 0);
+  }
+
+  var wallVideoFailures = 0, wallVideoOrder = [], wallVideoOrderAt = 0, wallVideoLoadedAt = 0, wallVideoPlaying = false, wallVideoOffScreen = 0;
+
+  /*
+   * The server's word on whether the wallpaper reaches the screen (lib/home
+   * checkWallVideoOutput). Loaded while the screen saver was closing, it plays
+   * on with no picture and says nothing: two heartbeats of that, and it is
+   * loaded again.
+   */
+  function noteWallVideoOutput(onScreen) {
+    if (onScreen !== false || !wallVideoPlaying || previewHoldsVideo() || document.documentElement.classList.contains('resting')) {
+      wallVideoOffScreen = 0;
+      return;
+    }
+    if (++wallVideoOffScreen < 2) return;
+    wallVideoOffScreen = 0;
+    wallVideoNeedsRestart = true;
+  }
+  // Room for a 4K stream over the network to reach its first frame.
+  var WALL_VIDEO_START_MS = 20000;
+
+  /*
+   * LG's screen saver never comes over a playing video: while the wallpaper
+   * plays, a B8 (webOS 4.4) and a C2 (webOS 9.2) refused turnOnScreenSaver
+   * and asked for no idle screen saver in over 6 minutes, leaving Home's
+   * clock and tiles on an OLED panel. Where the TV's screen saver time is
+   * known (the heartbeat's saverIdleMs, LG's setting), the video fades out
+   * as it runs out, lets the decoder go and asks the server to start the
+   * screen saver: the TV's own timer does not run while a video plays, so it
+   * would only start then. Where it is not known, the video fades out after 2
+   * minutes without a key or the pointer, and the TV's own screen saver comes
+   * as it does over a still background. A key, the pointer or Home coming
+   * back plays it again.
+   */
+  var WALL_VIDEO_IDLE_MS = 120000;
+  // The fade (WALL_VIDEO_FADE_S), so the screen saver starts at the TV's time.
+  var WALL_VIDEO_SAVER_LEAD_MS = 3000;
+  var saverIdleMs = null;
+  function wallVideoIdleMs() {
+    return saverIdleMs ? Math.max(WALL_VIDEO_IDLE_MS, saverIdleMs - WALL_VIDEO_SAVER_LEAD_MS) : WALL_VIDEO_IDLE_MS;
+  }
+  function noteSaverIdleMs(ms) {
+    var next = typeof ms === 'number' && ms > 0 ? ms : null;
+    if (next === saverIdleMs) return;
+    var wasIdle = wallVideoIdle();
+    saverIdleMs = next;
+    scheduleWallVideoIdle();
+    // A longer time can bring back a video already let go.
+    if (wasIdle && !wallVideoIdle() && wallChoice === 'video') updateWall();
+  }
+  function wallVideoIdle() { return Date.now() - wallVideoInputAt >= wallVideoIdleMs(); }
+  function scheduleWallVideoIdle() {
+    clearTimeout(wallVideoIdleTimer);
+    wallVideoIdleTimer = null;
+    if (wallChoice !== 'video') return;
+    wallVideoIdleTimer = setTimeout(function () {
+      wallVideoIdleTimer = null;
+      if (!wallVideoIdle()) return scheduleWallVideoIdle();
+      if (!wallVideoEl || wallVideoEl.getAttribute('src') === null) return updateWall();
+      // Faded out first, as at a clip's end, rather than cut to black.
+      wallVideoShow(0);
+      if ($('wall-caption')) $('wall-caption').textContent = '';
+      setTimeout(function () {
+        if (!wallVideoIdle()) return;
+        updateWall();
+        if (saverIdleMs) postJson('/api/home/idle-saver', {}, function () {});
+      }, WALL_VIDEO_FADE_S * 1000);
+    }, Math.max(0, wallVideoIdleMs() - (Date.now() - wallVideoInputAt)) + 50);
+  }
+  function noteWallVideoInput() {
+    var wasIdle = wallVideoIdle();
+    wallVideoInputAt = Date.now();
+    scheduleWallVideoIdle();
+    if (wasIdle && wallChoice === 'video') updateWall();
+  }
+  // The wallpaper's opacity transition (#wall video) is 2.4 s.
+  var WALL_VIDEO_FADE_S = 2.5;
+  /*
+   * Back after a moment (a preview while moving along the rows), the same
+   * video goes on from where it was; after longer (the screen saver), the
+   * next one plays, so coming back is not always the same scene from its start.
+   */
+  var wallVideoLeftAt = 0, wallVideoLeftWhen = 0;
+  var WALL_VIDEO_RESUME_MS = 60000;
+  function restartWallVideo(strength) {
+    var brief = wallVideoLeftWhen && Date.now() - wallVideoLeftWhen < WALL_VIDEO_RESUME_MS;
+    var at = brief ? wallVideoLeftAt : 0;
+    wallVideoLeftWhen = 0;
+    if (brief) playWallVideo(wallVideoIndex, strength, at);
+    else playWallVideo(nextWallVideoIndex(), strength);
+  }
+
+  function playWallVideo(index, strength, startAt) {
+    if (!wallVideoEl || !wallVideoSources.length) return;
+    wallVideoNeedsRestart = false;
+    wallVideoIndex = ((index % wallVideoSources.length) + wallVideoSources.length) % wallVideoSources.length;
+    var video = wallVideoEl, item = wallVideoItems[wallVideoIndex] || { url: wallVideoSources[wallVideoIndex] }, source = item.url;
+    wallVideoHide();
+    video.muted = true;
+    wallVideoLoadedAt = Date.now();
+    wallVideoPlaying = false;
+    video.onplaying = function () { wallVideoPlaying = true; };
+    video.oncanplay = function () {
+      wallVideoFailures = 0;
+      wallVideoShow(strength);
+      var playing = video.play();
+      if (playing && typeof playing.catch === 'function') playing.catch(wallVideoHide);
+    };
+    video.onended = function () { playWallVideo(nextWallVideoIndex(), wallSlot().strength); };
+    video.ontimeupdate = function () {
+      var points = item.pointsOfInterest || [], caption = item.title || '', time = video.currentTime || 0;
+      for (var p = 0; p < points.length; p++) {
+        if (Number(points[p].at) > time) break;
+        caption = points[p].text || caption;
+      }
+      if ($('wall-caption').textContent !== caption) {
+        $('wall-caption').textContent = caption;
+        clearWallCaption();
+      }
+      // Faded out over its last moments, so the next one loading is a dip to black rather than a cut.
+      if (wallVideoPlaying && video.duration && video.duration - time < WALL_VIDEO_FADE_S) wallVideoShow(0);
+    };
+    video.onerror = function () {
+      wallVideoHide();
+      if (++wallVideoFailures < wallVideoSources.length) return playWallVideo(nextWallVideoIndex(), strength);
+      // Every one failed in a row: the next heartbeat tries again.
+      wallVideoFailures = 0;
+      wallVideoNeedsRestart = true;
+    };
+    video.onloadedmetadata = startAt > 0 ? function () {
+      try { if (startAt < (video.duration || 0) - 1) video.currentTime = startAt; } catch (e) {}
+    } : null;
+    video.pause();
+    video.src = source;
+    video.load();
+  }
+
+  function nextWallVideoIndex() {
+    if (wallVideoSources.length < 2) return 0;
+    if (!wallVideoShuffle) return (wallVideoIndex + 1) % wallVideoSources.length;
+    if (!wallVideoOrder.length || wallVideoOrderAt >= wallVideoOrder.length) {
+      wallVideoOrder = window.TVWebVideoOrder.shuffled(wallVideoSources.length, Math.random, wallVideoIndex);
+      wallVideoOrderAt = 0;
+    }
+    return wallVideoOrder[wallVideoOrderAt++];
   }
 
   // ---------------------------------------------------------------- animated background
@@ -5631,13 +6384,20 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
    * accent.
    */
   var LOOK = $('look').textContent, lookShown = '';
+  function hexRgb(hex) {
+    var n = parseInt(hex.slice(1), 16);
+    return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+  }
   function shade(hex, f) {
-    var n = parseInt(hex.slice(1), 16), out = '#';
-    [n >> 16, (n >> 8) & 255, n & 255].forEach(function (v) {
+    var out = '#';
+    hexRgb(hex).forEach(function (v) {
       var x = Math.round(v * f);
       out += (x < 16 ? '0' : '') + x.toString(16);
     });
     return out;
+  }
+  function rgbaStr(rgb, f, a) {
+    return 'rgba(' + Math.round(rgb[0] * f) + ',' + Math.round(rgb[1] * f) + ',' + Math.round(rgb[2] * f) + ',' + a + ')';
   }
   function applyMotion(l) {
     smoothScroll = l.smoothScroll !== false;
@@ -5654,19 +6414,67 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     $('scrim').style.opacity = String(n / 100 * (anim.style === 'off' ? 1 : ANIM_SCRIM));
   }
 
-  function applyColours(c) {
-    var key = c ? c.text + c.accent : '';
+  /*
+   * The cards' fade and the pulse, in the accent colour: the ring itself
+   * breathes between the accent and a dimmer one, with a glow around it.
+   */
+  var cardLookShown = null;
+  function applyCardLook(l) {
+    var accent = (l.colours && l.colours.accent) || '#ece7df';
+    var fade = typeof l.cardFade === 'number' ? l.cardFade : 20;
+    var key = accent + '|' + fade;
+    if (key === cardLookShown) return;
+    cardLookShown = key;
+    var rgb = hexRgb(accent), shown = (100 - fade) / 100;
+    // The card's ring is a border (see .card:after), a square tile's an outline.
+    function frames(prop) {
+      return '{0%,100%{' + prop + ':' + rgbaStr(rgb, 1, '.55') + ';box-shadow:0 0 6px 0 ' + rgbaStr(rgb, 1, '.15') + '}' +
+        '50%{' + prop + ':' + accent + ';box-shadow:0 0 12px 1px ' + rgbaStr(rgb, 1, '.35') + '}}';
+    }
+    var cardFrames = frames('border-color'), tileFrames = frames('outline-color');
+    var breathe = ' 1.8s ease-in-out infinite;';
+    var el = $('card-look');
+    if (!el) {
+      el = document.createElement('style');
+      el.id = 'card-look';
+      document.head.appendChild(el);
+    }
+    el.textContent = '.cards .tile.app,.cards .row:not(.active) .tile.app{opacity:' + shown + '}' +
+      '.cards .tile.app.focus{opacity:1}' +
+      '.cards .app.focus .card:after{border-color:' + accent + '}' +
+      '@-webkit-keyframes cardPulse' + cardFrames + '@keyframes cardPulse' + cardFrames +
+      '@-webkit-keyframes tilePulse' + tileFrames + '@keyframes tilePulse' + tileFrames +
+      '.pulse.cards .app.focus .card:after{-webkit-animation:cardPulse' + breathe + 'animation:cardPulse' + breathe + '}' +
+      '.pulse:not(.cards) .tile.app.focus,.pulse .cl.focus:after,.pulse .gc.focus{-webkit-animation:tilePulse' + breathe + 'animation:tilePulse' + breathe + '}';
+  }
+
+  function applyColours(c, highlight) {
+    var key = (c ? c.text + c.accent : '') + '|' + (highlight || '');
     if (key === lookShown) return;
     lookShown = key;
     // Rebuilt at the next render, so the tiles take the colours at once
     // rather than fading their frames to them.
     renderedRows = '';
-    if (!c) { $('look').textContent = LOOK; return; }
-    var swap = { '#ece7df': c.text, '#a39d93': shade(c.text, 0.69), '#6b665e': shade(c.text, 0.45),
-                 '#e9ad55': c.accent, '#231d12': shade(c.accent, 0.15) };
-    // Replace once: a chosen accent may itself be one of the original colours.
-    $('look').textContent = LOOK.replace(/outline-color:#ece7df\b|#(?:ece7df|a39d93|6b665e|e9ad55|231d12)\b/g,
-      function (m) { return m === 'outline-color:#ece7df' ? 'outline-color:' + c.accent : swap[m]; });
+    if (!c && !highlight) { $('look').textContent = LOOK; return; }
+    var css = LOOK;
+    if (c) {
+      var swap = { '#ece7df': c.text, '#a39d93': shade(c.text, 0.69), '#6b665e': shade(c.text, 0.45),
+                   '#e9ad55': c.accent, '#231d12': shade(c.accent, 0.15) };
+      // Replace once: a chosen accent may itself be one of the original colours.
+      css = css.replace(/outline-color:#ece7df\b|#(?:ece7df|a39d93|6b665e|e9ad55|231d12)\b/g,
+        function (m) { return m === 'outline-color:#ece7df' ? 'outline-color:' + c.accent : swap[m]; });
+    }
+    if (highlight) {
+      var hRgb = hexRgb(highlight);
+      var focusRgba = rgbaStr(hRgb, 1, '.86');
+      var tileRgba = rgbaStr(hRgb, 0.6, '.45');
+      css = css.replace(/rgba\(20,19,16,\.86\)|rgba\(12,11,10,\.45\)|#24211b\b/g, function (m) {
+        if (m === 'rgba(12,11,10,.45)') return tileRgba;
+        if (m === '#24211b') return highlight;
+        return focusRgba;
+      });
+    }
+    $('look').textContent = css;
   }
 
   // ---------------------------------------------------------------- data
@@ -5699,7 +6507,8 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
       if (!searchOn()) { closeSearch(); state.rail = false; }
       setFadeOn(layout.fade === true);
       applyMotion(layout);
-      applyColours(layout.colours);
+      applyColours(layout.colours, layout.tileHighlight);
+      applyCardLook(layout);
       applyDarkening(layout.darkening);
       stageClass();
       renderNow();
@@ -5707,6 +6516,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
       refreshPicture();
       clearTimeout(loadRetry);
       readWallpapers(r.wallpapers);
+      renderPicture();
       updateWall();
       if (!state.arranging) render();
       if (firstLoad) { beat(); fadeIn(); }
@@ -5723,6 +6533,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
       refreshGuide();
       refreshTvGuide();
       openAskedGuide();
+      openAskedPlay();
       // The player keeps its frozen order; its channels' names and guide follow.
       if (player.open) { renderBand(); if (player.list) renderList(); }
       if (guide.open) renderGuide();
@@ -5832,12 +6643,19 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     return out;
   }
 
+  // Each beat schedules the next, sooner while the screen saver covers the page.
+  function scheduleBeat(ms) {
+    clearTimeout(beatTimer);
+    beatTimer = setTimeout(beat, ms);
+  }
+
   function beat() {
+    scheduleBeat(BEAT_MS);
     // With no usable catalogue, let the server's ten-second watchdog recover Home.
     if (!data || !layout) return;
     // Whether the page has the keyboard: after a wake on webOS 11 it can be
     // in front and get no keys (#1122).
-    postJson('/api/home/beat', { focused: document.hasFocus(), visible: document.visibilityState || '', perf: takeTrace() }, function (r) {
+    postJson('/api/home/beat', { focused: document.hasFocus(), visible: document.visibilityState || '', iptv: !!(player.open || guide.open), perf: takeTrace() }, function (r) {
       if (r && r.ok) {
         beatFails = 0;
         // A custom launcher chosen in Glasshouse Home's place (lib/home-launcher).
@@ -5848,12 +6666,18 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
         // webOS 4: switched off, the standalone view closes itself, as Back does.
         if (r.enabled === false && standalone) return window.close();
         rest(!!r.covered);
+        saverUp = !!(r.covered && r.saver);
+        if (r.saver) scheduleBeat(SAVER_BEAT_MS);
         renderWeather(r.weather || null);
+        renderRemoteBattery(r.remoteBattery || null);
         // webOS 4: two minutes behind another app, not the screen saver, the
         // view closes itself to give its memory back; Home opens it afresh.
         coveredSince = r.covered && !r.saver ? (coveredSince || Date.now()) : 0;
         if (standalone && coveredSince && Date.now() - coveredSince > CLOSE_BEHIND_MS) return window.close();
         readWallpapers(r.wallpapers);
+        renderPicture();
+        noteWallVideoOutput(r.wallVideoOnScreen);
+        noteSaverIdleMs(r.saverIdleMs);
         updateWall();
         $('fault').className = '';
         // The TV's setting can change while the view is open, so the heartbeat
@@ -5894,6 +6718,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     initialEscape = false;
     clearTimeout(okTimer);
     okDownAt = 0; backDown = false;
+    saverUp = false;
     closeRecents();
     closeFolder();
     if (adder.open) closeAdder();
@@ -5901,6 +6726,20 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     if (guide.open && !guideAsked) closeGuide();
     keepSearch();
     readLaunchParams();
+    // Start screensaver in the dashboard can launch the saver app directly,
+    // without a tvpower "Screen Saver" state or a covered heartbeat. Its video
+    // player can stop Home's decoder anyway, so reload the wallpaper on return.
+    if (wallChoice === 'video' && wallVideoSources.length) {
+      // Not unloaded on the way out (a relaunch over Home, a quick trip): the
+      // reload carries on with the same clip from where it was.
+      if (!wallVideoLeftWhen && wallVideoEl && wallVideoEl.getAttribute('src')) {
+        wallVideoLeftAt = wallVideoEl.currentTime || 0;
+        wallVideoLeftWhen = Date.now();
+      }
+      wallVideoNeedsRestart = true;
+    }
+    wallVideoInputAt = Date.now();
+    scheduleWallVideoIdle();
     updateWall();
     // Back from an app, Home is as it was left: the same tile in focus and
     // every row where it was scrolled, brought to rest where it was headed.
@@ -5925,6 +6764,9 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
 
   window.addEventListener('resize', fit);
   document.addEventListener('keydown', noteOkKey, true);
+  document.addEventListener('keydown', noteWallVideoInput, true);
+  document.addEventListener('mousemove', noteWallVideoInput, true);
+  document.addEventListener('onwheel' in document ? 'wheel' : 'mousewheel', noteWallVideoInput, true);
   document.addEventListener('keyup', noteOkKey, true);
   document.addEventListener('keydown', onKeyDown, true);
   document.addEventListener('keyup', onKeyUp, true);
@@ -5952,7 +6794,8 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
   // Home pressed with the view already open reaches it as a relaunch.
   document.addEventListener('webOSRelaunch', function () { guideLaunch(); returned(); });
   document.addEventListener('visibilitychange', function () {
-    if (document.hidden) { animStop(); darken(); }
+    // Hidden behind an app, which may need the decoder the wallpaper holds.
+    if (document.hidden) { animStop(); darken(); unloadWallVideo(); }
     else { returned(); animRun(); }
   });
   window.addEventListener('pagehide', function () { if (player.open) closePlayer(); stopPreview(); });
@@ -5968,7 +6811,6 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
   guideLaunch(true);
   load();
   refreshWeather();
-  setInterval(beat, BEAT_MS);
   setInterval(function () {
     renderNow(); updateWall(); if (!document.hidden) refreshPicture();
     if (guide.open) {

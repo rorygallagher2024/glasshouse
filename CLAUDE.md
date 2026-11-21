@@ -138,6 +138,16 @@ it.
 
 A small change can skip the heading: one or two plain sentences are enough.
 
+## Release notes
+
+Release notes are parsed by `server/lib/updater.js` (`releaseSummary`), which
+reads only the text above an exact `## Details` heading (up to 600 characters,
+shown on the Server tab, the TV app and Home Assistant's update entity). Open
+with 1–3 plain sentences for people using Glasshouse (no headings or bullet
+lists above `## Details`), then put `## Details` on its own line with the full
+bullets, PR numbers and any `###` subheadings below it. Keep internal
+refactors and doc changes out of the opening summary.
+
 ## Don't narrate the work
 
 No process commentary: what was tried, what was ruled out, what turned out to

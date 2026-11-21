@@ -7,6 +7,9 @@
 *{margin:0;padding:0;box-sizing:border-box}
 /* The window is an overlay: whatever is on screen shows through above the bar. */
 html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font-family:sans-serif;color:#fff;cursor:default}
+/* Over LG's Home, which webOS 11 keeps drawn under an overlay: black, as webOS 5 leaves behind it. */
+#backdrop{display:none;position:absolute;left:0;top:0;width:1920px;height:1080px;background:#000}
+#backdrop.on{display:block}
 #shade{position:absolute;left:0;right:0;bottom:0;height:460px;opacity:0;
   background:-webkit-linear-gradient(top,rgba(0,0,0,0),rgba(0,0,0,.78));background:linear-gradient(to bottom,rgba(0,0,0,0),rgba(0,0,0,.78));
   -webkit-transition:opacity .18s ease-out;transition:opacity .18s ease-out}
@@ -25,17 +28,37 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
  * again (a shadow, a blur, opacity over the picture) changes as it moves,
  * which on a C2 (webOS 9.2.2) made each step visibly slower.
  */
+/*
+ * The row glides as Glasshouse Home's rows do: this curve follows Home's spring
+ * (SPRING in home.html) to within 2%, 90% of the way in 195 ms. At .12s, Smooth
+ * scrolling on looked no different from off (#1558). A key pressed again
+ * mid-glide starts the next from where the row is.
+ */
 #row{position:absolute;left:96px;top:18px;white-space:nowrap;font-size:0;will-change:transform;
-  -webkit-transition:-webkit-transform .12s ease-out;transition:transform .12s ease-out}
+  -webkit-transition:-webkit-transform .36s cubic-bezier(.25,.25,.15,1);transition:transform .36s cubic-bezier(.25,.25,.15,1)}
 /* Opaque, so a bright picture behind never shows through or hides a name. */
 .tile{display:inline-block;vertical-align:top;position:relative;width:180px;height:200px;margin-right:24px;padding-top:22px;border-radius:24px;
   text-align:center;background:#1e1e1e;color:#c8c8c8;border:2px solid #2e2e2e;
   -webkit-transition:-webkit-transform .1s ease-out;transition:transform .1s ease-out}
 .tile.input{width:300px;padding:0 22px;text-align:left}
 .tile.focus{background:#fff;color:#111;border-color:#fff;-webkit-transform:scale(1.07);transform:scale(1.07)}
+/*
+ * An icon that is a symbol on a clear ground takes the tile's colour as its
+ * name does, so it never vanishes into the tile: a light one, as several of
+ * LG's own are (Apps, Notifications, Sports on a C2), turns dark on the white
+ * tile in focus, and a dark one (AirPlay on a B8) light on the dark tiles.
+ * Which icons are which is worked out once, as each is kept (toneIcon), never
+ * as the focus moves.
+ */
+.tile.focus.lite .ico{-webkit-filter:brightness(.07);filter:brightness(.07)}
+.tile.dark:not(.focus) .ico{-webkit-filter:invert(1) brightness(.78);filter:invert(1) brightness(.78)}
 .ico{display:block;width:112px;height:112px;margin:0 auto 14px;border-radius:20px;background:#333 center/contain no-repeat}
+img.ico{background:none;object-fit:contain}
 .ico.letter{line-height:112px;font-size:52px;font-weight:600;color:#fff;background:#3a3a3a}
 .nm{font-size:24px;padding:0 12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.no-app-labels .tile:not(.input){width:156px;height:156px;margin-top:22px;padding-top:20px}
+.no-app-labels .tile:not(.input) .ico{margin-bottom:0}
+.no-app-labels .tile:not(.input) .nm{display:none}
 .input .head{display:-webkit-flex;display:flex;-webkit-align-items:center;align-items:center;height:100%}
 .dico{-webkit-flex:0 0 auto;flex:0 0 auto;width:60px;height:60px;margin-right:18px}
 .dico svg{display:block;width:100%;height:100%}
@@ -50,6 +73,7 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
 </style>
 </head>
 <body>
+<div id="backdrop"></div>
 <div id="shade"></div>
 <div id="clock"></div>
 <div id="bar"><div id="row"></div></div>
@@ -111,6 +135,7 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
       });
     }
     if (e.kind === 'tuner') return launch('com.webos.app.livetv', null, cb);
+    if (e.appId) return launch(e.appId, e.params || (e.deviceId ? { requestDevice: e.deviceId } : null), cb);
     if (e.kind === 'input') {
       var params = typeof e.uniqueId === 'number' && e.uniqueId > 0 && e.uniqueId < 15 ?
         { id: 'uniqueId', value: String(e.uniqueId) } : {};
@@ -120,12 +145,13 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
   }
 
   function close() {
+    stopEdge();
     if (closing) return;
     closing = true;
     visibleSince = 0;
     clearInterval(clockTimer);
     document.body.className = '';
-    closeTimer = setTimeout(function () { closeTimer = null; window.close(); }, 160);
+    closeTimer = setTimeout(function () { closeTimer = null; $('backdrop').className = ''; window.close(); }, 160);
   }
 
   function pad(n) { return n < 10 ? '0' + n : String(n); }
@@ -147,7 +173,13 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
     var order = (cat.order && cat.order.app) || (cat.apps || []).map(function (a) { return a.id; });
     order.forEach(function (id) {
       if (hiddenApps.indexOf(id) !== -1 || folder.indexOf(id) !== -1) return;
-      if (id === LG_HOME_TILE) return out.push({ kind: 'lg', id: id, name: 'LG Home', letter: 'LG' });
+      if (id === LG_HOME_TILE) {
+        // Beside Glasshouse Home (opened by a remote key, #1499), Home opens it
+        // and a held Home LG's, and launching LG's Home would open Glasshouse Home.
+        if (cat.enabled) return;
+        var lgName = (layout.appNames && layout.appNames[id]) || 'LG Home';
+        return out.push({ kind: 'lg', id: id, name: lgName, letter: lgName.slice(0, 2).toUpperCase() || 'LG' });
+      }
       var a = byId[id];
       // Saved web pages are left out: their addresses are not sent out by the
       // server (#1268), and its POSTs, which open one, refuse this page.
@@ -161,30 +193,43 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
     var devOrder = (cat.order && cat.order.dev) || (cat.devices || []).map(function (d) { return d.id; });
     devOrder.forEach(function (id) {
       var d = devById[id];
-      if (!d || hiddenDevs.indexOf(id) !== -1) return;
+      // AirPlay is both an app and an input, under one id. Where the apps have
+      // it, its app tile is the one shown or hidden; the input is not shown
+      // as well, whichever way it was set (#1500, #1502).
+      if (!d || hiddenDevs.indexOf(id) !== -1 || byId[id]) return;
       if (d.unused && layout.hideUnused === true) return;
-      out.push({ kind: d.tuner ? 'tuner' : 'input', id: d.id, name: d.name, port: d.port, input: d.input,
-                 uniqueId: d.uniqueId, dicon: window.glasshouseDevIcon ? window.glasshouseDevIcon(d) : '' });
+      out.push({ dev: true, kind: d.tuner ? 'tuner' : (d.kind || 'input'), id: d.id, name: d.name, port: d.port, input: d.input,
+                 uniqueId: d.uniqueId, appId: d.appId || null, params: d.params || null, deviceId: d.deviceId || null,
+                 dicon: window.glasshouseDevIcon ? window.glasshouseDevIcon(d) : '' });
     });
     return out;
   }
 
   function tileHtml(e, i) {
-    var cls = 'tile' + (e.kind === 'input' || e.kind === 'tuner' ? ' input' : '') + (i === focus ? ' focus' : '') +
-      (e.kind === 'input' && e.port === onPort ? ' now' : '');
-    if (e.kind === 'input' || e.kind === 'tuner') {
+    // Every input, AirPlay's among them, as an input, with its icon.
+    var isDev = !!e.dev;
+    var cls = 'tile' + (isDev ? ' input' : '') + (!isDev && e.icon && iconTone[e.icon] ? ' ' + iconTone[e.icon] : '') + (i === focus ? ' focus' : '') +
+      (e.kind === 'input' && e.port && e.port === onPort ? ' now' : '');
+    if (isDev) {
+      var sub = e.kind === 'input' ? 'HDMI ' + e.port
+        : e.kind === 'av' ? 'AV' : e.kind === 'component' ? 'Component'
+        : e.kind === 'dms' ? 'Media Server'
+        : e.kind === 'usb' ? 'USB' : '';
       return '<div class="' + cls + '" data-i="' + i + '"><div class="head">' + (e.dicon || '') +
         '<div class="txt"><div class="nm">' + esc(e.name) + '</div>' +
-        (e.kind === 'input' ? '<div class="path">HDMI ' + esc(e.port) + '</div>' : '') + '</div></div></div>';
+        (sub ? '<div class="path">' + esc(sub) + '</div>' : '') + '</div></div></div>';
     }
-    var ico = e.icon ? '<span class="ico" style="background-image:url(\'' + esc(e.icon) + '\')"></span>'
+    // An image, decoded in the frame that draws it: a CSS background is decoded
+    // after, so a C2 (webOS 9.2.2) showed the tiles first and the icons a
+    // moment later.
+    var ico = e.icon ? '<img class="ico" src="' + esc(iconSrc(e.icon)) + '" decoding="sync" alt="">'
       : '<span class="ico letter">' + esc(e.letter) + '</span>';
     return '<div class="' + cls + '" data-i="' + i + '">' + ico + '<div class="nm">' + esc(e.name) + '</div></div>';
   }
   function render() {
     var html = '', wasApp = true;
     list.forEach(function (e, i) {
-      var isApp = e.kind !== 'input' && e.kind !== 'tuner';
+      var isApp = !e.dev;
       if (wasApp && !isApp && i > 0) html += '<span class="gap"></span>';
       wasApp = isApp;
       html += tileHtml(e, i);
@@ -193,14 +238,71 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
     scrollTo();
   }
   // The row slides so the tile in focus stays on screen.
+  var ROOM = 1920 - 96 * 2;
+  var shift = 0;
+  /*
+   * Glasshouse Home's Smooth scrolling (Home tab, Motion): off, the row jumps
+   * to where a key, the wheel or the pointer sends it rather than gliding.
+   */
+  function applySmooth(layout) {
+    var t = layout && layout.smoothScroll === false ? 'none' : '';
+    var row = $('row');
+    if (row.style.transition !== t) row.style.webkitTransition = row.style.transition = t;
+  }
+  function applyShift() {
+    $('row').style.webkitTransform = $('row').style.transform = 'translateX(' + (-shift) + 'px)';
+  }
   function scrollTo() {
     var el = $('row').querySelector('[data-i="' + focus + '"]');
     if (!el) return;
-    var left = el.offsetLeft, right = left + el.offsetWidth, room = 1920 - 96 * 2;
-    var shift = 0;
-    if (right > room) shift = right - room + 24;
-    $('row').style.webkitTransform = $('row').style.transform = 'translateX(' + (-shift) + 'px)';
+    var right = el.offsetLeft + el.offsetWidth;
+    shift = right > ROOM ? right - ROOM + 24 : 0;
+    applyShift();
   }
+
+  /*
+   * The Magic Remote, as on Glasshouse Home: a notch of the wheel moves the
+   * row a tile, and the pointer resting near either end of it steps it along
+   * while there is more that way (#1500, #1531). The focus stays where the
+   * pointer puts it.
+   */
+  var EDGE = 150, EDGE_STEP_MS = 220;
+  var edgeDir = 0, edgeTimer = null;
+  function slide(dir) {
+    var tiles = $('row').querySelectorAll('.tile');
+    if (!tiles.length) return false;
+    var step = tiles[1] ? tiles[1].offsetLeft - tiles[0].offsetLeft : tiles[0].offsetWidth;
+    var last = tiles[tiles.length - 1];
+    var most = Math.max(0, last.offsetLeft + last.offsetWidth - ROOM + 24);
+    var next = Math.max(0, Math.min(most, shift + dir * step));
+    if (next === shift) return false;
+    shift = next;
+    applyShift();
+    return true;
+  }
+  function stopEdge() {
+    edgeDir = 0;
+    if (edgeTimer) { clearInterval(edgeTimer); edgeTimer = null; }
+  }
+  document.addEventListener('onwheel' in document ? 'wheel' : 'mousewheel', function (ev) {
+    if (document.body.className.indexOf('on') === -1) return;
+    var d = ev.deltaY !== undefined ? ev.deltaY : -ev.wheelDelta;
+    if (ev.deltaX && Math.abs(ev.deltaX) > Math.abs(d || 0)) d = ev.deltaX;
+    if (!d) return;
+    ev.preventDefault();
+    slide(d > 0 ? 1 : -1);
+  });
+  document.addEventListener('mousemove', function (ev) {
+    if (document.body.className.indexOf('on') === -1) return stopEdge();
+    var r = $('bar').getBoundingClientRect();
+    var over = ev.clientY >= r.top && ev.clientY <= r.bottom;
+    var dir = !over ? 0 : ev.clientX < EDGE ? -1 : ev.clientX > 1920 - EDGE ? 1 : 0;
+    if (!dir) return stopEdge();
+    edgeDir = dir;
+    if (edgeTimer) return;
+    slide(edgeDir);
+    edgeTimer = setInterval(function () { if (!edgeDir || !slide(edgeDir)) stopEdge(); }, EDGE_STEP_MS);
+  });
   // Only the tile left and the tile reached change, so the rest are not styled again.
   // byPointer: the row is not slid under the pointer, which would put another
   // tile beneath it and move the focus on again.
@@ -243,35 +345,259 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
   $('row').addEventListener('click', function () { choose(); });
 
   var CACHE = 'glasshouse.homebar';
-  var moved = false, waiting = 0, now = null, cat = null;
-  function show() {
-    render();
+  var moved = false, waiting = 0, now = null, cat = null, labelsOff = false;
+  var renderedJson = '', warmed = {}, iconScript = null, iconCallbacks = [], seq = 0;
+
+  /*
+   * The row's icons, kept beside it as data: URLs, so a Bar opened before
+   * anything has loaded (not preloaded, or after a restart) has every icon
+   * from its first frame, with no request to wait on. Fetched again each time
+   * the row is warmed, from the browser's cache, so a changed icon is kept;
+   * only the row's own are kept, ICON_CACHE_MAX at most.
+   */
+  var ICON_CACHE = 'glasshouse.homebar.icons', ICON_CACHE_MAX = 400000;
+  var iconData = {};
+  try { iconData = JSON.parse(window.localStorage.getItem(ICON_CACHE) || '{}') || {}; } catch (e) { iconData = {}; }
+  function iconSrc(url) { return iconData[url] || url; }
+  function saveIcons() {
+    try {
+      var text = JSON.stringify(iconData);
+      if (text.length <= ICON_CACHE_MAX) window.localStorage.setItem(ICON_CACHE, text);
+    } catch (e) {}
+  }
+  /*
+   * Each kept icon's tone, kept beside the icons: 'lite' for a light symbol
+   * on a clear ground, 'dark' for a dark one, where most of a 24 px copy is
+   * clear and what is not is near white or near black. '' for any other,
+   * such as an icon that fills its square.
+   */
+  var TONE_CACHE = 'glasshouse.homebar.iconTones';
+  var iconTone = {};
+  try { iconTone = JSON.parse(window.localStorage.getItem(TONE_CACHE) || '{}') || {}; } catch (e) { iconTone = {}; }
+  function saveTones() {
+    try { window.localStorage.setItem(TONE_CACHE, JSON.stringify(iconTone)); } catch (e) {}
+  }
+  function toneIcon(url, data) {
+    var img = new Image();
+    img.onload = function () {
+      var tone;
+      try {
+        var c = document.createElement('canvas');
+        c.width = c.height = 24;
+        var g = c.getContext('2d');
+        g.drawImage(img, 0, 0, 24, 24);
+        var d = g.getImageData(0, 0, 24, 24).data, clear = 0, n = 0, lum = 0;
+        for (var i = 0; i < d.length; i += 4) {
+          if (d[i + 3] < 128) { clear++; continue; }
+          n++;
+          lum += 0.2126 * d[i] + 0.7152 * d[i + 1] + 0.0722 * d[i + 2];
+        }
+        tone = clear < 24 * 24 * 0.3 || !n ? '' : lum / n > 200 ? 'lite' : lum / n < 60 ? 'dark' : '';
+      } catch (e) { return; }
+      if (iconTone[url] === tone) return;
+      iconTone[url] = tone;
+      saveTones();
+      markTone(url, tone);
+    };
+    img.src = data;
+  }
+  // The tiles showing an icon, once its tone is known.
+  function markTone(url, tone) {
+    var tiles = $('row').querySelectorAll('.tile');
+    for (var k = 0; k < tiles.length; k++) {
+      var e = list[+tiles[k].getAttribute('data-i')];
+      if (!e || e.dev || e.icon !== url) continue;
+      var cls = tiles[k].className.replace(/ (lite|dark)\b/g, '');
+      if (tone) cls = cls.replace(/^tile/, 'tile ' + tone);
+      if (tiles[k].className !== cls) tiles[k].className = cls;
+    }
+  }
+  function keepIcon(url) {
+    if (!window.FileReader) return;
+    var x = new XMLHttpRequest();
+    x.open('GET', url, true);
+    x.responseType = 'blob';
+    x.onload = function () {
+      if (x.status !== 200 || !x.response) return;
+      var r = new FileReader();
+      r.onload = function () {
+        if (typeof r.result !== 'string' || r.result.indexOf('data:image/') !== 0) return;
+        if (iconData[url] === r.result) {
+          if (!iconTone.hasOwnProperty(url)) toneIcon(url, r.result);
+          return;
+        }
+        iconData[url] = r.result;
+        saveIcons();
+        toneIcon(url, r.result);
+      };
+      r.readAsDataURL(x.response);
+    };
+    x.send();
+  }
+
+  // Keep decoded app icons in memory while hidden so opening does not paint blank boxes first.
+  function warmIcons(items) {
+    var used = {};
+    items.forEach(function (e) { if (e.icon) used[e.icon] = true; });
+    var dropped = false;
+    for (var url in iconData) {
+      if (iconData.hasOwnProperty(url) && !used[url]) { delete iconData[url]; dropped = true; }
+    }
+    if (dropped) saveIcons();
+    var toneDropped = false;
+    for (var t in iconTone) {
+      if (iconTone.hasOwnProperty(t) && !used[t]) { delete iconTone[t]; toneDropped = true; }
+    }
+    if (toneDropped) saveTones();
+    items.forEach(function (e) {
+      if (e.icon && !warmed[e.icon + '#kept']) { warmed[e.icon + '#kept'] = true; keepIcon(e.icon); }
+    });
+    items.forEach(function (e) {
+      if (!e.icon || warmed[e.icon]) return;
+      var img = new Image();
+      warmed[e.icon] = img;
+      img.src = e.icon;
+      if (typeof img.decode === 'function') img.decode().then(null, function () {});
+    });
+  }
+  function ensureDevIcons(cb) {
+    if (window.glasshouseDevIcon) return cb();
+    iconCallbacks.push(cb);
+    if (iconScript) return;
+    iconScript = document.createElement('script');
+    iconScript.onload = iconScript.onerror = function () {
+      if (!window.glasshouseDevIcon) iconScript = null;
+      var q = iconCallbacks.splice(0, iconCallbacks.length);
+      q.forEach(function (fn) { fn(); });
+    };
+    iconScript.src = BASE + '/assets/devicons.js';
+    document.head.appendChild(iconScript);
+  }
+  function syncFocus() {
+    var tiles = $('row').querySelectorAll('.tile');
+    for (var k = 0; k < tiles.length; k++) {
+      var cls = tiles[k].className.replace(/ focus/g, '') + (k === focus ? ' focus' : '');
+      if (tiles[k].className !== cls) tiles[k].className = cls;
+    }
+    scrollTo();
+  }
+  function updateNow() {
+    var tiles = $('row').querySelectorAll('.tile.input');
+    for (var k = 0; k < tiles.length; k++) {
+      var idx = +tiles[k].getAttribute('data-i');
+      var e = list[idx];
+      var on = !!(e && e.kind === 'input' && e.port && e.port === onPort);
+      var cls = tiles[k].className.replace(/ now/g, '') + (on ? ' now' : '');
+      if (tiles[k].className !== cls) tiles[k].className = cls;
+    }
+  }
+  function applyRow(nextList, port, nextLabelsOff) {
+    var nextJson = JSON.stringify(nextList);
+    var barCls = nextLabelsOff ? 'no-app-labels' : '';
+    var labelsChanged = nextLabelsOff !== labelsOff || $('bar').className !== barCls;
+    labelsOff = nextLabelsOff;
+    if (labelsChanged) $('bar').className = barCls;
+    if (nextJson !== renderedJson) {
+      var keepId = moved && list[focus] ? list[focus].id : null;
+      list = nextList;
+      onPort = port;
+      focus = 0;
+      if (keepId) for (var i = 0; i < list.length; i++) if (list[i].id === keepId) focus = i;
+      renderedJson = nextJson;
+      render();
+      warmIcons(list);
+      return;
+    }
+    if (port !== onPort) {
+      onPort = port;
+      updateNow();
+    }
+    if (labelsChanged) scrollTo();
+  }
+  function openWindow() {
+    // Where LG's Home stays drawn under the bar (webOS 11), the server says so and the bar covers it.
+    if (document.body.className !== 'on') getJson(BASE + '/api/home/bar-open', function (j) { if (j && j.lgHomeUnder === true) $('backdrop').className = 'on'; });
     tick();
     clearInterval(clockTimer);
     clockTimer = setInterval(tick, 10000);
     document.body.className = 'on';
   }
-  function ready() {
-    if (--waiting > 0 || closing) return;
-    if (!cat) { if (!list.length) close(); return; }
-    var fresh = tilesFrom(cat);
-    if (!fresh.length) return close();
-    var port = now && now.kind === 'input' && now.behindHome !== true ? now.port : null;
-    var same = JSON.stringify(fresh) === JSON.stringify(list) && port === onPort;
-    try { window.localStorage.setItem(CACHE, JSON.stringify({ list: fresh, onPort: port })); } catch (e) {}
-    if (same && document.body.className === 'on') return;
-    var keepId = moved && list[focus] ? list[focus].id : null;
-    list = fresh;
-    onPort = port;
-    focus = 0;
-    if (keepId) for (var i = 0; i < list.length; i++) if (list[i].id === keepId) focus = i;
-    show();
+  function hydrateFromCache() {
+    try {
+      var kept = JSON.parse(window.localStorage.getItem(CACHE) || 'null');
+      if (kept && kept.list && kept.list.length) {
+        applyRow(kept.list, kept.onPort, !!kept.labelsOff);
+        return true;
+      }
+    } catch (e) {}
+    return false;
+  }
+  function portFrom(j) {
+    return j && j.kind === 'input' && j.behindHome !== true ? j.port : null;
+  }
+  function saveCache(fresh, port, nextLabelsOff) {
+    try { window.localStorage.setItem(CACHE, JSON.stringify({ list: fresh, onPort: port, labelsOff: nextLabelsOff })); } catch (e) {}
   }
 
   /*
-   * Opening: the last row drawn at once, so the window comes up with its first
-   * frame, then what the server says. Run at load and again each time the
-   * preloaded app is opened.
+   * Whether Glasshouse Home is on, so a remote key pressed over it does
+   * nothing (#1499). Kept, as a press is answered before the catalogue is
+   * read. The server says whether it is in front: this app may not ask the
+   * TV's app manager (getForegroundAppInfo is denied it on a B8, webOS 4.4.3).
+   */
+  var HOME_KEPT = 'glasshouse.homebar.home';
+  function keepHome(c) {
+    if (!c) return;
+    try { window.localStorage.setItem(HOME_KEPT, c.enabled ? '1' : ''); } catch (e) {}
+  }
+  function keptHome() {
+    try { return window.localStorage.getItem(HOME_KEPT) === '1'; } catch (e) { return false; }
+  }
+  // cb(true) where Glasshouse Home is in front.
+  function overHome(cb) {
+    if (!keptHome()) return cb(false);
+    var answered = false;
+    var done = function (yes) { if (!answered) { answered = true; cb(yes); } };
+    // Never held up for long: a press with no answer opens the Bar.
+    setTimeout(function () { done(false); }, 500);
+    getJson(BASE + '/api/home/now', function (j) { done(!!(j && j.homeInFront === true)); });
+  }
+  // A press: the Bar opened, unless Glasshouse Home is in front, where it closes unseen.
+  function pressed() {
+    overHome(function (yes) {
+      if (!yes) return start();
+      idleUntilOpened = false;
+      window.close();
+    });
+  }
+
+  /*
+   * Prewarming while hidden: renders the cached row and fetches the catalogue
+   * and app icons ahead of the Home press without showing the window, so the
+   * press only switches body.on and updates the active input dot in place.
+   */
+  function prewarm() {
+    var mySeq = ++seq;
+    hydrateFromCache();
+    var preCat = null, need = 2;
+    function donePrewarm() {
+      if (--need > 0 || mySeq !== seq || !idleUntilOpened || closing) return;
+      if (!preCat) return;
+      var fresh = tilesFrom(preCat);
+      if (!fresh.length) return;
+      applySmooth(preCat.layout);
+      var nextLabelsOff = !!(preCat.layout && preCat.layout.showAppLabels === false);
+      saveCache(fresh, onPort, nextLabelsOff);
+      applyRow(fresh, onPort, nextLabelsOff);
+    }
+    ensureDevIcons(donePrewarm);
+    getJson(BASE + '/api/home/catalogue', function (j) { preCat = j; keepHome(j); donePrewarm(); });
+  }
+
+  /*
+   * Opening: shows the prewarmed or cached row at once so the window comes up
+   * with its first frame, then updates the active input or any changed tiles
+   * without tearing down unchanged icon elements.
    */
   function start() {
     // Opened again while it fades out: it stays.
@@ -280,81 +606,103 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
     closing = false;
     moved = false;
     focus = 0;
-    try {
-      var kept = JSON.parse(window.localStorage.getItem(CACHE) || 'null');
-      if (kept && kept.list && kept.list.length) {
-        list = kept.list;
-        onPort = kept.onPort;
-        show();
-      }
-    } catch (e) {}
+    var mySeq = ++seq;
+    if (!renderedJson) hydrateFromCache();
+    else syncFocus();
+    if (list.length) openWindow();
     now = null;
     cat = null;
-    waiting = window.glasshouseDevIcon ? 2 : 3;
-    if (!window.glasshouseDevIcon) {
-      var icons = document.createElement('script');
-      icons.onload = icons.onerror = ready;
-      icons.src = BASE + '/assets/devicons.js';
-      document.head.appendChild(icons);
+    waiting = 3;
+    function readyFor() {
+      if (mySeq !== seq || --waiting > 0 || closing) return;
+      if (!cat) { if (!list.length) close(); return; }
+      var fresh = tilesFrom(cat);
+      if (!fresh.length) return close();
+      applySmooth(cat.layout);
+      var nextLabelsOff = !!(cat.layout && cat.layout.showAppLabels === false);
+      var port = portFrom(now);
+      saveCache(fresh, port, nextLabelsOff);
+      applyRow(fresh, port, nextLabelsOff);
+      if (document.body.className !== 'on') openWindow();
     }
-    getJson(BASE + '/api/home/now', function (j) { now = j; ready(); });
-    getJson(BASE + '/api/home/catalogue', function (j) { cat = j; ready(); });
+    ensureDevIcons(readyFor);
+    getJson(BASE + '/api/home/now', function (j) {
+      if (mySeq !== seq || closing) return;
+      now = j;
+      if (renderedJson) {
+        var port = portFrom(j);
+        if (port !== onPort) {
+          onPort = port;
+          updateNow();
+        }
+      }
+      readyFor();
+    });
+    getJson(BASE + '/api/home/catalogue', function (j) {
+      keepHome(j);
+      if (mySeq !== seq || closing) return;
+      cat = j;
+      readyFor();
+    });
   }
 
   /*
    * Preloaded: the Glasshouse server starts the app hidden ({"preload":
-   * "full"}) at boot, at switch-on and after each close, so a press finds the
-   * page loaded. A preloaded page draws nothing until that press, which
-   * reaches it as a relaunch; a press of Home while it is up closes it.
+   * "full"}) at boot, at switch-on and after a pause following each close, so
+   * a press finds the page loaded. A preloaded page draws nothing until that
+   * press, which reaches it as a relaunch; a press of Home while it is up
+   * closes it.
    */
-  function preloaded() {
-    var p = {};
-    try { p = JSON.parse(window.PalmSystem.launchParams || '{}') || {}; } catch (e) {}
-    return !!p.preload;
+  function launchInfo() {
+    try { return JSON.parse((window.PalmSystem && window.PalmSystem.launchParams) || '{}') || {}; } catch (e) { return {}; }
   }
   function hidden() { return document.hidden === true || document.webkitHidden === true; }
+  var initial = launchInfo();
+  var seenPress = initial.press || 0;
   /*
    * Preloaded, the page starts with no window, so hidden. On a B8 (webOS
-   * 4.4.3) the preload's launch parameters did not say so: the page drew
-   * itself, and the first press, taken for a second, closed it at once.
+   * 4.4.3) a preload's launch parameters did not always say so: without a
+   * keyfilter press marker, a hidden launch still waits for the first press.
    */
-  var idleUntilOpened = preloaded() || hidden();
+  var idleUntilOpened = !!initial.preload || (!seenPress && hidden());
   /*
-   * A relaunch is a second press of Home, and closes the bar, once it is on
-   * screen; one within this time of opening still opens it, as a backstop.
+   * Without a press sequence number, a single press can reach webOSRelaunch
+   * twice close together on webOS 4.4.3; time windows still guard that path.
    */
   var SECOND_PRESS_MS = 250;
   var visibleSince = hidden() ? 0 : Date.now();
   function visibilityChanged() { visibleSince = hidden() ? 0 : (visibleSince || Date.now()); }
   document.addEventListener('visibilitychange', visibilityChanged);
   document.addEventListener('webkitvisibilitychange', visibilityChanged);
-  /*
-   * One press can arrive as two relaunches close together: taken as two
-   * presses, the second reopened the bar the first had just closed (a B8,
-   * webOS 4.4.3). Those within this time of the last are the same press.
-   */
   var SAME_PRESS_MS = 200;
   var lastRelaunch = 0;
-  document.addEventListener('webOSRelaunch', function () {
+  document.addEventListener('webOSRelaunch', function (ev) {
+    var detail = (ev && ev.detail) || {};
+    if (detail.preload) return;
     var at = Date.now();
-    if (at - lastRelaunch < SAME_PRESS_MS) return;
+    if (detail.press) {
+      if (detail.press === seenPress) return;
+      seenPress = detail.press;
+    } else {
+      if (at - lastRelaunch < SAME_PRESS_MS) return;
+      var shownFor = visibleSince ? at - visibleSince : 0;
+      if (!idleUntilOpened && !closing && document.body.className === 'on' && shownFor < SECOND_PRESS_MS) {
+        lastRelaunch = at;
+        start();
+        return;
+      }
+    }
     lastRelaunch = at;
-    var shownFor = visibleSince ? at - visibleSince : 0;
-    if (idleUntilOpened || closing || document.body.className !== 'on' || shownFor < SECOND_PRESS_MS) {
+    if (idleUntilOpened || closing || document.body.className !== 'on') {
       idleUntilOpened = false;
-      visibleSince = visibleSince || Date.now();
-      start();
+      visibleSince = visibleSince || at;
+      pressed();
     } else {
       close();
     }
   });
-  if (idleUntilOpened) {
-    var icons = document.createElement('script');
-    icons.src = BASE + '/assets/devicons.js';
-    document.head.appendChild(icons);
-  } else {
-    start();
-  }
+  if (idleUntilOpened) prewarm();
+  else pressed();
 })();
 </script>
 </body>
