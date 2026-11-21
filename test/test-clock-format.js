@@ -26,7 +26,7 @@ var SRC_DIR = path.join(os.tmpdir(), 'tvweb-clock-qml-' + process.pid);
 var SRC = path.join(SRC_DIR, 'clock.qml');
 try { fs.mkdirSync(SRC_DIR); } catch (e) {}
 fs.writeFileSync(SRC,
-  'Item {\n    property int level: __TVWEB_LEVEL__\n    property bool hour12: __TVWEB_CLOCK12__\n}\n', 'utf8');
+  'Item {\n    property int level: __TVWEB_LEVEL__\n    property bool hour12: __TVWEB_CLOCK12__\n    property string tvLocale: "__TVWEB_LOCALE__"\n}\n', 'utf8');
 fs.writeFileSync(CFG, JSON.stringify({ port: 8080 }), 'utf8');
 
 var env = mockEnv.createMockEnv({
@@ -82,8 +82,14 @@ var clock = require('../server/lib/clock');
 // What getPreferences answers: { timeFormat } or null for a TV without it.
 var answer = null;
 var asked = 0;
+// What settingsservice answers for localeInfo, or null.
+var localeAnswer = null;
 var written = [];
 function luna(uri, payload, cb) {
+  if (uri === 'com.webos.settingsservice/getSystemSettings') {
+    assert.deepEqual(payload, { category: 'option', keys: ['localeInfo'] });
+    return cb(localeAnswer);
+  }
   if (uri === 'com.webos.service.systemservice/getPreferences') {
     asked++;
     assert.deepEqual(payload, { keys: ['timeFormat'] });
@@ -169,7 +175,8 @@ function statsBody() {
     luna: null,
     assetPath: function (qml) { return qml === 'screensavers/clock.qml' ? SRC : null; },
     config: config,
-    hour12: clock.hour12
+    hour12: clock.hour12,
+    qtLocale: clock.qtLocale
   });
   answer = { returnValue: true, timeFormat: 'HH12' };
   clock.refresh();
@@ -183,8 +190,22 @@ function statsBody() {
   screensavers.restageScreensaver();
   staged = env.files[path.join(SAVER_DIR, 'qml', 'main.qml')];
   assert.ok(staged.indexOf('property bool hour12: false') !== -1, staged);
+  assert.ok(staged.indexOf('property string tvLocale: ""') !== -1, 'no language before the TV has said');
+  localeAnswer = { returnValue: true, settings: { localeInfo: { locales: { UI: 'sv-SE', TV: 'sv-SE' } } } };
+  changes = [];
+  clock.refresh();
+  assert.strictEqual(clock.qtLocale(), 'sv_SE', 'as Qt names it');
+  assert.strictEqual(changes.length, 1, 'a new language is announced, to restage the saver');
+  screensavers.restageScreensaver();
+  staged = env.files[path.join(SAVER_DIR, 'qml', 'main.qml')];
+  assert.ok(staged.indexOf('property string tvLocale: "sv_SE"') !== -1, staged);
+  clock.refresh();
+  assert.strictEqual(changes.length, 1, 'the same language again is no change');
+  localeAnswer = { returnValue: true, settings: { localeInfo: { locales: { UI: 'not a locale!' } } } };
+  clock.refresh();
+  assert.strictEqual(clock.qtLocale(), 'sv_SE', 'a malformed answer keeps the last');
   env.restore();
-  console.log('  ✓ the staged screen saver is written with the TV\'s hour cycle');
+  console.log('  ✓ the staged screen saver is written with the TV\'s hour cycle and menu language');
 })();
 
 // 5. The Advanced tab's clockHour12 control writes HH12 or HH24 through systemservice.
