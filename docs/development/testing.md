@@ -25,6 +25,19 @@ It checks real filesystem notifications as well as injected watch events
 comes just after a watch starts),
 including `etc` and jail resets that reuse their inodes, and verifies that callbacks
 arriving after shutdown cannot restart watching.
+`test-audiolevels.js` feeds `audiolevels.js` generated tones in place of
+`arecord`, through `init`: a 100 Hz tone fills the 80-160 Hz band and not the
+2.5 kHz one, bass that comes and goes counts beats, a second of quiet reads
+silent, capture runs on the "App" capture device and stops once nobody asks,
+a failed start waits before trying again, and a TV without the device says
+so and starts nothing.
+`test-beattrack.js` feeds `beattrack.js` frames of a 120 BPM bar (kick on
+each beat, clap on 2 and 4, hats between, a crash on 1): the tempo is found
+within 1.5 BPM, the beat clock within 25 ms, beat 1 and the claps in the
+pattern where they are; bars without bass are a breakdown counting down to a
+phrase line with the tempo held, the bass coming back is a drop, a bar
+without bass is neither, and a tempo locked at half moves up once the kick
+lands on every beat.
 `test-privacy-apphosts.js` exercises the real synchronizer with simulated
 mounts: clock sync both before and after mounting, tier and custom-list
 changes, learned countries, update-only blocking, disabling and a failed
@@ -210,7 +223,7 @@ before its first read.
 
 `test-repo.js` checks declared source URLs from the Homebrew Channel and added catalogs, including missing, malformed and unsafe addresses, GitHub downloads mapped to their repository, and other `.ipk` downloads omitted without changing installation URLs. `test-catalog-ui.js` checks source-link escaping, new-tab attributes, placement beside the primary action using the idle pill style, and availability across app states and disabled controls in both lists, including corrected and omitted download links.
 
-`test-saver-manifests.js` reads screen saver folders, checks that brightness keeps the Bright and Dim levels at 100% and 65% with a layer between and below, the order and ids, a folder with something wrong listed with the reason, staging, translated names, and what one added on the TV does past the screen. An installed homebrew app's screen saver is listed from its app, by either file name, with the same checks, an app without one is left out, only its QML is staged, and one whose app has gone counts as LG's.
+`test-saver-manifests.js` reads screen saver folders, checks that brightness keeps the Bright and Dim levels at 100% and 65% with a layer between and below, the order and ids, a folder with something wrong listed with the reason, staging, the stats and audio addresses a built-in is given, translated names, and what one added on the TV does past the screen. An installed homebrew app's screen saver is listed from its app, by either file name, with the same checks, an app without one is left out, only its QML is staged, and one whose app has gone counts as LG's.
 
 `test-homeassistant.js` checks `/api/homeassistant`, the one answer a screen saver gets for all the values it declares: that it takes the token every other read takes, that it reads each declared entity once and answers with only those, under the saver's own short names and with no calendar, that the staged QML is handed the single address with the token and no placeholder is left, that a saver which declares nothing is served nothing without asking Home Assistant again, and that an API switched off is reported as unconfigured rather than retried.
 

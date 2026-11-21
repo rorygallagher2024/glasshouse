@@ -135,6 +135,17 @@ A four-dimensional hypercube turning through the fourth dimension, rendered in f
 
 A live panel diagnostics dashboard on black, showing the TV's cumulative panel hours, short clean and refresher countdowns, processor silicon, Wi-Fi link quality, and remote battery. The card cluster periodically moves to protect the panel.
 
+### Music highway
+
+A neon track floating in the dark, rising over hills, dipping and banking through bends, with a small spaceship riding it. It moves to whatever the TV is playing: busier music makes the track faster, steeper and more twisting, and turns it from blue toward magenta. Its edges flare on every beat, hardest on the first of each bar; walls of laser beams lean out from both sides of the road and flash on hits; the bass lights the horizon; and blocks in three lanes come for the ship, whose engines flare and throw sparks as it catches them. With nothing playing, the track cruises slowly and dimly, and nothing on the screen ever stands still.
+
+**Blocks** picks how they are placed:
+
+* **On the beat** (the default) follows the music's tempo and reads it the way dance music is written, in bars of four beats and phrases of eight bars. Each block arrives at the craft exactly on an eighth note, in the lane of whatever plays loudest there: kicks on the left, claps and snares in the middle, hi-hats on the right. The track surges on every beat, and a gate across the track marks the start of each phrase. When the bass drops out for a few bars, the track slows, flattens and cools for the breakdown; a build climbs and speeds up, filling every eighth note for its last bars, toward the drop it expects on the next phrase line; and the drop arrives as a big gate with a flash, the track at full speed with its biggest hills and bends. Until the tempo is found, a few seconds into a song, blocks come as in the other mode.
+* **React to each hit** starts a block on each beat or hit as it is heard. It reacts to anything, tempo or not, but its blocks reach the craft a few seconds later, off the beat.
+
+To hear the music, Glasshouse reads the TV's own sound output (what it plays, not a microphone) while this screen saver is on screen, and stops 3 seconds after it closes. The sound is turned into levels and beats as it arrives; none of it is kept or sent anywhere. The TV does not start a screen saver while a video plays, but it does over music apps such as Spotify.
+
 ## Adding your own
 
 A screen saver added on the TV is a folder in `/var/lib/tvweb/screensavers/`, named as you like within a few rules (lowercase letters, digits and `-`, up to 32 characters; see the format below), holding a `saver.json` that names and describes it, its QML, and anything else it uses. The tab lists it after Glasshouse's own, marked *Added on this TV* with its author and license, and a Glasshouse update leaves the folder alone. To add one, copy its folder there and open the tab:
