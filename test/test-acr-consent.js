@@ -54,6 +54,7 @@ function testControl() {
     },
     privacy: {
       acrConsentKeys: function (cb) { cb(['acrAllowed', 'acrOnAllowed']); },
+      rememberHeld: function (kind, name, off) { calls.push('held ' + kind + ' ' + off); },
       setConsent: function (key, on, cb) {
         calls.push(key + ' ' + on);
         cb(key === 'acrOnAllowed' ? { ok: true, alsoChanged: 2 } : { ok: false, error: 'no such consent flag: ' + key });
@@ -61,7 +62,7 @@ function testControl() {
     }
   });
   controls.doControl('acr', false, function (res) {
-    assert.deepEqual(calls, ['setSystemSettings {"livePlus":"off"}', 'acrAllowed false', 'acrOnAllowed false']);
+    assert.deepEqual(calls, ['setSystemSettings {"livePlus":"off"}', 'held livePlus true', 'acrAllowed false', 'acrOnAllowed false']);
     assert.deepEqual(res, { ok: true, alsoChanged: 2 });
     console.log('  ✓ the ACR switch writes livePlus and every flag found');
     calls = [];
