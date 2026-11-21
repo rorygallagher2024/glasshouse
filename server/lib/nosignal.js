@@ -151,6 +151,7 @@ function artBlock(indent, api) {
       '        asynchronous: true',
       '        cache: false',
       '        smooth: true',
+      '        autoTransform: true',
       '        fillMode: filling ? Image.PreserveAspectCrop : Image.PreserveAspectFit',
       '        sourceSize.width: 1920',
       '        sourceSize.height: 1080',

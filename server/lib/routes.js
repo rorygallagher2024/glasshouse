@@ -1861,6 +1861,15 @@ function handleRequest(req, res) {
       send(res, status, JSON.stringify({ ok: false, error: error }));
     }, 'image/jpeg');
   }
+  // Media servers on the network, and one's folders, to add one to Art.
+  if (pathname === '/api/art/servers' && req.method === 'GET') {
+    return artModule.findServers(function (r) { send(res, 200, JSON.stringify(r)); });
+  }
+  if (pathname === '/api/art/browse' && req.method === 'GET') {
+    return artModule.browseFolder(String(u.query && u.query.udn || ''), String(u.query && u.query.id || '0'), function (r) {
+      send(res, r.ok ? 200 : 400, JSON.stringify(r));
+    });
+  }
   if (pathname === '/api/art' && req.method === 'GET') {
     var artStatus = artModule.status();
     artStatus.writable = !!config.allowControl || fromTV(req);
@@ -1880,6 +1889,10 @@ function handleRequest(req, res) {
     return readJsonBody(req, res, function (body) {
       function done(r) { send(res, r && r.ok === false ? 400 : 200, JSON.stringify(r)); }
       if (body && body.removeAll === true) return artModule.remove(undefined, done);
+      if (body && body.addFolder && typeof body.addFolder === 'object') {
+        return artModule.addFolder(String(body.addFolder.udn || ''), String(body.addFolder.id || ''), String(body.addFolder.title || ''), done);
+      }
+      if (body && typeof body.removeFolder === 'string') return artModule.removeFolder(body.removeFolder, done);
       if (body && typeof body.remove === 'string') return artModule.remove(body.remove, done);
       artModule.save(body && body.settings, done);
     }, 4096);

@@ -7,7 +7,7 @@
  * screen. Filling the screen, it is drawn a little larger than the screen, so
  * the drift never shows an edge.
  */
-import QtQuick 2.4
+import QtQuick 2.5
 
 Item {
     id: frame
@@ -52,6 +52,8 @@ Item {
         asynchronous: true
         cache: false
         smooth: true
+        // A phone's photo, turned as its camera says.
+        autoTransform: true
         fillMode: frame.filling ? Image.PreserveAspectCrop : Image.PreserveAspectFit
         // Decoded at the screen's size: a museum's 3400 pixel print would take
         // a tenfold share of the TV's memory otherwise.
