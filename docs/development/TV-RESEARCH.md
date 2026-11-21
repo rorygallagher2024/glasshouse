@@ -1000,6 +1000,35 @@ Measured on 22 October 2026 on an LCD 65UQ801C0SB, firmware 04.60.90.
   in front about 6 s later, against 2 to 3 s on a G3; the screen is black
   meanwhile.
 
+## The screen saver's runner (OLED55A19LA, webOS 6.5.3)
+
+- `qml-runner` runs a QML screen saver with its standard output and error on
+  `/dev/null`: `console.log` from the saver is lost, and nothing of it
+  reaches `/var/log/messages`. A saver that ends shows there only as the
+  window going invisible, then tvpowerd going back to Active.
+- The GPU is a single-core Mali-G52 (`/sys/class/misc/mali0/device/gpuinfo`:
+  `Mali-G52 1 cores r1p0 0x7402`), with no utilisation figure under sysfs.
+- With Spotify playing behind the screen saver, WebAppMgr kept using about
+  42% of one core and the compositor 21%; the load average stayed near 38.
+
+## The sound output as a capture device (OLED55A19LA, webOS 6.5.3)
+
+Checked with Spotify playing, read-only, on 21 November 2026:
+
+- `/proc/asound/pcm` lists card 0 (`mlp_scard_audio`) with eight software
+  mixer playback devices, two game audio ones, and three capture devices:
+  `00-10: Pcm8 capture App`, `00-11: AAC encode capture` and
+  `00-12: Pcm9 capture App`.
+- `arecord -D hw:0,10 -f S16_LE -c 2 -r 48000` and the same on `hw:0,12`
+  record the mix the TV is playing, Spotify included: neighbouring samples
+  differ by a fifth of their size, as music does, not noise. Recording did not
+  interrupt playback.
+- PulseAudio runs system-wide (`/var/run/pulse/native`). Its `pcm_output` sink
+  was `RUNNING`, but `parec` from `pcm_output.monitor` gave only zeros:
+  Spotify does not play through it.
+- With Spotify in front, the TV still went into the screen saver when idle,
+  though a request to start one was refused as something playing.
+
 ## The screen saver and the Magic Remote's pointer (webOS 9.2, C2)
 
 Checked on an OLED42C24LA, webOS 9.2.2, with the screen saver started by tvpower over an app (#1364):
