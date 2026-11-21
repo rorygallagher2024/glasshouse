@@ -480,6 +480,10 @@
         <div class="pointer-pad" id="pointer-pad" role="group" aria-label="Pointer" data-t-aria-label="ctl.pointer">
           <span data-t="ctl.pointer.hint">Slide to move. Tap to click. Use the wheel to scroll.</span>
         </div>
+        <!-- Shown in the remote's Motion mode, inside the Android app only: it reads the phone's gyroscope. -->
+        <div class="pointer-pad motion-pad" id="motion-pad" role="group" aria-label="Motion" data-t-aria-label="rp.motion">
+          <span data-t="ctl.pointer.motionHint">Hold here and point the phone to move. Let go to stop. Tap to click.</span>
+        </div>
         <div class="btns">
           <button type="button" id="pointer-click" data-t="ctl.pointer.click">Click</button>
         </div>
@@ -501,10 +505,11 @@
       </div>
     </details>
 
-    <!-- The remote's modes: its buttons, the pointer's touchpad, or the keyboard. -->
+    <!-- The remote's modes: its buttons, the pointer's touchpad or motion, or the keyboard. -->
     <div class="rp-modes" id="remote-modes" role="tablist" data-remote>
       <button type="button" role="tab" data-mode="buttons" onclick="remoteMode('buttons')" data-t="rp.buttons">Buttons</button>
       <button type="button" role="tab" data-mode="touch" id="rp-mode-touch" onclick="remoteMode('touch')" data-t="rp.touchpad">Touchpad</button>
+      <button type="button" role="tab" data-mode="motion" id="rp-mode-motion" onclick="remoteMode('motion')" data-t="rp.motion" hidden>Motion</button>
       <button type="button" role="tab" data-mode="keys" onclick="remoteMode('keys')" data-t="ctl.keyboard">Keyboard</button>
     </div>
 
@@ -2797,6 +2802,7 @@
 <script src="/assets/ui/format.js"></script>
 <script src="/assets/ui/readouts.js"></script>
 <script src="/assets/ui/update.js"></script>
+<script src="/assets/ui/motion.js"></script>
 <script src="/assets/ui/controls.js"></script>
 <script src="/assets/ui/privacy.js"></script>
 <script src="/assets/ui/lgsettings.js"></script>

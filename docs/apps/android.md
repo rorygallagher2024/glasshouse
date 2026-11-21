@@ -36,13 +36,14 @@ A **Quick Settings tile** turns one TV on and off: the one chosen with **Use for
 
 ![The remote opened from a TV's card, with the app's back button and section menu along the bottom](../screenshots/android-remote.png){ width="300" }
 
-The dashboard's remote, opened from a TV's card or from **Remote** at the top of its dashboard, works as it does in a browser, with three things only the app can do:
+The dashboard's remote, opened from a TV's card or from **Remote** at the top of its dashboard, works as it does in a browser, with four things only the app can do:
 
 * **The phone's volume keys** step the TV's volume while the remote is showing: one step a press, and about six a second while held. Otherwise they are the phone's own.
 * **Pull-to-refresh** is off while the remote is showing, so a drag down the touchpad moves the cursor rather than reloading the page.
 * **A short buzz** on each press.
+* **Motion**, beside Touchpad: hold the pad and point the phone to move the cursor, as a Magic Remote does. See [the remote](../dashboard/control.md#the-remote-on-its-own).
 
-These need app version 0.6.0 or later, and Glasshouse 0.156.0 or later on the TV for the remote opened from the dashboard.
+These need app version 0.6.0 or later (0.7.0 for Motion), and Glasshouse 0.156.0 or later on the TV for the remote opened from the dashboard.
 
 ## Turning a TV on
 
