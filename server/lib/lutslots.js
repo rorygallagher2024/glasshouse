@@ -97,8 +97,9 @@ function tableFailure(text) {
  * source: 'stored' }. It is the file, never the live picture state, and a
  * write sent with dataOpt 0 is not in it. Unlike a modern TV it needs picMode
  * (and optionally profileNo and colorSpace) to name the slot; several matching
- * files without a colorSpace fail rather than guess, and file names the one served. Anything else, or a missing or
- * wrongly sized file, gets the failure reply the C1 itself gives.
+ * files without a colorSpace fail rather than guess, and file names the one
+ * served. Anything else, or a missing or wrongly sized file, gets the failure
+ * reply the C1 itself gives.
  */
 function readTable(command, picMode, profileNo, colorSpace, cb) {
   var table = TABLES.hasOwnProperty(command) ? TABLES[command] : null;
