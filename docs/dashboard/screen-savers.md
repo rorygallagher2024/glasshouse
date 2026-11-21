@@ -29,9 +29,13 @@ Plays the muted video playlist configured under **Home → Background → Video*
 
 ### Picture frame
 
-Shows your own pictures, photos from your network and paintings in the public domain, one at a time, each fading into the next. With Picture frame chosen, this tab shows what is on screen and sets where its pictures come from:
+Shows your own pictures, photos from your network and paintings in the public domain, one at a time, each fading into the next. With Picture frame chosen, this tab shows what is on screen, a line saying where its pictures come from and how often they change, and **Picture frame settings**, which opens its settings in a dialog. The same dialog opens from the [Inputs](inputs.md#no-signal-screen) tab, and from search ("picture frame", "photos", "slideshow"); on a phone it fills the screen.
+
+On this tab:
 
 * **Now showing:** the picture on screen, with its title, and **Previous** and **Next**, which the screen saver takes up within a couple of seconds. Previous goes back through the last five pictures; Next after going back comes forward through them before a new one. They work while the picture frame is on screen, as the screen saver or on an input's [No Signal screen](inputs.md#no-signal-screen).
+
+In **Picture frame settings**:
 
 * **Your pictures:** up to 100 JPEG, PNG or WebP images, added from the browser or dropped on **Add pictures**. Each is made 1920 × 1080 or smaller before it is uploaded, and kept on the TV in `/var/lib/tvweb/art-pictures`, which an update leaves alone.
 * **Collections:** fourteen, in three groups, each free to show with its credit.

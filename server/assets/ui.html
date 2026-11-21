@@ -1122,24 +1122,12 @@
     <div class="pv-sub" data-t="ss.video.where">The videos, their order and the captions are set on the Home tab, under Background.</div>
   </div>
 
-  <!-- The Art saver's pictures and how it shows them (lib/art) -->
+  <!-- The picture frame (id "art", lib/art): what it shows now, and its settings in their own dialog -->
   <div class="ss-level-row" id="ss-art-row" hidden>
     <div class="ss-level-lbl" data-t="ss.art.now">Now showing</div>
     <div class="ss-art-now" id="ss-art-now"></div>
-    <div class="ss-level-lbl ss-video-lbl" data-t="ss.art.pictures">Pictures</div>
-    <div class="ss-pool-box ss-art-box" id="ss-art-sources"></div>
-    <div class="ss-level-lbl ss-video-lbl" id="ss-art-mine-lbl" data-t="ss.art.mine">Your pictures</div>
-    <div class="ss-art-pics" id="ss-art-pics"></div>
-    <input type="file" id="ss-art-file" accept="image/jpeg,image/png,image/webp" multiple hidden onchange="ssArtPicked(this)">
-    <div class="pv-sub" id="ss-art-note" role="status"></div>
-    <div class="ss-level-lbl ss-video-lbl" data-t="ss.art.folders">Network folders</div>
-    <div id="ss-art-folders"></div>
-    <div class="ss-art-browse" id="ss-art-browse" hidden></div>
-    <div class="ss-level-lbl ss-video-lbl" id="ss-art-show-lbl" data-t="ss.art.show">Showing them</div>
-    <select class="pill-sel ss-sel" id="ss-art-minutes" aria-labelledby="ss-art-show-lbl ss-art-minutes" onchange="ssArtSave({ seconds: Number(this.value) })"></select>
-    <select class="pill-sel ss-sel" id="ss-art-fit" aria-labelledby="ss-art-show-lbl ss-art-fit" onchange="ssArtSave({ fit: this.value })"></select>
-    <select class="pill-sel ss-sel" id="ss-art-caption" aria-labelledby="ss-art-show-lbl ss-art-caption" onchange="ssArtSave({ caption: this.value })"></select>
-    <div class="pv-sub" id="ss-art-where"></div>
+    <p class="prot-desc ss-art-summary" id="ss-art-summary"></p>
+    <div class="set-actions"><button type="button" class="pill idle" id="ss-frame-open" onclick="openFrameSettings()" data-t="ss.art.settings">Picture frame settings</button></div>
   </div>
 
   <div class="ss-level-row" id="ss-entities-row" hidden>
@@ -1385,6 +1373,10 @@
       <button type="button" class="hm-card" id="inputs-nosignal-art" onclick="setNoSignal('art')" hidden>&mdash;</button>
     </div>
     <div class="pv-sub" id="inputs-nosignal-desc" hidden></div>
+    <div class="inputs-frame" id="inputs-frame" hidden>
+      <div class="ss-art-now" id="inputs-art-now"></div>
+      <div class="set-actions"><button type="button" class="pill idle" onclick="openFrameSettings()" data-t="ss.art.settings">Picture frame settings</button></div>
+    </div>
   </div>
 
   <div class="pv-note" id="inputs-none" hidden data-t="inputs.none">Nothing about this TV&rsquo;s inputs can be changed from here.</div>
@@ -2662,6 +2654,59 @@
 </footer>
 
 <!-- Offered on load when "Update pop-up" is on in the Server tab; see offerUpdatePopup in ui/update.js. -->
+<!-- Picture frame settings: opened from the Screensaver and Inputs tabs, and from search.
+     A settings dialog (set-modal): a header that stays while the body scrolls,
+     and the dashboard's own groups and rows inside. -->
+<div id="frame-modal" class="modal-backdrop set-modal-backdrop" hidden onclick="if(event.target===this)closeFrameSettings()" onkeydown="if(event.key==='Escape')closeFrameSettings()">
+  <div class="modal-card set-modal" role="dialog" aria-modal="true" aria-labelledby="frame-modal-title" aria-describedby="frame-modal-sub">
+    <div class="set-modal-head">
+      <div class="set-modal-heading">
+        <h2 class="set-modal-title" id="frame-modal-title" data-t="ss.art.title">Picture frame</h2>
+        <p class="set-modal-sub" id="frame-modal-sub"></p>
+      </div>
+      <button type="button" class="pill idle" id="frame-modal-close" onclick="closeFrameSettings()" data-t="home.cardIconDoneBtn">Done</button>
+    </div>
+    <div class="set-modal-body">
+      <section class="set-sec" aria-labelledby="frame-sec-mine">
+        <h3 class="pv-g" id="frame-sec-mine" data-t="ss.art.mine">Your pictures</h3>
+        <div class="prot-table" id="ss-art-mine"></div>
+        <div class="ss-art-pics" id="ss-art-pics"></div>
+        <p class="set-note" id="ss-art-note" role="status" aria-live="polite"></p>
+        <input type="file" id="ss-art-file" accept="image/jpeg,image/png,image/webp" multiple hidden onchange="ssArtPicked(this)">
+      </section>
+      <div id="ss-art-sources"></div>
+      <section class="set-sec" aria-labelledby="frame-sec-folders">
+        <h3 class="pv-g" id="frame-sec-folders" data-t="ss.art.folders">Network folders</h3>
+        <div class="prot-table" id="ss-art-folders"></div>
+        <div class="set-browse" id="ss-art-browse" hidden></div>
+      </section>
+      <section class="set-sec" aria-labelledby="frame-sec-show">
+        <h3 class="pv-g" id="frame-sec-show" data-t="ss.art.show">Showing them</h3>
+        <div class="prot-table">
+          <div class="prot-row">
+            <div class="prot-main"><label class="prot-title" for="ss-art-minutes" data-t="ss.art.timeTitle">Each picture shows for</label></div>
+            <div class="prot-status"><select class="pill-sel" id="ss-art-minutes" onchange="ssArtSave({ seconds: Number(this.value) })"></select></div>
+          </div>
+          <div class="prot-row">
+            <div class="prot-main">
+              <label class="prot-title" for="ss-art-fit" data-t="ss.art.fitTitle">Fit</label>
+              <div class="prot-desc" data-t="ss.art.fitDesc">The whole picture on black, or filling the screen with its edges cropped.</div>
+            </div>
+            <div class="prot-status"><select class="pill-sel" id="ss-art-fit" onchange="ssArtSave({ fit: this.value })"></select></div>
+          </div>
+          <div class="prot-row">
+            <div class="prot-main">
+              <label class="prot-title" for="ss-art-caption" data-t="ss.art.labelTitle">Label</label>
+              <div class="prot-desc" data-t="ss.art.labelDesc">The title, who made it and where it is from, for 20 seconds after each change, all the time, or not at all. A credit that a picture’s licence asks for stays on screen either way.</div>
+            </div>
+            <div class="prot-status"><select class="pill-sel" id="ss-art-caption" onchange="ssArtSave({ caption: this.value })"></select></div>
+          </div>
+        </div>
+      </section>
+      <p class="set-note" id="ss-art-where"></p>
+    </div>
+  </div>
+</div>
 <div id="updpop" class="modal-backdrop" hidden>
   <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="updpop-title">
     <span class="updpop-st" data-t="server.popup.status">Update available</span>
