@@ -88,7 +88,10 @@ test('bass that comes and goes counts beats', function () {
 });
 
 test('silence is reported after a second of quiet', function () {
-  play(new Buffer(48000 * 4 * 1.2));
+  // Filled by hand: node 0.10 and 0.12 hand out new buffers unzeroed.
+  var quiet = new Buffer(48000 * 4 * 1.2);
+  quiet.fill(0);
+  play(quiet);
   assert.strictEqual(audiolevels.read().silent, true);
 });
 
