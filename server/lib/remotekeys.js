@@ -443,14 +443,14 @@ function brightnessStep() {
 
 /*
  * How the level bar looks: 'lg', a vertical bar at the right edge laid out like
- * the TV's own volume bar, 'horizontal', a pill low on the screen, or 'none',
- * no bar at all. Only the last two are kept in the file, so a TV left on the
- * default holds none.
+ * the TV's own volume bar, 'horizontal', a pill low on the screen, 'vertical',
+ * the same pill upright at the right edge, or 'none', no bar at all. All but
+ * 'lg' are kept in the file, so a TV left on the default holds none.
  */
 function readStoredBarStyle() {
   try {
     var j = JSON.parse(fs.readFileSync(mapFile(), 'utf8'));
-    return j && (j.brightnessBarStyle === 'horizontal' || j.brightnessBarStyle === 'none') ? j.brightnessBarStyle : '';
+    return j && (j.brightnessBarStyle === 'horizontal' || j.brightnessBarStyle === 'vertical' || j.brightnessBarStyle === 'none') ? j.brightnessBarStyle : '';
   } catch (e) {
     return '';
   }
@@ -797,7 +797,8 @@ function writeKeys(map, cb, home, starting) {
   var step = readStoredBrightnessStep();
   if (step) value.brightnessStep = step;
   if (levelBarShown() && barAvailable() && Object.keys(map).some(function (k) { return isBrightnessAction(map[k]); })) value.osd = true;
-  if (readStoredBarStyle() === 'horizontal') value.osdStyle = 'horizontal';
+  var barStyle = readStoredBarStyle();
+  if (barStyle === 'horizontal' || barStyle === 'vertical') value.osdStyle = barStyle;
   configs[MAP_KEY] = value;
   lunaFn('com.webos.service.config/setConfigs', { configs: configs }, function (r) {
     cb(!!(r && r.returnValue));
@@ -1943,7 +1944,7 @@ function brightnessKeySet() {
  */
 function setBrightnessBarStyle(value, cb) {
   if (!levelBar.isStyle(value)) {
-    return cb({ ok: false, error: msg('srv.remoteKeys.badBarStyle', 'The level bar style must be lg, horizontal or none') });
+    return cb({ ok: false, error: msg('srv.remoteKeys.badBarStyle', 'The level bar style must be lg, horizontal, vertical or none') });
   }
   if (!lunaFn) return cb({ ok: false, error: 'no luna wrapper' });
   var wasShown = levelBarShown();

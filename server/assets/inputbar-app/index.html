@@ -42,12 +42,13 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
 .tworow .tile{margin-top:16px;margin-bottom:16px}
 .tworow .tile.now:after{bottom:-20px}
 /*
- * The level bar (opened by a Brightness key), in one of two styles that the
- * Remote tab chooses between (body.osdlg or body.osdh): a vertical bar at the
- * right edge, laid out like the TV's own volume bar (#osdv), or a dark pill
- * low on the screen with an icon, a track and the number (#osd).
+ * The level bar (opened by a Brightness key), in one of three styles that the
+ * Remote tab chooses between (body.osdlg, body.osdh or body.osdvp): a vertical
+ * bar at the right edge, laid out like the TV's own volume bar (#osdv), or a
+ * dark pill with an icon, a track and the number (#osd), low on the screen
+ * (osdh) or upright at the right edge (osdvp).
  */
-.osdlg #osd,.osdh #osdv{display:none}
+.osdlg #osd,.osdh #osdv,.osdvp #osdv{display:none}
 /*
  * LG's volume bar (StarfishVolume.qml), as measured on a capture of it at
  * 1920 x 1080: a tube 18 wide and 552 high from y 263, its right edge 60 from
@@ -73,7 +74,7 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
 #osdv .vfill{position:absolute;left:-1px;bottom:2px;width:18px;height:0;border-radius:9px;background:#e4e7e6}
 /* Centred, and as wide as its parts, which do not change with the level. */
 #osd{position:absolute;left:50%;bottom:80px;height:80px;border-radius:40px;-webkit-transform:translateX(-50%);transform:translateX(-50%);
-  background:rgba(34,34,36,.94);box-shadow:0 8px 32px rgba(0,0,0,.5);opacity:0;display:-webkit-flex;display:flex;
+  background:rgba(34,34,36,.94);opacity:0;display:-webkit-flex;display:flex;
   -webkit-align-items:center;align-items:center;padding:0 32px;
   -webkit-transition:opacity .16s ease-out;transition:opacity .16s ease-out}
 .osdon #osd{opacity:1}
@@ -85,6 +86,16 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
 #osd .ofill{height:100%;width:0;border-radius:6px;background:#fff}
 /* Room for three digits whatever the level, so neither the pill nor the track changes size; the digits hug the right side. */
 #osd .onum{-webkit-flex:0 0 auto;flex:0 0 auto;width:3ch;margin-left:24px;text-align:right;font-size:36px;font-weight:500;font-variant-numeric:tabular-nums;color:#fff}
+/*
+ * The same pill upright at the right edge, level with the volume bar's: the icon
+ * on top, the track and the fill rising from its foot, and the number below.
+ */
+.osdvp #osd{left:auto;right:60px;bottom:auto;top:50%;width:80px;height:auto;-webkit-flex-direction:column;flex-direction:column;
+  padding:32px 0;-webkit-transform:translateY(-50%);transform:translateY(-50%)}
+.osdvp #osd .oico{margin:0 0 24px}
+.osdvp #osd .otrack{position:relative;-webkit-flex:0 0 460px;flex:0 0 460px;width:11px;height:460px}
+.osdvp #osd .ofill{position:absolute;left:0;bottom:0;width:100%;height:0}
+.osdvp #osd .onum{width:3ch;margin:24px 0 0;text-align:center}
 </style>
 </head>
 <body>
@@ -204,17 +215,20 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
   var OSD_POLL_MS = 120;
   var OSD_FILL_MAX = 547;
   var osdTimer = null, osdPoll = null, osdLevel = -1, osdOpen = false, osdCloseTimer = null, osdStyle = 'osdlg', osdPainted = '';
-  // The class the body carries while the bar is up: the vertical bar, unless the launch or the server says horizontal.
+  // The class the body carries while the bar is up: the LG-style bar, unless the launch or the server names another.
   function osdClass(style) {
-    osdStyle = style === 'horizontal' ? 'osdh' : 'osdlg';
+    osdStyle = style === 'horizontal' ? 'osdh' : style === 'vertical' ? 'osdvp' : 'osdlg';
   }
   function osdBodyClass() {
     document.body.className = 'osdon ' + osdStyle;
   }
   // Writes the level to the style on screen only; a change of style paints the other again.
   function osdPaint() {
-    if (osdStyle === 'osdh') {
-      $('ofill').style.width = osdLevel + '%';
+    if (osdStyle === 'osdh' || osdStyle === 'osdvp') {
+      // The fill runs along the track: its width in the horizontal pill, its height in the upright one.
+      var fill = $('ofill').style;
+      fill.width = osdStyle === 'osdh' ? osdLevel + '%' : '';
+      fill.height = osdStyle === 'osdvp' ? osdLevel + '%' : '';
       $('onum').textContent = String(osdLevel);
     } else {
       // A level above 0 is at least as tall as the fill is wide, so its ends stay round.

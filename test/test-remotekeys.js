@@ -1099,7 +1099,7 @@ step(function (next) {
   }));
 });
 
-// The level bar's style is chosen on the Remote tab: LG's vertical bar unless horizontal is set.
+// The level bar's style is chosen on the Remote tab: LG's bar unless another is set.
 step(function (next) {
   bar.allowed = true;
   rk.setRemoteKey('red', 'open', 'action:brightnessUp', guard(function (s) {
@@ -1121,13 +1121,23 @@ step(function (next) {
             var opened = f.launched.filter(function (l) { return l.id === 'com.tvweb.inputbar'; });
             assert.strictEqual(JSON.parse(opened[0].params).style, 'horizontal', 'each press opens the bar in that style');
             f.handle(1004, false, false);
-            rk.setBrightnessBarStyle('lg', guard(function (back) {
-              assert.ok(back.ok, back.error);
-              assert.strictEqual(tv.keys.osdStyle, undefined, 'back to the default, nothing kept');
-              rk.setRemoteKey('red', 'lg', '', guard(function (off) {
-                assert.ok(off.ok, off.error);
-                console.log('  ✓ the level bar style is vertical by default, horizontal when chosen, refused when unknown, and reaches the filter and the page');
-                next();
+            rk.setBrightnessBarStyle('vertical', guard(function (v) {
+              assert.ok(v.ok, v.error);
+              assert.strictEqual(tv.keys.osdStyle, 'vertical', 'the upright pill reaches the filter too');
+              var f2 = loadFilter();
+              tv.backlight = 50;
+              f2.handle(1004, true, false);
+              var opened2 = f2.launched.filter(function (l) { return l.id === 'com.tvweb.inputbar'; });
+              assert.strictEqual(JSON.parse(opened2[0].params).style, 'vertical', 'and each press opens the bar in it');
+              f2.handle(1004, false, false);
+              rk.setBrightnessBarStyle('lg', guard(function (back) {
+                assert.ok(back.ok, back.error);
+                assert.strictEqual(tv.keys.osdStyle, undefined, 'back to the default, nothing kept');
+                rk.setRemoteKey('red', 'lg', '', guard(function (off) {
+                  assert.ok(off.ok, off.error);
+                  console.log('  ✓ the level bar style is LG\'s by default, horizontal or vertical when chosen, refused when unknown, and reaches the filter and the page');
+                  next();
+                }));
               }));
             }));
           }));

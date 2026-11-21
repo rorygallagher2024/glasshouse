@@ -13,16 +13,17 @@
  * is made of the settings service itself.
  *
  * The style, 'lg' (a vertical bar at the right edge, laid out like the TV's
- * own volume bar), 'horizontal' (a pill low on the screen) or 'none' (no bar:
- * the keys change the brightness and show nothing), is read through the
- * function remotekeys.js gives, at most every STYLE_CACHE_MS.
+ * own volume bar), 'horizontal' (a pill low on the screen), 'vertical' (the same
+ * pill upright at the right edge) or 'none' (no bar: the keys change the
+ * brightness and show nothing), is read through the function remotekeys.js
+ * gives, at most every STYLE_CACHE_MS.
  *
  * It also gives the part of the key filter that opens the bar, which the
  * filter's own source (remotekeys.js's filterSource) places in itself.
  *
  * Strict ES5: runs on node 0.12.
  */
-var STYLES = ['lg', 'horizontal', 'none'];
+var STYLES = ['lg', 'horizontal', 'vertical', 'none'];
 var BACKLIGHT_IDLE_MS = 30000;
 var STYLE_CACHE_MS = 2000;
 
@@ -38,7 +39,7 @@ var styleCache = { value: 'lg', at: 0 };
 
 /*
  * opts.luna: the function that calls a luna service, opts.subscription:
- * luna.Subscription, opts.readStyle: () => 'lg' | 'horizontal' | 'none' as kept,
+ * luna.Subscription, opts.readStyle: () => 'lg' | 'horizontal' | 'vertical' | 'none' as kept,
  * opts.idleMs: how long the subscription stays after the last ask.
  */
 function init(opts) {
@@ -111,7 +112,7 @@ function getBrightness(cb) {
 function filterConfig() {
   return [
     '        glasshouseOsd = value.osd === true;',
-    '        glasshouseOsdStyle = value.osdStyle === "horizontal" ? "horizontal" : "lg";'
+    '        glasshouseOsdStyle = value.osdStyle === "horizontal" || value.osdStyle === "vertical" ? value.osdStyle : "lg";'
   ].join('\n');
 }
 

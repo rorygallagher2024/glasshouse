@@ -137,13 +137,14 @@ step('a closed subscription is not trusted, and with no asks for a while it is s
   });
 });
 
-step('only the three styles are valid', function (done) {
+step('only the four styles are valid', function (done) {
   assert.ok(levelBar.isStyle('lg'));
   assert.ok(levelBar.isStyle('horizontal'));
+  assert.ok(levelBar.isStyle('vertical'));
   assert.ok(levelBar.isStyle('none'));
-  assert.ok(!levelBar.isStyle('vertical'));
+  assert.ok(!levelBar.isStyle('diagonal'));
   assert.ok(!levelBar.isStyle(undefined));
-  assert.deepEqual(levelBar.STYLES, ['lg', 'horizontal', 'none']);
+  assert.deepEqual(levelBar.STYLES, ['lg', 'horizontal', 'vertical', 'none']);
   done();
 });
 
@@ -164,7 +165,10 @@ step('the filter opens the bar\'s app once for each press, with the level and th
   assert.deepEqual(launched, [], 'nothing opens with no Brightness key set');
   launched.length = 0;
   vm.runInNewContext('var value = { osd: true, osdStyle: "diagonal" };\n' + levelBar.filterShow('com.example.bar') + '\n' + levelBar.filterConfig() + '\nglasshouseBrightnessShow(60, 1);', sandbox);
-  assert.strictEqual(launched[0].params.style, 'lg', 'an unknown style is the vertical one');
+  assert.strictEqual(launched[0].params.style, 'lg', 'an unknown style is the LG-style one');
+  launched.length = 0;
+  vm.runInNewContext('var value = { osd: true, osdStyle: "vertical" };\n' + levelBar.filterShow('com.example.bar') + '\n' + levelBar.filterConfig() + '\nglasshouseBrightnessShow(60, 1);', sandbox);
+  assert.strictEqual(launched[0].params.style, 'vertical', 'the upright pill is passed on');
   done();
 });
 

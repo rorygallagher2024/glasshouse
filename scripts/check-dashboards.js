@@ -4239,7 +4239,8 @@ async function visitInputsAndRemote(browser, base, problems) {
 /*
  * Brightness key settings: a section of its own on the Remote tab, there only
  * while a key is set to Brightness up or down. Brightness step and Level bar
- * style are its rows, the style offering a vertical bar, a horizontal one or no
+ * style are its rows, the style offering LG's bar, a horizontal one, a vertical
+ * one or no
  * bar, and left out where the bar cannot be shown (webOS 11).
  */
 async function visitBrightnessKeySettings(browser, base, problems) {
@@ -4294,8 +4295,8 @@ async function visitBrightnessKeySettings(browser, base, problems) {
     if (!(hy.y < sy.y && sy.y < by.y)) fail('the heading, the step and the style are not in that order');
     if (await page.locator('#apps-rk-list .rk-key').last().boundingBox().then(b => b.y) > hy.y) fail('the section is above the keys');
     const options = await styleSel.locator('option').evaluateAll(o => o.map(x => x.value));
-    if (JSON.stringify(options) !== JSON.stringify(['lg', 'horizontal', 'none'])) fail('the style offers ' + options + ', not lg, horizontal and none');
-    if (await styleSel.inputValue() !== 'lg') fail('the style does not start on the vertical bar');
+    if (JSON.stringify(options) !== JSON.stringify(['lg', 'horizontal', 'vertical', 'none'])) fail('the style offers ' + options + ', not lg, horizontal, vertical and none');
+    if (await styleSel.inputValue() !== 'lg') fail('the style does not start on the LG-style bar');
 
     // Each choice is saved and comes back as chosen.
     await styleSel.selectOption('none');
@@ -4304,6 +4305,9 @@ async function visitBrightnessKeySettings(browser, base, problems) {
     await styleSel.selectOption('horizontal');
     await page.waitForFunction(() => document.querySelector('#apps-rk-bar-style').value === 'horizontal');
     if (JSON.stringify(writes[writes.length - 1]) !== JSON.stringify({ brightnessBarStyle: 'horizontal' })) fail('choosing the horizontal bar did not save it');
+    await styleSel.selectOption('vertical');
+    await page.waitForFunction(() => document.querySelector('#apps-rk-bar-style').value === 'vertical');
+    if (JSON.stringify(writes[writes.length - 1]) !== JSON.stringify({ brightnessBarStyle: 'vertical' })) fail('choosing the vertical bar did not save it');
     await stepSel.selectOption('15');
     await page.waitForFunction(() => document.querySelector('#apps-rk-step').value === '15');
     if (JSON.stringify(writes[writes.length - 1]) !== JSON.stringify({ brightnessStep: 15 })) fail('choosing a step did not save it');

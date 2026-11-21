@@ -316,9 +316,9 @@ var PARTS = [
     write: function (v, cb) { remoteKeys.setBrightnessStep(v, cb); }
   },
   {
-    // How the level bar of a Brightness key looks, 'lg', 'horizontal' or 'none', kept with the remote keys.
+    // How the level bar of a Brightness key looks, 'lg', 'horizontal', 'vertical' or 'none', kept with the remote keys.
     id: 'brightnessBarStyle',
-    valid: function (v) { return v === 'lg' || v === 'horizontal' || v === 'none'; },
+    valid: function (v) { return v === 'lg' || v === 'horizontal' || v === 'vertical' || v === 'none'; },
     read: function (cb) {
       remoteKeys.getRemoteKeys(function (r) {
         cb(r && r.supported && typeof r.brightnessBarStyle === 'string' ? r.brightnessBarStyle : undefined);
