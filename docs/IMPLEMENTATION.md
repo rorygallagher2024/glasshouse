@@ -1589,7 +1589,10 @@ and the header says the screen is on, and not while the stats'
 `signal_format.game_mode` is set. While PicCap is capturing or Hue Sync is
 streaming, which the route asks as `/api/stats` does for the Ambient Light tab,
 the route answers `{ ok: false, busy }` without a capture, as theirs and ours
-would share the capture hardware, and the glow fades until it stops. Each side's hue is raised to a fixed
+would share the capture hardware, and the glow fades until it stops. After
+three failed reads in a row, as while the server restarts for an update, it
+fades and reads every 30 s rather than every 3 s, and comes back by itself;
+it used to give up for the rest of the visit. Each side's hue is raised to a fixed
 brightness, at least half saturated, so a dim picture still gives a colour;
 the picture's brightness sets how strong it shows. The two colours are
 registered custom properties, faded on the root. With the glow on, the body's
