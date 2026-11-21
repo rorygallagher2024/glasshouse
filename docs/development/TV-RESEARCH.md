@@ -3927,3 +3927,49 @@ or merely cached overlay does not exempt a stopped Home view.
 With the correction installed, navigating Guide for at least 30 s kept it
 open. Successive watchdog checks logged that the view was behind
 `com.webos.app.livemenu`, rather than restoring LG's Home.
+## Stored calibration files (rooted LG OLED)
+
+A 1D LUT, 3D LUT, 3x3 gamut matrix or enable flag written to the picture
+service is stored in `/mnt/lg/cmn_data/external_pqldb/<mode>_<profileN>_<RECORD>`
+(for example `hdr_filmMaker_profile0_...`). Sizes: the 1D file is 3072
+little-endian 16-bit values (6144 bytes); the 3D file is 33 x 33 x 33 x 3 of
+them (215622 bytes).
+
+* This is the stored state. A write sent with `dataOpt` 0 stays in RAM and does
+  not appear in these files.
+* The file follows the picture mode a calibration session was started in, not
+  the mode on screen.
+* `getTemporalPeakControl` and `getGlobalStressReduction` report the stored
+  switch, not the live panel value.
+
+Not yet confirmed on a TV: that a stored upload changes the file each time.
+The prefix is the mode name for SDR (`filmMaker`) and snake case for HDR
+(`hdr_cinema`, while the app sends `hdrCinema`).
+
+### getExternalPqData from the stored files
+
+`POST /api/externalpq/getExternalPqData` takes the payload a modern LG's
+`externalpq/getExternalPqData` takes (`command`) plus `picMode` and optional
+`profileNo` and `colorSpace` (`BT709` or `BT2020`) to pick the slot. A
+camelCase `picMode` also matches the file prefix in its other spellings:
+`hdrCinema` gives `hdr_cinema`, `hdrFilmMaker` gives `hdr_filmMaker` and
+`dolbyCinemaDark` gives `dolby_cinema_dark`. When several files match and no
+`colorSpace` is given, the reply is the failure reply; a good reply adds
+`file`, the file served. A modern TV needs only `command`, so the bare modern
+payload is not enough here: without `picMode` the reply is the failure
+reply. The reply has the same keys: `returnValue`, `data` (base64,
+little-endian 16-bit), `dataCount` (107811) and `dataType`
+(`unsigned integer16`, the string CMI writes; the read value is unverified),
+plus `source: "stored"`. Only `GET_3D_LUT_DATA` is served.
+
+The bytes come from the slot file, so the reply is the stored state. It is not
+the live value: a write sent with dataOpt 0 stays in RAM and never reaches the
+file, and whether the file is rewritten on every stored upload has not been
+tested. `GET_1D_DPG_DATA` is not served: a modern TV answers it with the gamma
+table the picture engine applies (engine state, not the file), so a stored
+table under that name would pass as live. Any other command, a missing slot,
+a bad `picMode` or `profileNo`, or a wrongly sized file gets `returnValue:
+false` with the C1's text, `no file path from tvservice`. Errors from the
+route itself (401, 400, 413, 415) use `{ok:false,error}`. The route needs the
+Glasshouse token, because the reply holds table data, and it is never logged.
+

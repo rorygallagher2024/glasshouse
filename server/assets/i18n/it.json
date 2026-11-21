@@ -3656,5 +3656,9 @@
  "metrics.sys.wiredMac": {"from": "Wired MAC", "text": "MAC cablato"},
  "pic.offNote": {"text": "In grigio: non disponibile nella modalità immagine attuale o per ciò che è sullo schermo.", "from": "Greyed out: not available in the current picture mode, or for what is on screen."},
  "glow.toggleOn": {"text": "Bagliore dello schermo: disattivato (clic per illuminare la pagina dallo schermo del televisore)", "from": "Screen glow: off (click to light the page from the TV’s screen)"},
- "glow.toggleOff": {"text": "Bagliore dello schermo: attivato (clic per disattivarlo)", "from": "Screen glow: on (click to switch off)"}
+ "glow.toggleOff": {"text": "Bagliore dello schermo: attivato (clic per disattivarlo)", "from": "Screen glow: on (click to switch off)"},
+ "oled.slots": {"text": "File di calibrazione salvati", "from": "Stored calibration files"},
+ "oled.slots.note": {"text": "Stato salvato, letto dai file sul televisore. Una scrittura di calibrazione non salvata resta in memoria e qui non compare, e ogni file appartiene alla modalità immagine in cui è stata avviata una calibrazione, non a quella visualizzata.", "from": "Stored state, read from the files on the TV. A calibration write that is not saved stays in memory and does not show here, and each file belongs to the picture mode a calibration was started in, not the mode on screen."},
+ "oled.slots.size": {"text": "{n} byte", "from": "{n} bytes"},
+ "oled.slots.badSize": {"text": "dimensione inattesa", "from": "unexpected size"}
 }

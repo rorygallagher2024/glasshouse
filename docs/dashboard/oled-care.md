@@ -6,6 +6,7 @@ The aim is not to encourage disabling OLED protections blindly. Instead, the das
 
 * Cumulative panel hours, panel maintenance and Pixel Refresher countdowns with scheduling, completed cycle counters and refresher failure alerts.
 * GSR stress events on supported panels — counts how many static image stress intervals (such as logos, HUDs, or news tickers) the panel has detected, even if active dimming is switched off.
+* Stored calibration files, on a TV that keeps them: the size and a checksum of each picture calibration file (1D and 3D LUT, gamut matrix, enable flag), never the contents. This is the stored state, not what the panel is showing now; the section is hidden where the TV has no such folder.
 * Screen shift and logo dimming on any OLED.
 * Temporal peak control (ASBL) and global stress reduction on supported models (the two normally reachable only from the TV's service menu, with a service remote and a PIN).
 

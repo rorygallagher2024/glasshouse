@@ -3656,5 +3656,9 @@
  "metrics.sys.wiredMac": {"from": "Wired MAC", "text": "Vezetékes MAC"},
  "pic.offNote": {"text": "Szürkítve: nem érhető el a jelenlegi képmódban vagy a képernyőn látható tartalomnál.", "from": "Greyed out: not available in the current picture mode, or for what is on screen."},
  "glow.toggleOn": {"text": "Képernyőfény: ki (kattintson, hogy a tévé képernyője megvilágítsa az oldalt)", "from": "Screen glow: off (click to light the page from the TV’s screen)"},
- "glow.toggleOff": {"text": "Képernyőfény: be (kattintson a kikapcsoláshoz)", "from": "Screen glow: on (click to switch off)"}
+ "glow.toggleOff": {"text": "Képernyőfény: be (kattintson a kikapcsoláshoz)", "from": "Screen glow: on (click to switch off)"},
+ "oled.slots": {"text": "Mentett kalibrációs fájlok", "from": "Stored calibration files"},
+ "oled.slots.note": {"text": "Mentett állapot, a tévén lévő fájlokból olvasva. A nem mentett kalibrációs írás a memóriában marad, és itt nem jelenik meg; minden fájl ahhoz a képmódhoz tartozik, amelyben a kalibrációt elindították, nem a képernyőn látható módhoz.", "from": "Stored state, read from the files on the TV. A calibration write that is not saved stays in memory and does not show here, and each file belongs to the picture mode a calibration was started in, not the mode on screen."},
+ "oled.slots.size": {"text": "{n} bájt", "from": "{n} bytes"},
+ "oled.slots.badSize": {"text": "váratlan méret", "from": "unexpected size"}
 }
