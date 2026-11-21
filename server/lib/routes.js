@@ -8,6 +8,7 @@ var zlib = require('zlib');
 var crypto = require('crypto');
 var http = require('http');
 var say = require('./say');
+var lutSlots = require('./lutslots');
 var localAddress4 = require('./util').localAddress4;
 var localAddress6 = require('./util').localAddress6;
 var listenDualStack = require('./util').listenDualStack;
@@ -2128,6 +2129,24 @@ function handleRequest(req, res) {
     return tvApp('status', function (r) {
       if (r && r.ok) r.writable = config.allowControl;
       send(res, 200, JSON.stringify(r));
+    });
+  }
+
+  // Stored picture-calibration files (size and checksum only), where the TV has them.
+  if (pathname === '/api/lutslots') {
+    return lutSlots.readSlots(function (r) {
+      send(res, 200, JSON.stringify({ ok: true, available: !!r.available, slots: r.slots || [] }));
+    });
+  }
+
+  // getExternalPqData as a modern LG answers it, from the stored slot files. The
+  // reply carries table bytes, so it is behind auth and is not logged.
+  if (pathname === '/api/externalpq/getExternalPqData' && req.method === 'POST') {
+    if (!authed(u.query, req)) return send(res, 401, JSON.stringify({ ok: false, error: 'unauthorized' }));
+    return readJsonBody(req, res, function (body) {
+      lutSlots.readTable(body && body.command, body && body.picMode, body && body.profileNo, function (r) {
+        send(res, 200, JSON.stringify(r));
+      });
     });
   }
 

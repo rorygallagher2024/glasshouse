@@ -3656,5 +3656,9 @@
  "metrics.sys.wiredMac": {"from": "Wired MAC", "text": "Проводной MAC"},
  "pic.offNote": {"text": "Серым: недоступно в текущем режиме изображения или для того, что на экране.", "from": "Greyed out: not available in the current picture mode, or for what is on screen."},
  "glow.toggleOn": {"text": "Подсветка от экрана: выключена (нажмите, чтобы подсветить страницу экраном телевизора)", "from": "Screen glow: off (click to light the page from the TV’s screen)"},
- "glow.toggleOff": {"text": "Подсветка от экрана: включена (нажмите, чтобы выключить)", "from": "Screen glow: on (click to switch off)"}
+ "glow.toggleOff": {"text": "Подсветка от экрана: включена (нажмите, чтобы выключить)", "from": "Screen glow: on (click to switch off)"},
+ "oled.slots": {"text": "Сохранённые файлы калибровки", "from": "Stored calibration files"},
+ "oled.slots.note": {"text": "Сохранённое состояние, прочитанное из файлов на телевизоре. Запись калибровки, которая не сохранена, остаётся в памяти и здесь не видна; каждый файл относится к режиму изображения, в котором запущена калибровка, а не к режиму на экране.", "from": "Stored state, read from the files on the TV. A calibration write that is not saved stays in memory and does not show here, and each file belongs to the picture mode a calibration was started in, not the mode on screen."},
+ "oled.slots.size": {"text": "{n} байт", "from": "{n} bytes"},
+ "oled.slots.badSize": {"text": "неожиданный размер", "from": "unexpected size"}
 }
