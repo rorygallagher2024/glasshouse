@@ -1406,9 +1406,11 @@ function logoPath(id, logoId) {
 
 /*
  * The play URL, for the TV's own page only (routes.js checks). Read fresh
- * each time: Xtream's live URLs redirect to a token that expires.
+ * each time: Xtream's live URLs redirect to a token that expires. as: 'hls'
+ * or 'ts', the other kind of stream for this play only, where the channel can
+ * be either (Home's player trying the one that holds up).
  */
-function streamUrl(id, key) {
+function streamUrl(id, key, as) {
   var p = playlist(id), cur = current[id] || {};
   if (!p || !cur.sel || typeof key !== 'string' || !/^[a-z][0-9a-z]{1,24}$/.test(key)) return null;
   var added = cache.added[id];
@@ -1427,6 +1429,8 @@ function streamUrl(id, key) {
     var switchable = p.kind === 'xtream' && /\.(m3u8|ts)(\?|$)/i.test(url) &&
       !(account && isArray(account.formats) && (account.formats.indexOf('m3u8') === -1 || account.formats.indexOf('ts') === -1));
     if (switchable && isArray(p.ts) && p.ts.indexOf(key) !== -1) url = url.replace(/\.m3u8(\?|$)/i, '.ts$1');
+    if (switchable && as === 'ts') url = url.replace(/\.m3u8(\?|$)/i, '.ts$1');
+    else if (switchable && as === 'hls') url = url.replace(/\.ts(\?|$)/i, '.m3u8$1');
     return { url: url, format: /\.m3u8(\?|$)/i.test(url) ? 'hls' : /\.ts(\?|$)/i.test(url) ? 'ts' : 'unknown',
       account: !!account, maxConnections: account ? account.maxConnections : null, switchable: switchable };
   } catch (e) { return null; }
@@ -1672,14 +1676,14 @@ var RELAY_REJOIN_LOGS = 20;
 var RELAY_STALL_MS = 15000;
 var relayStallMs = RELAY_STALL_MS;
 
-function relayStream(id, key, req, res) {
+function relayStream(id, key, req, res, as) {
   var upstream = null, closed = false, tries = 0, retryTimer = null, flowingSince = 0, lostAt = 0, rejoins = 0;
   function refuse(code, why) {
     if (res.headersSent) return res.end();
     res.writeHead(code, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
     res.end(JSON.stringify({ ok: false, error: why }));
   }
-  var p = playlist(id), s = streamUrl(id, key);
+  var p = playlist(id), s = streamUrl(id, key, as);
   if (!p || !s) return refuse(404, 'no-stream');
   var tunerLogin = p.kind === 'enigma2' && p.streamLogin === true && !!p.user;
   if (p.kind === 'enigma2' && !tunerLogin) return refuse(404, 'no-stream');
@@ -1826,9 +1830,10 @@ function relayStream(id, key, req, res) {
  * own segments. A preview of the channel being recorded plays the recording
  * too; any other channel's play ends it. cb(stream or null).
  */
-function playUrl(id, key, full, cb) {
-  var s = streamUrl(id, key);
+function playUrl(id, key, full, cb, as) {
+  var s = streamUrl(id, key, as);
   if (!s) return cb(null);
+  if (as) s.as = as;
   var owner = playlist(id);
   if (owner && owner.kind === 'enigma2' && owner.takeOver === true) {
     return enigma2Free(owner, s.url, function () { deliverStream(id, key, full, s, cb); });
@@ -1850,7 +1855,7 @@ function deliverStream(id, key, full, s, cb) {
   var local = timeshift.current(at);
   if (local) { s.url = local; s.timeshift = true; return cb(s); }
   // Home's own player reads MPEG-TS through the relay (relayStream); the TV's player takes s.url.
-  if (s.format === 'ts' && !(owner && owner.kind === 'enigma2') && (RELAY_HTTPS || !/^https:/i.test(s.url))) s.relay = '/api/iptv/relay?pl=' + encodeURIComponent(id) + '&key=' + encodeURIComponent(key);
+  if (s.format === 'ts' && !(owner && owner.kind === 'enigma2') && (RELAY_HTTPS || !/^https:/i.test(s.url))) s.relay = '/api/iptv/relay?pl=' + encodeURIComponent(id) + '&key=' + encodeURIComponent(key) + (s.as ? '&as=' + s.as : '');
   if (!full || config.timeshift !== true || s.format !== 'ts') return cb(s);
   timeshift.open(at, s.url, function (r) {
     if (r) { s.url = r.url; s.timeshift = true; delete s.relay; }

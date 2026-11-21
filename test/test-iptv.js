@@ -519,7 +519,17 @@ step('an Xtream channel plays as MPEG-TS once chosen, after a restart too, and a
     assert.equal(iptv.setOutput({ pl: xc, key: c.key, output: 'hls' }).ok, true);
     assert.equal(iptv.streamUrl(xc, c.key).url, hls.url);
     assert.equal(iptv.setOutput({ pl: m3u, key: c.key, output: 'ts' }).ok, false, 'a plain list has one kind of link');
-    done();
+    // For one play: the other kind, leaving the channel's own as it was.
+    assert.equal(iptv.streamUrl(xc, c.key, 'ts').url, hls.url.replace(/\.m3u8$/, '.ts'));
+    assert.equal(iptv.streamUrl(xc, c.key).format, 'hls', 'a play as the other kind keeps nothing');
+    assert.equal(iptv.setOutput({ pl: xc, key: c.key, output: 'ts' }).ok, true);
+    assert.equal(iptv.streamUrl(xc, c.key, 'hls').url, hls.url);
+    assert.equal(iptv.setOutput({ pl: xc, key: c.key, output: 'hls' }).ok, true);
+    iptv.playUrl(xc, c.key, false, function (stream) {
+      assert.equal(stream.format, 'ts');
+      assert.equal(stream.relay, '/api/iptv/relay?pl=' + encodeURIComponent(xc) + '&key=' + encodeURIComponent(c.key) + '&as=ts', 'its relay reads the same kind');
+      done();
+    }, 'ts');
   });
 });
 
