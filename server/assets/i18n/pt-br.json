@@ -3642,5 +3642,6 @@
  "metrics.sys.wiredMac": {"from": "Wired MAC", "text": "MAC cabeado"},
  "pic.offNote": {"text": "Em cinza: não disponível no modo de imagem atual ou para o que está na tela.", "from": "Greyed out: not available in the current picture mode, or for what is on screen."},
  "glow.toggleOn": {"text": "Brilho da tela: desligado (clique para iluminar a página com a tela da TV)", "from": "Screen glow: off (click to light the page from the TV’s screen)"},
- "glow.toggleOff": {"text": "Brilho da tela: ligado (clique para desligar)", "from": "Screen glow: on (click to switch off)"}
+ "glow.toggleOff": {"text": "Brilho da tela: ligado (clique para desligar)", "from": "Screen glow: on (click to switch off)"},
+ "ss.tvOff": {"text": "A TV está desligada. Ligue-a para iniciar um protetor de tela.", "from": "The TV is off. Switch it on to start a screen saver."}
 }

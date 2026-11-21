@@ -3656,5 +3656,6 @@
  "metrics.sys.wiredMac": {"from": "Wired MAC", "text": "Проводной MAC"},
  "pic.offNote": {"text": "Серым: недоступно в текущем режиме изображения или для того, что на экране.", "from": "Greyed out: not available in the current picture mode, or for what is on screen."},
  "glow.toggleOn": {"text": "Подсветка от экрана: выключена (нажмите, чтобы подсветить страницу экраном телевизора)", "from": "Screen glow: off (click to light the page from the TV’s screen)"},
- "glow.toggleOff": {"text": "Подсветка от экрана: включена (нажмите, чтобы выключить)", "from": "Screen glow: on (click to switch off)"}
+ "glow.toggleOff": {"text": "Подсветка от экрана: включена (нажмите, чтобы выключить)", "from": "Screen glow: on (click to switch off)"},
+ "ss.tvOff": {"text": "Телевизор выключен. Включите его, чтобы запустить заставку.", "from": "The TV is off. Switch it on to start a screen saver."}
 }

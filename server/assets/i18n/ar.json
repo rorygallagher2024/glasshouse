@@ -3642,5 +3642,6 @@
  "metrics.sys.wiredMac": {"from": "Wired MAC", "text": "MAC السلكي"},
  "pic.offNote": {"text": "الإعدادات الرمادية غير متاحة في وضع الصورة الحالي أو لما يُعرض على الشاشة.", "from": "Greyed out: not available in the current picture mode, or for what is on screen."},
  "glow.toggleOn": {"text": "توهج الشاشة: متوقف (انقر لإضاءة الصفحة من شاشة التلفزيون)", "from": "Screen glow: off (click to light the page from the TV’s screen)"},
- "glow.toggleOff": {"text": "توهج الشاشة: يعمل (انقر لإيقافه)", "from": "Screen glow: on (click to switch off)"}
+ "glow.toggleOff": {"text": "توهج الشاشة: يعمل (انقر لإيقافه)", "from": "Screen glow: on (click to switch off)"},
+ "ss.tvOff": {"text": "التلفاز مطفأ. شغّله لبدء شاشة التوقف.", "from": "The TV is off. Switch it on to start a screen saver."}
 }

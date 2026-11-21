@@ -3642,5 +3642,6 @@
  "metrics.sys.wiredMac": {"from": "Wired MAC", "text": "MAC filaire"},
  "pic.offNote": {"from": "Greyed out: not available in the current picture mode, or for what is on screen.", "text": "Grisé : non disponible dans le mode d'image actuel, ou pour ce qui est à l'écran."},
  "glow.toggleOn": {"from": "Screen glow: off (click to light the page from the TV’s screen)", "text": "Halo de l'écran : désactivé (cliquez pour éclairer la page depuis l'écran de la TV)"},
- "glow.toggleOff": {"from": "Screen glow: on (click to switch off)", "text": "Halo de l'écran : activé (cliquez pour le désactiver)"}
+ "glow.toggleOff": {"from": "Screen glow: on (click to switch off)", "text": "Halo de l'écran : activé (cliquez pour le désactiver)"},
+ "ss.tvOff": {"from": "The TV is off. Switch it on to start a screen saver.", "text": "Le téléviseur est éteint. Allumez-le pour lancer un écran de veille."}
 }

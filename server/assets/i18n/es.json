@@ -3642,5 +3642,6 @@
  "metrics.sys.wiredMac": {"from": "Wired MAC", "text": "MAC por cable"},
  "pic.offNote": {"text": "En gris: no disponible en el modo de imagen actual o para lo que hay en pantalla.", "from": "Greyed out: not available in the current picture mode, or for what is on screen."},
  "glow.toggleOn": {"text": "Resplandor de la pantalla: desactivado (haz clic para iluminar la página desde la pantalla del televisor)", "from": "Screen glow: off (click to light the page from the TV’s screen)"},
- "glow.toggleOff": {"text": "Resplandor de la pantalla: activado (haz clic para desactivarlo)", "from": "Screen glow: on (click to switch off)"}
+ "glow.toggleOff": {"text": "Resplandor de la pantalla: activado (haz clic para desactivarlo)", "from": "Screen glow: on (click to switch off)"},
+ "ss.tvOff": {"text": "El televisor está apagado. Enciéndelo para iniciar un salvapantallas.", "from": "The TV is off. Switch it on to start a screen saver."}
 }

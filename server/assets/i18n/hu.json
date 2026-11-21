@@ -3656,5 +3656,6 @@
  "metrics.sys.wiredMac": {"from": "Wired MAC", "text": "Vezetékes MAC"},
  "pic.offNote": {"text": "Szürkítve: nem érhető el a jelenlegi képmódban vagy a képernyőn látható tartalomnál.", "from": "Greyed out: not available in the current picture mode, or for what is on screen."},
  "glow.toggleOn": {"text": "Képernyőfény: ki (kattintson, hogy a tévé képernyője megvilágítsa az oldalt)", "from": "Screen glow: off (click to light the page from the TV’s screen)"},
- "glow.toggleOff": {"text": "Képernyőfény: be (kattintson a kikapcsoláshoz)", "from": "Screen glow: on (click to switch off)"}
+ "glow.toggleOff": {"text": "Képernyőfény: be (kattintson a kikapcsoláshoz)", "from": "Screen glow: on (click to switch off)"},
+ "ss.tvOff": {"text": "A TV ki van kapcsolva. Kapcsolja be a képernyővédő indításához.", "from": "The TV is off. Switch it on to start a screen saver."}
 }
