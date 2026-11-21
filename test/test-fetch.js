@@ -194,7 +194,8 @@ function retries(done) {
   assert.ok(big.join(' ').indexOf('--proto =http,https --proto-redir =http,https') > 0);
   assert.strictEqual(big.indexOf('--max-time'), -1);
   var wget = fetch._fetchArgs('/bin/wget', 'https://h/x.ipk', '/tmp/x', 'big');
-  assert.strictEqual(wget.join(' '), '-q -T 30 -U tvweb/1.2.3 -O /tmp/x -- https://h/x.ipk');
+  assert.deepEqual(wget, ['-q', '-T', '30', '-U', 'tvweb/1.2.3 (+https://github.com/rorygallagher2024/glasshouse)', '-O', '/tmp/x', '--', 'https://h/x.ipk'],
+    'named, with the project page, as Wikimedia\'s API rules ask');
   var text = fetch._fetchArgs('/usr/bin/curl', 'https://h/a.json', null);
   assert.strictEqual(text[text.indexOf('--max-time') + 1], '10');
   assert.strictEqual(text[text.indexOf('--connect-timeout') + 1], '5');

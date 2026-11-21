@@ -231,6 +231,21 @@ every 30 minutes at most and only while the screen is on. Only the search text
 or the place's latitude and longitude are sent. The last reply is kept in
 `/var/lib/tvweb/home-weather-internet.json`.
 
+With a collection picked for the **Picture frame** screen saver, the server connects to
+the Cleveland Museum of Art (`openaccess-api.clevelandart.org` to pick a
+painting, `openaccess-cdn.clevelandart.org` for its picture) or the Rijksmuseum
+(`data.rijksmuseum.nl` and `id.rijksmuseum.nl` to pick one, `iiif.micr.io` for
+its picture), ESA (`esawebb.org` or `esahubble.org` for a page of the archive
+and the image's credit, `cdn.esawebb.org` or `cdn.esahubble.org` for the
+picture) or Wikimedia Commons (`commons.wikimedia.org` to pick one,
+`upload.wikimedia.org` or `thumb.wikimedia.org` for the picture), one at a time and only while the screen saver asks for more. Requests name Glasshouse and its project page in their User-Agent, as Wikimedia's API rules ask; nothing about the TV or its owner is in them.
+**Add a network folder** sends an SSDP search for media servers on the local
+network, and a folder added is listed and its pictures fetched over HTTP from
+that server, on the local network only. Nothing about the TV is sent
+beyond the request itself. The next one or two are kept in
+`/var/lib/tvweb/art-cache`, and the owner's own pictures in
+`/var/lib/tvweb/art-pictures`.
+
 With an app's DNS set to a DNS-over-HTTPS address on the Apps tab, the server
 answers DNS on `127.0.53.1` upwards, port 53 over UDP and TCP, reachable only
 on the TV, and posts each of that app's lookups to the address over HTTPS.

@@ -14,6 +14,7 @@ var listenDualStack = require('./util').listenDualStack;
 var allocBuffer = require('./util').allocBuffer;
 var hostPort = require('./util').hostPort;
 var sendIconFile = require('./iconserver').sendIconFile;
+var artModule = require('./art');
 var writeJsonAtomic = require('./util').writeJsonAtomic;
 var unlinkQuiet = require('./util').unlinkQuiet;
 var existsQuiet = require('./util').existsQuiet;
@@ -1841,6 +1842,66 @@ function handleRequest(req, res) {
   if (pathname === '/api/screensaver/video-busy' && req.method === 'GET') {
     if (!authed(u.query, req)) return send(res, 401, JSON.stringify({ ok: false, error: 'unauthorised' }));
     return screensaversModule.videoBusy(function (r) { send(res, 200, JSON.stringify(r)); });
+  }
+
+  /* The Art screen saver's pictures (lib/art). next is what the screen saver
+     asks for each picture; image serves one, the owner's or one fetched. */
+  // Whether Next or Previous was asked for, polled by the views on screen.
+  if (pathname === '/api/art/command' && req.method === 'GET') {
+    return send(res, 200, JSON.stringify(artModule.poll(String(u.query && u.query.view || ''))));
+  }
+  if (pathname === '/api/art/next' && req.method === 'GET') {
+    var artDir = String(u.query && u.query.dir || '');
+    return artModule.next(function (r) {
+      if (r.ok) {
+        r.image = '/api/art/image?id=' + encodeURIComponent(r.id) + (config.token ? '&k=' + encodeURIComponent(config.token) : '');
+      }
+      send(res, 200, JSON.stringify(r));
+    }, artDir === 'prev' ? 'prev' : 'next');
+  }
+  if (pathname === '/api/art/image' && req.method === 'GET') {
+    var artFile = artModule.image(String(u.query && u.query.id || ''));
+    if (!artFile) return send(res, 404, JSON.stringify({ ok: false, error: 'no such picture' }));
+    return sendIconFile(req, res, artFile, function (status, error) {
+      send(res, status, JSON.stringify({ ok: false, error: error }));
+    }, 'image/jpeg');
+  }
+  // Media servers on the network, and one's folders, to add one to Art.
+  if (pathname === '/api/art/servers' && req.method === 'GET') {
+    return artModule.findServers(function (r) { send(res, 200, JSON.stringify(r)); });
+  }
+  if (pathname === '/api/art/browse' && req.method === 'GET') {
+    return artModule.browseFolder(String(u.query && u.query.udn || ''), String(u.query && u.query.id || '0'), function (r) {
+      send(res, r.ok ? 200 : 400, JSON.stringify(r));
+    });
+  }
+  if (pathname === '/api/art' && req.method === 'GET') {
+    var artStatus = artModule.status();
+    artStatus.writable = !!config.allowControl || fromTV(req);
+    return send(res, 200, JSON.stringify(artStatus));
+  }
+  if ((pathname === '/api/art' || pathname === '/api/art/upload') && req.method === 'POST') {
+    if (!config.allowControl && !fromTV(req)) {
+      return send(res, 403, JSON.stringify({ ok: false, error: msg('srv.controlsOff', 'controls disabled in config') }));
+    }
+    if (pathname === '/api/art/upload') {
+      if (!postGuard(req, res, 'image/jpeg', true)) return;
+      return artModule.upload(req, function (r) {
+        if (!r.ok) return refuseUpload(req, res, r.error, r.status || 400);
+        send(res, 200, JSON.stringify(r));
+      });
+    }
+    return readJsonBody(req, res, function (body) {
+      function done(r) { send(res, r && r.ok === false ? 400 : 200, JSON.stringify(r)); }
+      if (body && body.removeAll === true) return artModule.remove(undefined, done);
+      if (body && body.addFolder && typeof body.addFolder === 'object') {
+        return artModule.addFolder(String(body.addFolder.udn || ''), String(body.addFolder.id || ''), String(body.addFolder.title || ''), done);
+      }
+      if (body && typeof body.removeFolder === 'string') return artModule.removeFolder(body.removeFolder, done);
+      if (body && typeof body.go === 'string') return artModule.go(body.go, done);
+      if (body && typeof body.remove === 'string') return artModule.remove(body.remove, done);
+      artModule.save(body && body.settings, done);
+    }, 4096);
   }
 
   if (pathname === '/api/screensaver') {

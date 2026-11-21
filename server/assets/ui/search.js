@@ -27,6 +27,18 @@
   // Curated OLED protection entries ensure instant discovery regardless of fetch state.
   const CURATED_ITEMS = [
     {
+      // A dialog, opened from the Screensaver and Inputs tabs: opened from here too.
+      key: 'frame:settings',
+      title: 'Picture frame settings',
+      tab: 'screensaver',
+      kind: 'setting',
+      aliases: ['picture frame', 'photo frame', 'digital frame', 'photos', 'pictures', 'slideshow', 'art', 'art mode', 'gallery', 'paintings', 'museum', 'space', 'hubble', 'webb', 'nasa', 'wikimedia', 'nas', 'dlna', 'network folder', 'upload pictures'],
+      searchText: 'Picture frame settings Your pictures, photographs, space and paintings, network folders, how often a new picture comes',
+      selector: '#ss-frame-open',
+      fallbackId: 'ss-list',
+      run: function () { if (typeof openFrameSettings === 'function') openFrameSettings(); }
+    },
+    {
       key: 'oled:gsr',
       title: 'Global Stress Reduction (GSR)',
       tab: 'oledcare',
@@ -236,7 +248,8 @@
         searchText: c.searchText,
         aliases: c.aliases,
         target,
-        detail: target ? target.closest('details') : null
+        detail: target ? target.closest('details') : null,
+        run: c.run
       });
     });
   }
@@ -497,6 +510,8 @@
   function openItem(item) {
     if (!item) return;
     if (item.tab && typeof showTab === 'function') showTab(item.tab);
+    // One that opens a dialog rather than pointing at a row.
+    if (item.run) { closeSearch(false); item.run(); return; }
     if (item.detail) item.detail.open = true;
     // A preference is in the sidebar, which on a phone slides in.
     if (item.target && item.target.closest && item.target.closest('.sidenav') && typeof openNav === 'function') openNav();

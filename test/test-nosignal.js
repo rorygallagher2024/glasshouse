@@ -1,5 +1,5 @@
 /**
- * test/test-nosignal.js - the plain and icon No Signal screens (lib/nosignal):
+ * test/test-nosignal.js - the plain, icon and Art No Signal screens (lib/nosignal):
  * LG's file patched only where the expected lines are there once, mounted and
  * updated or taken away, and the input app restarted only once no input is in front.
  */
@@ -23,6 +23,8 @@ mkdirs(state); mkdirs(path.dirname(file));
 var LG = [
   'Item {',
   '    property string currentKey: ""',
+  '    RandomMoveItem {',
+  '        id: element',
   '            AnimatedImage {',
   '                visible: element.isDynamic && (headerText.text || bodyText.text)',
   '                source: "../../Images/screensaver/screensaver12frame.gif"',
@@ -37,6 +39,7 @@ var LG = [
   '            ScreensaverSubText {',
   '                visible: photoBody.text.length > 0',
   '            }',
+  '    }',
   '}', ''].join('\n');
 fs.writeFileSync(file, LG);
 fs.writeFileSync(mountinfo, '');
@@ -55,7 +58,8 @@ function luna(uri, params, cb) {
     : { returnValue: true, appId: foreground };
   setTimeout(function () { cb(reply); }, 0);
 }
-nosignal.init({ luna: luna, exec: exec, stateDir: state, appQml: qml, mountinfo: mountinfo, pendingFile: path.join(root, 'pending'), retryMs: 20 });
+nosignal.init({ luna: luna, exec: exec, stateDir: state, appQml: qml, mountinfo: mountinfo, pendingFile: path.join(root, 'pending'), retryMs: 20,
+  config: { port: 8080, token: 'a b' } });
 
 // The patch.
 var plain = nosignal.patch(LG, 'plain');
@@ -70,7 +74,17 @@ assert.ok(icon.indexOf('                id: headerText\n                visible:
 assert.strictEqual(nosignal.patch(LG.replace('visible: text.length > 0\n', 'visible: true\n'), 'plain'), null, 'a line missing leaves LG\'s screen');
 assert.strictEqual(nosignal.patch(LG + '                visible: text.length > 0\n', 'plain'), null, 'and so does a line there twice');
 assert.strictEqual(nosignal.patch(LG.replace('id: headerText\n', 'id: otherHeader\n'), 'icon'), null, 'missing header leaves LG\'s screen in icon mode');
-assert.deepEqual(nosignal.status(), { ok: true, available: true, on: false, mode: 'lg', applied: false, restartPending: false });
+// Art: under LG's drifting box, which fades once a picture is in, asking Art's address with the token.
+var art = nosignal.patch(LG, 'art');
+assert.ok(art.indexOf('    Item {\n        id: glasshouseArt\n') !== -1, 'the pictures sit beside the box, at its level');
+assert.ok(art.indexOf('id: glasshouseArt') < art.indexOf('    RandomMoveItem {'), 'and before it, so the box is drawn over them');
+assert.ok(art.indexOf('        id: element\n        opacity: currentKey === "noSignal" && glasshouseArt.started ? 0 : 1\n') !== -1, 'the box fades once a picture is in');
+assert.ok(art.indexOf('property string api: "http://127.0.0.1:8080/api/art/next?k=a%20b"') !== -1, 'Art\'s address, with the token');
+assert.ok(art.indexOf('visible: element.isDynamic && (headerText.text || bodyText.text) && currentKey !== "noSignal"') !== -1, 'LG\'s picture left out, as plain');
+assert.ok(art.indexOf('text: headerText.text') !== -1, 'LG\'s own words for No Signal on the label');
+assert.strictEqual(nosignal.patch(LG.replace('    RandomMoveItem {\n', '    Item {\n'), 'art'), null, 'no drifting box, no Art');
+assert.ok(nosignal.patch(LG.replace('    RandomMoveItem {\n', '    Item {\n'), 'icon'), 'while the others are still offered');
+assert.deepEqual(nosignal.status(), { ok: true, available: true, art: true, on: false, mode: 'lg', applied: false, restartPending: false });
 console.log('  ✓ LG\'s file is patched only where the expected lines are there once');
 
 var steps = [
@@ -109,6 +123,23 @@ var steps = [
         console.log('  ✓ switched to the disconnected cable icon while mounted, updating in place');
         next();
       }, 'the restart after switching to icon', 2000);
+    });
+  },
+  function (next) {
+    // To Art in place, and the saved copy still says Art can be offered.
+    execs = [];
+    nosignal.set('art', function (r) {
+      assert.strictEqual(r.mode, 'art');
+      assert.strictEqual(r.art, true);
+      assert.strictEqual(fs.readFileSync(path.join(state, 'nosignal', 'Screensaver.qml'), 'utf8'), art);
+      waitFor(function () { return execs.length === 1; }, function () {
+        nosignal.set('icon', function () {
+          waitFor(function () { return execs.length === 2; }, function () {
+            console.log('  ✓ switched to Art and back while mounted');
+            next();
+          }, 'the restart back to icon', 2000);
+        });
+      }, 'the restart after switching to Art', 2000);
     });
   },
   function (next) {
