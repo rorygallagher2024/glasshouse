@@ -1122,13 +1122,19 @@
     <div class="pv-sub" data-t="ss.video.where">The videos, their order and the captions are set on the Home tab, under Background.</div>
   </div>
 
-  <div class="ss-level-row" id="ss-entities-row" hidden>
-    <div class="ss-level-lbl" data-t="ss.entities">Home Assistant Entities</div>
-    <div id="ss-entities-list"></div>
-    <div class="pv-sub" id="ss-entities-note" style="margin-top:8px"></div>
-    <div id="ss-entities-setup" hidden style="margin-top:8px">
-      <button type="button" onclick="openHaSettings()" data-t="ss.openMqtt">Open HA and MQTT settings</button>
-    </div>
+  <!-- The picture frame (id "art", lib/art): what it shows now, and its settings in their own dialog -->
+  <div class="ss-level-row" id="ss-art-row" hidden>
+    <div class="ss-level-lbl" data-t="ss.art.now">Now showing</div>
+    <div class="ss-art-now" id="ss-art-now"></div>
+    <p class="prot-desc ss-art-summary" id="ss-art-summary"></p>
+    <div class="set-actions"><button type="button" class="pill idle" id="ss-frame-open" onclick="openFrameSettings()" data-t="ss.art.settings">Picture frame settings</button></div>
+  </div>
+
+  <!-- A Home Assistant screen saver: what it reads, and its settings in their own dialog -->
+  <div class="ss-level-row" id="ss-ha-row" hidden>
+    <div class="ss-level-lbl" data-t="ss.ha.reads">Reads</div>
+    <p class="prot-desc ss-art-summary" id="ss-ha-summary"></p>
+    <div class="set-actions"><button type="button" class="pill idle" id="ss-ha-open" onclick="openHaSaverSettings()" data-t="ss.ha.settings">Screen saver settings</button></div>
   </div>
 
   <div class="ss-level-row" id="ss-pool-row" hidden>
@@ -1358,12 +1364,17 @@
   <div class="tab-grp" id="inputs-grp-nosignal" hidden>
     <div class="pv-sec" data-t="ss.noSignal">No Signal screen</div>
     <div class="pv-sub apps-grp-d" data-t="inputs.noSignal.desc">What an input with nothing coming in shows.</div>
-    <div class="hm-grid hm-grid-3" id="inputs-nosignal-cards">
+    <div class="hm-grid hm-grid-4" id="inputs-nosignal-cards">
       <button type="button" class="hm-card" id="inputs-nosignal-lg" onclick="setNoSignal('lg')">&mdash;</button>
       <button type="button" class="hm-card" id="inputs-nosignal-plain" onclick="setNoSignal('plain')">&mdash;</button>
       <button type="button" class="hm-card" id="inputs-nosignal-icon" onclick="setNoSignal('icon')">&mdash;</button>
+      <button type="button" class="hm-card" id="inputs-nosignal-art" onclick="setNoSignal('art')" hidden>&mdash;</button>
     </div>
     <div class="pv-sub" id="inputs-nosignal-desc" hidden></div>
+    <div class="inputs-frame" id="inputs-frame" hidden>
+      <div class="ss-art-now" id="inputs-art-now"></div>
+      <div class="set-actions"><button type="button" class="pill idle" onclick="openFrameSettings()" data-t="ss.art.settings">Picture frame settings</button></div>
+    </div>
   </div>
 
   <div class="pv-note" id="inputs-none" hidden data-t="inputs.none">Nothing about this TV&rsquo;s inputs can be changed from here.</div>
@@ -1562,8 +1573,8 @@
     </div>
     <div class="prot-row home-gh-row home-show-row" hidden>
       <div class="prot-main">
-        <div class="prot-title" data-t="home.navSound">Sound when moving</div>
-        <div class="prot-desc" data-t="home.navSoundDesc">A sound each time you move between tiles: a click, a softer rollover, or a sound of your own.</div>
+        <div class="prot-title" data-t="home.navSound">Sound when moving with the buttons</div>
+        <div class="prot-desc" data-t="home.navSoundDesc">A sound each time the arrow keys move focus, and each time OK or Back is pressed: a click, a softer rollover, or a sound of your own.</div>
         <div class="prot-desc home-sound-own" id="home-nav-sound-own" hidden>
           <span id="home-nav-sound-note" role="status"></span>
           <button type="button" class="pill idle" id="home-nav-sound-upload" onclick="q('home-nav-sound-file').click()" data-t="home.navSound.upload">Upload a sound</button>
@@ -1572,8 +1583,8 @@
         <input type="file" id="home-nav-sound-file" accept=".ogg,.wav,.mp3,audio/ogg,audio/wav,audio/mpeg" hidden onchange="homeNavSoundPicked(this)">
       </div>
       <div class="prot-status home-sound-ctl">
-        <button type="button" class="pill idle home-sound-play" id="home-nav-sound-play" onclick="homeNavSoundPlay()" aria-label="Play" data-t-aria-label="home.navSound.play" title="Play" data-t-title="home.navSound.play">&#9654;</button>
-        <select class="pill-sel" id="home-nav-sound-sel" onchange="homeNavSound(this.value)" aria-label="Sound when moving" data-t-aria-label="home.navSound">
+        <button type="button" class="pill idle home-sound-play" id="home-nav-sound-play" onclick="homeNavSoundPlay('nav')" aria-label="Play" data-t-aria-label="home.navSound.play" title="Play" data-t-title="home.navSound.play">&#9654;</button>
+        <select class="pill-sel" id="home-nav-sound-sel" onchange="homeNavSound(this.value)" aria-label="Sound when moving with the buttons" data-t-aria-label="home.navSound">
         <option value="off" data-t="home.navSound.off">Off</option>
         <option value="click" data-t="home.navSound.click">Click</option>
         <option value="rollover" data-t="home.navSound.rollover">Rollover</option>
@@ -1613,17 +1624,24 @@
     </div>
     <div class="prot-row home-gh-row home-show-row" hidden>
       <div class="prot-main">
-        <div class="prot-title" data-t="home.showCec">CEC addresses</div>
-        <div class="prot-desc" data-t="home.showCecDesc">On each input’s tile: the HDMI-CEC address of the device behind it.</div>
-      </div>
-      <div class="prot-status"><button type="button" class="pill idle" id="home-show-cec" onclick="homeShow('showCec')">&mdash;</button></div>
-    </div>
-    <div class="prot-row home-gh-row home-show-row" hidden>
-      <div class="prot-main">
         <div class="prot-title" data-t="home.showPointer">Magic Remote pointer</div>
         <div class="prot-desc" data-t="home.showPointerDesc">Moving the remote shows its pointer on Glasshouse Home. Off, only the arrow keys move around Home, and OK and a click both open the tile in focus.</div>
       </div>
       <div class="prot-status"><button type="button" class="pill idle" id="home-show-pointer" onclick="homeShow('showPointer')">&mdash;</button></div>
+    </div>
+    <div id="home-pointer-sound-row" class="prot-row home-gh-row home-show-row" hidden>
+      <div class="prot-main">
+        <div class="prot-title" data-t="home.pointerSound">Sound when moving with the pointer</div>
+        <div class="prot-desc" data-t="home.pointerSoundDesc">A sound each time the Magic Remote's pointer or wheel moves focus, and each time it clicks: a click, a softer rollover, or a sound of your own.</div>
+      </div>
+      <div class="prot-status home-sound-ctl">
+        <button type="button" class="pill idle home-sound-play" id="home-pointer-sound-play" onclick="homeNavSoundPlay('pointer')" aria-label="Play" data-t-aria-label="home.navSound.play" title="Play" data-t-title="home.navSound.play">&#9654;</button>
+        <select class="pill-sel" id="home-pointer-sound-sel" onchange="homePointerSound(this.value)" aria-label="Sound when moving with the pointer" data-t-aria-label="home.pointerSound">
+        <option value="off" data-t="home.navSound.off">Off</option>
+        <option value="click" data-t="home.navSound.click">Click</option>
+        <option value="rollover" data-t="home.navSound.rollover">Rollover</option>
+        <option value="own" data-t="home.navSound.own">Your own</option>
+      </select></div>
     </div>
     <div class="prot-row home-gh-row home-show-row" hidden>
       <div class="prot-main">
@@ -1663,6 +1681,13 @@
         <div class="prot-desc" data-t="home.pictureDesc">In the top right of Glasshouse Home: the resolution, refresh rate and HDR of what was last on, and the picture mode and brightness it gets.</div>
       </div>
       <div class="prot-status"><button type="button" class="pill idle" id="home-picture" onclick="homePicture()">&mdash;</button></div>
+    </div>
+    <div class="prot-row home-gh-row home-show-row" hidden>
+      <div class="prot-main">
+        <div class="prot-title" data-t="home.showCec">CEC addresses</div>
+        <div class="prot-desc" data-t="home.showCecDesc">On each input’s tile: the HDMI-CEC address of the device behind it.</div>
+      </div>
+      <div class="prot-status"><button type="button" class="pill idle" id="home-show-cec" onclick="homeShow('showCec')">&mdash;</button></div>
     </div>
   </div>
   </div>
@@ -2641,6 +2666,87 @@
 </footer>
 
 <!-- Offered on load when "Update pop-up" is on in the Server tab; see offerUpdatePopup in ui/update.js. -->
+<!-- A Home Assistant screen saver's settings: how it shows its readings and
+     which entities it reads. The rows for its options are moved in here from
+     the Screensaver tab while one of these screen savers is in use. -->
+<div id="ha-modal" class="modal-backdrop set-modal-backdrop" hidden onclick="if(event.target===this)closeHaSaverSettings()" onkeydown="if(event.key==='Escape'&&!event.defaultPrevented)closeHaSaverSettings()">
+  <div class="modal-card set-modal" role="dialog" aria-modal="true" aria-labelledby="ha-modal-title" aria-describedby="ha-modal-sub">
+    <div class="set-modal-head">
+      <div class="set-modal-heading">
+        <h2 class="set-modal-title" id="ha-modal-title">&mdash;</h2>
+        <p class="set-modal-sub" id="ha-modal-sub"></p>
+      </div>
+      <button type="button" class="pill idle" id="ha-modal-close" onclick="closeHaSaverSettings()" data-t="home.cardIconDoneBtn">Done</button>
+    </div>
+    <div class="set-modal-body">
+      <section class="set-sec" id="ha-sec-look" aria-labelledby="ha-sec-look-h">
+        <h3 class="pv-g" id="ha-sec-look-h" data-t="ss.art.show">Showing them</h3>
+        <div class="prot-table" id="ha-look"></div>
+      </section>
+      <section class="set-sec" aria-labelledby="ha-sec-ents-h">
+        <h3 class="pv-g" id="ha-sec-ents-h" data-t="ss.entities2">Entities</h3>
+        <p class="set-note ha-ents-note" id="ss-entities-note"></p>
+        <div id="ss-entities-list"></div>
+        <div class="set-actions" id="ss-entities-setup" hidden>
+          <button type="button" class="pill idle" onclick="closeHaSaverSettings();openHaSettings()" data-t="ss.openMqtt">Open HA and MQTT settings</button>
+        </div>
+      </section>
+    </div>
+  </div>
+</div>
+<!-- Picture frame settings: opened from the Screensaver and Inputs tabs, and from search.
+     A settings dialog (set-modal): a header that stays while the body scrolls,
+     and the dashboard's own groups and rows inside. -->
+<div id="frame-modal" class="modal-backdrop set-modal-backdrop" hidden onclick="if(event.target===this)closeFrameSettings()" onkeydown="if(event.key==='Escape')closeFrameSettings()">
+  <div class="modal-card set-modal" role="dialog" aria-modal="true" aria-labelledby="frame-modal-title" aria-describedby="frame-modal-sub">
+    <div class="set-modal-head">
+      <div class="set-modal-heading">
+        <h2 class="set-modal-title" id="frame-modal-title" data-t="ss.art.title">Picture frame</h2>
+        <p class="set-modal-sub" id="frame-modal-sub"></p>
+      </div>
+      <button type="button" class="pill idle" id="frame-modal-close" onclick="closeFrameSettings()" data-t="home.cardIconDoneBtn">Done</button>
+    </div>
+    <div class="set-modal-body">
+      <section class="set-sec" aria-labelledby="frame-sec-mine">
+        <h3 class="pv-g" id="frame-sec-mine" data-t="ss.art.mine">Your pictures</h3>
+        <div class="prot-table" id="ss-art-mine"></div>
+        <div class="ss-art-pics" id="ss-art-pics"></div>
+        <p class="set-note" id="ss-art-note" role="status" aria-live="polite"></p>
+        <input type="file" id="ss-art-file" accept="image/jpeg,image/png,image/webp" multiple hidden onchange="ssArtPicked(this)">
+      </section>
+      <div id="ss-art-sources"></div>
+      <section class="set-sec" aria-labelledby="frame-sec-folders">
+        <h3 class="pv-g" id="frame-sec-folders" data-t="ss.art.folders">Network folders</h3>
+        <div class="prot-table" id="ss-art-folders"></div>
+        <div class="set-browse" id="ss-art-browse" hidden></div>
+      </section>
+      <section class="set-sec" aria-labelledby="frame-sec-show">
+        <h3 class="pv-g" id="frame-sec-show" data-t="ss.art.show">Showing them</h3>
+        <div class="prot-table">
+          <div class="prot-row">
+            <div class="prot-main"><label class="prot-title" for="ss-art-minutes" data-t="ss.art.timeTitle">Each picture shows for</label></div>
+            <div class="prot-status"><select class="pill-sel" id="ss-art-minutes" onchange="ssArtSave({ seconds: Number(this.value) })"></select></div>
+          </div>
+          <div class="prot-row">
+            <div class="prot-main">
+              <label class="prot-title" for="ss-art-fit" data-t="ss.art.fitTitle">Fit</label>
+              <div class="prot-desc" data-t="ss.art.fitDesc">The whole picture on black, or filling the screen with its edges cropped.</div>
+            </div>
+            <div class="prot-status"><select class="pill-sel" id="ss-art-fit" onchange="ssArtSave({ fit: this.value })"></select></div>
+          </div>
+          <div class="prot-row">
+            <div class="prot-main">
+              <label class="prot-title" for="ss-art-caption" data-t="ss.art.labelTitle">Label</label>
+              <div class="prot-desc" data-t="ss.art.labelDesc">The title, who made it and where it is from, for 20 seconds after each change, all the time, or not at all. A credit that a picture’s licence asks for stays on screen either way.</div>
+            </div>
+            <div class="prot-status"><select class="pill-sel" id="ss-art-caption" onchange="ssArtSave({ caption: this.value })"></select></div>
+          </div>
+        </div>
+      </section>
+      <p class="set-note" id="ss-art-where"></p>
+    </div>
+  </div>
+</div>
 <div id="updpop" class="modal-backdrop" hidden>
   <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="updpop-title">
     <span class="updpop-st" data-t="server.popup.status">Update available</span>

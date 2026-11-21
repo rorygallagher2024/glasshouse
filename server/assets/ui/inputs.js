@@ -205,6 +205,9 @@ function renderInputsPreview(kind) {
       </svg>
     </span>`;
   }
+  if (kind === 'nsart') {
+    return `<span class="hm-s hm-s-nsart"><span class="hm-nsart-pic"><i></i></span></span>`;
+  }
   return `<span class="hm-s hm-s-nsplain"><span class="hm-nsplain-txt">No Signal</span></span>`;
 }
 
@@ -278,8 +281,8 @@ async function setInputKey(ours) {
 }
 
 /*
- * LG's No Signal screen as just "No Signal": offered where the TV's own screen
- * is the one the server knows how to change.
+ * LG's No Signal screen as just "No Signal", a cable icon or the picture frame:
+ * offered where the TV's own screen is the one the server knows how to change.
  */
 function renderNoSignal() {
   const grp = q('inputs-grp-nosignal');
@@ -294,6 +297,14 @@ function renderNoSignal() {
     t('ss.noSignal.desc', 'Leaves out the animated picture and the line of advice under it, so an input with nothing coming in shows only \u201cNo Signal\u201d.'), mode === 'plain', !writable);
   setInputsCard(q('inputs-nosignal-icon'), 'nsicon', t('inputs.noSignal.icon', 'Disconnected cable'),
     t('inputs.noSignal.iconDesc', 'Shows a subtle disconnected cable icon instead of \u201cNo Signal\u201d.'), mode === 'icon', !writable);
+  q('inputs-nosignal-art').hidden = !ns.art && mode !== 'art';
+  setInputsCard(q('inputs-nosignal-art'), 'nsart', t('inputs.noSignal.art', 'Picture frame'),
+    t('inputs.noSignal.artDesc2', 'The picture frame\u2019s pictures, with \u201cNo Signal\u201d on each picture\u2019s label.'), mode === 'art', !writable);
+  // Its settings, shared with the Screensaver tab; what it shows now, while it is the No Signal screen.
+  const frame = q('inputs-frame');
+  frame.hidden = !ns.art && mode !== 'art';
+  q('inputs-art-now').hidden = mode !== 'art';
+  if (!frame.hidden && typeof frameLoad === 'function') frameLoad(true);
   const desc = q('inputs-nosignal-desc');
   desc.hidden = !ns.restartPending;
   desc.textContent = ns.restartPending
@@ -305,9 +316,9 @@ function renderNoSignal() {
 async function setNoSignal(mode) {
   const ns = (inputsData && inputsData.noSignal) || {};
   const cur = ns.mode || (ns.on ? 'plain' : 'lg');
-  const next = mode === 'icon' || mode === 'plain' ? mode : 'lg';
+  const next = mode === 'icon' || mode === 'plain' || mode === 'art' ? mode : 'lg';
   if (cur === next) return;
-  q('inputs-nosignal-lg').disabled = q('inputs-nosignal-plain').disabled = q('inputs-nosignal-icon').disabled = true;
+  q('inputs-nosignal-lg').disabled = q('inputs-nosignal-plain').disabled = q('inputs-nosignal-icon').disabled = q('inputs-nosignal-art').disabled = true;
   await sendCommand('plainNoSignal', next);
   loadInputs();
 }

@@ -3956,3 +3956,27 @@ or merely cached overlay does not exempt a stopped Home view.
 With the correction installed, navigating Guide for at least 30 s kept it
 open. Successive watchdog checks logged that the view was behind
 `com.webos.app.livemenu`, rather than restoring LG's Home.
+
+## The volume bar's layout (OLED48C56LB, webOS 10.3.0)
+
+LG's volume bar is QML in the compositor (`surface-manager`), not a web app:
+`/usr/lib/qml/WebOSCompositor/views/StarfishVolumeView.qml` decides when it
+shows and `views/volume/StarfishVolume.qml` draws it, with the sizes and
+timings in the `"volume"` block of `StarfishDefaultSettings.qml` and the images
+in `images/4k/` (also `qhd/` and the plain folder). Sizes are in units of a
+1920 x 1080 screen, scaled to the output; the 4k images are twice those.
+
+The bar is vertical at the right edge, centred on the screen. From the left it
+has the output's icon (72), the level as a number (font 85, `#E6E5E5`, with a
+drop shadow), and a track 36 wide and 570 high, 51 from the edge, with an up
+and a down arrow (about 30 square) above and below it. The fill is 18 wide, up
+to 534 long above a 10 margin. When muted it is replaced by a 96 circle
+(`#373A41`, opacity 0.5) holding a mute icon. It fades in and out in 150 ms and
+stays up 1500 ms after the last change.
+
+The configd value `com.webos.surfacemanager.volumeOSD` (`true` unless set)
+turns the bar and the mute icon off: with it `false` the view marks itself
+unavailable and closes. On this TV, setting it to `false` removed both at
+once, without restarting anything, and `true` brought them back.
+LG has no brightness bar to copy; the level bar of a Brightness key takes this
+layout.
