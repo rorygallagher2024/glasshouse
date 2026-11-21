@@ -281,7 +281,7 @@ async function setInputKey(ours) {
 }
 
 /*
- * LG's No Signal screen as just "No Signal", a cable icon or Art's pictures:
+ * LG's No Signal screen as just "No Signal", a cable icon or the picture frame:
  * offered where the TV's own screen is the one the server knows how to change.
  */
 function renderNoSignal() {
@@ -298,8 +298,8 @@ function renderNoSignal() {
   setInputsCard(q('inputs-nosignal-icon'), 'nsicon', t('inputs.noSignal.icon', 'Disconnected cable'),
     t('inputs.noSignal.iconDesc', 'Shows a subtle disconnected cable icon instead of \u201cNo Signal\u201d.'), mode === 'icon', !writable);
   q('inputs-nosignal-art').hidden = !ns.art && mode !== 'art';
-  setInputsCard(q('inputs-nosignal-art'), 'nsart', t('inputs.noSignal.art', 'Art'),
-    t('inputs.noSignal.artDesc', 'The Art screen saver\u2019s pictures, with \u201cNo Signal\u201d on each picture\u2019s label. Pick them on the Screensaver tab.'), mode === 'art', !writable);
+  setInputsCard(q('inputs-nosignal-art'), 'nsart', t('inputs.noSignal.art', 'Picture frame'),
+    t('inputs.noSignal.artDesc', 'The picture frame\u2019s pictures, with \u201cNo Signal\u201d on each picture\u2019s label. Pick them on the Screensaver tab.'), mode === 'art', !writable);
   const desc = q('inputs-nosignal-desc');
   desc.hidden = !ns.restartPending;
   desc.textContent = ns.restartPending

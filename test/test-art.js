@@ -14,6 +14,7 @@ var fs = require('fs');
 var os = require('os');
 var path = require('path');
 var art = require('../server/lib/art');
+var waitFor = require('./wait-for').waitFor;
 var dlna = require('../server/lib/dlna');
 
 console.log('Running test-art.js ...');
@@ -41,12 +42,16 @@ var download = function (url, file, cb) {
   fs.writeFileSync(file, JPEG);
   setTimeout(function () { cb(null); }, 0);
 };
+var keysWatched = [];
 function init() {
-  art.init({ stateDir: dir, getJson: getJson, download: download, free: function (d, cb) { cb(1e9); } });
+  art.init({ watchKeys: function (on) { keysWatched.push(on); }, stateDir: dir, getJson: getJson, download: download, free: function (d, cb) { cb(1e9); } });
 }
 init();
 
-function later(fn) { setTimeout(fn, 30); }
+// Once fetching ahead has settled, however long that takes on a busy runner.
+function later(fn) {
+  setTimeout(function () { waitFor(function () { return !art.status().fetching; }, fn, 'fetching ahead to settle'); }, 5);
+}
 function call(fn) { return function (cb) { fn(function (r) { cb(r); }); }; }
 
 // A record is a picture where its print is a JPEG on the museum's CDN and its
@@ -104,7 +109,7 @@ var steps = [
   },
   // What is not one of the choices is refused, and nothing changes.
   function (done) {
-    art.save({ minutes: 7 }, function (r) {
+    art.save({ seconds: 7 }, function (r) {
       assert.strictEqual(r.ok, false);
       art.save({ collections: ['cma-european', 'nope'] }, function (r2) {
         assert.strictEqual(r2.ok, false);
@@ -115,7 +120,7 @@ var steps = [
   },
   // A collection picked: two paintings come ahead, one at a time.
   function (done) {
-    art.save({ collections: ['cma-modern'], minutes: 5 }, function (r) {
+    art.save({ collections: ['cma-modern'], seconds: 30 }, function (r) {
       assert.strictEqual(r.ok, true);
       assert.deepEqual(r.settings.collections, ['cma-modern']);
       later(function () {
@@ -126,8 +131,8 @@ var steps = [
       });
     });
   },
-  // Each served is the next fetched; the queue fills behind it; only the one on
-  // screen and the one fading out stay with what is waiting.
+  // Each served is the next fetched; the queue fills behind it; only the last
+  // five shown, for Previous, stay with the two waiting.
   function (done) {
     var ids = [];
     (function one(n) {
@@ -135,7 +140,7 @@ var steps = [
         assert.ok(ids.every(function (id, i) { return ids.indexOf(id) === i; }), 'no painting twice');
         later(function () {
           var files = fs.readdirSync(path.join(dir, 'art-cache')).filter(function (f) { return /\.jpg$/.test(f); });
-          assert.ok(files.length <= 4, 'only a few kept: ' + files.join(' '));
+          assert.ok(files.length <= 7, 'only a few kept: ' + files.join(' '));
           assert.ok(art.image(ids[ids.length - 1]), 'the one on screen is still there');
           assert.strictEqual(art.image(ids[0]), null, 'an old one is gone');
           done();
@@ -145,13 +150,13 @@ var steps = [
       art.next(function (r) {
         assert.strictEqual(r.ok, true);
         assert.ok(/^c-cma-\d+$/.test(r.id));
-        assert.strictEqual(r.minutes, 5);
+        assert.strictEqual(r.seconds, 30);
         assert.strictEqual(r.fit, 'fit');
         assert.strictEqual(r.info.credit, 'The Cleveland Museum of Art');
         ids.push(r.id);
         later(function () { one(n - 1); });
       });
-    })(4);
+    })(7);
   },
   // A picture of the owner's own, uploaded: taken in turn with the paintings.
   function (done) {
@@ -196,13 +201,14 @@ var steps = [
     assert.ok(art.image('p-' + art.status().pictures[0]));
     done();
   },
-  // The collection dropped: its paintings go, and only the owner's are shown.
+  // The collection dropped: those waiting go, those shown lately stay for
+  // Previous, and only the owner's are shown.
   function (done) {
     art.save({ collections: [] }, function () {
       var files = fs.readdirSync(path.join(dir, 'art-cache')).filter(function (f) { return /\.jpg$/.test(f) && f !== 'queue.json'; });
       art.next(function (r) {
         assert.strictEqual(r.id.charAt(0), 'p');
-        assert.ok(files.length <= 2, 'only those on screen stay: ' + files.join(' '));
+        assert.ok(files.length <= 5, 'only those shown lately stay, for Previous: ' + files.join(' '));
         done();
       });
     });
@@ -212,7 +218,7 @@ var steps = [
     art.remove(art.status().pictures[0], function (r) {
       assert.strictEqual(r.pictures.length, 0);
       init();
-      assert.strictEqual(art.status().settings.minutes, 5, 'kept over a restart');
+      assert.strictEqual(art.status().settings.seconds, 30, 'kept over a restart');
       art.next(function (r2) {
         assert.ok(r2.empty);
         done();
@@ -267,6 +273,61 @@ var steps = [
         });
       });
     });
+  },
+  // Previous and Next: back through those shown, forward through them again,
+  // then a new one; a command the views ask for; the remote's arrows only
+  // while the No Signal screen asks.
+  function (done) {
+    getJson = function (url, cb) { setTimeout(function () { cb(null, { info: { total: 50 }, data: [record(next++)] }); }, 0); };
+    init();
+    art.save({ mine: false, collections: ['cma-european'] }, function () {
+      var ids = [];
+      (function step(n) {
+        if (n) return later(function () { art.next(function (r) { ids.push(r.id); step(n - 1); }); });
+        art.next(function (back) {
+          assert.strictEqual(back.id, ids[1], 'Previous: the one before');
+          assert.ok(art.status().canGoBack);
+          art.next(function (fwd) {
+            assert.strictEqual(fwd.id, ids[2], 'Next after going back: forward through those shown');
+            later(function () {
+              art.next(function (fresh) {
+                assert.ok(ids.indexOf(fresh.id) === -1, 'then a new one');
+                assert.strictEqual(art.status().current.id, fresh.id);
+                assert.strictEqual(art.status().showing, false, 'no view has asked yet');
+                var p0 = art.poll('saver');
+                assert.strictEqual(art.status().showing, true);
+                art.go('prev', function (st) {
+                  assert.strictEqual(art.poll('saver').seq, p0.seq + 1);
+                  assert.strictEqual(art.poll('saver').dir, 'prev');
+                  art.go('sideways', function (bad) {
+                    assert.strictEqual(bad.ok, false);
+                    // Arrows: ignored until the No Signal screen asks.
+                    art.keyPressed(106);
+                    assert.strictEqual(art.poll('saver').seq, p0.seq + 1);
+                    art.poll('nosignal');
+                    assert.deepEqual(keysWatched.slice(-1), [true], 'the remote watched');
+                    art.keyPressed(106);
+                    assert.deepEqual([art.poll('nosignal').seq, art.poll('nosignal').dir], [p0.seq + 2, 'next']);
+                    art.keyPressed(105);
+                    assert.strictEqual(art.poll('nosignal').dir, 'prev');
+                    art.keyPressed(28);
+                    assert.strictEqual(art.poll('nosignal').seq, p0.seq + 3, 'other keys left alone');
+                    done();
+                  });
+                });
+              });
+            });
+          });
+        }, 'prev');
+      })(3);
+    });
+  },
+  // Minutes saved by an earlier build are read as seconds.
+  function (done) {
+    fs.writeFileSync(path.join(dir, 'art.json'), JSON.stringify({ minutes: 15 }));
+    init();
+    assert.strictEqual(art.status().settings.seconds, 900);
+    done();
   },
   // A museum that does not answer: said on the dashboard, nothing shown.
   function (done) {

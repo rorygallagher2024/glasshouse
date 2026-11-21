@@ -231,7 +231,7 @@ every 30 minutes at most and only while the screen is on. Only the search text
 or the place's latitude and longitude are sent. The last reply is kept in
 `/var/lib/tvweb/home-weather-internet.json`.
 
-With a collection picked for the **Art** screen saver, the server connects to
+With a collection picked for the **Picture frame** screen saver, the server connects to
 the Cleveland Museum of Art (`openaccess-api.clevelandart.org` to pick a
 painting, `openaccess-cdn.clevelandart.org` for its picture) or the Rijksmuseum
 (`data.rijksmuseum.nl` and `id.rijksmuseum.nl` to pick one, `iiif.micr.io` for

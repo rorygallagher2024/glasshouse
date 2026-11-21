@@ -1,6 +1,6 @@
 'use strict';
 /*
- * lib/art.js - The pictures the Art screen saver shows: the owner's own,
+ * lib/art.js - The pictures the Picture frame screen saver (id "art") shows: the owner's own,
  * uploaded from the browser, paintings from museum collections in the public
  * domain, and folders on the home network's media servers (lib/dlna).
  * Strict ES5 for Node 0.12.2 on webOS 4.
@@ -52,10 +52,11 @@ var RECENT = 60;
 var MIN_RATIO = 0.45, MAX_RATIO = 2.6;
 var PICK_TRIES = 5;
 
-var MINUTES = [5, 10, 15, 30, 60];
+// How long each picture stays, in seconds.
+var SECONDS = [30, 60, 120, 300, 600, 900, 1800, 3600];
 var FITS = ['fit', 'fill'];
 var CAPTIONS = ['brief', 'always', 'off'];
-var DEFAULTS = { mine: true, collections: [], folders: [], minutes: 10, fit: 'fit', caption: 'brief' };
+var DEFAULTS = { mine: true, collections: [], folders: [], seconds: 600, fit: 'fit', caption: 'brief' };
 
 var CLEVELAND_API = 'https://openaccess-api.clevelandart.org/api/artworks/';
 var CLEVELAND_CDN = /^https:\/\/openaccess-cdn\.clevelandart\.org\/[A-Za-z0-9._\/-]+\.jpg$/;
@@ -97,8 +98,23 @@ var COLLECTIONS = [
 ];
 
 var settings = copy(DEFAULTS);
-// Fetched ahead: [{ key, file, info }]. shown: the last few served, kept on disk.
-var queue = [], shown = [], recent = [];
+// Fetched ahead: [{ key, collection, info }]. history: the last HISTORY shown,
+// [{ id, info, key }], the one on screen at pos; a fetched one's file is kept
+// while it is in it, so Previous can go back to it.
+var queue = [], history = [], pos = -1, recent = [];
+var HISTORY = 5;
+// Next and Previous from the dashboard or the remote: each a new seq, which
+// the screen saver and the No Signal screen ask for every couple of seconds.
+var command = { seq: 0, dir: 'next' };
+// When each view last asked: a view asking within VIEW_MS is on screen.
+var viewedAt = {};
+var VIEW_MS = 6000;
+// The remote's left and right, watched while the No Signal screen shows.
+var KEY_LEFT = 105, KEY_RIGHT = 106;
+/** @type {function(boolean): void} */
+var watchKeysFn = function () {};
+var watching = false;
+var watchTimer = null;
 var totals = {};          // department -> how many works the query has
 var filling = false, lastError = '', uploading = false;
 var turn = 0;             // alternates between the owner's own and the collections
@@ -134,7 +150,9 @@ function readSettings(raw) {
       if (one && s.folders.length < MAX_FOLDERS && !s.folders.some(function (o) { return o.key === one.key; })) s.folders.push(one);
     });
   }
-  if (MINUTES.indexOf(raw.minutes) !== -1) s.minutes = raw.minutes;
+  if (SECONDS.indexOf(raw.seconds) !== -1) s.seconds = raw.seconds;
+  // Saved before seconds, by a build that offered minutes.
+  else if (SECONDS.indexOf(raw.minutes * 60) !== -1) s.seconds = raw.minutes * 60;
   if (FITS.indexOf(raw.fit) !== -1) s.fit = raw.fit;
   if (CAPTIONS.indexOf(raw.caption) !== -1) s.caption = raw.caption;
   return s;
@@ -174,7 +192,11 @@ function init(opts) {
   if (opts.download) downloadFn = opts.download;
   if (opts.getJson) getJsonFn = opts.getJson;
   if (opts.free) freeFn = opts.free;
-  queue = []; shown = []; recent = []; totals = {}; deck = [];
+  queue = []; history = []; pos = -1; recent = []; totals = {}; deck = [];
+  command = { seq: 0, dir: 'next' }; viewedAt = {};
+  if (opts.watchKeys) watchKeysFn = opts.watchKeys;
+  if (watchTimer) clearInterval(watchTimer);
+  watchTimer = null; watching = false;
   filling = false; lastError = ''; uploading = false; turn = 0;
   servers = {}; listings = {};
   var raw = null;
@@ -187,9 +209,12 @@ function init(opts) {
 function readQueue() {
   var saved = null;
   try { saved = JSON.parse(fs.readFileSync(queueFile, 'utf8')); } catch (e) {}
+  // Only those of a source still picked: settings may have changed since.
+  var picked = sources();
   if (saved && Array.isArray(saved.queue)) {
     queue = saved.queue.filter(function (item) {
-      return item && /^[a-z0-9-]{1,40}$/.test(String(item.key)) && fs.existsSync(cacheFile(item.key));
+      return item && /^[a-z0-9-]{1,40}$/.test(String(item.key)) && picked.indexOf(item.collection) !== -1 &&
+        fs.existsSync(cacheFile(item.key));
     });
   }
   if (saved && Array.isArray(saved.recent)) recent = saved.recent.filter(function (k) { return typeof k === 'string'; }).slice(-RECENT);
@@ -232,7 +257,10 @@ function status() {
     pictures: pictures(),
     maxPictures: MAX_PICTURES,
     uploading: uploading,
-    minuteChoices: MINUTES.slice(),
+    secondChoices: SECONDS.slice(),
+    showing: viewing(),
+    current: pos >= 0 && history[pos] ? { id: history[pos].id, info: history[pos].info } : null,
+    canGoBack: pos > 0,
     collections: COLLECTIONS.map(function (c) {
       return { id: c.id, label: c.label, detail: c.detail, source: c.museum === 'rijks' ? RIJKS : CLEVELAND, on: settings.collections.indexOf(c.id) !== -1 };
     }),
@@ -246,7 +274,7 @@ function status() {
 function save(patch, cb) {
   if (!patch || typeof patch !== 'object') return cb({ ok: false, error: 'settings must be an object' });
   var next = copy(settings);
-  ['mine', 'collections', 'minutes', 'fit', 'caption'].forEach(function (k) {
+  ['mine', 'collections', 'seconds', 'fit', 'caption'].forEach(function (k) {
     if (Object.prototype.hasOwnProperty.call(patch, k)) next[k] = patch[k];
   });
   var read = readSettings(next);
@@ -316,7 +344,7 @@ function addFolder(udn, id, title, cb) {
   var sv = servers[udn];
   if (!sv) return cb({ ok: false, error: msg('srv.art.serverGone', 'Look for media servers again: this one was not found.') });
   if (settings.folders.length >= MAX_FOLDERS) {
-    return cb({ ok: false, error: msg('srv.art.foldersFull', 'Art takes up to {max} network folders. Remove one to add another.', { max: MAX_FOLDERS }) });
+    return cb({ ok: false, error: msg('srv.art.foldersFull', 'The picture frame takes up to {max} network folders. Remove one to add another.', { max: MAX_FOLDERS }) });
   }
   var f = readFolder({ udn: udn, id: id, location: sv.location, server: sv.name, title: title });
   if (!f) return cb({ ok: false, error: 'invalid folder' });
@@ -346,7 +374,7 @@ function upload(req, cb) {
   function refused(text, code) { cb({ ok: false, error: text, status: code || 400 }); }
   if (uploading) return refused(msg('srv.art.uploading', 'Wait for the last picture to finish uploading.'), 409);
   if (pictures().length >= MAX_PICTURES) {
-    return refused(msg('srv.art.full', 'Art holds {max} of your pictures. Remove one to add another.', { max: MAX_PICTURES }), 409);
+    return refused(msg('srv.art.full', 'The picture frame holds {max} of your pictures. Remove one to add another.', { max: MAX_PICTURES }), 409);
   }
   uploading = true;
   function finish(text, code) {
@@ -479,7 +507,7 @@ function pickCleveland(collection, cb) {
 
 function inQueue(key) {
   for (var i = 0; i < queue.length; i++) if (queue[i].key === key) return true;
-  for (var j = 0; j < shown.length; j++) if (shown[j].key === key) return true;
+  for (var j = 0; j < history.length; j++) if (history[j].key === key) return true;
   return false;
 }
 
@@ -725,37 +753,71 @@ function nextOwn() {
   return { id: 'p-' + deck.shift(), info: null };
 }
 
-// Keeps the one on screen and the one before it, which is still fading out.
-function served(item) {
-  shown.push(item);
-  while (shown.length > 2) util.unlinkQuiet(cacheFile(shown.shift().key));
-  recent.push(item.key);
-  if (recent.length > RECENT) recent = recent.slice(-RECENT);
-  saveQueue();
-}
-
 function nextCollection() {
   if (!queue.length) return null;
   var item = queue.shift();
-  served(item);
-  return { id: 'c-' + item.key, info: item.info };
+  recent.push(item.key);
+  if (recent.length > RECENT) recent = recent.slice(-RECENT);
+  saveQueue();
+  return { id: 'c-' + item.key, info: item.info, key: item.key };
+}
+
+/*
+ * A new picture shown: after any gone back past, which are dropped, and with
+ * the oldest let go past HISTORY, its file with it.
+ */
+function remember(pick) {
+  history = history.slice(0, pos + 1);
+  history.push({ id: pick.id, info: pick.info, key: pick.key || null });
+  while (history.length > HISTORY) {
+    var old = history.shift();
+    if (old.key && !inQueueOnly(old.key)) util.unlinkQuiet(cacheFile(old.key));
+  }
+  pos = history.length - 1;
+}
+
+function inQueueOnly(key) {
+  for (var i = 0; i < queue.length; i++) if (queue[i].key === key) return true;
+  return false;
+}
+
+// A picture of the history still there to show: an upload not removed since.
+function stillThere(item) {
+  return !!image(item.id);
 }
 
 /**
  * The next picture for the screen saver, with the settings it draws by:
- * { ok, id, info, minutes, fit, caption }, or { ok: false, empty } with
+ * { ok, id, info, seconds, fit, caption }, or { ok: false, empty } with
  * nothing to show, or { ok: false, waiting } while the first is fetched.
+ * dir 'prev' goes back one, where there is one; after going back, 'next'
+ * comes forward through those shown before a new one is picked.
  * @param {function(Object): void} cb
+ * @param {string=} dir
  */
-function next(cb) {
+function next(cb, dir) {
+  var base = { seconds: settings.seconds, fit: settings.fit, caption: settings.caption, seq: command.seq };
+  if (dir === 'prev' || (pos < history.length - 1 && pos >= 0)) {
+    var step = dir === 'prev' ? -1 : 1;
+    var at = pos + step;
+    while (at >= 0 && at < history.length && !stillThere(history[at])) at += step;
+    if (at >= 0 && at < history.length) {
+      pos = at;
+      return cb(merge({ ok: true, id: history[at].id, info: history[at].info }, base));
+    }
+    // Nothing further back: the one on screen again.
+    if (dir === 'prev' && pos >= 0 && history[pos] && stillThere(history[pos])) {
+      return cb(merge({ ok: true, id: history[pos].id, info: history[pos].info }, base));
+    }
+  }
   var own = settings.mine && pictures().length > 0;
   var online = sources().length > 0;
-  var base = { minutes: settings.minutes, fit: settings.fit, caption: settings.caption };
   function answer(pick) {
     fill();
+    if (pick) remember(pick);
     if (!pick) {
       if (online) return cb(merge({ ok: false, waiting: true, error: lastError || undefined }, base));
-      return cb(merge({ ok: false, empty: true, message: msg('srv.art.empty', 'Add pictures or pick a collection for Art on the Screensaver tab.') }, base));
+      return cb(merge({ ok: false, empty: true, message: msg('srv.art.empty2', 'Add pictures or pick a collection for the picture frame on the Screensaver tab.') }, base));
     }
     cb(merge({ ok: true, id: pick.id, info: pick.info }, base));
   }
@@ -767,6 +829,51 @@ function next(cb) {
   }
   if (own) return answer(nextOwn());
   answer(nextCollection());
+}
+
+/*
+ * Next or Previous, from the dashboard or the remote: the views on screen
+ * take it up within a couple of seconds. cb(status) where given.
+ */
+function go(dir, cb) {
+  if (dir !== 'next' && dir !== 'prev') return cb && cb({ ok: false, error: 'dir must be next or prev' });
+  command = { seq: command.seq + 1, dir: dir };
+  if (cb) cb(status());
+}
+
+/*
+ * A view asking whether there is a command: 'saver' or 'nosignal'. The No
+ * Signal screen showing has the remote's left and right watched.
+ */
+function poll(view) {
+  if (view === 'saver' || view === 'nosignal') viewedAt[view] = Date.now();
+  if (view === 'nosignal') watchArrows();
+  return { ok: true, seq: command.seq, dir: command.dir };
+}
+
+function viewing() {
+  var now = Date.now();
+  return Object.keys(viewedAt).some(function (v) { return now - viewedAt[v] < VIEW_MS; });
+}
+
+function watchArrows() {
+  if (!watching) { watching = true; watchKeysFn(true); }
+  if (watchTimer) return;
+  watchTimer = setInterval(function () {
+    if (Date.now() - (viewedAt.nosignal || 0) < VIEW_MS) return;
+    clearInterval(watchTimer);
+    watchTimer = null;
+    watching = false;
+    watchKeysFn(false);
+  }, 2000);
+  if (watchTimer.unref) watchTimer.unref();
+}
+
+// A remote key: left and right step the pictures while the No Signal screen shows.
+function keyPressed(code) {
+  if (!watching || Date.now() - (viewedAt.nosignal || 0) >= VIEW_MS) return;
+  if (code === KEY_LEFT) go('prev');
+  else if (code === KEY_RIGHT) go('next');
 }
 
 function merge(a, b) {
@@ -782,6 +889,9 @@ module.exports = {
   remove: remove,
   image: image,
   next: next,
+  go: go,
+  poll: poll,
+  keyPressed: keyPressed,
   fill: fill,
   clevelandPick: clevelandPick,
   rijksPick: rijksPick,

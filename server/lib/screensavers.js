@@ -261,7 +261,7 @@ function readSaver(root, name) {
   }
   // So does the address of Art's pictures.
   if (!root.builtin && uses.indexOf('art') !== -1) {
-    return problem(msg('srv.saver.noArt', 'It asks for Art\'s pictures, which only Glasshouse\'s own screen savers are given.'));
+    return problem(msg('srv.saver.noArt', 'It asks for the picture frame\'s pictures, which only Glasshouse\'s own screen savers are given.'));
   }
   if (m.choices !== undefined) {
     var choices = readChoices(m.choices, id);

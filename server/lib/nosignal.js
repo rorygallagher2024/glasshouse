@@ -23,7 +23,7 @@
  * boot, 7 s into a B8's), so an input with nothing coming in does not hold the
  * restart back: its No Signal screen is drawn again, plain, with nothing lost.
  *
- * Art mode draws the Art screen saver's pictures (lib/art) full screen under
+ * Art mode draws the picture frame's pictures (lib/art) full screen under
  * LG's drifting box, which fades once the first picture is in, so until then,
  * or with nothing to show, LG's "No Signal" stays. It asks Art's address only
  * while the No Signal screen shows.
@@ -53,7 +53,7 @@ var MOVER_START = /\n([ \t]*)RandomMoveItem \{(?=\n)/g;
 var MOVER_ID = /(\n([ \t]*)id: element)(?=\n)/g;
 
 /*
- * The Art screen saver's pictures (lib/art) as the No Signal screen: the same
+ * The picture frame's pictures (lib/art) as the No Signal screen: the same
  * address it asks, each picture fading into the next and drifting slowly, its
  * label for a moment, always or never, with LG's own "No Signal" above it.
  * It fills the screen even where LG draws its box small, and asks for
@@ -67,7 +67,9 @@ function artBlock(indent, api) {
     '    property string api: ' + JSON.stringify(api),
     '    property string origin: api.split("/api/")[0]',
     '    property real t: Math.random() * 10000',
-    '    property int minutes: 10',
+    '    property int seconds: 600',
+    '    property int seq: -1',
+    '    property string commandUrl: api.replace("/api/art/next", "/api/art/command") + (api.indexOf("?") === -1 ? "?" : "&") + "view=nosignal"',
     '    property string fit: "fit"',
     '    property string caption: "brief"',
     '    property bool started: false',
@@ -83,6 +85,7 @@ function artBlock(indent, api) {
     '    onActiveChanged: {',
     '        if (active) { glasshouseArtAsk.interval = 300; glasshouseArtAsk.restart(); return; }',
     '        glasshouseArtAsk.stop();',
+    '        seq = -1;',
     '        glasshouseArtOut.stop();',
     '        started = false;',
     '        labelUp = false;',
@@ -90,7 +93,7 @@ function artBlock(indent, api) {
     '        glasshouseArtB.waiting = false; glasshouseArtB.opacity = 0; glasshouseArtB.source = "";',
     '    }',
     '    function later(seconds) { glasshouseArtAsk.interval = Math.max(1, seconds) * 1000; glasshouseArtAsk.restart(); }',
-    '    function ask() {',
+    '    function ask(dir) {',
     '        if (!active) return;',
     '        var x = new XMLHttpRequest();',
     '        x.onreadystatechange = function () {',
@@ -98,22 +101,25 @@ function artBlock(indent, api) {
     '            var d = null;',
     '            try { d = JSON.parse(x.responseText); } catch (e) { d = null; }',
     '            if (!d) { later(30); return; }',
-    '            if (d.minutes) minutes = d.minutes;',
+    '            if (d.seconds) seconds = d.seconds;',
+    '            if (seq < 0 && typeof d.seq === "number") seq = d.seq;',
     '            if (d.fit) fit = d.fit;',
     '            if (d.caption) caption = d.caption;',
     '            if (!d.ok || !d.image) { later(d.waiting ? 10 : 60); return; }',
     '            var f = glasshouseArtA.opacity > 0.5 ? glasshouseArtB : glasshouseArtA;',
     '            f.details = d.info || null;',
     '            f.seed = Math.random() * 1000;',
+    '            f.fadeMs = dir ? 800 : 3000;',
     '            f.waiting = true;',
     '            f.source = "";',
     '            f.source = origin + d.image;',
     '        };',
-    '        x.open("GET", api);',
+    '        x.open("GET", api + (dir ? (api.indexOf("?") === -1 ? "?" : "&") + "dir=" + dir : ""));',
     '        x.send();',
     '    }',
     '    function shown(f) {',
     '        var other = f === glasshouseArtA ? glasshouseArtB : glasshouseArtA;',
+    '        other.fadeMs = f.fadeMs;',
     '        f.z = 2; other.z = 1;',
     '        f.opacity = 1; other.opacity = 0;',
     '        started = true;',
@@ -121,9 +127,27 @@ function artBlock(indent, api) {
     '        info = f.details;',
     '        corner = (corner + 1 + Math.floor(Math.random() * 3)) % 4;',
     '        glasshouseArtIn.restart();',
-    '        later(minutes * 60);',
+    '        later(seconds);',
     '    }',
-    '    Timer { id: glasshouseArtAsk; interval: 300; onTriggered: glasshouseArt.ask() }',
+    '    function poll() {',
+    '        if (!active) return;',
+    '        var x = new XMLHttpRequest();',
+    '        x.onreadystatechange = function () {',
+    '            if (x.readyState !== XMLHttpRequest.DONE) return;',
+    '            var d = null;',
+    '            try { d = JSON.parse(x.responseText); } catch (e) { d = null; }',
+    '            if (!d || typeof d.seq !== "number") return;',
+    '            if (seq < 0) { seq = d.seq; return; }',
+    '            if (d.seq === seq) return;',
+    '            seq = d.seq;',
+    '            glasshouseArtAsk.stop();',
+    '            ask(d.dir === "prev" ? "prev" : "next");',
+    '        };',
+    '        x.open("GET", commandUrl);',
+    '        x.send();',
+    '    }',
+    '    Timer { id: glasshouseArtAsk; interval: 300; onTriggered: glasshouseArt.ask("") }',
+    '    Timer { interval: 1500; running: glasshouseArt.active; repeat: true; onTriggered: glasshouseArt.poll() }',
     '    Timer { interval: 1000; running: glasshouseArt.active; repeat: true; onTriggered: glasshouseArt.t += 1 }',
     '    Timer {',
     '        id: glasshouseArtIn',
@@ -143,11 +167,12 @@ function artBlock(indent, api) {
       '        property var details: null',
       '        property bool waiting: false',
       '        property real seed: 0',
+      '        property int fadeMs: 3000',
       '        property bool filling: glasshouseArt.fit === "fill"',
       '        property real phase: glasshouseArt.t * 2 * Math.PI / 600 + seed',
       '        opacity: 0',
       '        visible: opacity > 0',
-      '        Behavior on opacity { NumberAnimation { duration: 3000; easing.type: Easing.InOutQuad } }',
+      '        Behavior on opacity { NumberAnimation { duration: ' + id + '.fadeMs; easing.type: Easing.InOutQuad } }',
       '        asynchronous: true',
       '        cache: false',
       '        smooth: true',
@@ -321,7 +346,7 @@ function wanted() {
 
 function modeLabel(mode) {
   if (mode === 'icon') return 'disconnected-cable';
-  if (mode === 'art') return 'Art';
+  if (mode === 'art') return 'picture frame';
   if (mode === 'plain') return 'plain';
   return 'LG\'s';
 }

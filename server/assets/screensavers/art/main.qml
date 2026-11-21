@@ -1,13 +1,15 @@
 /*
- * Art screen saver: the owner's own pictures and paintings in the public
- * domain, one at a time, each fading into the next.
+ * Picture frame screen saver (id "art"): the owner's own pictures, paintings
+ * in the public domain and network folders, one at a time, each fading into
+ * the next. Next and Previous on the dashboard step through them: it asks
+ * every couple of seconds whether one was pressed.
  *
  * Glasshouse picks each picture (lib/art.js) and serves it from this TV, so
  * nothing here reaches past the TV. The answer also carries how long each
  * stays, how it fits the screen and when its label shows, so a change on the
  * dashboard takes effect with the next picture.
  *
- * For an OLED: the picture changes every few minutes, drifts slowly while it
+ * For an OLED: the picture changes every so often, drifts slowly while it
  * is up, and its label shows for a moment after each change, in a different
  * corner each time, unless asked to stay.
  */
@@ -30,7 +32,10 @@ WebOSWindow {
     property string api: "__TVWEB_ART__"
     property string origin: api.split("/api/")[0]
 
-    property int minutes: 10
+    property int seconds: 600
+    // The last Next or Previous taken up; -1 until the first answer says where it stands.
+    property int seq: -1
+    property string commandUrl: api.replace("/api/art/next", "/api/art/command") + (api.indexOf("?") === -1 ? "?" : "&") + "view=saver"
     property string fit: "fit"
     property string caption: "brief"
     property bool started: false
@@ -57,14 +62,15 @@ WebOSWindow {
         asker.restart();
     }
 
-    function ask() {
+    function ask(dir) {
         var x = new XMLHttpRequest();
         x.onreadystatechange = function () {
             if (x.readyState !== XMLHttpRequest.DONE) return;
             var d = null;
             try { d = JSON.parse(x.responseText); } catch (e) { d = null; }
             if (!d) { win.later(30); return; }
-            if (d.minutes) win.minutes = d.minutes;
+            if (d.seconds) win.seconds = d.seconds;
+            if (win.seq < 0 && typeof d.seq === "number") win.seq = d.seq;
             if (d.fit) win.fit = d.fit;
             if (d.caption) win.caption = d.caption;
             if (!d.ok || !d.image) {
@@ -75,15 +81,18 @@ WebOSWindow {
             }
             var next = a.opacity > 0.5 ? b : a;
             next.fit = win.fit;
+            // Stepped through by hand: a quicker fade.
+            next.fadeMs = dir ? 800 : 3000;
             next.show(win.origin + d.image, d.info);
         };
-        x.open("GET", win.api);
+        x.open("GET", win.api + (dir ? (win.api.indexOf("?") === -1 ? "?" : "&") + "dir=" + dir : ""));
         x.setRequestHeader("X-Glasshouse-Lang", win.lang());
         x.send();
     }
 
     function shown(f) {
         var other = f === a ? b : a;
+        other.fadeMs = f.fadeMs;
         f.z = 2;
         other.z = 1;
         f.opacity = 1;
@@ -96,10 +105,29 @@ WebOSWindow {
         win.shownInfo = f.info;
         win.corner = (win.corner + 1 + Math.floor(Math.random() * 3)) % 4;
         labelIn.restart();
-        win.later(win.minutes * 60);
+        win.later(win.seconds);
     }
 
-    Timer { id: asker; interval: 500; running: true; repeat: false; onTriggered: win.ask() }
+    // Next or Previous pressed on the dashboard: a new seq.
+    function poll() {
+        var x = new XMLHttpRequest();
+        x.onreadystatechange = function () {
+            if (x.readyState !== XMLHttpRequest.DONE) return;
+            var d = null;
+            try { d = JSON.parse(x.responseText); } catch (e) { d = null; }
+            if (!d || typeof d.seq !== "number") return;
+            if (win.seq < 0) { win.seq = d.seq; return; }
+            if (d.seq === win.seq) return;
+            win.seq = d.seq;
+            asker.stop();
+            win.ask(d.dir === "prev" ? "prev" : "next");
+        };
+        x.open("GET", win.commandUrl);
+        x.send();
+    }
+
+    Timer { id: asker; interval: 500; running: true; repeat: false; onTriggered: win.ask("") }
+    Timer { interval: 1500; running: true; repeat: true; onTriggered: win.poll() }
     Timer { interval: 1000; running: true; repeat: true; onTriggered: win.t += 1 }
     // The picture faded out lets go of its memory.
     Timer {
