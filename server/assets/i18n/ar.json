@@ -3342,7 +3342,6 @@
  "home.cardIconLabel": {"text": "أيقونة البطاقة", "from": "Card icon"},
  "home.focusPulse": {"text": "نبض على التطبيق المحدد", "from": "Pulse on the app in focus"},
  "home.focusPulseDesc": {"text": "يتوهج إطار التطبيق الذي تقف عليه بنبض هادئ، بلون التمييز في Home.", "from": "The ring around the app you are on breathes, with a soft glow, in Home’s accent colour."},
- "home.navSound": {"text": "صوت عند التنقل", "from": "Sound when moving"},
  "home.navSound.click": {"text": "نقرة", "from": "Click"},
  "home.navSound.off": {"text": "إيقاف", "from": "Off"},
  "home.navSound.own": {"text": "صوتك", "from": "Your own"},
@@ -3371,7 +3370,6 @@
  "home.cardIconSpec.files": {"text": "PNG أو JPEG أو WebP أو SVG حتى 10 ميجابايت، أو أفلت ملفاً على البطاقة. يُحتوى أي شكل آخر كاملاً دون قص.", "from": "PNG, JPEG, WebP or SVG up to 10 MB, or drop one on the card. Another shape is fitted whole, never cropped."},
  "home.cardIconOther": {"text": "أو استخدم أيقونة موجودة على التلفزيون", "from": "Or use an icon already on the TV"},
  "home.navSound.rollover": {"text": "تمرير", "from": "Rollover"},
- "home.navSoundDesc": {"text": "صوت في كل مرة تنتقل فيها بين المربعات: نقرة، أو صوت تمرير أنعم، أو صوت خاص بك.", "from": "A sound each time you move between tiles: a click, a softer rollover, or a sound of your own."},
  "home.colours.highlight": {"from": "Tile highlight", "text": "تظليل الأيقونة"},
  "home.colours.highlightHint": {"from": "The fill colour behind the focused tile on Glasshouse Home. Any colour can be picked on the browser dashboard’s Home tab.", "text": "لون التعبئة خلف الأيقونة المحددة في Glasshouse Home. يمكن اختيار أي لون من تبويب الرئيسية في لوحة التحكم على المتصفح."},
  "home.highlight.default": {"from": "Default", "text": "الافتراضي"},
@@ -3760,5 +3758,9 @@
  "ss.ha.reads": {"text": "يقرأ", "from": "Reads"},
  "ss.ha.settings": {"text": "إعدادات شاشة التوقف", "from": "Screen saver settings"},
  "ss.entities2": {"text": "الكيانات", "from": "Entities"},
- "ss.tvOff": {"text": "التلفاز مطفأ. شغّله لبدء شاشة التوقف.", "from": "The TV is off. Switch it on to start a screen saver."}
+ "ss.tvOff": {"text": "التلفاز مطفأ. شغّله لبدء شاشة التوقف.", "from": "The TV is off. Switch it on to start a screen saver."},
+ "home.navSound": {"text": "صوت عند التنقل بالأزرار", "from": "Sound when moving with the buttons"},
+ "home.navSoundDesc": {"text": "صوت في كل مرة تنقل فيها مفاتيح الأسهم التركيز، وفي كل ضغطة على OK أو رجوع: نقرة، أو صوت أنعم، أو صوت من اختيارك.", "from": "A sound each time the arrow keys move focus, and each time OK or Back is pressed: a click, a softer rollover, or a sound of your own."},
+ "home.pointerSound": {"text": "صوت عند التنقل بالمؤشر", "from": "Sound when moving with the pointer"},
+ "home.pointerSoundDesc": {"text": "صوت في كل مرة ينقل فيها مؤشر Magic Remote أو عجلته التركيز، وفي كل نقرة: نقرة، أو صوت أنعم، أو صوت من اختيارك.", "from": "A sound each time the Magic Remote's pointer or wheel moves focus, and each time it clicks: a click, a softer rollover, or a sound of your own."}
 }
