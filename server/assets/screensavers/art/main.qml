@@ -51,9 +51,12 @@ WebOSWindow {
     property string titleFamily: lgRegular.status === FontLoader.Ready ? lgRegular.name : ""
     property string textFamily: lgLight.status === FontLoader.Ready ? lgLight.name : titleFamily
 
+    // The TV's menu language, such as sv_SE: LG's screen saver app keeps en_US.
+    property string tvLocale: "__TVWEB_LOCALE__"
+
     // The TV's language, for the message shown with nothing to show.
     function lang() {
-        var n = String(Qt.locale().name || "en").toLowerCase().replace("_", "-");
+        var n = String(win.tvLocale || Qt.locale().name || "en").toLowerCase().replace("_", "-");
         return n === "pt-br" ? n : n.split("-")[0];
     }
 
