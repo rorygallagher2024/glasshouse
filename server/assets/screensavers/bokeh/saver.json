@@ -9,7 +9,8 @@
     "pl": "Bokeh",
     "pt": "Bokeh",
     "pt-br": "Bokeh",
-    "ru": "Боке"
+    "ru": "Боке",
+    "sv": "Bokeh"
   },
   "description": {
     "en": "Soft circles of light drifting in and out on black.",
@@ -19,7 +20,8 @@
     "pl": "Miękkie kręgi światła pojawiające się i znikające na czerni.",
     "pt": "Círculos suaves de luz que surgem e se desvanecem sobre fundo preto.",
     "pt-br": "Círculos suaves de luz que surgem e somem sobre o preto.",
-    "ru": "Мягкие круги света проплывают и тают на чёрном фоне."
+    "ru": "Мягкие круги света проплывают и тают на чёрном фоне.",
+    "sv": "Mjuka ljuscirklar som glider in och ut på svart."
   },
   "license": "MIT",
   "uses": [
