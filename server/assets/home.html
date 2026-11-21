@@ -80,8 +80,8 @@ html.resting #wall .layer{-webkit-animation-play-state:paused;animation-play-sta
 #source{-webkit-flex:1 1 auto;flex:1 1 auto;min-width:0;padding-left:24px;border-left:1px solid #2a2825;padding-bottom:2px}
 #source.none{visibility:hidden}
 #srcKind{font-size:23px;color:#e9ad55}
-/* Room below the line for descenders, which overflow:hidden cut at line-height 1 ("g" in "Logik"); the margin gives it back. */
-#srcTitle{font-family:'Outfit',sans-serif;font-size:70px;line-height:1;font-weight:400;letter-spacing:-1px;margin:8px 0 4px;padding-bottom:8px;
+/* Room above and below the line for tall accents and descenders, which overflow:hidden cut at line-height 1 ("g" in "Logik"); the padding makes room while keeping the baseline unchanged. */
+#srcTitle{font-family:'Outfit',sans-serif;font-size:70px;line-height:1;font-weight:400;letter-spacing:-1px;margin:-4px 0 4px;padding:12px 0 8px;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #srcVia{font-size:26px;color:#a39d93}
 
@@ -701,6 +701,8 @@ html.faded #stage{opacity:0}
 body.no-drift #wall .layer{-webkit-animation:none;animation:none}
 body.no-crossfade #wall .layer{-webkit-transition:none;transition:none}
 body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide #folderGrid,body.no-slide #hits{-webkit-transition:none;transition:none}
+/* Outfit lacks Vietnamese horn and stacked-tone glyphs; use Manrope for text headings in Vietnamese. */
+html[lang="vi"] #srcTitle,html[lang="vi"] #plMode,html[lang="vi"] #pvMode,html[lang="vi"] #pvNameTitle,html[lang="vi"] .dev .nm,html[lang="vi"] #recents h2,html[lang="vi"] #recents .empty b,html[lang="vi"] #folder h2,html[lang="vi"] #fault h1,html[lang="vi"] #query,html[lang="vi"] .hit .ttl,html[lang="vi"] .tv .gname,html[lang="vi"] #bdName,html[lang="vi"] #pmsg b,html[lang="vi"] #clGroup,html[lang="vi"] #adder h2,html[lang="vi"] #adQuery{font-family:'Manrope',sans-serif}
 </style>
 </head>
 <body>

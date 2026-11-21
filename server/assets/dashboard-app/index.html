@@ -39,13 +39,13 @@ html,body{height:100%;background:#000;color:#ece7df;overflow:hidden;font-family:
 (function () {
   /*
    * This page shows while the server that holds the translations is still
-   * starting, so its few strings are here: Spanish on a Spanish TV, English
-   * otherwise. The markup above holds the English, for a page whose script
-   * does not run. English is the first entry of TXT, the base language for
-   * translations in this project.
+   * starting, so its few strings are here, matching the TV's language and
+   * falling back to English. The markup above holds the English, for a page
+   * whose script does not run. English is the first entry of TXT, the base
+   * language for translations in this project.
    */
-  var SPT = String((navigator.languages && navigator.languages[0]) || navigator.language || 'en')
-    .slice(0, 2).toLowerCase() === 'es';
+  var LANG = String((navigator.languages && navigator.languages[0]) || navigator.language || 'en')
+    .slice(0, 2).toLowerCase();
   var TXT = {
     en: {
       connecting: 'Connecting to TV service',
@@ -58,9 +58,15 @@ html,body{height:100%;background:#000;color:#ece7df;overflow:hidden;font-family:
       waiting: 'Esperando a que arranque el servicio en segundo plano',
       out: 'El panel no responde. Puede que aún esté arrancando, o que esté desactivado en esta TV.',
       retry: 'Pulsa OK para reintentar'
+    },
+    vi: {
+      connecting: 'Đang kết nối với dịch vụ TV',
+      waiting: 'Đang chờ dịch vụ nền khởi tạo',
+      out: 'Bảng điều khiển không phản hồi. Có thể máy chủ vẫn đang khởi động hoặc đã bị tắt trên TV này.',
+      retry: 'Nhấn OK để thử lại'
     }
   };
-  TXT = TXT[SPT ? 'es' : 'en'];
+  TXT = TXT[LANG] || TXT.en;
 
   // Rewritten by the server to match config.json's port, at every start.
   var PORT = 8080;                // tvweb:port
