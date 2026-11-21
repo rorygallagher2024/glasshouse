@@ -3793,5 +3793,15 @@
  "home.info.today": {"from": "today", "text": "ma"},
  "home.info.tomorrow": {"from": "tomorrow", "text": "holnap"},
  "home.info.weekday": {"from": "on {weekday}", "text": "{weekday}"},
- "home.infoDesc": {"from": "Beside the clock: up to four lines, each an entity's value, such as the next bin collection, the post or a share price. Or lines Home Assistant sends itself.", "text": "Az óra mellett: legfeljebb négy sor, mindegyik egy entitás értéke, például a következő szemétszállítás, a posta vagy egy részvény árfolyama. Vagy a Home Assistant által küldött sorok."}
+ "home.infoDesc": {"from": "Beside the clock: up to four lines, each an entity's value, such as the next bin collection, the post or a share price. Or lines Home Assistant sends itself.", "text": "Az óra mellett: legfeljebb négy sor, mindegyik egy entitás értéke, például a következő szemétszállítás, a posta vagy egy részvény árfolyama. Vagy a Home Assistant által küldött sorok."},
+ "home.board": {"from": "Board", "text": "Eredményjelző"},
+ "home.board.fromHa": {"from": "Sent from Home Assistant", "text": "A Home Assistant küldi"},
+ "home.board.fromScores": {"from": "Today's matches", "text": "Mai mérkőzések"},
+ "home.board.fullTime": {"from": "FT", "text": "Vége"},
+ "home.board.halfTime": {"from": "HT", "text": "Félidő"},
+ "home.board.leaguesDesc": {"from": "Choose the leagues. Glasshouse reads their matches from ESPN once a minute while Home is on screen and the TV is on. Nothing else is sent.", "text": "Válaszd ki a bajnokságokat. A Glasshouse percenként egyszer lekéri a mérkőzéseiket az ESPN-től, amíg a Home látható és a TV be van kapcsolva. Mást nem küld."},
+ "home.board.none": {"from": "No matches today", "text": "Ma nincs mérkőzés"},
+ "home.board.postponed": {"from": "Postponed", "text": "Elhalasztva"},
+ "home.board.scoresTitle": {"from": "Today’s matches", "text": "Mai mérkőzések"},
+ "home.boardDesc": {"from": "Beside the lines: today's matches in the leagues you choose, with their kick-off times and live scores, four at a time. Or a board Home Assistant sends.", "text": "A sorok mellett: a választott bajnokságok mai mérkőzései kezdési időkkel és élő eredményekkel, egyszerre négy. Vagy a Home Assistant által küldött tábla."}
 }

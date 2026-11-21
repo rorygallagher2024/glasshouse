@@ -3779,5 +3779,15 @@
  "home.info.today": {"from": "today", "text": "aujourd'hui"},
  "home.info.tomorrow": {"from": "tomorrow", "text": "demain"},
  "home.info.weekday": {"from": "on {weekday}", "text": "{weekday}"},
- "home.infoDesc": {"from": "Beside the clock: up to four lines, each an entity's value, such as the next bin collection, the post or a share price. Or lines Home Assistant sends itself.", "text": "À côté de l'horloge : jusqu'à quatre lignes, chacune la valeur d'une entité, comme la prochaine collecte des déchets, le courrier ou le cours d'une action. Ou des lignes envoyées par Home Assistant lui-même."}
+ "home.infoDesc": {"from": "Beside the clock: up to four lines, each an entity's value, such as the next bin collection, the post or a share price. Or lines Home Assistant sends itself.", "text": "À côté de l'horloge : jusqu'à quatre lignes, chacune la valeur d'une entité, comme la prochaine collecte des déchets, le courrier ou le cours d'une action. Ou des lignes envoyées par Home Assistant lui-même."},
+ "home.board": {"from": "Board", "text": "Tableau"},
+ "home.board.fromHa": {"from": "Sent from Home Assistant", "text": "Envoyé par Home Assistant"},
+ "home.board.fromScores": {"from": "Today's matches", "text": "Matchs du jour"},
+ "home.board.fullTime": {"from": "FT", "text": "Fin"},
+ "home.board.halfTime": {"from": "HT", "text": "MT"},
+ "home.board.leaguesDesc": {"from": "Choose the leagues. Glasshouse reads their matches from ESPN once a minute while Home is on screen and the TV is on. Nothing else is sent.", "text": "Choisissez les championnats. Glasshouse lit leurs matchs sur ESPN une fois par minute tant que Home est à l'écran et le téléviseur allumé. Rien d'autre n'est envoyé."},
+ "home.board.none": {"from": "No matches today", "text": "Aucun match aujourd'hui"},
+ "home.board.postponed": {"from": "Postponed", "text": "Reporté"},
+ "home.board.scoresTitle": {"from": "Today’s matches", "text": "Matchs du jour"},
+ "home.boardDesc": {"from": "Beside the lines: today's matches in the leagues you choose, with their kick-off times and live scores, four at a time. Or a board Home Assistant sends.", "text": "À côté des lignes : les matchs du jour dans les championnats choisis, avec leurs horaires et scores en direct, quatre à la fois. Ou un tableau envoyé par Home Assistant."}
 }

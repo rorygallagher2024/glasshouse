@@ -396,6 +396,7 @@ function renderHome() {
   loadHomeCardIcons();
   renderHomeWeather(st);
   renderHomeInfo(st);
+  renderHomeBoard(st);
   const countAlt = q('home-show-count-alt');
   if (countAlt) countAlt.hidden = !altView;
   const searchRow = q('home-search-row');
@@ -1321,6 +1322,40 @@ function homeInfoSave() {
                  before: q('home-info-before-' + i).value.trim() });
   }
   homeSaveLayout({ infoLines: lines });
+}
+
+/*
+ * The board: off, today's matches in the leagues chosen here, read by the TV
+ * from ESPN (lib/scores), or a board Home Assistant sends. The leagues come
+ * with the layout, each a pill that adds or takes it away.
+ */
+function renderHomeBoard(st) {
+  const sel = q('home-board-sel');
+  if (!sel) return;
+  const source = (st.layout && st.layout.board) || 'off';
+  sel.value = source;
+  sel.disabled = !homeWritable();
+  const panel = q('home-board-panel');
+  panel.hidden = !st.supported.ok || source !== 'scores';
+  if (panel.hidden) return;
+  const chosen = (st.layout && st.layout.boardLeagues) || [];
+  const all = (st.layout && st.layout.scoresLeagues) || [];
+  q('home-board-leagues').innerHTML = all.map(l => {
+    const on = chosen.indexOf(l.id) !== -1;
+    return `<button type="button" class="pill ${on ? 'good' : 'idle'}" translate="no" aria-pressed="${on}" ${homeWritable() ? '' : 'disabled'}
+      onclick="homeBoardLeague('${jsq(l.id)}')">${esc(l.name)}</button>`;
+  }).join('');
+}
+
+function homeBoardSource(value) {
+  homeSaveLayout({ board: value });
+}
+
+function homeBoardLeague(id) {
+  const chosen = ((homeLayout && homeLayout.boardLeagues) || []).slice();
+  const at = chosen.indexOf(id);
+  if (at === -1) chosen.push(id); else chosen.splice(at, 1);
+  homeSaveLayout({ boardLeagues: chosen });
 }
 
 function homeShow(key) {

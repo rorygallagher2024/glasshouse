@@ -195,6 +195,19 @@ html.resting #wall .layer{-webkit-animation-play-state:paused;animation-play-sta
 .info-label{color:#a39d93;margin-right:12px;overflow:hidden;text-overflow:ellipsis}
 .info-value{-webkit-flex:0 0 auto;flex:0 0 auto}
 .alternative #info{-webkit-order:2;order:2;margin:0 48px 0 0}
+/* The board (text.lg_tv_home_board): a title and four of its lines at a
+   time, turning to the next four every few seconds. */
+#board{-webkit-flex:0 1 auto;flex:0 1 auto;min-width:0;max-width:560px;margin-left:56px;padding-bottom:2px;white-space:nowrap}
+#board.none{display:none}
+#boardTitle{font-size:20px;letter-spacing:.08em;text-transform:uppercase;color:#a39d93;margin-bottom:4px}
+#boardTitle:empty{display:none}
+#boardLines{-webkit-transition:opacity .3s;transition:opacity .3s}
+#boardLines.turning{opacity:0}
+#boardPage{margin-left:.6em;letter-spacing:0}
+#board .info-label{color:inherit}
+#board .info-value{color:#a39d93;margin-left:auto;padding-left:16px}
+.alternative #board{-webkit-order:2;order:2;margin:0 48px 0 0}
+.alternative #boardTitle{font-size:18px}
 .alternative .info-line{font-size:23px}
 .alternative .info-line svg{width:24px;height:24px}
 .alternative #wxIcon,.alternative #wxIcon svg{width:72px;height:72px}
@@ -556,7 +569,7 @@ html.resting #wall .layer{-webkit-animation-play-state:paused;animation-play-sta
    it and go when not in use: nothing still stays on the panel. */
 .playing #now{z-index:4}
 .playing #rows,.playing #rail,.playing #wall,.playing #wall-caption,.playing #scrim,
-.playing #when,.playing #source,.playing #plate,.playing #weather,.playing #info,.playing #wxCredit{visibility:hidden}
+.playing #when,.playing #source,.playing #plate,.playing #weather,.playing #info,.playing #board,.playing #wxCredit{visibility:hidden}
 #preview.full{position:absolute;left:0;top:0;width:1920px;height:1080px;margin:0;box-shadow:none;
   -webkit-transform-origin:0 0;transform-origin:0 0}
 #preview.full:after,#preview.full #pvInfo{display:none}
@@ -752,6 +765,7 @@ html[lang="vi"] #srcTitle,html[lang="vi"] #plMode,html[lang="vi"] #pvMode,html[l
       <div id="wxLine"><span id="wxCity"></span><span id="wxCond"></span></div>
     </div>
     <div id="info" class="none"></div>
+    <div id="board" class="none"><div id="boardTitle"></div><div id="boardLines"></div></div>
   </section>
 
   <main id="rows"></main>
@@ -2108,6 +2122,16 @@ html[lang="vi"] #srcTitle,html[lang="vi"] #plMode,html[lang="vi"] #pvMode,html[l
     }
     return (l.before ? l.before + ' ' : '') + text;
   }
+  function infoLinesHtml(lines, from, to) {
+    var html = '';
+    for (var i = from; i < to && i < lines.length; i++) {
+      var l = lines[i];
+      html += '<div class="info-line">' + (l.icon ? infoIcon(l.icon) : '') +
+        (l.label ? '<span class="info-label">' + esc(l.label) + '</span>' : '') +
+        '<span class="info-value">' + esc(infoValue(l)) + '</span></div>';
+    }
+    return html;
+  }
   var shownInfo = null;
   function renderInfo(lines) {
     // The day too: a date reads differently from midnight.
@@ -2115,18 +2139,78 @@ html[lang="vi"] #srcTitle,html[lang="vi"] #plMode,html[lang="vi"] #pvMode,html[l
     if (key === shownInfo) return;
     shownInfo = key;
     if (!key) { $('info').className = 'none'; $('info').innerHTML = ''; return; }
-    var html = '';
-    for (var i = 0; i < lines.length; i++) {
-      var l = lines[i];
-      html += '<div class="info-line">' + (l.icon ? infoIcon(l.icon) : '') +
-        (l.label ? '<span class="info-label">' + esc(l.label) + '</span>' : '') +
-        '<span class="info-value">' + esc(infoValue(l)) + '</span></div>';
-    }
-    $('info').innerHTML = html;
+    $('info').innerHTML = infoLinesHtml(lines, 0, lines.length);
     $('info').className = '';
   }
+
+  // The board: BOARD_PAGE lines at a time, the next ones every BOARD_TURN_MS.
+  var BOARD_PAGE = 4;
+  var BOARD_TURN_MS = 8000;
+  var shownBoard = null, board = null, boardPage = 0, boardTimer = null;
+  function drawBoardPage() {
+    var pages = Math.ceil(board.lines.length / BOARD_PAGE);
+    if (boardPage >= pages) boardPage = 0;
+    $('boardTitle').innerHTML = esc(board.title) +
+      (pages > 1 ? '<span id="boardPage">' + (boardPage + 1) + '/' + pages + '</span>' : '');
+    $('boardLines').innerHTML = infoLinesHtml(board.lines, boardPage * BOARD_PAGE, (boardPage + 1) * BOARD_PAGE);
+  }
+  function turnBoard() {
+    if (!board || board.lines.length <= BOARD_PAGE) return;
+    $('boardLines').className = 'turning';
+    setTimeout(function () {
+      if (!board) return;
+      boardPage++;
+      drawBoardPage();
+      $('boardLines').className = '';
+    }, 300);
+  }
+  /*
+   * The day's matches (lib/scores) as board lines, in the page's language:
+   * the sides and kick-off before, the score and the minute during, the score
+   * and full time after. Two leagues or more mark each line with its own.
+   */
+  function scoresBoard(b) {
+    var many = false, first = null;
+    for (var i = 0; i < b.matches.length; i++) {
+      if (first === null) first = b.matches[i].league;
+      else if (b.matches[i].league !== first) many = true;
+    }
+    var lines = [];
+    for (var j = 0; j < b.matches.length; j++) {
+      var m = b.matches[j];
+      var label = m.state === 'pre' ? m.home + ' – ' + m.away
+        : m.home + ' ' + m.homeScore + '–' + m.awayScore + ' ' + m.away;
+      var value = /POSTPONED|CANCELED|CANCELLED/.test(m.status) ? t('home.board.postponed', 'Postponed')
+        : m.state === 'pre' ? (m.start ? hm(new Date(m.start)) : '')
+        : m.state === 'post' ? t('home.board.fullTime', 'FT')
+        : m.status === 'STATUS_HALFTIME' ? t('home.board.halfTime', 'HT')
+        : m.clock;
+      lines.push({ label: (many ? m.league + ' · ' : '') + label, value: value });
+    }
+    if (!lines.length) lines.push({ label: t('home.board.none', 'No matches today'), value: '' });
+    return { title: t('home.board.scoresTitle', 'Today’s matches'), lines: lines };
+  }
+  function renderBoard(b) {
+    if (b && b.kind === 'scores') b = scoresBoard(b);
+    var key = b && (b.title || (b.lines && b.lines.length)) ? JSON.stringify(b) : '';
+    if (key === shownBoard) return;
+    shownBoard = key;
+    if (!key) {
+      board = null;
+      clearInterval(boardTimer); boardTimer = null;
+      $('board').className = 'none';
+      return;
+    }
+    board = { title: b.title || '', lines: b.lines || [] };
+    drawBoardPage();
+    $('board').className = '';
+    if (!boardTimer) boardTimer = setInterval(turnBoard, BOARD_TURN_MS);
+  }
   function refreshInfo() {
-    getJson('/api/home/info', function (r) { renderInfo(r && r.ok ? r.lines : null); });
+    getJson('/api/home/info', function (r) {
+      renderInfo(r && r.ok ? r.lines : null);
+      renderBoard(r && r.ok ? r.board : null);
+    });
   }
 
   // ---------------------------------------------------------------- actions
@@ -5557,7 +5641,7 @@ html[lang="vi"] #srcTitle,html[lang="vi"] #plMode,html[lang="vi"] #pvMode,html[l
       var r = m && window.getComputedStyle(m).visibility !== 'hidden' && m.getBoundingClientRect();
       return r && r.width && r.height && r.bottom > 0 && r.top < height ? r : null;
     };
-    var now = [$('when'), $('weather'), $('info'), $('source'), $('plate'), $('preview')];
+    var now = [$('when'), $('weather'), $('info'), $('board'), $('source'), $('plate'), $('preview')];
     // Where the text starts in the marks on the caption's half of the screen.
     for (var n = 0; n < now.length; n++) {
       var nr = shown(now[n]), cs = nr && window.getComputedStyle(now[n]), inset = null;
@@ -6810,6 +6894,7 @@ html[lang="vi"] #srcTitle,html[lang="vi"] #plMode,html[lang="vi"] #pvMode,html[l
         if (r.saver) scheduleBeat(SAVER_BEAT_MS);
         renderWeather(r.weather || null);
         renderInfo(r.info || null);
+        renderBoard(r.board || null);
         renderRemoteBattery(r.remoteBattery || null);
         // webOS 4: two minutes behind another app, not the screen saver, the
         // view closes itself to give its memory back; Home opens it afresh.

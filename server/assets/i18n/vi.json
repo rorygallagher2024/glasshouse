@@ -3797,5 +3797,15 @@
  "home.info.today": {"from": "today", "text": "hôm nay"},
  "home.info.tomorrow": {"from": "tomorrow", "text": "ngày mai"},
  "home.info.weekday": {"from": "on {weekday}", "text": "{weekday}"},
- "home.infoDesc": {"from": "Beside the clock: up to four lines, each an entity's value, such as the next bin collection, the post or a share price. Or lines Home Assistant sends itself.", "text": "Bên cạnh đồng hồ: tối đa bốn dòng, mỗi dòng là giá trị của một thực thể, như lần thu gom rác tiếp theo, thư hoặc giá cổ phiếu. Hoặc các dòng do chính Home Assistant gửi."}
+ "home.infoDesc": {"from": "Beside the clock: up to four lines, each an entity's value, such as the next bin collection, the post or a share price. Or lines Home Assistant sends itself.", "text": "Bên cạnh đồng hồ: tối đa bốn dòng, mỗi dòng là giá trị của một thực thể, như lần thu gom rác tiếp theo, thư hoặc giá cổ phiếu. Hoặc các dòng do chính Home Assistant gửi."},
+ "home.board": {"from": "Board", "text": "Bảng tỷ số"},
+ "home.board.fromHa": {"from": "Sent from Home Assistant", "text": "Do Home Assistant gửi"},
+ "home.board.fromScores": {"from": "Today's matches", "text": "Trận đấu hôm nay"},
+ "home.board.fullTime": {"from": "FT", "text": "Hết giờ"},
+ "home.board.halfTime": {"from": "HT", "text": "Nghỉ giữa hiệp"},
+ "home.board.leaguesDesc": {"from": "Choose the leagues. Glasshouse reads their matches from ESPN once a minute while Home is on screen and the TV is on. Nothing else is sent.", "text": "Chọn các giải đấu. Glasshouse đọc trận đấu của chúng từ ESPN mỗi phút một lần khi Home đang hiển thị và TV đang bật. Không gửi gì khác."},
+ "home.board.none": {"from": "No matches today", "text": "Hôm nay không có trận"},
+ "home.board.postponed": {"from": "Postponed", "text": "Hoãn"},
+ "home.board.scoresTitle": {"from": "Today’s matches", "text": "Trận đấu hôm nay"},
+ "home.boardDesc": {"from": "Beside the lines: today's matches in the leagues you choose, with their kick-off times and live scores, four at a time. Or a board Home Assistant sends.", "text": "Bên cạnh các dòng: trận đấu hôm nay ở các giải bạn chọn, kèm giờ bắt đầu và tỷ số trực tiếp, bốn trận mỗi lần. Hoặc một bảng do Home Assistant gửi."}
 }

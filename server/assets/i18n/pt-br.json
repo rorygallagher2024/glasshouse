@@ -3779,5 +3779,15 @@
  "home.info.today": {"from": "today", "text": "hoje"},
  "home.info.tomorrow": {"from": "tomorrow", "text": "amanhã"},
  "home.info.weekday": {"from": "on {weekday}", "text": "{weekday}"},
- "home.infoDesc": {"from": "Beside the clock: up to four lines, each an entity's value, such as the next bin collection, the post or a share price. Or lines Home Assistant sends itself.", "text": "Ao lado do relógio: até quatro linhas, cada uma com o valor de uma entidade, como a próxima coleta de lixo, o correio ou a cotação de uma ação. Ou linhas que o próprio Home Assistant envia."}
+ "home.infoDesc": {"from": "Beside the clock: up to four lines, each an entity's value, such as the next bin collection, the post or a share price. Or lines Home Assistant sends itself.", "text": "Ao lado do relógio: até quatro linhas, cada uma com o valor de uma entidade, como a próxima coleta de lixo, o correio ou a cotação de uma ação. Ou linhas que o próprio Home Assistant envia."},
+ "home.board": {"from": "Board", "text": "Placar"},
+ "home.board.fromHa": {"from": "Sent from Home Assistant", "text": "Enviado pelo Home Assistant"},
+ "home.board.fromScores": {"from": "Today's matches", "text": "Jogos de hoje"},
+ "home.board.fullTime": {"from": "FT", "text": "Fim"},
+ "home.board.halfTime": {"from": "HT", "text": "Intervalo"},
+ "home.board.leaguesDesc": {"from": "Choose the leagues. Glasshouse reads their matches from ESPN once a minute while Home is on screen and the TV is on. Nothing else is sent.", "text": "Escolha as ligas. O Glasshouse lê os jogos na ESPN uma vez por minuto enquanto o Home está na tela e a TV ligada. Nada mais é enviado."},
+ "home.board.none": {"from": "No matches today", "text": "Sem jogos hoje"},
+ "home.board.postponed": {"from": "Postponed", "text": "Adiado"},
+ "home.board.scoresTitle": {"from": "Today’s matches", "text": "Jogos de hoje"},
+ "home.boardDesc": {"from": "Beside the lines: today's matches in the leagues you choose, with their kick-off times and live scores, four at a time. Or a board Home Assistant sends.", "text": "Ao lado das linhas: os jogos de hoje nas ligas que você escolher, com horários e placares ao vivo, quatro de cada vez. Ou um placar enviado pelo Home Assistant."}
 }

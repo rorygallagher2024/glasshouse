@@ -1130,5 +1130,10 @@
  "home.info.date": {"from": "{day} {month}", "text": "{day}. {month}"},
  "home.info.today": {"from": "today", "text": "heute"},
  "home.info.tomorrow": {"from": "tomorrow", "text": "morgen"},
- "home.info.weekday": {"from": "on {weekday}", "text": "am {weekday}"}
+ "home.info.weekday": {"from": "on {weekday}", "text": "am {weekday}"},
+ "home.board.fullTime": {"from": "FT", "text": "Ende"},
+ "home.board.halfTime": {"from": "HT", "text": "HZ"},
+ "home.board.none": {"from": "No matches today", "text": "Heute keine Spiele"},
+ "home.board.postponed": {"from": "Postponed", "text": "Verschoben"},
+ "home.board.scoresTitle": {"from": "Today’s matches", "text": "Spiele heute"}
 }

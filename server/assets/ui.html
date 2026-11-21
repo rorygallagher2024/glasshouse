@@ -1685,6 +1685,21 @@
       <div id="home-info-lines"></div>
       <datalist id="home-info-entities"></datalist>
     </div>
+    <div class="prot-row home-gh-row home-show-row" hidden>
+      <div class="prot-main">
+        <div class="prot-title" data-t="home.board">Board</div>
+        <div class="prot-desc" data-t="home.boardDesc">Beside the lines: today's matches in the leagues you choose, with their kick-off times and live scores, four at a time. Or a board Home Assistant sends.</div>
+      </div>
+      <div class="prot-status"><select class="pill-sel" id="home-board-sel" onchange="homeBoardSource(this.value)" aria-label="Board" data-t-aria-label="home.board">
+        <option value="off" data-t="common.off">Off</option>
+        <option value="scores" data-t="home.board.fromScores">Today's matches</option>
+        <option value="ha" data-t="home.board.fromHa">Sent from Home Assistant</option>
+      </select></div>
+    </div>
+    <div class="home-info-panel" id="home-board-panel" hidden>
+      <div class="sub" data-t="home.board.leaguesDesc">Choose the leagues. Glasshouse reads their matches from ESPN once a minute while Home is on screen and the TV is on. Nothing else is sent.</div>
+      <div class="home-weather-results home-board-leagues" id="home-board-leagues"></div>
+    </div>
     <div class="prot-row home-gh-row" id="home-remote-battery-row" hidden>
       <div class="prot-main">
         <div class="prot-title" data-t="home.remoteBattery">Remote battery</div>

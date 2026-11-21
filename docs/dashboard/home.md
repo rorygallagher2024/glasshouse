@@ -87,6 +87,12 @@ Preview cards at the top of the **Home** tab switch between five launcher option
 
     Displays current temperature, condition icon, and location level with the clock, sourced from Home Assistant or Open-Meteo. See [Weather badge](#weather-badge).
 
+-   **Board**
+
+    ---
+
+    Today's matches in the leagues you choose, with kick-off times and live scores, four at a time, read from ESPN. See [Board](#board).
+
 -   **Lines from Home Assistant**
 
     ---
@@ -573,6 +579,14 @@ Up to four lines of your own after the weather, or before the clock in the Alter
 * **Off.**
 
 Icons are [Material Design Icons](https://pictogrammers.com/library/mdi/) names, with or without `mdi:`. Glasshouse Home draws its own outline for names starting with trash, delete, recycle, mail, email, post, chart, trending, finance, cash, car, flash, lightning, power, battery, calendar, thermometer, home, package and truck, and a dot for any other.
+
+### Board
+
+Beside the lines, a board of up to twenty lines shown four at a time, turning to the next four every 8 seconds, with a page count by its title. The **Board** setting chooses what it shows:
+
+* **Today's matches:** the day's matches in the leagues you pick from the list (Premier League, Champions League, La Liga, Allsvenskan, the NHL and more): the sides and kick-off time before a match, the score and the minute during it, *HT* at half time and *FT* after. With two leagues or more chosen, each line starts with its league's short name, and a day without a match says so. The TV reads the matches from ESPN's public scoreboard, which needs no account, once a minute while Home is on screen and the TV is on, sending only the league and the date. Results not updated for 15 minutes are taken away.
+* **Sent from Home Assistant:** whatever was last written to the `text.lg_tv_home_board` entity, `{"title":"Football today","minutes":10,"lines":[{"label":"Arsenal 2–1 Chelsea","value":"67'"}]}`. It is not kept across a restart, and with `minutes` it goes that long after the last push. An empty value takes it away at once.
+* **Off (default).**
 
 ### Remote battery
 

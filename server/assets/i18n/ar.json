@@ -3779,5 +3779,15 @@
  "home.info.today": {"from": "today", "text": "اليوم"},
  "home.info.tomorrow": {"from": "tomorrow", "text": "غدًا"},
  "home.info.weekday": {"from": "on {weekday}", "text": "يوم {weekday}"},
- "home.infoDesc": {"from": "Beside the clock: up to four lines, each an entity's value, such as the next bin collection, the post or a share price. Or lines Home Assistant sends itself.", "text": "بجانب الساعة: حتى أربعة أسطر، كل منها قيمة كيان، مثل موعد جمع النفايات التالي أو البريد أو سعر سهم. أو أسطر يرسلها Home Assistant بنفسه."}
+ "home.infoDesc": {"from": "Beside the clock: up to four lines, each an entity's value, such as the next bin collection, the post or a share price. Or lines Home Assistant sends itself.", "text": "بجانب الساعة: حتى أربعة أسطر، كل منها قيمة كيان، مثل موعد جمع النفايات التالي أو البريد أو سعر سهم. أو أسطر يرسلها Home Assistant بنفسه."},
+ "home.board": {"from": "Board", "text": "لوحة النتائج"},
+ "home.board.fromHa": {"from": "Sent from Home Assistant", "text": "يرسلها Home Assistant"},
+ "home.board.fromScores": {"from": "Today's matches", "text": "مباريات اليوم"},
+ "home.board.fullTime": {"from": "FT", "text": "نهاية"},
+ "home.board.halfTime": {"from": "HT", "text": "استراحة"},
+ "home.board.leaguesDesc": {"from": "Choose the leagues. Glasshouse reads their matches from ESPN once a minute while Home is on screen and the TV is on. Nothing else is sent.", "text": "اختر الدوريات. يقرأ Glasshouse مبارياتها من ESPN مرة كل دقيقة ما دام Home ظاهرًا على الشاشة والتلفاز يعمل. لا يُرسل أي شيء آخر."},
+ "home.board.none": {"from": "No matches today", "text": "لا مباريات اليوم"},
+ "home.board.postponed": {"from": "Postponed", "text": "مؤجلة"},
+ "home.board.scoresTitle": {"from": "Today’s matches", "text": "مباريات اليوم"},
+ "home.boardDesc": {"from": "Beside the lines: today's matches in the leagues you choose, with their kick-off times and live scores, four at a time. Or a board Home Assistant sends.", "text": "بجانب الأسطر: مباريات اليوم في الدوريات التي تختارها، بمواعيد انطلاقها ونتائجها المباشرة، أربع في كل مرة. أو لوحة يرسلها Home Assistant."}
 }

@@ -60,6 +60,10 @@ var WEATHER_SOURCES = ['off', 'ha', 'internet'];
 // Where the lines beside the clock come from: nowhere, Home Assistant
 // entities chosen on the dashboard, or lines Home Assistant sends.
 var INFO_SOURCES = ['off', 'entities', 'ha'];
+// Where the board beside them comes from: nowhere, the day's matches in the
+// leagues chosen on the dashboard (lib/scores), or a board Home Assistant sends.
+var BOARD_SOURCES = ['off', 'scores', 'ha'];
+var scoresLib = require('./scores');
 // The Magic Remote's battery beside the date: never, only once it is low, or always.
 var REMOTE_BATTERY = ['off', 'low', 'always'];
 // At or under this, the badge shows in 'low' and is drawn as low. A remote
@@ -511,6 +515,8 @@ function defaults() {
     // The lines beside the clock, and the entities they read.
     info: 'entities',
     infoLines: [],
+    board: 'off',
+    boardLeagues: [],
     // The live preview kept on what was last on whenever the view is on
     // screen, rather than only while a tile is chosen.
     previewAlways: false,
@@ -651,6 +657,8 @@ function normalise(raw) {
   d.weatherPlace = weatherPlaceOf(raw.weatherPlace);
   d.info = INFO_SOURCES.indexOf(raw.info) !== -1 ? raw.info : 'entities';
   d.infoLines = infoLinesOf(raw.infoLines);
+  d.board = BOARD_SOURCES.indexOf(raw.board) !== -1 ? raw.board : 'off';
+  d.boardLeagues = stringList(raw.boardLeagues).filter(function (id) { return !!scoresLib.league(id); });
   d.rowsBottom = raw.rowsBottom === true;
   d.reopenAfterWake = raw.reopenAfterWake !== false;
   d.view = raw.view === 'alternative' ? 'alternative' : 'standard';
@@ -889,6 +897,8 @@ function setLayout(body, cb) {
     weatherPlace: body.weatherPlace !== undefined ? body.weatherPlace : c.weatherPlace,
     info: body.info !== undefined ? body.info : c.info,
     infoLines: body.infoLines !== undefined ? body.infoLines : c.infoLines,
+    board: body.board !== undefined ? body.board : c.board,
+    boardLeagues: body.boardLeagues !== undefined ? body.boardLeagues : c.boardLeagues,
     previewAlways: typeof body.previewAlways === 'boolean' ? body.previewAlways : c.previewAlways,
     previewInTile: typeof body.previewInTile === 'boolean' ? body.previewInTile : c.previewInTile,
     previewSize: body.previewSize !== undefined ? body.previewSize : c.previewSize,
@@ -943,6 +953,7 @@ function setLayout(body, cb) {
   if (JSON.stringify(c.deviceNames) !== JSON.stringify(config.deviceNames)) onDeviceNamesFn();
   if (config.weather === 'internet') setTimeout(internetWeatherTick, 0);
   if (JSON.stringify(c.infoLines) !== JSON.stringify(config.infoLines)) { entityInfo = null; entityInfoAt = 0; }
+  if (JSON.stringify(c.boardLeagues) !== JSON.stringify(config.boardLeagues) || c.board !== config.board) { scores = null; scoresAt = 0; }
   // A row back in its own order keeps no record of what was opened.
   ROWS.forEach(function (r) { if (config.sort[r] !== 'recent') recent.forget(r); });
   cb({ ok: true, layout: layoutOf(config), layoutVersion: layoutVersion() });
@@ -1037,7 +1048,7 @@ function layoutOf(c) {
     searchHintSeen: c.searchHintSeen, picture: c.picture, livePreview: c.livePreview, search: c.search, recommended: c.recommended,
     fade: c.fade, wallDrift: c.wallDrift, wallCrossfade: c.wallCrossfade, smoothScroll: c.smoothScroll, slidePanels: c.slidePanels,
     darkening: c.darkening, hideUnused: c.hideUnused, showMediaServers: c.showMediaServers, deviceNames: devNamesNow(c.deviceNames), appNames: c.appNames, appCards: c.appCards, focusPulse: c.focusPulse, navSound: c.navSound, pointerSound: c.pointerSound, ownSound: ownSoundInfo(), cardFade: c.cardFade, appIcons: c.appIcons, inputBarTransparent: c.inputBarTransparent, inputBarSwitchOnOk: c.inputBarSwitchOnOk, showClock: c.showClock, rowsBottom: c.rowsBottom, view: c.view,
-    showLastOn: c.showLastOn, showAppCount: c.showAppCount, showAppLabels: c.showAppLabels, showCec: c.showCec, showTvLogos: c.showTvLogos, showPointer: c.showPointer, reopenAfterWake: c.reopenAfterWake, weather: c.weather, weatherPlace: c.weatherPlace, info: c.info, infoLines: c.infoLines, previewAlways: c.previewAlways, previewInTile: c.previewInTile, previewSize: c.previewSize, previewSound: c.previewSound, wallAnim: c.wallAnim,
+    showLastOn: c.showLastOn, showAppCount: c.showAppCount, showAppLabels: c.showAppLabels, showCec: c.showCec, showTvLogos: c.showTvLogos, showPointer: c.showPointer, reopenAfterWake: c.reopenAfterWake, weather: c.weather, weatherPlace: c.weatherPlace, info: c.info, infoLines: c.infoLines, board: c.board, boardLeagues: c.boardLeagues, scoresLeagues: scoresLib.LEAGUES, previewAlways: c.previewAlways, previewInTile: c.previewInTile, previewSize: c.previewSize, previewSound: c.previewSound, wallAnim: c.wallAnim,
     remoteBattery: c.remoteBattery,
     animTheme: c.animTheme, animSky: c.animSky, animLight: c.animLight, animThemes: ANIM_THEMES,
     wallShuffleMinutes: c.wallShuffleMinutes, shuffleMinutes: SHUFFLE_MINUTES, colours: c.colours,
@@ -1977,6 +1988,19 @@ function homeInfoIcon(v) {
   return v.replace(/^mdi:/, '').toLowerCase().replace(/[^a-z0-9-]/g, '').slice(0, 40);
 }
 
+// A pushed list of lines, at most max of them, or null where it is not one.
+function homeInfoLines(list, max, labelMax) {
+  if (!isArray(list)) return null;
+  var lines = [];
+  list.forEach(function (item) {
+    if (lines.length >= max || !item || typeof item !== 'object') return;
+    var line = { icon: homeInfoIcon(item.icon), label: homeInfoText(item.label, labelMax),
+                 value: homeInfoText(item.value, HOME_INFO_VALUE_MAX) };
+    if (line.label || line.value) lines.push(line);
+  });
+  return lines;
+}
+
 function setHomeInfo(raw) {
   var text = String(raw == null ? '' : raw).trim();
   var parsed = null;
@@ -2082,9 +2106,83 @@ function currentInfo() {
   return [];
 }
 
+/*
+ * A board beside them: a title and a longer list the view shows a few lines
+ * at a time. text.lg_tv_home_board's command topic:
+ *   {"title":"Football today","minutes":10,"lines":[{"label":"Arsenal 2-1 Chelsea","value":"67'"}]}
+ * Live results go stale, so it is not kept across a restart, and with
+ * minutes it is taken away that long after the last push, as when Home
+ * Assistant stops sending. An empty push takes it away at once.
+ */
+var HOME_BOARD_MAX = 20;
+var HOME_BOARD_LABEL_MAX = 48;
+var HOME_BOARD_TITLE_MAX = 40;
+var homeBoard = null;
+
+function setHomeBoard(raw) {
+  var text = String(raw == null ? '' : raw).trim();
+  if (!text) { homeBoard = null; return; }
+  var parsed = null;
+  try { parsed = JSON.parse(text); } catch (e) { return; }
+  var lines = homeInfoLines(parsed && !isArray(parsed) ? parsed.lines : parsed, HOME_BOARD_MAX, HOME_BOARD_LABEL_MAX);
+  if (!lines) return;
+  var title = parsed && !isArray(parsed) ? homeInfoText(parsed.title, HOME_BOARD_TITLE_MAX) : '';
+  var minutes = parsed && !isArray(parsed) && typeof parsed.minutes === 'number' && parsed.minutes > 0 ? parsed.minutes : 0;
+  homeBoard = title || lines.length ? { title: title, lines: lines, until: minutes ? nowMs() + minutes * 60000 : 0 } : null;
+}
+
+/*
+ * The day's matches in the leagues chosen on the dashboard, read from ESPN
+ * (lib/scores) at most every SCORES_MS while Home is on screen and the TV
+ * on. A read that fails keeps the last for SCORES_STALE_MS; a new day starts
+ * empty.
+ */
+var SCORES_MS = 60000;
+var SCORES_STALE_MS = 15 * 60000;
+/** @type {typeof import('./scores')} */
+var scoresModule = null;
+var scores = null;          // { day, at, matches }
+var scoresAt = 0;
+var scoresReading = false;
+
+function refreshScores() {
+  var c = readConfig();
+  if (c.board !== 'scores' || !c.boardLeagues.length || !scoresModule || !powerActive) return;
+  if (scoresReading || nowMs() - scoresAt < SCORES_MS) return;
+  scoresReading = true;
+  scoresAt = nowMs();
+  var wanted = c.boardLeagues.join(',');
+  scoresModule.today(c.boardLeagues, nowMs(), function (err, matches) {
+    scoresReading = false;
+    if (readConfig().boardLeagues.join(',') !== wanted) return;
+    if (err) return console.error('home: could not read the scores: ' + err.message);
+    scores = { day: scoresModule.dayOf(nowMs()), at: nowMs(), matches: matches };
+  });
+}
+
+function currentBoard() {
+  var c = readConfig();
+  if (c.board === 'ha') {
+    if (!homeBoard) return null;
+    if (homeBoard.until && nowMs() > homeBoard.until) { homeBoard = null; return null; }
+    return { title: homeBoard.title, lines: homeBoard.lines };
+  }
+  if (c.board === 'scores' && c.boardLeagues.length && scores && scoresModule) {
+    if (scores.day !== scoresModule.dayOf(nowMs()) || nowMs() - scores.at > SCORES_STALE_MS) return null;
+    return { kind: 'scores', leagues: c.boardLeagues.map(function (id) { return scoresLib.league(id).short; }),
+             matches: scores.matches.map(function (m) {
+               var o = {}; for (var k in m) o[k] = m[k];
+               o.league = scoresLib.league(m.league).short;
+               return o;
+             }) };
+  }
+  return null;
+}
+
 function info(cb) {
   refreshEntityInfo();
-  cb({ ok: true, lines: currentInfo() });
+  refreshScores();
+  cb({ ok: true, lines: currentInfo(), board: currentBoard() });
 }
 
 function loadWeather() {
@@ -3374,7 +3472,7 @@ function beat(body) {
   // Whether Internet TV is in front, its guide or a player: Home Assistant's media player shows IPTV then.
   if (iptvModule && body && typeof body.iptv === 'boolean') iptvModule.front(body.iptv && viewInFront());
   beats++;
-  if (viewInFront()) { watchBeat(beatGraceMs); refreshEntityInfo(); }
+  if (viewInFront()) { watchBeat(beatGraceMs); refreshEntityInfo(); refreshScores(); }
   var saver = powerState === 'Screen Saver' || !!(screensaversModule && screensaversModule.launchedShowing());
   // As last seen: the reply does not wait for videooutput.
   var onScreen = wallVideoOnScreen;
@@ -3384,7 +3482,7 @@ function beat(body) {
            build: buildId, wallpapers: wallpapers.status(),
            layoutVersion: layoutVersion(), sleeps: sleeps, trace: fs.existsSync(traceFile()),
            // So a push shows within a heartbeat rather than at the next poll.
-           weather: currentWeather(), remoteBattery: remoteBatteryBadge(), info: currentInfo() };
+           weather: currentWeather(), remoteBattery: remoteBatteryBadge(), info: currentInfo(), board: currentBoard() };
 }
 
 /*
@@ -4003,6 +4101,11 @@ function init(opts) {
   loadHomeInfo();
   weatherModule = opts.weather || null;
   haEntityModule = opts.haEntity || null;
+  scoresModule = opts.scores || null;
+  scores = null;
+  scoresAt = 0;
+  scoresReading = false;
+  homeBoard = null;
   entityInfo = null;
   entityInfoAt = 0;
   entityInfoReading = false;
@@ -4278,6 +4381,7 @@ module.exports = {
   now: now,
   setWeather: setWeather,
   setHomeInfo: setHomeInfo,
+  setHomeBoard: setHomeBoard,
   info: info,
   weatherPlaces: weatherPlaces,
   weather: weather,

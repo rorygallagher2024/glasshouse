@@ -3693,6 +3693,54 @@ step('lines from entities chosen on the dashboard are read through Home Assistan
   });
 });
 
+step('the board: today\'s matches in the leagues chosen, read at most once a minute, or a board Home Assistant pushes', function (done) {
+  var clock = Date.now();
+  var asked = 0;
+  var matches = [{ league: 'soccer/eng.1', start: clock, state: 'in', status: 'STATUS_HALFTIME', clock: "45'",
+                   home: 'Hull', away: 'Brighton', homeScore: '1', awayScore: '0' }];
+  var fail = false;
+  var scoresFake = {
+    dayOf: require('../server/lib/scores').dayOf,
+    today: function (ids, now, cb) { asked++; return fail ? cb(new Error('offline')) : cb(null, matches); }
+  };
+  start(null, { now: function () { return clock; }, scores: scoresFake });
+  assert.strictEqual(home.layout().board, 'off', 'off unless chosen');
+  assert.ok(home.layout().scoresLeagues.length > 5, 'the leagues offered come with the layout');
+  home.setLayout({ board: 'scores', boardLeagues: ['soccer/eng.1', 'soccer/nowhere', 'soccer/uefa.champions'] }, function (r) {
+    assert.deepEqual(r.layout.boardLeagues, ['soccer/eng.1', 'soccer/uefa.champions'], 'unknown leagues left out');
+    home.info(function (i1) {
+      assert.strictEqual(asked, 1);
+      var b = i1.board || home.beat().board;
+      assert.strictEqual(b.kind, 'scores');
+      assert.deepEqual(b.leagues, ['PL', 'CL']);
+      assert.strictEqual(b.matches[0].league, 'PL', 'each match by its league\'s short name');
+      home.info(function () {});
+      assert.strictEqual(asked, 1, 'not again within a minute');
+      clock += 61000;
+      fail = true;
+      home.info(function () {});
+      assert.strictEqual(asked, 2, 'again after a minute');
+      assert.strictEqual(home.beat().board.matches.length, 1, 'a failed read keeps the last');
+      clock += 16 * 60000;
+      assert.strictEqual(home.beat().board, null, 'gone once 15 minutes old');
+      home.setLayout({ board: 'ha' }, function () {
+        var lines = [];
+        for (var i = 0; i < 25; i++) lines.push({ label: 'Team ' + i, value: "67'" });
+        home.setHomeBoard(JSON.stringify({ title: 'Football today', minutes: 10, lines: lines }));
+        var pushed = home.beat().board;
+        assert.strictEqual(pushed.title, 'Football today');
+        assert.strictEqual(pushed.lines.length, 20, 'twenty at most');
+        clock += 10 * 60000 + 1000;
+        assert.strictEqual(home.beat().board, null, 'a pushed board goes once its minutes are up');
+        home.setHomeBoard(JSON.stringify({ title: 'x', lines: [] }));
+        home.setHomeBoard('');
+        assert.strictEqual(home.beat().board, null, 'an empty push takes it away');
+        done();
+      });
+    });
+  });
+});
+
 step('a Weather switch saved off before the source choice stays off', function (done) {
   start({ enabled: false, showWeather: false });
   assert.strictEqual(home.layout().weather, 'off');

@@ -2068,6 +2068,10 @@ function setupHomeAssistant() {
       if (glasshouseHome) glasshouseHome.setHomeInfo(val);
       return;
     }
+    if (action === 'homeBoard') {
+      if (glasshouseHome) glasshouseHome.setHomeBoard(val);
+      return;
+    }
 
     if (action === 'toast') {
       doControl('toast', val, function() {});
@@ -2243,11 +2247,14 @@ function startGlasshouseHome() {
   });
   var weather = require('./lib/weather');
   weather.init({ getJson: fetchLib.getJson });
+  var scores = require('./lib/scores');
+  scores.init({ getJson: fetchLib.getJson });
   glasshouseHome.init({
     // webOS 11 with the Home key changed: LG's Home stays drawn under Glasshouse Bar unless it is closed.
     lgHomeUnderBar: remoteKeys.nativeHomeBarOn,
     screensavers: screensavers,
     weather: weather,
+    scores: scores,
     haEntity: haEntity,
     // What the dashboard's Remote section shows: the level, the step it stands
     // in for, and whether it can be read at all. null with no remote paired.

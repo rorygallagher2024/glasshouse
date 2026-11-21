@@ -3797,5 +3797,15 @@
  "home.info.today": {"from": "today", "text": "i dag"},
  "home.info.tomorrow": {"from": "tomorrow", "text": "i morgon"},
  "home.info.weekday": {"from": "on {weekday}", "text": "på {weekday}"},
- "home.infoDesc": {"from": "Beside the clock: up to four lines, each an entity's value, such as the next bin collection, the post or a share price. Or lines Home Assistant sends itself.", "text": "Bredvid klockan: upp till fyra rader, var och en en entitets värde, till exempel nästa sophämtning, posten eller en aktiekurs. Eller rader som Home Assistant skickar själv."}
+ "home.infoDesc": {"from": "Beside the clock: up to four lines, each an entity's value, such as the next bin collection, the post or a share price. Or lines Home Assistant sends itself.", "text": "Bredvid klockan: upp till fyra rader, var och en en entitets värde, till exempel nästa sophämtning, posten eller en aktiekurs. Eller rader som Home Assistant skickar själv."},
+ "home.board": {"from": "Board", "text": "Resultattavla"},
+ "home.board.fromHa": {"from": "Sent from Home Assistant", "text": "Skickas från Home Assistant"},
+ "home.board.fromScores": {"from": "Today's matches", "text": "Dagens matcher"},
+ "home.board.fullTime": {"from": "FT", "text": "Slut"},
+ "home.board.halfTime": {"from": "HT", "text": "Halvtid"},
+ "home.board.leaguesDesc": {"from": "Choose the leagues. Glasshouse reads their matches from ESPN once a minute while Home is on screen and the TV is on. Nothing else is sent.", "text": "Välj ligor. Glasshouse hämtar deras matcher från ESPN en gång i minuten medan Home visas och TV:n är på. Inget annat skickas."},
+ "home.board.none": {"from": "No matches today", "text": "Inga matcher i dag"},
+ "home.board.postponed": {"from": "Postponed", "text": "Inställd"},
+ "home.board.scoresTitle": {"from": "Today’s matches", "text": "Dagens matcher"},
+ "home.boardDesc": {"from": "Beside the lines: today's matches in the leagues you choose, with their kick-off times and live scores, four at a time. Or a board Home Assistant sends.", "text": "Bredvid raderna: dagens matcher i de ligor du väljer, med avsparkstider och liveresultat, fyra i taget. Eller en tavla som Home Assistant skickar."}
 }
