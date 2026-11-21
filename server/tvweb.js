@@ -700,8 +700,13 @@ screensavers.init({
 idlesaver.init({ luna: luna, mediaState: telemetry.readMediaState,
   homeVideoBackground: function () { return !!(glasshouseHome && glasshouseHome.videoBackgroundActive()); },
   watching: function () { return !!(iptv && iptv.watching()); } });
+// The Art screen saver's settings and the paintings it fetched ahead.
+require('./lib/art').init({
+  // The remote's left and right step the pictures on the No Signal screen.
+  watchKeys: function (on) { if (!on || remotebuttons.isSupported()) remotebuttons.want('art', on); }
+});
 // A mount does not outlive a reboot: the plain No Signal screen is mounted again.
-nosignal.init({ luna: luna });
+nosignal.init({ luna: luna, config: CONFIG });
 nosignal.apply();
 telemetry.init({
   luna: luna,
@@ -800,6 +805,7 @@ remotebuttons.init({
   },
   onAnyKey: function (code) {
     screensavers.keyPressed(code);
+    require('./lib/art').keyPressed(code);
   },
   onPointer: function () {
     screensavers.pointerUsed();

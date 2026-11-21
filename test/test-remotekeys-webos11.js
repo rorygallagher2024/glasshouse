@@ -1025,6 +1025,9 @@ step('restore puts back every key LG had, and deletes Glasshouse\'s files', func
       voice.switches = [];
       set('ai', 'open', 'netflix', function () {
       set('alexa', 'nothing', '', function () {
+      // A Brightness key here shows no level bar, so the bar's app is not on the TV
+      // and restore leaves it alone: the fake luna refuses a dev/remove.
+      set('netflix', 'open', 'action:brightnessUp', function () {
       assert.ok(tv.blocked['amazon.alexa.view']);
       assert.ok(exists(MAP) && exists(LG_FILE));
       rk.restore(function (ok) {
@@ -1041,6 +1044,7 @@ step('restore puts back every key LG had, and deletes Glasshouse\'s files', func
         assert.ok(!exists(MAP) && !exists(LG_FILE));
         assert.strictEqual(tv.configs['glasshouse.remoteKeys'], undefined);
         next();
+      });
       });
       });
       });

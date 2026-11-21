@@ -4022,6 +4022,7 @@ step('apps take card icons from the folder by title, or the one chosen, and the 
       assert.strictEqual(r.layout.appCards, true);
       assert.strictEqual(r.layout.focusPulse, true);
       assert.strictEqual(r.layout.navSound, 'off', 'only a sound Home has');
+      assert.strictEqual(r.layout.pointerSound, 'off', 'the pointer follows the keys until chosen');
       assert.strictEqual(fs.existsSync(home.navSoundFile('click').path), true, 'the click ships with Glasshouse');
       assert.strictEqual(fs.existsSync(home.navSoundFile('rollover').path), true);
       assert.strictEqual(home.navSoundFile('own'), null, 'no own sound until one is put on the TV');
