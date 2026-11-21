@@ -178,6 +178,13 @@ WebOSWindow {
                 font.pixelSize: 30
                 font.italic: true
             }
+            Text {
+                id: creditMeasure
+                visible: false
+                text: win.shownInfo && win.shownInfo.credit ? win.shownInfo.credit : ""
+                font.family: win.textFamily
+                font.pixelSize: 19
+            }
             Column {
                 id: words
                 x: 22
@@ -209,10 +216,52 @@ WebOSWindow {
                 Text {
                     text: win.shownInfo && win.shownInfo.credit ? win.shownInfo.credit : ""
                     visible: text !== ""
+                    // A museum's credit line is shown whole, so it wraps.
+                    width: Math.min(creditMeasure.implicitWidth + 1, 760)
+                    wrapMode: Text.WordWrap
                     color: "#8c8c8c"
                     font.family: win.textFamily
                     font.pixelSize: 19
                 }
+            }
+        }
+
+        /*
+         * A picture whose licence asks for its credit (ESA's, a photographer's
+         * on Commons) keeps it on screen, small, while the label is not up,
+         * in the bottom corner on the other side from the label.
+         */
+        Rectangle {
+            id: creditBox
+            z: 3
+            property bool needed: !!(win.shownInfo && win.shownInfo.mustCredit) && win.started
+            property string line: win.shownInfo ? [win.shownInfo.artist, win.shownInfo.credit].filter(function (s) { return !!s; }).join(" \u00b7 ") : ""
+            width: creditText.width + 20
+            height: creditText.height + 12
+            radius: 3
+            color: "#000000"
+            opacity: needed && !win.labelUp ? 0.7 : 0
+            visible: opacity > 0
+            Behavior on opacity { NumberAnimation { duration: 1500 } }
+            x: (win.corner % 2) ? 40 : win.width - width - 40
+            y: win.height - height - 36
+            Text {
+                id: creditMeasureSmall
+                visible: false
+                text: creditBox.line
+                font.family: win.textFamily
+                font.pixelSize: 17
+            }
+            Text {
+                id: creditText
+                x: 10
+                y: 6
+                text: creditBox.line
+                width: Math.min(creditMeasureSmall.implicitWidth + 1, 900)
+                wrapMode: Text.WordWrap
+                color: "#b4b4b4"
+                font.family: win.textFamily
+                font.pixelSize: 17
             }
         }
 
