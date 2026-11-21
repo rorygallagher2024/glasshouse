@@ -10,7 +10,11 @@
     "pt": "Autoestrada musical",
     "pt-br": "Rodovia musical",
     "ru": "Музыкальная трасса",
-    "vi": "Xa lộ âm nhạc"
+    "vi": "Xa lộ âm nhạc",
+    "ar": "طريق الموسيقى السريع",
+    "de": "Musik-Highway",
+    "fr": "Autoroute musicale",
+    "sv": "Musikmotorväg"
   },
   "description": {
     "en": "A neon track that rises, banks and speeds up with what the TV plays, and a craft catching blocks on the beat.",
@@ -21,7 +25,11 @@
     "pt": "Uma pista néon que sobe, se inclina e acelera com o que a TV toca, e uma nave que apanha blocos ao ritmo.",
     "pt-br": "Uma pista neon que sobe, se inclina e acelera com o que a TV toca, e uma nave que pega blocos no ritmo.",
     "ru": "Неоновая трасса, которая поднимается, кренится и ускоряется под то, что играет телевизор, и корабль, ловящий блоки в такт.",
-    "vi": "Một đường đua neon nhô lên, nghiêng và tăng tốc theo những gì TV đang phát, cùng một phi thuyền đón các khối theo nhịp."
+    "vi": "Một đường đua neon nhô lên, nghiêng và tăng tốc theo những gì TV đang phát, cùng một phi thuyền đón các khối theo nhịp.",
+    "ar": "مسار نيون يرتفع ويميل ويتسارع مع ما يشغّله التلفزيون، ومركبة تلتقط المكعبات على الإيقاع.",
+    "de": "Eine Neonstrecke, die mit dem, was der Fernseher spielt, ansteigt, sich neigt und schneller wird, und ein Gleiter, der Blöcke im Takt fängt.",
+    "fr": "Une piste néon qui monte, s’incline et accélère avec ce que joue la TV, et un vaisseau qui attrape des blocs en rythme.",
+    "sv": "En neonbana som stiger, lutar och ökar farten med det TV:n spelar, och en farkost som fångar block i takt."
   },
   "license": "MIT",
   "uses": [
@@ -39,7 +47,11 @@
       "pt": "Blocos",
       "pt-br": "Blocos",
       "ru": "Блоки",
-      "vi": "Khối"
+      "vi": "Khối",
+      "ar": "المكعبات",
+      "de": "Blöcke",
+      "fr": "Blocs",
+      "sv": "Block"
     },
     "default": "beat",
     "options": [
@@ -54,7 +66,11 @@
           "pt": "No ritmo",
           "pt-br": "No ritmo",
           "ru": "В такт",
-          "vi": "Theo nhịp"
+          "vi": "Theo nhịp",
+          "ar": "على الإيقاع",
+          "de": "Im Takt",
+          "fr": "En rythme",
+          "sv": "I takt"
         },
         "value": "1"
       },
@@ -69,7 +85,11 @@
           "pt": "Reagir a cada batida",
           "pt-br": "Reagir a cada batida",
           "ru": "Реагировать на каждый удар",
-          "vi": "Phản ứng với từng tiếng gõ"
+          "vi": "Phản ứng với từng tiếng gõ",
+          "ar": "التفاعل مع كل ضربة",
+          "de": "Auf jeden Schlag reagieren",
+          "fr": "Réagir à chaque frappe",
+          "sv": "Reagera på varje slag"
         },
         "value": "0"
       }
