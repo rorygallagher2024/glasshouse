@@ -84,6 +84,14 @@ hours.
   context, but ES 2 is what every TV can be assumed to take.
 * `highp` in a fragment shader is optional in ES 2. Mali GPUs (Midgard on the
   B8, Bifrost on the CX) support it.
+* Music highway bends its track with a vertex shader on a `GridMesh` (10 × 160:
+  with one column, each row's two triangles bent the lane lines into a
+  sawtooth), far end first so nearer rows paint over a crest, and its laser
+  walls the same way into a 960×540 layer. On an OLED55A19LA (webOS 6.5.3,
+  a single-core Mali-G52) it ran at 55-60 fps and 28.6% of one core, most of
+  that the JavaScript moving blocks and sparks. Half-rings cut by `clip`
+  inside an item rotating with the road ended the screen saver 18 s in there,
+  and a 512×512 layer per ring made it lag; shapes are drawn by shaders.
 * Shader screen savers have run on a CX and nothing older. On a B8 (4×
   Cortex-A53 at up to 1 GHz, 32-bit; Mali-T820 MP2) they are expected to load,
   as nothing they use is newer than Qt 5.6, but how fast they run there has not
