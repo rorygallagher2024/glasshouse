@@ -3751,5 +3751,6 @@
  "ss.ha.none": {"from": "No entities chosen yet.", "text": "Aucune entité choisie pour l’instant."},
  "ss.ha.reads": {"from": "Reads", "text": "Affiche"},
  "ss.ha.settings": {"from": "Screen saver settings", "text": "Réglages de l’écran de veille"},
- "ss.entities2": {"from": "Entities", "text": "Entités"}
+ "ss.entities2": {"from": "Entities", "text": "Entités"},
+ "ss.tvOff": {"from": "The TV is off. Switch it on to start a screen saver.", "text": "Le téléviseur est éteint. Allumez-le pour lancer un écran de veille."}
 }

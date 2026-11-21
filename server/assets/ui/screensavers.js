@@ -14,6 +14,7 @@ const SS_SWITCHING = t('ss.switching',
   'The TV is switching screen savers. The screen may stay dark for up to a minute, then it comes back on its own.');
 const SS_ONLY_IN_APPS = t('ss.onlyInApps',
   'The screen saver can only be started while a webOS app is running, not from an HDMI input or Live TV.');
+const SS_TV_OFF = t('ss.tvOff', 'The TV is off. Switch it on to start a screen saver.');
 
 /*
  * Marks a button as refused, with the reason. Not `disabled`: a disabled button

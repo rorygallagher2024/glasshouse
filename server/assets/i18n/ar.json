@@ -3751,5 +3751,6 @@
  "ss.ha.none": {"text": "لم يُختر أي كيان بعد.", "from": "No entities chosen yet."},
  "ss.ha.reads": {"text": "يقرأ", "from": "Reads"},
  "ss.ha.settings": {"text": "إعدادات شاشة التوقف", "from": "Screen saver settings"},
- "ss.entities2": {"text": "الكيانات", "from": "Entities"}
+ "ss.entities2": {"text": "الكيانات", "from": "Entities"},
+ "ss.tvOff": {"text": "التلفاز مطفأ. شغّله لبدء شاشة التوقف.", "from": "The TV is off. Switch it on to start a screen saver."}
 }

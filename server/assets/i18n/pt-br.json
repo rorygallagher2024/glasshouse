@@ -3751,5 +3751,6 @@
  "ss.ha.none": {"text": "Nenhuma entidade escolhida ainda.", "from": "No entities chosen yet."},
  "ss.ha.reads": {"text": "Lê", "from": "Reads"},
  "ss.ha.settings": {"text": "Configurações do protetor de tela", "from": "Screen saver settings"},
- "ss.entities2": {"text": "Entidades", "from": "Entities"}
+ "ss.entities2": {"text": "Entidades", "from": "Entities"},
+ "ss.tvOff": {"text": "A TV está desligada. Ligue-a para iniciar um protetor de tela.", "from": "The TV is off. Switch it on to start a screen saver."}
 }
