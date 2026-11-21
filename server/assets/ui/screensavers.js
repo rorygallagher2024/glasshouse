@@ -714,35 +714,47 @@ function renderSsArt(art, locked) {
   ssArtState = art;
   const s = art.settings;
   const pics = art.pictures || [];
-  const dis = locked ? ' dis' : '';
-  const item = (checked, onchange, name, sub) => `<label class="ss-pool-item ss-art-item${dis}">
-      <input type="checkbox" ${checked ? 'checked' : ''} ${locked ? 'disabled' : ''} onchange="${onchange}">
-      <span><span class="ss-art-name">${esc(name)}</span><span class="ss-art-sub">${esc(sub)}</span></span>
-    </label>`;
+  // A switch pressed redraws its row: focus is kept on it, for the keyboard.
+  const focusKey = document.activeElement && document.activeElement.dataset ? document.activeElement.dataset.fkey : '';
+  const onOff = on => on ? t('common.on', 'On') : t('common.off', 'Off');
+  const row = (key, name, desc, on, onclick) => `<div class="prot-row">
+      <div class="prot-main">
+        <div class="prot-title" id="frame-t-${esc(key)}">${esc(name)}</div>
+        ${desc ? `<div class="prot-desc">${esc(desc)}</div>` : ''}
+      </div>
+      <div class="prot-status"><button type="button" class="pill pill-toggle ${on ? 'good' : 'idle'}" data-fkey="${esc(key)}"
+        aria-pressed="${on ? 'true' : 'false'}" aria-labelledby="frame-t-${esc(key)}" onclick="${onclick}" ${locked ? 'disabled' : ''}>${esc(onOff(on))}</button></div>
+    </div>`;
+
+  q('ss-art-mine').innerHTML = row('mine', t('ss.art.mineShow', 'Show your pictures'),
+    pics.length === 1 ? t('ss.art.mineOne', '1 picture added.') : t('ss.art.mineN', '{n} pictures added.', { n: pics.length }),
+    s.mine, `ssArtSave({ mine: ${s.mine ? 'false' : 'true'} })`);
+
   q('ss-art-sources').innerHTML =
-    item(s.mine, 'ssArtSave({ mine: this.checked })', t('ss.art.mine', 'Your pictures'),
-      t('ss.art.mineCount', '{n} added below', { n: pics.length })) +
     [['space', t('ss.art.groupSpace', 'Space')], ['photos', t('ss.art.groupPhotos', 'Photography')], ['paintings', t('ss.art.groupPaintings', 'Paintings')]]
       .map(([group, name]) => {
         const list = art.collections.filter(c => (c.group || 'paintings') === group);
         if (!list.length) return '';
         const from = [...new Set(list.map(c => c.source))].join(', ');
-        return `<div class="ss-art-group"><span>${esc(name)}</span><span class="ss-art-from">${esc(from)}</span></div>` +
-          list.map(c => item(c.on, `ssArtCollection('${esc(c.id)}', this.checked)`, c.label, c.detail)).join('');
+        return `<section class="set-sec" aria-labelledby="frame-sec-${group}">
+          <h3 class="pv-g" id="frame-sec-${group}">${esc(name)}<span class="c">${esc(from)}</span></h3>
+          <div class="prot-table">${list.map(c => row(c.id, c.label, c.detail, c.on, `ssArtCollection('${esc(c.id)}', ${c.on ? 'false' : 'true'})`)).join('')}</div>
+        </section>`;
       }).join('');
 
   const full = pics.length >= art.maxPictures;
   const busy = locked || ssArtUploading || art.uploading;
   q('ss-art-pics').innerHTML = `<div class="wall-card${ssArtUploading ? ' busy' : ''}">
-      <button type="button" class="wall-screen" id="ss-art-add" onclick="ssArtChoose()" ${busy || full ? 'disabled' : ''}
+      <button type="button" class="wall-screen" id="ss-art-add" data-fkey="add" onclick="ssArtChoose()" ${busy || full ? 'disabled' : ''}
           aria-label="${esc(t('ss.art.add', 'Add pictures'))}">
         ${full ? '' : `<span class="wall-add">${esc(t('ss.art.add', 'Add pictures'))}</span>`}
         ${ssArtUploading ? `<span class="wall-sending">${esc(t('home.wall.uploading', 'Uploading…'))}</span>` : ''}
       </button>
     </div>` + pics.map((id, i) => `<div class="wall-card has fixed">
-      <button type="button" class="wall-screen" tabindex="-1" disabled aria-label="${esc(t('home.wall.pictureN', 'Picture {n}', { n: i + 1 }))}"
-          style="background-image:url('${esc(api('/api/art/image?id=p-' + encodeURIComponent(id)))}')"></button>
-      <div class="wall-actions"><button type="button" class="wall-link" onclick="ssArtRemove('${esc(id)}')" ${busy ? 'disabled' : ''}>${esc(t('home.wall.remove', 'Remove'))}</button></div>
+      <div class="wall-screen" role="img" aria-label="${esc(t('home.wall.pictureN', 'Picture {n}', { n: i + 1 }))}"
+          style="background-image:url('${esc(api('/api/art/image?id=p-' + encodeURIComponent(id)))}')"></div>
+      <div class="wall-actions"><button type="button" class="wall-link" data-fkey="rm-${esc(id)}" onclick="ssArtRemove('${esc(id)}')" ${busy ? 'disabled' : ''}
+        aria-label="${esc(t('ss.art.removeN', 'Remove picture {n}', { n: i + 1 }))}">${esc(t('home.wall.remove', 'Remove'))}</button></div>
     </div>`).join('');
   const add = q('ss-art-add');
   add.addEventListener('dragover', e => { if (busy || full) return; e.preventDefault(); add.classList.add('drop'); });
@@ -755,11 +767,16 @@ function renderSsArt(art, locked) {
   });
 
   const folders = art.folders || [];
-  q('ss-art-folders').innerHTML = (folders.length ? `<div class="ss-pool-box ss-art-box">${folders.map(f => `<div class="ss-pool-item ss-art-item ss-art-folder">
-      <span><span class="ss-art-name">${esc(f.title || f.server)}</span><span class="ss-art-sub">${esc(f.server)}</span></span>
-      <button type="button" class="wall-link" onclick="ssArtRemoveFolder('${esc(f.key)}')" ${locked ? 'disabled' : ''}>${esc(t('home.wall.remove', 'Remove'))}</button>
-    </div>`).join('')}</div>` : '') +
-    `<div class="ss-pool-actions"><button type="button" class="ss-pool-btn" onclick="ssArtBrowse()" ${locked || folders.length >= (art.maxFolders || 10) || !q('ss-art-browse').hidden ? 'disabled' : ''}>${esc(t('ss.art.addFolder', 'Add a network folder'))}</button></div>`;
+  const browsing = !q('ss-art-browse').hidden;
+  q('ss-art-folders').innerHTML = folders.map(f => `<div class="prot-row">
+      <div class="prot-main"><div class="prot-title">${esc(f.title || f.server)}</div><div class="prot-desc">${esc(f.server)}</div></div>
+      <div class="prot-status"><button type="button" class="pill idle" data-fkey="f-${esc(f.key)}" onclick="ssArtRemoveFolder('${esc(f.key)}')" ${locked ? 'disabled' : ''}
+        aria-label="${esc(t('ss.art.removeFolder', 'Remove {folder}', { folder: f.title || f.server }))}">${esc(t('home.wall.remove', 'Remove'))}</button></div>
+    </div>`).join('') + (browsing ? '' : `<div class="prot-row">
+      <div class="prot-main"><div class="prot-desc set-desc-only">${esc(folders.length ? t('ss.art.foldersMore', 'Pictures from a NAS or media server on your network, such as Plex or Jellyfin, over DLNA.')
+        : t('ss.art.foldersNone', 'Pictures from a NAS or media server on your network, such as Plex or Jellyfin, over DLNA. None added yet.'))}</div></div>
+      <div class="prot-status"><button type="button" class="pill idle" data-fkey="addfolder" onclick="ssArtBrowse()" ${locked || folders.length >= (art.maxFolders || 10) ? 'disabled' : ''}>${esc(t('ss.art.addFolderShort', 'Add folder'))}</button></div>
+    </div>`);
 
   const fill = (id, options, value) => {
     const sel = q(id);
@@ -770,23 +787,26 @@ function renderSsArt(art, locked) {
     sel.disabled = locked;
   };
   fill('ss-art-minutes', (art.secondChoices || [30, 60, 120, 300, 600, 900, 1800, 3600]).map(n => [n,
-    n === 3600 ? t('ss.art.everyHour', 'A new picture every hour')
-      : n === 60 ? t('ss.art.everyMinute', 'A new picture every minute')
-      : n < 60 ? t('ss.art.everySeconds', 'A new picture every {n} seconds', { n })
-      : t('ss.art.everyMinutes', 'A new picture every {n} minutes', { n: n / 60 })]), s.seconds);
-  fill('ss-art-fit', [['fit', t('ss.art.fit', 'The whole picture, on black')], ['fill', t('ss.art.fill', 'Filling the screen')]], s.fit);
-  fill('ss-art-caption', [['brief', t('ss.art.captionBrief', 'Its label for a moment after each change')],
-    ['always', t('ss.art.captionAlways', 'Its label all the time')], ['off', t('ss.art.captionOff', 'No label')]], s.caption);
+    n === 3600 ? t('ss.art.oneHour', '1 hour') : n === 60 ? t('ss.art.oneMinute', '1 minute')
+      : n < 60 ? t('ss.art.nSeconds', '{n} seconds', { n }) : t('ss.art.nMinutes', '{n} minutes', { n: n / 60 })]), s.seconds);
+  fill('ss-art-fit', [['fit', t('ss.art.fitWhole', 'Whole picture')], ['fill', t('ss.art.fitFill', 'Fill the screen')]], s.fit);
+  fill('ss-art-caption', [['brief', t('ss.art.capBrief', 'Briefly')], ['always', t('ss.art.capAlways', 'Always')], ['off', t('ss.art.capOff', 'Off')]], s.caption);
 
   const where = [];
   const museums = [...new Set(art.collections.filter(c => c.on).map(c => c.source))];
   if (museums.length) {
     where.push(art.fetching ? t('ss.art.fetching', 'Fetching the next painting…')
-      : t('ss.art.privacy3', 'Pictures from {sources} are free to show with their credit, which each one\u2019s label carries, and stays on screen where its licence asks. The TV fetches them one at a time, and keeps only the last few and the next one or two.', { sources: museums.join(t('ss.art.and', ' and ')) }));
+      : t('ss.art.privacy3', 'Pictures from {sources} are free to show with their credit, which each one’s label carries, and stays on screen where its licence asks. The TV fetches them one at a time, and keeps only the last few and the next one or two.', { sources: museums.join(t('ss.art.and', ' and ')) }));
   }
   if (art.error) where.push(art.error);
   if (!s.mine && !museums.length && !folders.length) where.push(t('ss.art.nothing', 'Pick your pictures or a collection, or the screen saver has nothing to show.'));
   q('ss-art-where').textContent = where.join(' ');
+  q('frame-modal-sub').textContent = frameSummary(art);
+
+  if (focusKey) {
+    const again = q('frame-modal').querySelector(`[data-fkey="${CSS.escape(focusKey)}"]`);
+    if (again && !again.disabled) again.focus();
+  }
 }
 
 /*
@@ -805,15 +825,15 @@ async function ssArtBrowse() {
   const box = q('ss-art-browse');
   box.hidden = false;
   ssArtPath = [];
-  box.innerHTML = `<div class="pv-sub">${esc(t('ss.art.looking', 'Looking for media servers on your network…'))}</div>`;
+  box.innerHTML = `<p class="set-note" role="status">${esc(t('ss.art.looking', 'Looking for media servers on your network…'))}</p>`;
   if (ssArtState) renderSsArt(ssArtState, false);
   let r;
-  try { r = await ssArtGet('/api/art/servers'); } catch (e) { box.innerHTML = `<div class="pv-sub">${esc(e.message)}</div>`; return; }
+  try { r = await ssArtGet('/api/art/servers'); } catch (e) { box.innerHTML = `<p class="set-note">${esc(e.message)}</p>`; return; }
   const list = r.servers || [];
   box.innerHTML = (list.length
-    ? `<div class="ss-pool-box ss-art-box">${list.map(sv => `<button type="button" class="ss-art-row" onclick="ssArtOpen(${esc(JSON.stringify(JSON.stringify({ udn: sv.udn, name: sv.name })))}, '0', '')">${esc(sv.name)}<span aria-hidden="true">›</span></button>`).join('')}</div>`
-    : `<div class="pv-sub">${esc(t('ss.art.noServers', 'No media servers answered. Check that one, such as Plex, Jellyfin or a NAS, is on and sharing over DLNA.'))}</div>`) +
-    `<div class="ss-pool-actions"><button type="button" class="ss-pool-btn" onclick="ssArtBrowseClose()">${esc(t('common.cancel', 'Cancel'))}</button></div>`;
+    ? `<div class="set-crumbs">${esc(t('ss.art.servers', 'Media servers'))}</div><div class="set-list">${list.map(sv => `<button type="button" class="set-item" onclick="ssArtOpen(${esc(JSON.stringify(JSON.stringify({ udn: sv.udn, name: sv.name })))}, '0', '')"><span>${esc(sv.name)}</span><span class="set-chev" aria-hidden="true">›</span></button>`).join('')}</div>`
+    : `<p class="set-note">${esc(t('ss.art.noServers', 'No media servers answered. Check that one, such as Plex, Jellyfin or a NAS, is on and sharing over DLNA.'))}</p>`) +
+    `<div class="set-actions"><button type="button" class="pill idle" onclick="ssArtBrowseClose()">${esc(t('common.cancel', 'Cancel'))}</button></div>`;
 }
 
 function ssArtBrowseClose() {
@@ -829,10 +849,10 @@ async function ssArtOpen(serverJson, id, title, up) {
   else if (id !== '0') ssArtPath.push({ id, title });
   else ssArtPath = [];
   const box = q('ss-art-browse');
-  box.innerHTML = `<div class="pv-sub">${esc(t('ss.art.opening', 'Opening the folder…'))}</div>`;
+  box.innerHTML = `<p class="set-note" role="status">${esc(t('ss.art.opening', 'Opening the folder…'))}</p>`;
   let r;
   try { r = await ssArtGet('/api/art/browse?udn=' + encodeURIComponent(sv.udn) + '&id=' + encodeURIComponent(id)); }
-  catch (e) { box.innerHTML = `<div class="pv-sub">${esc(e.message)}</div><div class="ss-pool-actions"><button type="button" class="ss-pool-btn" onclick="ssArtBrowse()">${esc(t('ss.art.servers', 'Media servers'))}</button></div>`; return; }
+  catch (e) { box.innerHTML = `<p class="set-note">${esc(e.message)}</p><div class="set-actions"><button type="button" class="pill idle" onclick="ssArtBrowse()">${esc(t('ss.art.servers', 'Media servers'))}</button></div>`; return; }
   const svArg = esc(JSON.stringify(serverJson));
   const crumbs = [sv.name].concat(ssArtPath.map(p => p.title)).join(' / ');
   const parent = ssArtPath.length > 1 ? ssArtPath[ssArtPath.length - 2] : null;
@@ -840,13 +860,13 @@ async function ssArtOpen(serverJson, id, title, up) {
     ? `ssArtOpen(${svArg}, ${esc(JSON.stringify(parent ? parent.id : '0'))}, '', true)`
     : 'ssArtBrowse()';
   const folders = r.folders || [];
-  box.innerHTML = `<div class="ss-art-crumbs">${esc(crumbs)}</div>` +
-    (folders.length ? `<div class="ss-pool-box ss-art-box">${folders.map(f => `<button type="button" class="ss-art-row" onclick="ssArtOpen(${svArg}, ${esc(JSON.stringify(f.id))}, ${esc(JSON.stringify(f.title))})">${esc(f.title)}<span aria-hidden="true">›</span></button>`).join('')}</div>` : '') +
-    `<div class="pv-sub">${esc(r.pictures === 1 ? t('ss.art.folderHasOne', 'This folder holds 1 picture.') : r.pictures ? t('ss.art.folderHas', 'This folder holds {n} pictures.', { n: r.pictures }) : t('ss.art.folderNone', 'This folder holds no JPEG pictures of its own.'))}</div>` +
-    `<div class="ss-pool-actions">
-      <button type="button" class="ss-pool-btn" onclick="${back}">${esc(t('ss.art.back', 'Back'))}</button>
-      <button type="button" class="ss-pool-btn" onclick="ssArtAddFolder(${svArg}, ${esc(JSON.stringify(id))})" ${r.pictures ? '' : 'disabled'}>${esc(t('ss.art.useFolder', 'Use this folder'))}</button>
-      <button type="button" class="ss-pool-btn" onclick="ssArtBrowseClose()">${esc(t('common.cancel', 'Cancel'))}</button>
+  box.innerHTML = `<div class="set-crumbs">${esc(crumbs)}</div>` +
+    (folders.length ? `<div class="set-list">${folders.map(f => `<button type="button" class="set-item" onclick="ssArtOpen(${svArg}, ${esc(JSON.stringify(f.id))}, ${esc(JSON.stringify(f.title))})"><span>${esc(f.title)}</span><span class="set-chev" aria-hidden="true">›</span></button>`).join('')}</div>` : '') +
+    `<p class="set-note">${esc(r.pictures === 1 ? t('ss.art.folderHasOne', 'This folder holds 1 picture.') : r.pictures ? t('ss.art.folderHas', 'This folder holds {n} pictures.', { n: r.pictures }) : t('ss.art.folderNone', 'This folder holds no JPEG pictures of its own.'))}</p>` +
+    `<div class="set-actions">
+      <button type="button" class="pill idle" onclick="${back}">${esc(t('ss.art.back', 'Back'))}</button>
+      <button type="button" class="pill good" onclick="ssArtAddFolder(${svArg}, ${esc(JSON.stringify(id))})" ${r.pictures ? '' : 'disabled'}>${esc(t('ss.art.useFolder', 'Use this folder'))}</button>
+      <button type="button" class="pill idle" onclick="ssArtBrowseClose()">${esc(t('common.cancel', 'Cancel'))}</button>
     </div>`;
 }
 
@@ -891,11 +911,11 @@ function renderSsArtNow(art, box) {
   const off = !art.showing || !writable;
   box.innerHTML = `<div class="ss-art-now-pic"${cur ? ` style="background-image:url('${esc(api('/api/art/image?id=' + encodeURIComponent(cur.id)))}')"` : ''}></div>
     <div class="ss-art-now-words">${words.length && art.showing
-      ? words.map((w, i) => `<div class="${i ? 'ss-art-sub' : 'ss-art-name'}">${esc(w)}</div>`).join('')
-      : `<div class="ss-art-sub">${esc(t('ss.art.notShowing', 'Not on screen. Previous and Next work while the picture frame shows, as the screen saver or on an input\u2019s No Signal screen.'))}</div>`}</div>
+      ? words.map((w, i) => `<div class="${i ? 'prot-desc' : 'prot-title'}">${esc(w)}</div>`).join('')
+      : `<div class="prot-desc">${esc(t('ss.art.notShowing', 'Not on screen. Previous and Next work while the picture frame shows, as the screen saver or on an input\u2019s No Signal screen.'))}</div>`}</div>
     <div class="ss-art-now-btns">
-      <button type="button" class="ss-pool-btn" onclick="ssArtGo('prev')" ${off || !art.canGoBack ? 'disabled' : ''} aria-label="${esc(t('ss.art.prev', 'Previous'))}">\u2039 ${esc(t('ss.art.prev', 'Previous'))}</button>
-      <button type="button" class="ss-pool-btn" onclick="ssArtGo('next')" ${off ? 'disabled' : ''} aria-label="${esc(t('ss.art.next', 'Next'))}">${esc(t('ss.art.next', 'Next'))} \u203a</button>
+      <button type="button" class="pill idle" onclick="ssArtGo('prev')" ${off || !art.canGoBack ? 'disabled' : ''} aria-label="${esc(t('ss.art.prev', 'Previous'))}">\u2039 ${esc(t('ss.art.prev', 'Previous'))}</button>
+      <button type="button" class="pill idle" onclick="ssArtGo('next')" ${off ? 'disabled' : ''} aria-label="${esc(t('ss.art.next', 'Next'))}">${esc(t('ss.art.next', 'Next'))} \u203a</button>
     </div>`;
 }
 
@@ -959,16 +979,44 @@ function frameChanged() {
   return frameLoad(false);
 }
 
+/*
+ * A settings dialog (set-modal) keeps the keyboard inside while it is open,
+ * and gives focus back to what opened it when it closes.
+ */
+function setModalOpen(box, first) {
+  box._opener = document.activeElement;
+  box.hidden = false;
+  if (!box._trapped) {
+    box._trapped = true;
+    box.addEventListener('keydown', e => {
+      if (e.key !== 'Tab') return;
+      const all = [...box.querySelectorAll('button,select,input,a[href],[tabindex]:not([tabindex="-1"])')]
+        .filter(el => !el.disabled && !el.hidden && el.offsetParent !== null);
+      if (!all.length) return;
+      const at = all.indexOf(document.activeElement);
+      if (e.shiftKey && at <= 0) { e.preventDefault(); all[all.length - 1].focus(); }
+      else if (!e.shiftKey && at === all.length - 1) { e.preventDefault(); all[0].focus(); }
+    });
+  }
+  if (first) first.focus();
+}
+
+function setModalClose(box) {
+  box.hidden = true;
+  const back = box._opener;
+  box._opener = null;
+  if (back && document.contains(back) && typeof back.focus === 'function') back.focus();
+}
+
 function openFrameSettings() {
   const box = q('frame-modal');
-  box.hidden = false;
-  q('frame-modal-close').focus();
+  setModalOpen(box, q('frame-modal-close'));
   if (ssArtState && ssArtState.secondChoices) renderSsArt(ssArtState, ssArtState.writable === false);
   frameLoad(false);
 }
 
 function closeFrameSettings() {
-  q('frame-modal').hidden = true;
+  setModalClose(q('frame-modal'));
   q('ss-art-browse').hidden = true;
   ssArtPath = [];
 }

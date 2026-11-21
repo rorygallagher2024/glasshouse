@@ -2446,56 +2446,68 @@ button.home-look:active{background:none}
 #home-bg-video .set .wall-choice+.wall-choice{margin-top:8px}
 .ss-video-box{max-height:none}
 .ss-video-lbl{margin-top:20px}
-/* Art: each source with what it is under its name, and the owner's pictures small. */
-.ss-pool-box.ss-art-box{max-height:none}
-.ss-art-item{align-items:flex-start;padding:8px}
-.ss-art-item input[type="checkbox"]{margin-top:2px}
-.ss-art-name{display:block;color:var(--w90)}
-.ss-art-sub{display:block;margin-top:2px;font-size:12px;line-height:1.4;color:var(--w60)}
-.ss-art-pics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px 10px;max-width:340px}
-.ss-art-pics .wall-add{font-size:11px}
-.ss-art-pics .wall-actions{margin-top:4px}
-#ss-art-note:empty{display:none}
-#ss-art-note{margin-top:8px}
-#ss-art-where,#ss-art-note{max-width:340px}
-#ss-art-folders .ss-pool-box{margin-bottom:10px}
-.ss-art-group{display:flex;justify-content:space-between;align-items:baseline;gap:10px;padding:12px 8px 2px;
-  font:500 11px 'Manrope',sans-serif;letter-spacing:.12em;text-transform:uppercase;color:var(--w60)}
-.ss-art-group:first-child{padding-top:4px}
-.ss-art-from{font-size:11px;letter-spacing:normal;text-transform:none;color:var(--w40,var(--w60));text-align:right}
-.frame-modal{max-width:560px;border-color:var(--w25)}
-.frame-modal-head{position:sticky;top:-24px;z-index:1;display:flex;align-items:center;justify-content:space-between;gap:12px;
-  margin:-24px -28px 8px;padding:20px 28px 12px;background:var(--bg);border-bottom:1px solid var(--w12)}
-.frame-modal-title{font-size:20px;font-weight:500;color:var(--w100)}
-.frame-modal .ss-level-lbl{margin-top:20px}
-.frame-modal .ss-pool-box.ss-art-box,.frame-modal .ss-art-pics,.frame-modal #ss-art-where,.frame-modal #ss-art-note,
-.frame-modal .ss-art-browse,.frame-modal select.pill-sel.ss-sel{max-width:none}
-.frame-modal .ss-art-pics{grid-template-columns:repeat(4,minmax(0,1fr))}
+/*
+ * Settings dialog (set-modal): a header that stays while the body scrolls,
+ * the dashboard's own groups (.pv-g) and rows (.prot-row) inside. The body is
+ * the one scroller, so a wheel anywhere in it scrolls it. A phone gets the
+ * whole screen. Text keeps to the scale: titles at --h-sec, groups at
+ * --h-grp, rows at --h-row, descriptions at 14px, nothing below --w60.
+ */
+.set-modal{max-width:640px;padding:0;display:flex;flex-direction:column;overflow:hidden;border-color:var(--w25)}
+.set-modal-head{flex:none;display:flex;align-items:flex-start;justify-content:space-between;gap:16px;
+  padding:22px 28px 18px;border-bottom:1px solid var(--w12)}
+.set-modal-heading{min-width:0}
+.set-modal-title{font-family:'Outfit',sans-serif;font-weight:300;font-size:var(--h-sec);line-height:1.2;color:var(--w100);margin:0}
+.set-modal-sub{font-size:14px;line-height:1.45;color:var(--w60);margin:6px 0 0}
+.set-modal-sub:empty{display:none}
+.set-modal-body{flex:1;min-height:0;overflow-y:auto;padding:0 28px 28px}
+.set-sec{margin-top:28px}
+.set-modal-body>.set-sec:first-child{margin-top:20px}
+h3.pv-g{margin:0 0 2px}
+.set-note{font-size:14px;line-height:1.45;color:var(--w60);margin:14px 0 0;max-width:62ch}
+.set-note:empty{display:none}
+.set-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.set-browse{margin-top:12px;padding:16px;border:1px solid var(--w12);border-radius:var(--r-md)}
+.set-browse .set-note:first-child{margin-top:0}
+.set-crumbs{font-size:14px;line-height:1.45;color:var(--w60);margin-bottom:4px;overflow-wrap:anywhere}
+.set-list{display:flex;flex-direction:column}
+button.set-item{display:flex;justify-content:space-between;align-items:center;gap:12px;width:100%;min-height:44px;padding:10px 0;
+  border:0;border-bottom:1px solid var(--w06);border-radius:0;background:transparent;cursor:pointer;
+  font:600 var(--h-row) 'Manrope',sans-serif;letter-spacing:.02em;text-transform:none;text-align:left;color:var(--w90)}
+button.set-item:hover{color:var(--w100)}
+.set-chev{font-size:20px;line-height:1;color:var(--w60)}
+.set-modal .prot-status .pill-sel{min-width:150px}
+.set-modal .ss-art-pics{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:14px 12px;margin-top:14px}
+.set-modal .wall-card:not(.has) button.wall-screen{background:transparent;border-color:var(--edge)}
+.set-modal .wall-card:not(.has) button.wall-screen::before{display:none}
+.set-modal .wall-card:not(.has) button.wall-screen:hover:not(:disabled){border-color:var(--w80);background:rgba(var(--fg),.04)}
+.set-modal .wall-add{font-size:13px;color:var(--w80)}
+.set-modal .wall-add::before{font-size:24px;color:var(--w90)}
+.set-modal button.wall-link{font-size:13px}
+.set-modal div.wall-screen{position:relative;display:block;width:100%;aspect-ratio:16/9;border:1px solid var(--w12);border-radius:var(--r-md);
+  background:#000 center/cover no-repeat}
 @media (max-width:560px){
-  #frame-modal{padding:0;align-items:stretch}
-  #frame-modal .modal-card{max-height:none;height:100%;border-radius:0;border:0;padding:24px 16px}
-  .frame-modal-head{margin:-24px -16px 8px;padding:16px}
-  .frame-modal .ss-art-pics{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .set-modal-backdrop{padding:0;align-items:stretch}
+  .set-modal{max-width:none;max-height:none;height:100%;border:0;border-radius:0}
+  .set-modal-head{padding:16px}
+  .set-modal-body{padding:0 16px 24px}
+  .set-modal .ss-art-pics{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .set-modal .prot-row{flex-wrap:wrap}
+  .set-modal .prot-status .pill-sel{min-width:0;width:100%}
+  .set-modal .prot-row:has(.pill-sel) .prot-status{flex-basis:100%}
 }
-.inputs-frame{margin-top:16px;max-width:540px}
-.inputs-frame .ss-art-now{margin-bottom:10px}
-.ss-art-summary{margin-top:10px;max-width:340px}
-.ss-art-now{display:grid;grid-template-columns:96px minmax(0,1fr);gap:8px 14px;align-items:center;max-width:340px}
-.ss-art-now-pic{width:96px;aspect-ratio:16/9;border-radius:var(--r-sm);border:1px solid var(--w12);background:#000 center/contain no-repeat}
-.ss-art-now-words{min-width:0;font-size:13.5px}
-.ss-art-now-words .ss-art-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* Picture frame on the Screensaver and Inputs tabs: what it shows now. */
+.inputs-frame{margin-top:18px;max-width:560px}
+.inputs-frame .ss-art-now{margin-bottom:4px}
+.ss-art-summary{margin-top:12px;max-width:340px}
+.ss-art-now{display:grid;grid-template-columns:112px minmax(0,1fr);gap:12px 14px;align-items:center;max-width:340px}
+.inputs-frame .ss-art-now{max-width:560px}
+.ss-art-now-pic{width:112px;aspect-ratio:16/9;border-radius:var(--r-sm);border:1px solid var(--w12);background:#000 center/contain no-repeat}
+.ss-art-now-words{min-width:0}
+.ss-art-now-words .prot-title{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ss-art-now-words .prot-desc{margin-top:2px}
 .ss-art-now-btns{grid-column:1/-1;display:flex;gap:8px}
-.ss-art-now-btns .ss-pool-btn{flex:1}
-.ss-art-folder{justify-content:space-between;cursor:default}
-.ss-art-folder .wall-link{flex-shrink:0}
-.ss-art-browse{max-width:340px;margin-top:12px;padding:12px;border:1px solid var(--w12);border-radius:var(--r-md)}
-.ss-art-browse .pv-sub{margin:6px 0}
-.ss-art-browse .ss-pool-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
-button.ss-art-row{display:flex;justify-content:space-between;align-items:center;width:100%;min-height:0;padding:8px;border:0;
-  border-radius:var(--r-sm);background:transparent;font:500 13.5px 'Manrope';letter-spacing:normal;text-transform:none;text-align:left;color:var(--w90)}
-button.ss-art-row:hover{background:rgba(var(--fg),.04)}
-.ss-art-crumbs{font-size:12px;color:var(--w60);margin-bottom:8px;overflow-wrap:anywhere}
-#ss-art-where{margin-top:10px}
+.ss-art-now-btns .pill{flex:1;min-width:0}
 .ss-video-colour{display:flex;align-items:center;gap:10px;margin-top:14px;color:var(--w80);font-size:13px}
 .ss-video-colour input[type=color]{width:40px;height:28px;padding:0;border:1px solid var(--edge);border-radius:var(--r-md);background:none}
 .ss-video-actions{margin:14px 0 8px}
