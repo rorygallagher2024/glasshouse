@@ -1130,13 +1130,11 @@
     <div class="set-actions"><button type="button" class="pill idle" id="ss-frame-open" onclick="openFrameSettings()" data-t="ss.art.settings">Picture frame settings</button></div>
   </div>
 
-  <div class="ss-level-row" id="ss-entities-row" hidden>
-    <div class="ss-level-lbl" data-t="ss.entities">Home Assistant Entities</div>
-    <div id="ss-entities-list"></div>
-    <div class="pv-sub" id="ss-entities-note" style="margin-top:8px"></div>
-    <div id="ss-entities-setup" hidden style="margin-top:8px">
-      <button type="button" onclick="openHaSettings()" data-t="ss.openMqtt">Open HA and MQTT settings</button>
-    </div>
+  <!-- A Home Assistant screen saver: what it reads, and its settings in their own dialog -->
+  <div class="ss-level-row" id="ss-ha-row" hidden>
+    <div class="ss-level-lbl" data-t="ss.ha.reads">Reads</div>
+    <p class="prot-desc ss-art-summary" id="ss-ha-summary"></p>
+    <div class="set-actions"><button type="button" class="pill idle" id="ss-ha-open" onclick="openHaSaverSettings()" data-t="ss.ha.settings">Screen saver settings</button></div>
   </div>
 
   <div class="ss-level-row" id="ss-pool-row" hidden>
@@ -2654,6 +2652,34 @@
 </footer>
 
 <!-- Offered on load when "Update pop-up" is on in the Server tab; see offerUpdatePopup in ui/update.js. -->
+<!-- A Home Assistant screen saver's settings: how it shows its readings and
+     which entities it reads. The rows for its options are moved in here from
+     the Screensaver tab while one of these screen savers is in use. -->
+<div id="ha-modal" class="modal-backdrop set-modal-backdrop" hidden onclick="if(event.target===this)closeHaSaverSettings()" onkeydown="if(event.key==='Escape'&&!event.defaultPrevented)closeHaSaverSettings()">
+  <div class="modal-card set-modal" role="dialog" aria-modal="true" aria-labelledby="ha-modal-title" aria-describedby="ha-modal-sub">
+    <div class="set-modal-head">
+      <div class="set-modal-heading">
+        <h2 class="set-modal-title" id="ha-modal-title">&mdash;</h2>
+        <p class="set-modal-sub" id="ha-modal-sub"></p>
+      </div>
+      <button type="button" class="pill idle" id="ha-modal-close" onclick="closeHaSaverSettings()" data-t="home.cardIconDoneBtn">Done</button>
+    </div>
+    <div class="set-modal-body">
+      <section class="set-sec" id="ha-sec-look" aria-labelledby="ha-sec-look-h">
+        <h3 class="pv-g" id="ha-sec-look-h" data-t="ss.art.show">Showing them</h3>
+        <div class="prot-table" id="ha-look"></div>
+      </section>
+      <section class="set-sec" aria-labelledby="ha-sec-ents-h">
+        <h3 class="pv-g" id="ha-sec-ents-h" data-t="ss.entities2">Entities</h3>
+        <p class="set-note ha-ents-note" id="ss-entities-note"></p>
+        <div id="ss-entities-list"></div>
+        <div class="set-actions" id="ss-entities-setup" hidden>
+          <button type="button" class="pill idle" onclick="closeHaSaverSettings();openHaSettings()" data-t="ss.openMqtt">Open HA and MQTT settings</button>
+        </div>
+      </section>
+    </div>
+  </div>
+</div>
 <!-- Picture frame settings: opened from the Screensaver and Inputs tabs, and from search.
      A settings dialog (set-modal): a header that stays while the body scrolls,
      and the dashboard's own groups and rows inside. -->

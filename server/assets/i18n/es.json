@@ -3208,7 +3208,6 @@
  "srv.saver.badEntities": {"text": "{file}: entities necesita nombres cortos, cada uno con un ID de entidad de Home Assistant como sensor.outdoor_temperature, hasta un máximo de {max}.", "from": "{file}: entities needs short names, each with a Home Assistant entity id such as sensor.outdoor_temperature, up to {max} of them."},
  "srv.saver.haUses": {"text": "{file}: entities y \"ha\" o \"ha-all\" en uses van juntos.", "from": "{file}: entities and \"ha\" or \"ha-all\" in uses go together."},
  "srv.saver.undeclaredHa": {"text": "{main} usa {placeholder}, y saver.json no nombra esa entidad bajo entities.", "from": "{main} uses {placeholder}, and saver.json does not name that entity under entities."},
- "ss.entities": {"text": "Entidades de Home Assistant", "from": "Home Assistant Entities"},
  "ss.entities.desc": {"text": "Elige qué entidades de Home Assistant lee este salvapantallas y nombres cortos opcionales. Deja la entidad vacía para ocultarla.", "from": "Choose which Home Assistant entities this screen saver reads and optional short display labels. Leave an entity blank to hide it."},
  "ss.haNotConfigured": {"text": "La API de Home Assistant no está configurada. Guarda la dirección y el token de acceso en la pestaña HA y MQTT.", "from": "Home Assistant API is not configured. Save the address and access token in the HA and MQTT tab."},
  "ha.cleared": {"text": "Borrado.", "from": "Cleared."},
@@ -3746,5 +3745,11 @@
  "ss.art.fitTitle": {"text": "Ajuste", "from": "Fit"},
  "ss.art.fitDesc": {"text": "La imagen entera sobre negro, o llenando la pantalla con los bordes recortados.", "from": "The whole picture on black, or filling the screen with its edges cropped."},
  "ss.art.labelTitle": {"text": "Rótulo", "from": "Label"},
- "ss.art.labelDesc": {"text": "El título, quién lo hizo y de dónde es, durante 20 segundos tras cada cambio, todo el tiempo o nunca. El crédito que pide la licencia de una imagen queda en pantalla en cualquier caso.", "from": "The title, who made it and where it is from, for 20 seconds after each change, all the time, or not at all. A credit that a picture’s licence asks for stays on screen either way."}
+ "ss.art.labelDesc": {"text": "El título, quién lo hizo y de dónde es, durante 20 segundos tras cada cambio, todo el tiempo o nunca. El crédito que pide la licencia de una imagen queda en pantalla en cualquier caso.", "from": "The title, who made it and where it is from, for 20 seconds after each change, all the time, or not at all. A credit that a picture’s licence asks for stays on screen either way."},
+ "ss.ha.listOne": {"text": "1 entidad, una a una.", "from": "1 entity, one at a time."},
+ "ss.ha.listN": {"text": "{n} entidades, una a una.", "from": "{n} entities, one at a time."},
+ "ss.ha.none": {"text": "Aún no hay entidades elegidas.", "from": "No entities chosen yet."},
+ "ss.ha.reads": {"text": "Lee", "from": "Reads"},
+ "ss.ha.settings": {"text": "Ajustes del salvapantallas", "from": "Screen saver settings"},
+ "ss.entities2": {"text": "Entidades", "from": "Entities"}
 }

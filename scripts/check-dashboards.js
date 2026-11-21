@@ -4278,6 +4278,9 @@ async function visitSaverEntitySlots(browser, base, problems) {
       await route.fulfill({ json: { ok: true } });
     });
     await page.goto(base + '/?tab=screensaver');
+    // The slots are in the screen saver's dialog, opened from the tab.
+    await page.locator('#ss-ha-open').click();
+    await page.locator('#ha-modal:not([hidden])').waitFor();
     const first = page.locator('#ss-ent-sensor_1');
     await first.waitFor();
     // Typed and confirmed with Enter: the field keeps focus through the save.

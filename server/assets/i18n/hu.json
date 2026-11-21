@@ -3222,7 +3222,6 @@
  "srv.saver.badEntities": {"text": "{file}: az entities mező rövid neveket igényel, mindegyikhez egy Home Assistant entitás-azonosítóval (pl. sensor.outdoor_temperature), legfeljebb {max} darabot.", "from": "{file}: entities needs short names, each with a Home Assistant entity id such as sensor.outdoor_temperature, up to {max} of them."},
  "srv.saver.haUses": {"text": "{file}: az entities és a \"ha\" vagy a \"ha-all\" a uses listában összetartoznak.", "from": "{file}: entities and \"ha\" or \"ha-all\" in uses go together."},
  "srv.saver.undeclaredHa": {"text": "A(z) {main} a(z) {placeholder} értéket használja, de a saver.json nem nevezi meg az entities alatt.", "from": "{main} uses {placeholder}, and saver.json does not name that entity under entities."},
- "ss.entities": {"text": "Home Assistant entitások", "from": "Home Assistant Entities"},
  "ss.entities.desc": {"text": "Válassza ki a kiolvasandó Home Assistant entitásokat és opcionális rövid feliratokat. Hagyjon üresen egy entitást az elrejtéshez.", "from": "Choose which Home Assistant entities this screen saver reads and optional short display labels. Leave an entity blank to hide it."},
  "ss.haNotConfigured": {"text": "A Home Assistant API nincs konfigurálva. Mentse el a címet és a hozzáférési tokent a HA és MQTT fülön.", "from": "Home Assistant API is not configured. Save the address and access token in the HA and MQTT tab."},
  "ha.cleared": {"text": "Törölve.", "from": "Cleared."},
@@ -3760,5 +3759,11 @@
  "ss.art.fitTitle": {"text": "Illesztés", "from": "Fit"},
  "ss.art.fitDesc": {"text": "A teljes kép fekete alapon, vagy a képernyőt kitöltve, levágott szélekkel.", "from": "The whole picture on black, or filling the screen with its edges cropped."},
  "ss.art.labelTitle": {"text": "Felirat", "from": "Label"},
- "ss.art.labelDesc": {"text": "A cím, az alkotó és a forrás, minden váltás után 20 másodpercig, végig, vagy egyáltalán nem. A kép licence által kért forrásmegjelölés mindenképp a képernyőn marad.", "from": "The title, who made it and where it is from, for 20 seconds after each change, all the time, or not at all. A credit that a picture’s licence asks for stays on screen either way."}
+ "ss.art.labelDesc": {"text": "A cím, az alkotó és a forrás, minden váltás után 20 másodpercig, végig, vagy egyáltalán nem. A kép licence által kért forrásmegjelölés mindenképp a képernyőn marad.", "from": "The title, who made it and where it is from, for 20 seconds after each change, all the time, or not at all. A credit that a picture’s licence asks for stays on screen either way."},
+ "ss.ha.listOne": {"text": "1 entitás, egyenként.", "from": "1 entity, one at a time."},
+ "ss.ha.listN": {"text": "{n} entitás, egyenként.", "from": "{n} entities, one at a time."},
+ "ss.ha.none": {"text": "Még nincs kiválasztott entitás.", "from": "No entities chosen yet."},
+ "ss.ha.reads": {"text": "Olvassa", "from": "Reads"},
+ "ss.ha.settings": {"text": "Képernyővédő beállításai", "from": "Screen saver settings"},
+ "ss.entities2": {"text": "Entitások", "from": "Entities"}
 }

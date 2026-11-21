@@ -2496,6 +2496,33 @@ button.set-item:hover{color:var(--w100)}
   .set-modal .prot-status .pill-sel{min-width:0;width:100%}
   .set-modal .prot-row:has(.pill-sel) .prot-status{flex-basis:100%}
 }
+/*
+ * A Home Assistant screen saver's dialog: its option rows, moved in from the
+ * tab, laid out as rows; its entity slots and list at the same scale, the
+ * list no longer a scroller of its own inside the dialog's.
+ */
+.set-note.warn{color:var(--cand)}
+.set-modal .ss-level-row{display:flex;justify-content:space-between;align-items:center;gap:16px;max-width:none;
+  margin:0;padding:12px 0;border-bottom:1px solid var(--w06)}
+.set-modal .ss-level-row>.ss-level-lbl{font:600 var(--h-row) 'Manrope',sans-serif;letter-spacing:.02em;text-transform:none;
+  color:var(--w90);margin:0}
+.set-modal select.pill-sel.ss-sel{width:220px;max-width:60%;height:32px;margin:0}
+.set-modal .ss-pick{width:220px;max-width:60%;margin:0}
+.set-modal .ss-pick-btn{height:32px;min-height:0;font:500 12.5px 'Manrope',sans-serif;letter-spacing:.08em}
+.set-modal .ss-entity-field{max-width:none;margin:0;padding:14px 0 16px;border-bottom:1px solid var(--w06);gap:8px}
+.set-modal .ss-entity-field label{font:600 var(--h-row) 'Manrope',sans-serif;color:var(--w90)}
+.set-modal .ss-entity-hint{font-size:14px;color:var(--w60);max-width:60%}
+.set-modal .ss-ent-label-row label,.set-modal .ss-li-label label{font:500 14px 'Manrope',sans-serif;color:var(--w60)}
+.set-modal .ss-li-head,.set-modal .ss-li-add{max-width:none}
+.set-modal .ss-li-head label{font:600 var(--h-row) 'Manrope',sans-serif;color:var(--w90)}
+.set-modal .ss-li-count,.set-modal .ss-li-num,.set-modal .ss-li-id{font-size:14px;color:var(--w60)}
+.set-modal .ss-li-scroll{max-width:none;max-height:none;overflow:visible;overscroll-behavior:auto}
+.set-modal .ss-li-add-btn{font:500 12.5px 'Manrope',sans-serif;letter-spacing:.08em;text-transform:uppercase}
+.ha-ents-note{margin:4px 0 6px}
+@media (max-width:560px){
+  .set-modal .ss-level-row{flex-wrap:wrap}
+  .set-modal select.pill-sel.ss-sel,.set-modal .ss-pick{width:100%;max-width:none}
+}
 /* Picture frame on the Screensaver and Inputs tabs: what it shows now. */
 .inputs-frame{margin-top:18px;max-width:560px}
 .inputs-frame .ss-art-now{margin-bottom:4px}

@@ -3208,7 +3208,6 @@
  "srv.saver.badEntities": {"text": "{file}: يتطلب entities أسماء قصيرة، يحتوي كل منها على معرّف كيان في Home Assistant مثل sensor.outdoor_temperature، بحد أقصى {max}.", "from": "{file}: entities needs short names, each with a Home Assistant entity id such as sensor.outdoor_temperature, up to {max} of them."},
  "srv.saver.haUses": {"text": "{file}: يترابط entities و \"ha\" أو \"ha-all\" في uses معاً.", "from": "{file}: entities and \"ha\" or \"ha-all\" in uses go together."},
  "srv.saver.undeclaredHa": {"text": "يستخدم {main} العنصر {placeholder}، بينما لا يذكر saver.json هذا الكيان ضمن entities.", "from": "{main} uses {placeholder}, and saver.json does not name that entity under entities."},
- "ss.entities": {"text": "كيانات Home Assistant", "from": "Home Assistant Entities"},
  "ss.entities.desc": {"text": "اختر كيانات Home Assistant التي تقرأها شاشة التوقف هذه مع أسماء عرض اختيارية مختصرة. اترك الكيان فارغاً لإخفائه.", "from": "Choose which Home Assistant entities this screen saver reads and optional short display labels. Leave an entity blank to hide it."},
  "ss.haNotConfigured": {"text": "واجهة برمجة تطبيقات Home Assistant غير مكوّنة. احفظ العنوان ورمز الوصول في تبويب HA وMQTT.", "from": "Home Assistant API is not configured. Save the address and access token in the HA and MQTT tab."},
  "ha.cleared": {"text": "تم المسح.", "from": "Cleared."},
@@ -3746,5 +3745,11 @@
  "ss.art.fitTitle": {"text": "الملاءمة", "from": "Fit"},
  "ss.art.fitDesc": {"text": "الصورة كاملة على خلفية سوداء، أو ملء الشاشة مع قص حوافها.", "from": "The whole picture on black, or filling the screen with its edges cropped."},
  "ss.art.labelTitle": {"text": "البطاقة", "from": "Label"},
- "ss.art.labelDesc": {"text": "العنوان ومن صنعها ومن أين هي، لمدة 20 ثانية بعد كل تغيير، أو طوال الوقت، أو مطلقًا. النسبة التي تطلبها رخصة الصورة تبقى على الشاشة في كل الأحوال.", "from": "The title, who made it and where it is from, for 20 seconds after each change, all the time, or not at all. A credit that a picture’s licence asks for stays on screen either way."}
+ "ss.art.labelDesc": {"text": "العنوان ومن صنعها ومن أين هي، لمدة 20 ثانية بعد كل تغيير، أو طوال الوقت، أو مطلقًا. النسبة التي تطلبها رخصة الصورة تبقى على الشاشة في كل الأحوال.", "from": "The title, who made it and where it is from, for 20 seconds after each change, all the time, or not at all. A credit that a picture’s licence asks for stays on screen either way."},
+ "ss.ha.listOne": {"text": "كيان واحد، واحدًا تلو الآخر.", "from": "1 entity, one at a time."},
+ "ss.ha.listN": {"text": "عدد الكيانات: {n}، واحدًا تلو الآخر.", "from": "{n} entities, one at a time."},
+ "ss.ha.none": {"text": "لم يُختر أي كيان بعد.", "from": "No entities chosen yet."},
+ "ss.ha.reads": {"text": "يقرأ", "from": "Reads"},
+ "ss.ha.settings": {"text": "إعدادات شاشة التوقف", "from": "Screen saver settings"},
+ "ss.entities2": {"text": "الكيانات", "from": "Entities"}
 }
