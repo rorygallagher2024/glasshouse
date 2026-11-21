@@ -3342,7 +3342,7 @@
  "home.cardIconLabel": {"text": "Ikona karty", "from": "Card icon"},
  "home.focusPulse": {"text": "Pulsowanie na wybranej aplikacji", "from": "Pulse on the app in focus"},
  "home.focusPulseDesc": {"text": "Obramowanie aplikacji, na której jesteś, pulsuje delikatną poświatą w kolorze akcentu Home.", "from": "The ring around the app you are on breathes, with a soft glow, in Home’s accent colour."},
- "home.navSound": {"text": "Dźwięk przy przechodzeniu", "from": "Sound when moving"},
+ "home.navSound": {"text": "Dźwięk przy przechodzeniu przyciskami", "from": "Sound when moving with the buttons"},
  "home.navSound.click": {"text": "Kliknięcie", "from": "Click"},
  "home.navSound.off": {"text": "Wyłączony", "from": "Off"},
  "home.navSound.own": {"text": "Własny", "from": "Your own"},
@@ -3371,7 +3371,7 @@
  "home.cardIconSpec.files": {"text": "PNG, JPEG, WebP lub SVG do 10 MB albo upuść plik na kartę. Inny kształt jest dopasowywany w całości, bez przycinania.", "from": "PNG, JPEG, WebP or SVG up to 10 MB, or drop one on the card. Another shape is fitted whole, never cropped."},
  "home.cardIconOther": {"text": "Albo użyj ikony, która już jest na telewizorze", "from": "Or use an icon already on the TV"},
  "home.navSound.rollover": {"text": "Muśnięcie", "from": "Rollover"},
- "home.navSoundDesc": {"text": "Dźwięk przy każdym przejściu między kafelkami: kliknięcie, łagodniejszy rollover albo własny dźwięk.", "from": "A sound each time you move between tiles: a click, a softer rollover, or a sound of your own."},
+ "home.navSoundDesc": {"text": "Dźwięk przy każdym przesunięciu fokusu strzałkami oraz przy każdym naciśnięciu OK lub Wstecz: kliknięcie, łagodniejsze muśnięcie albo własny dźwięk.", "from": "A sound each time the arrow keys move focus, and each time OK or Back is pressed: a click, a softer rollover, or a sound of your own."},
  "home.colours.highlight": {"from": "Tile highlight", "text": "Podświetlenie kafelka"},
  "home.colours.highlightHint": {"from": "The fill colour behind the focused tile on Glasshouse Home. Any colour can be picked on the browser dashboard’s Home tab.", "text": "Kolor wypełnienia za wybranym kafelkiem w Glasshouse Home. Dowolny kolor można wybrać na karcie Home panelu w przeglądarce."},
  "home.highlight.default": {"from": "Default", "text": "Domyślny"},
@@ -3778,5 +3778,7 @@
  "ss.ha.reads": {"text": "Odczytuje", "from": "Reads"},
  "ss.ha.settings": {"text": "Ustawienia wygaszacza", "from": "Screen saver settings"},
  "ss.entities2": {"text": "Encje", "from": "Entities"},
- "ss.tvOff": {"text": "Telewizor jest wyłączony. Włącz go, aby uruchomić wygaszacz.", "from": "The TV is off. Switch it on to start a screen saver."}
+ "ss.tvOff": {"text": "Telewizor jest wyłączony. Włącz go, aby uruchomić wygaszacz.", "from": "The TV is off. Switch it on to start a screen saver."},
+ "home.pointerSound": {"text": "Dźwięk przy przechodzeniu wskaźnikiem", "from": "Sound when moving with the pointer"},
+ "home.pointerSoundDesc": {"text": "Dźwięk przy każdym przesunięciu fokusu wskaźnikiem lub rolką Magic Remote oraz przy każdym kliknięciu: kliknięcie, łagodniejsze muśnięcie albo własny dźwięk.", "from": "A sound each time the Magic Remote's pointer or wheel moves focus, and each time it clicks: a click, a softer rollover, or a sound of your own."}
 }
