@@ -465,9 +465,10 @@ function levelBarShown() {
   return brightnessBarStyle() !== 'none';
 }
 
-// Whether a key set to id needs the bar's app: it opens the bar, or shows a level bar.
+// Whether a key set to id needs the bar's app: it opens the bar, or shows a
+// level bar, which only a TV offered the input bar shows (not webOS 11).
 function needsBarApp(id) {
-  return id === INPUT_BAR || (isBrightnessAction(id) && levelBarShown());
+  return id === INPUT_BAR || (isBrightnessAction(id) && levelBarShown() && barAvailable());
 }
 
 // step and style are kept as they were in the file unless one is given ('' for the default).
