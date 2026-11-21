@@ -4737,6 +4737,74 @@ async function visitAdblockCards(browser, base, problems) {
 }
 
 /*
+ * The remote's Motion mode, offered by the Android app's bridge alone: not
+ * in a browser, nor where the phone has no gyroscope. Holding the pad reads
+ * the turning each frame and moves the cursor against it (turned left, it
+ * goes left), letting go stops reading, and a tap clicks.
+ */
+async function visitRemoteMotion(browser, base, problems) {
+  const fail = what => problems.push('Remote motion: ' + what);
+  const open = async bridge => {
+    const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
+    page.on('pageerror', e => fail(e.message));
+    await page.addInitScript(bridge => {
+      if (!bridge) return;
+      window.__motion = { reads: [], started: 0, stopped: 0 };
+      window.GlasshouseApp = {
+        remoteState() {},
+        motionAvailable: () => bridge.available,
+        motionStart() { window.__motion.started++; },
+        motionStop() { window.__motion.stopped++; },
+        motionRead: () => window.__motion.reads.shift() || '0,0'
+      };
+    }, bridge);
+    await page.goto(base + '/?view=remote');
+    await page.waitForFunction(() => !document.getElementById('tab-control').hidden);
+    // The pointer as a TV with LG's network input has it.
+    await page.evaluate(() => applyPointerSettings({ enabled: true, transport: 'http' }));
+    await page.waitForFunction(() => !document.getElementById('rp-mode-touch').hidden);
+    return page;
+  };
+  const offered = page => page.evaluate(() => !document.getElementById('rp-mode-motion').hidden);
+  for (const [label, bridge] of [['in a browser', null], ['without a gyroscope', { available: false }]]) {
+    const page = await open(bridge);
+    try {
+      if (await offered(page)) fail('offered ' + label);
+    } finally { await page.close(); }
+  }
+  const page = await open({ available: true });
+  try {
+    if (!await offered(page)) { fail('not offered in the app'); return; }
+    await page.locator('#remote-modes [data-mode="motion"]').click();
+    if (!await page.locator('#motion-pad').isVisible() || await page.locator('#pointer-pad').isVisible()) fail('Motion does not show its own pad');
+    const held = await page.evaluate(async () => {
+      const sent = [], moves = [];
+      window.sendPointer = body => sent.push(body);
+      window.queuePointerMove = (dx, dy) => moves.push([dx, dy]);
+      const el = document.getElementById('motion-pad');
+      const fire = type => el.dispatchEvent(new PointerEvent(type, { pointerId: 1, pointerType: 'touch', isPrimary: true,
+        button: 0, buttons: type === 'pointerup' ? 0 : 1, bubbles: true, cancelable: true }));
+      const frames = n => new Promise(r => { const step = () => (--n ? requestAnimationFrame(step) : r()); requestAnimationFrame(step); });
+      fire('pointerdown'); fire('pointerup');
+      const clicks = sent.filter(b => b.click).length;
+      // 0.05 rad left a frame, for ten frames: about 3 rad/s, a flick.
+      window.__motion.reads = Array(10).fill('0.05,0');
+      fire('pointerdown');
+      await frames(14);
+      fire('pointerup');
+      const reads = window.__motion.reads.length;
+      return { clicks, reads, dx: moves.reduce((n, m) => n + m[0], 0), dy: moves.reduce((n, m) => n + m[1], 0),
+        clicked: sent.filter(b => b.click).length - clicks, started: window.__motion.started, stopped: window.__motion.stopped };
+    });
+    if (held.clicks !== 1) fail('a tap on the pad sent ' + held.clicks + ' clicks');
+    if (held.reads) fail(held.reads + ' readings were left unread while held');
+    if (held.dx > -300 || held.dy !== 0) fail('half a radian to the left moved the cursor ' + held.dx + ',' + held.dy);
+    if (held.clicked) fail('turning while held clicked');
+    if (held.started !== 2 || held.stopped !== 2) fail('the sensor started ' + held.started + ' and stopped ' + held.stopped + ' times for two holds');
+  } finally { await page.close(); }
+}
+
+/*
  * The remote on its own (?view=remote, #1586): on a phone and in a wide
  * window, only playback, volume, the D-pad, the pointer where its
  * switch is on (Server, Advanced), the keyboard and the way back, in one column,
@@ -4888,7 +4956,7 @@ async function visitRemoteView(browser, base, problems) {
 
 function groups(web, tv) {
   return [
-    { job: 'tabs', tabs: web.map(t => ({ path: '/?tab=' + t, label: 'web ' + t })), visits: [visitHomeAnimations, visitHuesyncSettings, visitInputsAndRemote, visitBrightnessKeySettings, visitAdblockCards, visitSaverEntitySlots, visitRemoteView] },
+    { job: 'tabs', tabs: web.map(t => ({ path: '/?tab=' + t, label: 'web ' + t })), visits: [visitHomeAnimations, visitHuesyncSettings, visitInputsAndRemote, visitBrightnessKeySettings, visitAdblockCards, visitSaverEntitySlots, visitRemoteView, visitRemoteMotion] },
     { job: 'tabs', tabs: tv.map(t => ({ path: '/assets/dashboard.html?tab=' + t, label: 'TV ' + t })),
       visits: [visitTvDashboard, visitTvAudio, visitTvPictureWrites, visitPictureUnavailable, visitTvNonOled, visitTvHuesync] },
     { job: 'home', tabs: [], visits: [visitHomePicture, visitHomePreview, visitHomePreviewOptions, visitHomePreviewWebos4, visitHomePreviewSize, visitHomePreviewSizeDetails, visitInputBarBehindHome, visitInputBarSwitchOnOk, visitHomeBarPrewarm, visitHomeBarIconsReady, visitHomeBarTiles, visitHomeBarBesideHome, visitHomeBarScroll, visitHomeUpDown, visitHomeFolderKeys, visitHomePointerOff, visitHomeOrder, visitHomeAvailability, visitHomeSearch, visitHomeWeather, visitHomeWeatherSetting, visitHomeRemoteBattery, visitHomeRemoteBatterySetting] },
