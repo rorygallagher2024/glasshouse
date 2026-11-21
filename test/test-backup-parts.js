@@ -35,7 +35,8 @@ function fakeTv(opts) {
     controls: [],
     alwaysOn: !!opts.alwaysOn,
     scans: opts.scans,
-    step: 10
+    step: 10,
+    barStyle: 'lg'
   };
   var luna = function (uri, p, cb) {
     var r = { returnValue: true };
@@ -95,12 +96,13 @@ function fakeTv(opts) {
     },
     remoteKeys: {
       getRemoteKeys: function (cb) {
-        cb({ ok: true, supported: true, brightnessStep: tv.step, keys: Object.keys(tv.keys).map(function (k) {
+        cb({ ok: true, supported: true, brightnessStep: tv.step, brightnessBarStyle: tv.barStyle, keys: Object.keys(tv.keys).map(function (k) {
           var v = tv.keys[k];
           return { key: k, action: v === null ? 'lg' : v === '' ? 'nothing' : 'open', id: v || '' };
         }) });
       },
       setBrightnessStep: function (n, cb) { tv.controls.push(['brightnessStep', n]); tv.step = n; cb({ ok: true }); },
+      setBrightnessBarStyle: function (v, cb) { tv.controls.push(['brightnessBarStyle', v]); tv.barStyle = v; cb({ ok: true }); },
       setRemoteKey: function (key, action, id, cb) {
         tv.controls.push(['remoteKey', key, action, id]);
         if (id === 'missing.app') return cb({ ok: false, error: 'not installed' });
@@ -159,6 +161,7 @@ step('a backup holds LG\'s own switches, privacy, apps, keys and the screen save
   tv.saver = { mode: 'aquarium', level: 'bright' };
   tv.config.screensaverPowerOffMinutes = 120;
   tv.step = 15;
+  tv.barStyle = 'horizontal';
   tv.use();
   backup.create(function (b) {
     saved = b;
@@ -172,6 +175,7 @@ step('a backup holds LG\'s own switches, privacy, apps, keys and the screen save
       savedPages: [{ title: 'home assistant', address: 'http://192.168.1.125:8123' }],
       remoteKeys: { netflix: 'youtube.leanback.v4', amazon: null, red: '' },
       brightnessStep: 15,
+      brightnessBarStyle: 'horizontal',
       quickAccess: { 1: 'netflix', 2: '' },
       screensaver: { mode: 'aquarium', level: 'bright' },
       screensaverPowerOff: 120
@@ -223,6 +227,7 @@ step('a restore sets each through its control, only where this TV has it', funct
     assert.deepEqual(tv.quick, { 1: 'netflix', 2: '' });
     assert.strictEqual(tv.config.screensaverPowerOffMinutes, 120);
     assert.strictEqual(tv.step, 15, 'the Brightness step comes back');
+    assert.strictEqual(tv.barStyle, 'horizontal', 'and the level bar style');
     assert.deepEqual(tv.custom, { mode: 'add', names: ['ads.example.com'], enabled: false }, 'the list, switched off as it was');
     assert.ok(!tv.controls.some(function (c) { return c[0] === 'acr'; }), 'ACR is never switched on');
     done();
@@ -234,6 +239,7 @@ step('the same settings restored again change nothing', function (done) {
   tv.saver = { mode: 'aquarium', level: 'bright' };
   tv.config.screensaverPowerOffMinutes = 120;
   tv.step = 15;
+  tv.barStyle = 'horizontal';
   tv.use();
   backup.restore({ format: 'glasshouse-backup', version: 1, settings: saved.settings }, function (r) {
     assert.deepEqual(r.lg.applied, []);

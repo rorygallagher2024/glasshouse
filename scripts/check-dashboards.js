@@ -4237,6 +4237,109 @@ async function visitInputsAndRemote(browser, base, problems) {
 }
 
 /*
+ * Brightness key settings: a section of its own on the Remote tab, there only
+ * while a key is set to Brightness up or down. Brightness step and Level bar
+ * style are its rows, the style offering LG's bar, a horizontal one, a vertical
+ * one or no
+ * bar, and left out where the bar cannot be shown (webOS 11).
+ */
+async function visitBrightnessKeySettings(browser, base, problems) {
+  const page = await browser.newPage();
+  const fail = message => problems.push('Brightness key settings: ' + message);
+  page.on('pageerror', error => fail(error.message));
+  const state = { brightnessKey: false, bar: true, style: 'lg', step: 10 };
+  const writes = [];
+  const keysNow = () => [
+    { key: 'red', title: 'Red', action: state.brightnessKey ? 'open' : 'lg', id: state.brightnessKey ? 'action:brightnessUp' : '', opens: state.brightnessKey ? 'Brightness up' : '' },
+    { key: 'green', title: 'Green', action: 'lg' }
+  ];
+  try {
+    await page.route('**/api/remote/available', route => route.fulfill({ json: { ok: true, available: true } }));
+    await page.route('**/api/apps', async route => {
+      // The page may close with this still on its way.
+      try {
+        const apps = await (await route.fetch()).json();
+        apps.writable = true;
+        apps.quickAccess = null;
+        apps.remoteKeys = { ok: true, supported: true, keys: keysNow(), choices: [],
+          brightnessStep: state.step, brightnessBar: state.bar, brightnessBarStyle: state.style };
+        await route.fulfill({ json: apps });
+      } catch (e) { /* closed */ }
+    });
+    await page.route('**/api/remotekeys', async route => {
+      if (route.request().method() !== 'POST') return route.continue();
+      const set = route.request().postDataJSON();
+      writes.push(set);
+      if (set.brightnessBarStyle !== undefined) state.style = set.brightnessBarStyle;
+      if (set.brightnessStep !== undefined) state.step = set.brightnessStep;
+      await route.fulfill({ json: { ok: true } });
+    });
+    const open = async () => {
+      await page.goto(base + '/?tab=remote');
+      await page.locator('#apps-rk-list .rk-key').first().waitFor();
+    };
+    const heading = page.locator('#apps-rk-list .rk-grp', { hasText: 'Brightness key settings' });
+    const stepSel = page.locator('#apps-rk-step');
+    const styleSel = page.locator('#apps-rk-bar-style');
+
+    // No key set to Brightness: no section, and none of its rows.
+    await open();
+    if (await heading.count() || await stepSel.count() || await styleSel.count()) fail('the section shows with no key set to Brightness');
+
+    // A key set to it: the section, its heading first, then the step and the style.
+    state.brightnessKey = true;
+    await open();
+    await heading.waitFor();
+    if (!await stepSel.isVisible() || !await styleSel.isVisible()) fail('the step or the style row is missing from the section');
+    const [hy, sy, by] = await Promise.all([heading.boundingBox(), stepSel.boundingBox(), styleSel.boundingBox()]);
+    if (!(hy.y < sy.y && sy.y < by.y)) fail('the heading, the step and the style are not in that order');
+    if (await page.locator('#apps-rk-list .rk-key').last().boundingBox().then(b => b.y) > hy.y) fail('the section is above the keys');
+    const options = await styleSel.locator('option').evaluateAll(o => o.map(x => x.value));
+    if (JSON.stringify(options) !== JSON.stringify(['lg', 'horizontal', 'vertical', 'none'])) fail('the style offers ' + options + ', not lg, horizontal, vertical and none');
+    if (await styleSel.inputValue() !== 'lg') fail('the style does not start on the LG-style bar');
+
+    // Each choice is saved and comes back as chosen.
+    await styleSel.selectOption('none');
+    await page.waitForFunction(() => document.querySelector('#apps-rk-bar-style') && document.querySelector('#apps-rk-bar-style').value === 'none');
+    if (JSON.stringify(writes[writes.length - 1]) !== JSON.stringify({ brightnessBarStyle: 'none' })) fail('choosing No bar did not save it');
+    await styleSel.selectOption('horizontal');
+    await page.waitForFunction(() => document.querySelector('#apps-rk-bar-style').value === 'horizontal');
+    if (JSON.stringify(writes[writes.length - 1]) !== JSON.stringify({ brightnessBarStyle: 'horizontal' })) fail('choosing the horizontal bar did not save it');
+    await styleSel.selectOption('vertical');
+    await page.waitForFunction(() => document.querySelector('#apps-rk-bar-style').value === 'vertical');
+    if (JSON.stringify(writes[writes.length - 1]) !== JSON.stringify({ brightnessBarStyle: 'vertical' })) fail('choosing the vertical bar did not save it');
+    await stepSel.selectOption('15');
+    await page.waitForFunction(() => document.querySelector('#apps-rk-step').value === '15');
+    if (JSON.stringify(writes[writes.length - 1]) !== JSON.stringify({ brightnessStep: 15 })) fail('choosing a step did not save it');
+
+    // Where the bar cannot be shown, the step is left in the section alone.
+    state.bar = false;
+    await open();
+    await heading.waitFor();
+    if (!await stepSel.isVisible()) fail('the step is missing where the bar cannot be shown');
+    if (await styleSel.count()) fail('the style is offered where the bar cannot be shown');
+
+    // At phone width the section stays inside the page.
+    state.bar = true;
+    await page.setViewportSize({ width: 390, height: 800 });
+    await open();
+    await heading.waitFor();
+    if (!await styleSel.isVisible()) fail('the style row is not visible at phone width');
+    if (await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth)) fail('the section makes the page scroll sideways at phone width');
+    await page.setViewportSize({ width: 1280, height: 800 });
+
+    // The key put back as LG has it: the section goes.
+    state.brightnessKey = false;
+    await open();
+    if (await heading.count() || await stepSel.count() || await styleSel.count()) fail('the section stays with no key set to Brightness');
+  } catch (e) {
+    fail(e.message);
+  } finally {
+    await page.close();
+  }
+}
+
+/*
  * Home Assistant: Ambient's entity slots on the Screensaver tab: a slot given
  * its first entity shows its Label row at once, though the field picked from
  * still has focus (#1446), and a field tabbed to before a save keeps its focus
@@ -4785,7 +4888,7 @@ async function visitRemoteView(browser, base, problems) {
 
 function groups(web, tv) {
   return [
-    { job: 'tabs', tabs: web.map(t => ({ path: '/?tab=' + t, label: 'web ' + t })), visits: [visitHomeAnimations, visitHuesyncSettings, visitInputsAndRemote, visitAdblockCards, visitSaverEntitySlots, visitRemoteView] },
+    { job: 'tabs', tabs: web.map(t => ({ path: '/?tab=' + t, label: 'web ' + t })), visits: [visitHomeAnimations, visitHuesyncSettings, visitInputsAndRemote, visitBrightnessKeySettings, visitAdblockCards, visitSaverEntitySlots, visitRemoteView] },
     { job: 'tabs', tabs: tv.map(t => ({ path: '/assets/dashboard.html?tab=' + t, label: 'TV ' + t })),
       visits: [visitTvDashboard, visitTvAudio, visitTvPictureWrites, visitPictureUnavailable, visitTvNonOled, visitTvHuesync] },
     { job: 'home', tabs: [], visits: [visitHomePicture, visitHomePreview, visitHomePreviewOptions, visitHomePreviewWebos4, visitHomePreviewSize, visitHomePreviewSizeDetails, visitInputBarBehindHome, visitInputBarSwitchOnOk, visitHomeBarPrewarm, visitHomeBarIconsReady, visitHomeBarTiles, visitHomeBarBesideHome, visitHomeBarScroll, visitHomeUpDown, visitHomeFolderKeys, visitHomePointerOff, visitHomeOrder, visitHomeAvailability, visitHomeSearch, visitHomeWeather, visitHomeWeatherSetting, visitHomeRemoteBattery, visitHomeRemoteBatterySetting] },

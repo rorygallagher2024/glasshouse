@@ -2633,6 +2633,11 @@ function handleRequest(req, res) {
     if (!remoteKeysModule) return send(res, 200, JSON.stringify({ ok: true, supported: false }));
     return remoteKeysModule.getRemoteKeys(function (rk) { send(res, 200, JSON.stringify(rk || { ok: true, supported: false })); });
   }
+  // The bar's page asks for it while a Brightness key is held.
+  if (pathname === '/api/remotekeys/brightness' && req.method === 'GET') {
+    if (!remoteKeysModule) return send(res, 200, JSON.stringify({ ok: false }));
+    return remoteKeysModule.getBrightness(function (r) { send(res, 200, JSON.stringify(r)); });
+  }
   if (pathname === '/api/remotekeys' && req.method === 'POST') {
     if (!config.allowControl) {
       return send(res, 403, JSON.stringify({ ok: false, error: msg('srv.controlsOff', 'controls disabled in config') }));
@@ -2641,6 +2646,11 @@ function handleRequest(req, res) {
       if (!remoteKeysModule) return send(res, 503, JSON.stringify({ ok: false, error: 'remote keys module unavailable' }));
       if (body && body.brightnessStep !== undefined) {
         return remoteKeysModule.setBrightnessStep(body.brightnessStep, function (r) {
+          send(res, r && r.ok ? 200 : 400, JSON.stringify(r));
+        });
+      }
+      if (body && body.brightnessBarStyle !== undefined) {
+        return remoteKeysModule.setBrightnessBarStyle(body.brightnessBarStyle, function (r) {
           send(res, r && r.ok ? 200 : 400, JSON.stringify(r));
         });
       }
