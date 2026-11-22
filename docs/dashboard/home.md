@@ -593,7 +593,7 @@ Icons are [Material Design Icons](https://pictogrammers.com/library/mdi/) names,
 
 ### Board
 
-Beside the lines, a board of up to twenty lines shown four at a time, turning to the next four every 8 seconds, with a page count by its title. The **Board** setting chooses what it shows:
+Beside the lines, a board of up to twenty lines shown four at a time, turning to the next four every 8 seconds, with a page count by its title. It keeps one width as the pages turn, that of its longest line, and a line too long for it slides to show its end and back. The **Board** setting chooses what it shows:
 
 * **Today's matches:** the day's matches in the leagues you pick from the list (Premier League, Champions League, La Liga, Allsvenskan, the NHL and more): the sides and kick-off time before a match, the score and the minute during it, *HT* at half time and *FT* after. With two leagues or more chosen, each line starts with its league's short name, and a day without a match says so. The TV reads the matches from ESPN's public scoreboard, which needs no account, once a minute while Home is on screen and the TV is on, sending only the league and the date. Results not updated for 15 minutes are taken away. The [Scores screen saver](screen-savers.md#scores) shows the same leagues.
 

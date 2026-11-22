@@ -212,7 +212,15 @@ html.resting #wall .layer{-webkit-animation-play-state:paused;animation-play-sta
 .alternative #info{-webkit-order:2;order:2;margin:0 48px 0 0}
 /* The board (text.lg_tv_home_board): a title and four of its lines at a
    time, turning to the next four every few seconds. */
-#board{-webkit-flex:0 1 auto;flex:0 1 auto;min-width:0;max-width:560px;margin-left:56px;padding-bottom:2px;white-space:nowrap}
+/* As wide as its longest line on any page, 520px at most, set when the board
+   changes (boardWidth): sized by the page on screen, a page of shorter names
+   narrowed it and the lines beside it moved. A line too long slides to show
+   its end, and back (slideLongLines). */
+#board{-webkit-flex:0 0 auto;flex:0 0 auto;min-width:0;max-width:520px;margin-left:56px;padding-bottom:2px;white-space:nowrap}
+#boardMeasure{position:absolute;visibility:hidden;left:0;top:0;white-space:nowrap}
+#board .info-line{overflow:hidden}
+#board .info-label.sliding{text-overflow:clip}
+#board .slide{display:inline-block;will-change:transform}
 #board.none{display:none}
 #boardTitle{font-size:20px;letter-spacing:.08em;text-transform:uppercase;color:#a39d93;margin-bottom:4px}
 #boardTitle:empty{display:none}
@@ -2235,6 +2243,47 @@ html[lang="vi"] #srcTitle,html[lang="vi"] #plMode,html[lang="vi"] #pvMode,html[l
     $('boardTitle').innerHTML = esc(board.title) +
       (pages > 1 ? '<span id="boardPage">' + (boardPage + 1) + '/' + pages + '</span>' : '');
     $('boardLines').innerHTML = infoLinesHtml(board.lines, boardPage * BOARD_PAGE, (boardPage + 1) * BOARD_PAGE);
+    slideLongLines($('boardLines'));
+  }
+  /*
+   * A line too long for the board slides left to show its end, stays, and
+   * slides back, at 40 pixels a second, within the 8 seconds of a page. One
+   * keyframes rule per distance, made once and kept.
+   */
+  function boardWidth() {
+    var probe = document.createElement('div');
+    probe.id = 'boardMeasure';
+    probe.innerHTML = '<div id="boardTitle">' + esc(board.title) + '<span id="boardPage">0/0</span></div>' +
+      infoLinesHtml(board.lines, 0, board.lines.length);
+    $('board').appendChild(probe);
+    var w = Math.ceil(probe.offsetWidth) + 2;
+    $('board').removeChild(probe);
+    $('board').style.width = Math.min(520, w) + 'px';
+  }
+  var slideRules = {};
+  function slideLongLines(box) {
+    var labels = box.querySelectorAll('.info-label');
+    for (var i = 0; i < labels.length; i++) {
+      var label = labels[i];
+      var over = label.scrollWidth - label.clientWidth;
+      if (over < 4) continue;
+      over = Math.ceil(over / 8) * 8;
+      var name = 'boardSlide' + over;
+      if (!slideRules[name]) {
+        slideRules[name] = true;
+        var css = '{0%,20%{-webkit-transform:translate3d(0,0,0);transform:translate3d(0,0,0)}' +
+          '50%,70%{-webkit-transform:translate3d(-' + over + 'px,0,0);transform:translate3d(-' + over + 'px,0,0)}' +
+          '100%{-webkit-transform:translate3d(0,0,0);transform:translate3d(0,0,0)}}';
+        var style = document.createElement('style');
+        style.textContent = '@-webkit-keyframes ' + name + css + '@keyframes ' + name + css;
+        document.head.appendChild(style);
+      }
+      // Out over 30% of the run and back over 30%, so a run is over / 12 seconds.
+      var secs = Math.max(4, Math.min(8, over / 12)).toFixed(2);
+      label.className += ' sliding';
+      label.innerHTML = '<span class="slide" style="-webkit-animation:' + name + ' ' + secs + 's linear infinite;animation:' +
+        name + ' ' + secs + 's linear infinite">' + label.innerHTML + '</span>';
+    }
   }
   function turnBoard() {
     if (!board || board.lines.length <= BOARD_PAGE) return;
@@ -2302,8 +2351,10 @@ html[lang="vi"] #srcTitle,html[lang="vi"] #plMode,html[lang="vi"] #pvMode,html[l
       return;
     }
     board = { title: b.title || '', lines: b.lines || [] };
-    drawBoardPage();
+    // Shown first: a board not displayed measures nothing.
     $('board').className = '';
+    boardWidth();
+    drawBoardPage();
     if (!boardTimer) boardTimer = setInterval(turnBoard, BOARD_TURN_MS);
   }
   function refreshInfo() {
