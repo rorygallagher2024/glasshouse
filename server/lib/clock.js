@@ -40,6 +40,8 @@ function refresh(cb) {
   cb = cb || function () {};
   if (!lunaFn || reading) return cb(is12);
   reading = true;
+  // A C6 (webOS 11.1) answers category "option" without localeInfo, and
+  // without a category with it.
   readLocale({ category: 'option', keys: ['localeInfo'] }, function (found) {
     if (!found) readLocale({ keys: ['localeInfo'] }, function () {});
   });
