@@ -563,7 +563,7 @@ The badge appears once data is received, is kept when the TV restarts, and is hi
 
 Up to four lines of your own after the weather, or before the clock in the Alternative View, each an icon, a name and a value: *Bin 1 · collected on Wednesday*, *PostNord · arrives tomorrow*, *Viscaria · 14.58 SEK*. For Home Assistant users. The setting chooses where they come from, and offers only what is set up: **Entities you pick** needs the [Home Assistant API](../HOME-ASSISTANT.md#reading-home-assistant-entities) on the HA & MQTT tab, and **Sent by an automation** needs MQTT. With neither, the setting is not shown.
 
-* **Entities you pick (default):** each line reads a Home Assistant entity, every 30 seconds while Home is on screen. **Add a line** takes an entity (the field suggests Home Assistant's), up to four, and says what it added, or why it could not. Each line can be moved or removed, and **Customise** gives it, all optional:
+* **Entities you pick (default):** each line reads a Home Assistant entity, every 30 seconds while Home is on screen. **Add a line** uses the Home Assistant entity picker (search by name, entity ID or unit, filter by entity type such as `Sensors` or `Weather`, and load more results on scroll), up to four, and says what it added, or why it could not. Each line can be moved or removed, and **Customise** gives it, all optional:
   * **Name:** shown in place of the entity's own name.
   * **Attribute:** one of its attributes in place of its state, such as `next_date` for a bin collection whose state is text.
   * **Text before:** a few words put in front of the value, such as *collected* or *arrives*, so a date reads *collected tomorrow*.

@@ -4368,7 +4368,11 @@ async function visitSaverEntitySlots(browser, base, problems) {
       } catch (e) { /* closed */ }
     });
     await page.route('**/api/ha/entities', route => route.fulfill({ json: { ok: true, configured: true,
-      entities: [{ id: 'sensor.living_room', name: 'Living room' }, { id: 'sensor.office', name: 'Office' }] } }));
+      entities: [
+        { id: 'sensor.living_room', name: 'Living room', unit: '°C' },
+        { id: 'sensor.office', name: 'Office', unit: '°C' },
+        { id: 'weather.home', name: 'Forecast Home', unit: '' }
+      ] } }));
     await page.route('**/api/control', async route => {
       const command = route.request().postDataJSON();
       if (command.action === 'screensaverEntities') {
@@ -4404,6 +4408,20 @@ async function visitSaverEntitySlots(browser, base, problems) {
     const typed = await page.evaluate(id => document.getElementById(id) && document.getElementById(id).value, focused);
     if (slots.sensor_1.label !== 'Lounge') fail('the label was not saved');
     if (focused && focused.indexOf('ss-ent-') === 0 && !/xyz$/.test(typed || '')) fail('what was typed in the next field was lost: ' + typed);
+
+    // Open the reusable entity picker, filter by type, and ensure Escape closes only the picker.
+    await page.locator('button[onclick*="ssHaToggle"][onclick*="sensor_1"]').click();
+    const list1 = page.locator('#ss-ha-list-sensor_1:not([hidden])');
+    await list1.waitFor({ timeout: 3000 });
+    await list1.locator('.ha-pk-chip', { hasText: 'Weather' }).click();
+    const weatherOpt = list1.locator('.ha-pk-opt[data-entity="weather.home"]');
+    await weatherOpt.waitFor({ timeout: 3000 });
+    if (await list1.locator('.ha-pk-opt[data-entity="sensor.living_room"]').count() !== 0) {
+      fail('domain filter chip did not filter out sensor entities');
+    }
+    await list1.locator('.ha-pk-search').press('Escape');
+    if (!(await page.locator('#ss-ha-list-sensor_1').isHidden())) fail('Escape did not close the open entity picker');
+    if (await page.locator('#ha-modal').isHidden()) fail('Escape closed the parent modal instead of only the entity picker');
   } catch (e) {
     fail(e.message);
   } finally {
