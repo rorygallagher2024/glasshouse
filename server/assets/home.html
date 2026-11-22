@@ -2236,13 +2236,13 @@ html[lang="vi"] #srcTitle,html[lang="vi"] #plMode,html[lang="vi"] #pvMode,html[l
    */
   /*
    * A match's label with the sides' crests: beside each name, or in place of
-   * it. A crest that does not load shows the name in its place (crests only)
-   * or nothing (beside the name).
+   * it. A crest that does not load shows the name in its place, as text
+   * (crests only), or nothing (beside the name).
    */
   function crestImg(key, name, alone) {
     if (!key) return alone ? esc(name) : '';
     return '<img class="crest' + (alone ? ' alone' : '') + '" src="/api/scores/crest?team=' + encodeURIComponent(key) +
-      '" alt="' + esc(name) + '" onerror="' + (alone ? 'this.outerHTML=this.alt' : 'this.parentNode.removeChild(this)') + '">';
+      '" alt="' + esc(name) + '" onerror="' + (alone ? 'this.parentNode.replaceChild(document.createTextNode(this.alt),this)' : 'this.parentNode.removeChild(this)') + '">';
   }
   function crestLabel(m, many, alone) {
     var middle = m.state === 'pre' ? ' – ' : ' ' + esc(m.homeScore) + '–' + esc(m.awayScore) + ' ';
