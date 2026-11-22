@@ -52,8 +52,8 @@
  * webOS 11 (a C5 on 11.2.0) has a Weston compositor whose key filters are
  * native libraries, named by com.webos.surfacemanager.keyFiltersCpp: there is
  * no KeyFilters directory and no JavaScript to put first. LG's launch library
- * reads what a key does at each press from two of LG's own values, so a change
- * there applies at once: the streaming buttons and Apps from the settings
+ * reads what a key does from two of LG's own values and takes up a change there
+ * at once, though after a wake it can act on a list of its own (nudgedList): the streaming buttons and Apps from the settings
  * service's other.mapping_info, a list of { name: { app_id, launch_param,
  * isActive } } that LG's server sends, Guide and Home Hub from the configd
  * values com.webos.keyaction.*, and the ? button from LG's custom button
@@ -349,6 +349,7 @@ function init(opts) {
   muteToastsMs = opts.muteToastsMs || 0;
   powerTimers.forEach(function (t) { clearTimeout(t); });
   powerTimers = [];
+  lastPowerState = null;
   powerRechecksMs = opts.powerRechecksMs || POWER_RECHECKS_MS;
   if (lunaFn && fs.existsSync(toastsMarker())) unmuteToasts();
 }
@@ -1122,8 +1123,8 @@ function reconcile(name, current, wanted, saved, written) {
  * cb(ok, wrote).
  */
 var applyQueue = [];
-function applyNative(cb, mapOverride) {
-  applyQueue.push({ cb: cb, map: mapOverride });
+function applyNative(cb, mapOverride, refresh) {
+  applyQueue.push({ cb: cb, map: mapOverride, refresh: !!refresh });
   if (applyQueue.length === 1) applyNext();
 }
 
@@ -1134,7 +1135,7 @@ function applyNext() {
     applyQueue.shift();
     applyNext();
     job.cb(ok, !!wrote);
-  }, job.map);
+  }, job.map, job.refresh);
 }
 
 /*
@@ -1143,24 +1144,49 @@ function applyNext() {
  * restarts the compositor once, and again when one is set back. Where it
  * cannot be, or Glasshouse Home has no guide, the Guide key is left to LG.
  */
-function applyNativeNow(cb, mapOverride) {
+function applyNativeNow(cb, mapOverride, refresh) {
   var map = mapOverride || readMap();
   var wantGuide = map.guide === HOME_GUIDE && homeGuideOn();
   var rest = {};
   Object.keys(map).forEach(function (k) { if (map[k] !== HOME_GUIDE) rest[k] = map[k]; });
   var st = guidePatch.status();
-  if (!st.supported && !st.bar) return applyNativeMap(cb, rest);
+  if (!st.supported && !st.bar) return applyNativeMap(cb, rest, refresh);
   var want = { guide: st.supported && wantGuide, input: st.supported && guidePatch.validId(map.input) ? map.input : '',
     bar: st.bar && !mapOverride && homeBarLauncherFn() };
   guidePatch.apply(want, function (r) {
     if (!r.ok) console.log('remotekeys: LG\'s key handler could not be changed: ' + r.error);
     if (r.restarted) compositorRestartedFn();
     if (r.ok && want.guide) rest.guide = HOME_GUIDE;
-    applyNativeMap(cb, rest);
+    applyNativeMap(cb, rest, refresh);
   });
 }
 
-function applyNativeMap(cb, map) {
+/*
+ * After a wake, LG's launch library can act on a list of its own rather than
+ * the one the settings service holds: on a C6 (webOS 11, 43.11.77) a Netflix
+ * button set to Nothing opened Netflix after some hours in standby, though
+ * mapping_info still said Nothing, until the key was changed and changed back
+ * (#1671). So the list is written twice: each button Glasshouse holds with its
+ * launch_param changed, then as it should be, both changes the library is told
+ * of. A button set to Nothing stays off in both. The list as first written, or
+ * null where Glasshouse holds none of its buttons.
+ */
+function nudgedList(list, lg) {
+  var held = false;
+  var out = copyValue(list);
+  (out || []).forEach(function (entry) {
+    Object.keys(entry || {}).forEach(function (name) {
+      if (!Object.prototype.hasOwnProperty.call(lg.mappingWritten, name)) return;
+      var e = entry[name];
+      if (!e || typeof e !== 'object') return;
+      e.launch_param = e.launch_param === null ? '' : null;
+      held = true;
+    });
+  });
+  return held ? out : null;
+}
+
+function applyNativeMap(cb, map, refresh) {
   var lg = readLg();
   if (!Object.keys(map).length && !lgHolds(lg)) {
     watchLg(false);
@@ -1182,6 +1208,7 @@ function applyNativeMap(cb, map) {
       });
     });
     if (listChanged) settings[MAPPING_KEY] = nextList;
+    var nudged = refresh && !listChanged ? nudgedList(nextList, lg) : null;
     Object.keys(NATIVE_SETTINGS).forEach(function (key) {
       var name = NATIVE_SETTINGS[key];
       if (!tv.settings || !tv.settings[name]) return;
@@ -1219,6 +1246,20 @@ function applyNativeMap(cb, map) {
       if (!Object.keys(configs).length) return finish(true);
       lunaFn('com.webos.service.config/setConfigs', { configs: configs }, function (r) { finish(!!(r && r.returnValue)); });
     };
+    if (nudged) {
+      // Both writes are changes, so LG's launch library takes the list up again.
+      var both = {};
+      both[MAPPING_KEY] = nudged;
+      return writeSettings(both, function (ok) {
+        if (!ok) return cb(false, false);
+        settings[MAPPING_KEY] = nextList;
+        writeSettings(settings, function (ok2) {
+          if (!ok2) return cb(false, true);
+          refreshed = true;
+          writeActions();
+        });
+      });
+    }
     if (!Object.keys(settings).length) return writeActions();
     writeSettings(settings, function (ok) {
       if (!ok) return cb(false, wrote);
@@ -2022,14 +2063,31 @@ function moveLegacyHome() {
 var POWER_RECHECKS_MS = [3000, 15000, 60000, 180000, 600000];
 var powerRechecksMs = POWER_RECHECKS_MS;
 var powerTimers = [];
+var lastPowerState = null;
+// Set when a write after a wake has gone through, for its one log line.
+var refreshed = false;
 
-function powerChanged() {
+/*
+ * state: the TV's power state now. Coming back on from standby, each check
+ * writes the streaming buttons again even where they read as they should
+ * (nudgedList).
+ */
+function powerChanged(state) {
+  var woke = state === 'Active' && !!lastPowerState && lastPowerState !== 'Active' && lastPowerState !== 'Screen Saver';
+  if (state) lastPowerState = state;
   powerTimers.forEach(function (t) { clearTimeout(t); });
+  var logged = false;
   powerTimers = powerRechecksMs.map(function (ms) {
     return setTimeout(function () {
+      refreshed = false;
       recheckNative(function (ok, wrote) {
-        if (wrote) console.log('remotekeys: LG put its keys back at a power change; set again' + (ok ? '' : ', and the TV did not take it'));
-      });
+        if (refreshed && !logged) {
+          logged = true;
+          console.log('remotekeys: streaming buttons written again after the wake' + (ok ? '' : ', and the TV did not take it'));
+        } else if (wrote && !refreshed) {
+          console.log('remotekeys: LG put its keys back at a power change; set again' + (ok ? '' : ', and the TV did not take it'));
+        }
+      }, woke);
     }, ms);
   });
 }
@@ -2041,12 +2099,12 @@ function powerChanged() {
  * Glasshouse's own. cb(ok).
  */
 var RECHECK_MS = 30 * 60 * 1000;
-function recheckNative(cb) {
+function recheckNative(cb, refresh) {
   cb = cb || function () {};
   if (!lunaFn || keysOnTv()) return cb(false);
   hasNativeFilters(function (yes) {
     if (!yes) return cb(false);
-    applyNative(cb);
+    applyNative(cb, undefined, refresh);
   });
 }
 

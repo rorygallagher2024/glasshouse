@@ -71,7 +71,10 @@ function freshTv() {
 }
 freshTv();
 
+// Sees each call first, where a test sets it.
+var lunaWatch = null;
 function luna(uri, params, cb) {
+  if (lunaWatch) lunaWatch(uri, params);
   var r = { returnValue: true };
   if (uri === 'com.webos.service.config/getConfigs') {
     r.configs = {};
@@ -742,6 +745,44 @@ step('LG\'s list written back at a power change with nothing announced is set ag
         set('netflix', 'lg', '', next);
       }, 120);
     }, 70);
+  });
+});
+
+step('after a wake, a button set to Nothing is written twice though it reads as set, and stays off both times (#1671)', function (next) {
+  rk.init(initOpts);
+  set('netflix', 'nothing', '', function () {
+    var want = copy(tv.mapping);
+    var seen = [];
+    // Each mapping_info written, in order.
+    var watching = function (uri, params) {
+      if (uri === 'com.webos.settingsservice/setSystemSettings' && params.settings.mapping_info) seen.push(copy(params.settings.mapping_info));
+    };
+    lunaWatch = watching;
+    // A change that is not a wake writes nothing when the list reads right.
+    rk.powerChanged('Active');
+    rk.powerChanged('Active Standby');
+    setTimeout(function () {
+      assert.strictEqual(seen.length, 0);
+      rk.powerChanged('Suspend');
+      rk.powerChanged('Active');
+      setTimeout(function () {
+        lunaWatch = null;
+        // Two checks after the wake, each writing the list twice.
+        assert.strictEqual(seen.length, 4);
+        var first = null;
+        seen[0].forEach(function (e) { if (e.netflix) first = e.netflix; });
+        assert.strictEqual(first.isActive, false);
+        assert.notStrictEqual(first.launch_param, entry('netflix').launch_param);
+        assert.deepEqual(seen[1], want);
+        assert.deepEqual(tv.mapping, want);
+        // LG's own entries, the ones not set, are written as they were.
+        seen[0].forEach(function (e, i) { if (!e.netflix) assert.deepEqual(e, want[i]); });
+        set('netflix', 'lg', '', function () {
+          assert.deepEqual(tv.mapping, MAPPING);
+          next();
+        });
+      }, 200);
+    }, 200);
   });
 });
 
