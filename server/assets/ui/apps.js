@@ -409,6 +409,7 @@ const RK_GROUPS = [
   { id: 'streaming', title: () => t('apps.remoteKeys.streaming', 'Streaming buttons'),
     keys: ['netflix', 'amazon', 'disneyplus', 'rakutentv', 'lgchannels', 'ivi', 'okko', 'kinopoisk', 'shop', 'hulu', 'iplayer', 'freeviewplay', 'slingtv', 'globoplay', 'shahid'] },
   { id: 'assistant', title: () => t('apps.remoteKeys.assistant', 'Voice assistant buttons'), keys: ['voice', 'alexa', 'googleassistant'] },
+  { id: 'channel', title: () => t('apps.remoteKeys.channel', 'Channel keys'), keys: ['channelup', 'channeldown'] },
   { id: 'colour', title: () => t('apps.remoteKeys.colour', 'Color keys'), keys: ['red', 'green', 'yellow', 'blue'] },
   // Anything else, including keys a later server offers.
   { id: 'other', title: () => t('apps.remoteKeys.other', 'Other keys'), keys: null }
