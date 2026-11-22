@@ -81,10 +81,23 @@ function retries(done) {
             fetch.getJson('https://example.org/a.json', function (errCert) {
               assert.ok(errCert && !errCert.offline);
               assert.ok(/certificate/i.test(errCert.message));
-              assert.strictEqual(calls().length, 1, 'certificate error is not retried across address families');
               var lines = fs.existsSync(log) ? fs.readFileSync(log, 'utf8').trim().split('\n') : [];
-              assert.strictEqual(lines.length, 1, 'wget is not called when curl fails certificate verification');
-              console.log('  ✓ a certificate failure (60) fails immediately and does not try other clients');
+              assert.strictEqual(lines.length, 2, 'tried once with the TV\'s roots and once with Glasshouse\'s, and wget never');
+              assert.strictEqual(lines[0].indexOf('--cacert'), -1);
+              assert.ok(/--cacert \S*ca-roots\.pem/.test(lines[1]), 'the retry names Glasshouse\'s roots: ' + lines[1]);
+              assert.deepEqual(calls(), ['', ''], 'not retried across address families');
+              console.log('  ✓ a certificate failure (60) is tried once more with Glasshouse\'s roots, then fails without other clients');
+
+              reset();
+              // Verifies only with the bundled roots, as GitHub's release files on a 65SM8600 (#1595).
+              install('curl', 'for a in "$@"; do [ "$a" = "--cacert" ] && { echo \'{"ok":3}\'; exit 0; }; done\n' +
+                              'echo "curl: (60) SSL certificate problem: unable to get local issuer certificate" >&2\nexit 60\n');
+              fetch.getJson('https://github.com/a.json', function (errCa, docCa) {
+                assert.ifError(errCa);
+                assert.strictEqual(docCa.ok, 3);
+                assert.strictEqual(calls().length, 2);
+                console.log('  ✓ a host the TV\'s roots cannot verify is reached with Glasshouse\'s');
+                try { fs.unlinkSync(dir + '/wget'); } catch (e) {}
 
               reset();
               cfg.fetch = { ip: '6' };
@@ -102,6 +115,7 @@ function retries(done) {
                 downloads();
               });
             });
+              });
           });
         });
         });
