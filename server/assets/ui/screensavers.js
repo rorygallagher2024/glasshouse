@@ -51,10 +51,12 @@ function pressScreensaver(id) {
 
 // Under a saver added on the TV or an installed app's, who made it, its
 // license and what it does past the screen; under one that cannot be picked,
-// why. Glasshouse's own carry nothing more.
+// why. Built-in savers carry only their author when one is named.
 function ssMeta(m) {
   if (m.note) return `<div class="ss-meta bad">${esc(m.note)}</div>`;
-  if (m.builtin !== false) return '';
+  if (m.builtin !== false) {
+    return m.author ? `<div class="ss-meta">${esc(t('ss.by', 'by {author}', { author: m.author }))}</div>` : '';
+  }
   const bits = [m.fromApp ? t('ss.installedApp', 'Installed app') : t('ss.added', 'Added on this TV')];
   if (m.author) bits.push(t('ss.by', 'by {author}', { author: m.author }));
   if (m.license) bits.push(m.license);
