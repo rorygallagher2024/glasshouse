@@ -1,7 +1,7 @@
 /*
- * lib/guidepatch.js - the remote's Guide, Input and Home keys on webOS 11,
- * for Glasshouse Home's guide, an app or input of the owner's choice, and
- * Glasshouse Bar
+ * lib/guidepatch.js - the remote's Guide, Input, Home and channel keys on
+ * webOS 11, for Glasshouse Home's guide, an app or input of the owner's
+ * choice, Glasshouse Bar, and a channel key of the owner's choosing
  *
  * webOS 11's key filters are native. libappLaunch.so reads the configd value
  * com.webos.keyaction.tvGuide and launches its app with no launch parameters,
@@ -20,6 +20,9 @@
  *   bar    the Home key launches Glasshouse Bar's app, through the call that
  *          opens LG's settings for an always-on display, with its id and
  *          parameters changed
+ *   channel  libpreProcess.so's first filter, which takes the keys the system
+ *          profile lists, reads a list of Glasshouse's (BLOCK_PROFILE) in
+ *          place of LG's, so the channel keys set reach nothing of LG's
  *
  * Nothing of LG's is shipped: a library on the TV is read, found to be a
  * build listed here by its SHA-256 with the places changed put back, changed
@@ -57,6 +60,19 @@ var PICKER_TEXT_RE = /^\{"id": "([A-Za-z0-9._-]{1,30})"\}\0*$/;
  * offset, as LG has it. A library is a build when it hashes to the key with
  * every place changed put back, so a change anywhere else refuses it.
  */
+/*
+ * native/keyfilter-log/channel-keys.s as native/keyfilter-log/build.py makes
+ * it: code for the zeros after .eh_frame in libpreProcess.so that logs the
+ * channel keys' presses, releases and every fourth repeat, so a held key is
+ * seen as it repeats, a line every 200 ms.
+ */
+var CHANNEL_STUB = '70b582b0d9f82440d9f8285040f29216a41b012c26d8022d24d8134e7e44022d04d0002d08d10021316005e031684a1c' +
+  '326011f0030f15d10ff2300001a9ebf7f0ef019870b104eb44042c440ff2400303eb44130ff218020ff22c0100910621' +
+  'ebf740ef02b070bd481a00004c534d004e4c5f494e5055545f4b455946494c5445525f55534500000000bf00bf00bf00' +
+  '7b22676c617373686f7573655f6b6579223a3430322c226576223a307d0000007b22676c617373686f7573655f6b6579' +
+  '223a3430322c226576223a317d0000007b22676c617373686f7573655f6b6579223a3430322c226576223a327d000000' +
+  '7b22676c617373686f7573655f6b6579223a3430332c226576223a307d0000007b22676c617373686f7573655f6b6579' +
+  '223a3430332c226576223a317d0000007b22676c617373686f7573655f6b6579223a3430332c226576223a327d000000';
 var GUIDE_PARAMS = '7b22676c617373686f757365223a226775696465227d00';
 var LIBRARIES = {
   appLaunch: {
@@ -104,8 +120,44 @@ var LIBRARIES = {
         }
       }
     }
+  },
+  preProcess: {
+    file: '/usr/lib/libpreProcess.so.1',
+    builds: {
+      'cd34040641bd737db5da2bc198713def8cf1010d6bfbd85221b687a46752b867': {
+        tv: 'OLED48C54LA, webOS 11.2.0, firmware 43.21.77',
+        sets: {
+          channel: [
+            // handleKeyBlockByApp takes every key named in the system profile's blockedKeys, which
+            // the profile generator works out from LG's own feature files and nothing else can add
+            // to. The name it reads in getProfiles' answer and the one it asks for become
+            // BLOCK_PROFILE, a value Glasshouse's override file sets.
+            { at: 0x152a8, was: '626c6f636b65644b657973', now: '7476776562426c6f636b73' },
+            { at: 0x1533f, was: '626c6f636b65644b657973', now: '7476776562426c6f636b73' },
+            // A key found in the list shows LG's "This button is not available" toast (createToast
+            // with message 0x2b) before it is taken, at every event of the key. That call (blx), whose
+            // result nothing reads, is a bl to CHANNEL_STUB instead, which logs the event.
+            { at: 0xb7b8, was: 'f8f748ef', now: '0df04ef8' },
+            { at: 0x18858, was: new Array(CHANNEL_STUB.length / 2 + 1).join('00'), now: CHANNEL_STUB }
+          ]
+        }
+      }
+    }
   }
 };
+
+/*
+ * The keys the changed key filter takes, by Linux key code, as a value of the
+ * system profile's: an override file read by LG's profile generator, which
+ * copies a value it does not know into the profile as it is. The filter asks
+ * for it once, as it loads, so a change takes a restart of the compositor.
+ */
+var BLOCK_PROFILE = 'tvwebBlocks';
+var PROFILE_OVERRIDE_DIR = '/var/webos-profile/override';
+var PROFILE_OVERRIDE_FILE = 'glasshouse_keys.json';
+// How long the profile service is given to read the file again, asked every PROFILE_POLL_MS.
+var PROFILE_WAIT_MS = 6000;
+var PROFILE_POLL_MS = 500;
 
 var files = {};
 var stateDir = '/var/lib/tvweb';
@@ -115,14 +167,26 @@ var mountInfoFile = '/proc/self/mountinfo';
 var mountsFn = null;
 var cached = null;
 var copyNumber = 0;
+var lunaFn = null;
+var overrideDir = PROFILE_OVERRIDE_DIR;
+var profileWaitMs = PROFILE_WAIT_MS;
+var profilePollMs = PROFILE_POLL_MS;
 
 function init(opts) {
   opts = opts || {};
-  files = { appLaunch: opts.library || LIBRARIES.appLaunch.file, systemUI: opts.systemUiLibrary || LIBRARIES.systemUI.file };
+  files = {
+    appLaunch: opts.library || LIBRARIES.appLaunch.file,
+    systemUI: opts.systemUiLibrary || LIBRARIES.systemUI.file,
+    preProcess: opts.preProcessLibrary || LIBRARIES.preProcess.file
+  };
   if (opts.stateDir) stateDir = opts.stateDir;
   execFn = opts.exec || execFile;
   mountInfoFile = opts.mountInfo || '/proc/self/mountinfo';
   mountsFn = opts.mounts || null;
+  lunaFn = opts.luna || null;
+  overrideDir = opts.profileOverrideDir || PROFILE_OVERRIDE_DIR;
+  profileWaitMs = typeof opts.profileWaitMs === 'number' ? opts.profileWaitMs : PROFILE_WAIT_MS;
+  profilePollMs = typeof opts.profilePollMs === 'number' ? opts.profilePollMs : PROFILE_POLL_MS;
   cached = null;
 }
 init();
@@ -226,18 +290,79 @@ function read(name) {
  */
 function status() {
   if (cached) return cached;
-  var app = read('appLaunch'), ui = read('systemUI');
+  var app = read('appLaunch'), ui = read('systemUI'), pre = read('preProcess');
+  var any = app || ui || pre;
   cached = {
     supported: !!app,
     bar: !!ui,
+    channel: !!pre,
     applied: {
       guide: !!(app && app.found.on.guide),
       input: app ? app.found.on.input : '',
-      bar: !!(ui && ui.found.on.bar)
+      bar: !!(ui && ui.found.on.bar),
+      blocked: pre && pre.found.on.channel ? readBlocked() : []
     },
-    tv: (app || ui) ? (app || ui).found.build.tv : ''
+    tv: any ? any.found.build.tv : ''
   };
   return cached;
+}
+
+function overridePath() { return path.join(overrideDir, PROFILE_OVERRIDE_FILE); }
+
+// The key codes the override file names, sorted, or [] without one.
+function readBlocked() {
+  try {
+    var j = JSON.parse(fs.readFileSync(overridePath(), 'utf8'));
+    return normalCodes(j && j[BLOCK_PROFILE]);
+  } catch (e) {
+    return [];
+  }
+}
+
+// Whole key codes, each once, in order.
+function normalCodes(list) {
+  var out = [];
+  (Array.isArray(list) ? list : []).forEach(function (c) {
+    if (typeof c === 'number' && c > 0 && Math.floor(c) === c && out.indexOf(c) === -1) out.push(c);
+  });
+  return out.sort(function (a, b) { return a - b; });
+}
+
+function sameCodes(a, b) { return a.join(',') === b.join(','); }
+
+/*
+ * The override file written with these codes, or removed for none, and the
+ * profile service told to read its files again; cb(ok) once the profile
+ * holds them. The generator copies BLOCK_PROFILE as it is (a C5, webOS 11.2.0).
+ */
+function writeBlocked(codes, cb) {
+  try {
+    if (codes.length) {
+      var body = {};
+      body[BLOCK_PROFILE] = codes;
+      util.mkdirp(overrideDir);
+      fs.writeFileSync(overridePath() + '.tmp', JSON.stringify(body));
+      fs.renameSync(overridePath() + '.tmp', overridePath());
+    } else {
+      util.unlinkQuiet(overridePath());
+    }
+  } catch (e) {
+    return cb(false);
+  }
+  if (!lunaFn) return cb(false);
+  lunaFn('com.webos.service.systemprofile/debug/rescan', {}, function () {
+    waitForProfile(codes, Date.now() + profileWaitMs, cb);
+  });
+}
+
+function waitForProfile(codes, until, cb) {
+  lunaFn('com.webos.service.systemprofile/getProfiles', { names: [BLOCK_PROFILE] }, function (r) {
+    var value = r && r.profiles ? r.profiles[BLOCK_PROFILE] : undefined;
+    // With no file the name is gone from the profile, or an empty list.
+    if (sameCodes(normalCodes(value), codes)) return cb(true);
+    if (Date.now() >= until) return cb(false);
+    setTimeout(function () { waitForProfile(codes, until, cb); }, profilePollMs);
+  });
 }
 
 // Whether an id can be put in the Input key's text.
@@ -326,37 +451,69 @@ function writeCopy(name, found, buf, want) {
 
 // Whether a library's wanted changes are none: LG's own is used then.
 function isPlain(name, want) {
-  return name === 'appLaunch' ? (!want.guide && !want.input) : !want.bar;
+  if (name === 'appLaunch') return !want.guide && !want.input;
+  if (name === 'preProcess') return !want.channel;
+  return !want.bar;
+}
+
+// Every library's copies taken off, one after another. cb().
+function unmountEvery(cb) {
+  var names = Object.keys(files);
+  (function next(i) {
+    if (i === names.length) return cb();
+    unmountAll(files[names[i]], function () { next(i + 1); });
+  })(0);
 }
 
 /*
  * Mounts the libraries with the changes wanted ({ guide: whether, input: an
- * id or '', bar: whether }) over LG's, and restarts the compositor once to read
- * them. Where they are as wanted already nothing is done. cb({ ok, restarted,
- * error }).
+ * id or '', bar: whether, blocked: key codes }) over LG's, and restarts the
+ * compositor once to read them. Where they are as wanted already nothing is
+ * done. cb({ ok, restarted, error }).
  */
 function apply(want, cb) {
   var st = status();
   var input = want.input || '';
   if (input && !validId(input)) return cb({ ok: false, error: 'id' });
-  var wantApp = { guide: !!want.guide, input: input }, wantUi = { bar: !!want.bar };
+  var blocked = normalCodes(want.blocked);
+  var wantApp = { guide: !!want.guide, input: input }, wantUi = { bar: !!want.bar }, wantPre = { channel: blocked.length > 0 };
   var needApp = wantApp.guide || !!input || st.applied.guide || !!st.applied.input;
   var needUi = wantUi.bar || st.applied.bar;
-  if ((needApp && !st.supported) || (needUi && !st.bar)) return cb({ ok: false, error: 'unsupported' });
+  var needPre = wantPre.channel || st.applied.blocked.length > 0;
+  if ((needApp && !st.supported) || (needUi && !st.bar) || (needPre && !st.channel)) return cb({ ok: false, error: 'unsupported' });
   var jobs = [];
   if (st.supported && (!!st.applied.guide !== wantApp.guide || st.applied.input !== input)) jobs.push({ name: 'appLaunch', want: wantApp });
   if (st.bar && !!st.applied.bar !== wantUi.bar) jobs.push({ name: 'systemUI', want: wantUi });
-  if (!jobs.length) return cb({ ok: true, restarted: false });
+  var patched = st.applied.blocked.length > 0;
+  if (st.channel && patched !== wantPre.channel) jobs.push({ name: 'preProcess', want: wantPre });
+  // The filter reads the list as it loads: other keys with it changed still take a restart.
+  var listChanged = !sameCodes(readBlocked(), blocked);
+  var restartForList = listChanged && wantPre.channel;
+  if (!jobs.length && !restartForList) {
+    // A list nothing reads any more, left by a change that failed half way.
+    if (listChanged) writeBlocked(blocked, function () {});
+    return cb({ ok: true, restarted: false });
+  }
+  if (listChanged) {
+    return writeBlocked(blocked, function (ok) {
+      if (!ok) return cb({ ok: false, error: 'profile' });
+      mountJobs(st, jobs, { app: wantApp, ui: wantUi, blocked: blocked }, cb);
+    });
+  }
+  mountJobs(st, jobs, { app: wantApp, ui: wantUi, blocked: blocked }, cb);
+}
+
+// apply()'s mounts, then the restart. wanted: { app, ui, blocked } as asked.
+function mountJobs(st, jobs, wanted, cb) {
+  var wantApp = wanted.app, wantUi = wanted.ui, input = wantApp.input;
   var kept = [];
   // Not restarted on the copies: they are taken off, and the compositor restarted on LG's own.
   function fallBack(restartErr, done) {
     console.log('guidepatch: the compositor did not restart (' + restartErr.message + '), putting LG\'s key handlers back');
-    unmountAll(files.appLaunch, function () {
-      unmountAll(files.systemUI, function () {
-        restartCompositor(function (againErr) {
-          if (againErr) console.log('guidepatch: the compositor did not restart on LG\'s key handlers either: ' + againErr.message);
-          done();
-        });
+    unmountEvery(function () {
+      restartCompositor(function (againErr) {
+        if (againErr) console.log('guidepatch: the compositor did not restart on LG\'s key handlers either: ' + againErr.message);
+        done();
       });
     });
   }
@@ -365,10 +522,12 @@ function apply(want, cb) {
       cached = null;
       var after = status();
       var right = (!st.supported || (!!after.applied.guide === wantApp.guide && after.applied.input === input)) &&
-        (!st.bar || !!after.applied.bar === wantUi.bar);
+        (!st.bar || !!after.applied.bar === wantUi.bar) &&
+        (!st.channel || sameCodes(after.applied.blocked, wanted.blocked));
       if (!right) return cb({ ok: false, error: 'mount' });
       dropOldCopies(kept);
-      console.log('guidepatch: the key handlers are ' + (kept.length ? 'changed' : 'LG\'s again') + ' on ' + (after.tv || st.tv) + ', restarting the compositor');
+      var changed = after.applied.guide || !!after.applied.input || after.applied.bar || after.applied.blocked.length > 0;
+      console.log('guidepatch: the key handlers are ' + (changed ? 'changed' : 'LG\'s again') + ' on ' + (after.tv || st.tv) + ', restarting the compositor');
       return restartCompositor(function (restartErr) {
         if (!restartErr) return cb({ ok: true, restarted: true });
         fallBack(restartErr, function () { cb({ ok: false, restarted: true, error: 'restart' }); });
@@ -398,10 +557,14 @@ function apply(want, cb) {
   })(0);
 }
 
+// Whether Glasshouse's override file is on the TV, for putting everything back.
+function holdsKeys() { return fs.existsSync(overridePath()); }
+
 module.exports = {
   init: init,
   status: status,
   apply: apply,
+  holdsKeys: holdsKeys,
   validId: validId,
   MAX_ID: MAX_ID,
   LIBRARIES: LIBRARIES

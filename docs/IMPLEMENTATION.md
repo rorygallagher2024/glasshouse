@@ -1063,6 +1063,35 @@ makes the service refuse new ones rather than queue them, and back on with
 in `/var/lib/tvweb` marks toasts off, and the server's start switches them back
 on from it.
 
+The channel rocker is handled by `/usr/lib/libpreProcess.so`'s first filter,
+`handleKeyBlockByApp`, before any other: it takes every key the system profile's
+`blockedKeys` lists, which LG's profile generator works out from its own feature
+files and which an override file cannot add to (the generator logs `ignore
+feature : blockedKeys`). Where the library is a build `lib/guidepatch.js` lists,
+setting **Channel up** or **Channel down** writes
+`/var/webos-profile/override/glasshouse_keys.json`, `{"tvwebBlocks":[402,403]}`
+with the Linux codes of the keys set. The generator copies a value it does not
+know into the profile as it is, and `debug/rescan` has the service read it
+again; the server waits until `getProfiles` returns it. The library's copy
+reads `tvwebBlocks` in place of `blockedKeys` (the name in its `getProfiles`
+request and in its reading of the answer, both 11 characters), so it takes the
+keys set. Where it takes one it called `createToast` for LG's "This button is
+not available" notice at every event; that call goes to 336 bytes of code
+written into the zeros after `.eh_frame`, still in the executable segment's
+last page (`native/keyfilter-log/channel-keys.s`), which logs the event
+through PmLog's `LSM` context as `NL_INPUT_KEYFILTER_USE`, one of the pairs
+PmLogDaemon's whitelist sends to `/var/log/messages`:
+`{"glasshouse_key":402,"ev":2}`, with `ev` 0 pressed, 1 released and 2
+repeated. A held key repeats every 50 ms from half a second, and the code logs
+the first repeat and every fourth after it, a line every 200 ms, the pace the
+panel was seen to follow, counting them in a word past `.bss` (0x1a2c0), in
+the page the loader zeroes after it, which nothing of the library uses. A 3 s
+hold writes about 15 lines. The server follows the log as for the AI button,
+and answers a press at once and each repeat logged with a step. `lginput2` also logs a press as
+`NL_NON_LIST_BUTTON_CLICK`, but a held key only now and then, so that line is
+not read. The filter asks for the profile once, as it loads, so a change of the
+keys set restarts the compositor, as the other changes to LG's libraries do.
+
 ## The input bar
 
 The [input bar](dashboard/inputs.md#glasshouse-input-bar) is a web app of its own,
