@@ -1133,5 +1133,141 @@
  "home.info.today": {"from": "today", "text": "heute"},
  "home.info.tomorrow": {"from": "tomorrow", "text": "morgen"},
  "home.info.weekday": {"from": "on {weekday}", "text": "am {weekday}"},
- "ha.api.desc": {"text": "Liest Home-Assistant-Entitäten live für die Home-Assistant-Bildschirmschoner (Ambient und Data Display) im Tab Bildschirmschoner und für die Werte auf einen Blick neben der Uhr von Glasshouse Home im Tab Home. Verbindet sich direkt über HTTP/HTTPS mit Home Assistant, ohne MQTT, und speichert ohne Neustart.", "from": "Reads live Home Assistant entities for the Home Assistant screen savers (Ambient and Data Display) on the Screensaver tab, and for the values at a glance beside Glasshouse Home's clock on the Home tab. Connects straight to Home Assistant over HTTP/HTTPS without using MQTT, and saves without restarting."}
+ "ha.api.desc": {"text": "Liest Home-Assistant-Entitäten live für die Home-Assistant-Bildschirmschoner (Ambient und Data Display) im Tab Bildschirmschoner und für die Werte auf einen Blick neben der Uhr von Glasshouse Home im Tab Home. Verbindet sich direkt über HTTP/HTTPS mit Home Assistant, ohne MQTT, und speichert ohne Neustart.", "from": "Reads live Home Assistant entities for the Home Assistant screen savers (Ambient and Data Display) on the Screensaver tab, and for the values at a glance beside Glasshouse Home's clock on the Home tab. Connects straight to Home Assistant over HTTP/HTTPS without using MQTT, and saves without restarting."},
+  "ha.domain.all": {
+    "text": "Alle",
+    "from": "All"
+  },
+  "ha.domain.binarySensor": {
+    "text": "Binärsensoren",
+    "from": "Binary sensors"
+  },
+  "ha.domain.calendar": {
+    "text": "Kalender",
+    "from": "Calendars"
+  },
+  "ha.domain.climate": {
+    "text": "Klima",
+    "from": "Climate"
+  },
+  "ha.domain.counter": {
+    "text": "Zähler",
+    "from": "Counters"
+  },
+  "ha.domain.cover": {
+    "text": "Abdeckungen",
+    "from": "Covers"
+  },
+  "ha.domain.deviceTracker": {
+    "text": "Tracker",
+    "from": "Trackers"
+  },
+  "ha.domain.fan": {
+    "text": "Ventilatoren",
+    "from": "Fans"
+  },
+  "ha.domain.inputBoolean": {
+    "text": "Schalter-Helfer",
+    "from": "Input booleans"
+  },
+  "ha.domain.inputNumber": {
+    "text": "Zahlen-Helfer",
+    "from": "Input numbers"
+  },
+  "ha.domain.inputSelect": {
+    "text": "Auswahl-Helfer",
+    "from": "Input select"
+  },
+  "ha.domain.inputText": {
+    "text": "Text-Helfer",
+    "from": "Input text"
+  },
+  "ha.domain.light": {
+    "text": "Lichter",
+    "from": "Lights"
+  },
+  "ha.domain.lock": {
+    "text": "Schlösser",
+    "from": "Locks"
+  },
+  "ha.domain.mediaPlayer": {
+    "text": "Medien",
+    "from": "Media"
+  },
+  "ha.domain.number": {
+    "text": "Zahlen",
+    "from": "Numbers"
+  },
+  "ha.domain.person": {
+    "text": "Personen",
+    "from": "People"
+  },
+  "ha.domain.sensor": {
+    "text": "Sensoren",
+    "from": "Sensors"
+  },
+  "ha.domain.sun": {
+    "text": "Sonne",
+    "from": "Sun"
+  },
+  "ha.domain.switch": {
+    "text": "Schalter",
+    "from": "Switches"
+  },
+  "ha.domain.timer": {
+    "text": "Timer",
+    "from": "Timers"
+  },
+  "ha.domain.vacuum": {
+    "text": "Staubsauger",
+    "from": "Vacuums"
+  },
+  "ha.domain.weather": {
+    "text": "Wetter",
+    "from": "Weather"
+  },
+  "ha.picker.added": {
+    "text": "Hinzugefügt",
+    "from": "Added"
+  },
+  "ha.picker.countAll": {
+    "text": "{n} Entitäten",
+    "from": "{n} entities"
+  },
+  "ha.picker.countOne": {
+    "text": "1 Entität",
+    "from": "1 entity"
+  },
+  "ha.picker.filterType": {
+    "text": "Nach Typ filtern",
+    "from": "Filter by type"
+  },
+  "ha.picker.reset": {
+    "text": "Zurücksetzen",
+    "from": "Reset"
+  },
+  "ha.picker.searchLabel": {
+    "text": "Entitäten filtern",
+    "from": "Filter entities"
+  },
+  "ha.picker.searchPlaceholder": {
+    "text": "Nach Name, Entitäts-ID oder Einheit suchen…",
+    "from": "Search by name, entity ID, or unit…"
+  },
+  "ha.picker.selected": {
+    "text": "Ausgewählt",
+    "from": "Selected"
+  },
+  "ha.picker.showMore": {
+    "text": "Mehr anzeigen ({n} verbleibend)",
+    "from": "Show more ({n} remaining)"
+  },
+  "ha.picker.showingOf": {
+    "text": "{shown} von {n} Treffern ({total} gesamt)",
+    "from": "Showing {shown} of {n} matching ({total} total)"
+  },
+  "ha.picker.withUnit": {
+    "text": "Mit Einheit",
+    "from": "With unit"
+  }
 }

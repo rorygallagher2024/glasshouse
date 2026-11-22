@@ -220,37 +220,7 @@ function renderSsColorPick(colors, current, locked) {
 }
 
 let ssEntitiesKey_ = '';
-let ssHaEntities = null;
-let ssHaLoading = false;
-// Why the list could not be read, shown in place of it until the cache is reset.
-let ssHaListError = '';
-
-function resetHaEntitiesCache() {
-  ssHaEntities = null;
-  ssHaListError = '';
-  ssEntitiesKey_ = '';
-}
-
-async function ensureHaEntities(onLoaded) {
-  // A failed read is not retried on each render: the list can be 8 MB.
-  if (ssHaEntities !== null || ssHaLoading || ssHaListError) return;
-  ssHaLoading = true;
-  try {
-    const r = await fetch(api('/api/ha/entities'));
-    const d = await r.json();
-    if (d && d.ok && d.configured && Array.isArray(d.entities)) {
-      ssHaEntities = d.entities;
-      ssEntitiesKey_ = '';
-      if (typeof onLoaded === 'function') onLoaded();
-      else loadScreensavers();
-    } else if (d && d.error) {
-      ssHaListError = d.error;
-      if (typeof onLoaded === 'function') onLoaded();
-    }
-  } catch (e) {} finally {
-    ssHaLoading = false;
-  }
-}
+onHaEntitiesReset(() => { ssEntitiesKey_ = ''; });
 
 function ssHaSlotLabel(e) {
   const m = /^sensor_(\d+)$/.exec(e.id);
@@ -258,8 +228,7 @@ function ssHaSlotLabel(e) {
 }
 
 function ssHaLookup(entityId) {
-  if (!entityId || !ssHaEntities) return null;
-  return ssHaEntities.find(x => x.id === entityId) || null;
+  return haEntityLookup(entityId);
 }
 
 function ssHaFriendlyHint(entityId) {
@@ -289,20 +258,22 @@ function renderSsEntities(saverId, entities, haConfigured, locked) {
   }
   if (setup) setup.hidden = haConfigured !== false;
 
-  if (haConfigured && ssHaEntities === null) ensureHaEntities();
+  const haState = haEntitiesState();
+  if (haConfigured && !haState.loaded && !haState.error) ensureHaEntities(() => loadScreensavers());
 
   // Do not rebuild inputs while the user is typing in or picking from them,
   // except after a save: a slot given its first entity gains its Label row
   // then (#1446), and focus, with what is being typed, is put back after.
   const active = document.activeElement;
   const inside = !!(active && container.contains(active));
-  if (inside && !ssForceEntityRender) return;
+  const pkOpen = !!(haPickerState.key && haPickerState.key.indexOf('ss:' + saverId + ':') === 0);
+  if ((inside || pkOpen) && !ssForceEntityRender) return;
   ssForceEntityRender = false;
   const keep = inside && active.id ? { id: active.id, value: active.value,
     start: active.selectionStart, end: active.selectionEnd } : null;
 
   const key = (locked ? '1' : '0') + '|' + (haConfigured ? '1' : '0') + '|' +
-    (ssHaEntities ? ssHaEntities.length : -1) + '|' + saverId + '|' +
+    (haState.loaded ? haState.entities.length : -1) + '|' + saverId + '|' +
     entities.map(e => e.id + '=' + e.entity + ':' + (e.customLabel || '')).join(',');
   if (key === ssEntitiesKey_) return;
   ssEntitiesKey_ = key;
@@ -317,6 +288,7 @@ function renderSsEntities(saverId, entities, haConfigured, locked) {
     const hit = ssHaLookup(e.entity);
     const hint = ssHaFriendlyHint(e.entity);
     const labelPlaceholder = (hit && hit.name) ? hit.name : labelFallback;
+    const pkKey = 'ss:' + saverId + ':' + e.id;
     html += `
       <div class="ss-entity-field">
         <div class="ss-entity-head">
@@ -326,12 +298,13 @@ function renderSsEntities(saverId, entities, haConfigured, locked) {
         <div class="ss-ent-wrap">
           <input type="text" id="ss-ent-${esc(e.id)}" data-slot="${esc(e.id)}" data-saver="${esc(saverId)}"
             value="${esc(e.entity || '')}" placeholder="${esc(hidePlaceholder)}"
-            autocomplete="off" spellcheck="false" ${locked ? 'disabled' : ''}
+            autocomplete="off" spellcheck="false" aria-expanded="false" ${locked ? 'disabled' : ''}
             oninput="ssHaFilter('${esc(saverId)}', '${esc(e.id)}')"
+            onkeydown="haPickerKeydown(event, '${esc(pkKey)}')"
             onchange="saveSsEntity('${esc(saverId)}', '${esc(e.id)}', this.value)">
           ${(haConfigured && !locked) ? `<button type="button" class="ss-ent-btn" title="${esc(chooseTitle)}" aria-label="${esc(chooseTitle)}" onclick="ssHaToggle('${esc(saverId)}', '${esc(e.id)}')">&#9662;</button>` : ''}
           ${(!locked && e.entity) ? `<button type="button" class="ss-ent-btn" title="${esc(clearTitle)}" aria-label="${esc(clearTitle)}" onclick="saveSsEntity('${esc(saverId)}', '${esc(e.id)}', '')">&times;</button>` : ''}
-          <div class="ss-pick-list ss-ha-list" id="ss-ha-list-${esc(e.id)}" hidden></div>
+          <div class="ss-pick-list ss-ha-list ha-picker" id="ss-ha-list-${esc(e.id)}" hidden></div>
         </div>
         ${e.entity ? `<div class="ss-ent-label-row">
           <label for="ss-lbl-${esc(e.id)}">${esc(labelTitle)}</label>
@@ -342,6 +315,16 @@ function renderSsEntities(saverId, entities, haConfigured, locked) {
       </div>`;
   });
   container.innerHTML = html;
+  entities.forEach(e => {
+    const slotId = e.id;
+    const currentEntity = e.entity || '';
+    haPickerRegister('ss:' + saverId + ':' + slotId, {
+      listId: 'ss-ha-list-' + slotId,
+      inputId: 'ss-ent-' + slotId,
+      getCurrentId: () => currentEntity,
+      onPick: id => ssHaPick(saverId, slotId, id)
+    });
+  });
   const back = keep && q(keep.id);
   if (back) {
     // A field tabbed to before the save came back keeps what was typed in it.
@@ -354,69 +337,17 @@ function renderSsEntities(saverId, entities, haConfigured, locked) {
 }
 
 function ssHaCloseAll() {
-  document.querySelectorAll('.ss-ha-list').forEach(el => { el.hidden = true; });
-}
-
-function ssHaRenderList(saverId, slot, filterText, showAll) {
-  const list = document.getElementById('ss-ha-list-' + slot);
-  if (!list) return;
-  if (ssHaEntities === null && ssHaListError) {
-    list.innerHTML = `<div class="ss-ha-empty">${esc(ssHaListError)}</div>`;
-    list.hidden = false;
-    return;
-  }
-  if (ssHaEntities === null) {
-    list.innerHTML = `<div class="ss-ha-empty">${esc(t('ss.loadingEntities', 'Loading entities...'))}</div>`;
-    list.hidden = false;
-    ensureHaEntities(() => ssHaRenderList(saverId, slot, filterText, showAll));
-    return;
-  }
-  const tokens = showAll ? [] : String(filterText || '').trim().toLowerCase().split(/\s+/).filter(Boolean);
-  const matches = [];
-  for (let i = 0; i < ssHaEntities.length; i++) {
-    const item = ssHaEntities[i];
-    if (tokens.length) {
-      const hay = (item.id + ' ' + (item.name || '')).toLowerCase();
-      if (!tokens.every(tok => hay.indexOf(tok) !== -1)) continue;
-    }
-    matches.push(item);
-    if (matches.length >= 80) break;
-  }
-  if (!matches.length) {
-    list.innerHTML = `<div class="ss-ha-empty">${esc(t('ss.noEntitiesMatch', 'No matching entities'))}</div>`;
-  } else {
-    let html = '';
-    matches.forEach(item => {
-      const sub = item.name ? (item.id + (item.unit ? ' · ' + item.unit : '')) : (item.unit || '');
-      html += `<div class="ss-ha-opt" onmousedown="event.preventDefault(); ssHaPick('${esc(saverId)}', '${esc(slot)}', '${esc(item.id)}')">
-        <div class="ss-ha-opt-n">${esc(item.name || item.id)}</div>
-        ${sub ? `<div class="ss-ha-opt-id">${esc(sub)}</div>` : ''}
-      </div>`;
-    });
-    list.innerHTML = html;
-  }
-  list.hidden = false;
+  haPickerCloseAll();
 }
 
 function ssHaToggle(saverId, slot) {
-  const list = document.getElementById('ss-ha-list-' + slot);
-  if (!list) return;
-  const wasHidden = list.hidden;
-  ssHaCloseAll();
-  if (wasHidden) {
-    ssHaRenderList(saverId, slot, '', true);
-    const input = document.getElementById('ss-ent-' + slot);
-    if (input) input.focus();
-  }
+  haPickerToggle('ss:' + saverId + ':' + slot);
 }
 
 function ssHaFilter(saverId, slot) {
   const input = document.getElementById('ss-ent-' + slot);
-  if (!input || !ssHaEntities) return;
-  ssHaCloseAll();
-  if (input.value.trim().length > 0) {
-    ssHaRenderList(saverId, slot, input.value, false);
-  }
+  if (!input) return;
+  haPickerFilter('ss:' + saverId + ':' + slot, input.value);
 }
 
 function ssHaPick(saverId, slot, entityId) {
@@ -469,14 +400,16 @@ function renderSsEntityList(saverId, entityList, haConfigured, locked) {
   }
   if (setup) setup.hidden = haConfigured !== false;
 
-  if (haConfigured && ssHaEntities === null) ensureHaEntities();
+  const haState = haEntitiesState();
+  if (haConfigured && !haState.loaded && !haState.error) ensureHaEntities(() => loadScreensavers());
 
   const active = document.activeElement;
-  if (!ssForceEntityRender && active && container.contains(active)) return;
+  const pkOpen = !!(haPickerState.key && haPickerState.key.indexOf('ss:' + saverId + ':') === 0);
+  if (!ssForceEntityRender && ((active && container.contains(active)) || pkOpen)) return;
   ssForceEntityRender = false;
 
   const key = 'list|' + (locked ? '1' : '0') + '|' + (haConfigured ? '1' : '0') + '|' +
-    (ssHaEntities ? ssHaEntities.length : -1) + '|' + saverId + '|' + ssListMax + '|' +
+    (haState.loaded ? haState.entities.length : -1) + '|' + saverId + '|' + ssListMax + '|' +
     items.map(it => it.entity + ':' + (it.label || '')).join(',');
   if (key === ssEntitiesKey_) return;
   ssEntitiesKey_ = key;
@@ -491,6 +424,7 @@ function renderSsEntityList(saverId, entityList, haConfigured, locked) {
   const labelTitle = t('ss.entityLabel', 'Label');
   const customPh = t('ss.entityList.customLabelPlaceholder', 'Custom display label (optional)');
   const full = items.length >= ssListMax;
+  const addPkKey = 'ss:' + saverId + ':_add';
 
   let html = `
     <div class="ss-li-head">
@@ -500,11 +434,11 @@ function renderSsEntityList(saverId, entityList, haConfigured, locked) {
     <div class="ss-li-add">
       <div class="ss-ent-wrap">
         <input type="text" id="ss-ent-_add" data-saver="${esc(saverId)}" placeholder="${esc(addPh)}"
-          autocomplete="off" spellcheck="false" ${(locked || full) ? 'disabled' : ''}
+          autocomplete="off" spellcheck="false" aria-expanded="false" ${(locked || full) ? 'disabled' : ''}
           oninput="ssHaFilter('${esc(saverId)}', '_add')"
-          onkeydown="if(event.key==='Enter'){event.preventDefault();addSsListEntity('${esc(saverId)}');}">
+          onkeydown="if(!haPickerKeydown(event,'${esc(addPkKey)}')&&event.key==='Enter'){event.preventDefault();addSsListEntity('${esc(saverId)}');}">
         ${(haConfigured && !locked && !full) ? `<button type="button" class="ss-ent-btn" title="${esc(chooseTitle)}" aria-label="${esc(chooseTitle)}" onclick="ssHaToggle('${esc(saverId)}', '_add')">&#9662;</button>` : ''}
-        <div class="ss-pick-list ss-ha-list" id="ss-ha-list-_add" hidden></div>
+        <div class="ss-pick-list ss-ha-list ha-picker" id="ss-ha-list-_add" hidden></div>
       </div>
       <button type="button" class="ss-li-add-btn" ${(locked || full) ? 'disabled' : ''} onclick="addSsListEntity('${esc(saverId)}')">${esc(addBtnLbl)}</button>
     </div>`;
@@ -543,6 +477,12 @@ function renderSsEntityList(saverId, entityList, haConfigured, locked) {
     html += '</div>';
   }
   container.innerHTML = html;
+  haPickerRegister('ss:' + saverId + ':_add', {
+    listId: 'ss-ha-list-_add',
+    inputId: 'ss-ent-_add',
+    getUsedIds: () => ssListItems.map(it => it.entity),
+    onPick: id => ssHaPick(saverId, '_add', id)
+  });
 }
 
 async function commitSsEntityList(saverId, nextItems, forceRender) {
@@ -562,7 +502,7 @@ function addSsListEntity(saverId, explicitId) {
   const trimmed = raw.trim();
   if (!trimmed) {
     if (input) input.focus();
-    if (ssHaEntities) ssHaToggle(saverId, '_add');
+    if (haEntitiesState().loaded) ssHaToggle(saverId, '_add');
     return;
   }
   if (ssListItems.length >= ssListMax) return;
@@ -1283,7 +1223,6 @@ document.addEventListener('click', async ev => {
   const opt = ev.target.closest('.ss-pick-opt[data-id]');
   if (opt) { pickSsChoice(opt.dataset.id); return; }
   if (!ev.target.closest('#ss-pick') && !q('ss-pick-list').hidden) ssPickOpen(false);
-  if (!ev.target.closest('.ss-ent-wrap')) ssHaCloseAll();
 });
 
 /* Brightness, in 5% steps from 5%, sent on release: each value restages the
