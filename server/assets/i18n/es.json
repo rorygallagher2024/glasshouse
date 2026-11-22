@@ -3817,5 +3817,5 @@
  "home.board.place": {"from": "Shown", "text": "Se muestra"},
  "home.board.place.beside": {"from": "Beside the lines", "text": "Junto a las líneas"},
  "home.board.place.strip": {"from": "Running along the bottom", "text": "Pasando por abajo"},
- "home.board.placeDesc": {"from": "Along the bottom, the matches run in the strip the news uses, before any headlines, by name only.", "text": "Abajo, los partidos pasan por la cinta de las noticias, antes de los titulares, solo con nombres."}
+ "home.board.placeDesc": {"from": "Along the bottom, the matches open every run of the strip the news uses, by name only, with the next headlines after them.", "text": "Abajo, los partidos abren cada vuelta de la cinta de noticias, solo con nombres, y les siguen los siguientes titulares."}
 }

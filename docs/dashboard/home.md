@@ -599,7 +599,7 @@ Beside the lines, a board of up to twenty lines shown four at a time, turning to
 
   **Teams shown as** picks how a side shows, on the board and in the Scores screen saver alike: its **Name** (default), its **Crest and name**, or its **Crest only**, with the name where ESPN has no crest for it. Crests come from ESPN's image server, 96 pixels square, each fetched the first time it is shown and kept on the TV.
 
-  **Shown** puts the board **Beside the lines** (default) or **Running along the bottom**: there the matches run by name in the strip the news uses, before any headlines, and the strip shows even with the news off.
+  **Shown** puts the board **Beside the lines** (default) or **Running along the bottom**: there the matches run by name in the strip the news uses, at the start of every run with the next headlines after them, so a changed score comes round within about a minute. The strip shows even with the news off.
 * **Sent from Home Assistant:** whatever was last written to the `text.lg_tv_home_board` entity, `{"title":"Football today","minutes":10,"lines":[{"label":"Arsenal 2–1 Chelsea","value":"67'"}]}`. It is not kept across a restart, and with `minutes` it goes that long after the last push. An empty value takes it away at once.
 * **Off (default).**
 

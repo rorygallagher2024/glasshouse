@@ -2184,15 +2184,17 @@ html[lang="vi"] #srcTitle,html[lang="vi"] #plMode,html[lang="vi"] #pvMode,html[l
    * up to 45 across three feeds, came to 20,000 and moved in jerks on a C6.
    * New headlines are taken at the start of a run, so none is cut off on
    * screen, and a run's time follows its length, at NEWS_SPEED pixels a second:
-   * 60, one pixel a frame on a 60 Hz panel, where 90 stepped one and two pixels
-   * by turns and looked jerky.
+   * 120, two whole pixels a frame on a 60 Hz panel; 90 stepped one and two
+   * pixels by turns and looked jerky, and 60 was slower than wanted.
    */
-  var NEWS_SPEED = 60;
+  var NEWS_SPEED = 120;
   var NEWS_BATCH = 8;
-  var newsItems = [], newsWaiting = null, newsKey = '', newsAt = 0, newsShown = false;
-  // The strip runs the board's lines, when it is put there, then the headlines.
+  var newsItems = [], runBoard = [], newsWaiting = null, newsKey = '', newsAt = 0, runAt = 0, newsShown = false;
+  // The board's lines, when it is put in the strip, open every run and the
+  // headlines take turns after them: scores change, so they come round each
+  // run rather than once in every 45 headlines.
   var stripBoard = [], stripNews = [];
-  function updateStrip() { renderStrip(stripBoard.concat(stripNews)); }
+  function updateStrip() { renderStrip(stripBoard, stripNews); }
   function renderNews(items) { stripNews = items || []; updateStrip(); }
   function newsHtml(items) {
     var parts = [];
@@ -2202,8 +2204,12 @@ html[lang="vi"] #srcTitle,html[lang="vi"] #plMode,html[lang="vi"] #pvMode,html[l
     return parts.join('<span class="sep">\u2022</span>');
   }
   function startNewsRun() {
-    if (newsWaiting) { newsItems = newsWaiting; newsWaiting = null; if (newsAt >= newsItems.length) newsAt = 0; }
-    var batch = newsItems.slice(newsAt, newsAt + NEWS_BATCH);
+    if (newsWaiting) {
+      runBoard = newsWaiting.board; newsItems = newsWaiting.news; newsWaiting = null;
+      if (newsAt >= newsItems.length) newsAt = 0;
+    }
+    runAt = newsAt;
+    var batch = runBoard.concat(newsItems.slice(newsAt, newsAt + NEWS_BATCH));
     newsAt = newsAt + NEWS_BATCH >= newsItems.length ? 0 : newsAt + NEWS_BATCH;
     var run = $('newsRun');
     run.innerHTML = newsHtml(batch);
@@ -2219,19 +2225,24 @@ html[lang="vi"] #srcTitle,html[lang="vi"] #plMode,html[lang="vi"] #pvMode,html[l
     run.style.webkitAnimationName = '';
     run.style.animationName = '';
   }
-  function renderStrip(items) {
-    if (!items || !items.length) {
+  function renderStrip(boardItems, items) {
+    if (!boardItems.length && !items.length) {
       if (!newsShown) return;
       newsShown = false;
-      newsItems = []; newsWaiting = null; newsKey = ''; newsAt = 0;
+      newsItems = []; runBoard = []; newsWaiting = null; newsKey = ''; newsAt = 0;
       $('news').className = 'none';
       $('newsRun').innerHTML = '';
       stageClass();
       return;
     }
-    var key = JSON.stringify(items);
-    if (key !== newsKey) { newsKey = key; newsWaiting = items; }
-    if (newsShown) return;
+    var key = JSON.stringify([boardItems, items]);
+    if (key !== newsKey) { newsKey = key; newsWaiting = { board: boardItems, news: items }; }
+    if (newsShown) {
+      // Matches put in the strip after a run began start it again with them,
+      // from the same headlines, rather than a run later.
+      if (newsWaiting && boardItems.length && !runBoard.length) { newsAt = runAt; startNewsRun(); }
+      return;
+    }
     newsShown = true;
     $('news').className = '';
     startNewsRun();
@@ -2346,7 +2357,9 @@ html[lang="vi"] #srcTitle,html[lang="vi"] #plMode,html[lang="vi"] #pvMode,html[l
   }
   // The board in the strip along the bottom, chosen on the Home tab.
   function boardInStrip() { return !!layout && layout.boardStrip === true; }
+  var lastBoard = null;
   function renderBoard(b) {
+    lastBoard = b;
     if (b && b.kind === 'scores') b = scoresBoard(b);
     var key = b && (b.title || (b.lines && b.lines.length)) ? (boardInStrip() ? 'strip ' : '') + JSON.stringify(b) : '';
     if (key === shownBoard) return;
@@ -6897,6 +6910,8 @@ html[lang="vi"] #srcTitle,html[lang="vi"] #plMode,html[lang="vi"] #pvMode,html[l
       data = r;
       loadLineup();
       layout = r.layout;
+      // The board may have come before the layout that says where it goes.
+      if (lastBoard) renderBoard(lastBoard);
       preloadNavSounds();
       if (!searchOn()) { closeSearch(); state.rail = false; }
       setFadeOn(layout.fade === true);

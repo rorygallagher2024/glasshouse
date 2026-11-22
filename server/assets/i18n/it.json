@@ -3831,5 +3831,5 @@
  "home.board.place": {"from": "Shown", "text": "Mostrato"},
  "home.board.place.beside": {"from": "Beside the lines", "text": "Accanto alle righe"},
  "home.board.place.strip": {"from": "Running along the bottom", "text": "Scorrevole in basso"},
- "home.board.placeDesc": {"from": "Along the bottom, the matches run in the strip the news uses, before any headlines, by name only.", "text": "In basso, le partite scorrono nella striscia delle notizie, prima dei titoli, solo con i nomi."}
+ "home.board.placeDesc": {"from": "Along the bottom, the matches open every run of the strip the news uses, by name only, with the next headlines after them.", "text": "In basso, le partite aprono ogni giro della striscia delle notizie, solo con i nomi, seguite dai titoli successivi."}
 }
