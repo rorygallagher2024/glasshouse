@@ -80,6 +80,7 @@ function saverSteps() {
   scores.saverBoard(['soccer/eng.1', 'soccer/uefa.champions', 'soccer/eng.1', 'nope'], now, false, function (b) {
     assert.strictEqual(b.ok, true);
     assert.deepEqual(b.leagues, ['PL', 'CL'], 'each league once, unknown ones dropped');
+    assert.deepEqual(b.names, { PL: 'Premier League', CL: 'Champions League' }, 'the names the saver heads its groups with');
     assert.strictEqual(b.note, '');
     assert.deepEqual(b.matches.map(function (m) { return m.detail; }), ['Postponed', 'FT', 'HT', kickHm(new Date(kick))]);
     assert.deepEqual(b.matches[2], { league: 'PL', home: 'Hull', away: 'Brighton', homeScore: '2', awayScore: '1', state: 'in', detail: 'HT' });

@@ -176,7 +176,7 @@ function detailOf(m, hour12) {
 
 /*
  * saverBoard(ids, nowMs, hour12, cb) - cb(body) for the Scores screen saver:
- * { ok, title, note, leagues: [short], matches: [{ league, home, away,
+ * { ok, title, note, leagues: [short], names: {short: name}, matches: [{ league, home, away,
  * homeScore, awayScore, state, detail }] }. note says there are no matches
  * today, or is empty; ok is false only when no league could be read.
  */
@@ -185,7 +185,9 @@ function saverBoard(ids, nowMs, hour12, cb) {
   (ids || []).forEach(function (id) { if (league(id) && wanted.indexOf(id) === -1) wanted.push(id); });
   var shorts = wanted.map(function (id) { return league(id).short; });
   cachedToday(wanted, nowMs, function (err, matches) {
-    var body = { ok: !err, title: msg('home.board.scoresTitle', 'Today’s matches'), note: '', leagues: shorts, matches: [] };
+    var names = {};
+    wanted.forEach(function (id) { names[league(id).short] = league(id).name; });
+    var body = { ok: !err, title: msg('home.board.scoresTitle', 'Today’s matches'), note: '', leagues: shorts, names: names, matches: [] };
     if (err) return cb(body);
     body.matches = (matches || []).map(function (m) {
       return {

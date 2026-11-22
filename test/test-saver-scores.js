@@ -1,7 +1,8 @@
 /*
  * test/test-saver-scores.js - The Scores screen saver shows the Premier League
  * until leagues are picked, keeps up to four known ones, refuses none, and is
- * staged with the address of /api/scores for them, carrying the token. A
+ * staged with the address of /api/scores for them, carrying the token. With
+ * Glasshouse Home they are its board's leagues, picked on either tab. A
  * screen saver added on the TV is not given that address.
  *
  * Strict ES5: runs on node 0.12.
@@ -69,12 +70,44 @@ screensavers.setSaverLeagues('scores', [], function (none) {
       assert.deepEqual(mode('scores').leagues, r.leagues);
       assert.ok(staged().indexOf('leagues=' + encodeURIComponent(r.leagues.join(',')) + '&k=t1') !== -1, 'restaged with them');
       console.log('  ✓ up to four known leagues are kept and restaged, none is refused');
-      env.restore();
+
+      // With Glasshouse Home, the leagues are its board's: one list for both.
+      var board = ['soccer/swe.1'];
+      var boardSets = [];
+      screensavers.init({
+        luna: env.mockLuna,
+        config: { allowControl: true, port: 8080, token: 't1' },
+        saverRoots: [{ dir: BUILTIN_DIR, builtin: true }, { dir: addedRoot, builtin: false }],
+        injectKey: function (k, cb) { cb(true); },
+        KEY_BACK: 412,
+        leagues: function () { return board; },
+        setLeagues: function (list, done) {
+          boardSets.push(list);
+          board = list;
+          screensavers.leaguesChanged();
+          done({ ok: true });
+        }
+      });
+      screensavers.restageScreensaver();
+      assert.deepEqual(mode('scores').leagues, ['soccer/swe.1'], 'the board\'s leagues');
+      assert.ok(staged().indexOf('leagues=soccer%2Fswe.1&k=t1') !== -1);
+      board = ['soccer/eng.1', 'soccer/uefa.champions'];
+      screensavers.leaguesChanged();
+      assert.ok(staged().indexOf('leagues=' + encodeURIComponent('soccer/eng.1,soccer/uefa.champions')) !== -1, 'picked on the Home tab, restaged');
+      screensavers.setSaverLeagues('scores', ['soccer/ger.1', 'nope'], function (shared) {
+        assert.strictEqual(shared.ok, true);
+        assert.deepEqual(boardSets, [['soccer/ger.1']], 'picked here, saved as the board\'s');
+        assert.ok(staged().indexOf('leagues=soccer%2Fger.1&k=t1') !== -1);
+        board = [];
+        assert.deepEqual(mode('scores').leagues, ['soccer/eng.1'], 'a board without leagues: the Premier League');
+        console.log('  ✓ with Glasshouse Home, the leagues are its board\'s, picked on either tab');
+        env.restore();
       fs.unlinkSync(path.join(addedRoot, 'mine', 'saver.json'));
       fs.unlinkSync(path.join(addedRoot, 'mine', 'main.qml'));
       fs.rmdirSync(path.join(addedRoot, 'mine'));
       fs.rmdirSync(addedRoot);
-      console.log('\nALL test-saver-scores.js assertions passed!\n');
+        console.log('\nALL test-saver-scores.js assertions passed!\n');
+      });
     });
   });
 });

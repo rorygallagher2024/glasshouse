@@ -3791,7 +3791,7 @@
  "home.board.scoresTitle": {"from": "Today’s matches", "text": "Jogos de hoje"},
  "home.boardDesc": {"from": "Beside the lines: today's matches in the leagues you choose, with their kick-off times and live scores, four at a time. Or a board Home Assistant sends.", "text": "Ao lado das linhas: os jogos de hoje nas ligas que você escolher, com horários e placares ao vivo, quatro de cada vez. Ou um placar enviado pelo Home Assistant."},
  "ss.leagues": {"from": "Leagues", "text": "Ligas"},
- "ss.leaguesDesc": {"from": "Up to four. Glasshouse reads their matches from ESPN at most once a minute while the screen saver shows. Nothing else is sent.", "text": "Até quatro. O Glasshouse lê os jogos delas da ESPN no máximo uma vez por minuto enquanto o protetor de tela aparece. Nada mais é enviado."},
+ "ss.leaguesDesc": {"from": "Up to four, the same as the board on Glasshouse Home. Glasshouse reads their matches from ESPN at most once a minute while the screen saver shows. Nothing else is sent.", "text": "Até quatro, as mesmas do quadro do Glasshouse Home. O Glasshouse lê os jogos delas da ESPN no máximo uma vez por minuto enquanto o protetor de tela aparece. Nada mais é enviado."},
  "srv.saver.noLeagues": {"from": "Pick at least one league.", "text": "Escolha pelo menos uma liga."},
  "srv.saver.noScores": {"from": "It asks for the day's matches, which only Glasshouse's own screen savers are given.", "text": "Pede os jogos do dia, que só os protetores de tela do próprio Glasshouse recebem."}
 }

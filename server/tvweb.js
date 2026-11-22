@@ -697,7 +697,10 @@ screensavers.init({
   watchPointer: function (on) { if (!on || remotebuttons.isSupported()) remotebuttons.want('saverPointer', on); },
   mediaState: telemetry.readMediaState,
   homeVideoBackground: function () { return !!(glasshouseHome && glasshouseHome.videoBackgroundActive()); },
-  haEntity: haEntity
+  haEntity: haEntity,
+  // The Scores saver's leagues are Glasshouse Home's board's.
+  leagues: glasshouseHome ? function () { return glasshouseHome.boardLeagues(); } : undefined,
+  setLeagues: glasshouseHome ? function (list, cb) { glasshouseHome.setBoardLeagues(list, cb); } : undefined
 });
 idlesaver.init({ luna: luna, mediaState: telemetry.readMediaState,
   homeVideoBackground: function () { return !!(glasshouseHome && glasshouseHome.videoBackgroundActive()); },
@@ -2295,6 +2298,7 @@ function startGlasshouseHome() {
     },
     pictureDetails: function (on) { homePicture.want('details', on); },
     onDeviceNames: function () { telemetry.expireInputNames(); },
+    onBoardLeagues: function () { screensavers.leaguesChanged(); },
     handOverTileHiding: function (hide) { appsModule.handOverToHome(hide); }
   });
   homeLauncher.init({ stateDir: __dirname, version: TVWEB_DISPLAY_VERSION });

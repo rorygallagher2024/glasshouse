@@ -319,6 +319,8 @@ var homeKeysFn = function () {};
 var handOverFn = function () {};
 /** @type {function(): void} */
 var onDeviceNamesFn = function () {};
+// Called when the board's leagues change: the Scores screen saver shows the same.
+var onBoardLeaguesFn = function () {};
 // Told whether the plate's picture details are on, at start and on each change.
 /** @type {function(boolean): void} */
 var pictureDetailsFn = function () {};
@@ -954,6 +956,7 @@ function setLayout(body, cb) {
   if (config.weather === 'internet') setTimeout(internetWeatherTick, 0);
   if (JSON.stringify(c.infoLines) !== JSON.stringify(config.infoLines)) { entityInfo = null; entityInfoAt = 0; }
   if (JSON.stringify(c.boardLeagues) !== JSON.stringify(config.boardLeagues) || c.board !== config.board) { scores = null; scoresAt = 0; }
+  if (JSON.stringify(c.boardLeagues) !== JSON.stringify(config.boardLeagues)) onBoardLeaguesFn();
   // A row back in its own order keeps no record of what was opened.
   ROWS.forEach(function (r) { if (config.sort[r] !== 'recent') recent.forget(r); });
   cb({ ok: true, layout: layoutOf(config), layoutVersion: layoutVersion() });
@@ -4089,6 +4092,7 @@ function init(opts) {
   handOverFn = opts.handOverTileHiding || function () {};
   pictureDetailsFn = opts.pictureDetails || function () {};
   onDeviceNamesFn = opts.onDeviceNames || function () {};
+  onBoardLeaguesFn = opts.onBoardLeagues || function () {};
   setHomeKeyFn = opts.setHomeKey || function (id, cb) { cb({ ok: true, none: true }); };
   readsHomeKeyFn = opts.readsHomeKey || function () { return false; };
   holdMs = opts.holdMs || HOLD_MS;
@@ -4359,8 +4363,16 @@ function stop() {
   recent.flush();
 }
 
+// The leagues picked for the board, which the Scores screen saver shares:
+// picked on either tab, they are the same list.
+function boardLeagues() { return readConfig().boardLeagues.slice(); }
+
+function setBoardLeagues(list, cb) { setLayout({ boardLeagues: list }, cb); }
+
 module.exports = {
   LG_HOME: LG_HOME,
+  boardLeagues: boardLeagues,
+  setBoardLeagues: setBoardLeagues,
   viewInFront: viewInFront,
   barOpened: barOpened,
   reopenAfterCompositor: reopenAfterCompositor,

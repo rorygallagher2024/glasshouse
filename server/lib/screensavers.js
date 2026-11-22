@@ -34,8 +34,14 @@ var SCREENSAVER_MARKER = '.tvweb-screensaver';
 var SCREENSAVER_LEVEL_MARKER = '.tvweb-brightness';
 var SCREENSAVER_ENTITIES_FILE = '/var/lib/tvweb/screensaver-entities.json';
 var SCREENSAVER_COLORS_FILE = '/var/lib/tvweb/screensaver-colors.json';
-// The leagues each screen saver with "scores" in uses shows, by its id.
+// The leagues a screen saver with "scores" in uses shows: Glasshouse Home's
+// board's, through these, so one list serves both. The file keeps them, by
+// saver id, only where Home is not there to.
 var SCREENSAVER_LEAGUES_FILE = '/var/lib/tvweb/screensaver-leagues.json';
+/** @type {null|function(): Array<string>} */
+var leaguesFn = null;
+/** @type {null|function(Array<string>, function(any): void): void} */
+var setLeaguesFn = null;
 var DEFAULT_SAVER_LEAGUES = ['soccer/eng.1'];
 var MAX_SAVER_LEAGUES = 4;
 /** @type {typeof import('./haentity') | null} */
@@ -884,6 +890,8 @@ function init(opts) {
   haEntityModule = opts.haEntity || null;
   hour12Fn = opts.hour12 || function () { return false; };
   qtLocaleFn = opts.qtLocale || function () { return ''; };
+  leaguesFn = opts.leagues || null;
+  setLeaguesFn = opts.setLeagues || null;
   webosVersion = opts.webosVersion || null;
   saverRoots = opts.saverRoots || DEFAULT_ROOTS;
   catalogCache = null;
@@ -1307,7 +1315,11 @@ function knownLeagues(list) {
 // the Premier League until some are picked.
 function screensaverLeagues(e) {
   if (!e || !e.uses || e.uses.indexOf('scores') === -1) return undefined;
-  var picked = knownLeagues(readStoredLeagues()[e.id]);
+  var shared = null;
+  if (leaguesFn) {
+    try { shared = leaguesFn(); } catch (err) { shared = null; }
+  }
+  var picked = knownLeagues(shared || readStoredLeagues()[e.id]);
   return picked.length ? picked : DEFAULT_SAVER_LEAGUES.slice();
 }
 
@@ -1320,6 +1332,12 @@ function setSaverLeagues(saverId, leagues, cb) {
   }
   var picked = knownLeagues(leagues);
   if (!picked.length) return cb({ ok: false, error: msg('srv.saver.noLeagues', 'Pick at least one league.') });
+  if (setLeaguesFn) {
+    // Home's board takes them and calls leaguesChanged(), which restages.
+    return setLeaguesFn(picked, function (r) {
+      cb(r && r.ok ? { ok: true, leagues: picked } : { ok: false, error: (r && r.error) || 'could not save the leagues' });
+    });
+  }
   var stored = readStoredLeagues();
   stored[saverId] = picked;
   try {
@@ -1327,11 +1345,17 @@ function setSaverLeagues(saverId, leagues, cb) {
   } catch (e) {
     return cb({ ok: false, error: e.message });
   }
-  if (stagedScreensaver() === saverId) {
-    restageScreensaver();
-    restartScreensaverApp(function () {});
-  }
+  leaguesChanged();
   cb({ ok: true, leagues: picked });
+}
+
+// The leagues changed, here or on the Home tab: the saver showing scores is
+// staged again with them.
+function leaguesChanged() {
+  var staged = saverById(stagedScreensaver());
+  if (!staged || !staged.uses || staged.uses.indexOf('scores') === -1) return;
+  restageScreensaver();
+  restartScreensaverApp(function () {});
 }
 
 function setSaverColor(saverId, colorId, cb) {
@@ -2383,6 +2407,7 @@ module.exports = {
   setSaverEntities: setSaverEntities,
   setSaverColor: setSaverColor,
   setSaverLeagues: setSaverLeagues,
+  leaguesChanged: leaguesChanged,
   screensaverColor: function () {
     var mode = screensaverMode();
     if (mode === 'random') mode = stagedScreensaver();

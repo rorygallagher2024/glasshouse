@@ -3791,7 +3791,7 @@
  "home.board.scoresTitle": {"from": "Today’s matches", "text": "مباريات اليوم"},
  "home.boardDesc": {"from": "Beside the lines: today's matches in the leagues you choose, with their kick-off times and live scores, four at a time. Or a board Home Assistant sends.", "text": "بجانب الأسطر: مباريات اليوم في الدوريات التي تختارها، بمواعيد انطلاقها ونتائجها المباشرة، أربع في كل مرة. أو لوحة يرسلها Home Assistant."},
  "ss.leagues": {"from": "Leagues", "text": "الدوريات"},
- "ss.leaguesDesc": {"from": "Up to four. Glasshouse reads their matches from ESPN at most once a minute while the screen saver shows. Nothing else is sent.", "text": "حتى أربعة. يقرأ Glasshouse مبارياتها من ESPN مرة واحدة في الدقيقة على الأكثر أثناء عرض شاشة التوقف. لا يُرسل أي شيء آخر."},
+ "ss.leaguesDesc": {"from": "Up to four, the same as the board on Glasshouse Home. Glasshouse reads their matches from ESPN at most once a minute while the screen saver shows. Nothing else is sent.", "text": "حتى أربعة، وهي نفسها المعروضة في لوحة Glasshouse Home. يقرأ Glasshouse مبارياتها من ESPN مرة واحدة في الدقيقة على الأكثر أثناء عرض شاشة التوقف. لا يُرسل أي شيء آخر."},
  "srv.saver.noLeagues": {"from": "Pick at least one league.", "text": "اختر دوريًا واحدًا على الأقل."},
  "srv.saver.noScores": {"from": "It asks for the day's matches, which only Glasshouse's own screen savers are given.", "text": "تطلب مباريات اليوم، التي لا تحصل عليها إلا شاشات التوقف الخاصة بـ Glasshouse."}
 }

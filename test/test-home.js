@@ -3703,11 +3703,14 @@ step('the board: today\'s matches in the leagues chosen, read at most once a min
     dayOf: require('../server/lib/scores').dayOf,
     today: function (ids, now, cb) { asked++; return fail ? cb(new Error('offline')) : cb(null, matches); }
   };
-  start(null, { now: function () { return clock; }, scores: scoresFake });
+  var leagueChanges = 0;
+  start(null, { now: function () { return clock; }, scores: scoresFake, onBoardLeagues: function () { leagueChanges++; } });
   assert.strictEqual(home.layout().board, 'off', 'off unless chosen');
   assert.ok(home.layout().scoresLeagues.length > 5, 'the leagues offered come with the layout');
   home.setLayout({ board: 'scores', boardLeagues: ['soccer/eng.1', 'soccer/nowhere', 'soccer/uefa.champions'] }, function (r) {
     assert.deepEqual(r.layout.boardLeagues, ['soccer/eng.1', 'soccer/uefa.champions'], 'unknown leagues left out');
+    assert.deepEqual(home.boardLeagues(), ['soccer/eng.1', 'soccer/uefa.champions'], 'shared with the Scores screen saver');
+    assert.strictEqual(leagueChanges, 1, 'which is told they changed');
     home.info(function (i1) {
       assert.strictEqual(asked, 1);
       var b = i1.board || home.beat().board;

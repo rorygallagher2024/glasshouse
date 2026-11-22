@@ -3809,7 +3809,7 @@
  "home.board.scoresTitle": {"from": "Today’s matches", "text": "Dagens matcher"},
  "home.boardDesc": {"from": "Beside the lines: today's matches in the leagues you choose, with their kick-off times and live scores, four at a time. Or a board Home Assistant sends.", "text": "Bredvid raderna: dagens matcher i de ligor du väljer, med avsparkstider och liveresultat, fyra i taget. Eller en tavla som Home Assistant skickar."},
  "ss.leagues": {"from": "Leagues", "text": "Ligor"},
- "ss.leaguesDesc": {"from": "Up to four. Glasshouse reads their matches from ESPN at most once a minute while the screen saver shows. Nothing else is sent.", "text": "Upp till fyra. Glasshouse hämtar deras matcher från ESPN högst en gång i minuten medan skärmsläckaren visas. Inget annat skickas."},
+ "ss.leaguesDesc": {"from": "Up to four, the same as the board on Glasshouse Home. Glasshouse reads their matches from ESPN at most once a minute while the screen saver shows. Nothing else is sent.", "text": "Upp till fyra, samma som tavlan på Glasshouse Home. Glasshouse hämtar deras matcher från ESPN högst en gång i minuten medan skärmsläckaren visas. Inget annat skickas."},
  "srv.saver.noLeagues": {"from": "Pick at least one league.", "text": "Välj minst en liga."},
  "srv.saver.noScores": {"from": "It asks for the day's matches, which only Glasshouse's own screen savers are given.", "text": "Den ber om dagens matcher, som bara Glasshouses egna skärmsläckare får."}
 }

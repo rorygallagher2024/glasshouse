@@ -4,7 +4,8 @@
  *
  * The server reads ESPN at most once a minute and words each match in the
  * TV's menu language (/api/scores, filled in for __TVWEB_SCORES__), so this
- * file only lays the rows out. Five rows at a time, the next five every ten
+ * file only lays the rows out: grouped under each league's name when more
+ * than one is picked, six rows at a time with the next six every ten
  * seconds, and the whole block somewhere new every minute.
  *
  * QtQuick 2.4 and Eos.Window 0.1, as the Clock saver: what a webOS 4 set has.
@@ -58,9 +59,14 @@ WebOSWindow {
     property string tvLocale: "__TVWEB_LOCALE__"
     property string scoresUrl: "__TVWEB_SCORES__"
 
-    property int rowsPerPage: 5
+    property int rowsPerPage: 6
     property int page: 0
     property var matches: []
+    // What the board lists: a league's name, then its matches, league after
+    // league in the order picked; only the matches with one league.
+    property var items: []
+    // items split into what fits on screen at once (pagesOf).
+    property var pages: [[]]
     property string boardTitle: ""
     property string boardNote: ""
     // Wide enough for "Paris Saint-Germain" at 44 px.
@@ -78,53 +84,77 @@ WebOSWindow {
 
     ListModel { id: shown }
 
-    // The league, when more than one is picked, and the match's state, as one
-    // small line under the score.
-    function joined(a, b) {
-        if (a && b) return a + " · " + b;
-        return a || b || "";
+    function pageCount() {
+        return Math.max(1, win.pages.length);
     }
 
-    function pageCount() {
-        return Math.max(1, Math.ceil(win.matches.length / win.rowsPerPage));
+    // rowsPerPage rows to a page. A league's name never ends a page, and a
+    // page that starts partway through a league names it again.
+    function pagesOf(list) {
+        var out = [];
+        var cur = [];
+        var header = null;
+        for (var i = 0; i < list.length; i++) {
+            var it = list[i];
+            var full = cur.length >= win.rowsPerPage || (it.kind === "header" && cur.length >= win.rowsPerPage - 1);
+            if (full) {
+                out.push(cur);
+                cur = [];
+                if (it.kind === "match" && header && header.league === it.league) cur.push(header);
+            }
+            if (it.kind === "header") header = it;
+            cur.push(it);
+        }
+        if (cur.length || !out.length) out.push(cur);
+        return out;
+    }
+
+    function buildItems(d) {
+        var list = [];
+        var leagues = d.leagues || [];
+        var all = d.matches || [];
+        if (leagues.length < 2) {
+            for (var a = 0; a < all.length; a++) list.push({ kind: "match", m: all[a], league: "" });
+            return list;
+        }
+        for (var l = 0; l < leagues.length; l++) {
+            var name = (d.names && d.names[leagues[l]]) || leagues[l];
+            var first = true;
+            for (var i = 0; i < all.length; i++) {
+                if (all[i].league !== leagues[l]) continue;
+                if (first) list.push({ kind: "header", text: name, league: leagues[l] });
+                first = false;
+                list.push({ kind: "match", m: all[i], league: leagues[l] });
+            }
+        }
+        return list;
+    }
+
+    function rowOf(item) {
+        if (item.kind === "header") {
+            return { header: true, text: item.text, home: "", away: "", middle: "", under: "", live: false };
+        }
+        var m = item.m;
+        var started = m.state !== "pre";
+        // A match called off before it started has words, not a time.
+        var timed = /\d/.test(m.detail || "");
+        return {
+            header: false, text: "",
+            home: m.home || "",
+            away: m.away || "",
+            // Between the teams: the kick-off before it starts, the score
+            // after, with the minute, half time or full time just under it.
+            middle: started ? (m.homeScore + " – " + m.awayScore) : (timed ? m.detail : "–"),
+            under: started || !timed ? (m.detail || "") : "",
+            live: m.state === "in"
+        };
     }
 
     function showPage() {
         if (win.page >= win.pageCount()) win.page = 0;
         shown.clear();
-        var from = win.page * win.rowsPerPage;
-        for (var i = from; i < Math.min(win.matches.length, from + win.rowsPerPage); i++) {
-            var m = win.matches[i];
-            shown.append({
-                league: m.league || "",
-                home: m.home || "",
-                away: m.away || "",
-                // Between the teams: the kick-off before it starts, the score
-                // after; under it the minute, half time or full time. A match
-                // called off before it started has words, not a time.
-                middle: m.state !== "pre" ? (m.homeScore + " – " + m.awayScore)
-                      : (/\d/.test(m.detail || "") ? m.detail : "–"),
-                under: win.joined(m.league, m.state !== "pre" || !/\d/.test(m.detail || "") ? m.detail : ""),
-                live: m.state === "in"
-            });
-        }
-    }
-
-    // Where move() last sent the block. block.x and block.y read mid-animation
-    // are on the way there, so the clamp below works from these.
-    property real goalX: 0
-    property real goalY: 0
-
-    // The block grows when matches arrive or a page has more rows: pulled back
-    // inside the margin rather than left off the edge until the next move.
-    // Called on the block's size changing, which comes after the Column has
-    // laid the new rows out.
-    function keepInside() {
-        var margin = Math.round(40 * win.unit);
-        var nx = Math.max(margin, Math.min(win.goalX, win.width - block.width - margin));
-        var ny = Math.max(margin, Math.min(win.goalY, win.height - block.height - margin));
-        if (nx !== win.goalX) { win.goalX = nx; block.x = nx; }
-        if (ny !== win.goalY) { win.goalY = ny; block.y = ny; }
+        var rows = win.pages[win.page] || [];
+        for (var i = 0; i < rows.length; i++) shown.append(win.rowOf(rows[i]));
     }
 
     function fetchScores() {
@@ -139,6 +169,8 @@ WebOSWindow {
                 win.boardTitle = d.title || "";
                 win.boardNote = d.note || "";
                 win.matches = d.matches || [];
+                win.items = win.buildItems(d);
+                win.pages = win.pagesOf(win.items);
                 win.showPage();
             } catch (e) {}
         };
@@ -205,57 +237,81 @@ WebOSWindow {
             Column {
                 id: board
                 width: win.teamWidth * 2 + Math.round(200 * win.unit) + Math.round(48 * win.unit)
-                spacing: Math.round(6 * win.unit)
+                spacing: 0
 
                 Repeater {
                     model: shown
 
-                    Row {
-                        height: Math.round(80 * win.unit)
-                        spacing: Math.round(24 * win.unit)
+                    Item {
+                        width: board.width
+                        height: model.header ? Math.round(64 * win.unit) : Math.round(86 * win.unit)
 
                         Text {
-                            width: win.teamWidth
-                            height: parent.height
-                            verticalAlignment: Text.AlignVCenter
-                            horizontalAlignment: Text.AlignRight
-                            elide: Text.ElideRight
-                            font.pixelSize: Math.round(44 * win.unit)
-                            color: win.inkBright
-                            text: model.home
+                            visible: model.header
+                            width: parent.width
+                            anchors.bottom: parent.bottom
+                            anchors.bottomMargin: Math.round(6 * win.unit)
+                            horizontalAlignment: Text.AlignHCenter
+                            font.pixelSize: Math.round(28 * win.unit)
+                            font.capitalization: Font.AllUppercase
+                            font.letterSpacing: Math.round(3 * win.unit)
+                            color: win.inkDim
+                            text: model.text
                         }
-                        Item {
-                            width: Math.round(200 * win.unit)
+
+                        Row {
+                            visible: !model.header
                             height: parent.height
+                            spacing: Math.round(24 * win.unit)
 
                             Text {
-                                id: middleText
-                                width: parent.width
-                                y: model.under !== "" ? Math.round(4 * win.unit) : Math.round((parent.height - height) / 2)
-                                horizontalAlignment: Text.AlignHCenter
-                                font.family: win.digitFamily
-                                font.pixelSize: Math.round(48 * win.unit)
-                                color: model.live ? win.inkLive : win.inkBright
-                                text: model.middle
+                                width: win.teamWidth
+                                height: parent.height
+                                verticalAlignment: Text.AlignVCenter
+                                horizontalAlignment: Text.AlignRight
+                                elide: Text.ElideRight
+                                font.pixelSize: Math.round(44 * win.unit)
+                                color: win.inkBright
+                                text: model.home
+                            }
+                            Item {
+                                width: Math.round(200 * win.unit)
+                                height: parent.height
+
+                                // The score and what it means, one block
+                                // centred on the team names.
+                                Column {
+                                    width: parent.width
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    spacing: 0
+
+                                    Text {
+                                        width: parent.width
+                                        horizontalAlignment: Text.AlignHCenter
+                                        font.family: win.digitFamily
+                                        font.pixelSize: Math.round(48 * win.unit)
+                                        color: model.live ? win.inkLive : win.inkBright
+                                        text: model.middle
+                                    }
+                                    Text {
+                                        width: parent.width
+                                        horizontalAlignment: Text.AlignHCenter
+                                        font.pixelSize: Math.round(24 * win.unit)
+                                        color: model.live ? win.inkLive : win.inkDim
+                                        visible: text !== ""
+                                        text: model.under
+                                    }
+                                }
                             }
                             Text {
-                                width: parent.width
-                                anchors.top: middleText.bottom
-                                horizontalAlignment: Text.AlignHCenter
-                                font.pixelSize: Math.round(24 * win.unit)
-                                color: model.live ? win.inkLive : win.inkDim
-                                visible: text !== ""
-                                text: model.under
+                                width: win.teamWidth
+                                height: parent.height
+                                verticalAlignment: Text.AlignVCenter
+                                elide: Text.ElideRight
+                                font.pixelSize: Math.round(44 * win.unit)
+                                color: win.inkBright
+                                text: model.away
                             }
-                        }
-                        Text {
-                            width: win.teamWidth
-                            height: parent.height
-                            verticalAlignment: Text.AlignVCenter
-                            elide: Text.ElideRight
-                            font.pixelSize: Math.round(44 * win.unit)
-                            color: win.inkBright
-                            text: model.away
                         }
                     }
                 }
