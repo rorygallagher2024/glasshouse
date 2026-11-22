@@ -1700,6 +1700,27 @@ rebooted, through a night in standby. lginput2's luna methods include
 `enableLoggingMotion`, `getSensorData` and `enablePrintRfStatus`, none of which
 Glasshouse calls; `getConnectionStatus` and `getDeviceInfo` left it at 0%.
 
+## The ?, 123 and Home Hub buttons in the key filters (C5, webOS 10.3.0)
+
+On an OLED48C56LB (webOS 10.3.0) with an MR25GA, LG's `appLaunch.js` in
+`/usr/lib/qt5/qml/KeyFilters/` names the ? button as `WebOS.Key_webOS_Multikey`: a press calls
+`launchAccessibility`, and a 2 s hold, timed by `longPressTimer`, `launchAccessibilityOverlay`,
+unless `settingsService.disableAccessibilityLaunch`. The key reaches Linux as code 1124,
+`IR_KEY_MULTIKEY`. The Home Hub button (`IR_KEY_INPUT_HUB`, Linux code 1023) reaches the filters
+as `Qt.Key_Video` (`0x010000f3` in `/usr/share/X11/xkb/keycodes/lg`): `appLaunch.js` launches
+`inputHubAction.appId` with the last input (`applicationManager.checkLaunch`), passing the key on
+where that app is already full screen, or, where `inputHubAction.action` is `showInputPicker`,
+shows `com.webos.app.quickinputpicker`.
+
+The 123 button reaches the filters as `WebOS.Key_webOS_ScreenRemote` (Qt `0x01200032`; Linux
+code 994, `IR_KEY_SCREEN_REMOTE`). `appLaunch.js` sends it on to YouTube's window, leaves it to a
+foreground app whose info has `handleScreenRemoteKey` (the web browser shows its own menu) and to
+the screen saver, opens `com.webos.app.multiviewsettings` in multi-view, and otherwise asks
+`systemUIManager/launch` for `com.webos.app.screenremote`: LG's on-screen remote, here a list of
+the user manual, Sport, Quick Help and the four colour keys. That id is not an app
+(`getAppInfo` refuses it); `systemUi.js` closes it as `screenRemoteView`. Held, the button
+toggles audio description, `AD/SAP` printed under it.
+
 ## MR25GA battery (C5, webOS 11.2)
 
 OLED77C5PUA.DUSQLJR, firmware 43.21.31, read on 3 November 2026:

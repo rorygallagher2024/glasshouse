@@ -85,8 +85,8 @@ function loadFilter(broken, extra) {
   var ctx = {
     genericTimer: { set: function (ms, fn) { timers.push({ ms: ms, fn: fn }); return timers.length; } },
     WebOS: { Key_webOS_Netflix: 1001, Key_webOS_Amazon: 1002, Key_webOS_TVGuide: 1003, Key_webOS_Red: 1004,
-             Key_webOS_USP: 1005, Key_webOS_ChannelUp: 1006 },
-    Qt: { Key_Super_L: 2001 },
+             Key_webOS_USP: 1005, Key_webOS_ChannelUp: 1006, Key_webOS_Multikey: 1010, Key_webOS_ScreenRemote: 1011 },
+    Qt: { Key_Super_L: 2001, Key_Video: 2002 },
     KeyPolicy: { NextPolicy: 'next', Accepted: 'accepted', NotAccepted: 'notAccepted' },
     lunaCall: {
       appId: 'com.webos.surfacemanager',
@@ -781,6 +781,77 @@ step(function (next) {
               console.log('  ✓ the channel keys are offered where a filter names them, or else where the WebOS module defines them; one set to an app is consumed and opens it, and As LG has it passes it on');
               next();
             }));
+          }));
+        }));
+      }));
+    }));
+  }));
+});
+
+step(function (next) {
+  // The ? and 123 buttons are filter keys where LG's filters name them, and there they can do nothing.
+  var offered = function (r, name) { return r.keys.filter(function (k) { return k.key === name; })[0]; };
+  rk.getRemoteKeys(guard(function (without) {
+    assert.ok(!offered(without, 'multikey') && !offered(without, 'screenremote'), 'not where no filter names them');
+    fs.writeFileSync(path.join(filtersDir, 'more.js'), 'case WebOS.Key_webOS_Multikey: case WebOS.Key_webOS_ScreenRemote:');
+    rk.init({ luna: luna, stateDir: stateDir, filtersDir: filtersDir });
+    rk.getRemoteKeys(guard(function (withKeys) {
+      assert.ok(offered(withKeys, 'multikey'), 'the ? button where a filter names it');
+      assert.ok(!offered(withKeys, 'multikey').noNothing, 'the filter can leave it doing nothing');
+      assert.strictEqual(offered(withKeys, 'screenremote').title, '123 button');
+      rk.setRemoteKey('multikey', 'nothing', '', guard(function (s) {
+        assert.strictEqual(s.ok, true, s.error);
+        var f = loadFilter();
+        assert.strictEqual(f.handle(1010, true, false), 'accepted', 'a press is taken from LG');
+        assert.strictEqual(f.handle(1010, false, false), 'accepted', 'and its release, so no hold starts');
+        rk.setRemoteKey('screenremote', 'open', 'netflix', guard(function (s2) {
+          assert.strictEqual(s2.ok, true, s2.error);
+          var f2 = loadFilter();
+          assert.strictEqual(f2.handle(1011, true, false), 'accepted', 'a press is taken, so LG shows no on-screen remote');
+          assert.strictEqual(f2.handle(1011, false, false), 'accepted');
+          rk.setRemoteKey('multikey', 'lg', '', guard(function () {
+            rk.setRemoteKey('screenremote', 'lg', '', guard(function () {
+              var f3 = loadFilter();
+              assert.strictEqual(f3.handle(1010, true, false), 'next', 'As LG has it passes ? on');
+              assert.strictEqual(f3.handle(1011, true, false), 'next', 'and 123');
+              fs.unlinkSync(path.join(filtersDir, 'more.js'));
+              rk.init({ luna: luna, stateDir: stateDir, filtersDir: filtersDir });
+              console.log('  \u2713 the ? and 123 buttons are offered where the filters name them, can do nothing there, and As LG has it passes them on');
+              next();
+            }));
+          }));
+        }));
+      }));
+    }));
+  }));
+});
+
+step(function (next) {
+  // Home Hub is Qt.Key_Video in the filters: offered only where the TV's key table gives that plain Qt key to it.
+  fs.writeFileSync(path.join(filtersDir, 'homehub.js'), 'case Qt.Key_Video:');
+  var hubTable = path.join(__dirname, 'fixtures', 'lg-keytable-oled48c56lb-webos10.txt');
+  var otherTable = path.join(stateDir, 'keycodes-other');
+  var hasHub = function (r) { return r.keys.some(function (k) { return k.key === 'homehub'; }); };
+  fs.writeFileSync(otherTable, '    <IR_KEY_SOMETHING_ELSE> = 1031; // Qt::Key_Video=0x010000f3\n');
+  rk.init({ luna: luna, stateDir: stateDir, filtersDir: filtersDir, keyTablePath: otherTable });
+  rk.getRemoteKeys(guard(function (withOther) {
+    assert.ok(!hasHub(withOther), 'not where Key_Video is another button');
+    rk.init({ luna: luna, stateDir: stateDir, filtersDir: filtersDir, keyTablePath: path.join(stateDir, 'no-such-table') });
+    rk.getRemoteKeys(guard(function (withNone) {
+      assert.ok(!hasHub(withNone), 'nor where there is no key table');
+      fs.unlinkSync(otherTable);
+      rk.init({ luna: luna, stateDir: stateDir, filtersDir: filtersDir, keyTablePath: hubTable });
+      rk.getRemoteKeys(guard(function (withHub) {
+        assert.ok(withHub.keys.some(function (k) { return k.key === 'homehub' && k.title === 'Home Hub'; }), 'offered where the key table gives it Key_Video');
+        rk.setRemoteKey('homehub', 'open', 'netflix', guard(function (s) {
+          assert.strictEqual(s.ok, true, s.error);
+          assert.strictEqual(loadFilter().handle(2002, true, false), 'accepted', 'a press is taken from LG');
+          rk.setRemoteKey('homehub', 'lg', '', guard(function () {
+            assert.strictEqual(loadFilter().handle(2002, true, false), 'next');
+            fs.unlinkSync(path.join(filtersDir, 'homehub.js'));
+            rk.init({ luna: luna, stateDir: stateDir, filtersDir: filtersDir });
+            console.log('  \u2713 Home Hub is offered only where the key table gives Qt.Key_Video to it');
+            next();
           }));
         }));
       }));

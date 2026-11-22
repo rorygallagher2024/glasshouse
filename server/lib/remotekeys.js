@@ -262,15 +262,32 @@ var KEYS = [
   { key: 'googleassistant', symbol: 'WebOS.Key_webOS_GoogleVoice', title: 'Google Assistant' },
   { key: 'voice', symbol: 'WebOS.Key_webOS_Voice', title: 'Microphone', replacesVoice: true },
   { key: 'apps', symbol: 'WebOS.Key_webOS_Apps', title: 'Apps' },
-  // Only webOS 11's native filters let these be changed (NATIVE_ACTIONS,
-  // NATIVE_SETTINGS); the JavaScript filter leaves them out, so its file is
-  // unchanged. Home Hub is the MR25's house-in-a-circle button (IR 1031); the
-  // ? button (IR 1132) is LG's custom button, with an action of its own when held.
-  { key: 'homehub', title: 'Home Hub', nativeOnly: true },
+  // webOS 11's native filters change these (NATIVE_ACTIONS, NATIVE_SETTINGS).
+  // Home Hub is the MR25's house-in-a-circle button (IR 1031); the ? button
+  // (IR 1132) is LG's custom button, with an action of its own when held.
+  //
+  // Home Hub and ? are also filter keys where LG's JavaScript filters name
+  // them, as appLaunch.js does on an OLED48C56LB (webOS 10.3.0): Home Hub as
+  // Qt.Key_Video, opening the app LG sets for it (inputHubAction) or the input
+  // picker; ? opening the accessibility menu on a press and its overlay on a
+  // 2 s hold. Set there, a key takes both press and hold, as the microphone
+  // does, and only webOS 11's native setting cannot be left doing nothing.
+  //
+  // Qt.Key_Video is a plain Qt key that another firmware could give another
+  // button, so Home Hub is offered only where LG's key table
+  // (/usr/share/X11/xkb/keycodes/lg) gives it to the Home Hub button, named
+  // lg: keyTable.
+  { key: 'homehub', symbol: 'Qt.Key_Video', lg: 'IR_KEY_INPUT_HUB', keyTable: true, title: 'Home Hub' },
   // The MR25's AI button reads no value: see NATIVE_SERVICE_KEYS.
   { key: 'ai', title: 'AI', nativeOnly: true, turnsOffVoice: true },
-  { key: 'multikey', title: '? button', nativeOnly: true, noNothing: true },
+  { key: 'multikey', symbol: 'WebOS.Key_webOS_Multikey', title: '? button', noNothing: true },
   { key: 'multikeyhold', title: '? button, held', nativeOnly: true, noNothing: true },
+  // The 123 button, a filter key only: appLaunch.js on an OLED48C56LB (webOS
+  // 10.3.0) shows LG's on-screen remote on a press (systemUIManager,
+  // com.webos.app.screenremote: user manual, Sport, Quick Help and the colour
+  // keys), hands it to YouTube and apps that ask for it, and a hold toggles
+  // audio description. Set, the filter takes all of that.
+  { key: 'screenremote', symbol: 'WebOS.Key_webOS_ScreenRemote', title: '123 button', filterOnly: true },
   // The channel rocker. On webOS 10 and below the JavaScript key filter names
   // it (symbol), where a key that is set is accepted and so no longer changes
   // the channel. On webOS 11 the filter does not carry it; lib/guidepatch has
@@ -321,6 +338,8 @@ var filtersDir = LG_FILTERS_DIR;
 var WEBOS_PLUGIN = '/usr/lib/qt5/qml/WebOS/Global/libwebosglobalplugin.so';
 var webosPlugin = WEBOS_PLUGIN;
 var tvKeys = null;      // the symbols this TV's filters name, read once
+var LG_KEY_TABLE = '/usr/share/X11/xkb/keycodes/lg';
+var keyTablePath = LG_KEY_TABLE;
 var nativeFilters = null; // whether configd names native filters, once answered
 var switcherFound = null; // whether the TV has INPUT_SWITCHER, once answered
 var SubscriptionCtor = null; // luna.Subscription, to follow LG's settings
@@ -353,6 +372,7 @@ function init(opts) {
     exec: opts.guideExec, mounts: opts.guideMounts, mountInfo: opts.guideMountInfo, luna: lunaFn,
     profileOverrideDir: opts.profileOverrideDir, profileWaitMs: opts.profileWaitMs, profilePollMs: opts.profilePollMs });
   filtersDir = opts.filtersDir || LG_FILTERS_DIR;
+  keyTablePath = opts.keyTablePath || LG_KEY_TABLE;
   webosPlugin = opts.webosPlugin || WEBOS_PLUGIN;
   tvKeys = null;
   nativeFilters = null;
@@ -397,6 +417,27 @@ function keyByName(name) {
  * filters only have cases for Yellow and Blue, passing Red and Green straight
  * to the app in front.
  */
+// A filter symbol as LG's key table names its Qt key: Qt.Key_Video is Key_Video, WebOS.Key_webOS_Guide Key_webOS_Guide.
+function qtName(symbol) {
+  return String(symbol || '').replace(/^(Qt|WebOS)\./, '');
+}
+
+/*
+ * LG's key table, as { button name: { code, qt } }: lines such as
+ * "<IR_KEY_INPUT_HUB> = 1031; // Qt::Key_Video=0x010000f3". Empty where the
+ * file cannot be read.
+ */
+function readKeyTable(file) {
+  var out = {};
+  var text = '';
+  try { text = fs.readFileSync(file || keyTablePath, 'utf8'); } catch (e) { return out; }
+  text.split('\n').forEach(function (line) {
+    var m = /<([A-Za-z0-9_]+)>\s*=\s*(\d+)\s*;\s*\/\/\s*Qt::(\w+)\s*=/.exec(line);
+    if (m) out[m[1]] = { code: parseInt(m[2], 10), qt: m[3] };
+  });
+  return out;
+}
+
 function keysOnTv() {
   if (tvKeys) return tvKeys;
   var src = '';
@@ -416,8 +457,15 @@ function keysOnTv() {
     }
     return plugin.indexOf(symbol.replace(/^WebOS\./, '') + '\u0000') !== -1;
   }
+  var table = null;
   tvKeys = KEYS.filter(function (k) {
     if (k.nativeOnly || k.nativeMapping) return false;
+    if (k.keyTable) {
+      // A plain Qt key: only where this firmware gives it to that button.
+      if (src.indexOf(k.symbol) === -1) return false;
+      if (!table) table = readKeyTable();
+      return !!(table[k.lg] && table[k.lg].qt === qtName(k.symbol));
+    }
     if ((k.color && hasColor) || src.indexOf(k.symbol) !== -1) return true;
     return !!k.fromPlugin && inPlugin(k.symbol);
   });
@@ -1091,7 +1139,7 @@ function nativeKeys(tv, lg) {
       if (refusedBlocks[appId] && !lg.blocks[appId]) return false;
       return !!((tv.apps && tv.apps[appId]) || lg.blocks[appId]);
     }
-    if (k.nativeOnly) return false;
+    if (k.nativeOnly || k.filterOnly) return false;
     var entry = lg.mapping[k.key] || mappingEntry(tv.list, k.key);
     return !!(entry && typeof entry === 'object' && entry.isActive !== false);
   });
@@ -1215,7 +1263,7 @@ function applyNativeMap(cb, map) {
     (nextList || []).forEach(function (entry) {
       Object.keys(entry || {}).forEach(function (name) {
         var def = keyByName(name);
-        if (!def || def.nativeOnly || def.blockCode || NATIVE_ACTIONS[name]) return;
+        if (!def || def.nativeOnly || def.blockCode || NATIVE_ACTIONS[name] || NATIVE_SETTINGS[name]) return;
         var v = reconcile(name, entry[name], function (lgEntry) { return mappingWanted(map, name, lgEntry); },
           lg.mapping, lg.mappingWritten);
         if (v !== undefined) { entry[name] = v; listChanged = true; }
@@ -1878,7 +1926,7 @@ function describeKeys(keys, inChain, cb, native) {
           opens: id ? (titles[id] || id) : '',
           elsewhere: !!(cc && k.regions && k.regions.indexOf(cc) === -1)
         };
-        if (k.noNothing) key.noNothing = true;
+        if (k.noNothing && native) key.noNothing = true;
         if (k.turnsOffVoice) key.turnsOffVoice = true;
         if (k.replacesVoice) key.replacesVoice = true;
         if (native && NATIVE_BLOCK_KEYS[k.key]) key.blocksApp = true;
@@ -1933,7 +1981,7 @@ function setOfferedKey(def, action, id, kind, cb) {
   }
   var nativeInput = kind !== 'filter' && def.key === 'input';
   if (action === 'nothing') {
-    if (def.noNothing || nativeInput) return cb({ ok: false, error: msg('srv.remoteKeys.noNothing', 'This key cannot be set to do nothing') });
+    if ((def.noNothing && kind !== 'filter') || nativeInput) return cb({ ok: false, error: msg('srv.remoteKeys.noNothing', 'This key cannot be set to do nothing') });
     map[def.key] = '';
     return save(map, saved);
   }
@@ -2265,6 +2313,8 @@ module.exports = {
   restore: restore,
   filterSource: filterSource,
   KEYS: KEYS,
+  readKeyTable: readKeyTable,
+  qtName: qtName,
   CONFIG_KEY: CONFIG_KEY,
   MAP_KEY: MAP_KEY,
   HANDLER: HANDLER
