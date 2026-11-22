@@ -3791,5 +3791,17 @@
  "home.info.noSuchEntity": {"text": "Home Assistant no tiene ninguna entidad llamada {entity}.", "from": "Home Assistant has no entity called {entity}."},
  "home.info.added": {"text": "Se añadió {name} como línea {n}.", "from": "Added {name} as line {n}."},
  "home.info.removed": {"text": "Se quitó la línea {n}.", "from": "Removed line {n}."},
- "home.info.customise": {"text": "Personalizar", "from": "Customise"}
+ "home.info.customise": {"text": "Personalizar", "from": "Customise"},
+ "apps.running.close": {"text": "Cerrar", "from": "Close"},
+ "apps.running.closeAll": {"text": "Cerrar todas", "from": "Close all"},
+ "apps.running.closeFailed": {"text": "No se pudo cerrar la app: {error}", "from": "Could not close app: {error}"},
+ "apps.running.closing": {"text": "Cerrando…", "from": "Closing…"},
+ "apps.running.desc": {"text": "Apps abiertas o cargadas en memoria en la TV ahora mismo. Cerrar una app detiene su proceso y libera su memoria de inmediato.", "from": "Apps currently open or loaded in memory on the TV. Closing an app stops its process and frees its memory right away."},
+ "apps.running.inFront": {"text": "En primer plano", "from": "In front"},
+ "apps.running.mb": {"text": "{mb} MB", "from": "{mb} MB"},
+ "apps.running.none": {"text": "Ninguna en ejecución", "from": "None running"},
+ "apps.running.noneDesc": {"text": "No hay ninguna app cargada en memoria ahora mismo.", "from": "No apps are currently running in memory."},
+ "apps.running.summaryMb": {"text": "{n} apps · {mb} MB", "from": "{n} apps · {mb} MB"},
+ "apps.running.summaryOneMb": {"text": "1 app · {mb} MB", "from": "1 app · {mb} MB"},
+ "apps.running.title": {"text": "Apps en memoria", "from": "Apps in memory"}
 }

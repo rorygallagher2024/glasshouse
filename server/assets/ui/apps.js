@@ -184,6 +184,7 @@ function renderAppsPanel() {
 
   renderSavedPages(d);
 
+  renderRunningApps(d);
   renderPreload(d);
   renderBackgroundServices(d);
   renderAppDns(d);
@@ -1048,6 +1049,97 @@ function renderBackgroundServices(d) {
       </div>
     </div>`;
   }).join('');
+}
+
+function renderRunningApps(d) {
+  const list = q('apps-running-list');
+  const summary = q('apps-running-summary');
+  const actions = q('apps-running-actions');
+  const closeAllBtn = q('btn-close-all-running');
+  const running = d.running || [];
+  const totalMb = running.reduce((sum, a) => sum + (a.mb || 0), 0);
+
+  if (summary) {
+    if (!running.length) {
+      summary.textContent = t('apps.running.none', 'None running');
+    } else if (running.length === 1) {
+      summary.textContent = totalMb
+        ? t('apps.running.summaryOneMb', '1 app · {mb} MB', { mb: totalMb })
+        : t('apps.count.one', '1 app');
+    } else {
+      summary.textContent = totalMb
+        ? t('apps.running.summaryMb', '{n} apps · {mb} MB', { n: running.length, mb: totalMb })
+        : t('apps.count', '{n} apps', { n: running.length });
+    }
+  }
+
+  if (actions) actions.style.display = running.length > 1 ? '' : 'none';
+  if (closeAllBtn) {
+    closeAllBtn.disabled = !d.writable;
+    closeAllBtn.textContent = t('apps.running.closeAll', 'Close all');
+  }
+
+  if (!list) return;
+  if (!running.length) {
+    list.classList.remove('catalog-grid');
+    list.innerHTML = `<div class="sub" style="padding:16px 0">${esc(t('apps.running.noneDesc', 'No apps are currently running in memory.'))}</div>`;
+    return;
+  }
+
+  list.classList.add('catalog-grid');
+  list.innerHTML = running.map(a => {
+    const title = a.title || a.id;
+    const monogram = esc(String(title).trim().charAt(0).toUpperCase() || '?');
+    const iconUrl = api(a.iconUrl || ('/api/apps/icon?id=' + encodeURIComponent(a.id)));
+    const badges = [];
+    if (a.foreground) badges.push(`<span class="app-badge">${esc(t('apps.running.inFront', 'In front'))}</span>`);
+    if (a.mb) badges.push(`<span class="app-badge">${esc(t('apps.running.mb', '{mb} MB', { mb: a.mb }))}</span>`);
+    return `<div class="catalog-card" id="running-card-${esc(a.id)}">
+      <div class="catalog-card-head">
+        <span class="catalog-card-ico-wrap"><span class="catalog-card-monogram" aria-hidden="true">${monogram}</span><img class="catalog-card-ico" src="${iconUrl}" width="46" height="46" loading="lazy" alt="" onerror="this.style.display='none'"></span>
+        <div class="catalog-card-main">
+          <div class="catalog-card-title" title="${esc(title)}" translate="no">${esc(title)}</div>
+          <div class="catalog-card-meta" translate="no">${esc(a.id)}</div>
+        </div>
+      </div>
+      ${badges.length ? `<div class="catalog-card-badges">${badges.join('')}</div>` : ''}
+      <div class="prot-status">
+        <button type="button" class="pill bad" id="btn-close-app-${esc(a.id)}" onclick="closeRunningApp('${jsq(a.id)}')" ${d.writable ? '' : 'disabled'}>${esc(t('apps.running.close', 'Close'))}</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function sendCloseRunning(body, btn) {
+  if (btn) {
+    btn.disabled = true;
+    btn.classList.add('busy');
+    btn.textContent = t('apps.running.closing', 'Closing\u2026');
+  }
+  let error = null;
+  try {
+    const res = await fetch(api('/api/apps/close'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    const d = await res.json().catch(() => ({}));
+    if (!res.ok || !d || !d.ok) error = (d && d.error) || t('common.unknownError', 'unknown error');
+  } catch (e) {
+    error = e.message;
+  } finally {
+    if (btn) btn.classList.remove('busy');
+  }
+  await loadApps();
+  if (error) alert(t('apps.running.closeFailed', 'Could not close app: {error}', { error }));
+}
+
+function closeRunningApp(appId) {
+  return sendCloseRunning({ id: appId }, document.getElementById('btn-close-app-' + appId));
+}
+
+function closeAllRunningApps() {
+  return sendCloseRunning({ all: true }, q('btn-close-all-running'));
 }
 
 function renderPreload(d) {

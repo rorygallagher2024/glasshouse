@@ -3805,5 +3805,17 @@
  "home.info.noSuchEntity": {"text": "В Home Assistant нет объекта {entity}.", "from": "Home Assistant has no entity called {entity}."},
  "home.info.added": {"text": "{name} добавлен строкой {n}.", "from": "Added {name} as line {n}."},
  "home.info.removed": {"text": "Строка {n} удалена.", "from": "Removed line {n}."},
- "home.info.customise": {"text": "Настроить", "from": "Customise"}
+ "home.info.customise": {"text": "Настроить", "from": "Customise"},
+ "apps.running.close": {"text": "Закрыть", "from": "Close"},
+ "apps.running.closeAll": {"text": "Закрыть все", "from": "Close all"},
+ "apps.running.closeFailed": {"text": "Не удалось закрыть приложение: {error}", "from": "Could not close app: {error}"},
+ "apps.running.closing": {"text": "Закрытие…", "from": "Closing…"},
+ "apps.running.desc": {"text": "Приложения, открытые или загруженные сейчас в память телевизора. Закрытие останавливает процесс и сразу освобождает память.", "from": "Apps currently open or loaded in memory on the TV. Closing an app stops its process and frees its memory right away."},
+ "apps.running.inFront": {"text": "На экране", "from": "In front"},
+ "apps.running.mb": {"text": "{mb} МБ", "from": "{mb} MB"},
+ "apps.running.none": {"text": "Нет запущенных", "from": "None running"},
+ "apps.running.noneDesc": {"text": "Сейчас в памяти нет запущенных приложений.", "from": "No apps are currently running in memory."},
+ "apps.running.summaryMb": {"text": "{n} прил. · {mb} МБ", "from": "{n} apps · {mb} MB"},
+ "apps.running.summaryOneMb": {"text": "1 прил. · {mb} МБ", "from": "1 app · {mb} MB"},
+ "apps.running.title": {"text": "Приложения в памяти", "from": "Apps in memory"}
 }

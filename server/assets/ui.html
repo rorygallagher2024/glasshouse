@@ -1308,6 +1308,15 @@
     <div class="apps-grp-h" data-t="apps.group.bg">Background</div>
     <div class="pv-sub apps-grp-d" data-t="apps.group.bg.desc">What the TV runs without being asked. Switching some of it off frees memory.</div>
 
+    <details class="pv-d" id="disc-running-apps" ontoggle="if(this.open)loadApps()">
+      <summary><span data-t="apps.running.title">Apps in memory</span> <span class="cur" id="apps-running-summary"></span></summary>
+      <div class="pv-sub" data-t="apps.running.desc">Apps currently open or loaded in memory on the TV. Closing an app stops its process and frees its memory right away.</div>
+      <div id="apps-running-actions" style="display:none; margin-top:12px;">
+        <button type="button" class="pill bad" id="btn-close-all-running" onclick="closeAllRunningApps()" data-t="apps.running.closeAll">Close all</button>
+      </div>
+      <div class="prot-table catalog-grid" id="apps-running-list" style="margin-top:14px"></div>
+    </details>
+
     <details class="pv-d" id="disc-preload" hidden>
       <summary><span data-t="apps.preload">Apps kept ready in the background</span> <span class="cur" id="apps-preload-summary"></span></summary>
       <div class="pv-sub" data-t="apps.preload.desc">LG keeps these apps loaded in the background so they open

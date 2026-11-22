@@ -1131,5 +1131,53 @@
  "home.info.today": {"from": "today", "text": "heute"},
  "home.info.tomorrow": {"from": "tomorrow", "text": "morgen"},
  "home.info.weekday": {"from": "on {weekday}", "text": "am {weekday}"},
- "ha.api.desc": {"text": "Liest Home-Assistant-Entitäten live für die Home-Assistant-Bildschirmschoner (Ambient und Data Display) im Tab Bildschirmschoner und für die Werte auf einen Blick neben der Uhr von Glasshouse Home im Tab Home. Verbindet sich direkt über HTTP/HTTPS mit Home Assistant, ohne MQTT, und speichert ohne Neustart.", "from": "Reads live Home Assistant entities for the Home Assistant screen savers (Ambient and Data Display) on the Screensaver tab, and for the values at a glance beside Glasshouse Home's clock on the Home tab. Connects straight to Home Assistant over HTTP/HTTPS without using MQTT, and saves without restarting."}
+ "ha.api.desc": {"text": "Liest Home-Assistant-Entitäten live für die Home-Assistant-Bildschirmschoner (Ambient und Data Display) im Tab Bildschirmschoner und für die Werte auf einen Blick neben der Uhr von Glasshouse Home im Tab Home. Verbindet sich direkt über HTTP/HTTPS mit Home Assistant, ohne MQTT, und speichert ohne Neustart.", "from": "Reads live Home Assistant entities for the Home Assistant screen savers (Ambient and Data Display) on the Screensaver tab, and for the values at a glance beside Glasshouse Home's clock on the Home tab. Connects straight to Home Assistant over HTTP/HTTPS without using MQTT, and saves without restarting."},
+  "apps.running.close": {
+    "text": "Schließen",
+    "from": "Close"
+  },
+  "apps.running.closeAll": {
+    "text": "Alle schließen",
+    "from": "Close all"
+  },
+  "apps.running.closeFailed": {
+    "text": "App konnte nicht geschlossen werden: {error}",
+    "from": "Could not close app: {error}"
+  },
+  "apps.running.closing": {
+    "text": "Wird geschlossen…",
+    "from": "Closing…"
+  },
+  "apps.running.desc": {
+    "text": "Apps, die aktuell auf dem TV geöffnet oder im Arbeitsspeicher geladen sind. Das Schließen beendet den Prozess und gibt den Speicher sofort frei.",
+    "from": "Apps currently open or loaded in memory on the TV. Closing an app stops its process and frees its memory right away."
+  },
+  "apps.running.inFront": {
+    "text": "Im Vordergrund",
+    "from": "In front"
+  },
+  "apps.running.mb": {
+    "text": "{mb} MB",
+    "from": "{mb} MB"
+  },
+  "apps.running.none": {
+    "text": "Keine aktiv",
+    "from": "None running"
+  },
+  "apps.running.noneDesc": {
+    "text": "Derzeit sind keine Apps im Speicher aktiv.",
+    "from": "No apps are currently running in memory."
+  },
+  "apps.running.summaryMb": {
+    "text": "{n} Apps · {mb} MB",
+    "from": "{n} apps · {mb} MB"
+  },
+  "apps.running.summaryOneMb": {
+    "text": "1 App · {mb} MB",
+    "from": "1 app · {mb} MB"
+  },
+  "apps.running.title": {
+    "text": "Apps im Speicher",
+    "from": "Apps in memory"
+  }
 }

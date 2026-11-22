@@ -3791,5 +3791,17 @@
  "home.info.noSuchEntity": {"text": "لا يوجد في Home Assistant كيان باسم {entity}.", "from": "Home Assistant has no entity called {entity}."},
  "home.info.added": {"text": "أُضيف {name} كسطر {n}.", "from": "Added {name} as line {n}."},
  "home.info.removed": {"text": "حُذف السطر {n}.", "from": "Removed line {n}."},
- "home.info.customise": {"text": "تخصيص", "from": "Customise"}
+ "home.info.customise": {"text": "تخصيص", "from": "Customise"},
+ "apps.running.close": {"text": "إغلاق", "from": "Close"},
+ "apps.running.closeAll": {"text": "إغلاق الكل", "from": "Close all"},
+ "apps.running.closeFailed": {"text": "تعذّر إغلاق التطبيق: {error}", "from": "Could not close app: {error}"},
+ "apps.running.closing": {"text": "جارٍ الإغلاق…", "from": "Closing…"},
+ "apps.running.desc": {"text": "التطبيقات المفتوحة حالياً أو المحمّلة في ذاكرة التلفاز. إغلاق التطبيق يوقف عمليته ويحرّر ذاكرته فوراً.", "from": "Apps currently open or loaded in memory on the TV. Closing an app stops its process and frees its memory right away."},
+ "apps.running.inFront": {"text": "في الواجهة", "from": "In front"},
+ "apps.running.mb": {"text": "{mb} ميغابايت", "from": "{mb} MB"},
+ "apps.running.none": {"text": "لا يوجد قيد التشغيل", "from": "None running"},
+ "apps.running.noneDesc": {"text": "لا توجد تطبيقات قيد التشغيل في الذاكرة حالياً.", "from": "No apps are currently running in memory."},
+ "apps.running.summaryMb": {"text": "{n} تطبيقات · {mb} ميغابايت", "from": "{n} apps · {mb} MB"},
+ "apps.running.summaryOneMb": {"text": "تطبيق واحد · {mb} ميغابايت", "from": "1 app · {mb} MB"},
+ "apps.running.title": {"text": "التطبيقات في الذاكرة", "from": "Apps in memory"}
 }

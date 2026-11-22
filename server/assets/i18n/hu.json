@@ -3805,5 +3805,17 @@
  "home.info.noSuchEntity": {"text": "A Home Assistantben nincs {entity} nevű entitás.", "from": "Home Assistant has no entity called {entity}."},
  "home.info.added": {"text": "{name} hozzáadva {n}. sorként.", "from": "Added {name} as line {n}."},
  "home.info.removed": {"text": "A(z) {n}. sor törölve.", "from": "Removed line {n}."},
- "home.info.customise": {"text": "Testreszabás", "from": "Customise"}
+ "home.info.customise": {"text": "Testreszabás", "from": "Customise"},
+ "apps.running.close": {"text": "Bezárás", "from": "Close"},
+ "apps.running.closeAll": {"text": "Összes bezárása", "from": "Close all"},
+ "apps.running.closeFailed": {"text": "Nem sikerült bezárni az alkalmazást: {error}", "from": "Could not close app: {error}"},
+ "apps.running.closing": {"text": "Bezárás…", "from": "Closing…"},
+ "apps.running.desc": {"text": "A TV memóriájában jelenleg nyitott vagy betöltött alkalmazások. Egy alkalmazás bezárása leállítja a folyamatát, és azonnal felszabadítja a memóriáját.", "from": "Apps currently open or loaded in memory on the TV. Closing an app stops its process and frees its memory right away."},
+ "apps.running.inFront": {"text": "Előtérben", "from": "In front"},
+ "apps.running.mb": {"text": "{mb} MB", "from": "{mb} MB"},
+ "apps.running.none": {"text": "Nincs futó", "from": "None running"},
+ "apps.running.noneDesc": {"text": "Jelenleg nincs alkalmazás a memóriában.", "from": "No apps are currently running in memory."},
+ "apps.running.summaryMb": {"text": "{n} alkalmazás · {mb} MB", "from": "{n} apps · {mb} MB"},
+ "apps.running.summaryOneMb": {"text": "1 alkalmazás · {mb} MB", "from": "1 app · {mb} MB"},
+ "apps.running.title": {"text": "Alkalmazások a memóriában", "from": "Apps in memory"}
 }

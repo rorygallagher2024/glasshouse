@@ -3808,5 +3808,17 @@
  "home.info.noSuchEntity": {"text": "Home Assistant har ingen entitet som heter {entity}.", "from": "Home Assistant has no entity called {entity}."},
  "home.info.added": {"text": "{name} har lagts till som rad {n}.", "from": "Added {name} as line {n}."},
  "home.info.removed": {"text": "Rad {n} har tagits bort.", "from": "Removed line {n}."},
- "home.info.customise": {"text": "Anpassa", "from": "Customise"}
+ "home.info.customise": {"text": "Anpassa", "from": "Customise"},
+ "apps.running.close": {"text": "Stäng", "from": "Close"},
+ "apps.running.closeAll": {"text": "Stäng alla", "from": "Close all"},
+ "apps.running.closeFailed": {"text": "Det gick inte att stänga appen: {error}", "from": "Could not close app: {error}"},
+ "apps.running.closing": {"text": "Stänger…", "from": "Closing…"},
+ "apps.running.desc": {"text": "Appar som just nu är öppna eller inlästa i TV:ns minne. När en app stängs avslutas dess process och minnet frigörs direkt.", "from": "Apps currently open or loaded in memory on the TV. Closing an app stops its process and frees its memory right away."},
+ "apps.running.inFront": {"text": "I förgrunden", "from": "In front"},
+ "apps.running.mb": {"text": "{mb} MB", "from": "{mb} MB"},
+ "apps.running.none": {"text": "Inga igång", "from": "None running"},
+ "apps.running.noneDesc": {"text": "Det finns inga appar inlästa i minnet just nu.", "from": "No apps are currently running in memory."},
+ "apps.running.summaryMb": {"text": "{n} appar · {mb} MB", "from": "{n} apps · {mb} MB"},
+ "apps.running.summaryOneMb": {"text": "1 app · {mb} MB", "from": "1 app · {mb} MB"},
+ "apps.running.title": {"text": "Appar i minnet", "from": "Apps in memory"}
 }
