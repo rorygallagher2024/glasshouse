@@ -775,18 +775,24 @@ function homeSetSort(kind, value) {
   homeSaveLayout({ sort: { [kind]: value } });
 }
 
+// homeSaving is cleared however the save ends: left set by a render or a
+// reload that threw (the server restarting mid-save, say), it made every later
+// change on the tab do nothing, with no error, until the page was reloaded.
 async function homeSaveLayout(patch) {
   if (!homeWritable()) return;
   homeSaving = true;
-  homeLoadRevision++;
-  renderHome();
   try {
-    const r = await homePost('/api/home/layout', patch);
-    homeLayout = r.layout;
-    homeStatus.layout = r.layout;
-  } catch (e) { showErr(e.message); }
-  await loadHome(true);
-  homeSaving = false;
+    homeLoadRevision++;
+    renderHome();
+    try {
+      const r = await homePost('/api/home/layout', patch);
+      homeLayout = r.layout;
+      homeStatus.layout = r.layout;
+    } catch (e) { showErr(e.message); }
+    await loadHome(true);
+  } finally {
+    homeSaving = false;
+  }
   renderHome();
 }
 
@@ -1152,11 +1158,12 @@ async function homeHideLg() {
   homeArmed = null;
   clearTimeout(homeArmTimer);
   homeSaving = true;
-  renderHome();
   try {
+    renderHome();
     await homePost('/api/home/start-layout', { hideLgHomeAtStart: want });
-  } catch (e) { showErr(e.message); }
-  homeSaving = false;
+  } catch (e) { showErr(e.message); } finally {
+    homeSaving = false;
+  }
   loadHome();
 }
 
