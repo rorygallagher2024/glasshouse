@@ -847,17 +847,9 @@ button.key-hit{background:var(--w10)}
 .ss-tag{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--green);margin-left:10px}
 .ss-level-row{margin-top:22px;max-width:760px}
 .ss-leagues-box .sub{margin:4px 0 10px}
-.news-feed-line{display:grid;grid-template-columns:3fr 1fr;gap:8px;margin-top:10px}
-.news-feed-line input{min-width:0;box-sizing:border-box;font-family:'Manrope';font-size:14px;color:var(--w100);background:transparent;
-  border:1px solid var(--edge);padding:9px 12px;min-height:42px;border-radius:var(--r-sm);outline:none}
-.news-feed-line input:focus{border-color:var(--w100)}
-.news-feed-line input:disabled{opacity:.45}
-.news-feed-line input::placeholder{color:var(--w60)}
-.news-feed-status{grid-column:1/-1;font-size:13px;color:var(--w60);min-height:0}
 .news-feed-status:empty{display:none}
 .news-feed-status.good{color:var(--green)}
 .news-feed-status.warn{color:var(--cand)}
-@media (max-width:700px){.news-feed-line{grid-template-columns:1fr}}
 .home-crests-row{display:flex;align-items:center;gap:12px;margin-top:14px}
 .home-crests-row label{font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--w60)}
 .ss-head{margin-bottom:0}
@@ -1626,7 +1618,7 @@ footer{margin-top:38px;font-size:13px;letter-spacing:.08em;text-transform:upperc
    clock, added one by one. Each field has its label above and its help under
    it, so nothing has to fit inside the box. */
 .home-info-panel{padding:4px 0 16px;border-bottom:1px solid var(--w06);grid-column:1/-1}
-.home-info-panel #home-info-note{margin-bottom:14px;max-width:62ch}
+.home-info-panel #home-info-note,.home-info-panel .home-info-note{margin-bottom:14px;max-width:62ch}
 .home-info-addbox,.home-info-list{max-width:560px}
 .home-info-addbox .ss-li-head{max-width:none}
 .home-info-addbox .ss-li-add{max-width:none}

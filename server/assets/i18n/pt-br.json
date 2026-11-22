@@ -3799,11 +3799,7 @@
  "home.boardDesc": {"text": "Para quem usa o Home Assistant: uma lista com título enviada por uma automação, como os jogos de hoje de uma integração esportiva, ao lado do relógio do Glasshouse Home, quatro linhas por vez.", "from": "For Home Assistant users: a titled list an automation sends, such as today's matches from a sports integration, shown beside the clock on Glasshouse Home four lines at a time."},
  "home.news": {"from": "News strip", "text": "Faixa de notícias"},
  "home.newsDesc": {"from": "Along the bottom: the headlines of up to three news feeds (RSS or Atom), one at a time or running, each after its source.", "text": "Embaixo: as manchetes de até três feeds de notícias (RSS ou Atom), uma de cada vez ou passando, cada uma após sua fonte."},
- "home.news.feedsDesc": {"from": "The address of each feed, and a name to show before its headlines if you want another than the feed's own. Each is read every 10 minutes while the strip or the News screen saver shows. The News screen saver reads the same feeds.", "text": "O endereço de cada feed e, se quiser outro que não o dele, um nome para mostrar antes das manchetes. Cada um é lido a cada 10 minutos enquanto a faixa ou o protetor de tela Notícias aparece. O protetor de tela Notícias lê os mesmos feeds."},
  "home.news.feeds": {"from": "News feeds", "text": "Feeds de notícias"},
- "home.news.url": {"from": "Feed address, such as https://www.svt.se/rss.xml", "text": "Endereço do feed, por exemplo https://www.svt.se/rss.xml"},
- "home.news.urlLabel": {"from": "Feed address", "text": "Endereço do feed"},
- "home.news.name": {"from": "Name (optional)", "text": "Nome (opcional)"},
  "home.news.none": {"from": "No headlines yet", "text": "Ainda sem manchetes"},
  "srv.saver.noNews": {"from": "It asks for the news headlines, which only Glasshouse's own screen savers are given.", "text": "Pede as manchetes das notícias, que só os protetores de tela do próprio Glasshouse recebem."},
  "home.news.noFeeds": {"from": "Add news feeds on the Screensaver tab", "text": "Adicione feeds de notícias na aba Protetor de tela"},
@@ -3824,5 +3820,15 @@
  "home.news.speedDesc2": {"from": "One at a time shows each headline for 8 or 6 seconds, and fades to the next. Running moves them right to left, less smoothly on TVs that cannot draw every frame. Both apply to the matches in the strip and to the News screen saver too.", "text": "Uma de cada vez mostra cada manchete por 8 ou 6 segundos e passa para a próxima com uma transição. Passando as move da direita para a esquerda, com menos fluidez em TVs que não desenham todos os quadros. Ambos valem também para os jogos na faixa e para o protetor de tela News."},
  "home.board.placeDesc2": {"from": "Along the bottom, the board's lines open every run of the strip the news uses, with the next headlines after them.", "text": "Embaixo, as linhas do quadro abrem cada volta da faixa das notícias, seguidas das próximas manchetes."},
  "home.board.haDesc": {"text": "Uma automação envia o quadro para a entidade Home Board Push da TV: um título e até vinte linhas, cada uma com um rótulo e um valor. O Glasshouse não baixa nada para ele. O guia do Home Assistant tem um exemplo.", "from": "An automation sends the board to the TV's Home Board Push entity: a title and up to twenty lines, each with a label and a value. Glasshouse fetches nothing for it. The Home Assistant guide has an example."},
- "srv.fetch.tooBig": {"text": "o arquivo de {host} tem mais de {size}", "from": "the file from {host} is over {size}"}
+ "srv.fetch.tooBig": {"text": "o arquivo de {host} tem mais de {size}", "from": "the file from {host} is over {size}"},
+ "home.news.add": {"text": "Adicionar um feed", "from": "Add a feed"},
+ "home.news.addHint": {"text": "O endereço de um feed RSS ou Atom, como o de um site de notícias.", "from": "The address of an RSS or Atom feed, such as a news site's."},
+ "home.news.full": {"text": "Três feeds no máximo: remova um para adicionar outro.", "from": "Three feeds at most: remove one to add another."},
+ "home.news.needUrl": {"text": "Digite o endereço de um feed primeiro.", "from": "Type a feed's address first."},
+ "home.news.badUrl": {"text": "O endereço de um feed começa com http:// ou https://.", "from": "A feed's address starts with http:// or https://."},
+ "home.news.dupe": {"text": "Esse feed já está na lista.", "from": "That feed is already in the list."},
+ "home.news.added": {"text": "Adicionado como feed {n}. Lendo agora.", "from": "Added as feed {n}. Reading it now."},
+ "home.news.removed": {"text": "Feed {n} removido.", "from": "Removed feed {n}."},
+ "home.news.nameHint": {"text": "Opcional. Aparece antes das manchetes no lugar do nome do feed.", "from": "Optional. Shown before its headlines in place of the feed's own name."},
+ "home.news.feedsDesc": {"text": "Até três feeds RSS ou Atom, cada um lido a cada 10 minutos enquanto a faixa ou o protetor de tela Notícias aparece. A faixa e o protetor de tela Notícias usam os mesmos feeds.", "from": "Up to three RSS or Atom feeds, each read every 10 minutes while the strip or the News screen saver shows. The strip and the News screen saver use the same feeds."}
 }

@@ -1468,86 +1468,188 @@ function renderHomeBoard(st) {
 }
 
 /*
- * News feeds: three slots of an address and an optional name, on the Home tab
- * for the strip and on the Screensaver tab for the News saver, both saved as
- * Home's newsFeeds. prefix names the slots' ids.
+ * News feeds, added one at a time, up to three, on the Home tab for the strip
+ * and on the Screensaver tab for the News saver, both saved as Home's
+ * newsFeeds. prefix names a place's ids. The add form is built once and kept
+ * out of the list, which is drawn again after each change, so a redraw never
+ * takes what is being typed.
  */
 const NEWS_SLOTS = 3;
-function newsFeedsHtml(prefix, feeds, writable) {
-  const dis = writable ? '' : 'disabled';
-  let html = '';
-  for (let i = 0; i < NEWS_SLOTS; i++) {
-    const f = feeds[i] || {};
-    html += `<div class="news-feed-line">
-      <input type="url" id="${prefix}-url-${i}" value="${esc(f.url || '')}" maxlength="2048" ${dis}
-        placeholder="${esc(t('home.news.url', 'Feed address, such as https://www.svt.se/rss.xml'))}" aria-label="${esc(t('home.news.urlLabel', 'Feed address'))}"
-        autocomplete="off" spellcheck="false" onchange="newsFeedsSave('${prefix}')">
-      <input type="text" id="${prefix}-name-${i}" value="${esc(f.name || '')}" maxlength="40" ${dis}
-        placeholder="${esc(t('home.news.name', 'Name (optional)'))}" aria-label="${esc(t('home.news.name', 'Name (optional)'))}" onchange="newsFeedsSave('${prefix}')">
-      <div class="news-feed-status" id="${prefix}-status-${i}" role="status"></div>
-    </div>`;
-  }
-  return html;
+const newsLists = {};
+const newsMsgTimers = {};
+
+function newsSay(prefix, text, warn) {
+  const msg = q(prefix + '-msg');
+  if (!msg) return;
+  msg.textContent = text || '';
+  msg.className = 'home-info-msg' + (warn ? ' warn' : '');
+  clearTimeout(newsMsgTimers[prefix]);
+  if (text && !warn) newsMsgTimers[prefix] = setTimeout(() => { msg.textContent = ''; }, 4000);
 }
 
-// Rebuilt only when the feeds change, and then each is checked; never under
-// a field being typed in.
+function newsForm(prefix, box) {
+  if (q(prefix + '-add')) return;
+  box.innerHTML = `
+    <div class="home-info-addbox">
+      <div class="ss-li-head">
+        <label for="${prefix}-add">${esc(t('home.news.add', 'Add a feed'))}</label>
+        <span class="ss-li-count num" id="${prefix}-count"></span>
+      </div>
+      <div class="ss-li-add">
+        <input type="url" id="${prefix}-add" maxlength="2048" autocomplete="off" spellcheck="false"
+          aria-describedby="${prefix}-hint ${prefix}-msg" onkeydown="if(event.key==='Enter'){event.preventDefault();newsAdd('${prefix}');}">
+        <button type="button" class="ss-li-add-btn" id="${prefix}-add-btn" onclick="newsAdd('${prefix}')">${esc(t('ss.entityList.addBtn', 'Add'))}</button>
+      </div>
+      <div class="home-info-hint" id="${prefix}-hint"></div>
+      <div class="home-info-msg" id="${prefix}-msg" role="status" aria-live="polite"></div>
+    </div>
+    <div id="${prefix}-list"></div>`;
+  // An address, the same in every language.
+  q(prefix + '-add').placeholder = 'https://';
+}
+
 function renderNewsFeeds(prefix, feeds, writable) {
   const box = q(prefix + '-feeds');
-  if (!box || box.contains(document.activeElement)) return;
-  const key = JSON.stringify(feeds || []) + writable;
-  if (box.dataset.key === key) return;
-  box.dataset.key = key;
-  box.innerHTML = newsFeedsHtml(prefix, feeds || [], writable);
+  if (!box) return;
+  newsForm(prefix, box);
+  newsLists[prefix] = (feeds || []).map(f => ({ url: f.url, name: f.name || '' }));
+  newsDraw(prefix, writable);
+}
+
+function newsDraw(prefix, writable) {
+  const lines = newsLists[prefix] || [];
+  const locked = writable === false;
+  const full = lines.length >= NEWS_SLOTS;
+  q(prefix + '-count').textContent = lines.length + ' / ' + NEWS_SLOTS;
+  q(prefix + '-add').disabled = locked || full;
+  q(prefix + '-add-btn').disabled = locked || full;
+  q(prefix + '-hint').textContent = full ? t('home.news.full', 'Three feeds at most: remove one to add another.')
+    : t('home.news.addHint', 'The address of an RSS or Atom feed, such as a news site\'s.');
+  const list = q(prefix + '-list');
+  if (list.contains(document.activeElement) && document.activeElement.tagName === 'INPUT') return;
+  const key = JSON.stringify(lines) + locked;
+  if (list.dataset.key === key) return;
+  list.dataset.key = key;
+  const dis = locked ? 'disabled' : '';
+  let html = lines.length ? '<div class="ss-li-scroll home-info-list">' : '';
+  lines.forEach((f, i) => {
+    html += `
+      <div class="ss-li-item">
+        <div class="ss-li-top">
+          <span class="ss-li-num num">${i + 1}</span>
+          <div class="ss-li-info" title="${esc(f.url)}">
+            <div class="ss-li-name" id="${prefix}-title-${i}">${esc(f.name || newsHost(f.url))}</div>
+            <div class="ss-li-id">${esc(f.url)}</div>
+          </div>
+          <div class="ss-li-acts">
+            <button type="button" title="${esc(t('ss.entityList.moveUp', 'Move up'))}" aria-label="${esc(t('ss.entityList.moveUp', 'Move up'))}" ${(locked || i === 0) ? 'disabled' : ''} onclick="newsMove('${prefix}', ${i}, -1)">&#8593;</button>
+            <button type="button" title="${esc(t('ss.entityList.moveDown', 'Move down'))}" aria-label="${esc(t('ss.entityList.moveDown', 'Move down'))}" ${(locked || i === lines.length - 1) ? 'disabled' : ''} onclick="newsMove('${prefix}', ${i}, 1)">&#8595;</button>
+            <button type="button" title="${esc(t('ss.entityList.remove', 'Remove'))}" aria-label="${esc(t('ss.entityList.remove', 'Remove'))}" ${dis} onclick="newsRemove('${prefix}', ${i})">&times;</button>
+          </div>
+        </div>
+        <div class="home-info-preview news-feed-status" id="${prefix}-status-${i}" role="status"></div>
+        <details class="home-info-more"${f.name ? ' open' : ''}>
+          <summary>${esc(t('home.info.customise', 'Customise'))}</summary>
+          <div class="home-info-field">
+            <label for="${prefix}-name-${i}">${esc(t('home.info.name', 'Name'))}</label>
+            <div class="home-info-input">
+              <input type="text" id="${prefix}-name-${i}" value="${esc(f.name)}" maxlength="40" ${dis}
+                autocomplete="off" spellcheck="false" onchange="newsName('${prefix}', ${i}, this.value)">
+              <div class="home-info-hint">${esc(t('home.news.nameHint', 'Optional. Shown before its headlines in place of the feed\'s own name.'))}</div>
+            </div>
+          </div>
+        </details>
+      </div>`;
+  });
+  if (lines.length) html += '</div>';
+  list.innerHTML = html;
   newsCheck(prefix);
 }
 
+function newsHost(url) {
+  const m = /^https?:\/\/(?:www\.)?([^\/:?#]+)/i.exec(url || '');
+  return m ? m[1] : url;
+}
+
 /*
- * Under each address, what the server made of it: the feed's name and how
- * many headlines it has, or why it could not be read. The server reads a feed
- * at once when it is new, so a wrong address shows straight after saving.
+ * Under each feed, what the server made of it: its name and how many
+ * headlines it has, or why it could not be read. The server reads a feed at
+ * once when it is new, so a wrong address shows straight after it is added.
  */
 async function newsCheck(prefix) {
-  // By the address in each slot, as an empty slot between two is not saved.
-  const urls = [];
-  for (let i = 0; i < NEWS_SLOTS; i++) {
-    const input = q(`${prefix}-url-${i}`);
-    urls.push(input ? input.value.trim() : '');
+  const lines = newsLists[prefix] || [];
+  lines.forEach((f, i) => {
     const el = q(`${prefix}-status-${i}`);
-    if (el) { el.textContent = urls[i] ? t('home.news.checking', 'Reading the feed…') : ''; el.className = 'news-feed-status'; }
-  }
-  if (!urls.some(Boolean)) return;
+    if (el) { el.textContent = t('home.news.checking', 'Reading the feed…'); el.className = 'home-info-preview news-feed-status'; }
+  });
+  if (!lines.length) return;
   let r = null;
   try { r = await homeGet('/api/news/status'); } catch (e) { r = null; }
-  urls.forEach((url, i) => {
+  lines.forEach((f, i) => {
     const el = q(`${prefix}-status-${i}`);
-    if (!el || !url) return;
-    const st = r && r.feeds && r.feeds.find(x => x.url === url);
+    if (!el) return;
+    const st = r && r.feeds && r.feeds.find(x => x.url === f.url);
     if (!st) { el.textContent = ''; return; }
     if (st.ok) {
       el.textContent = t('home.news.feedOk', '{source}: {n} headlines', { source: st.source, n: st.count });
-      el.className = 'news-feed-status good';
+      el.className = 'home-info-preview news-feed-status good';
+      const title = q(`${prefix}-title-${i}`);
+      if (title && !f.name && st.source) title.textContent = st.source;
     } else {
       el.textContent = st.error === 'feed' ? t('home.news.notFeed', 'Read, but it is not an RSS or Atom feed. Check the address.')
         : st.error === 'size' ? t('home.news.tooBig', 'Larger than 2 MB, so it is not read.')
         : t('home.news.fetchFailed', 'Could not be read. Check the address, and that the TV is online.');
-      el.className = 'news-feed-status warn';
+      el.className = 'home-info-preview news-feed-status warn';
     }
   });
 }
 
-async function newsFeedsSave(prefix) {
-  const list = [];
-  for (let i = 0; i < NEWS_SLOTS; i++) {
-    const url = (q(`${prefix}-url-${i}`).value || '').trim();
-    if (url) list.push({ url, name: (q(`${prefix}-name-${i}`).value || '').trim() });
-  }
+async function newsCommit(prefix, list) {
+  newsLists[prefix] = list;
+  newsDraw(prefix, true);
   try { await homePost('/api/home/layout', { newsFeeds: list }); } catch (e) { showErr(e.message); }
-  // At once, as the fields are not rebuilt while the next one has the focus.
-  const box = q(prefix + '-feeds');
-  if (box) box.dataset.key = JSON.stringify(list) + true;
   newsCheck(prefix);
   if (prefix === 'home-news') loadHome(true); else loadScreensavers();
+}
+
+function newsAdd(prefix) {
+  const input = q(prefix + '-add');
+  const url = input.value.trim();
+  const list = (newsLists[prefix] || []).slice();
+  if (!url) { newsSay(prefix, t('home.news.needUrl', 'Type a feed\'s address first.'), true); input.focus(); return; }
+  if (!/^https?:\/\/[^\s]+$/i.test(url) || url.length > 2048) {
+    newsSay(prefix, t('home.news.badUrl', 'A feed\'s address starts with http:// or https://.'), true);
+    return;
+  }
+  if (list.some(f => f.url === url)) { newsSay(prefix, t('home.news.dupe', 'That feed is already in the list.'), true); return; }
+  if (list.length >= NEWS_SLOTS) return;
+  list.push({ url, name: '' });
+  input.value = '';
+  newsSay(prefix, t('home.news.added', 'Added as feed {n}. Reading it now.', { n: list.length }));
+  newsCommit(prefix, list);
+}
+
+function newsRemove(prefix, i) {
+  const list = (newsLists[prefix] || []).slice();
+  list.splice(i, 1);
+  newsSay(prefix, t('home.news.removed', 'Removed feed {n}.', { n: i + 1 }));
+  newsCommit(prefix, list);
+}
+
+function newsMove(prefix, i, by) {
+  const list = (newsLists[prefix] || []).slice();
+  const j = i + by;
+  if (j < 0 || j >= list.length) return;
+  [list[i], list[j]] = [list[j], list[i]];
+  newsCommit(prefix, list);
+}
+
+function newsName(prefix, i, value) {
+  const list = (newsLists[prefix] || []).map(f => Object.assign({}, f));
+  if (!list[i]) return;
+  list[i].name = value.trim();
+  newsLists[prefix] = list;
+  homePost('/api/home/layout', { newsFeeds: list }).catch(e => showErr(e.message));
 }
 
 function renderHomeNews(st) {

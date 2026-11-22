@@ -3799,11 +3799,7 @@
  "home.boardDesc": {"text": "لمستخدمي Home Assistant: قائمة لها عنوان ترسلها أتمتة، مثل مباريات اليوم من تكامل رياضي، تظهر بجانب الساعة في Glasshouse Home أربعة أسطر في كل مرة.", "from": "For Home Assistant users: a titled list an automation sends, such as today's matches from a sports integration, shown beside the clock on Glasshouse Home four lines at a time."},
  "home.news": {"from": "News strip", "text": "شريط الأخبار"},
  "home.newsDesc": {"from": "Along the bottom: the headlines of up to three news feeds (RSS or Atom), one at a time or running, each after its source.", "text": "في الأسفل: عناوين ما يصل إلى ثلاث خلاصات أخبار (RSS أو Atom)، واحدًا تلو الآخر أو متحركة، كل منها بعد مصدره."},
- "home.news.feedsDesc": {"from": "The address of each feed, and a name to show before its headlines if you want another than the feed's own. Each is read every 10 minutes while the strip or the News screen saver shows. The News screen saver reads the same feeds.", "text": "عنوان كل خلاصة، واسم يظهر قبل عناوينها إن أردت اسمًا غير اسمها. تُقرأ كل خلاصة كل 10 دقائق أثناء ظهور الشريط أو شاشة توقف الأخبار. تقرأ شاشة توقف الأخبار الخلاصات نفسها."},
  "home.news.feeds": {"from": "News feeds", "text": "خلاصات الأخبار"},
- "home.news.url": {"from": "Feed address, such as https://www.svt.se/rss.xml", "text": "عنوان الخلاصة، مثل https://www.svt.se/rss.xml"},
- "home.news.urlLabel": {"from": "Feed address", "text": "عنوان الخلاصة"},
- "home.news.name": {"from": "Name (optional)", "text": "الاسم (اختياري)"},
  "home.news.none": {"from": "No headlines yet", "text": "لا عناوين بعد"},
  "srv.saver.noNews": {"from": "It asks for the news headlines, which only Glasshouse's own screen savers are given.", "text": "تطلب عناوين الأخبار، التي لا تحصل عليها إلا شاشات التوقف الخاصة بـ Glasshouse."},
  "home.news.noFeeds": {"from": "Add news feeds on the Screensaver tab", "text": "أضف خلاصات الأخبار في علامة تبويب شاشة التوقف"},
@@ -3824,5 +3820,15 @@
  "home.news.speedDesc2": {"from": "One at a time shows each headline for 8 or 6 seconds, and fades to the next. Running moves them right to left, less smoothly on TVs that cannot draw every frame. Both apply to the matches in the strip and to the News screen saver too.", "text": "واحدًا تلو الآخر يعرض كل عنوان لمدة 8 أو 6 ثوانٍ ثم يتلاشى إلى التالي. متحركة تنقلها من اليمين إلى اليسار، بسلاسة أقل على أجهزة التلفاز التي لا ترسم كل إطار. ينطبق كلاهما أيضًا على المباريات في الشريط وعلى شاشة التوقف News."},
  "home.board.placeDesc2": {"from": "Along the bottom, the board's lines open every run of the strip the news uses, with the next headlines after them.", "text": "في الأسفل، تفتتح أسطر اللوحة كل دورة من شريط الأخبار، وتليها العناوين التالية."},
  "home.board.haDesc": {"text": "ترسل أتمتة اللوحة إلى كيان Home Board Push في التلفزيون: عنوانًا وحتى عشرين سطرًا، لكل منها تسمية وقيمة. لا يجلب Glasshouse شيئًا لها. يحتوي دليل Home Assistant على مثال.", "from": "An automation sends the board to the TV's Home Board Push entity: a title and up to twenty lines, each with a label and a value. Glasshouse fetches nothing for it. The Home Assistant guide has an example."},
- "srv.fetch.tooBig": {"text": "الملف من {host} أكبر من {size}", "from": "the file from {host} is over {size}"}
+ "srv.fetch.tooBig": {"text": "الملف من {host} أكبر من {size}", "from": "the file from {host} is over {size}"},
+ "home.news.add": {"text": "إضافة موجز", "from": "Add a feed"},
+ "home.news.addHint": {"text": "عنوان موجز RSS أو Atom، مثل موجز موقع إخباري.", "from": "The address of an RSS or Atom feed, such as a news site's."},
+ "home.news.full": {"text": "ثلاثة موجزات كحد أقصى: احذف واحدًا لإضافة آخر.", "from": "Three feeds at most: remove one to add another."},
+ "home.news.needUrl": {"text": "اكتب عنوان موجز أولًا.", "from": "Type a feed's address first."},
+ "home.news.badUrl": {"text": "يبدأ عنوان الموجز بـ http:// أو https://.", "from": "A feed's address starts with http:// or https://."},
+ "home.news.dupe": {"text": "هذا الموجز موجود في القائمة بالفعل.", "from": "That feed is already in the list."},
+ "home.news.added": {"text": "أُضيف كموجز {n}. تجري قراءته الآن.", "from": "Added as feed {n}. Reading it now."},
+ "home.news.removed": {"text": "حُذف الموجز {n}.", "from": "Removed feed {n}."},
+ "home.news.nameHint": {"text": "اختياري. يظهر قبل عناوينه بدلًا من اسم الموجز نفسه.", "from": "Optional. Shown before its headlines in place of the feed's own name."},
+ "home.news.feedsDesc": {"text": "حتى ثلاثة موجزات RSS أو Atom، يُقرأ كل منها كل 10 دقائق ما دام الشريط أو شاشة توقف الأخبار ظاهرًا. يستخدم الشريط وشاشة توقف الأخبار الموجزات نفسها.", "from": "Up to three RSS or Atom feeds, each read every 10 minutes while the strip or the News screen saver shows. The strip and the News screen saver use the same feeds."}
 }

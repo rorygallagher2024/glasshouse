@@ -3817,11 +3817,7 @@
  "home.boardDesc": {"text": "Dla użytkowników Home Assistant: lista z tytułem wysyłana przez automatyzację, np. dzisiejsze mecze z integracji sportowej, obok zegara Glasshouse Home, po cztery wiersze.", "from": "For Home Assistant users: a titled list an automation sends, such as today's matches from a sports integration, shown beside the clock on Glasshouse Home four lines at a time."},
  "home.news": {"from": "News strip", "text": "Pasek wiadomości"},
  "home.newsDesc": {"from": "Along the bottom: the headlines of up to three news feeds (RSS or Atom), one at a time or running, each after its source.", "text": "Na dole: nagłówki z maksymalnie trzech kanałów wiadomości (RSS lub Atom), po jednym lub przewijane, każdy po swoim źródle."},
- "home.news.feedsDesc": {"from": "The address of each feed, and a name to show before its headlines if you want another than the feed's own. Each is read every 10 minutes while the strip or the News screen saver shows. The News screen saver reads the same feeds.", "text": "Adres każdego kanału i, jeśli chcesz inną niż jego własna, nazwa wyświetlana przed nagłówkami. Każdy kanał jest odczytywany co 10 minut, gdy widać pasek lub wygaszacz Wiadomości. Wygaszacz Wiadomości czyta te same kanały."},
  "home.news.feeds": {"from": "News feeds", "text": "Kanały wiadomości"},
- "home.news.url": {"from": "Feed address, such as https://www.svt.se/rss.xml", "text": "Adres kanału, np. https://www.svt.se/rss.xml"},
- "home.news.urlLabel": {"from": "Feed address", "text": "Adres kanału"},
- "home.news.name": {"from": "Name (optional)", "text": "Nazwa (opcjonalnie)"},
  "home.news.none": {"from": "No headlines yet", "text": "Brak nagłówków"},
  "srv.saver.noNews": {"from": "It asks for the news headlines, which only Glasshouse's own screen savers are given.", "text": "Prosi o nagłówki wiadomości, które dostają tylko własne wygaszacze Glasshouse."},
  "home.news.noFeeds": {"from": "Add news feeds on the Screensaver tab", "text": "Dodaj kanały wiadomości na karcie Wygaszacz"},
@@ -3842,5 +3838,15 @@
  "home.news.speedDesc2": {"from": "One at a time shows each headline for 8 or 6 seconds, and fades to the next. Running moves them right to left, less smoothly on TVs that cannot draw every frame. Both apply to the matches in the strip and to the News screen saver too.", "text": "Po jednym pokazuje każdy nagłówek przez 8 lub 6 sekund i przechodzi płynnie do następnego. Przewijane przesuwa je od prawej do lewej, mniej płynnie na telewizorach, które nie rysują każdej klatki. Oba dotyczą też meczów w pasku i wygaszacza News."},
  "home.board.placeDesc2": {"from": "Along the bottom, the board's lines open every run of the strip the news uses, with the next headlines after them.", "text": "Na dole wiersze tablicy otwierają każdy przebieg paska wiadomości, a po nich kolejne nagłówki."},
  "home.board.haDesc": {"text": "Automatyzacja wysyła tablicę do encji Home Board Push telewizora: tytuł i do dwudziestu wierszy, każdy z etykietą i wartością. Glasshouse niczego do niej nie pobiera. Przykład jest w przewodniku Home Assistant.", "from": "An automation sends the board to the TV's Home Board Push entity: a title and up to twenty lines, each with a label and a value. Glasshouse fetches nothing for it. The Home Assistant guide has an example."},
- "srv.fetch.tooBig": {"text": "plik z {host} przekracza {size}", "from": "the file from {host} is over {size}"}
+ "srv.fetch.tooBig": {"text": "plik z {host} przekracza {size}", "from": "the file from {host} is over {size}"},
+ "home.news.add": {"text": "Dodaj kanał", "from": "Add a feed"},
+ "home.news.addHint": {"text": "Adres kanału RSS lub Atom, np. serwisu informacyjnego.", "from": "The address of an RSS or Atom feed, such as a news site's."},
+ "home.news.full": {"text": "Najwyżej trzy kanały: usuń jeden, aby dodać inny.", "from": "Three feeds at most: remove one to add another."},
+ "home.news.needUrl": {"text": "Najpierw wpisz adres kanału.", "from": "Type a feed's address first."},
+ "home.news.badUrl": {"text": "Adres kanału zaczyna się od http:// lub https://.", "from": "A feed's address starts with http:// or https://."},
+ "home.news.dupe": {"text": "Ten kanał jest już na liście.", "from": "That feed is already in the list."},
+ "home.news.added": {"text": "Dodano jako kanał {n}. Trwa odczyt.", "from": "Added as feed {n}. Reading it now."},
+ "home.news.removed": {"text": "Usunięto kanał {n}.", "from": "Removed feed {n}."},
+ "home.news.nameHint": {"text": "Opcjonalne. Wyświetlane przed nagłówkami zamiast nazwy kanału.", "from": "Optional. Shown before its headlines in place of the feed's own name."},
+ "home.news.feedsDesc": {"text": "Do trzech kanałów RSS lub Atom, każdy odczytywany co 10 minut, gdy widać pasek lub wygaszacz Wiadomości. Pasek i wygaszacz Wiadomości korzystają z tych samych kanałów.", "from": "Up to three RSS or Atom feeds, each read every 10 minutes while the strip or the News screen saver shows. The strip and the News screen saver use the same feeds."}
 }

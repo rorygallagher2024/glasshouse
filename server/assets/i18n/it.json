@@ -3813,11 +3813,7 @@
  "home.boardDesc": {"text": "Per chi usa Home Assistant: un elenco con titolo inviato da un’automazione, come le partite di oggi da un’integrazione sportiva, accanto all’orologio di Glasshouse Home, quattro righe alla volta.", "from": "For Home Assistant users: a titled list an automation sends, such as today's matches from a sports integration, shown beside the clock on Glasshouse Home four lines at a time."},
  "home.news": {"from": "News strip", "text": "Striscia notizie"},
  "home.newsDesc": {"from": "Along the bottom: the headlines of up to three news feeds (RSS or Atom), one at a time or running, each after its source.", "text": "In basso: i titoli di un massimo di tre feed di notizie (RSS o Atom), uno alla volta o scorrevoli, ciascuno dopo la sua fonte."},
- "home.news.feedsDesc": {"from": "The address of each feed, and a name to show before its headlines if you want another than the feed's own. Each is read every 10 minutes while the strip or the News screen saver shows. The News screen saver reads the same feeds.", "text": "L'indirizzo di ogni feed e, se ne vuoi uno diverso dal suo, un nome da mostrare prima dei titoli. Ogni feed viene letto ogni 10 minuti mentre è visibile la striscia o il salvaschermo Notizie. Il salvaschermo Notizie legge gli stessi feed."},
  "home.news.feeds": {"from": "News feeds", "text": "Feed di notizie"},
- "home.news.url": {"from": "Feed address, such as https://www.svt.se/rss.xml", "text": "Indirizzo del feed, ad esempio https://www.svt.se/rss.xml"},
- "home.news.urlLabel": {"from": "Feed address", "text": "Indirizzo del feed"},
- "home.news.name": {"from": "Name (optional)", "text": "Nome (facoltativo)"},
  "home.news.none": {"from": "No headlines yet", "text": "Ancora nessun titolo"},
  "srv.saver.noNews": {"from": "It asks for the news headlines, which only Glasshouse's own screen savers are given.", "text": "Chiede i titoli delle notizie, che ricevono solo i salvaschermi di Glasshouse."},
  "home.news.noFeeds": {"from": "Add news feeds on the Screensaver tab", "text": "Aggiungi i feed di notizie nella scheda Salvaschermo"},
@@ -3838,5 +3834,15 @@
  "home.news.speedDesc2": {"from": "One at a time shows each headline for 8 or 6 seconds, and fades to the next. Running moves them right to left, less smoothly on TVs that cannot draw every frame. Both apply to the matches in the strip and to the News screen saver too.", "text": "Uno alla volta mostra ogni titolo per 8 o 6 secondi e sfuma nel successivo. Scorrevole li sposta da destra a sinistra, meno fluido sui televisori che non disegnano ogni fotogramma. Entrambi valgono anche per le partite nella striscia e per il salvaschermo News."},
  "home.board.placeDesc2": {"from": "Along the bottom, the board's lines open every run of the strip the news uses, with the next headlines after them.", "text": "In basso, le righe del tabellone aprono ogni giro della striscia delle notizie, seguite dai titoli successivi."},
  "home.board.haDesc": {"text": "Un’automazione invia il tabellone all’entità Home Board Push del televisore: un titolo e fino a venti righe, ciascuna con un’etichetta e un valore. Glasshouse non scarica nulla per esso. La guida di Home Assistant ha un esempio.", "from": "An automation sends the board to the TV's Home Board Push entity: a title and up to twenty lines, each with a label and a value. Glasshouse fetches nothing for it. The Home Assistant guide has an example."},
- "srv.fetch.tooBig": {"text": "il file da {host} supera {size}", "from": "the file from {host} is over {size}"}
+ "srv.fetch.tooBig": {"text": "il file da {host} supera {size}", "from": "the file from {host} is over {size}"},
+ "home.news.add": {"text": "Aggiungi un feed", "from": "Add a feed"},
+ "home.news.addHint": {"text": "L’indirizzo di un feed RSS o Atom, come quello di un sito di notizie.", "from": "The address of an RSS or Atom feed, such as a news site's."},
+ "home.news.full": {"text": "Tre feed al massimo: rimuovine uno per aggiungerne un altro.", "from": "Three feeds at most: remove one to add another."},
+ "home.news.needUrl": {"text": "Scrivi prima l’indirizzo di un feed.", "from": "Type a feed's address first."},
+ "home.news.badUrl": {"text": "L’indirizzo di un feed inizia con http:// o https://.", "from": "A feed's address starts with http:// or https://."},
+ "home.news.dupe": {"text": "Quel feed è già nell’elenco.", "from": "That feed is already in the list."},
+ "home.news.added": {"text": "Aggiunto come feed {n}. Lo sto leggendo.", "from": "Added as feed {n}. Reading it now."},
+ "home.news.removed": {"text": "Feed {n} rimosso.", "from": "Removed feed {n}."},
+ "home.news.nameHint": {"text": "Facoltativo. Mostrato prima dei suoi titoli al posto del nome del feed.", "from": "Optional. Shown before its headlines in place of the feed's own name."},
+ "home.news.feedsDesc": {"text": "Fino a tre feed RSS o Atom, ciascuno letto ogni 10 minuti mentre si vedono la striscia o il salvaschermo Notizie. La striscia e il salvaschermo Notizie usano gli stessi feed.", "from": "Up to three RSS or Atom feeds, each read every 10 minutes while the strip or the News screen saver shows. The strip and the News screen saver use the same feeds."}
 }
