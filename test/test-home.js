@@ -3612,6 +3612,93 @@ step('the weather Home Assistant pushes is kept across a restart, capped, hidden
   });
 });
 
+step('the info lines Home Assistant pushes are capped, kept across a restart and cleared by an empty push', function (done) {
+  start({ enabled: false, info: 'ha' }, { mqttOn: function () { return true; } });
+  home.setHomeInfo('not json');
+  home.setHomeInfo('{"label":"one"}');
+  assert.deepEqual(home.beat().info, [], 'nothing shown from a push that is not a list');
+  var long = new Array(60).join('x');
+  home.setHomeInfo(JSON.stringify([
+    { icon: 'mdi:trash-can', label: '  Bin   1 ', value: 'in 4 days' },
+    { icon: 'mail', label: long, value: 2 },
+    { label: '', value: '' },
+    { label: 'c' }, { label: 'd' }, { label: 'e' }
+  ]));
+  var lines = home.beat().info;
+  assert.strictEqual(lines.length, 4, 'four at most, empty ones left out');
+  assert.deepEqual(lines[0], { icon: 'trash-can', label: 'Bin 1', value: 'in 4 days' }, 'mdi: dropped, spaces folded');
+  assert.strictEqual(lines[1].label.length, 32, 'labels capped');
+  assert.strictEqual(lines[1].value, '2', 'a number shown as text');
+  home.init(lastInit);
+  home.info(function (r) {
+    assert.strictEqual(r.lines.length, 4, 'kept across a restart');
+    home.setHomeInfo('{"items":[{"label":"Post","value":"Friday"}]}');
+    assert.deepEqual(home.beat().info, [{ icon: '', label: 'Post', value: 'Friday' }], 'a list under items is read too');
+    home.setHomeInfo('');
+    assert.deepEqual(home.beat().info, [], 'an empty push clears them');
+    home.init(lastInit);
+    assert.deepEqual(home.beat().info, [], 'and they stay cleared after a restart');
+    done();
+  });
+});
+
+step('lines from entities chosen on the dashboard are read through Home Assistant, at most every 30 seconds, and kept when a read fails', function (done) {
+  var clock = Date.now();
+  var reads = [];
+  var answer = {
+    'sensor.bin_1': { state: 'on 25-Nov-2026', attributes: { friendly_name: 'Bin 1', next_date: '2026-11-25T00:00:00+01:00', icon: 'mdi:trash-can' } },
+    'sensor.visc': { state: '14.58', attributes: { friendly_name: 'Viscaria', unit_of_measurement: 'SEK', device_class: 'monetary' } }
+  };
+  var ha = {
+    configured: function () { return true; },
+    readMany: function (ids, cb) {
+      reads.push(ids.slice());
+      var out = {};
+      ids.forEach(function (id) { if (answer[id]) out[id] = answer[id]; });
+      cb({ ok: true, entities: out, errors: {} });
+    }
+  };
+  var mqtt = true;
+  start(null, { now: function () { return clock; }, haEntity: ha, mqttOn: function () { return mqtt; } });
+  assert.strictEqual(home.layout().info, 'entities', 'entities unless chosen otherwise');
+  home.setLayout({ infoLines: [
+    { entity: 'sensor.bin_1', attribute: 'next_date', label: 'Bin 1', before: 'collected' },
+    { entity: 'SENSOR.VISC' },
+    { entity: 'not an entity' },
+    { entity: 'sensor.a' }, { entity: 'sensor.b' }, { entity: 'sensor.c' }
+  ] }, function (r) {
+    assert.strictEqual(r.layout.infoLines.length, 4, 'four at most, a malformed one left out');
+    assert.strictEqual(r.layout.infoLines[1].entity, 'sensor.visc', 'lower-cased');
+    home.info(function (i1) {
+      assert.deepEqual(reads, [['sensor.bin_1', 'sensor.visc', 'sensor.a', 'sensor.b']]);
+      var lines = i1.lines.length ? i1.lines : home.beat().info;
+      assert.deepEqual(lines[0], { icon: 'trash-can', label: 'Bin 1', before: 'collected', v: '2026-11-25T00:00:00+01:00', unit: '' }, 'the attribute, without a unit');
+      assert.deepEqual(lines[1], { icon: 'cash', label: 'Viscaria', before: '', v: '14.58', unit: 'SEK' }, 'its name and unit, an icon from its class');
+      assert.strictEqual(lines[2].v, '', 'an entity Home Assistant does not have reads empty');
+      home.info(function () {});
+      assert.strictEqual(reads.length, 1, 'not read again within 30 seconds');
+      clock += 31000;
+      answer = {};
+      home.info(function () {});
+      assert.strictEqual(reads.length, 2, 'read again after 30 seconds');
+      assert.strictEqual(home.beat().info[1].v, '14.58', 'a failed read keeps the line as it was');
+      home.setLayout({ info: 'off' }, function () {
+        assert.deepEqual(home.beat().info, [], 'off shows none');
+        home.setLayout({ info: 'ha' }, function () {
+          home.setHomeInfo(JSON.stringify([{ label: 'Pushed', value: 'x' }]));
+          assert.strictEqual(home.beat().info[0].label, 'Pushed', 'Home Assistant\'s pushes shown while chosen');
+          mqtt = false;
+          assert.deepEqual(home.beat().info, [], 'not once MQTT is no longer set up');
+          home.status(function (st) {
+            assert.deepEqual(st.haLines, { api: true, mqtt: false }, 'the dashboard is told which sources can work');
+            done();
+          });
+        });
+      });
+    });
+  });
+});
+
 step('a Weather switch saved off before the source choice stays off', function (done) {
   start({ enabled: false, showWeather: false });
   assert.strictEqual(home.layout().weather, 'off');

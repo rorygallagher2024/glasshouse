@@ -87,6 +87,12 @@ Preview cards at the top of the **Home** tab switch between five launcher option
 
     Displays current temperature, condition icon, and location level with the clock, sourced from Home Assistant or Open-Meteo. See [Weather badge](#weather-badge).
 
+-   **Home Assistant: values at a glance**
+
+    ---
+
+    Up to four short lines from Home Assistant beside the clock: the next bin collection, a parcel on its way, a share price. Each reads an entity picked on the dashboard, or an automation sends them. See [Home Assistant: values at a glance](#home-assistant-values-at-a-glance).
+
 -   **Badges & labels**
 
     ---
@@ -552,6 +558,34 @@ The weather badge displays the current temperature and an icon level with the cl
 * **Off:** Disables the badge completely.
 
 The badge appears once data is received, is kept when the TV restarts, and is hidden once 3 hours pass without an update (or when an empty value is sent from Home Assistant).
+
+### Home Assistant: values at a glance
+
+Up to four lines of your own after the weather, or before the clock in the Alternative View, each an icon, a name and a value: *Bin 1 · collected on Wednesday*, *PostNord · arrives tomorrow*, *Viscaria · 14.58 SEK*. For Home Assistant users. The setting chooses where they come from, and offers only what is set up: **Entities you pick** needs the [Home Assistant API](../HOME-ASSISTANT.md#screen-savers-reading-home-assistant) on the HA & MQTT tab, and **Sent by an automation** needs MQTT. With neither, the setting is not shown.
+
+* **Entities you pick (default):** each line reads a Home Assistant entity, every 30 seconds while Home is on screen. **Add a line** takes an entity (the field suggests Home Assistant's), up to four, and says what it added, or why it could not. Each line can be moved or removed, and **Customise** gives it, all optional:
+  * **Name:** shown in place of the entity's own name.
+  * **Attribute:** one of its attributes in place of its state, such as `next_date` for a bin collection whose state is text.
+  * **Text before:** a few words put in front of the value, such as *collected* or *arrives*, so a date reads *collected tomorrow*.
+
+  Under each line, **Shows as** gives how it reads beside the clock.
+
+  A date shows as today, tomorrow, a weekday within the week, or a day and month after that, in the page's language. A number shows with its own decimals, two at most, and its unit. Anything else shows as Home Assistant has it. The icon is the entity's own, or one for what it measures.
+
+  Some examples, with entity names as the integrations usually make them:
+
+  | Entity | Attribute | Name | Text before | Shows |
+  |---|---|---|---|---|
+  | `sensor.bin_collection` (a bin's next collection) | `next_date` | Bin 1 | collected | *Bin 1 · collected on Wednesday* |
+  | `sensor.postnord_delivery_12345` (PostNord) | `next_delivery` | PostNord | arrives | *PostNord · arrives tomorrow* |
+  | `sensor.yahoofinance_visc_st` (Yahoo Finance) | | Viscaria | | *Viscaria · 14.58 SEK* |
+  | `sensor.outdoor_temperature` | | Outside | | *Outside · 3.4 °C* |
+
+  To find an attribute, open the entity in Home Assistant's **Developer tools → States**: its attributes are listed beside its state. An attribute shows without the entity's unit, which belongs to its state.
+* **Sent by an automation:** whatever was last written to the `text.lg_tv_home_info` entity, a JSON list such as `[{"icon":"trash-can","label":"Bin 1","value":"in 4 days"}]` ([entities](../HOME-ASSISTANT-ENTITIES.md)), kept across a restart until the next one. An empty value or `[]` takes them away ([example automation](../HOME-ASSISTANT.md#7-your-own-lines-on-glasshouse-home)).
+* **Off.**
+
+Icons are [Material Design Icons](https://pictogrammers.com/library/mdi/) names, with or without `mdi:`. Glasshouse Home draws its own outline for names starting with trash, delete, recycle, mail, email, post, chart, trending, finance, cash, car, flash, lightning, power, battery, calendar, thermometer, home, package and truck, and a dot for any other.
 
 ### Remote battery
 

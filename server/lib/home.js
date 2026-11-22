@@ -57,6 +57,9 @@ var SORTS = ['custom', 'recent'];
 var SHOW_KEYS = ['showClock', 'showLastOn', 'showAppCount', 'showAppLabels', 'showCec', 'showTvLogos', 'showPointer'];
 // Where the weather badge's weather comes from: nowhere, Home Assistant's pushes, or Open-Meteo.
 var WEATHER_SOURCES = ['off', 'ha', 'internet'];
+// Where the lines beside the clock come from: nowhere, Home Assistant
+// entities chosen on the dashboard, or lines Home Assistant sends.
+var INFO_SOURCES = ['off', 'entities', 'ha'];
 // The Magic Remote's battery beside the date: never, only once it is low, or always.
 var REMOTE_BATTERY = ['off', 'low', 'always'];
 // At or under this, the badge shows in 'low' and is drawn as low. A remote
@@ -505,6 +508,9 @@ function defaults() {
     // Where the weather comes from, and the place Open-Meteo is asked about.
     weather: 'ha',
     weatherPlace: null,
+    // The lines beside the clock, and the entities they read.
+    info: 'entities',
+    infoLines: [],
     // The live preview kept on what was last on whenever the view is on
     // screen, rather than only while a tile is chosen.
     previewAlways: false,
@@ -643,6 +649,8 @@ function normalise(raw) {
   // Before the choice, a Weather switch: off, or Home Assistant's.
   d.weather = WEATHER_SOURCES.indexOf(raw.weather) !== -1 ? raw.weather : raw.showWeather === false ? 'off' : 'ha';
   d.weatherPlace = weatherPlaceOf(raw.weatherPlace);
+  d.info = INFO_SOURCES.indexOf(raw.info) !== -1 ? raw.info : 'entities';
+  d.infoLines = infoLinesOf(raw.infoLines);
   d.rowsBottom = raw.rowsBottom === true;
   d.reopenAfterWake = raw.reopenAfterWake !== false;
   d.view = raw.view === 'alternative' ? 'alternative' : 'standard';
@@ -879,6 +887,8 @@ function setLayout(body, cb) {
     weather: body.weather !== undefined ? body.weather
       : typeof body.showWeather === 'boolean' ? (body.showWeather ? 'ha' : 'off') : c.weather,
     weatherPlace: body.weatherPlace !== undefined ? body.weatherPlace : c.weatherPlace,
+    info: body.info !== undefined ? body.info : c.info,
+    infoLines: body.infoLines !== undefined ? body.infoLines : c.infoLines,
     previewAlways: typeof body.previewAlways === 'boolean' ? body.previewAlways : c.previewAlways,
     previewInTile: typeof body.previewInTile === 'boolean' ? body.previewInTile : c.previewInTile,
     previewSize: body.previewSize !== undefined ? body.previewSize : c.previewSize,
@@ -932,6 +942,7 @@ function setLayout(body, cb) {
   if (c.picture !== config.picture) pictureDetailsFn(config.picture);
   if (JSON.stringify(c.deviceNames) !== JSON.stringify(config.deviceNames)) onDeviceNamesFn();
   if (config.weather === 'internet') setTimeout(internetWeatherTick, 0);
+  if (JSON.stringify(c.infoLines) !== JSON.stringify(config.infoLines)) { entityInfo = null; entityInfoAt = 0; }
   // A row back in its own order keeps no record of what was opened.
   ROWS.forEach(function (r) { if (config.sort[r] !== 'recent') recent.forget(r); });
   cb({ ok: true, layout: layoutOf(config), layoutVersion: layoutVersion() });
@@ -1026,7 +1037,7 @@ function layoutOf(c) {
     searchHintSeen: c.searchHintSeen, picture: c.picture, livePreview: c.livePreview, search: c.search, recommended: c.recommended,
     fade: c.fade, wallDrift: c.wallDrift, wallCrossfade: c.wallCrossfade, smoothScroll: c.smoothScroll, slidePanels: c.slidePanels,
     darkening: c.darkening, hideUnused: c.hideUnused, showMediaServers: c.showMediaServers, deviceNames: devNamesNow(c.deviceNames), appNames: c.appNames, appCards: c.appCards, focusPulse: c.focusPulse, navSound: c.navSound, pointerSound: c.pointerSound, ownSound: ownSoundInfo(), cardFade: c.cardFade, appIcons: c.appIcons, inputBarTransparent: c.inputBarTransparent, inputBarSwitchOnOk: c.inputBarSwitchOnOk, showClock: c.showClock, rowsBottom: c.rowsBottom, view: c.view,
-    showLastOn: c.showLastOn, showAppCount: c.showAppCount, showAppLabels: c.showAppLabels, showCec: c.showCec, showTvLogos: c.showTvLogos, showPointer: c.showPointer, reopenAfterWake: c.reopenAfterWake, weather: c.weather, weatherPlace: c.weatherPlace, previewAlways: c.previewAlways, previewInTile: c.previewInTile, previewSize: c.previewSize, previewSound: c.previewSound, wallAnim: c.wallAnim,
+    showLastOn: c.showLastOn, showAppCount: c.showAppCount, showAppLabels: c.showAppLabels, showCec: c.showCec, showTvLogos: c.showTvLogos, showPointer: c.showPointer, reopenAfterWake: c.reopenAfterWake, weather: c.weather, weatherPlace: c.weatherPlace, info: c.info, infoLines: c.infoLines, previewAlways: c.previewAlways, previewInTile: c.previewInTile, previewSize: c.previewSize, previewSound: c.previewSound, wallAnim: c.wallAnim,
     remoteBattery: c.remoteBattery,
     animTheme: c.animTheme, animSky: c.animSky, animLight: c.animLight, animThemes: ANIM_THEMES,
     wallShuffleMinutes: c.wallShuffleMinutes, shuffleMinutes: SHUFFLE_MINUTES, colours: c.colours,
@@ -1937,6 +1948,146 @@ function setWeather(raw) {
   } catch (e) {
     console.error('home: could not keep the weather: ' + e.message);
   }
+}
+
+/*
+ * Lines from Home Assistant under the clock: text.lg_tv_home_info's command
+ * topic, dispatched by tvweb.js. The payload is a JSON list an automation
+ * sends, each line an icon, a label and a value:
+ *   [{"icon":"trash","label":"Bin 1","value":"in 4 days"}]
+ * Shown until the next push; an empty push, or [], takes them away. A push
+ * that is not such a list is dropped and leaves the lines as they were.
+ */
+var HOME_INFO_MAX = 4;
+var HOME_INFO_LABEL_MAX = 32;
+var HOME_INFO_VALUE_MAX = 40;
+var homeInfo = [];
+
+function homeInfoFile() { return path.join(stateDir, 'home-info.json'); }
+
+function homeInfoText(v, max) {
+  if (typeof v === 'number' && isFinite(v)) v = String(v);
+  if (typeof v !== 'string') return '';
+  return v.replace(/\s+/g, ' ').trim().slice(0, max);
+}
+
+// "mdi:trash-can" and "trash-can" alike: the view draws the names it knows.
+function homeInfoIcon(v) {
+  if (typeof v !== 'string') return '';
+  return v.replace(/^mdi:/, '').toLowerCase().replace(/[^a-z0-9-]/g, '').slice(0, 40);
+}
+
+function setHomeInfo(raw) {
+  var text = String(raw == null ? '' : raw).trim();
+  var parsed = null;
+  if (text) {
+    try { parsed = JSON.parse(text); } catch (e) { return; }
+    if (parsed && !isArray(parsed) && isArray(parsed.items)) parsed = parsed.items;
+    if (!isArray(parsed)) return;
+  }
+  var lines = [];
+  (parsed || []).forEach(function (item) {
+    if (lines.length >= HOME_INFO_MAX || !item || typeof item !== 'object') return;
+    var line = { icon: homeInfoIcon(item.icon), label: homeInfoText(item.label, HOME_INFO_LABEL_MAX),
+                 value: homeInfoText(item.value, HOME_INFO_VALUE_MAX) };
+    if (line.label || line.value) lines.push(line);
+  });
+  homeInfo = lines;
+  try {
+    if (lines.length) writeJsonAtomic(homeInfoFile(), lines, 384);
+    else fs.unlinkSync(homeInfoFile());
+  } catch (e) {
+    if (lines.length) console.error('home: could not keep the info lines: ' + e.message);
+  }
+}
+
+function loadHomeInfo() {
+  var lines = null;
+  try { lines = JSON.parse(fs.readFileSync(homeInfoFile(), 'utf8')); } catch (e) {}
+  homeInfo = isArray(lines) ? lines.slice(0, HOME_INFO_MAX) : [];
+}
+
+/*
+ * Lines from entities chosen on the dashboard: an entity, optionally one of
+ * its attributes in place of its state, a label in place of its name and a
+ * few words before the value ("collected", "arrives"). Read through Home
+ * Assistant's API (lib/haentity) while the view is in front, at most every
+ * ENTITY_INFO_MS, and kept as last read when a read fails. The view formats
+ * the value: a date as today, tomorrow or a weekday, a number with its unit.
+ */
+var ENTITY_INFO_MS = 30000;
+var INFO_ENTITY_RE = /^[a-z0-9_]+\.[a-z0-9_]+$/;
+/** @type {typeof import('./haentity')} */
+var haEntityModule = null;
+var entityInfo = null;     // [{ icon, label, before, v, unit }] as last read
+var entityInfoAt = 0;
+var entityInfoReading = false;
+// Whether the MQTT bridge is set up, so lines can be sent from Home Assistant.
+var mqttOnFn = function () { return false; };
+
+function infoLinesOf(raw) {
+  var out = [];
+  (isArray(raw) ? raw : []).forEach(function (l) {
+    if (out.length >= HOME_INFO_MAX || !l || typeof l !== 'object') return;
+    var entity = String(l.entity || '').trim().toLowerCase();
+    if (!INFO_ENTITY_RE.test(entity)) return;
+    var attribute = homeInfoText(l.attribute, 64).replace(/[^A-Za-z0-9_]/g, '');
+    out.push({ entity: entity, attribute: attribute, label: homeInfoText(l.label, HOME_INFO_LABEL_MAX),
+               before: homeInfoText(l.before, 24) });
+  });
+  return out;
+}
+
+// An icon for an entity without its own, from what it measures.
+var INFO_CLASS_ICONS = { battery: 'battery', temperature: 'thermometer', timestamp: 'calendar', date: 'calendar',
+  monetary: 'cash', energy: 'flash', power: 'flash', distance: 'car' };
+
+function entityLine(cfgLine, read) {
+  var attrs = read ? read.attributes || {} : {};
+  var raw = !read ? null : cfgLine.attribute ? attrs[cfgLine.attribute] : read.state;
+  if (raw !== null && raw !== undefined && typeof raw === 'object') raw = null;
+  return {
+    icon: homeInfoIcon(attrs.icon) || INFO_CLASS_ICONS[attrs.device_class] || '',
+    label: cfgLine.label || homeInfoText(attrs.friendly_name, HOME_INFO_LABEL_MAX) || cfgLine.entity,
+    before: cfgLine.before,
+    v: raw === null || raw === undefined ? '' : homeInfoText(raw, HOME_INFO_VALUE_MAX),
+    unit: cfgLine.attribute ? '' : homeInfoText(attrs.unit_of_measurement, 12)
+  };
+}
+
+function refreshEntityInfo() {
+  var c = readConfig();
+  if (c.info !== 'entities' || !c.infoLines.length || !haEntityModule || !haEntityModule.configured()) return;
+  if (entityInfoReading || nowMs() - entityInfoAt < ENTITY_INFO_MS) return;
+  entityInfoReading = true;
+  var wanted = c.infoLines;
+  var ids = [];
+  wanted.forEach(function (l) { if (ids.indexOf(l.entity) === -1) ids.push(l.entity); });
+  haEntityModule.readMany(ids, function (r) {
+    entityInfoReading = false;
+    entityInfoAt = nowMs();
+    if (JSON.stringify(readConfig().infoLines) !== JSON.stringify(wanted)) return;
+    var before = entityInfo || [];
+    entityInfo = wanted.map(function (l, i) {
+      var read = r && r.entities ? r.entities[l.entity] : null;
+      // A read that failed keeps the line as it was rather than blanking it.
+      return read || !before[i] ? entityLine(l, read) : before[i];
+    });
+  });
+}
+
+// The lines the view shows, from the chosen source.
+function currentInfo() {
+  var c = readConfig();
+  // Lines sent while MQTT was set up are not left on screen once it is not.
+  if (c.info === 'ha') return mqttOnFn() ? homeInfo : [];
+  if (c.info === 'entities') return haEntityModule && haEntityModule.configured() ? entityInfo || [] : [];
+  return [];
+}
+
+function info(cb) {
+  refreshEntityInfo();
+  cb({ ok: true, lines: currentInfo() });
 }
 
 function loadWeather() {
@@ -3226,7 +3377,7 @@ function beat(body) {
   // Whether Internet TV is in front, its guide or a player: Home Assistant's media player shows IPTV then.
   if (iptvModule && body && typeof body.iptv === 'boolean') iptvModule.front(body.iptv && viewInFront());
   beats++;
-  if (viewInFront()) watchBeat(beatGraceMs);
+  if (viewInFront()) { watchBeat(beatGraceMs); refreshEntityInfo(); }
   var saver = powerState === 'Screen Saver' || !!(screensaversModule && screensaversModule.launchedShowing());
   // As last seen: the reply does not wait for videooutput.
   var onScreen = wallVideoOnScreen;
@@ -3236,7 +3387,7 @@ function beat(body) {
            build: buildId, wallpapers: wallpapers.status(),
            layoutVersion: layoutVersion(), sleeps: sleeps, trace: fs.existsSync(traceFile()),
            // So a push shows within a heartbeat rather than at the next poll.
-           weather: currentWeather(), remoteBattery: remoteBatteryBadge() };
+           weather: currentWeather(), remoteBattery: remoteBatteryBadge(), info: currentInfo() };
 }
 
 /*
@@ -3742,6 +3893,9 @@ function status(cb) {
       var c = readConfig();
       var out = {
         ok: true,
+        // What the lines beside the clock can come from: entities through the
+        // Home Assistant API, and lines sent over MQTT.
+        haLines: { api: !!(haEntityModule && haEntityModule.configured()), mqtt: !!mqttOnFn() },
         // Both dashboards leave Home out where it is false, as for other features a TV lacks.
         available: sup.ok || c.enabled || c.restorePending,
         supported: sup,
@@ -3852,7 +4006,13 @@ function init(opts) {
   buildId = opts.build || '';
   nowMs = opts.now || Date.now;
   loadWeather();
+  loadHomeInfo();
   weatherModule = opts.weather || null;
+  haEntityModule = opts.haEntity || null;
+  mqttOnFn = typeof opts.mqttOn === 'function' ? opts.mqttOn : function () { return false; };
+  entityInfo = null;
+  entityInfoAt = 0;
+  entityInfoReading = false;
   loadInternetWeather();
   config = null;
   configMtime = 0;
@@ -4124,6 +4284,8 @@ module.exports = {
   guide: guide,
   now: now,
   setWeather: setWeather,
+  setHomeInfo: setHomeInfo,
+  info: info,
   weatherPlaces: weatherPlaces,
   weather: weather,
   open: open,
