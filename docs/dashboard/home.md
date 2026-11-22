@@ -87,11 +87,11 @@ Preview cards at the top of the **Home** tab switch between five launcher option
 
     Displays current temperature, condition icon, and location level with the clock, sourced from Home Assistant or Open-Meteo. See [Weather badge](#weather-badge).
 
--   **At a glance**
+-   **Home Assistant: values at a glance**
 
     ---
 
-    Up to four short lines from Home Assistant beside the clock: the next bin collection, a parcel on its way, a share price. Each reads an entity picked on the dashboard, or an automation sends them. See [At a glance](#at-a-glance).
+    Up to four short lines from Home Assistant beside the clock: the next bin collection, a parcel on its way, a share price. Each reads an entity picked on the dashboard, or an automation sends them. See [Home Assistant: values at a glance](#home-assistant-values-at-a-glance).
 
 -   **Badges & labels**
 
@@ -559,11 +559,11 @@ The weather badge displays the current temperature and an icon level with the cl
 
 The badge appears once data is received, is kept when the TV restarts, and is hidden once 3 hours pass without an update (or when an empty value is sent from Home Assistant).
 
-### At a glance
+### Home Assistant: values at a glance
 
-Up to four lines of your own after the weather, or before the clock in the Alternative View, each an icon, a name and a value: *Bin 1 · collected on Wednesday*, *PostNord · arrives tomorrow*, *Viscaria · 14.58 SEK*. The **At a glance** setting chooses where they come from, and offers only what is set up: **Entities you pick** needs the [Home Assistant API](../HOME-ASSISTANT.md#screen-savers-reading-home-assistant) on the HA & MQTT tab, and **Sent by an automation** needs MQTT. With neither, the setting is not shown.
+Up to four lines of your own after the weather, or before the clock in the Alternative View, each an icon, a name and a value: *Bin 1 · collected on Wednesday*, *PostNord · arrives tomorrow*, *Viscaria · 14.58 SEK*. For Home Assistant users. The setting chooses where they come from, and offers only what is set up: **Entities you pick** needs the [Home Assistant API](../HOME-ASSISTANT.md#screen-savers-reading-home-assistant) on the HA & MQTT tab, and **Sent by an automation** needs MQTT. With neither, the setting is not shown.
 
-* **Entities you pick (default):** each line reads a Home Assistant entity, every 30 seconds while Home is on screen. **Add a line** takes an entity (the field suggests Home Assistant's), up to four, and each can be moved or removed. Each line can also have, all optional:
+* **Entities you pick (default):** each line reads a Home Assistant entity, every 30 seconds while Home is on screen. **Add a line** takes an entity (the field suggests Home Assistant's), up to four, and says what it added, or why it could not. Each line can be moved or removed, and **Customise** gives it, all optional:
   * **Name:** shown in place of the entity's own name.
   * **Attribute:** one of its attributes in place of its state, such as `next_date` for a bin collection whose state is text.
   * **Text before:** a few words put in front of the value, such as *collected* or *arrives*, so a date reads *collected tomorrow*.

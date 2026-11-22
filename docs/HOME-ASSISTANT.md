@@ -69,7 +69,7 @@ For config-file deployments, `deploy.sh` checks for `server/config.<tv-ip>.json`
 
 ### Which settings live where?
 
-The dashboard can change the broker, credentials, topic prefix and device identity, the settings that decide *where* telemetry goes, along with the Home Assistant API URL and token used by screen savers and Glasshouse Home's At a glance lines.
+The dashboard can change the broker, credentials, topic prefix and device identity, the settings that decide *where* telemetry goes, along with the Home Assistant API URL and token used by screen savers and Glasshouse Home's values at a glance.
 
 `port`, `host`, `allowControl`, `allowPower` and `token` are file-only. They decide *who can reach the server at all*, and a web UI able to widen its own exposure would defeat the point of setting them. `syslog` is file-only too. `allowTileHiding`, `allowExperimentalScreensavers`, `allowNetworkDebugger`, `prometheus.enabled` and `ntp` can be set in `config.json` or from the Server tab, and `iconServer` from the HA & MQTT tab ([App icons](#app-icons-for-launchers)).
 
@@ -121,7 +121,7 @@ Node-RED, Telegraf into InfluxDB, or scripts subscribing to that topic work the 
 **Home Assistant API** and **MQTT bridge** do separate jobs and are arranged in two sections on the **HA & MQTT** tab (`/?tab=mqtt`):
 
 * **MQTT bridge** publishes the TV's telemetry, sensors, and settings to your broker and receives remote control commands from Home Assistant.
-* **Home Assistant API** connects straight from the TV to Home Assistant over HTTP/HTTPS (using Home Assistant's REST API, without MQTT) so built-in screen savers, custom QML screen savers and Glasshouse Home's [At a glance](dashboard/home.md#at-a-glance) lines can read live entities from your smart home.
+* **Home Assistant API** connects straight from the TV to Home Assistant over HTTP/HTTPS (using Home Assistant's REST API, without MQTT) so built-in screen savers, custom QML screen savers and Glasshouse Home's [values at a glance](dashboard/home.md#home-assistant-values-at-a-glance) can read live entities from your smart home.
 
 ![HA & MQTT tab showing MQTT bridge and Home Assistant API separated](screenshots/mqtt.png)
 
@@ -377,7 +377,7 @@ action:
 The temperature is shown as sent, in the unit the weather entity uses. `city` is optional.
 
 ### 7. Your own lines on Glasshouse Home
-Glasshouse Home shows up to four lines of your own beside the clock, each an icon, a label and a value. The Home tab's **At a glance** can read them from entities with no automation at all ([Home tab](dashboard/home.md#at-a-glance)); with **Sent by an automation** chosen there, an automation writes them instead, for text the entities do not have. This sends the next bin collection and the next post delivery whenever one changes and when Home Assistant starts. The list goes straight to the command topic, as `text.set_value` takes 255 characters at most. They stay until the next push; an empty payload takes them away.
+Glasshouse Home shows up to four lines of your own beside the clock, each an icon, a label and a value. The Home tab's **Home Assistant: values at a glance** can read them from entities with no automation at all ([Home tab](dashboard/home.md#home-assistant-values-at-a-glance)); with **Sent by an automation** chosen there, an automation writes them instead, for text the entities do not have. This sends the next bin collection and the next post delivery whenever one changes and when Home Assistant starts. The list goes straight to the command topic, as `text.set_value` takes 255 characters at most. They stay until the next push; an empty payload takes them away.
 
 ```yaml
 alias: "Lines on Glasshouse Home"
