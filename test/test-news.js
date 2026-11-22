@@ -32,6 +32,10 @@ assert.strictEqual(news.textOf('1 < 2 &amp; 3 > 2'), '1 < 2 & 3 > 2', 'a "<" tha
 var many = '<rss><channel><title>X</title>';
 for (var n = 0; n < 30; n++) many += '<item><title>T' + n + '</title></item>';
 assert.strictEqual(news.parse(many + '</channel></rss>').items.length, 15);
+var latin1 = Buffer.concat([new Buffer('<?xml version="1.0" encoding="ISO-8859-1"?><rss><channel><title>L</title><item><title>'),
+  new Buffer([0xC5, 0x6B, 0x65, 0x20, 0x96, 0x20, 0xF6]), new Buffer('</title></item></channel></rss>')]);
+assert.deepEqual(news.parse(news.decodeFeed(latin1)).items, ['Åke – ö'], 'an ISO-8859-1 or Windows-1252 feed');
+assert.deepEqual(news.parse(news.decodeFeed(new Buffer('<rss><channel><title>U</title><item><title>Åke &copy;</title></item></channel></rss>'))).items, ['Åke ©']);
 console.log('  ✓ RSS 2.0, RSS 1.0 and Atom titles are read, decoded and stripped of markup');
 
 assert.deepEqual(news.feedsOf([

@@ -3807,5 +3807,6 @@
  "home.news.urlLabel": {"from": "Feed address", "text": "Endereço do feed"},
  "home.news.name": {"from": "Name (optional)", "text": "Nome (opcional)"},
  "home.news.none": {"from": "No headlines yet", "text": "Ainda sem títulos"},
- "srv.saver.noNews": {"from": "It asks for the news headlines, which only Glasshouse's own screen savers are given.", "text": "Pede os títulos das notícias, que só as proteções de ecrã do próprio Glasshouse recebem."}
+ "srv.saver.noNews": {"from": "It asks for the news headlines, which only Glasshouse's own screen savers are given.", "text": "Pede os títulos das notícias, que só as proteções de ecrã do próprio Glasshouse recebem."},
+ "home.news.noFeeds": {"from": "Add news feeds on the Screensaver tab", "text": "Adicione feeds de notícias no separador Proteção de ecrã"}
 }

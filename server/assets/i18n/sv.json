@@ -3825,5 +3825,6 @@
  "home.news.urlLabel": {"from": "Feed address", "text": "Flödets adress"},
  "home.news.name": {"from": "Name (optional)", "text": "Namn (valfritt)"},
  "home.news.none": {"from": "No headlines yet", "text": "Inga rubriker än"},
- "srv.saver.noNews": {"from": "It asks for the news headlines, which only Glasshouse's own screen savers are given.", "text": "Den ber om nyhetsrubrikerna, som bara Glasshouses egna skärmsläckare får."}
+ "srv.saver.noNews": {"from": "It asks for the news headlines, which only Glasshouse's own screen savers are given.", "text": "Den ber om nyhetsrubrikerna, som bara Glasshouses egna skärmsläckare får."},
+ "home.news.noFeeds": {"from": "Add news feeds on the Screensaver tab", "text": "Lägg till nyhetsflöden på fliken Skärmsläckare"}
 }

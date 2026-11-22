@@ -3807,5 +3807,6 @@
  "home.news.urlLabel": {"from": "Feed address", "text": "عنوان الخلاصة"},
  "home.news.name": {"from": "Name (optional)", "text": "الاسم (اختياري)"},
  "home.news.none": {"from": "No headlines yet", "text": "لا عناوين بعد"},
- "srv.saver.noNews": {"from": "It asks for the news headlines, which only Glasshouse's own screen savers are given.", "text": "تطلب عناوين الأخبار، التي لا تحصل عليها إلا شاشات التوقف الخاصة بـ Glasshouse."}
+ "srv.saver.noNews": {"from": "It asks for the news headlines, which only Glasshouse's own screen savers are given.", "text": "تطلب عناوين الأخبار، التي لا تحصل عليها إلا شاشات التوقف الخاصة بـ Glasshouse."},
+ "home.news.noFeeds": {"from": "Add news feeds on the Screensaver tab", "text": "أضف خلاصات الأخبار في علامة تبويب شاشة التوقف"}
 }

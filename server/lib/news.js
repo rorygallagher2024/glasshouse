@@ -63,7 +63,10 @@ function oneLine(s) { return String(s).replace(/\s+/g, ' ').trim(); }
 
 var NAMED = { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: ' ', ndash: '–',
   mdash: '—', hellip: '…', lsquo: '‘', rsquo: '’', ldquo: '“', rdquo: '”',
-  aring: 'å', auml: 'ä', ouml: 'ö', Aring: 'Å', Auml: 'Ä', Ouml: 'Ö', eacute: 'é', uuml: 'ü', Uuml: 'Ü' };
+  aring: 'å', auml: 'ä', ouml: 'ö', Aring: 'Å', Auml: 'Ä', Ouml: 'Ö', eacute: 'é', uuml: 'ü', Uuml: 'Ü',
+  oslash: 'ø', Oslash: 'Ø', aelig: 'æ', AElig: 'Æ', szlig: 'ß', egrave: 'è', agrave: 'à', aacute: 'á',
+  iacute: 'í', oacute: 'ó', uacute: 'ú', ntilde: 'ñ', ccedil: 'ç', ecirc: 'ê', copy: '©', reg: '®',
+  trade: '™', euro: '€', laquo: '«', raquo: '»', bull: '•', middot: '·', deg: '°', times: '×' };
 
 function fromCode(n) {
   if (!(n > 0 && n < 0x110000)) return '';
@@ -122,6 +125,22 @@ function parse(xml) {
   return { source: source, items: items, atom: atom };
 }
 
+/*
+ * A feed's text as its XML declaration says it is written: UTF-8 unless it
+ * names ISO-8859-1 or Windows-1252, which older feeds still use and which
+ * read as UTF-8 turn å, ä and ö into replacement characters.
+ */
+function decodeFeed(buf) {
+  var head = buf.slice(0, 200).toString('binary');
+  var m = /<\?xml[^>]*encoding\s*=\s*["']([^"']+)["']/i.exec(head);
+  if (m && /^(iso-?8859-1|latin-?1|windows-1252|cp1252)$/i.test(m[1])) {
+    // Windows-1252's own letters (the curly quotes, the dash) sit in 0x80-0x9f.
+    var cp1252 = { 128: '€', 130: '‚', 132: '„', 133: '…', 145: '‘', 146: '’', 147: '“', 148: '”', 149: '•', 150: '–', 151: '—', 153: '™' };
+    return buf.toString('binary').replace(/[\u0080-\u009f]/g, function (c) { return cp1252[c.charCodeAt(0)] || ''; });
+  }
+  return buf.toString('utf8');
+}
+
 function fetchFeed(url, cb) {
   if (fetching[url]) return fetching[url].push(cb);
   fetching[url] = [cb];
@@ -138,7 +157,7 @@ function fetchFeed(url, cb) {
   fetchFile(url, file, function (err) {
     var xml = null;
     try {
-      if (!err && fs.statSync(file).size <= FEED_MAX_BYTES) xml = fs.readFileSync(file, 'utf8');
+      if (!err && fs.statSync(file).size <= FEED_MAX_BYTES) xml = decodeFeed(fs.readFileSync(file));
     } catch (e) { xml = null; }
     try { fs.unlinkSync(file); } catch (e) {}
     var doc = xml ? parse(xml) : null;
@@ -219,6 +238,7 @@ module.exports = {
   init: init,
   feedsOf: feedsOf,
   parse: parse,
+  decodeFeed: decodeFeed,
   textOf: textOf,
   headlines: headlines,
   cached: cached,

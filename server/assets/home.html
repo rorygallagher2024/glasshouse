@@ -194,6 +194,8 @@ html.resting #wall .layer{-webkit-animation-play-state:paused;animation-play-sta
 @-webkit-keyframes newsRun{from{-webkit-transform:translateX(0)}to{-webkit-transform:translateX(-100%)}}
 @keyframes newsRun{from{transform:translateX(0)}to{transform:translateX(-100%)}}
 .alternative #news{left:90px;right:90px}
+/* The rows end above the strip, so the last one is not run over. */
+.has-news #rows{bottom:96px}
 .alternative #weather{-webkit-order:4;order:4;margin:0 0 0 48px}
 
 /* Lines from Home Assistant (text.lg_tv_home_info): an icon, a label and a
@@ -2196,14 +2198,16 @@ html[lang="vi"] #srcTitle,html[lang="vi"] #plMode,html[lang="vi"] #pvMode,html[l
   function renderNews(items) {
     var html = items && items.length ? newsHtml(items) : '';
     if (!html) {
+      if (!newsShown) return;
       newsNext = newsShown = '';
       $('news').className = 'none';
       $('newsRun').innerHTML = '';
+      stageClass();
       return;
     }
     newsNext = html;
     $('news').className = '';
-    if (!newsShown) startNewsRun();
+    if (!newsShown) { startNewsRun(); stageClass(); }
   }
   function newsRunEnded() {
     if (newsNext && newsNext !== newsShown) startNewsRun();
@@ -2557,7 +2561,8 @@ html[lang="vi"] #srcTitle,html[lang="vi"] #plMode,html[lang="vi"] #pvMode,html[l
       (layout && layout.view === 'alternative' ? ' alternative' : '') + (layout && layout.showAppLabels === false ? ' no-app-labels' : '') +
       (cardsOn() ? ' cards' : '') + (layout && layout.focusPulse === true ? ' pulse' : '') +
       (player.open ? ' playing' : '') + (adder.open ? ' adding' : '') +
-      (adder.open && adder.typing ? ' adtyping' : '') + (guide.open ? ' guiding' : '') + previewSizeClass();
+      (adder.open && adder.typing ? ' adtyping' : '') + (guide.open ? ' guiding' : '') + previewSizeClass() +
+      (newsShown ? ' has-news' : '');
     // Home Assistant's media player shows IPTV while the guide or a player is up: told at once, not at the next heartbeat.
     var iptvUp = !!(player.open || guide.open);
     if (iptvUp !== iptvWasUp) { iptvWasUp = iptvUp; beat(); }

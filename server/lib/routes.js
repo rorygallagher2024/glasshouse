@@ -1869,8 +1869,11 @@ function handleRequest(req, res) {
     if (!newsModule || !homeModule) return send(res, 503, JSON.stringify({ ok: false, error: 'news is not available' }));
     var newsLocale = clockModule && clockModule.qtLocale ? clockModule.qtLocale() : '';
     var newsLang = newsLocale ? say.langOfLocale(newsLocale) : res.glasshouseLang;
-    return newsModule.headlines(homeModule.newsFeeds(), function (r) {
-      /** @type {any} */ (r).note = r.items.length ? '' : msg('home.news.none', 'No headlines yet');
+    var newsFeedList = homeModule.newsFeeds();
+    return newsModule.headlines(newsFeedList, function (r) {
+      /** @type {any} */ (r).note = r.items.length ? ''
+        : !newsFeedList.length ? msg('home.news.noFeeds', 'Add news feeds on the Screensaver tab')
+        : msg('home.news.none', 'No headlines yet');
       /** @type {any} */ (res).glasshouseLang = newsLang;
       send(res, 200, JSON.stringify(r));
     });

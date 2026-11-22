@@ -3807,5 +3807,6 @@
  "home.news.urlLabel": {"from": "Feed address", "text": "Adresse du flux"},
  "home.news.name": {"from": "Name (optional)", "text": "Nom (facultatif)"},
  "home.news.none": {"from": "No headlines yet", "text": "Pas encore de titres"},
- "srv.saver.noNews": {"from": "It asks for the news headlines, which only Glasshouse's own screen savers are given.", "text": "Il demande les titres d'actualités, que seuls les économiseurs d'écran de Glasshouse reçoivent."}
+ "srv.saver.noNews": {"from": "It asks for the news headlines, which only Glasshouse's own screen savers are given.", "text": "Il demande les titres d'actualités, que seuls les économiseurs d'écran de Glasshouse reçoivent."},
+ "home.news.noFeeds": {"from": "Add news feeds on the Screensaver tab", "text": "Ajoutez des flux d'actualités dans l'onglet Économiseur d'écran"}
 }

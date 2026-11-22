@@ -3825,5 +3825,6 @@
  "home.news.urlLabel": {"from": "Feed address", "text": "Địa chỉ nguồn"},
  "home.news.name": {"from": "Name (optional)", "text": "Tên (tùy chọn)"},
  "home.news.none": {"from": "No headlines yet", "text": "Chưa có tiêu đề"},
- "srv.saver.noNews": {"from": "It asks for the news headlines, which only Glasshouse's own screen savers are given.", "text": "Nó yêu cầu các tiêu đề tin tức, thứ chỉ các trình bảo vệ màn hình của chính Glasshouse được nhận."}
+ "srv.saver.noNews": {"from": "It asks for the news headlines, which only Glasshouse's own screen savers are given.", "text": "Nó yêu cầu các tiêu đề tin tức, thứ chỉ các trình bảo vệ màn hình của chính Glasshouse được nhận."},
+ "home.news.noFeeds": {"from": "Add news feeds on the Screensaver tab", "text": "Thêm nguồn tin tức trong thẻ Trình bảo vệ màn hình"}
 }
