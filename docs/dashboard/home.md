@@ -569,6 +569,17 @@ Up to four lines of your own after the weather, or before the clock in the Alter
   * **Before the value:** a few words in front of it, such as *collected* or *arrives*.
 
   A date shows as today, tomorrow, a weekday within the week, or a day and month after that, in the page's language. A number shows with its own decimals and its unit. Anything else shows as Home Assistant has it. The icon is the entity's own, or one for what it measures.
+
+  Some examples, with entity names as the integrations usually make them:
+
+  | Entity | Attribute | Label | Before the value | Shows |
+  |---|---|---|---|---|
+  | `sensor.bin_collection` (a bin's next collection) | `next_date` | Bin 1 | collected | *Bin 1 · collected on Wednesday* |
+  | `sensor.postnord_delivery_12345` (PostNord) | `next_delivery` | PostNord | arrives | *PostNord · arrives tomorrow* |
+  | `sensor.yahoofinance_visc_st` (Yahoo Finance) | | Viscaria | | *Viscaria · 14.58 SEK* |
+  | `sensor.outdoor_temperature` | | Outside | | *Outside · 3.4 °C* |
+
+  To find an attribute, open the entity in Home Assistant's **Developer tools → States**: its attributes are listed beside its state. An attribute shows without the entity's unit, which belongs to its state.
 * **Sent from Home Assistant:** whatever was last written to the `text.lg_tv_home_info` entity, a JSON list such as `[{"icon":"trash-can","label":"Bin 1","value":"in 4 days"}]` ([entities](../HOME-ASSISTANT-ENTITIES.md)), kept across a restart until the next one. An empty value or `[]` takes them away ([example automation](../HOME-ASSISTANT.md#7-your-own-lines-on-glasshouse-home)).
 * **Off.**
 
