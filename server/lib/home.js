@@ -2022,6 +2022,8 @@ var haEntityModule = null;
 var entityInfo = null;     // [{ icon, label, before, v, unit }] as last read
 var entityInfoAt = 0;
 var entityInfoReading = false;
+// Whether the MQTT bridge is set up, so lines can be sent from Home Assistant.
+var mqttOnFn = function () { return false; };
 
 function infoLinesOf(raw) {
   var out = [];
@@ -2077,8 +2079,9 @@ function refreshEntityInfo() {
 // The lines the view shows, from the chosen source.
 function currentInfo() {
   var c = readConfig();
-  if (c.info === 'ha') return homeInfo;
-  if (c.info === 'entities') return entityInfo || [];
+  // Lines sent while MQTT was set up are not left on screen once it is not.
+  if (c.info === 'ha') return mqttOnFn() ? homeInfo : [];
+  if (c.info === 'entities') return haEntityModule && haEntityModule.configured() ? entityInfo || [] : [];
   return [];
 }
 
@@ -3890,6 +3893,9 @@ function status(cb) {
       var c = readConfig();
       var out = {
         ok: true,
+        // What the lines beside the clock can come from: entities through the
+        // Home Assistant API, and lines sent over MQTT.
+        haLines: { api: !!(haEntityModule && haEntityModule.configured()), mqtt: !!mqttOnFn() },
         // Both dashboards leave Home out where it is false, as for other features a TV lacks.
         available: sup.ok || c.enabled || c.restorePending,
         supported: sup,
@@ -4003,6 +4009,7 @@ function init(opts) {
   loadHomeInfo();
   weatherModule = opts.weather || null;
   haEntityModule = opts.haEntity || null;
+  mqttOnFn = typeof opts.mqttOn === 'function' ? opts.mqttOn : function () { return false; };
   entityInfo = null;
   entityInfoAt = 0;
   entityInfoReading = false;

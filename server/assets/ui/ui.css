@@ -1606,15 +1606,13 @@ footer{margin-top:38px;font-size:13px;letter-spacing:.08em;text-transform:upperc
 .home-weather-results{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px}
 .home-weather-results:empty{display:none}
 .home-weather-credit{opacity:.7;margin-top:6px}
+/* At a glance: the lines beside Glasshouse Home's clock, added one by one,
+   in the screen saver entity list's layout. */
 .home-info-panel{padding:4px 0 16px;border-bottom:1px solid var(--w06);grid-column:1/-1}
-.home-info-line{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:8px;margin-top:10px}
-.home-info-line input{min-width:0;box-sizing:border-box;font-family:'Manrope';font-size:14px;color:var(--w100);background:transparent;
-  border:1px solid var(--edge);padding:9px 12px;min-height:42px;border-radius:var(--r-sm);outline:none}
-.home-info-line input:focus{border-color:var(--w100)}
-.home-info-line input:disabled{opacity:.45}
-.home-info-line input::placeholder{color:var(--w60)}
-.home-info-line .home-info-n{grid-column:1/-1;font-size:.85em;opacity:.7}
-@media (max-width:700px){.home-info-line{grid-template-columns:1fr 1fr}}
+.home-info-panel #home-info-note{margin-bottom:12px;max-width:62ch}
+.home-info-list{max-height:none}
+.home-info-field label{min-width:96px}
+.home-info-preview{font-size:13px;color:var(--w70)}
 .prot-title{
   font-family:'Manrope',sans-serif;font-weight:600;font-size:var(--h-row);
   color:var(--w90);letter-spacing:.02em;

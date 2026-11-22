@@ -1669,15 +1669,15 @@
       <div class="sub" id="home-weather-chosen" role="status"></div>
       <div class="sub home-weather-credit" data-t="home.weather.credits">Weather data by Open-Meteo.com. Location data based on GeoNames.</div>
     </div>
-    <div class="prot-row home-gh-row home-show-row" hidden>
+    <div class="prot-row home-gh-row home-show-row" id="home-info-row" hidden>
       <div class="prot-main">
-        <div class="prot-title" data-t="home.info">Lines from Home Assistant</div>
-        <div class="prot-desc" data-t="home.infoDesc">Beside the clock: up to four lines, each an entity's value, such as the next bin collection, the post or a share price. Or lines Home Assistant sends itself.</div>
+        <div class="prot-title" data-t="home.info">At a glance</div>
+        <div class="prot-desc" data-t="home.infoDesc">Up to four short lines from Home Assistant beside the clock, such as the next bin collection, a parcel on its way or a share price.</div>
       </div>
-      <div class="prot-status"><select class="pill-sel" id="home-info-sel" onchange="homeInfoSource(this.value)" aria-label="Lines from Home Assistant" data-t-aria-label="home.info">
+      <div class="prot-status"><select class="pill-sel" id="home-info-sel" onchange="homeInfoSource(this.value)" aria-label="At a glance" data-t-aria-label="home.info">
         <option value="off" data-t="common.off">Off</option>
-        <option value="entities" data-t="home.info.fromEntities">Entities you choose</option>
-        <option value="ha" data-t="home.info.fromHa">Sent from Home Assistant</option>
+        <option value="entities" data-t="home.info.fromEntities">Entities you pick</option>
+        <option value="ha" data-t="home.info.fromHa">Sent by an automation</option>
       </select></div>
     </div>
     <div class="home-info-panel" id="home-info-panel" hidden>
@@ -2287,7 +2287,7 @@
 
   <div class="ha-api-section" id="ha-api-section">
     <div class="pv-h" style="margin-top:0" data-t="ha.api">Home Assistant API</div>
-    <div class="pv-sub" data-t="ha.api.desc">Enables the Home Assistant screen savers (Ambient and Data Display) on the Screensaver tab to show live Home Assistant entities. Connects straight to Home Assistant over HTTP/HTTPS without using MQTT, and saves without restarting.</div>
+    <div class="pv-sub" data-t="ha.api.desc">Reads live Home Assistant entities for the Home Assistant screen savers (Ambient and Data Display) on the Screensaver tab, and for At a glance, the lines beside Glasshouse Home's clock, on the Home tab. Connects straight to Home Assistant over HTTP/HTTPS without using MQTT, and saves without restarting.</div>
 
     <div class="cfg-cols">
       <div class="cfg-side">

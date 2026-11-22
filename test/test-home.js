@@ -3613,7 +3613,7 @@ step('the weather Home Assistant pushes is kept across a restart, capped, hidden
 });
 
 step('the info lines Home Assistant pushes are capped, kept across a restart and cleared by an empty push', function (done) {
-  start({ enabled: false, info: 'ha' });
+  start({ enabled: false, info: 'ha' }, { mqttOn: function () { return true; } });
   home.setHomeInfo('not json');
   home.setHomeInfo('{"label":"one"}');
   assert.deepEqual(home.beat().info, [], 'nothing shown from a push that is not a list');
@@ -3658,7 +3658,8 @@ step('lines from entities chosen on the dashboard are read through Home Assistan
       cb({ ok: true, entities: out, errors: {} });
     }
   };
-  start(null, { now: function () { return clock; }, haEntity: ha });
+  var mqtt = true;
+  start(null, { now: function () { return clock; }, haEntity: ha, mqttOn: function () { return mqtt; } });
   assert.strictEqual(home.layout().info, 'entities', 'entities unless chosen otherwise');
   home.setLayout({ infoLines: [
     { entity: 'sensor.bin_1', attribute: 'next_date', label: 'Bin 1', before: 'collected' },
@@ -3686,7 +3687,12 @@ step('lines from entities chosen on the dashboard are read through Home Assistan
         home.setLayout({ info: 'ha' }, function () {
           home.setHomeInfo(JSON.stringify([{ label: 'Pushed', value: 'x' }]));
           assert.strictEqual(home.beat().info[0].label, 'Pushed', 'Home Assistant\'s pushes shown while chosen');
-          done();
+          mqtt = false;
+          assert.deepEqual(home.beat().info, [], 'not once MQTT is no longer set up');
+          home.status(function (st) {
+            assert.deepEqual(st.haLines, { api: true, mqtt: false }, 'the dashboard is told which sources can work');
+            done();
+          });
         });
       });
     });

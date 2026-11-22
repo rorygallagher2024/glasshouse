@@ -805,7 +805,6 @@
     "from": "Nightly refresh reboot turned off"
   },
  "ha.api": {"text": "Home Assistant-API", "from": "Home Assistant API"},
- "ha.api.desc": {"text": "Aktiviert die Home Assistant-Bildschirmschoner (Ambient und Datenanzeige) auf dem Tab Bildschirmschoner zur Anzeige von Live-Entitäten aus Home Assistant. Verbindet sich direkt per HTTP/HTTPS ohne MQTT und speichert ohne Neustart.", "from": "Enables the Home Assistant screen savers (Ambient and Data Display) on the Screensaver tab to show live Home Assistant entities. Connects straight to Home Assistant over HTTP/HTTPS without using MQTT, and saves without restarting."},
  "ha.connected": {"text": "Verbunden: {msg}", "from": "Connected: {msg}"},
  "ha.test": {"text": "Verbindung testen", "from": "Test connection"},
  "ha.testFailed": {"text": "Verbindung fehlgeschlagen", "from": "Connection failed"},
@@ -1130,5 +1129,6 @@
  "home.info.date": {"from": "{day} {month}", "text": "{day}. {month}"},
  "home.info.today": {"from": "today", "text": "heute"},
  "home.info.tomorrow": {"from": "tomorrow", "text": "morgen"},
- "home.info.weekday": {"from": "on {weekday}", "text": "am {weekday}"}
+ "home.info.weekday": {"from": "on {weekday}", "text": "am {weekday}"},
+ "ha.api.desc": {"text": "Liest Home-Assistant-Entitäten live für die Home-Assistant-Bildschirmschoner (Ambient und Data Display) im Tab Bildschirmschoner und für „Auf einen Blick“, die Zeilen neben der Uhr von Glasshouse Home, im Tab Home. Verbindet sich direkt über HTTP/HTTPS mit Home Assistant, ohne MQTT, und speichert ohne Neustart.", "from": "Reads live Home Assistant entities for the Home Assistant screen savers (Ambient and Data Display) on the Screensaver tab, and for At a glance, the lines beside Glasshouse Home's clock, on the Home tab. Connects straight to Home Assistant over HTTP/HTTPS without using MQTT, and saves without restarting."}
 }
