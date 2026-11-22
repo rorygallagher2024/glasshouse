@@ -568,7 +568,7 @@ Up to four lines of your own after the weather, or before the clock in the Alter
   * **Label:** in place of the entity's name.
   * **Before the value:** a few words in front of it, such as *collected* or *arrives*.
 
-  A date shows as today, tomorrow, a weekday within the week, or a day and month after that, in the page's language. A number shows with its own decimals and its unit. Anything else shows as Home Assistant has it. The icon is the entity's own, or one for what it measures.
+  A date shows as today, tomorrow, a weekday within the week, or a day and month after that, in the page's language. A number shows with its own decimals, two at most, and its unit. Anything else shows as Home Assistant has it. The icon is the entity's own, or one for what it measures.
 
   Some examples, with entity names as the integrations usually make them:
 
