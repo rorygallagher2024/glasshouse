@@ -2429,7 +2429,7 @@ input.inp-name-in:disabled{border-bottom-color:transparent;cursor:default}
 .hm-inpbar-tile.now::after{content:'';position:absolute;left:50%;bottom:-6px;width:4px;height:4px;margin-left:-2px;border-radius:50%;background:#30de61}
 .hm-s-nslg,.hm-s-nsplain,.hm-s-nsicon,.hm-s-nsart{background:#000;align-items:center;justify-content:center;padding:12px}
 .hm-s-nsdvd{background:#000;padding:0;position:relative}
-.hm-nsdvd-logo{position:absolute;left:58%;top:16%;width:34%;aspect-ratio:640/284;background:#c43cff;-webkit-mask:url(/assets/nosignal/dvd.png) center/contain no-repeat;mask:url(/assets/nosignal/dvd.png) center/contain no-repeat}
+.hm-nsdvd-logo{position:absolute;left:12%;top:54%;width:34%;aspect-ratio:640/284;background:#c43cff;-webkit-mask:url(/assets/nosignal/dvd.png) center/contain no-repeat;mask:url(/assets/nosignal/dvd.png) center/contain no-repeat}
 /* Art: a landscape painting on black, its label in a corner. */
 .hm-nsart-pic{position:relative;width:46%;aspect-ratio:4/3;border-radius:1px;
   background:linear-gradient(180deg,#6f8fb0 0%,#c9b48a 46%,#7d8a52 47%,#4d5a33 100%)}
