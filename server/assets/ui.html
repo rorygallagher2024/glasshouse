@@ -1118,6 +1118,15 @@
     <div class="ss-leagues-box">
       <div class="sub" data-t="ss.leaguesDesc">Up to four, the same as the board on Glasshouse Home. Glasshouse reads their matches from ESPN at most once a minute while the screen saver shows. Nothing else is sent.</div>
       <div class="home-weather-results" id="ss-leagues"></div>
+      <div class="home-crests-row">
+        <label for="ss-crests" data-t="home.board.crests">Teams shown as</label>
+        <select class="pill-sel" id="ss-crests" onchange="ssCrests(this.value)">
+          <option value="names" data-t="home.board.crests.names">Names</option>
+          <option value="both" data-t="home.board.crests.both">Crest and name</option>
+          <option value="crests" data-t="home.board.crests.crests">Crests only</option>
+        </select>
+      </div>
+      <div class="sub" data-t="home.board.crestsDesc">Crests come from ESPN's image server, each fetched once and kept on the TV. The same setting is used by the Scores screen saver.</div>
     </div>
   </div>
 
@@ -1708,6 +1717,15 @@
     <div class="home-info-panel" id="home-board-panel" hidden>
       <div class="sub" data-t="home.board.leaguesDesc">Choose the leagues. Glasshouse reads their matches from ESPN once a minute while Home is on screen and the TV is on. Nothing else is sent.</div>
       <div class="home-weather-results home-board-leagues" id="home-board-leagues"></div>
+      <div class="home-crests-row">
+        <label for="home-board-crests" data-t="home.board.crests">Teams shown as</label>
+        <select class="pill-sel" id="home-board-crests" onchange="homeBoardCrests(this.value)">
+          <option value="names" data-t="home.board.crests.names">Names</option>
+          <option value="both" data-t="home.board.crests.both">Crest and name</option>
+          <option value="crests" data-t="home.board.crests.crests">Crests only</option>
+        </select>
+      </div>
+      <div class="sub" data-t="home.board.crestsDesc">Crests come from ESPN's image server, each fetched once and kept on the TV. The same setting is used by the Scores screen saver.</div>
     </div>
     <div class="prot-row home-gh-row" id="home-remote-battery-row" hidden>
       <div class="prot-main">

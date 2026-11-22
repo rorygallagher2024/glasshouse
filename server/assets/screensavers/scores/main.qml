@@ -69,6 +69,22 @@ WebOSWindow {
     property var pages: [[]]
     property string boardTitle: ""
     property string boardNote: ""
+    // How a side shows: "names", "both" (its crest beside its name) or
+    // "crests" (its crest alone, its name where the crest is missing), as
+    // picked for the board on Glasshouse Home.
+    property string crests: "names"
+    property int crestSize: crests === "crests" ? Math.round(64 * win.unit) : Math.round(44 * win.unit)
+    // A little dimmed: a crest stands still on the panel between moves.
+    property real crestOpacity: level > 0 ? 0.9 : 0.6
+
+    // A crest's address on this server, which keeps it after fetching it once.
+    function crestUrl(key) {
+        if (!key || win.crests === "names") return "";
+        var at = win.scoresUrl.indexOf("/api/scores?");
+        if (at < 0) return "";
+        return win.scoresUrl.slice(0, at) + "/api/scores/crest?team=" + encodeURIComponent(key);
+    }
+
     // Wide enough for "Paris Saint-Germain" at 44 px.
     property int teamWidth: Math.round(480 * win.unit)
 
@@ -132,7 +148,7 @@ WebOSWindow {
 
     function rowOf(item) {
         if (item.kind === "header") {
-            return { header: true, text: item.text, home: "", away: "", middle: "", under: "", live: false };
+            return { header: true, text: item.text, home: "", away: "", homeCrest: "", awayCrest: "", middle: "", under: "", live: false };
         }
         var m = item.m;
         var started = m.state !== "pre";
@@ -142,6 +158,8 @@ WebOSWindow {
             header: false, text: "",
             home: m.home || "",
             away: m.away || "",
+            homeCrest: win.crestUrl(m.homeCrest),
+            awayCrest: win.crestUrl(m.awayCrest),
             // Between the teams: the kick-off before it starts, the score
             // after, with the minute, half time or full time just under it.
             middle: started ? (m.homeScore + " – " + m.awayScore) : (timed ? m.detail : "–"),
@@ -168,6 +186,7 @@ WebOSWindow {
                 if (!d.ok) return;
                 win.boardTitle = d.title || "";
                 win.boardNote = d.note || "";
+                win.crests = d.crests === "both" || d.crests === "crests" ? d.crests : "names";
                 win.matches = d.matches || [];
                 win.items = win.buildItems(d);
                 win.pages = win.pagesOf(win.items);
@@ -264,15 +283,37 @@ WebOSWindow {
                             height: parent.height
                             spacing: Math.round(24 * win.unit)
 
-                            Text {
+                            Item {
                                 width: win.teamWidth
                                 height: parent.height
-                                verticalAlignment: Text.AlignVCenter
-                                horizontalAlignment: Text.AlignRight
-                                elide: Text.ElideRight
-                                font.pixelSize: Math.round(44 * win.unit)
-                                color: win.inkBright
-                                text: model.home
+
+                                Image {
+                                    id: homeCrest
+                                    anchors.right: parent.right
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    width: win.crestSize
+                                    height: win.crestSize
+                                    sourceSize.width: win.crestSize
+                                    sourceSize.height: win.crestSize
+                                    fillMode: Image.PreserveAspectFit
+                                    opacity: win.crestOpacity
+                                    asynchronous: true
+                                    visible: status === Image.Ready
+                                    source: model.homeCrest
+                                }
+                                Text {
+                                    anchors.right: homeCrest.visible ? homeCrest.left : parent.right
+                                    anchors.rightMargin: homeCrest.visible ? Math.round(16 * win.unit) : 0
+                                    width: parent.width - (homeCrest.visible ? win.crestSize + Math.round(16 * win.unit) : 0)
+                                    height: parent.height
+                                    visible: !(win.crests === "crests" && homeCrest.visible)
+                                    verticalAlignment: Text.AlignVCenter
+                                    horizontalAlignment: Text.AlignRight
+                                    elide: Text.ElideRight
+                                    font.pixelSize: Math.round(44 * win.unit)
+                                    color: win.inkBright
+                                    text: model.home
+                                }
                             }
                             Item {
                                 width: Math.round(200 * win.unit)
@@ -303,14 +344,36 @@ WebOSWindow {
                                     }
                                 }
                             }
-                            Text {
+                            Item {
                                 width: win.teamWidth
                                 height: parent.height
-                                verticalAlignment: Text.AlignVCenter
-                                elide: Text.ElideRight
-                                font.pixelSize: Math.round(44 * win.unit)
-                                color: win.inkBright
-                                text: model.away
+
+                                Image {
+                                    id: awayCrest
+                                    anchors.left: parent.left
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    width: win.crestSize
+                                    height: win.crestSize
+                                    sourceSize.width: win.crestSize
+                                    sourceSize.height: win.crestSize
+                                    fillMode: Image.PreserveAspectFit
+                                    opacity: win.crestOpacity
+                                    asynchronous: true
+                                    visible: status === Image.Ready
+                                    source: model.awayCrest
+                                }
+                                Text {
+                                    anchors.left: awayCrest.visible ? awayCrest.right : parent.left
+                                    anchors.leftMargin: awayCrest.visible ? Math.round(16 * win.unit) : 0
+                                    width: parent.width - (awayCrest.visible ? win.crestSize + Math.round(16 * win.unit) : 0)
+                                    height: parent.height
+                                    visible: !(win.crests === "crests" && awayCrest.visible)
+                                    verticalAlignment: Text.AlignVCenter
+                                    elide: Text.ElideRight
+                                    font.pixelSize: Math.round(44 * win.unit)
+                                    color: win.inkBright
+                                    text: model.away
+                                }
                             }
                         }
                     }

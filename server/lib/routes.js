@@ -1854,8 +1854,23 @@ function handleRequest(req, res) {
     var tvLocale = clockModule && clockModule.qtLocale ? clockModule.qtLocale() : '';
     var scoresLang = tvLocale ? say.langOfLocale(tvLocale) : res.glasshouseLang;
     return scoresModule.saverBoard(wantLeagues, Date.now(), clockHour12(), function (body) {
+      /** @type {any} */ (body).crests = homeModule && homeModule.boardCrests ? homeModule.boardCrests() : 'names';
       /** @type {any} */ (res).glasshouseLang = scoresLang;
       send(res, 200, JSON.stringify(body));
+    });
+  }
+
+  // A team's crest for the board and the Scores screen saver, kept on the TV.
+  if (pathname === '/api/scores/crest' && req.method === 'GET') {
+    if (!authed(u.query, req)) return send(res, 401, JSON.stringify({ ok: false, error: 'unauthorised' }));
+    if (!scoresModule) return send(res, 404, '');
+    return scoresModule.crest(String(u.query && u.query.team || ''), function (file) {
+      if (!file) return send(res, 404, '');
+      fs.readFile(file, function (err, data) {
+        if (err) return send(res, 404, '');
+        res.writeHead(200, { 'Content-Type': 'image/png', 'Cache-Control': 'max-age=86400' });
+        res.end(data);
+      });
     });
   }
 

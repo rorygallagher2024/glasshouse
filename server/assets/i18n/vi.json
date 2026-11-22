@@ -3811,5 +3811,10 @@
  "ss.leagues": {"from": "Leagues", "text": "Giải đấu"},
  "ss.leaguesDesc": {"from": "Up to four, the same as the board on Glasshouse Home. Glasshouse reads their matches from ESPN at most once a minute while the screen saver shows. Nothing else is sent.", "text": "Tối đa bốn, giống với bảng trên Glasshouse Home. Glasshouse đọc các trận của chúng từ ESPN nhiều nhất mỗi phút một lần khi trình bảo vệ màn hình hiển thị. Không gửi gì khác."},
  "srv.saver.noLeagues": {"from": "Pick at least one league.", "text": "Chọn ít nhất một giải."},
- "srv.saver.noScores": {"from": "It asks for the day's matches, which only Glasshouse's own screen savers are given.", "text": "Nó yêu cầu các trận đấu trong ngày, thứ chỉ các trình bảo vệ màn hình của chính Glasshouse được nhận."}
+ "srv.saver.noScores": {"from": "It asks for the day's matches, which only Glasshouse's own screen savers are given.", "text": "Nó yêu cầu các trận đấu trong ngày, thứ chỉ các trình bảo vệ màn hình của chính Glasshouse được nhận."},
+ "home.board.crests": {"from": "Teams shown as", "text": "Hiển thị đội bằng"},
+ "home.board.crests.names": {"from": "Names", "text": "Tên"},
+ "home.board.crests.both": {"from": "Crest and name", "text": "Huy hiệu và tên"},
+ "home.board.crests.crests": {"from": "Crests only", "text": "Chỉ huy hiệu"},
+ "home.board.crestsDesc": {"from": "Crests come from ESPN's image server, each fetched once and kept on the TV. The same setting is used by the Scores screen saver.", "text": "Huy hiệu lấy từ máy chủ hình ảnh của ESPN, mỗi cái tải một lần và lưu trên TV. Trình bảo vệ màn hình Tỷ số dùng cùng cài đặt này."}
 }

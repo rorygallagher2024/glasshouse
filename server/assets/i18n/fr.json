@@ -3793,5 +3793,10 @@
  "ss.leagues": {"from": "Leagues", "text": "Championnats"},
  "ss.leaguesDesc": {"from": "Up to four, the same as the board on Glasshouse Home. Glasshouse reads their matches from ESPN at most once a minute while the screen saver shows. Nothing else is sent.", "text": "Jusqu'à quatre, les mêmes que le tableau de Glasshouse Home. Glasshouse lit leurs matchs sur ESPN au plus une fois par minute pendant que l'économiseur d'écran s'affiche. Rien d'autre n'est envoyé."},
  "srv.saver.noLeagues": {"from": "Pick at least one league.", "text": "Choisissez au moins un championnat."},
- "srv.saver.noScores": {"from": "It asks for the day's matches, which only Glasshouse's own screen savers are given.", "text": "Il demande les matchs du jour, que seuls les économiseurs d'écran de Glasshouse reçoivent."}
+ "srv.saver.noScores": {"from": "It asks for the day's matches, which only Glasshouse's own screen savers are given.", "text": "Il demande les matchs du jour, que seuls les économiseurs d'écran de Glasshouse reçoivent."},
+ "home.board.crests": {"from": "Teams shown as", "text": "Équipes affichées par"},
+ "home.board.crests.names": {"from": "Names", "text": "Noms"},
+ "home.board.crests.both": {"from": "Crest and name", "text": "Écusson et nom"},
+ "home.board.crests.crests": {"from": "Crests only", "text": "Écussons seuls"},
+ "home.board.crestsDesc": {"from": "Crests come from ESPN's image server, each fetched once and kept on the TV. The same setting is used by the Scores screen saver.", "text": "Les écussons viennent du serveur d'images d'ESPN ; chacun est téléchargé une fois et gardé sur le téléviseur. L'économiseur d'écran Scores utilise le même réglage."}
 }

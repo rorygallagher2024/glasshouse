@@ -3811,5 +3811,10 @@
  "ss.leagues": {"from": "Leagues", "text": "Ligor"},
  "ss.leaguesDesc": {"from": "Up to four, the same as the board on Glasshouse Home. Glasshouse reads their matches from ESPN at most once a minute while the screen saver shows. Nothing else is sent.", "text": "Upp till fyra, samma som tavlan på Glasshouse Home. Glasshouse hämtar deras matcher från ESPN högst en gång i minuten medan skärmsläckaren visas. Inget annat skickas."},
  "srv.saver.noLeagues": {"from": "Pick at least one league.", "text": "Välj minst en liga."},
- "srv.saver.noScores": {"from": "It asks for the day's matches, which only Glasshouse's own screen savers are given.", "text": "Den ber om dagens matcher, som bara Glasshouses egna skärmsläckare får."}
+ "srv.saver.noScores": {"from": "It asks for the day's matches, which only Glasshouse's own screen savers are given.", "text": "Den ber om dagens matcher, som bara Glasshouses egna skärmsläckare får."},
+ "home.board.crests": {"from": "Teams shown as", "text": "Lagen visas som"},
+ "home.board.crests.names": {"from": "Names", "text": "Namn"},
+ "home.board.crests.both": {"from": "Crest and name", "text": "Märke och namn"},
+ "home.board.crests.crests": {"from": "Crests only", "text": "Bara märken"},
+ "home.board.crestsDesc": {"from": "Crests come from ESPN's image server, each fetched once and kept on the TV. The same setting is used by the Scores screen saver.", "text": "Klubbmärkena kommer från ESPN:s bildserver, hämtas en gång var och sparas på TV:n. Samma inställning gäller skärmsläckaren Resultat."}
 }

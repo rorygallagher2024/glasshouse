@@ -3793,5 +3793,10 @@
  "ss.leagues": {"from": "Leagues", "text": "الدوريات"},
  "ss.leaguesDesc": {"from": "Up to four, the same as the board on Glasshouse Home. Glasshouse reads their matches from ESPN at most once a minute while the screen saver shows. Nothing else is sent.", "text": "حتى أربعة، وهي نفسها المعروضة في لوحة Glasshouse Home. يقرأ Glasshouse مبارياتها من ESPN مرة واحدة في الدقيقة على الأكثر أثناء عرض شاشة التوقف. لا يُرسل أي شيء آخر."},
  "srv.saver.noLeagues": {"from": "Pick at least one league.", "text": "اختر دوريًا واحدًا على الأقل."},
- "srv.saver.noScores": {"from": "It asks for the day's matches, which only Glasshouse's own screen savers are given.", "text": "تطلب مباريات اليوم، التي لا تحصل عليها إلا شاشات التوقف الخاصة بـ Glasshouse."}
+ "srv.saver.noScores": {"from": "It asks for the day's matches, which only Glasshouse's own screen savers are given.", "text": "تطلب مباريات اليوم، التي لا تحصل عليها إلا شاشات التوقف الخاصة بـ Glasshouse."},
+ "home.board.crests": {"from": "Teams shown as", "text": "عرض الفرق"},
+ "home.board.crests.names": {"from": "Names", "text": "الأسماء"},
+ "home.board.crests.both": {"from": "Crest and name", "text": "الشعار والاسم"},
+ "home.board.crests.crests": {"from": "Crests only", "text": "الشعارات فقط"},
+ "home.board.crestsDesc": {"from": "Crests come from ESPN's image server, each fetched once and kept on the TV. The same setting is used by the Scores screen saver.", "text": "تأتي الشعارات من خادم صور ESPN، ويُنزَّل كل منها مرة واحدة ويُحفظ على التلفاز. تستخدم شاشة توقف النتائج الإعداد نفسه."}
 }

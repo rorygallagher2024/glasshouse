@@ -49,7 +49,7 @@ scores.today(['soccer/eng.1', 'soccer/uefa.champions', 'soccer/nowhere'], now, f
   assert.ok(/soccer\/eng\.1\/scoreboard\?dates=20261122$/.test(asked[0]), 'the TV\'s date');
   assert.strictEqual(matches.length, 2, 'a failed league and a malformed event left out');
   assert.deepEqual(matches[0], { league: 'soccer/eng.1', start: Date.parse('2026-11-22T14:00Z'), state: 'in',
-    status: 'STATUS_IN_PROGRESS', clock: "67'", home: 'Hull', away: 'Brighton', homeScore: '2', awayScore: '1' }, 'by kick-off');
+    status: 'STATUS_IN_PROGRESS', clock: "67'", home: 'Hull', away: 'Brighton', homeScore: '2', awayScore: '1', homeCrest: '', awayCrest: '' }, 'by kick-off');
   assert.strictEqual(matches[1].state, 'pre');
   console.log('  ✓ matches are read per league, sorted by kick-off, with a failed league left out');
   assert.strictEqual(scores.shortName('Brommapojkar', 'IF Brommapojkarna'), 'Brommapojkarna', 'cut at 12 by ESPN');
@@ -89,7 +89,7 @@ function saverSteps() {
     assert.deepEqual(b.names, { PL: 'Premier League', CL: 'Champions League' }, 'the names the saver heads its groups with');
     assert.strictEqual(b.note, '');
     assert.deepEqual(b.matches.map(function (m) { return m.detail; }), ['Postponed', 'FT', 'HT', kickHm(new Date(kick))]);
-    assert.deepEqual(b.matches[2], { league: 'PL', home: 'Hull', away: 'Brighton', homeScore: '2', awayScore: '1', state: 'in', detail: 'HT' });
+    assert.deepEqual(b.matches[2], { league: 'PL', home: 'Hull', away: 'Brighton', homeCrest: '', awayCrest: '', homeScore: '2', awayScore: '1', state: 'in', detail: 'HT' });
     assert.strictEqual(b.matches[3].homeScore, '', 'no score before kick-off');
     console.log('  ✓ the screen saver\'s board words each match: postponed, full time, half time, kick-off');
 
@@ -124,10 +124,69 @@ function saverSteps() {
             assert.strictEqual(sv.note, 'Inga matcher i dag', 'worded in the TV\'s language');
             assert.strictEqual(sv.title, 'Dagens matcher');
             console.log('  ✓ the board is worded in the language of the TV\'s locale');
-            console.log('\nALL test-scores.js assertions passed!\n');
+            crestSteps();
           });
         });
       });
     });
+  });
+}
+
+function crestSteps() {
+  var fs = require('fs');
+  var os = require('os');
+  var path = require('path');
+  var dir = path.join(os.tmpdir(), 'tvweb-crests-' + process.pid + '-' + Date.now());
+  var fetched = [];
+  var reply = 'png';
+  scores.init({ crestDir: dir, fetchFile: function (url, out, cb) {
+    fetched.push(url);
+    setTimeout(function () {
+      if (reply === 'fail') return cb(new Error('offline'));
+      fs.writeFileSync(out, reply === 'png' ? Buffer.concat([new Buffer([0x89, 0x50, 0x4e, 0x47]), new Buffer('rest')]) : new Buffer('<html>'));
+      cb(null);
+    }, 0);
+  } });
+  var e = event('2026-11-22T14:00Z', 'pre', 'STATUS_SCHEDULED', "0'", 'Hull', '0', 'Brighton', '0');
+  e.competitions[0].competitors[0].team.id = '306';
+  e.competitions[0].competitors[0].team.logo = 'https://a.espncdn.com/i/teamlogos/soccer/500/306.png';
+  e.competitions[0].competitors[1].team.id = '331';
+  e.competitions[0].competitors[1].team.logo = 'https://evil.example/331.png';
+  answers['eng.1'] = { events: [e] };
+  scores.resetCache();
+  scores.saverBoard(['soccer/eng.1'], now + 3600000, false, function (b) {
+    assert.strictEqual(b.matches[0].homeCrest, 'soccer-306');
+    assert.strictEqual(b.matches[0].awayCrest, '', 'only a logo on ESPN\'s own image server');
+    var waits = 2;
+    function both(file) {
+      assert.strictEqual(file, path.join(dir, 'soccer-306.png'));
+      if (--waits) return;
+      assert.deepEqual(fetched, ['https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/306.png&w=96&h=96'], 'fetched once, small');
+      scores.crest('soccer-306', function (again) {
+        assert.strictEqual(again, file);
+        assert.strictEqual(fetched.length, 1, 'kept, not fetched again');
+        scores.crest('soccer-331', function (none) {
+          assert.strictEqual(none, null, 'a team no scoreboard gave a crest for');
+          scores.crest('../etc', function (bad) {
+            assert.strictEqual(bad, null);
+            fs.unlinkSync(file);
+            reply = 'html';
+            scores.crest('soccer-306', function (page) {
+              assert.strictEqual(page, null, 'anything but a PNG is not kept');
+              assert.ok(!fs.existsSync(file) && !fs.existsSync(file + '.part'));
+              scores.crest('soccer-306', function (later) {
+                assert.strictEqual(later, null);
+                assert.strictEqual(fetched.length, 2, 'a failed crest is not asked for again within the hour');
+                fs.rmdirSync(dir);
+                console.log('  ✓ crests are fetched small from ESPN once each, kept, and only for teams a scoreboard named');
+                console.log('\nALL test-scores.js assertions passed!\n');
+              });
+            });
+          });
+        });
+      });
+    }
+    scores.crest('soccer-306', both);
+    scores.crest('soccer-306', both);
   });
 }

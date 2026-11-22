@@ -63,6 +63,9 @@ var INFO_SOURCES = ['off', 'entities', 'ha'];
 // Where the board beside them comes from: nowhere, the day's matches in the
 // leagues chosen on the dashboard (lib/scores), or a board Home Assistant sends.
 var BOARD_SOURCES = ['off', 'scores', 'ha'];
+// How the board and the Scores screen saver show a side: its name, its crest
+// and name, or its crest alone (the name where it has none).
+var BOARD_CRESTS = ['names', 'both', 'crests'];
 var scoresLib = require('./scores');
 // The Magic Remote's battery beside the date: never, only once it is low, or always.
 var REMOTE_BATTERY = ['off', 'low', 'always'];
@@ -519,6 +522,7 @@ function defaults() {
     infoLines: [],
     board: 'off',
     boardLeagues: [],
+    boardCrests: 'names',
     // The live preview kept on what was last on whenever the view is on
     // screen, rather than only while a tile is chosen.
     previewAlways: false,
@@ -661,6 +665,7 @@ function normalise(raw) {
   d.infoLines = infoLinesOf(raw.infoLines);
   d.board = BOARD_SOURCES.indexOf(raw.board) !== -1 ? raw.board : 'off';
   d.boardLeagues = stringList(raw.boardLeagues).filter(function (id) { return !!scoresLib.league(id); });
+  d.boardCrests = BOARD_CRESTS.indexOf(raw.boardCrests) !== -1 ? raw.boardCrests : 'names';
   d.rowsBottom = raw.rowsBottom === true;
   d.reopenAfterWake = raw.reopenAfterWake !== false;
   d.view = raw.view === 'alternative' ? 'alternative' : 'standard';
@@ -901,6 +906,7 @@ function setLayout(body, cb) {
     infoLines: body.infoLines !== undefined ? body.infoLines : c.infoLines,
     board: body.board !== undefined ? body.board : c.board,
     boardLeagues: body.boardLeagues !== undefined ? body.boardLeagues : c.boardLeagues,
+    boardCrests: body.boardCrests !== undefined ? body.boardCrests : c.boardCrests,
     previewAlways: typeof body.previewAlways === 'boolean' ? body.previewAlways : c.previewAlways,
     previewInTile: typeof body.previewInTile === 'boolean' ? body.previewInTile : c.previewInTile,
     previewSize: body.previewSize !== undefined ? body.previewSize : c.previewSize,
@@ -1051,7 +1057,7 @@ function layoutOf(c) {
     searchHintSeen: c.searchHintSeen, picture: c.picture, livePreview: c.livePreview, search: c.search, recommended: c.recommended,
     fade: c.fade, wallDrift: c.wallDrift, wallCrossfade: c.wallCrossfade, smoothScroll: c.smoothScroll, slidePanels: c.slidePanels,
     darkening: c.darkening, hideUnused: c.hideUnused, showMediaServers: c.showMediaServers, deviceNames: devNamesNow(c.deviceNames), appNames: c.appNames, appCards: c.appCards, focusPulse: c.focusPulse, navSound: c.navSound, pointerSound: c.pointerSound, ownSound: ownSoundInfo(), cardFade: c.cardFade, appIcons: c.appIcons, inputBarTransparent: c.inputBarTransparent, inputBarSwitchOnOk: c.inputBarSwitchOnOk, showClock: c.showClock, rowsBottom: c.rowsBottom, view: c.view,
-    showLastOn: c.showLastOn, showAppCount: c.showAppCount, showAppLabels: c.showAppLabels, showCec: c.showCec, showTvLogos: c.showTvLogos, showPointer: c.showPointer, reopenAfterWake: c.reopenAfterWake, weather: c.weather, weatherPlace: c.weatherPlace, info: c.info, infoLines: c.infoLines, board: c.board, boardLeagues: c.boardLeagues, scoresLeagues: scoresLib.LEAGUES, previewAlways: c.previewAlways, previewInTile: c.previewInTile, previewSize: c.previewSize, previewSound: c.previewSound, wallAnim: c.wallAnim,
+    showLastOn: c.showLastOn, showAppCount: c.showAppCount, showAppLabels: c.showAppLabels, showCec: c.showCec, showTvLogos: c.showTvLogos, showPointer: c.showPointer, reopenAfterWake: c.reopenAfterWake, weather: c.weather, weatherPlace: c.weatherPlace, info: c.info, infoLines: c.infoLines, board: c.board, boardLeagues: c.boardLeagues, boardCrests: c.boardCrests, scoresLeagues: scoresLib.LEAGUES, previewAlways: c.previewAlways, previewInTile: c.previewInTile, previewSize: c.previewSize, previewSound: c.previewSound, wallAnim: c.wallAnim,
     remoteBattery: c.remoteBattery,
     animTheme: c.animTheme, animSky: c.animSky, animLight: c.animLight, animThemes: ANIM_THEMES,
     wallShuffleMinutes: c.wallShuffleMinutes, shuffleMinutes: SHUFFLE_MINUTES, colours: c.colours,
@@ -2172,7 +2178,7 @@ function currentBoard() {
   }
   if (c.board === 'scores' && c.boardLeagues.length && scores && scoresModule) {
     if (scores.day !== scoresModule.dayOf(nowMs()) || nowMs() - scores.at > SCORES_STALE_MS) return null;
-    return { kind: 'scores', leagues: c.boardLeagues.map(function (id) { return scoresLib.league(id).short; }),
+    return { kind: 'scores', crests: c.boardCrests, leagues: c.boardLeagues.map(function (id) { return scoresLib.league(id).short; }),
              matches: scores.matches.map(function (m) {
                var o = {}; for (var k in m) o[k] = m[k];
                o.league = scoresLib.league(m.league).short;
@@ -4369,10 +4375,13 @@ function boardLeagues() { return readConfig().boardLeagues.slice(); }
 
 function setBoardLeagues(list, cb) { setLayout({ boardLeagues: list }, cb); }
 
+function boardCrests() { return readConfig().boardCrests; }
+
 module.exports = {
   LG_HOME: LG_HOME,
   boardLeagues: boardLeagues,
   setBoardLeagues: setBoardLeagues,
+  boardCrests: boardCrests,
   viewInFront: viewInFront,
   barOpened: barOpened,
   reopenAfterCompositor: reopenAfterCompositor,

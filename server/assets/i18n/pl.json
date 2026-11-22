@@ -3811,5 +3811,10 @@
  "ss.leagues": {"from": "Leagues", "text": "Ligi"},
  "ss.leaguesDesc": {"from": "Up to four, the same as the board on Glasshouse Home. Glasshouse reads their matches from ESPN at most once a minute while the screen saver shows. Nothing else is sent.", "text": "Do czterech, te same co na tablicy Glasshouse Home. Glasshouse pobiera ich mecze z ESPN najwyżej raz na minutę, gdy wyświetla się wygaszacz. Nic więcej nie jest wysyłane."},
  "srv.saver.noLeagues": {"from": "Pick at least one league.", "text": "Wybierz co najmniej jedną ligę."},
- "srv.saver.noScores": {"from": "It asks for the day's matches, which only Glasshouse's own screen savers are given.", "text": "Prosi o dzisiejsze mecze, które dostają tylko własne wygaszacze Glasshouse."}
+ "srv.saver.noScores": {"from": "It asks for the day's matches, which only Glasshouse's own screen savers are given.", "text": "Prosi o dzisiejsze mecze, które dostają tylko własne wygaszacze Glasshouse."},
+ "home.board.crests": {"from": "Teams shown as", "text": "Drużyny pokazywane jako"},
+ "home.board.crests.names": {"from": "Names", "text": "Nazwy"},
+ "home.board.crests.both": {"from": "Crest and name", "text": "Herb i nazwa"},
+ "home.board.crests.crests": {"from": "Crests only", "text": "Tylko herby"},
+ "home.board.crestsDesc": {"from": "Crests come from ESPN's image server, each fetched once and kept on the TV. The same setting is used by the Scores screen saver.", "text": "Herby pochodzą z serwera obrazów ESPN, każdy pobierany raz i przechowywany w telewizorze. Wygaszacz Wyniki używa tego samego ustawienia."}
 }

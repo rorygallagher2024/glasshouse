@@ -205,6 +205,9 @@ html.resting #wall .layer{-webkit-animation-play-state:paused;animation-play-sta
 #boardLines.turning{opacity:0}
 #boardPage{margin-left:.6em;letter-spacing:0}
 #board .info-label{color:inherit}
+/* Crests a little dimmed, for a panel that shows Home for hours. */
+#board .crest{width:1.1em;height:1.1em;vertical-align:-.2em;margin:0 .3em;opacity:.85}
+#board .crest.alone{width:1.5em;height:1.5em;vertical-align:-.4em;margin:0 .15em}
 #board .info-value{color:#a39d93;margin-left:auto;padding-left:16px}
 .alternative #board{-webkit-order:2;order:2;margin:0 48px 0 0}
 .alternative #boardTitle{font-size:18px}
@@ -2127,7 +2130,8 @@ html[lang="vi"] #srcTitle,html[lang="vi"] #plMode,html[lang="vi"] #pvMode,html[l
     for (var i = from; i < to && i < lines.length; i++) {
       var l = lines[i];
       html += '<div class="info-line">' + (l.icon ? infoIcon(l.icon) : '') +
-        (l.label ? '<span class="info-label">' + esc(l.label) + '</span>' : '') +
+        (l.labelHtml ? '<span class="info-label">' + l.labelHtml + '</span>'
+          : l.label ? '<span class="info-label">' + esc(l.label) + '</span>' : '') +
         '<span class="info-value">' + esc(infoValue(l)) + '</span></div>';
     }
     return html;
@@ -2169,6 +2173,22 @@ html[lang="vi"] #srcTitle,html[lang="vi"] #plMode,html[lang="vi"] #pvMode,html[l
    * the sides and kick-off before, the score and the minute during, the score
    * and full time after. Two leagues or more mark each line with its own.
    */
+  /*
+   * A match's label with the sides' crests: beside each name, or in place of
+   * it. A crest that does not load shows the name in its place (crests only)
+   * or nothing (beside the name).
+   */
+  function crestImg(key, name, alone) {
+    if (!key) return alone ? esc(name) : '';
+    return '<img class="crest' + (alone ? ' alone' : '') + '" src="/api/scores/crest?team=' + encodeURIComponent(key) +
+      '" alt="' + esc(name) + '" onerror="' + (alone ? 'this.outerHTML=this.alt' : 'this.parentNode.removeChild(this)') + '">';
+  }
+  function crestLabel(m, many, alone) {
+    var middle = m.state === 'pre' ? ' – ' : ' ' + esc(m.homeScore) + '–' + esc(m.awayScore) + ' ';
+    var home = alone ? crestImg(m.homeCrest, m.home, true) : crestImg(m.homeCrest, m.home, false) + esc(m.home);
+    var away = alone ? crestImg(m.awayCrest, m.away, true) : esc(m.away) + crestImg(m.awayCrest, m.away, false);
+    return (many ? esc(m.league) + ' · ' : '') + home + middle + away;
+  }
   function scoresBoard(b) {
     var many = false, first = null;
     for (var i = 0; i < b.matches.length; i++) {
@@ -2185,7 +2205,9 @@ html[lang="vi"] #srcTitle,html[lang="vi"] #plMode,html[lang="vi"] #pvMode,html[l
         : m.state === 'post' ? t('home.board.fullTime', 'FT')
         : m.status === 'STATUS_HALFTIME' ? t('home.board.halfTime', 'HT')
         : m.clock;
-      lines.push({ label: (many ? m.league + ' · ' : '') + label, value: value });
+      var line = { label: (many ? m.league + ' · ' : '') + label, value: value };
+      if (b.crests === 'both' || b.crests === 'crests') line.labelHtml = crestLabel(m, many, b.crests === 'crests');
+      lines.push(line);
     }
     if (!lines.length) lines.push({ label: t('home.board.none', 'No matches today'), value: '' });
     return { title: t('home.board.scoresTitle', 'Today’s matches'), lines: lines };

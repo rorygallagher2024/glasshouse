@@ -1340,11 +1340,20 @@ function renderHomeBoard(st) {
   if (panel.hidden) return;
   const chosen = (st.layout && st.layout.boardLeagues) || [];
   const all = (st.layout && st.layout.scoresLeagues) || [];
+  const crests = q('home-board-crests');
+  crests.value = (st.layout && st.layout.boardCrests) || 'names';
+  crests.disabled = !homeWritable();
   q('home-board-leagues').innerHTML = all.map(l => {
     const on = chosen.indexOf(l.id) !== -1;
     return `<button type="button" class="pill ${on ? 'good' : 'idle'}" translate="no" aria-pressed="${on}" ${homeWritable() ? '' : 'disabled'}
       onclick="homeBoardLeague('${jsq(l.id)}')">${esc(l.name)}</button>`;
   }).join('');
+}
+
+// How a side shows on the board and the Scores screen saver: name, crest and
+// name, or crest.
+function homeBoardCrests(value) {
+  homeSaveLayout({ boardCrests: value });
 }
 
 function homeBoardSource(value) {

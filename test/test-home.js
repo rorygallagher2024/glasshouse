@@ -3711,12 +3711,16 @@ step('the board: today\'s matches in the leagues chosen, read at most once a min
     assert.deepEqual(r.layout.boardLeagues, ['soccer/eng.1', 'soccer/uefa.champions'], 'unknown leagues left out');
     assert.deepEqual(home.boardLeagues(), ['soccer/eng.1', 'soccer/uefa.champions'], 'shared with the Scores screen saver');
     assert.strictEqual(leagueChanges, 1, 'which is told they changed');
+    assert.strictEqual(r.layout.boardCrests, 'names', 'names unless chosen');
+    assert.strictEqual(home.normalise({ boardCrests: 'logos' }).boardCrests, 'names');
+    assert.strictEqual(home.normalise({ boardCrests: 'both' }).boardCrests, 'both');
     home.info(function (i1) {
       assert.strictEqual(asked, 1);
       var b = i1.board || home.beat().board;
       assert.strictEqual(b.kind, 'scores');
       assert.deepEqual(b.leagues, ['PL', 'CL']);
       assert.strictEqual(b.matches[0].league, 'PL', 'each match by its league\'s short name');
+      assert.strictEqual(b.crests, 'names', 'how the view shows a side comes with the board');
       home.info(function () {});
       assert.strictEqual(asked, 1, 'not again within a minute');
       clock += 61000;

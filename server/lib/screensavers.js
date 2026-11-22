@@ -42,6 +42,8 @@ var SCREENSAVER_LEAGUES_FILE = '/var/lib/tvweb/screensaver-leagues.json';
 var leaguesFn = null;
 /** @type {null|function(Array<string>, function(any): void): void} */
 var setLeaguesFn = null;
+/** @type {null|function(): string} */
+var crestsFn = null;
 var DEFAULT_SAVER_LEAGUES = ['soccer/eng.1'];
 var MAX_SAVER_LEAGUES = 4;
 /** @type {typeof import('./haentity') | null} */
@@ -892,6 +894,7 @@ function init(opts) {
   qtLocaleFn = opts.qtLocale || function () { return ''; };
   leaguesFn = opts.leagues || null;
   setLeaguesFn = opts.setLeagues || null;
+  crestsFn = opts.crests || null;
   webosVersion = opts.webosVersion || null;
   saverRoots = opts.saverRoots || DEFAULT_ROOTS;
   catalogCache = null;
@@ -1420,6 +1423,8 @@ function screensaverList() {
       colors: hasColor ? screensaverColorOptions() : undefined,
       // The leagues a Scores screen saver shows, and those it can.
       leagues: screensaverLeagues(e),
+      // How it shows a side, shared with Home's board.
+      crests: e.uses && e.uses.indexOf('scores') !== -1 ? (crestsFn ? crestsFn() : 'names') : undefined,
       leagueOptions: e.uses && e.uses.indexOf('scores') !== -1
         ? scoresLib.LEAGUES.map(function (l) { return { id: l.id, label: l.name }; }) : undefined,
       // The Video saver's clock, weather and captions, kept with Home's playlist.

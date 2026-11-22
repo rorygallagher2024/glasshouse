@@ -237,7 +237,9 @@ minute at most and only while Home is on screen and the TV is on. Only the
 league and the date are sent, and nothing is kept on the TV. The **Scores**
 screen saver reads the same scoreboards for its leagues, once a minute at
 most and only while it shows; its leagues are kept in
-`/var/lib/tvweb/screensaver-leagues.json`.
+`/var/lib/tvweb/screensaver-leagues.json`. With crests shown, each team's
+crest is fetched once from ESPN's image server (`a.espncdn.com`) and kept in
+`/var/lib/tvweb/crests/`.
 
 With **Lines from Home Assistant** set to **Entities you choose**, the server
 reads the chosen entities from Home Assistant's API, every 30 seconds at most

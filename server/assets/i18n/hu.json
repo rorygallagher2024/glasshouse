@@ -3807,5 +3807,10 @@
  "ss.leagues": {"from": "Leagues", "text": "Bajnokságok"},
  "ss.leaguesDesc": {"from": "Up to four, the same as the board on Glasshouse Home. Glasshouse reads their matches from ESPN at most once a minute while the screen saver shows. Nothing else is sent.", "text": "Legfeljebb négy, ugyanazok, mint a Glasshouse Home tábláján. A Glasshouse a képernyővédő megjelenése alatt legfeljebb percenként egyszer olvassa be a mérkőzéseiket az ESPN-ről. Más nem kerül elküldésre."},
  "srv.saver.noLeagues": {"from": "Pick at least one league.", "text": "Válasszon legalább egy bajnokságot."},
- "srv.saver.noScores": {"from": "It asks for the day's matches, which only Glasshouse's own screen savers are given.", "text": "A napi mérkőzéseket kéri, amelyeket csak a Glasshouse saját képernyővédői kapnak meg."}
+ "srv.saver.noScores": {"from": "It asks for the day's matches, which only Glasshouse's own screen savers are given.", "text": "A napi mérkőzéseket kéri, amelyeket csak a Glasshouse saját képernyővédői kapnak meg."},
+ "home.board.crests": {"from": "Teams shown as", "text": "Csapatok megjelenítése"},
+ "home.board.crests.names": {"from": "Names", "text": "Nevek"},
+ "home.board.crests.both": {"from": "Crest and name", "text": "Címer és név"},
+ "home.board.crests.crests": {"from": "Crests only", "text": "Csak címerek"},
+ "home.board.crestsDesc": {"from": "Crests come from ESPN's image server, each fetched once and kept on the TV. The same setting is used by the Scores screen saver.", "text": "A címerek az ESPN képszerveréről származnak, mindegyiket egyszer tölti le és a tévén tárolja. Az Eredmények képernyővédő ugyanezt a beállítást használja."}
 }

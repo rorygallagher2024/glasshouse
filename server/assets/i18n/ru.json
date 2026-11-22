@@ -3807,5 +3807,10 @@
  "ss.leagues": {"from": "Leagues", "text": "Лиги"},
  "ss.leaguesDesc": {"from": "Up to four, the same as the board on Glasshouse Home. Glasshouse reads their matches from ESPN at most once a minute while the screen saver shows. Nothing else is sent.", "text": "До четырёх, те же, что на табло Glasshouse Home. Glasshouse читает их матчи с ESPN не чаще раза в минуту, пока показывается заставка. Больше ничего не отправляется."},
  "srv.saver.noLeagues": {"from": "Pick at least one league.", "text": "Выберите хотя бы одну лигу."},
- "srv.saver.noScores": {"from": "It asks for the day's matches, which only Glasshouse's own screen savers are given.", "text": "Она запрашивает матчи дня, которые получают только собственные заставки Glasshouse."}
+ "srv.saver.noScores": {"from": "It asks for the day's matches, which only Glasshouse's own screen savers are given.", "text": "Она запрашивает матчи дня, которые получают только собственные заставки Glasshouse."},
+ "home.board.crests": {"from": "Teams shown as", "text": "Команды показываются как"},
+ "home.board.crests.names": {"from": "Names", "text": "Названия"},
+ "home.board.crests.both": {"from": "Crest and name", "text": "Эмблема и название"},
+ "home.board.crests.crests": {"from": "Crests only", "text": "Только эмблемы"},
+ "home.board.crestsDesc": {"from": "Crests come from ESPN's image server, each fetched once and kept on the TV. The same setting is used by the Scores screen saver.", "text": "Эмблемы берутся с сервера изображений ESPN, каждая загружается один раз и хранится на телевизоре. Заставка «Счёт матчей» использует ту же настройку."}
 }

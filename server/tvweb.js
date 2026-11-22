@@ -700,7 +700,8 @@ screensavers.init({
   haEntity: haEntity,
   // The Scores saver's leagues are Glasshouse Home's board's.
   leagues: glasshouseHome ? function () { return glasshouseHome.boardLeagues(); } : undefined,
-  setLeagues: glasshouseHome ? function (list, cb) { glasshouseHome.setBoardLeagues(list, cb); } : undefined
+  setLeagues: glasshouseHome ? function (list, cb) { glasshouseHome.setBoardLeagues(list, cb); } : undefined,
+  crests: glasshouseHome ? function () { return glasshouseHome.boardCrests(); } : undefined
 });
 idlesaver.init({ luna: luna, mediaState: telemetry.readMediaState,
   homeVideoBackground: function () { return !!(glasshouseHome && glasshouseHome.videoBackgroundActive()); },
@@ -2254,7 +2255,7 @@ function startGlasshouseHome() {
   var weather = require('./lib/weather');
   weather.init({ getJson: fetchLib.getJson });
   var scores = require('./lib/scores');
-  scores.init({ getJson: fetchLib.getJson });
+  scores.init({ getJson: fetchLib.getJson, fetchFile: fetchLib.probeFetch });
   glasshouseHome.init({
     // webOS 11 with the Home key changed: LG's Home stays drawn under Glasshouse Bar unless it is closed.
     lgHomeUnderBar: remoteKeys.nativeHomeBarOn,

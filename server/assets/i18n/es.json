@@ -3793,5 +3793,10 @@
  "ss.leagues": {"from": "Leagues", "text": "Ligas"},
  "ss.leaguesDesc": {"from": "Up to four, the same as the board on Glasshouse Home. Glasshouse reads their matches from ESPN at most once a minute while the screen saver shows. Nothing else is sent.", "text": "Hasta cuatro, las mismas que el marcador de Glasshouse Home. Glasshouse lee sus partidos de ESPN como mucho una vez por minuto mientras se muestra el salvapantallas. No se envía nada más."},
  "srv.saver.noLeagues": {"from": "Pick at least one league.", "text": "Elige al menos una liga."},
- "srv.saver.noScores": {"from": "It asks for the day's matches, which only Glasshouse's own screen savers are given.", "text": "Pide los partidos del día, que solo reciben los salvapantallas propios de Glasshouse."}
+ "srv.saver.noScores": {"from": "It asks for the day's matches, which only Glasshouse's own screen savers are given.", "text": "Pide los partidos del día, que solo reciben los salvapantallas propios de Glasshouse."},
+ "home.board.crests": {"from": "Teams shown as", "text": "Equipos mostrados como"},
+ "home.board.crests.names": {"from": "Names", "text": "Nombres"},
+ "home.board.crests.both": {"from": "Crest and name", "text": "Escudo y nombre"},
+ "home.board.crests.crests": {"from": "Crests only", "text": "Solo escudos"},
+ "home.board.crestsDesc": {"from": "Crests come from ESPN's image server, each fetched once and kept on the TV. The same setting is used by the Scores screen saver.", "text": "Los escudos vienen del servidor de imágenes de ESPN; cada uno se descarga una vez y se guarda en el televisor. El salvapantallas Resultados usa el mismo ajuste."}
 }

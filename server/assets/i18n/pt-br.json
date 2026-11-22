@@ -3793,5 +3793,10 @@
  "ss.leagues": {"from": "Leagues", "text": "Ligas"},
  "ss.leaguesDesc": {"from": "Up to four, the same as the board on Glasshouse Home. Glasshouse reads their matches from ESPN at most once a minute while the screen saver shows. Nothing else is sent.", "text": "Até quatro, as mesmas do quadro do Glasshouse Home. O Glasshouse lê os jogos delas da ESPN no máximo uma vez por minuto enquanto o protetor de tela aparece. Nada mais é enviado."},
  "srv.saver.noLeagues": {"from": "Pick at least one league.", "text": "Escolha pelo menos uma liga."},
- "srv.saver.noScores": {"from": "It asks for the day's matches, which only Glasshouse's own screen savers are given.", "text": "Pede os jogos do dia, que só os protetores de tela do próprio Glasshouse recebem."}
+ "srv.saver.noScores": {"from": "It asks for the day's matches, which only Glasshouse's own screen savers are given.", "text": "Pede os jogos do dia, que só os protetores de tela do próprio Glasshouse recebem."},
+ "home.board.crests": {"from": "Teams shown as", "text": "Times mostrados como"},
+ "home.board.crests.names": {"from": "Names", "text": "Nomes"},
+ "home.board.crests.both": {"from": "Crest and name", "text": "Escudo e nome"},
+ "home.board.crests.crests": {"from": "Crests only", "text": "Só escudos"},
+ "home.board.crestsDesc": {"from": "Crests come from ESPN's image server, each fetched once and kept on the TV. The same setting is used by the Scores screen saver.", "text": "Os escudos vêm do servidor de imagens da ESPN, cada um baixado uma vez e guardado na TV. O protetor de tela Placares usa a mesma configuração."}
 }

@@ -122,7 +122,11 @@ async function loadScreensavers() {
   }
 
   q('ss-leagues-row').hidden = !(active && active.leagueOptions);
-  if (active && active.leagueOptions) renderSsLeagues(active.leagueOptions, active.leagues || [], locked);
+  if (active && active.leagueOptions) {
+    renderSsLeagues(active.leagueOptions, active.leagues || [], locked);
+    q('ss-crests').value = active.crests || 'names';
+    q('ss-crests').disabled = locked;
+  }
 
   q('ss-video-row').hidden = !(active && active.videoStyle);
   if (active && active.videoStyle) renderSsVideo(active.videoStyle, locked);
@@ -1166,6 +1170,13 @@ function renderSsLeagues(options, chosen, locked) {
     return `<button type="button" class="pill ${on ? 'good' : 'idle'}" translate="no" aria-pressed="${on}" ${off ? 'disabled' : ''}
       onclick="ssToggleLeague('${jsq(l.id)}')">${esc(l.label)}</button>`;
   }).join('');
+}
+
+// Shared with the board on Glasshouse Home, so it is saved in Home's layout.
+async function ssCrests(value) {
+  q('ss-crests').disabled = true;
+  try { await homePost('/api/home/layout', { boardCrests: value }); } catch (e) { showErr(e.message); }
+  loadScreensavers();
 }
 
 async function ssToggleLeague(id) {
