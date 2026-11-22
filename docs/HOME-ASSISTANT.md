@@ -116,7 +116,7 @@ mosquitto_sub -h <broker> -t 'lgtv/#' -v
 
 Node-RED, Telegraf into InfluxDB, or scripts subscribing to that topic work the same way. The Home Assistant Discovery messages are simply ignored by non-Home Assistant clients.
 
-### Screen savers reading Home Assistant
+### Reading Home Assistant entities
 
 **Home Assistant API** and **MQTT bridge** do separate jobs and are arranged in two sections on the **HA & MQTT** tab (`/?tab=mqtt`):
 
@@ -132,11 +132,15 @@ Node-RED, Telegraf into InfluxDB, or scripts subscribing to that topic work the 
 1. In Home Assistant, open your profile (bottom-left) → **Security** → **Long-Lived Access Tokens** → **Create Token** and copy the token.
 2. Open Glasshouse in a browser and navigate to **HA & MQTT** → **Home Assistant API**.
 3. Enter your **Home Assistant address** (for example `http://192.168.1.10:8123` or `http://homeassistant.local:8123`) and paste the **Long-Lived Access Token** (or set `homeAssistant.url` and `homeAssistant.token` in `config.json`).
-4. Click **Save** — credentials apply immediately without restarting the server — and Glasshouse checks the connection. The **Connection** box beside the settings draws the TV and Home Assistant as the MQTT bridge's box draws the TV and its broker: the link reads **Reachable** with Home Assistant's response time and how long ago a screen saver last read an entity, **Off**, or **Unreachable** with the reason. You can switch the **Home Assistant API** button off at any time to disable Home Assistant screen savers while keeping your saved address and token.
+4. Click **Save**. The settings apply at once, without restarting the server, and Glasshouse checks the connection. The **Connection** box beside the settings draws the TV and Home Assistant as the MQTT bridge's box draws the TV and its broker: the link reads **Reachable** with Home Assistant's response time and how long ago Glasshouse last read an entity, **Off**, or **Unreachable** with the reason. You can switch the **Home Assistant API** button off at any time to disable Home Assistant screen savers while keeping your saved address and token.
 
 ![Home Assistant API settings showing the toggle, address, saved token, and the Connection box with Home Assistant reachable](screenshots/ha-api.png)
 
-Once enabled and connected, two Home Assistant screen savers appear on the **Screensaver** tab (while off or unconfigured, they stay hidden):
+Once enabled and connected, the API is used in two places. While it is off or unconfigured, neither offers it.
+
+**On Glasshouse Home**, [values at a glance](dashboard/home.md#home-assistant-values-at-a-glance) shows up to four entities beside the clock, picked on the **Home** tab: a bin collection, a parcel on its way, a share price.
+
+**On the Screensaver tab**, two Home Assistant screen savers appear:
 
 * [**Home Assistant: Ambient**](dashboard/screen-savers.md#home-assistant-ambient) — shows the TV clock, date, and up to three configurable entities with optional custom display labels.
 * [**Home Assistant: Data Display**](dashboard/screen-savers.md#home-assistant-data-display) — cycles sequentially through 2 to 100 entities one at a time on black.

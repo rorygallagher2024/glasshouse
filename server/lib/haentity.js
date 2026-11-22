@@ -22,7 +22,7 @@ var MAX_LIST_BYTES = 8 * 1024 * 1024;
 var cfg = { enabled: true, url: '', token: '' };
 var lastStatus = { ok: null, message: '', error: '', checkedAt: 0 };
 // For the HA & MQTT tab's Connection box, as the MQTT one shows its broker:
-// how long Home Assistant last took to answer, and when a screen saver last read.
+// how long Home Assistant last took to answer, and when an entity was last read.
 var lastLatencyMs = null;
 var lastReadAt = 0;
 
