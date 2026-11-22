@@ -3794,9 +3794,9 @@
  "home.info.added": {"text": "{name} adicionado como linha {n}.", "from": "Added {name} as line {n}."},
  "home.info.removed": {"text": "Linha {n} removida.", "from": "Removed line {n}."},
  "home.info.customise": {"text": "Personalizar", "from": "Customise"},
- "home.board": {"from": "Board", "text": "Quadro"},
- "home.board.fromHa": {"from": "Sent from Home Assistant", "text": "Enviado pelo Home Assistant"},
- "home.boardDesc": {"from": "Beside the lines: a list Home Assistant sends, such as today's matches from a sports integration, four lines at a time.", "text": "Ao lado das linhas: uma lista que o Home Assistant envia, como os jogos de hoje de uma integração desportiva, quatro linhas de cada vez."},
+ "home.board": {"text": "Home Assistant: quadro", "from": "Home Assistant: board"},
+ "home.board.fromHa": {"text": "Enviado por uma automação", "from": "Sent by an automation"},
+ "home.boardDesc": {"text": "Para quem usa o Home Assistant: uma lista com título enviada por uma automação, como os jogos de hoje de uma integração desportiva, junto ao relógio do Glasshouse Home, quatro linhas de cada vez.", "from": "For Home Assistant users: a titled list an automation sends, such as today's matches from a sports integration, shown beside the clock on Glasshouse Home four lines at a time."},
  "home.news": {"from": "News strip", "text": "Faixa de notícias"},
  "home.newsDesc": {"from": "Along the bottom: the headlines of up to three news feeds (RSS or Atom), one at a time or running, each after its source.", "text": "Em baixo: os títulos de até três feeds de notícias (RSS ou Atom), um de cada vez ou a passar, cada um após a sua fonte."},
  "home.news.feedsDesc": {"from": "The address of each feed, and a name to show before its headlines if you want another than the feed's own. Each is read every 10 minutes while the strip or the News screen saver shows. The News screen saver reads the same feeds.", "text": "O endereço de cada feed e, se quiser outro que não o dele, um nome para mostrar antes dos títulos. Cada um é lido a cada 10 minutos enquanto a faixa ou a proteção de ecrã Notícias é mostrada. A proteção de ecrã Notícias lê os mesmos feeds."},
@@ -3822,5 +3822,6 @@
  "home.news.style.flip": {"from": "One at a time", "text": "Um de cada vez"},
  "home.news.style.scroll": {"from": "Running", "text": "A passar"},
  "home.news.speedDesc2": {"from": "One at a time shows each headline for 8 or 6 seconds, and fades to the next. Running moves them right to left, less smoothly on TVs that cannot draw every frame. Both apply to the matches in the strip and to the News screen saver too.", "text": "Um de cada vez mostra cada título durante 8 ou 6 segundos e passa ao seguinte com uma transição. A passar desloca-os da direita para a esquerda, com menos fluidez em televisores que não desenham todas as imagens. Ambos se aplicam também aos jogos na faixa e à proteção de ecrã News."},
- "home.board.placeDesc2": {"from": "Along the bottom, the board's lines open every run of the strip the news uses, with the next headlines after them.", "text": "Em baixo, as linhas do quadro abrem cada volta da faixa das notícias, seguidas dos títulos seguintes."}
+ "home.board.placeDesc2": {"from": "Along the bottom, the board's lines open every run of the strip the news uses, with the next headlines after them.", "text": "Em baixo, as linhas do quadro abrem cada volta da faixa das notícias, seguidas dos títulos seguintes."},
+ "home.board.haDesc": {"text": "Uma automação envia o quadro para a entidade Home Board Push do televisor: um título e até vinte linhas, cada uma com uma etiqueta e um valor. O Glasshouse não descarrega nada para ele. O guia do Home Assistant tem um exemplo.", "from": "An automation sends the board to the TV's Home Board Push entity: a title and up to twenty lines, each with a label and a value. Glasshouse fetches nothing for it. The Home Assistant guide has an example."}
 }

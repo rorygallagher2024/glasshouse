@@ -1452,7 +1452,12 @@ function homeInfoSource(value) {
 function renderHomeBoard(st) {
   const sel = q('home-board-sel');
   if (!sel) return;
-  sel.value = (st.layout && st.layout.board) || 'off';
+  // Sent over MQTT, so the row is shown only with MQTT set up, as the values
+  // at a glance' sources are, and reads as off while MQTT is not.
+  const mqtt = !!(st.haLines && st.haLines.mqtt);
+  const row = q('home-board-row');
+  if (row) row.hidden = !st.supported.ok || !mqtt;
+  sel.value = mqtt ? ((st.layout && st.layout.board) || 'off') : 'off';
   sel.disabled = !homeWritable();
   const panel = q('home-board-panel');
   panel.hidden = !st.supported.ok || sel.value === 'off';

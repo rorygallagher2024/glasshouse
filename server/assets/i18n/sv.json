@@ -3811,9 +3811,9 @@
  "home.info.added": {"text": "{name} har lagts till som rad {n}.", "from": "Added {name} as line {n}."},
  "home.info.removed": {"text": "Rad {n} har tagits bort.", "from": "Removed line {n}."},
  "home.info.customise": {"text": "Anpassa", "from": "Customise"},
- "home.board": {"from": "Board", "text": "Resultattavla"},
- "home.board.fromHa": {"from": "Sent from Home Assistant", "text": "Skickas från Home Assistant"},
- "home.boardDesc": {"from": "Beside the lines: a list Home Assistant sends, such as today's matches from a sports integration, four lines at a time.", "text": "Bredvid raderna: en lista som Home Assistant skickar, till exempel dagens matcher från en sportintegration, fyra rader i taget."},
+ "home.board": {"text": "Home Assistant: tavla", "from": "Home Assistant: board"},
+ "home.board.fromHa": {"text": "Skickas av en automation", "from": "Sent by an automation"},
+ "home.boardDesc": {"text": "För dig som använder Home Assistant: en lista med rubrik som en automation skickar, till exempel dagens matcher från en sportintegration, bredvid klockan på Glasshouse Home fyra rader i taget.", "from": "For Home Assistant users: a titled list an automation sends, such as today's matches from a sports integration, shown beside the clock on Glasshouse Home four lines at a time."},
  "home.news": {"from": "News strip", "text": "Nyhetsremsa"},
  "home.newsDesc": {"from": "Along the bottom: the headlines of up to three news feeds (RSS or Atom), one at a time or running, each after its source.", "text": "Längst ner: rubrikerna från upp till tre nyhetsflöden (RSS eller Atom), en i taget eller rullande, var och en efter sin källa."},
  "home.news.feedsDesc": {"from": "The address of each feed, and a name to show before its headlines if you want another than the feed's own. Each is read every 10 minutes while the strip or the News screen saver shows. The News screen saver reads the same feeds.", "text": "Adressen till varje flöde, och ett namn att visa före rubrikerna om du vill ha ett annat än flödets eget. Varje flöde läses var tionde minut medan remsan eller skärmsläckaren Nyheter visas. Skärmsläckaren Nyheter läser samma flöden."},
@@ -3839,5 +3839,6 @@
  "home.news.style.flip": {"from": "One at a time", "text": "En i taget"},
  "home.news.style.scroll": {"from": "Running", "text": "Rullande"},
  "home.news.speedDesc2": {"from": "One at a time shows each headline for 8 or 6 seconds, and fades to the next. Running moves them right to left, less smoothly on TVs that cannot draw every frame. Both apply to the matches in the strip and to the News screen saver too.", "text": "En i taget visar varje rubrik i 8 eller 6 sekunder och tonar sedan över till nästa. Rullande flyttar dem från höger till vänster, mindre jämnt på TV-apparater som inte hinner rita varje bildruta. Båda gäller även matcherna i remsan och News-skärmsläckaren."},
- "home.board.placeDesc2": {"from": "Along the bottom, the board's lines open every run of the strip the news uses, with the next headlines after them.", "text": "Längst ner inleder tavlans rader varje varv i nyhetsremsan, och nästa rubriker följer efter."}
+ "home.board.placeDesc2": {"from": "Along the bottom, the board's lines open every run of the strip the news uses, with the next headlines after them.", "text": "Längst ner inleder tavlans rader varje varv i nyhetsremsan, och nästa rubriker följer efter."},
+ "home.board.haDesc": {"text": "En automation skickar tavlan till TV:ns entitet Home Board Push: en rubrik och upp till tjugo rader, var och en med en etikett och ett värde. Glasshouse hämtar inget till den. Guiden för Home Assistant har ett exempel.", "from": "An automation sends the board to the TV's Home Board Push entity: a title and up to twenty lines, each with a label and a value. Glasshouse fetches nothing for it. The Home Assistant guide has an example."}
 }

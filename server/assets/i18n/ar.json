@@ -3794,9 +3794,9 @@
  "home.info.added": {"text": "أُضيف {name} كسطر {n}.", "from": "Added {name} as line {n}."},
  "home.info.removed": {"text": "حُذف السطر {n}.", "from": "Removed line {n}."},
  "home.info.customise": {"text": "تخصيص", "from": "Customise"},
- "home.board": {"from": "Board", "text": "لوحة النتائج"},
- "home.board.fromHa": {"from": "Sent from Home Assistant", "text": "يرسلها Home Assistant"},
- "home.boardDesc": {"from": "Beside the lines: a list Home Assistant sends, such as today's matches from a sports integration, four lines at a time.", "text": "بجانب الأسطر: قائمة يرسلها Home Assistant، مثل مباريات اليوم من تكامل رياضي، أربعة أسطر في كل مرة."},
+ "home.board": {"text": "Home Assistant: لوحة", "from": "Home Assistant: board"},
+ "home.board.fromHa": {"text": "ترسلها أتمتة", "from": "Sent by an automation"},
+ "home.boardDesc": {"text": "لمستخدمي Home Assistant: قائمة لها عنوان ترسلها أتمتة، مثل مباريات اليوم من تكامل رياضي، تظهر بجانب الساعة في Glasshouse Home أربعة أسطر في كل مرة.", "from": "For Home Assistant users: a titled list an automation sends, such as today's matches from a sports integration, shown beside the clock on Glasshouse Home four lines at a time."},
  "home.news": {"from": "News strip", "text": "شريط الأخبار"},
  "home.newsDesc": {"from": "Along the bottom: the headlines of up to three news feeds (RSS or Atom), one at a time or running, each after its source.", "text": "في الأسفل: عناوين ما يصل إلى ثلاث خلاصات أخبار (RSS أو Atom)، واحدًا تلو الآخر أو متحركة، كل منها بعد مصدره."},
  "home.news.feedsDesc": {"from": "The address of each feed, and a name to show before its headlines if you want another than the feed's own. Each is read every 10 minutes while the strip or the News screen saver shows. The News screen saver reads the same feeds.", "text": "عنوان كل خلاصة، واسم يظهر قبل عناوينها إن أردت اسمًا غير اسمها. تُقرأ كل خلاصة كل 10 دقائق أثناء ظهور الشريط أو شاشة توقف الأخبار. تقرأ شاشة توقف الأخبار الخلاصات نفسها."},
@@ -3822,5 +3822,6 @@
  "home.news.style.flip": {"from": "One at a time", "text": "واحدًا تلو الآخر"},
  "home.news.style.scroll": {"from": "Running", "text": "متحركة"},
  "home.news.speedDesc2": {"from": "One at a time shows each headline for 8 or 6 seconds, and fades to the next. Running moves them right to left, less smoothly on TVs that cannot draw every frame. Both apply to the matches in the strip and to the News screen saver too.", "text": "واحدًا تلو الآخر يعرض كل عنوان لمدة 8 أو 6 ثوانٍ ثم يتلاشى إلى التالي. متحركة تنقلها من اليمين إلى اليسار، بسلاسة أقل على أجهزة التلفاز التي لا ترسم كل إطار. ينطبق كلاهما أيضًا على المباريات في الشريط وعلى شاشة التوقف News."},
- "home.board.placeDesc2": {"from": "Along the bottom, the board's lines open every run of the strip the news uses, with the next headlines after them.", "text": "في الأسفل، تفتتح أسطر اللوحة كل دورة من شريط الأخبار، وتليها العناوين التالية."}
+ "home.board.placeDesc2": {"from": "Along the bottom, the board's lines open every run of the strip the news uses, with the next headlines after them.", "text": "في الأسفل، تفتتح أسطر اللوحة كل دورة من شريط الأخبار، وتليها العناوين التالية."},
+ "home.board.haDesc": {"text": "ترسل أتمتة اللوحة إلى كيان Home Board Push في التلفزيون: عنوانًا وحتى عشرين سطرًا، لكل منها تسمية وقيمة. لا يجلب Glasshouse شيئًا لها. يحتوي دليل Home Assistant على مثال.", "from": "An automation sends the board to the TV's Home Board Push entity: a title and up to twenty lines, each with a label and a value. Glasshouse fetches nothing for it. The Home Assistant guide has an example."}
 }

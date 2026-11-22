@@ -3808,9 +3808,9 @@
  "home.info.added": {"text": "{name} hozzáadva {n}. sorként.", "from": "Added {name} as line {n}."},
  "home.info.removed": {"text": "A(z) {n}. sor törölve.", "from": "Removed line {n}."},
  "home.info.customise": {"text": "Testreszabás", "from": "Customise"},
- "home.board": {"from": "Board", "text": "Eredményjelző"},
- "home.board.fromHa": {"from": "Sent from Home Assistant", "text": "A Home Assistant küldi"},
- "home.boardDesc": {"from": "Beside the lines: a list Home Assistant sends, such as today's matches from a sports integration, four lines at a time.", "text": "A sorok mellett: a Home Assistant által küldött lista, például egy sportintegrációból a mai mérkőzések, egyszerre négy sor."},
+ "home.board": {"text": "Home Assistant: tábla", "from": "Home Assistant: board"},
+ "home.board.fromHa": {"text": "Automatizálás küldi", "from": "Sent by an automation"},
+ "home.boardDesc": {"text": "Home Assistant-felhasználóknak: egy automatizálás által küldött, címmel ellátott lista, például a mai meccsek egy sport-integrációból, a Glasshouse Home órája mellett, egyszerre négy sorral.", "from": "For Home Assistant users: a titled list an automation sends, such as today's matches from a sports integration, shown beside the clock on Glasshouse Home four lines at a time."},
  "home.news": {"from": "News strip", "text": "Hírszalag"},
  "home.newsDesc": {"from": "Along the bottom: the headlines of up to three news feeds (RSS or Atom), one at a time or running, each after its source.", "text": "Alul: legfeljebb három hírcsatorna (RSS vagy Atom) címei egyenként vagy futva, mindegyik a forrása után."},
  "home.news.feedsDesc": {"from": "The address of each feed, and a name to show before its headlines if you want another than the feed's own. Each is read every 10 minutes while the strip or the News screen saver shows. The News screen saver reads the same feeds.", "text": "Minden csatorna címe, és ha a sajátja helyett mást szeretne, egy név a címek előtt. Mindegyiket 10 percenként olvassa, amíg a szalag vagy a Hírek képernyővédő látszik. A Hírek képernyővédő ugyanezeket a csatornákat olvassa."},
@@ -3836,5 +3836,6 @@
  "home.news.style.flip": {"from": "One at a time", "text": "Egyenként"},
  "home.news.style.scroll": {"from": "Running", "text": "Futó"},
  "home.news.speedDesc2": {"from": "One at a time shows each headline for 8 or 6 seconds, and fades to the next. Running moves them right to left, less smoothly on TVs that cannot draw every frame. Both apply to the matches in the strip and to the News screen saver too.", "text": "Egyenként minden hírt 8 vagy 6 másodpercig mutat, majd átúszik a következőbe. A futó jobbról balra mozgatja őket, kevésbé simán azokon a tévéken, amelyek nem rajzolnak meg minden képkockát. Mindkettő vonatkozik a szalagban lévő mérkőzésekre és a News képernyővédőre is."},
- "home.board.placeDesc2": {"from": "Along the bottom, the board's lines open every run of the strip the news uses, with the next headlines after them.", "text": "Alul a tábla sorai nyitják a hírszalag minden körét, utánuk jönnek a következő hírek."}
+ "home.board.placeDesc2": {"from": "Along the bottom, the board's lines open every run of the strip the news uses, with the next headlines after them.", "text": "Alul a tábla sorai nyitják a hírszalag minden körét, utánuk jönnek a következő hírek."},
+ "home.board.haDesc": {"text": "Egy automatizálás küldi a táblát a tévé Home Board Push entitásának: egy címet és legfeljebb húsz sort, mindegyik egy címkével és egy értékkel. A Glasshouse semmit nem tölt le hozzá. A Home Assistant útmutatóban van rá példa.", "from": "An automation sends the board to the TV's Home Board Push entity: a title and up to twenty lines, each with a label and a value. Glasshouse fetches nothing for it. The Home Assistant guide has an example."}
 }

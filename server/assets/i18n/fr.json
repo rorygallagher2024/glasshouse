@@ -3794,9 +3794,9 @@
  "home.info.added": {"from": "Added {name} as line {n}.", "text": "{name} ajouté en ligne {n}."},
  "home.info.removed": {"from": "Removed line {n}.", "text": "Ligne {n} retirée."},
  "home.info.customise": {"from": "Customise", "text": "Personnaliser"},
- "home.board": {"from": "Board", "text": "Tableau"},
- "home.board.fromHa": {"from": "Sent from Home Assistant", "text": "Envoyé par Home Assistant"},
- "home.boardDesc": {"from": "Beside the lines: a list Home Assistant sends, such as today's matches from a sports integration, four lines at a time.", "text": "À côté des lignes : une liste envoyée par Home Assistant, comme les matchs du jour d'une intégration sportive, quatre lignes à la fois."},
+ "home.board": {"from": "Home Assistant: board", "text": "Home Assistant : tableau"},
+ "home.board.fromHa": {"from": "Sent by an automation", "text": "Envoyé par une automatisation"},
+ "home.boardDesc": {"from": "For Home Assistant users: a titled list an automation sends, such as today's matches from a sports integration, shown beside the clock on Glasshouse Home four lines at a time.", "text": "Pour les utilisateurs de Home Assistant : une liste avec un titre envoyée par une automatisation, comme les matchs du jour d’une intégration sportive, à côté de l’horloge de Glasshouse Home, quatre lignes à la fois."},
  "home.news": {"from": "News strip", "text": "Bandeau d'actualités"},
  "home.newsDesc": {"from": "Along the bottom: the headlines of up to three news feeds (RSS or Atom), one at a time or running, each after its source.", "text": "En bas : les titres de trois flux d'actualités au plus (RSS ou Atom), un à la fois ou en défilement, chacun après sa source."},
  "home.news.feedsDesc": {"from": "The address of each feed, and a name to show before its headlines if you want another than the feed's own. Each is read every 10 minutes while the strip or the News screen saver shows. The News screen saver reads the same feeds.", "text": "L'adresse de chaque flux, et un nom à afficher devant ses titres si vous en voulez un autre que le sien. Chaque flux est lu toutes les 10 minutes tant que le bandeau ou l'économiseur d'écran Actualités s'affiche. L'économiseur d'écran Actualités lit les mêmes flux."},
@@ -3822,5 +3822,6 @@
  "home.news.style.flip": {"from": "One at a time", "text": "Un à la fois"},
  "home.news.style.scroll": {"from": "Running", "text": "Défilement"},
  "home.news.speedDesc2": {"from": "One at a time shows each headline for 8 or 6 seconds, and fades to the next. Running moves them right to left, less smoothly on TVs that cannot draw every frame. Both apply to the matches in the strip and to the News screen saver too.", "text": "Un à la fois affiche chaque titre 8 ou 6 secondes, puis passe au suivant en fondu. Le défilement les fait glisser de droite à gauche, moins fluide sur les téléviseurs qui ne dessinent pas chaque image. Les deux s'appliquent aussi aux matchs du bandeau et à l'économiseur d'écran News."},
- "home.board.placeDesc2": {"from": "Along the bottom, the board's lines open every run of the strip the news uses, with the next headlines after them.", "text": "En bas, les lignes du tableau ouvrent chaque passage du bandeau des actualités, suivies des titres suivants."}
+ "home.board.placeDesc2": {"from": "Along the bottom, the board's lines open every run of the strip the news uses, with the next headlines after them.", "text": "En bas, les lignes du tableau ouvrent chaque passage du bandeau des actualités, suivies des titres suivants."},
+ "home.board.haDesc": {"from": "An automation sends the board to the TV's Home Board Push entity: a title and up to twenty lines, each with a label and a value. Glasshouse fetches nothing for it. The Home Assistant guide has an example.", "text": "Une automatisation envoie le tableau à l’entité Home Board Push du téléviseur : un titre et jusqu’à vingt lignes, chacune avec un libellé et une valeur. Glasshouse ne récupère rien pour lui. Le guide Home Assistant en donne un exemple."}
 }
