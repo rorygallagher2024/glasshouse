@@ -846,6 +846,7 @@ button.key-hit{background:var(--w10)}
 .ss-card.on .ss-name{color:var(--green)}
 .ss-tag{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--green);margin-left:10px}
 .ss-level-row{margin-top:22px;max-width:760px}
+.ss-leagues-box .sub{margin:4px 0 10px}
 .ss-head{margin-bottom:0}
 #sspane .ss-head+.ss-split .ss-list,#sspane .ss-head+.ss-split .ss-side{margin-top:26px}
 /* The choice on the left, and what to do with it - brightness, starting it,

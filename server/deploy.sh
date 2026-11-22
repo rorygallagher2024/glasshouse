@@ -93,6 +93,7 @@ assets/screensavers/harmonograph/main.qml assets/screensavers/harmonograph/saver
 assets/screensavers/incense/main.qml assets/screensavers/incense/saver.json \
 assets/screensavers/murmuration/main.qml assets/screensavers/murmuration/saver.json \
 assets/screensavers/neo/main.qml assets/screensavers/neo/saver.json \
+assets/screensavers/scores/main.qml assets/screensavers/scores/saver.json \
 assets/screensavers/starfield/main.qml assets/screensavers/starfield/saver.json \
 assets/screensavers/starfield/star.png assets/screensavers/tesseract/main.qml \
 assets/screensavers/tesseract/saver.json assets/screensavers/tesseract/tesseract.js \

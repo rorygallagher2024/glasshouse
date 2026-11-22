@@ -415,8 +415,8 @@ var NOT_CARRIED = {
   blockTvUpdates: 'choose',
   // Rewrites LG's app list and restarts its app manager; Glasshouse Home's own hiding is in the layout.
   tileHiding: 'choose',
-  // Screen saver entity slots and colors can be chosen per TV.
-  screensaverEntities: 'choose', screensaverColor: 'choose',
+  // Screen saver entity slots, colors and leagues can be chosen per TV.
+  screensaverEntities: 'choose', screensaverColor: 'choose', screensaverLeagues: 'choose',
   setTileHidingAllowed: 'experimental', setWebos10ScreensaversAllowed: 'experimental', setInputBarAllowed: 'experimental', setPointerEnabled: 'experimental', setPointerSettings: 'experimental',
   setNetworkDebuggerAllowed: 'access', setDashboardPort: 'access',
   setDeviceName: 'tvName',

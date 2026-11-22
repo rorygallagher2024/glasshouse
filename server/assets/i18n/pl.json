@@ -3807,5 +3807,9 @@
  "home.board.none": {"from": "No matches today", "text": "Dziś brak meczów"},
  "home.board.postponed": {"from": "Postponed", "text": "Przełożony"},
  "home.board.scoresTitle": {"from": "Today’s matches", "text": "Dzisiejsze mecze"},
- "home.boardDesc": {"from": "Beside the lines: today's matches in the leagues you choose, with their kick-off times and live scores, four at a time. Or a board Home Assistant sends.", "text": "Obok wierszy: dzisiejsze mecze w wybranych ligach, z godzinami rozpoczęcia i wynikami na żywo, po cztery naraz. Albo tablica wysyłana przez Home Assistant."}
+ "home.boardDesc": {"from": "Beside the lines: today's matches in the leagues you choose, with their kick-off times and live scores, four at a time. Or a board Home Assistant sends.", "text": "Obok wierszy: dzisiejsze mecze w wybranych ligach, z godzinami rozpoczęcia i wynikami na żywo, po cztery naraz. Albo tablica wysyłana przez Home Assistant."},
+ "ss.leagues": {"from": "Leagues", "text": "Ligi"},
+ "ss.leaguesDesc": {"from": "Up to four. Glasshouse reads their matches from ESPN at most once a minute while the screen saver shows. Nothing else is sent.", "text": "Do czterech. Glasshouse pobiera ich mecze z ESPN najwyżej raz na minutę, gdy wyświetla się wygaszacz. Nic więcej nie jest wysyłane."},
+ "srv.saver.noLeagues": {"from": "Pick at least one league.", "text": "Wybierz co najmniej jedną ligę."},
+ "srv.saver.noScores": {"from": "It asks for the day's matches, which only Glasshouse's own screen savers are given.", "text": "Prosi o dzisiejsze mecze, które dostają tylko własne wygaszacze Glasshouse."}
 }

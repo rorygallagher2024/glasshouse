@@ -3803,5 +3803,9 @@
  "home.board.none": {"from": "No matches today", "text": "Ma nincs mérkőzés"},
  "home.board.postponed": {"from": "Postponed", "text": "Elhalasztva"},
  "home.board.scoresTitle": {"from": "Today’s matches", "text": "Mai mérkőzések"},
- "home.boardDesc": {"from": "Beside the lines: today's matches in the leagues you choose, with their kick-off times and live scores, four at a time. Or a board Home Assistant sends.", "text": "A sorok mellett: a választott bajnokságok mai mérkőzései kezdési időkkel és élő eredményekkel, egyszerre négy. Vagy a Home Assistant által küldött tábla."}
+ "home.boardDesc": {"from": "Beside the lines: today's matches in the leagues you choose, with their kick-off times and live scores, four at a time. Or a board Home Assistant sends.", "text": "A sorok mellett: a választott bajnokságok mai mérkőzései kezdési időkkel és élő eredményekkel, egyszerre négy. Vagy a Home Assistant által küldött tábla."},
+ "ss.leagues": {"from": "Leagues", "text": "Bajnokságok"},
+ "ss.leaguesDesc": {"from": "Up to four. Glasshouse reads their matches from ESPN at most once a minute while the screen saver shows. Nothing else is sent.", "text": "Legfeljebb négy. A Glasshouse a képernyővédő megjelenése alatt legfeljebb percenként egyszer olvassa be a mérkőzéseiket az ESPN-ről. Más nem kerül elküldésre."},
+ "srv.saver.noLeagues": {"from": "Pick at least one league.", "text": "Válasszon legalább egy bajnokságot."},
+ "srv.saver.noScores": {"from": "It asks for the day's matches, which only Glasshouse's own screen savers are given.", "text": "A napi mérkőzéseket kéri, amelyeket csak a Glasshouse saját képernyővédői kapnak meg."}
 }

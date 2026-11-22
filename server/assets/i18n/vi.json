@@ -3807,5 +3807,9 @@
  "home.board.none": {"from": "No matches today", "text": "Hôm nay không có trận"},
  "home.board.postponed": {"from": "Postponed", "text": "Hoãn"},
  "home.board.scoresTitle": {"from": "Today’s matches", "text": "Trận đấu hôm nay"},
- "home.boardDesc": {"from": "Beside the lines: today's matches in the leagues you choose, with their kick-off times and live scores, four at a time. Or a board Home Assistant sends.", "text": "Bên cạnh các dòng: trận đấu hôm nay ở các giải bạn chọn, kèm giờ bắt đầu và tỷ số trực tiếp, bốn trận mỗi lần. Hoặc một bảng do Home Assistant gửi."}
+ "home.boardDesc": {"from": "Beside the lines: today's matches in the leagues you choose, with their kick-off times and live scores, four at a time. Or a board Home Assistant sends.", "text": "Bên cạnh các dòng: trận đấu hôm nay ở các giải bạn chọn, kèm giờ bắt đầu và tỷ số trực tiếp, bốn trận mỗi lần. Hoặc một bảng do Home Assistant gửi."},
+ "ss.leagues": {"from": "Leagues", "text": "Giải đấu"},
+ "ss.leaguesDesc": {"from": "Up to four. Glasshouse reads their matches from ESPN at most once a minute while the screen saver shows. Nothing else is sent.", "text": "Tối đa bốn. Glasshouse đọc các trận của chúng từ ESPN nhiều nhất mỗi phút một lần khi trình bảo vệ màn hình hiển thị. Không gửi gì khác."},
+ "srv.saver.noLeagues": {"from": "Pick at least one league.", "text": "Chọn ít nhất một giải."},
+ "srv.saver.noScores": {"from": "It asks for the day's matches, which only Glasshouse's own screen savers are given.", "text": "Nó yêu cầu các trận đấu trong ngày, thứ chỉ các trình bảo vệ màn hình của chính Glasshouse được nhận."}
 }

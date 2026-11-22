@@ -116,6 +116,17 @@ function langOf(req) {
   return LANG_CODE.test(want) && want !== 'en' && dicts[want] ? want : null;
 }
 
+// The language file for a TV locale such as sv-SE or pt_BR, region first:
+// pt-br where it has its own file, otherwise pt. null for English or none.
+function langOfLocale(locale) {
+  var parts = String(locale || '').toLowerCase().replace(/_/g, '-').split('-');
+  var tries = parts.length > 1 ? [parts[0] + '-' + parts[1], parts[0]] : [parts[0]];
+  for (var i = 0; i < tries.length; i++) {
+    if (tries[i] !== 'en' && LANG_CODE.test(tries[i]) && dicts[tries[i]]) return tries[i];
+  }
+  return null;
+}
+
 function translateText(text, dict) {
   var has = Object.prototype.hasOwnProperty;
   var m = has.call(fixed, text) ? fixed[text] : has.call(filled, text) ? filled[text] : null;
@@ -164,6 +175,7 @@ module.exports = {
   list: list,
   init: init,
   langOf: langOf,
+  langOfLocale: langOfLocale,
   translateBody: translateBody,
   DISPLAY_FIELDS: DISPLAY_FIELDS
 };

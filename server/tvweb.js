@@ -1107,6 +1107,8 @@ routes.init({
   audio: audioCapabilities,
   btAudio: btAudio,
   clock: clockFormat,
+  // The Scores screen saver's reads; given its fetch with Home's, below.
+  scores: require('./lib/scores'),
   piccapStatus: piccap.status,
   huesyncStatus: huesync.status,
   keyboardUp: function () {
