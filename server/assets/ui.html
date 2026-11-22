@@ -1112,6 +1112,15 @@
     <select class="pill-sel ss-sel" id="ss-color" aria-labelledby="ss-color-lbl ss-color" onchange="pickSsColor(this.value)"></select>
   </div>
 
+  <!-- The News saver's feeds, the same as the Home tab's news strip -->
+  <div class="ss-level-row" id="ss-news-row" hidden>
+    <div class="ss-level-lbl" data-t="home.news.feeds">News feeds</div>
+    <div class="ss-leagues-box">
+      <div class="sub home-info-note" data-t="home.news.feedsDesc">Up to three RSS or Atom feeds, each read every 10 minutes while the strip or the News screen saver shows. The strip and the News screen saver use the same feeds.</div>
+      <div id="ss-news-feeds"></div>
+    </div>
+  </div>
+
   <!-- The Video saver's details over the video, kept with Home's playlist -->
   <div class="ss-level-row" id="ss-video-row" hidden>
     <div class="ss-level-lbl" data-t="ss.video.shown">Shown over the video</div>
@@ -1698,16 +1707,70 @@
           <span class="ss-li-count num" id="home-info-count"></span>
         </div>
         <div class="ss-li-add">
-          <input type="text" id="home-info-add" list="home-info-entities" autocomplete="off" spellcheck="false"
-            aria-describedby="home-info-add-hint home-info-msg"
-            onkeydown="if(event.key==='Enter'){event.preventDefault();homeInfoAdd();}">
+          <div class="ss-ent-wrap">
+            <input type="text" id="home-info-add" autocomplete="off" spellcheck="false"
+              aria-describedby="home-info-add-hint home-info-msg" aria-expanded="false"
+              oninput="homeInfoFilter()"
+              onkeydown="if(!haPickerKeydown(event,'home:info')&&event.key==='Enter'){event.preventDefault();homeInfoAdd();}">
+            <button type="button" class="ss-ent-btn" id="home-info-pick-btn" title="Choose entity" data-t-title="ss.chooseEntity" aria-label="Choose entity" data-t-aria-label="ss.chooseEntity" onclick="homeInfoTogglePicker()">&#9662;</button>
+            <div class="ss-pick-list ss-ha-list ha-picker" id="home-info-picker" hidden></div>
+          </div>
           <button type="button" class="ss-li-add-btn" id="home-info-add-btn" onclick="homeInfoAdd()" data-t="ss.entityList.addBtn">Add</button>
         </div>
         <div class="home-info-hint" id="home-info-add-hint"></div>
         <div class="home-info-msg" id="home-info-msg" role="status" aria-live="polite"></div>
       </div>
       <div id="home-info-lines"></div>
-      <datalist id="home-info-entities"></datalist>
+    </div>
+    <div class="prot-row home-gh-row" id="home-board-row" hidden>
+      <div class="prot-main">
+        <div class="prot-title" data-t="home.board">Home Assistant: board</div>
+        <div class="prot-desc" data-t="home.boardDesc">For Home Assistant users: a titled list an automation sends, such as today's matches from a sports integration, shown beside the clock on Glasshouse Home four lines at a time.</div>
+      </div>
+      <div class="prot-status"><select class="pill-sel" id="home-board-sel" onchange="homeBoardSource(this.value)" aria-label="Home Assistant: board" data-t-aria-label="home.board">
+        <option value="off" data-t="common.off">Off</option>
+        <option value="ha" data-t="home.board.fromHa">Sent by an automation</option>
+      </select></div>
+    </div>
+    <div class="home-info-panel" id="home-board-panel" hidden>
+      <div class="sub" data-t="home.board.haDesc">An automation sends the board to the TV's Home Board Push entity: a title and up to twenty lines, each with a label and a value. Glasshouse fetches nothing for it. The Home Assistant guide has an example.</div>
+      <div class="home-crests-row">
+        <label for="home-board-place" data-t="home.board.place">Shown</label>
+        <select class="pill-sel" id="home-board-place" onchange="homeBoardStrip(this.value === 'strip')">
+          <option value="beside" data-t="home.board.place.beside">Beside the lines</option>
+          <option value="strip" data-t="home.board.place.strip">Running along the bottom</option>
+        </select>
+      </div>
+      <div class="sub" data-t="home.board.placeDesc2">Along the bottom, the board's lines open every run of the strip the news uses, with the next headlines after them.</div>
+    </div>
+    <div class="prot-row home-gh-row home-show-row" hidden>
+      <div class="prot-main">
+        <div class="prot-title" data-t="home.news">News strip</div>
+        <div class="prot-desc" data-t="home.newsDesc">Along the bottom: the headlines of up to three news feeds (RSS or Atom), one at a time or running, each after its source.</div>
+      </div>
+      <div class="prot-status"><select class="pill-sel" id="home-news-sel" onchange="homeNewsOn(this.value === 'on')" aria-label="News strip" data-t-aria-label="home.news">
+        <option value="off" data-t="common.off">Off</option>
+        <option value="on" data-t="common.on">On</option>
+      </select></div>
+    </div>
+    <div class="home-info-panel" id="home-news-panel" hidden>
+      <div class="sub home-info-note" data-t="home.news.feedsDesc">Up to three RSS or Atom feeds, each read every 10 minutes while the strip or the News screen saver shows. The strip and the News screen saver use the same feeds.</div>
+      <div id="home-news-feeds"></div>
+      <div class="home-crests-row">
+        <label for="home-news-style" data-t="home.news.style">Headlines</label>
+        <select class="pill-sel" id="home-news-style" onchange="homeSaveLayout({ newsStyle: this.value })">
+          <option value="flip" data-t="home.news.style.flip">One at a time</option>
+          <option value="scroll" data-t="home.news.style.scroll">Running</option>
+        </select>
+      </div>
+      <div class="home-crests-row">
+        <label for="home-news-speed" data-t="home.news.speed">Speed</label>
+        <select class="pill-sel" id="home-news-speed" onchange="homeSaveLayout({ newsSpeed: this.value })">
+          <option value="slow" data-t="home.news.speed.slow">Slow</option>
+          <option value="normal" data-t="home.news.speed.normal">Normal</option>
+        </select>
+      </div>
+      <div class="sub" data-t="home.news.speedDesc2">One at a time shows each headline for 8 or 6 seconds, and fades to the next. Running moves them right to left, less smoothly on TVs that cannot draw every frame. Both apply to the matches in the strip and to the News screen saver too.</div>
     </div>
     <div class="prot-row home-gh-row" id="home-remote-battery-row" hidden>
       <div class="prot-main">
@@ -2868,6 +2931,7 @@
 <script src="/assets/ui/apps.js"></script>
 <script src="/assets/ui/install.js"></script>
 <script src="/assets/ui/inputs.js"></script>
+<script src="/assets/ui/ha-picker.js"></script>
 <script src="/assets/ui/home.js"></script>
 <script src="/assets/ui/iptv.js"></script>
 <script src="/assets/ui/tvchannels.js"></script>

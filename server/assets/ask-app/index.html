@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Glasshouse Question</title>
+<style>html,body{margin:0;background:transparent}</style>
+</head>
+<body>
+<script>
+/*
+ * The question app (lib/ask.js): opens the card the server serves,
+ * assets/ask.html, with the question's token from the launch parameters, as
+ * Glasshouse Home's app opens home.html. Served, the card can use Glasshouse's
+ * font, which a file:// page cannot load from the server, and answer with a
+ * POST. With no token or no question for it, or the server not answering, the
+ * window just closes. Strict ES5: the TV's own browser runs it.
+ */
+(function () {
+  // Filled in with the dashboard's port when the app is installed.
+  var PORT = 8080;                // tvweb:port
+  var BASE = 'http://localhost:' + PORT;
+  var p = {};
+  try { p = JSON.parse(window.PalmSystem.launchParams || '{}') || {}; } catch (e) {}
+  var token = String(p.token || '');
+  if (!/^[0-9a-f]+$/.test(token)) return window.close();
+  var x = new XMLHttpRequest();
+  x.open('GET', BASE + '/api/ask/current?token=' + token + '&t=' + Date.now(), true);
+  x.timeout = 4000;
+  x.onload = function () {
+    var j = null;
+    try { j = JSON.parse(x.responseText); } catch (e) {}
+    if (!j || !j.question) return window.close();
+    location.replace(BASE + '/assets/ask.html?token=' + token + '&t=' + Date.now());
+  };
+  x.onerror = x.ontimeout = function () { window.close(); };
+  x.send();
+})();
+</script>
+</body>
+</html>

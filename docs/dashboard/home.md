@@ -87,6 +87,12 @@ Preview cards at the top of the **Home** tab switch between five launcher option
 
     Displays current temperature, condition icon, and location level with the clock, sourced from Home Assistant or Open-Meteo. See [Weather badge](#weather-badge).
 
+-   **Home Assistant: board**
+
+    ---
+
+    A short list beside the clock that Home Assistant sends, such as today's matches from a sports integration, a few lines at a time. See [Home Assistant: board](#home-assistant-board).
+
 -   **Home Assistant: values at a glance**
 
     ---
@@ -563,7 +569,7 @@ The badge appears once data is received, is kept when the TV restarts, and is hi
 
 Up to four lines of your own after the weather, or before the clock in the Alternative View, each an icon, a name and a value: *Bin 1 · collected on Wednesday*, *PostNord · arrives tomorrow*, *Viscaria · 14.58 SEK*. For Home Assistant users. The setting chooses where they come from, and offers only what is set up: **Entities you pick** needs the [Home Assistant API](../HOME-ASSISTANT.md#reading-home-assistant-entities) on the HA & MQTT tab, and **Sent by an automation** needs MQTT. With neither, the setting is not shown.
 
-* **Entities you pick (default):** each line reads a Home Assistant entity, every 30 seconds while Home is on screen. **Add a line** takes an entity (the field suggests Home Assistant's), up to four, and says what it added, or why it could not. Each line can be moved or removed, and **Customise** gives it, all optional:
+* **Entities you pick (default):** each line reads a Home Assistant entity, every 30 seconds while Home is on screen. **Add a line** uses the Home Assistant entity picker (search by name, entity ID or unit, filter by entity type such as `Sensors` or `Weather`, and load more results on scroll), up to four, and says what it added, or why it could not. Each line can be moved or removed, and **Customise** gives it, all optional:
   * **Name:** shown in place of the entity's own name.
   * **Attribute:** one of its attributes in place of its state, such as `next_date` for a bin collection whose state is text.
   * **Text before:** a few words put in front of the value, such as *collected* or *arrives*, so a date reads *collected tomorrow*.
@@ -586,6 +592,19 @@ Up to four lines of your own after the weather, or before the clock in the Alter
 * **Off.**
 
 Icons are [Material Design Icons](https://pictogrammers.com/library/mdi/) names, with or without `mdi:`. Glasshouse Home draws its own outline for names starting with trash, delete, recycle, mail, email, post, chart, trending, finance, cash, car, flash, lightning, power, battery, calendar, thermometer, home, package and truck, and a dot for any other.
+
+### Home Assistant: board
+
+Beside the lines, a board of up to twenty lines that Home Assistant sends, shown four at a time, turning to the next four every 8 seconds, with a page count by its title. It keeps one width as the pages turn, that of its longest line, and a line too long for it slides to show its end and back. For Home Assistant users, and offered only with MQTT set up, as Home Assistant sends the board over it. The setting chooses whether it shows:
+
+* **Sent by an automation:** whatever was last written to the `text.lg_tv_home_board` entity, `{"title":"Football today","minutes":10,"lines":[{"label":"Arsenal 2–1 Chelsea","value":"67'"}]}`. It is not kept across a restart, and with `minutes` it goes that long after the last push. An empty value takes it away at once. Glasshouse fetches nothing for it: the matches, or anything else, come from an integration of the owner's choice, such as a sports one, through an automation that writes the entity. [Home Assistant](../HOME-ASSISTANT.md#9-a-board-on-glasshouse-home) has an example.
+
+  **Shown** puts the board **Beside the lines** (default) or **Running along the bottom**: there its lines open every run of the strip the news uses, with the next headlines after them, so a changed line comes round within a run. The strip shows even with the news off.
+* **Off (default).**
+
+### News strip
+
+Along the bottom, below the rows: the headlines of up to three news feeds, each after its source, on one line, eight headlines a run and the next eight the run after. The **News strip** setting turns it on. **Add a feed** takes a feed's address (RSS 2.0, RSS 1.0 or Atom, such as `https://www.svt.se/rss.xml`), up to three, and each feed's card then says whether it was read and how many headlines it gave, or why not: it could not be read, it is not a feed, or it is over 2 MB, which stops its download there. Feeds can be moved or removed, and **Customise** gives one a name to show in place of its own. The feeds take turns, up to fifteen headlines from each. Each feed is read every 10 minutes at most while the strip is on screen, and new headlines join at the end of a run, so none is cut off. The [News screen saver](screen-savers.md#news) reads the same feeds. **Headlines** shows them **One at a time** (default), each for a few seconds and fading to the next, or **Running** right to left. **Speed** is **Slow** (default) or **Normal**: 8 or 6 seconds a headline, or 60 or 100 pixels a second. Both apply to the board's matches when they are in the strip, and to the News screen saver. Running is less smooth on TVs whose browser cannot draw every frame, such as a C6.
 
 ### Remote battery
 

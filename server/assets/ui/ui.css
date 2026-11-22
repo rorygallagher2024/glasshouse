@@ -846,6 +846,12 @@ button.key-hit{background:var(--w10)}
 .ss-card.on .ss-name{color:var(--green)}
 .ss-tag{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--green);margin-left:10px}
 .ss-level-row{margin-top:22px;max-width:760px}
+.ss-leagues-box .sub{margin:4px 0 10px}
+.news-feed-status:empty{display:none}
+.news-feed-status.good{color:var(--green)}
+.news-feed-status.warn{color:var(--cand)}
+.home-crests-row{display:flex;align-items:center;gap:12px;margin-top:14px}
+.home-crests-row label{font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--w60)}
 .ss-head{margin-bottom:0}
 #sspane .ss-head+.ss-split .ss-list,#sspane .ss-head+.ss-split .ss-side{margin-top:26px}
 /* The choice on the left, and what to do with it - brightness, starting it,
@@ -886,22 +892,103 @@ select.pill-sel.ss-sel{display:block;width:100%;max-width:340px;height:48px;marg
 .ss-entity-field label{font-size:14px;color:var(--w80);font-weight:500;letter-spacing:.02em}
 .ss-entity-hint{font-size:13px;color:var(--w70);text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:240px}
 .ss-ent-wrap{position:relative;display:flex;align-items:stretch}
-.ss-ent-wrap input{
+.ss-ent-wrap>input{
   flex:1;min-width:0;box-sizing:border-box;font-family:'Manrope';font-weight:400;font-size:14px;letter-spacing:.03em;
   color:var(--w100);background:transparent;border:1px solid var(--edge);padding:10px 12px;min-height:44px;border-radius:var(--r-sm);outline:none
 }
-.ss-ent-wrap input:has(+ .ss-ent-btn){border-top-right-radius:0;border-bottom-right-radius:0}
-.ss-ent-wrap input:focus{border-color:var(--w100)}
-.ss-ent-wrap input:disabled{opacity:.45}
-.ss-ent-wrap input::placeholder{color:var(--w60)}
+.ss-ent-wrap>input:has(+ .ss-ent-btn){border-top-right-radius:0;border-bottom-right-radius:0}
+.ss-ent-wrap>input:focus{border-color:var(--w100)}
+.ss-ent-wrap>input:disabled{opacity:.45}
+.ss-ent-wrap>input::placeholder{color:var(--w60)}
 .ss-ent-btn{min-width:40px;padding:0;min-height:44px;border-left:0;border-radius:0;font-size:14px;display:flex;align-items:center;justify-content:center}
 .ss-ent-wrap .ss-ent-btn:last-of-type{border-top-right-radius:var(--r-sm);border-bottom-right-radius:var(--r-sm)}
 .ss-ha-list{max-height:260px;padding:4px 0}
-.ss-ha-opt{padding:9px 12px;cursor:pointer}
-.ss-ha-opt:hover{background:rgba(var(--fg),.07)}
-.ss-ha-opt-n{font-size:14px;color:var(--w100);line-height:1.35}
-.ss-ha-opt-id{font-size:13px;color:var(--w70);font-family:ui-monospace,SFMono-Regular,Menlo,monospace;margin-top:2px}
-.ss-ha-empty{padding:10px 12px;font-size:14px;color:var(--w70)}
+.ss-ha-empty{padding:12px 14px;font-size:14px;color:var(--w70)}
+/* Reusable Home Assistant entity picker (.ha-picker) */
+.ss-pick-list.ha-picker{
+  display:flex;flex-direction:column;max-height:min(460px,65vh);padding:0;overflow:hidden;
+  border-color:var(--w25);box-shadow:0 16px 40px rgba(0,0,0,.55)
+}
+.ha-picker[hidden]{display:none !important}
+.ha-pk-head{
+  flex:none;display:flex;flex-direction:column;gap:8px;padding:10px 12px 9px;
+  border-bottom:1px solid var(--w12);background:var(--bg)
+}
+.ha-pk-search-row{display:flex;align-items:center;gap:8px}
+.ha-picker .ha-pk-search{
+  flex:1 1 auto;width:100%;min-width:0;height:36px;min-height:36px;padding:6px 10px;margin:0;
+  border:1px solid var(--edge);border-radius:var(--r-sm);background:var(--w06);
+  color:var(--w100);font:400 13.5px/1.3 'Manrope',sans-serif;letter-spacing:.01em;outline:none
+}
+.ha-picker .ha-pk-search:focus{border-color:var(--w100);background:transparent}
+.ha-picker .ha-pk-search::placeholder{color:var(--w60)}
+button.ha-pk-reset{
+  flex:none;min-height:36px;padding:0 10px;border:1px solid var(--w12);border-radius:var(--r-sm);
+  font:500 12px/1 'Manrope',sans-serif;letter-spacing:.04em;text-transform:uppercase;color:var(--w70)
+}
+button.ha-pk-reset:hover{color:var(--w100);border-color:var(--w40)}
+.ha-pk-chips{
+  display:flex;gap:6px;overflow-x:auto;padding:2px 0;scrollbar-width:thin
+}
+button.ha-pk-chip{
+  flex:none;display:inline-flex;align-items:center;gap:5px;min-height:0;height:27px;padding:0 10px;
+  border-radius:999px;border:1px solid var(--w12);background:transparent;color:var(--w70);
+  font:500 12px/1 'Manrope',sans-serif;letter-spacing:.01em;text-transform:none;white-space:nowrap
+}
+button.ha-pk-chip:hover{color:var(--w100);border-color:var(--w40);background:rgba(var(--fg),.05)}
+button.ha-pk-chip.on{color:var(--btn-on-fg);background:var(--w100);border-color:var(--w100)}
+button.ha-pk-chip.on:hover{color:var(--btn-on-fg);border-color:var(--w100)}
+button.ha-pk-chip.ha-pk-chip-unit{border-style:dashed}
+button.ha-pk-chip.ha-pk-chip-unit.on{border-style:solid}
+.ha-pk-chip-n{font-size:11px;opacity:.72;font-variant-numeric:tabular-nums}
+.ha-pk-meta{font-size:12px;color:var(--w60);font-variant-numeric:tabular-nums;letter-spacing:.01em}
+.ha-pk-body{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:4px 0}
+.ha-pk-opt{
+  padding:9px 12px;cursor:pointer;border-bottom:1px solid var(--w06);
+  display:flex;flex-direction:column;gap:4px;transition:background-color .12s ease
+}
+.ha-pk-opt:last-of-type{border-bottom:0}
+.ha-pk-opt:hover,.ha-pk-opt.act{background:rgba(var(--fg),.08)}
+.ha-pk-opt.is-current{box-shadow:inset 3px 0 0 var(--green);background:color-mix(in srgb,var(--green) 7%,transparent)}
+.ha-pk-row1{display:flex;align-items:baseline;justify-content:space-between;gap:10px;min-width:0}
+.ha-pk-name{
+  font:600 13.5px/1.35 'Manrope',sans-serif;color:var(--w100);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0
+}
+.ha-pk-badges{display:inline-flex;align-items:center;gap:6px;flex:none}
+.ha-pk-unit{
+  font:600 11.5px/1 'Manrope',sans-serif;padding:3px 7px;border-radius:var(--r-sm);
+  background:var(--w06);border:1px solid var(--w12);color:var(--w80);font-variant-numeric:tabular-nums
+}
+.ha-pk-tag{
+  font:600 10.5px/1 'Manrope',sans-serif;letter-spacing:.05em;text-transform:uppercase;
+  padding:3px 6px;border-radius:var(--r-sm)
+}
+.ha-pk-tag.cur{color:var(--green);background:color-mix(in srgb,var(--green) 14%,transparent)}
+.ha-pk-tag.used{color:var(--w70);background:var(--w10)}
+.ha-pk-row2{display:flex;align-items:center;gap:7px;min-width:0}
+.ha-pk-dom{
+  flex:none;font:600 10.5px/1 'Manrope',sans-serif;letter-spacing:.04em;text-transform:uppercase;
+  padding:2px 6px;border-radius:var(--r-sm);color:var(--purple-t);background:color-mix(in srgb,var(--purple-t) 14%,transparent)
+}
+.ha-pk-dom[data-tone="measure"]{color:var(--pf-a);background:color-mix(in srgb,var(--pf-a) 15%,transparent)}
+.ha-pk-dom[data-tone="climate"]{color:var(--cand);background:color-mix(in srgb,var(--cand) 15%,transparent)}
+.ha-pk-dom[data-tone="state"]{color:var(--green);background:color-mix(in srgb,var(--green) 15%,transparent)}
+.ha-pk-id{
+  font-size:12.5px;line-height:1.3;color:var(--w70);
+  font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0
+}
+mark.ha-pk-hl{
+  background:color-mix(in srgb,var(--cand) 30%,transparent);color:var(--w100);
+  border-radius:2px;padding:0 1px
+}
+button.ha-pk-more{
+  display:block;width:calc(100% - 24px);margin:8px 12px;min-height:36px;padding:6px 12px;
+  border:1px dashed var(--w25);border-radius:var(--r-sm);background:transparent;
+  color:var(--w80);font:500 12.5px/1.2 'Manrope',sans-serif;letter-spacing:.02em;text-transform:none
+}
+button.ha-pk-more:hover{color:var(--w100);border-color:var(--w60);background:rgba(var(--fg),.04)}
 .ss-ent-label-row,.ss-li-label{display:flex;align-items:center;gap:10px;margin-top:6px}
 .ss-ent-label-row label,.ss-li-label label{font-size:14px;color:var(--w80);min-width:48px;flex-shrink:0}
 .ss-ent-label-row input,.ss-li-label input{
@@ -1612,23 +1699,23 @@ footer{margin-top:38px;font-size:13px;letter-spacing:.08em;text-transform:upperc
    clock, added one by one. Each field has its label above and its help under
    it, so nothing has to fit inside the box. */
 .home-info-panel{padding:4px 0 16px;border-bottom:1px solid var(--w06);grid-column:1/-1}
-.home-info-panel #home-info-note{margin-bottom:14px;max-width:62ch}
+.home-info-panel #home-info-note,.home-info-panel .home-info-note{margin-bottom:14px;max-width:62ch}
 .home-info-addbox,.home-info-list{max-width:560px}
 .home-info-addbox .ss-li-head{max-width:none}
 .home-info-addbox .ss-li-add{max-width:none}
-.home-info-addbox .ss-li-add input{width:auto}
+.home-info-addbox .ss-ent-wrap>input{width:auto}
 .home-info-more{margin-top:10px;padding-left:28px}
 .home-info-more summary{cursor:pointer;font-size:14px;color:var(--w80);min-height:32px;display:flex;align-items:center;gap:8px;list-style:none}
 .home-info-more summary::-webkit-details-marker{display:none}
 .home-info-more summary::before{content:'';width:6px;height:6px;border-right:1.5px solid currentColor;border-bottom:1.5px solid currentColor;transform:rotate(-45deg);transition:transform .15s}
 .home-info-more[open] summary::before{transform:rotate(45deg)}
 .home-info-more .home-info-field{padding-left:0}
-.home-info-addbox input,.home-info-input input{
+.home-info-input input{
   flex:1;width:100%;min-width:0;box-sizing:border-box;font-family:'Manrope';font-size:14px;letter-spacing:.03em;
   color:var(--w100);background:transparent;border:1px solid var(--edge);padding:10px 12px;min-height:44px;border-radius:var(--r-sm);outline:none}
-.home-info-addbox input:focus,.home-info-input input:focus{border-color:var(--w100)}
-.home-info-addbox input::placeholder,.home-info-input input::placeholder{color:var(--w60)}
-.home-info-addbox input:disabled,.home-info-input input:disabled{opacity:.45}
+.home-info-input input:focus{border-color:var(--w100)}
+.home-info-input input::placeholder{color:var(--w60)}
+.home-info-input input:disabled{opacity:.45}
 .home-info-hint{font-size:13px;color:var(--w70);line-height:1.4;margin-top:6px}
 .home-info-msg{font-size:14px;color:var(--w90);margin-top:6px;min-height:20px}
 .home-info-msg.warn{color:var(--warn,#e5534b)}

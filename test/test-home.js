@@ -3699,6 +3699,68 @@ step('lines from entities chosen on the dashboard are read through Home Assistan
   });
 });
 
+step('the board: off unless chosen, or a board Home Assistant pushes while MQTT is set up', function (done) {
+  var clock = Date.now();
+  var mqtt = true;
+  start(null, { now: function () { return clock; }, mqttOn: function () { return mqtt; } });
+  assert.strictEqual(home.layout().board, 'off', 'off unless chosen');
+  assert.strictEqual(home.normalise({ board: 'scores' }).board, 'off', 'no other source');
+  assert.strictEqual(home.layout().news, false, 'the news strip is off unless chosen');
+  assert.deepEqual(home.normalise({ news: true, newsFeeds: [{ url: 'https://svt.example/rss', name: 'SVT' }, { url: 'nope' }] }).newsFeeds,
+    [{ url: 'https://svt.example/rss', name: 'SVT' }], 'only http and https feeds');
+  assert.strictEqual(home.beat().news, null, 'no headlines with the strip off');
+  assert.strictEqual(home.layout().boardStrip, false, 'the board stays beside the lines unless chosen');
+  assert.strictEqual(home.normalise({ boardStrip: 'yes' }).boardStrip, false);
+  assert.strictEqual(home.normalise({ boardStrip: true }).boardStrip, true);
+  assert.strictEqual(home.layout().newsSpeed, 'slow', 'slow unless chosen');
+  assert.strictEqual(home.normalise({ newsSpeed: 'warp' }).newsSpeed, 'slow');
+  assert.strictEqual(home.normalise({ newsSpeed: 'fast' }).newsSpeed, 'normal', 'fast is no longer offered');
+  assert.strictEqual(home.layout().newsStyle, 'flip', 'one headline at a time unless chosen');
+  assert.strictEqual(home.normalise({ newsStyle: 'scroll' }).newsStyle, 'scroll');
+  assert.strictEqual(home.newsFlipMs(), 8000, 'each headline for 8 s at the slow speed');
+  assert.strictEqual(home.newsSpeed(), 60, 'pixels a second for the News screen saver');
+  home.setLayout({ board: 'ha' }, function () {
+    var lines = [];
+    for (var i = 0; i < 25; i++) lines.push({ label: 'Team ' + i, value: "67'" });
+    home.setHomeBoard(JSON.stringify({ title: 'Football today', minutes: 10, lines: lines }));
+    var pushed = home.beat().board;
+    assert.strictEqual(pushed.title, 'Football today');
+    assert.strictEqual(pushed.lines.length, 20, 'twenty at most');
+    mqtt = false;
+    assert.strictEqual(home.beat().board, null, 'not shown once MQTT is not set up');
+    mqtt = true;
+    clock += 10 * 60000 + 1000;
+    assert.strictEqual(home.beat().board, null, 'a pushed board goes once its minutes are up');
+    home.setHomeBoard(JSON.stringify({ title: 'x', lines: [] }));
+    home.setHomeBoard('');
+    assert.strictEqual(home.beat().board, null, 'an empty push takes it away');
+    done();
+  });
+});
+
+step('the news strip: the headlines as last read, with the strip on and feeds given', function (done) {
+  var refreshed = [];
+  var newsFake = {
+    refresh: function (feeds) { refreshed.push(feeds.length); },
+    cached: function (feeds) { return { ok: true, items: [{ source: 'SVT', title: 'Rubrik' }], feeds: feeds }; }
+  };
+  start(null, { news: newsFake });
+  assert.strictEqual(home.beat().news, null, 'off');
+  home.setLayout({ news: true }, function () {
+    assert.strictEqual(home.beat().news, null, 'on, but no feeds');
+    home.setLayout({ newsFeeds: [{ url: 'https://svt.example/rss', name: '' }] }, function (r) {
+      assert.deepEqual(r.layout.newsFeeds, [{ url: 'https://svt.example/rss', name: '' }]);
+      assert.deepEqual(home.beat().news, [{ source: 'SVT', title: 'Rubrik' }]);
+      assert.deepEqual(home.newsFeeds(), [{ url: 'https://svt.example/rss', name: '' }], 'shared with the News screen saver');
+      home.info(function (i) {
+        assert.deepEqual(i.news, [{ source: 'SVT', title: 'Rubrik' }]);
+        assert.ok(refreshed.length >= 1, 'feeds due a read are fetched');
+        done();
+      });
+    });
+  });
+});
+
 step('a Weather switch saved off before the source choice stays off', function (done) {
   start({ enabled: false, showWeather: false });
   assert.strictEqual(home.layout().weather, 'off');

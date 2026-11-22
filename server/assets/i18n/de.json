@@ -1127,57 +1127,159 @@
  "ss.ha.settings": {"text": "Bildschirmschoner-Einstellungen", "from": "Screen saver settings"},
  "ss.entities2": {"text": "Entitäten", "from": "Entities"},
  "ss.tvOff": {"text": "Der Fernseher ist aus. Schalten Sie ihn ein, um einen Bildschirmschoner zu starten.", "from": "The TV is off. Switch it on to start a screen saver."},
+ "srv.ask.yes": {"from": "Yes", "text": "Ja"},
+ "srv.ask.no": {"from": "No", "text": "Nein"},
  "home.info.date": {"from": "{day} {month}", "text": "{day}. {month}"},
  "home.info.today": {"from": "today", "text": "heute"},
  "home.info.tomorrow": {"from": "tomorrow", "text": "morgen"},
  "home.info.weekday": {"from": "on {weekday}", "text": "am {weekday}"},
  "ha.api.desc": {"text": "Liest Home-Assistant-Entitäten live für die Home-Assistant-Bildschirmschoner (Ambient und Data Display) im Tab Bildschirmschoner und für die Werte auf einen Blick neben der Uhr von Glasshouse Home im Tab Home. Verbindet sich direkt über HTTP/HTTPS mit Home Assistant, ohne MQTT, und speichert ohne Neustart.", "from": "Reads live Home Assistant entities for the Home Assistant screen savers (Ambient and Data Display) on the Screensaver tab, and for the values at a glance beside Glasshouse Home's clock on the Home tab. Connects straight to Home Assistant over HTTP/HTTPS without using MQTT, and saves without restarting."},
-  "apps.running.close": {
-    "text": "Schließen",
-    "from": "Close"
+  "ha.domain.all": {
+    "text": "Alle",
+    "from": "All"
   },
-  "apps.running.closeAll": {
-    "text": "Alle schließen",
-    "from": "Close all"
+  "ha.domain.binarySensor": {
+    "text": "Binärsensoren",
+    "from": "Binary sensors"
   },
-  "apps.running.closeFailed": {
-    "text": "App konnte nicht geschlossen werden: {error}",
-    "from": "Could not close app: {error}"
+  "ha.domain.calendar": {
+    "text": "Kalender",
+    "from": "Calendars"
   },
-  "apps.running.closing": {
-    "text": "Wird geschlossen…",
-    "from": "Closing…"
+  "ha.domain.climate": {
+    "text": "Klima",
+    "from": "Climate"
   },
-  "apps.running.desc": {
-    "text": "Apps, die aktuell auf dem TV geöffnet oder im Arbeitsspeicher geladen sind. Das Schließen beendet den Prozess und gibt den Speicher sofort frei.",
-    "from": "Apps currently open or loaded in memory on the TV. Closing an app stops its process and frees its memory right away."
+  "ha.domain.counter": {
+    "text": "Zähler",
+    "from": "Counters"
   },
-  "apps.running.inFront": {
-    "text": "Im Vordergrund",
-    "from": "In front"
+  "ha.domain.cover": {
+    "text": "Abdeckungen",
+    "from": "Covers"
   },
-  "apps.running.mb": {
-    "text": "{mb} MB",
-    "from": "{mb} MB"
+  "ha.domain.deviceTracker": {
+    "text": "Tracker",
+    "from": "Trackers"
   },
-  "apps.running.none": {
-    "text": "Keine aktiv",
-    "from": "None running"
+  "ha.domain.fan": {
+    "text": "Ventilatoren",
+    "from": "Fans"
   },
-  "apps.running.noneDesc": {
-    "text": "Derzeit sind keine Apps im Speicher aktiv.",
-    "from": "No apps are currently running in memory."
+  "ha.domain.inputBoolean": {
+    "text": "Schalter-Helfer",
+    "from": "Input booleans"
   },
-  "apps.running.summaryMb": {
-    "text": "{n} Apps · {mb} MB",
-    "from": "{n} apps · {mb} MB"
+  "ha.domain.inputNumber": {
+    "text": "Zahlen-Helfer",
+    "from": "Input numbers"
   },
-  "apps.running.summaryOneMb": {
-    "text": "1 App · {mb} MB",
-    "from": "1 app · {mb} MB"
+  "ha.domain.inputSelect": {
+    "text": "Auswahl-Helfer",
+    "from": "Input select"
   },
-  "apps.running.title": {
-    "text": "Apps im Speicher",
-    "from": "Apps in memory"
-  }
+  "ha.domain.inputText": {
+    "text": "Text-Helfer",
+    "from": "Input text"
+  },
+  "ha.domain.light": {
+    "text": "Lichter",
+    "from": "Lights"
+  },
+  "ha.domain.lock": {
+    "text": "Schlösser",
+    "from": "Locks"
+  },
+  "ha.domain.mediaPlayer": {
+    "text": "Medien",
+    "from": "Media"
+  },
+  "ha.domain.number": {
+    "text": "Zahlen",
+    "from": "Numbers"
+  },
+  "ha.domain.person": {
+    "text": "Personen",
+    "from": "People"
+  },
+  "ha.domain.sensor": {
+    "text": "Sensoren",
+    "from": "Sensors"
+  },
+  "ha.domain.sun": {
+    "text": "Sonne",
+    "from": "Sun"
+  },
+  "ha.domain.switch": {
+    "text": "Schalter",
+    "from": "Switches"
+  },
+  "ha.domain.timer": {
+    "text": "Timer",
+    "from": "Timers"
+  },
+  "ha.domain.vacuum": {
+    "text": "Staubsauger",
+    "from": "Vacuums"
+  },
+  "ha.domain.weather": {
+    "text": "Wetter",
+    "from": "Weather"
+  },
+  "ha.picker.added": {
+    "text": "Hinzugefügt",
+    "from": "Added"
+  },
+  "ha.picker.countAll": {
+    "text": "{n} Entitäten",
+    "from": "{n} entities"
+  },
+  "ha.picker.countOne": {
+    "text": "1 Entität",
+    "from": "1 entity"
+  },
+  "ha.picker.filterType": {
+    "text": "Nach Typ filtern",
+    "from": "Filter by type"
+  },
+  "ha.picker.reset": {
+    "text": "Zurücksetzen",
+    "from": "Reset"
+  },
+  "ha.picker.searchLabel": {
+    "text": "Entitäten filtern",
+    "from": "Filter entities"
+  },
+  "ha.picker.searchPlaceholder": {
+    "text": "Nach Name, Entitäts-ID oder Einheit suchen…",
+    "from": "Search by name, entity ID, or unit…"
+  },
+  "ha.picker.selected": {
+    "text": "Ausgewählt",
+    "from": "Selected"
+  },
+  "ha.picker.showMore": {
+    "text": "Mehr anzeigen ({n} verbleibend)",
+    "from": "Show more ({n} remaining)"
+  },
+  "ha.picker.showingOf": {
+    "text": "{shown} von {n} Treffern ({total} gesamt)",
+    "from": "Showing {shown} of {n} matching ({total} total)"
+  },
+  "ha.picker.withUnit": {
+    "text": "Mit Einheit",
+    "from": "With unit"
+  },
+ "apps.running.close": {"text": "Schließen", "from": "Close"},
+ "apps.running.closeAll": {"text": "Alle schließen", "from": "Close all"},
+ "apps.running.closeFailed": {"text": "App konnte nicht geschlossen werden: {error}", "from": "Could not close app: {error}"},
+ "apps.running.closing": {"text": "Wird geschlossen…", "from": "Closing…"},
+ "apps.running.desc": {"text": "Apps, die aktuell auf dem TV geöffnet oder im Arbeitsspeicher geladen sind. Das Schließen beendet den Prozess und gibt den Speicher sofort frei.", "from": "Apps currently open or loaded in memory on the TV. Closing an app stops its process and frees its memory right away."},
+ "apps.running.inFront": {"text": "Im Vordergrund", "from": "In front"},
+ "apps.running.mb": {"text": "{mb} MB", "from": "{mb} MB"},
+ "apps.running.none": {"text": "Keine aktiv", "from": "None running"},
+ "apps.running.noneDesc": {"text": "Derzeit sind keine Apps im Speicher aktiv.", "from": "No apps are currently running in memory."},
+ "apps.running.summaryMb": {"text": "{n} Apps · {mb} MB", "from": "{n} apps · {mb} MB"},
+ "apps.running.summaryOneMb": {"text": "1 App · {mb} MB", "from": "1 app · {mb} MB"},
+ "apps.running.title": {"text": "Apps im Speicher", "from": "Apps in memory"}
 }

@@ -31,6 +31,7 @@
     "fr": "Une piste néon qui monte, s’incline et accélère avec ce que joue la TV, et un vaisseau qui attrape des blocs en rythme.",
     "sv": "En neonbana som stiger, lutar och ökar farten med det TV:n spelar, och en farkost som fångar block i takt."
   },
+  "author": "vecluu",
   "license": "MIT",
   "uses": [
     "level",

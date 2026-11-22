@@ -19,8 +19,13 @@ SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
 src_file() {
   if [ -f "$SRC/$1" ]; then
     printf '%s\n' "$SRC/$1"
-  elif [ "$1" = assets/splash.png ] && [ -f "$SCRIPT_DIR/assets/splash.png" ]; then
-    printf '%s\n' "$SCRIPT_DIR/assets/splash.png"
+  else
+    # The dashboard app's own splash and icons, for an app that has none of
+    # its own (the question app).
+    case "$1" in
+      assets/splash.png|assets/icon80.png|assets/icon130.png)
+        [ -f "$SCRIPT_DIR/$1" ] && printf '%s\n' "$SCRIPT_DIR/$1" ;;
+    esac
   fi
 }
 # The same script installs Glasshouse Home's app (assets/home-app), named by
@@ -166,7 +171,10 @@ PKG="$WORK/data/usr/palm/packages/$ID"
 mkdir -p "$APP/assets" "$PKG"
 cp "$SRC/appinfo.json" "$APP/" || exit 0
 ported "$SRC/index.html" > "$APP/index.html" || exit 0
-cp "$SRC/assets/icon80.png" "$SRC/assets/icon130.png" "$APP/assets/" 2>/dev/null
+for icon in assets/icon80.png assets/icon130.png; do
+  src=$(src_file "$icon")
+  if [ -n "$src" ]; then cp "$src" "$APP/$icon" 2>/dev/null; fi
+done
 splash=$(src_file assets/splash.png)
 if [ -n "$splash" ]; then cp "$splash" "$APP/assets/splash.png" || exit 0; fi
 cp "$SRC/packageinfo.json" "$PKG/" || exit 0
