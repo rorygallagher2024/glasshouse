@@ -3891,5 +3891,10 @@
  "apps.running.noneDesc": {"text": "Nessuna app è attualmente caricata in memoria.", "from": "No apps are currently running in memory."},
  "apps.running.summaryMb": {"text": "{n} app · {mb} MB", "from": "{n} apps · {mb} MB"},
  "apps.running.summaryOneMb": {"text": "1 app · {mb} MB", "from": "1 app · {mb} MB"},
- "apps.running.title": {"text": "App in memoria", "from": "Apps in memory"}
+ "apps.running.title": {"text": "App in memoria", "from": "Apps in memory"},
+ "server.askOnTv": {"from": "Ask on the TV", "text": "Chiedi sulla TV"},
+ "server.askOnTv.desc": {"from": "When the daily check finds a new release, asks on the TV whether to install it, with Update now and Later, the next time the picture is on. Each release is asked about until it is answered.", "text": "Quando il controllo giornaliero trova una nuova versione, chiede sulla TV se installarla, con Aggiorna ora e Più tardi, la prossima volta che l'immagine è accesa. Ogni versione viene proposta finché non si risponde."},
+ "srv.updateAsk.title": {"from": "Glasshouse {version} is out", "text": "È disponibile Glasshouse {version}"},
+ "srv.updateAsk.install": {"from": "Update now", "text": "Aggiorna ora"},
+ "srv.updateAsk.later": {"from": "Later", "text": "Più tardi"}
 }

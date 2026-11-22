@@ -14,6 +14,8 @@ Shows the installed version and whether a newer release is out. **Check now** lo
 
 **Check for updates daily** looks once a day on its own, and lets Home Assistant offer the update.
 
+**Ask on the TV**, with the daily check on, puts a release it finds to whoever is watching, with the [question dialog](../HOME-ASSISTANT.md#8-ask-a-question-on-the-tv): the release's summary, **Update now**, which installs it as **Install** does, and **Later**. It asks the next time the picture is on, not over a screen saver or while the TV is off, and asks about a release until it is answered, then not again; the next release is asked about anew. It needs controls on, and is off by default.
+
 **Update pop-up** shows a pop-up in the browser it is switched on in when a newer release is out, over whichever tab is open, with the release's one-line summary. **Update** installs it the way **Install** does, with its progress in the pop-up, and **Dismiss** leaves it until the next release. It is off by default and kept per browser. Where controls are off, the pop-up only says it is out.
 
 **TV name** is the name under Glasshouse in the sidebar, and the TV's name in Home Assistant. Left empty, it is LG and the model, such as LG OLED42C24LA. A new name shows at once, with no restart.

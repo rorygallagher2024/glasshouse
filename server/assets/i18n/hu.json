@@ -3891,5 +3891,10 @@
  "apps.running.noneDesc": {"text": "Jelenleg nincs alkalmazás a memóriában.", "from": "No apps are currently running in memory."},
  "apps.running.summaryMb": {"text": "{n} alkalmazás · {mb} MB", "from": "{n} apps · {mb} MB"},
  "apps.running.summaryOneMb": {"text": "1 alkalmazás · {mb} MB", "from": "1 app · {mb} MB"},
- "apps.running.title": {"text": "Alkalmazások a memóriában", "from": "Apps in memory"}
+ "apps.running.title": {"text": "Alkalmazások a memóriában", "from": "Apps in memory"},
+ "server.askOnTv": {"from": "Ask on the TV", "text": "Kérdés a tévén"},
+ "server.askOnTv.desc": {"from": "When the daily check finds a new release, asks on the TV whether to install it, with Update now and Later, the next time the picture is on. Each release is asked about until it is answered.", "text": "Ha a napi ellenőrzés új verziót talál, a tévén megkérdezi, telepítse-e, Frissítés most és Később gombokkal, amikor legközelebb van kép. Minden verzióra addig kérdez rá, amíg válasz nem érkezik."},
+ "srv.updateAsk.title": {"from": "Glasshouse {version} is out", "text": "Megjelent a Glasshouse {version}"},
+ "srv.updateAsk.install": {"from": "Update now", "text": "Frissítés most"},
+ "srv.updateAsk.later": {"from": "Later", "text": "Később"}
 }

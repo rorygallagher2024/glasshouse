@@ -1282,5 +1282,8 @@
  "apps.running.noneDesc": {"text": "Derzeit sind keine Apps im Speicher aktiv.", "from": "No apps are currently running in memory."},
  "apps.running.summaryMb": {"text": "{n} Apps · {mb} MB", "from": "{n} apps · {mb} MB"},
  "apps.running.summaryOneMb": {"text": "1 App · {mb} MB", "from": "1 app · {mb} MB"},
- "apps.running.title": {"text": "Apps im Speicher", "from": "Apps in memory"}
+ "apps.running.title": {"text": "Apps im Speicher", "from": "Apps in memory"},
+ "srv.updateAsk.title": {"from": "Glasshouse {version} is out", "text": "Glasshouse {version} ist da"},
+ "srv.updateAsk.install": {"from": "Update now", "text": "Jetzt aktualisieren"},
+ "srv.updateAsk.later": {"from": "Later", "text": "Später"}
 }
