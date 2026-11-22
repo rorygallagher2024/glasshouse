@@ -3813,5 +3813,9 @@
  "home.news.feedOk": {"from": "{source}: {n} headlines", "text": "{source} : {n} titres"},
  "home.news.notFeed": {"from": "Read, but it is not an RSS or Atom feed. Check the address.", "text": "Téléchargé, mais ce n'est pas un flux RSS ou Atom. Vérifiez l'adresse."},
  "home.news.tooBig": {"from": "Larger than 2 MB, so it is not read.", "text": "Plus de 2 Mo, il n'est donc pas lu."},
- "home.news.fetchFailed": {"from": "Could not be read. Check the address, and that the TV is online.", "text": "Impossible de le lire. Vérifiez l'adresse et que le téléviseur est connecté."}
+ "home.news.fetchFailed": {"from": "Could not be read. Check the address, and that the TV is online.", "text": "Impossible de le lire. Vérifiez l'adresse et que le téléviseur est connecté."},
+ "home.board.place": {"from": "Shown", "text": "Affichage"},
+ "home.board.place.beside": {"from": "Beside the lines", "text": "À côté des lignes"},
+ "home.board.place.strip": {"from": "Running along the bottom", "text": "En défilement en bas"},
+ "home.board.placeDesc": {"from": "Along the bottom, the matches run in the strip the news uses, before any headlines, by name only.", "text": "En bas, les matchs défilent dans le bandeau des actualités, avant les titres, par leur nom seulement."}
 }

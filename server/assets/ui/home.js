@@ -1351,6 +1351,9 @@ function renderHomeBoard(st) {
   const crests = q('home-board-crests');
   crests.value = (st.layout && st.layout.boardCrests) || 'names';
   crests.disabled = !homeWritable();
+  const place = q('home-board-place');
+  place.value = st.layout && st.layout.boardStrip ? 'strip' : 'beside';
+  place.disabled = !homeWritable();
   q('home-board-leagues').innerHTML = all.map(l => {
     const on = chosen.indexOf(l.id) !== -1;
     return `<button type="button" class="pill ${on ? 'good' : 'idle'}" translate="no" aria-pressed="${on}" ${homeWritable() ? '' : 'disabled'}
@@ -1450,6 +1453,10 @@ function renderHomeNews(st) {
   const panel = q('home-news-panel');
   panel.hidden = !st.supported.ok || !on;
   if (!panel.hidden) renderNewsFeeds('home-news', st.layout.newsFeeds, homeWritable());
+}
+
+function homeBoardStrip(on) {
+  homeSaveLayout({ boardStrip: on });
 }
 
 function homeNewsOn(on) {

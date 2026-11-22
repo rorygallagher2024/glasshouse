@@ -3831,5 +3831,9 @@
  "home.news.feedOk": {"from": "{source}: {n} headlines", "text": "{source}: {n} rubriker"},
  "home.news.notFeed": {"from": "Read, but it is not an RSS or Atom feed. Check the address.", "text": "Gick att hämta, men det är inte ett RSS- eller Atom-flöde. Kontrollera adressen."},
  "home.news.tooBig": {"from": "Larger than 2 MB, so it is not read.", "text": "Större än 2 MB, så det läses inte."},
- "home.news.fetchFailed": {"from": "Could not be read. Check the address, and that the TV is online.", "text": "Gick inte att läsa. Kontrollera adressen och att TV:n är ansluten till internet."}
+ "home.news.fetchFailed": {"from": "Could not be read. Check the address, and that the TV is online.", "text": "Gick inte att läsa. Kontrollera adressen och att TV:n är ansluten till internet."},
+ "home.board.place": {"from": "Shown", "text": "Visas"},
+ "home.board.place.beside": {"from": "Beside the lines", "text": "Bredvid raderna"},
+ "home.board.place.strip": {"from": "Running along the bottom", "text": "Rullande längst ner"},
+ "home.board.placeDesc": {"from": "Along the bottom, the matches run in the strip the news uses, before any headlines, by name only.", "text": "Längst ner rullar matcherna i samma remsa som nyheterna, före rubrikerna, med lagnamn."}
 }

@@ -3831,5 +3831,9 @@
  "home.news.feedOk": {"from": "{source}: {n} headlines", "text": "{source}: {n} tiêu đề"},
  "home.news.notFeed": {"from": "Read, but it is not an RSS or Atom feed. Check the address.", "text": "Tải được nhưng không phải nguồn RSS hay Atom. Hãy kiểm tra địa chỉ."},
  "home.news.tooBig": {"from": "Larger than 2 MB, so it is not read.", "text": "Lớn hơn 2 MB nên không được đọc."},
- "home.news.fetchFailed": {"from": "Could not be read. Check the address, and that the TV is online.", "text": "Không đọc được. Hãy kiểm tra địa chỉ và kết nối internet của TV."}
+ "home.news.fetchFailed": {"from": "Could not be read. Check the address, and that the TV is online.", "text": "Không đọc được. Hãy kiểm tra địa chỉ và kết nối internet của TV."},
+ "home.board.place": {"from": "Shown", "text": "Hiển thị"},
+ "home.board.place.beside": {"from": "Beside the lines", "text": "Bên cạnh các dòng"},
+ "home.board.place.strip": {"from": "Running along the bottom", "text": "Chạy ở phía dưới"},
+ "home.board.placeDesc": {"from": "Along the bottom, the matches run in the strip the news uses, before any headlines, by name only.", "text": "Ở phía dưới, các trận chạy trong dải tin tức, trước các tiêu đề, chỉ với tên."}
 }

@@ -3831,5 +3831,9 @@
  "home.news.feedOk": {"from": "{source}: {n} headlines", "text": "{source}: {n} nagłówków"},
  "home.news.notFeed": {"from": "Read, but it is not an RSS or Atom feed. Check the address.", "text": "Pobrano, ale to nie jest kanał RSS ani Atom. Sprawdź adres."},
  "home.news.tooBig": {"from": "Larger than 2 MB, so it is not read.", "text": "Większy niż 2 MB, więc nie jest odczytywany."},
- "home.news.fetchFailed": {"from": "Could not be read. Check the address, and that the TV is online.", "text": "Nie można odczytać. Sprawdź adres i połączenie telewizora z internetem."}
+ "home.news.fetchFailed": {"from": "Could not be read. Check the address, and that the TV is online.", "text": "Nie można odczytać. Sprawdź adres i połączenie telewizora z internetem."},
+ "home.board.place": {"from": "Shown", "text": "Wyświetlanie"},
+ "home.board.place.beside": {"from": "Beside the lines", "text": "Obok wierszy"},
+ "home.board.place.strip": {"from": "Running along the bottom", "text": "Przewijane na dole"},
+ "home.board.placeDesc": {"from": "Along the bottom, the matches run in the strip the news uses, before any headlines, by name only.", "text": "Na dole mecze przewijają się w pasku wiadomości, przed nagłówkami, tylko z nazwami."}
 }

@@ -3718,6 +3718,9 @@ step('the board: today\'s matches in the leagues chosen, read at most once a min
     assert.strictEqual(home.beat().news, null, 'no headlines with the strip off');
     assert.strictEqual(home.normalise({ boardCrests: 'logos' }).boardCrests, 'names');
     assert.strictEqual(home.normalise({ boardCrests: 'both' }).boardCrests, 'both');
+    assert.strictEqual(r.layout.boardStrip, false, 'the board stays beside the lines unless chosen');
+    assert.strictEqual(home.normalise({ boardStrip: 'yes' }).boardStrip, false);
+    assert.strictEqual(home.normalise({ boardStrip: true }).boardStrip, true);
     home.info(function (i1) {
       assert.strictEqual(asked, 1);
       var b = i1.board || home.beat().board;

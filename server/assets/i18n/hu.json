@@ -3827,5 +3827,9 @@
  "home.news.feedOk": {"from": "{source}: {n} headlines", "text": "{source}: {n} cím"},
  "home.news.notFeed": {"from": "Read, but it is not an RSS or Atom feed. Check the address.", "text": "Letölthető, de nem RSS- vagy Atom-csatorna. Ellenőrizze a címet."},
  "home.news.tooBig": {"from": "Larger than 2 MB, so it is not read.", "text": "Nagyobb 2 MB-nál, ezért nem olvassa be."},
- "home.news.fetchFailed": {"from": "Could not be read. Check the address, and that the TV is online.", "text": "Nem olvasható. Ellenőrizze a címet és a tévé internetkapcsolatát."}
+ "home.news.fetchFailed": {"from": "Could not be read. Check the address, and that the TV is online.", "text": "Nem olvasható. Ellenőrizze a címet és a tévé internetkapcsolatát."},
+ "home.board.place": {"from": "Shown", "text": "Megjelenés"},
+ "home.board.place.beside": {"from": "Beside the lines", "text": "A sorok mellett"},
+ "home.board.place.strip": {"from": "Running along the bottom", "text": "Alul futva"},
+ "home.board.placeDesc": {"from": "Along the bottom, the matches run in the strip the news uses, before any headlines, by name only.", "text": "Alul a mérkőzések a hírszalagban futnak, a hírek előtt, csak névvel."}
 }

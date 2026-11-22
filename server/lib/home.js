@@ -529,6 +529,8 @@ function defaults() {
     // The news strip along the bottom, and the feeds it and the News screen
     // saver read.
     news: false,
+    // The board running in the strip along the bottom instead of beside the lines.
+    boardStrip: false,
     newsFeeds: [],
     // The live preview kept on what was last on whenever the view is on
     // screen, rather than only while a tile is chosen.
@@ -674,6 +676,7 @@ function normalise(raw) {
   d.boardLeagues = stringList(raw.boardLeagues).filter(function (id) { return !!scoresLib.league(id); });
   d.boardCrests = BOARD_CRESTS.indexOf(raw.boardCrests) !== -1 ? raw.boardCrests : 'names';
   d.news = raw.news === true;
+  d.boardStrip = raw.boardStrip === true;
   d.newsFeeds = newsLib.feedsOf(raw.newsFeeds);
   d.rowsBottom = raw.rowsBottom === true;
   d.reopenAfterWake = raw.reopenAfterWake !== false;
@@ -917,6 +920,7 @@ function setLayout(body, cb) {
     boardLeagues: body.boardLeagues !== undefined ? body.boardLeagues : c.boardLeagues,
     boardCrests: body.boardCrests !== undefined ? body.boardCrests : c.boardCrests,
     news: typeof body.news === 'boolean' ? body.news : c.news,
+    boardStrip: typeof body.boardStrip === 'boolean' ? body.boardStrip : c.boardStrip,
     newsFeeds: body.newsFeeds !== undefined ? body.newsFeeds : c.newsFeeds,
     previewAlways: typeof body.previewAlways === 'boolean' ? body.previewAlways : c.previewAlways,
     previewInTile: typeof body.previewInTile === 'boolean' ? body.previewInTile : c.previewInTile,
@@ -1068,7 +1072,7 @@ function layoutOf(c) {
     searchHintSeen: c.searchHintSeen, picture: c.picture, livePreview: c.livePreview, search: c.search, recommended: c.recommended,
     fade: c.fade, wallDrift: c.wallDrift, wallCrossfade: c.wallCrossfade, smoothScroll: c.smoothScroll, slidePanels: c.slidePanels,
     darkening: c.darkening, hideUnused: c.hideUnused, showMediaServers: c.showMediaServers, deviceNames: devNamesNow(c.deviceNames), appNames: c.appNames, appCards: c.appCards, focusPulse: c.focusPulse, navSound: c.navSound, pointerSound: c.pointerSound, ownSound: ownSoundInfo(), cardFade: c.cardFade, appIcons: c.appIcons, inputBarTransparent: c.inputBarTransparent, inputBarSwitchOnOk: c.inputBarSwitchOnOk, showClock: c.showClock, rowsBottom: c.rowsBottom, view: c.view,
-    showLastOn: c.showLastOn, showAppCount: c.showAppCount, showAppLabels: c.showAppLabels, showCec: c.showCec, showTvLogos: c.showTvLogos, showPointer: c.showPointer, reopenAfterWake: c.reopenAfterWake, weather: c.weather, weatherPlace: c.weatherPlace, info: c.info, infoLines: c.infoLines, board: c.board, boardLeagues: c.boardLeagues, boardCrests: c.boardCrests, news: c.news, newsFeeds: c.newsFeeds, scoresLeagues: scoresLib.LEAGUES, previewAlways: c.previewAlways, previewInTile: c.previewInTile, previewSize: c.previewSize, previewSound: c.previewSound, wallAnim: c.wallAnim,
+    showLastOn: c.showLastOn, showAppCount: c.showAppCount, showAppLabels: c.showAppLabels, showCec: c.showCec, showTvLogos: c.showTvLogos, showPointer: c.showPointer, reopenAfterWake: c.reopenAfterWake, weather: c.weather, weatherPlace: c.weatherPlace, info: c.info, infoLines: c.infoLines, board: c.board, boardLeagues: c.boardLeagues, boardCrests: c.boardCrests, news: c.news, newsFeeds: c.newsFeeds, boardStrip: c.boardStrip, scoresLeagues: scoresLib.LEAGUES, previewAlways: c.previewAlways, previewInTile: c.previewInTile, previewSize: c.previewSize, previewSound: c.previewSound, wallAnim: c.wallAnim,
     remoteBattery: c.remoteBattery,
     animTheme: c.animTheme, animSky: c.animSky, animLight: c.animLight, animThemes: ANIM_THEMES,
     wallShuffleMinutes: c.wallShuffleMinutes, shuffleMinutes: SHUFFLE_MINUTES, colours: c.colours,

@@ -2190,6 +2190,10 @@ html[lang="vi"] #srcTitle,html[lang="vi"] #plMode,html[lang="vi"] #pvMode,html[l
   var NEWS_SPEED = 60;
   var NEWS_BATCH = 8;
   var newsItems = [], newsWaiting = null, newsKey = '', newsAt = 0, newsShown = false;
+  // The strip runs the board's lines, when it is put there, then the headlines.
+  var stripBoard = [], stripNews = [];
+  function updateStrip() { renderStrip(stripBoard.concat(stripNews)); }
+  function renderNews(items) { stripNews = items || []; updateStrip(); }
   function newsHtml(items) {
     var parts = [];
     for (var i = 0; i < items.length; i++) {
@@ -2215,7 +2219,7 @@ html[lang="vi"] #srcTitle,html[lang="vi"] #plMode,html[lang="vi"] #pvMode,html[l
     run.style.webkitAnimationName = '';
     run.style.animationName = '';
   }
-  function renderNews(items) {
+  function renderStrip(items) {
     if (!items || !items.length) {
       if (!newsShown) return;
       newsShown = false;
@@ -2332,24 +2336,37 @@ html[lang="vi"] #srcTitle,html[lang="vi"] #plMode,html[lang="vi"] #pvMode,html[l
         : m.state === 'post' ? t('home.board.fullTime', 'FT')
         : m.status === 'STATUS_HALFTIME' ? t('home.board.halfTime', 'HT')
         : m.clock;
-      var line = { label: (many ? m.league + ' · ' : '') + label, value: value };
+      var line = { label: (many ? m.league + ' · ' : '') + label, value: value,
+                   strip: { source: m.league, title: label + (value ? '  ' + value : '') } };
       if (b.crests === 'both' || b.crests === 'crests') line.labelHtml = crestLabel(m, many, b.crests === 'crests');
       lines.push(line);
     }
     if (!lines.length) lines.push({ label: t('home.board.none', 'No matches today'), value: '' });
     return { title: t('home.board.scoresTitle', 'Today’s matches'), lines: lines };
   }
+  // The board in the strip along the bottom, chosen on the Home tab.
+  function boardInStrip() { return !!layout && layout.boardStrip === true; }
   function renderBoard(b) {
     if (b && b.kind === 'scores') b = scoresBoard(b);
-    var key = b && (b.title || (b.lines && b.lines.length)) ? JSON.stringify(b) : '';
+    var key = b && (b.title || (b.lines && b.lines.length)) ? (boardInStrip() ? 'strip ' : '') + JSON.stringify(b) : '';
     if (key === shownBoard) return;
     shownBoard = key;
-    if (!key) {
+    if (!key || boardInStrip()) {
       board = null;
       clearInterval(boardTimer); boardTimer = null;
       $('board').className = 'none';
+      // Each line after its league (or the board's title), as the news runs.
+      stripBoard = [];
+      if (key) {
+        for (var i = 0; i < b.lines.length; i++) {
+          var l = b.lines[i];
+          stripBoard.push(l.strip || { source: b.title || '', title: (l.label || '') + (l.value ? '  ' + l.value : '') });
+        }
+      }
+      updateStrip();
       return;
     }
+    if (stripBoard.length) { stripBoard = []; updateStrip(); }
     board = { title: b.title || '', lines: b.lines || [] };
     // Shown first: a board not displayed measures nothing.
     $('board').className = '';

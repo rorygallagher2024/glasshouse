@@ -3827,5 +3827,9 @@
  "home.news.feedOk": {"from": "{source}: {n} headlines", "text": "{source}: {n} titoli"},
  "home.news.notFeed": {"from": "Read, but it is not an RSS or Atom feed. Check the address.", "text": "Scaricato, ma non è un feed RSS o Atom. Controlla l'indirizzo."},
  "home.news.tooBig": {"from": "Larger than 2 MB, so it is not read.", "text": "Più grande di 2 MB, quindi non viene letto."},
- "home.news.fetchFailed": {"from": "Could not be read. Check the address, and that the TV is online.", "text": "Impossibile leggerlo. Controlla l'indirizzo e che il televisore sia connesso."}
+ "home.news.fetchFailed": {"from": "Could not be read. Check the address, and that the TV is online.", "text": "Impossibile leggerlo. Controlla l'indirizzo e che il televisore sia connesso."},
+ "home.board.place": {"from": "Shown", "text": "Mostrato"},
+ "home.board.place.beside": {"from": "Beside the lines", "text": "Accanto alle righe"},
+ "home.board.place.strip": {"from": "Running along the bottom", "text": "Scorrevole in basso"},
+ "home.board.placeDesc": {"from": "Along the bottom, the matches run in the strip the news uses, before any headlines, by name only.", "text": "In basso, le partite scorrono nella striscia delle notizie, prima dei titoli, solo con i nomi."}
 }

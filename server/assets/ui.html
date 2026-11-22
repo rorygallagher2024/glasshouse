@@ -1735,6 +1735,14 @@
         </select>
       </div>
       <div class="sub" data-t="home.board.crestsDesc">Crests come from ESPN's image server, each fetched once and kept on the TV. The same setting is used by the Scores screen saver.</div>
+      <div class="home-crests-row">
+        <label for="home-board-place" data-t="home.board.place">Shown</label>
+        <select class="pill-sel" id="home-board-place" onchange="homeBoardStrip(this.value === 'strip')">
+          <option value="beside" data-t="home.board.place.beside">Beside the lines</option>
+          <option value="strip" data-t="home.board.place.strip">Running along the bottom</option>
+        </select>
+      </div>
+      <div class="sub" data-t="home.board.placeDesc">Along the bottom, the matches run in the strip the news uses, before any headlines, by name only.</div>
     </div>
     <div class="prot-row home-gh-row home-show-row" hidden>
       <div class="prot-main">
