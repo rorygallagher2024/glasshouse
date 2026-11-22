@@ -908,12 +908,13 @@ function oledRows(d) {
              press: d.tpc ? t('tv.press.switchOff', 'Press OK to switch off') : t('tv.press.switchOn', 'Press OK to switch on'),
              hint: t('tv.oled.temporalPeakControl.hint', 'Limits how long the panel holds peak brightness, which protects it and keeps heat down. Switching it off makes burn-in more likely.') });
   if (d.screenShift)
-    r.push({ label: t('tv.oled.screenShift', 'Screen shift'), value: d.screenShift, cls: /on/i.test(d.screenShift) ? 'on' : 'off',
+    r.push({ label: t('tv.oled.screenShift', 'Screen shift'),
+             value: /on/i.test(d.screenShift) ? t('common.on', 'On') : t('common.off', 'Off'), cls: /on/i.test(d.screenShift) ? 'on' : 'off',
              act: d.writable ? 'shift' : null, on: /on/i.test(d.screenShift),
              press: /on/i.test(d.screenShift) ? t('tv.press.switchOff', 'Press OK to switch off') : t('tv.press.switchOn', 'Press OK to switch on'),
              hint: t('tv.oled.screenShift.hint', 'Nudges the whole image by a pixel now and then so a fixed edge never sits on the same pixels. Invisible in use.') });
   if (d.logoDimming)
-    r.push({ label: t('tv.oled.logoDimming', 'Logo dimming'), value: d.logoDimming, cls: /off/i.test(d.logoDimming) ? 'off' : 'on',
+    r.push({ label: t('tv.oled.logoDimming', 'Logo dimming'), value: logoDimmingText(d.logoDimming), cls: /off/i.test(d.logoDimming) ? 'off' : 'on',
              act: d.writable ? 'logo' : null, cur: String(d.logoDimming).toLowerCase(),
              press: t('tv.oled.logoDimming.press', 'Press OK for off, light or high'),
              hint: t('tv.oled.logoDimming.hint', 'Spots a station logo that has not moved and fades it slightly. Higher settings dim more of the picture around it.') });
@@ -928,6 +929,12 @@ function oledRows(d) {
       hint: t('tv.oled.cancelAScheduledRefresher.hint', 'Clears a queued calibration so the TV does not spend an hour on it after the next switch-off.') });
   }
   return r;
+}
+
+// LG's logo dimming levels as the Panel care tab names them.
+function logoDimmingText(v) {
+  v = String(v || 'off').toLowerCase();
+  return v === 'strong' ? t('oled.logo.high', 'High') : v === 'light' ? t('oled.logo.light', 'Light') : t('common.off', 'Off');
 }
 
 function saverItemTitle(modes, id) {
