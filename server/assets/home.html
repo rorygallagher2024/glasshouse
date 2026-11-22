@@ -2892,7 +2892,7 @@ html[lang="vi"] #srcTitle,html[lang="vi"] #plMode,html[lang="vi"] #pvMode,html[l
   // muted: the stream's own, kept here so a recovery reopens it as it is shown now.
   // timeshift: played from the server's recording, which can pause (lib/iptv-timeshift);
   // behindMs: time spent paused since the live point; left: seconds the recording can still hold the pause.
-  var tvStream = { gen: 0, item: null, format: '', playing: false, watch: null, onState: null, leaseTimer: null,
+  var tvStream = { gen: 0, claim: -1, item: null, format: '', playing: false, watch: null, onState: null, leaseTimer: null,
     muted: true, retryTimer: null, tries: 0, everPlayed: false, lostAt: 0, openedAt: 0, full: false,
     timeshift: false, paused: false, pausedAt: 0, behindMs: 0, capacity: null, tsTimer: null, tsUrl: '', noPauseAt: 0,
     // seekTo: seconds behind live the next open starts at; seekTarget: where left and right are heading; kept: seconds the stick holds.
@@ -3367,6 +3367,8 @@ html[lang="vi"] #srcTitle,html[lang="vi"] #plMode,html[lang="vi"] #pvMode,html[l
       tvStream.seekTo = null;
       // Before either player: the background video may hold the TV's decoder, which Home's player uses too.
       wallVideoYield();
+      // And it stays away until the visit ends, also while Home's player loads or reconnects with no source.
+      tvStream.claim = gen;
       var src = extra.length ? r.url + (r.url.indexOf('?') === -1 ? '?' : '&') + extra.join('&') : r.url;
       var playNow = function () {
         var played = v.play();
@@ -6207,6 +6209,13 @@ html[lang="vi"] #srcTitle,html[lang="vi"] #plMode,html[lang="vi"] #pvMode,html[l
   function previewHoldsVideo() {
     var v = $('pvVideo');
     if (tilePreview.opening !== null && tilePreview.opening === tilePreview.gen) return true;
+    /*
+     * A channel opening in Home's player: mpegts.js is still loading on the first one
+     * after Home loads, and the <video> has no source yet. A heartbeat then loaded the
+     * background again, and on a G3 (webOS 10.3.0) Home's player got the picture's size
+     * and never a frame, until the TV's player took the channel (6 first opens in 6).
+     */
+    if (tvStream.item && tvStream.claim === tvStream.gen) return true;
     return !!v && (v.getAttribute('src') !== null || !!v.firstChild);
   }
 
@@ -6350,6 +6359,12 @@ html[lang="vi"] #srcTitle,html[lang="vi"] #plMode,html[lang="vi"] #pvMode,html[l
 
   function playWallVideo(index, strength, startAt) {
     if (!wallVideoEl || !wallVideoSources.length) return;
+    // The next clip, or one tried after an error, waits too while the preview has the decoder.
+    if (previewHoldsVideo()) {
+      unloadWallVideo();
+      wallVideoNeedsRestart = true;
+      return;
+    }
     wallVideoNeedsRestart = false;
     wallVideoIndex = ((index % wallVideoSources.length) + wallVideoSources.length) % wallVideoSources.length;
     var video = wallVideoEl, item = wallVideoItems[wallVideoIndex] || { url: wallVideoSources[wallVideoIndex] }, source = item.url;
