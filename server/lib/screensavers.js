@@ -47,7 +47,9 @@ var crestsFn = null;
 /** @type {null|function(): Array<{url: string, name: string}>} */
 var newsFeedsFn = null;
 var DEFAULT_SAVER_LEAGUES = ['soccer/eng.1'];
-var MAX_SAVER_LEAGUES = 4;
+// As many as Home's board takes: one list for both, so none is lost when it
+// is changed on the Screensaver tab.
+var MAX_SAVER_LEAGUES = scoresLib.LEAGUES.length;
 /** @type {typeof import('./haentity') | null} */
 var haEntityModule = null;
 /*

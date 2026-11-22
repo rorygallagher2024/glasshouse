@@ -1166,10 +1166,9 @@ async function ssArtRemove(id) {
 let ssLeagues = [];
 function renderSsLeagues(options, chosen, locked) {
   ssLeagues = chosen.slice();
-  const full = chosen.length >= 4;
   q('ss-leagues').innerHTML = options.map(l => {
     const on = chosen.indexOf(l.id) !== -1;
-    const off = locked || (on ? chosen.length < 2 : full);
+    const off = locked || (on && chosen.length < 2);
     return `<button type="button" class="pill ${on ? 'good' : 'idle'}" translate="no" aria-pressed="${on}" ${off ? 'disabled' : ''}
       onclick="ssToggleLeague('${jsq(l.id)}')">${esc(l.label)}</button>`;
   }).join('');

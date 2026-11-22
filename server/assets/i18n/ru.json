@@ -3805,7 +3805,7 @@
  "home.board.scoresTitle": {"from": "Today’s matches", "text": "Матчи сегодня"},
  "home.boardDesc": {"from": "Beside the lines: today's matches in the leagues you choose, with their kick-off times and live scores, four at a time. Or a board Home Assistant sends.", "text": "Рядом со строками: сегодняшние матчи в выбранных лигах, со временем начала и счётом в прямом эфире, по четыре. Или табло, которое отправляет Home Assistant."},
  "ss.leagues": {"from": "Leagues", "text": "Лиги"},
- "ss.leaguesDesc": {"from": "Up to four, the same as the board on Glasshouse Home. Glasshouse reads their matches from ESPN at most once a minute while the screen saver shows. Nothing else is sent.", "text": "До четырёх, те же, что на табло Glasshouse Home. Glasshouse читает их матчи с ESPN не чаще раза в минуту, пока показывается заставка. Больше ничего не отправляется."},
+ "ss.leaguesDesc": {"from": "The same leagues as the board on Glasshouse Home. Glasshouse reads their matches from ESPN at most once a minute while the screen saver shows. Nothing else is sent.", "text": "Те же лиги, что на табло Glasshouse Home. Glasshouse читает их матчи с ESPN не чаще раза в минуту, пока показывается заставка. Больше ничего не отправляется."},
  "srv.saver.noLeagues": {"from": "Pick at least one league.", "text": "Выберите хотя бы одну лигу."},
  "srv.saver.noScores": {"from": "It asks for the day's matches, which only Glasshouse's own screen savers are given.", "text": "Она запрашивает матчи дня, которые получают только собственные заставки Glasshouse."},
  "home.board.crests": {"from": "Teams shown as", "text": "Команды показываются как"},

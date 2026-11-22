@@ -1,6 +1,6 @@
 /*
  * test/test-saver-scores.js - The Scores screen saver shows the Premier League
- * until leagues are picked, keeps up to four known ones, refuses none, and is
+ * until leagues are picked, keeps the known ones once each, refuses none, and is
  * staged with the address of /api/scores for them, carrying the token. With
  * Glasshouse Home they are its board's leagues, picked on either tab. A
  * screen saver added on the TV is not given that address.
@@ -66,10 +66,10 @@ screensavers.setSaverLeagues('scores', [], function (none) {
     screensavers.setSaverLeagues('scores', ['soccer/uefa.champions', 'nope', 'soccer/eng.1', 'soccer/eng.1',
       'soccer/swe.1', 'hockey/nhl', 'basketball/nba'], function (r) {
       assert.strictEqual(r.ok, true);
-      assert.deepEqual(r.leagues, ['soccer/uefa.champions', 'soccer/eng.1', 'soccer/swe.1', 'hockey/nhl'], 'known, once each, up to four');
+      assert.deepEqual(r.leagues, ['soccer/uefa.champions', 'soccer/eng.1', 'soccer/swe.1', 'hockey/nhl', 'basketball/nba'], 'known, once each');
       assert.deepEqual(mode('scores').leagues, r.leagues);
       assert.ok(staged().indexOf('leagues=' + encodeURIComponent(r.leagues.join(',')) + '&k=t1') !== -1, 'restaged with them');
-      console.log('  ✓ up to four known leagues are kept and restaged, none is refused');
+      console.log('  ✓ known leagues are kept once each and restaged, none is refused');
 
       // With Glasshouse Home, the leagues are its board's: one list for both.
       var board = ['soccer/swe.1'];
