@@ -1255,21 +1255,36 @@ function homeWeatherPick(i) {
 const HOME_INFO_SLOTS = 4;
 let homeHaList = null;       // { configured, entities, error } once read
 let homeHaListReading = false;
+onHaEntitiesReset(() => { homeHaList = null; homeHaListReading = false; });
+
+haPickerRegister('home:info', {
+  listId: 'home-info-picker',
+  inputId: 'home-info-add',
+  getUsedIds: () => (homeInfoList || []).map(l => l.entity),
+  onPick: id => {
+    const inp = q('home-info-add');
+    if (inp) inp.value = id;
+    homeInfoAdd();
+  }
+});
+
+function homeInfoFilter() {
+  const inp = q('home-info-add');
+  if (inp) haPickerFilter('home:info', inp.value);
+}
+
+function homeInfoTogglePicker() {
+  haPickerToggle('home:info');
+}
 
 async function homeReadHaList() {
   if (homeHaList || homeHaListReading) return;
   homeHaListReading = true;
-  try {
-    const r = await fetch(api('/api/ha/entities'));
-    const d = await r.json();
-    homeHaList = { configured: !!d.configured, entities: Array.isArray(d.entities) ? d.entities : [], error: d.ok ? '' : (d.error || '') };
-  } catch (e) {
-    homeHaList = { configured: true, entities: [], error: e.message };
-  }
-  homeHaListReading = false;
-  const dl = q('home-info-entities');
-  if (dl) dl.innerHTML = homeHaList.entities.map(e => `<option value="${esc(e.id)}">${esc(e.name || '')}</option>`).join('');
-  if (homeStatus) renderHomeInfo(homeStatus);
+  await ensureHaEntities(st => {
+    homeHaList = { configured: st.configured, entities: st.entities, error: st.error };
+    homeHaListReading = false;
+    if (homeStatus) renderHomeInfo(homeStatus);
+  });
 }
 
 // The lines as last saved or edited here: edits change this copy and save it
@@ -1339,6 +1354,7 @@ function homeInfoDraw() {
   // An entity id, the same in every language.
   q('home-info-add').placeholder = 'sensor.bin_collection';
   q('home-info-add').disabled = locked || full;
+  if (q('home-info-pick-btn')) q('home-info-pick-btn').disabled = locked || full;
   q('home-info-add-btn').disabled = locked || full;
   q('home-info-add-hint').textContent = full ? t('home.info.full', 'Four lines at most: remove one to add another.')
     : t('home.info.addHint', 'Start typing to pick one of Home Assistant\'s entities.');
@@ -1358,7 +1374,7 @@ function homeInfoDraw() {
   let html = '';
   if (lines.length) html += '<div class="ss-li-scroll home-info-list">';
   lines.forEach((l, i) => {
-    const hit = homeHaList ? homeHaList.entities.find(e => e.id === l.entity) : null;
+    const hit = haEntityLookup(l.entity) || (homeHaList ? homeHaList.entities.find(e => e.id === l.entity) : null);
     const own = (hit && hit.name) || l.entity;
     // How the line reads beside the clock, with a made-up value.
     const value = l.attribute ? t('home.info.tomorrow', 'tomorrow') : '…' + (hit && hit.unit ? ' ' + hit.unit : '');
@@ -1403,21 +1419,23 @@ function homeInfoAdd() {
   if (!entity) {
     homeInfoSay(t('home.info.needEntity', 'Type or pick an entity first.'), true);
     input.focus();
+    homeInfoTogglePicker();
     return;
   }
   if (!/^[a-z0-9_]+\.[a-z0-9_]+$/.test(entity)) {
     homeInfoSay(t('home.info.badEntity', 'An entity looks like sensor.bin_collection: a domain, a dot and a name.'), true);
     return;
   }
-  if (homeHaList && homeHaList.entities.length && !homeHaList.entities.some(e => e.id === entity)) {
+  if (homeHaList && homeHaList.entities.length && !haEntityLookup(entity) && !homeHaList.entities.some(e => e.id === entity)) {
     homeInfoSay(t('home.info.noSuchEntity', 'Home Assistant has no entity called {entity}.', { entity }), true);
     return;
   }
   if (lines.length >= HOME_INFO_SLOTS) return;
+  haPickerCloseAll();
   lines.push({ entity, attribute: '', label: '', before: '' });
   input.value = '';
   homeInfoCommit(lines);
-  const hit = homeHaList ? homeHaList.entities.find(e => e.id === entity) : null;
+  const hit = haEntityLookup(entity) || (homeHaList ? homeHaList.entities.find(e => e.id === entity) : null);
   homeInfoSay(t('home.info.added', 'Added {name} as line {n}.', { name: (hit && hit.name) || entity, n: lines.length }));
 }
 
