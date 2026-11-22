@@ -417,6 +417,16 @@ test('LG Channels\' content API cdpsvc is blocked only in Everything mode, its b
   assert.ok(fullList.indexOf('eic.cdpsvc.lgtvcommon.com') !== -1, 'region-prefixed cdpsvc must be in full mode');
 });
 
+test('LG\'s macro-regions are blocked on the ad hosts, on both tiers (#1556)', function () {
+  ['ads', 'full'].forEach(function (mode) {
+    var list = privacy.adBlockList(mode);
+    ['eu7.info.lgsmartad.com', 'eu7.ad.lgsmartad.com', 'na.info.lgsmartad.com', 'me.cdpbeacon.lgtvcommon.com'].forEach(function (h) {
+      assert.ok(list.indexOf(h) !== -1, h + ' must be in ' + mode + ' mode');
+    });
+  });
+  assert.strictEqual(privacy.adBlockList('ads').indexOf('eu7.cdpsvc.lgtvcommon.com'), -1, 'cdpsvc stays off the Ads tier');
+});
+
 test('Google push messaging is blocked only in Everything mode, on both address families', function () {
   assert.ok(sinkholed(privacy.adBlockHostsTable('full'), 'mtalk.google.com'));
   ['ads', 'off'].forEach(function (mode) {

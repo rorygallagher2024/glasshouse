@@ -1261,6 +1261,10 @@ beacons, `cdpbeacon` and `cdpbeacon2`, stay on Ads & telemetry. Existing country
 instead of importing every country's names. Classification and unobserved
 variants are [documented as upstream evidence](development/TV-RESEARCH.md#additional-categorized-domain-coverage).
 
+The ad hosts take the same macro-regions as prefixes, beside `aic`, `eic`, `kic`,
+`eu` and the country: a C1 on webOS 6.5 looked up `eu7.info.lgsmartad.com`,
+which no tier blocked ([#1556](https://github.com/rorygallagher2024/glasshouse/issues/1556)).
+
 The clock gate also covers the documented SDP macro-regions `af`, `as`, `la`,
 `me`, `na` and `eu7`, and WiseLG's `ruc` host. A saved country gets its `country7`
 SDP variant only where documented: `au`, `br`, `cn`, `hk`, `id`, `il`, `jp`, `kr`,
