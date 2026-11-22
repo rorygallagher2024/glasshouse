@@ -40,13 +40,8 @@ function refresh(cb) {
   cb = cb || function () {};
   if (!lunaFn || reading) return cb(is12);
   reading = true;
-  lunaFn('com.webos.settingsservice/getSystemSettings', { category: 'option', keys: ['localeInfo'] }, function (l) {
-    var locales = l && l.settings && l.settings.localeInfo && l.settings.localeInfo.locales;
-    var ui = locales && typeof locales.UI === 'string' ? locales.UI : '';
-    if (/^[a-z]{2,3}(-[A-Za-z0-9]{2,4})*$/.test(ui) && ui !== uiLocale) {
-      uiLocale = ui;
-      onChangeFn(is12);
-    }
+  readLocale({ category: 'option', keys: ['localeInfo'] }, function (found) {
+    if (!found) readLocale({ keys: ['localeInfo'] }, function () {});
   });
   lunaFn('com.webos.service.systemservice/getPreferences', { keys: ['timeFormat'] }, function (r) {
     reading = false;
@@ -92,6 +87,20 @@ function hour12() {
 }
 
 // The TV's menu language as Qt names a locale, sv_SE, or '' before it is known.
+// cb(true) once localeInfo.locales.UI has been read from this payload.
+function readLocale(payload, cb) {
+  lunaFn('com.webos.settingsservice/getSystemSettings', payload, function (l) {
+    var locales = l && l.settings && l.settings.localeInfo && l.settings.localeInfo.locales;
+    var ui = locales && typeof locales.UI === 'string' ? locales.UI : '';
+    if (!/^[a-z]{2,3}(-[A-Za-z0-9]{2,4})*$/.test(ui)) return cb(false);
+    if (ui !== uiLocale) {
+      uiLocale = ui;
+      onChangeFn(is12);
+    }
+    cb(true);
+  });
+}
+
 function qtLocale() {
   if (Date.now() - readAt > STALE_MS) refresh();
   return uiLocale.replace(/-/g, '_');
