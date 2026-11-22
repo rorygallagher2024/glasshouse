@@ -103,7 +103,12 @@ var ADBLOCK_REGIONAL = [
   // gates it on the general terms alone, not on any advertising consent.
   'api.adts.lgtvcommon.com'
 ];
-var ADBLOCK_REGION_PREFIXES = ['aic', 'eic', 'kic', 'eu'];
+/*
+ * LG's service regions, and the macro-regions its SDP names use, which its ad
+ * hosts take too: a C1 (webOS 6.5) looked up eu7.info.lgsmartad.com, which no
+ * tier blocked (#1556).
+ */
+var ADBLOCK_REGION_PREFIXES = ['aic', 'eic', 'kic', 'eu', 'eu7', 'af', 'as', 'la', 'me', 'na'];
 // Until the TV has reported its country, the countries LG is seen using.
 var ADBLOCK_FALLBACK_COUNTRIES = ['us', 'gb', 'au', 'br', 'ca', 'de', 'fr'];
 var COUNTRY_FILE = '/var/lib/tvweb/country';
