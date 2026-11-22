@@ -96,6 +96,7 @@ var HA_ENTITIES = [
   // as the weather badge next to the clock. See docs/dashboard/home.md.
   { id: 'weather', type: 'text', name: 'Weather Push', cat: 'controls' },
   { id: 'home_info', type: 'text', name: 'Home Info Push', cat: 'controls' },
+  { id: 'home_board', type: 'text', name: 'Home Board Push', cat: 'controls' },
   { id: 'picture_mode', type: 'select', name: 'Picture Mode (Select)', cat: 'controls' },
   { id: 'energy_saving', type: 'select', name: 'Energy Saving Step', cat: 'controls' },
   { id: 'sound_output', type: 'select', name: 'Sound Output', cat: 'controls' },
@@ -1149,6 +1150,17 @@ function buildEntities(opts) {
           name: 'Home Info Push',
           command_topic: topic.command('homeInfo'),
           icon: 'mdi:information-outline',
+          mode: 'text',
+          entity_category: 'config'
+        }
+      },
+      {
+        // A titled board of lines beside them, as the day's matches (setHomeBoard).
+        type: 'text', id: 'home_board',
+        payload: {
+          name: 'Home Board Push',
+          command_topic: topic.command('homeBoard'),
+          icon: 'mdi:scoreboard-outline',
           mode: 'text',
           entity_category: 'config'
         }

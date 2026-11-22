@@ -446,6 +446,35 @@ action:
       entity_id: scene.cinema
 ```
 
+### 9. A board on Glasshouse Home
+With the Home tab's **Home Assistant: board** set to **Sent by an automation**, an automation can put a titled list of up to twenty lines beside the lines, shown four at a time, such as today's matches. Glasshouse fetches nothing for it: the lines come from whatever integration you choose, and its terms are between you and it. With `minutes`, the board goes that long after the last push, so results that stop coming are not left up; an empty payload takes it away at once. It is not kept across a restart.
+
+This sends the matches of the teams followed with [Team Tracker](https://github.com/vasqued2/ha-teamtracker) whenever one of them changes:
+
+```yaml
+alias: "Board on Glasshouse Home"
+trigger:
+  - platform: state
+    entity_id:
+      - sensor.team_tracker_malmo
+      - sensor.team_tracker_arsenal
+action:
+  - action: mqtt.publish
+    data:
+      topic: lgtv/command/homeBoard
+      payload: >-
+        {% set ns = namespace(lines=[]) %}
+        {% for s in ['sensor.team_tracker_malmo', 'sensor.team_tracker_arsenal'] %}
+          {% set a = states[s].attributes %}
+          {% if states(s) in ['PRE', 'IN', 'POST'] %}
+            {% set score = a.team_score ~ '–' ~ a.opponent_score if states(s) != 'PRE' else '–' %}
+            {% set ns.lines = ns.lines + [{'label': a.team_name ~ ' ' ~ score ~ ' ' ~ a.opponent_name,
+                                           'value': a.clock if states(s) == 'IN' else (a.kickoff_in or '')}] %}
+          {% endif %}
+        {% endfor %}
+        {{ {'title': 'Football today', 'minutes': 30, 'lines': ns.lines} | to_json }}
+```
+
 ---
 
 ## Universal Media Player Setup

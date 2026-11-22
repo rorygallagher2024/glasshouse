@@ -3699,6 +3699,31 @@ step('lines from entities chosen on the dashboard are read through Home Assistan
   });
 });
 
+step('the board: off unless chosen, or a board Home Assistant pushes while MQTT is set up', function (done) {
+  var clock = Date.now();
+  var mqtt = true;
+  start(null, { now: function () { return clock; }, mqttOn: function () { return mqtt; } });
+  assert.strictEqual(home.layout().board, 'off', 'off unless chosen');
+  assert.strictEqual(home.normalise({ board: 'scores' }).board, 'off', 'no other source');
+  home.setLayout({ board: 'ha' }, function () {
+    var lines = [];
+    for (var i = 0; i < 25; i++) lines.push({ label: 'Team ' + i, value: "67'" });
+    home.setHomeBoard(JSON.stringify({ title: 'Football today', minutes: 10, lines: lines }));
+    var pushed = home.beat().board;
+    assert.strictEqual(pushed.title, 'Football today');
+    assert.strictEqual(pushed.lines.length, 20, 'twenty at most');
+    mqtt = false;
+    assert.strictEqual(home.beat().board, null, 'not shown once MQTT is not set up');
+    mqtt = true;
+    clock += 10 * 60000 + 1000;
+    assert.strictEqual(home.beat().board, null, 'a pushed board goes once its minutes are up');
+    home.setHomeBoard(JSON.stringify({ title: 'x', lines: [] }));
+    home.setHomeBoard('');
+    assert.strictEqual(home.beat().board, null, 'an empty push takes it away');
+    done();
+  });
+});
+
 step('a Weather switch saved off before the source choice stays off', function (done) {
   start({ enabled: false, showWeather: false });
   assert.strictEqual(home.layout().weather, 'off');

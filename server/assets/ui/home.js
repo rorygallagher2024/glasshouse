@@ -396,6 +396,7 @@ function renderHome() {
   loadHomeCardIcons();
   renderHomeWeather(st);
   renderHomeInfo(st);
+  renderHomeBoard(st);
   const countAlt = q('home-show-count-alt');
   if (countAlt) countAlt.hidden = !altView;
   const searchRow = q('home-search-row');
@@ -1464,6 +1465,24 @@ function homeInfoSource(value) {
   homeSaveLayout({ info: value });
 }
 
+// The board: off, or a board Home Assistant sends, over MQTT, so the row is
+// shown only with MQTT set up, as the values at a glance' sources are.
+function renderHomeBoard(st) {
+  const sel = q('home-board-sel');
+  if (!sel) return;
+  const mqtt = !!(st.haLines && st.haLines.mqtt);
+  const row = q('home-board-row');
+  if (row) row.hidden = !st.supported.ok || !mqtt;
+  // Sent while MQTT was set up, it reads as off until MQTT is again.
+  const source = mqtt ? ((st.layout && st.layout.board) || 'off') : 'off';
+  sel.value = source;
+  sel.disabled = !homeWritable();
+  q('home-board-panel').hidden = !st.supported.ok || !mqtt || source === 'off';
+}
+
+function homeBoardSource(value) {
+  homeSaveLayout({ board: value });
+}
 
 function homeShow(key) {
   homeSaveLayout({ [key]: homeLayout[key] === false });
