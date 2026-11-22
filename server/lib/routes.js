@@ -2558,6 +2558,14 @@ function handleRequest(req, res) {
     });
   }
 
+  if (pathname === '/api/apps/close' && req.method === 'POST') {
+    return readJsonBody(req, res, function (body) {
+      appsModule.closeRunningApp(body || {}, function (r) {
+        send(res, r && r.ok ? 200 : 400, JSON.stringify(r));
+      });
+    });
+  }
+
   if ((pathname === '/api/apps/hide' || pathname === '/api/apps/unhide') && fromHomebrewChannel()) {
     return send(res, 400, JSON.stringify({ ok: false, error: tileHidingOffMsg }));
   }

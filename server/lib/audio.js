@@ -70,6 +70,57 @@ function sectionValues(text) {
   return out;
 }
 
+function colonValues(text) {
+  /** @type {Object.<string, string>} */
+  var out = {};
+  String(text || '').split(/\r?\n/).forEach(function (line) {
+    var pair = /^([^:]+):\s*(.+)$/.exec(line);
+    if (pair) out[pair[1].trim()] = pair[2].trim();
+  });
+  return out;
+}
+
+function amstDecoderCodec(d) {
+  if (!d || d.bStarted !== 'ON') return null;
+  var raw = String(d.codec || '').replace(/^(?:LX_)?AUD_CODEC_/i, '');
+  if (!raw || /^(UNKNOWN|NONE)$/i.test(raw)) return null;
+  return raw;
+}
+
+// webOS 4 (M16+) lacks getAudioInputProperty and /proc/lgtv-driver/audio,
+// exposing the active DSP decoder and renderer state under /proc/lg/amst0 instead.
+function amstAudioInput() {
+  var status = colonValues(util.readTrimmed('/proc/lg/amst0/status'));
+  var decs = [0, 1].map(function (n) { return colonValues(util.readTrimmed('/proc/lg/amst0/dec' + n + '/status')); });
+  var readable = Object.keys(status).length > 0 || decs.some(function (d) { return Object.keys(d).length > 0; });
+  if (!readable) return { readable: false, input: null, codecRaw: null };
+  var main = /^[01]$/.test(status['Main Decoder'] || '') ? Number(status['Main Decoder']) : -1;
+  var order = main === 1 ? [decs[1], decs[0]] : [decs[0], decs[1]];
+  for (var i = 0; i < order.length; i++) {
+    var codec = amstDecoderCodec(order[i]);
+    if (codec) {
+      var rate = Number(order[i].samplingFreq);
+      var sampleRate = rate > 0 ? (rate < 1000 ? rate * 1000 : rate) : 0;
+      var input = { codec: names.audioCodec(codec).display };
+      if (sampleRate > 0) input.sampleRate = sampleRate;
+      return { readable: true, input: input, codecRaw: codec.toLowerCase() };
+    }
+  }
+  var rens = [0, 1].map(function (n) { return colonValues(util.readTrimmed('/proc/lg/amst0/ren' + n + '/status')); });
+  for (var j = 0; j < rens.length; j++) {
+    var r = rens[j];
+    var renRate = Number(r.samplingFreq);
+    if (r.bStarted === 'ON' && r.bSetMainRen === '1' && renRate > 0 && /^AUD_INPUT_HDMI/i.test(r.input || '')) {
+      return {
+        readable: true,
+        input: { codec: 'PCM', sampleRate: renRate < 1000 ? renRate * 1000 : renRate },
+        codecRaw: 'pcm'
+      };
+    }
+  }
+  return { readable: true, input: null, codecRaw: null };
+}
+
 // SAD strings can include CTA's audio-block header, or be bare triplets.
 function sads(text) {
   if (typeof text !== 'string' || !/^[\da-f\s,:]+$/i.test(text)) return null;
@@ -422,17 +473,18 @@ function build(replies, decoder) {
   var audio = replies.input && replies.input.returnValue !== false && replies.input.audioInputProperty;
   var activeInput = Array.isArray(audio) && audio[0] && audio[0].codec ? audio[0] : null;
   var started = adecs.some(function (a) { return a.Start === '1' && /^HDMI(?:_PORT)?\d/.test(a.Connect || ''); });
-  // Whether the TV can say what audio comes in at all: a B8 (webOS 4.4.3) has
-  // neither getAudioInputProperty nor the driver's hdmi file, where a C2 with
-  // nothing playing has both and reports no audio.
-  var inputReadable = Array.isArray(audio) || Object.keys(hdmi).length > 0;
+  var amst = amstAudioInput();
+  // Whether the TV can say what audio comes in at all: newer TVs report
+  // getAudioInputProperty or /proc/lgtv-driver/audio, and webOS 4 (B8) exposes
+  // DSP decoder state under /proc/lg/amst0.
+  var inputReadable = Array.isArray(audio) || Object.keys(hdmi).length > 0 || amst.readable;
   // LG's driver writes SamplingRate in Hz (48000), while Realtek writes kHz (48).
   var rawRate = Number(hdmi.SamplingRate);
   var sampleRate = rawRate > 0 ? (rawRate < 1000 ? rawRate * 1000 : rawRate) : 0;
   var liveInput = activeInput ? { codec: names.audioCodec(activeInput.codec).display,
     immersive: activeInput.immersive ? names.audioImmersive(activeInput.immersive) : null } :
     started && hdmi.AudioData === '1' && sampleRate > 0 ?
-      { codec: names.audioCodec(hdmi.Codec).display, sampleRate: sampleRate } : null;
+      { codec: names.audioCodec(hdmi.Codec).display, sampleRate: sampleRate } : amst.input;
   // getARCEDIDInfo.eARC describes EDID policy, not the negotiated link. The
   // G3 returned true there while getARCState and its driver reported ARC.
   var earc = sound.EARC && sound.EARC.EArcOnOff === 'On';
@@ -553,4 +605,4 @@ function init(opts) {
   receiverMap = opts.hdmiReceiverMap || null;
 }
 
-module.exports = { init: init, status: status, setOverride: setOverride };
+module.exports = { init: init, status: status, setOverride: setOverride, amstAudioInput: amstAudioInput };

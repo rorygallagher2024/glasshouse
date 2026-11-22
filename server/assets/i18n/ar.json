@@ -3864,5 +3864,17 @@
  "ha.picker.selected": {"text": "مختار", "from": "Selected"},
  "ha.picker.showMore": {"text": "عرض المزيد ({n} متبقٍ)", "from": "Show more ({n} remaining)"},
  "ha.picker.showingOf": {"text": "عرض {shown} من أصل {n} مطابق ({total} إجمالاً)", "from": "Showing {shown} of {n} matching ({total} total)"},
- "ha.picker.withUnit": {"text": "بوحدة قياس", "from": "With unit"}
+ "ha.picker.withUnit": {"text": "بوحدة قياس", "from": "With unit"},
+ "apps.running.close": {"text": "إغلاق", "from": "Close"},
+ "apps.running.closeAll": {"text": "إغلاق الكل", "from": "Close all"},
+ "apps.running.closeFailed": {"text": "تعذّر إغلاق التطبيق: {error}", "from": "Could not close app: {error}"},
+ "apps.running.closing": {"text": "جارٍ الإغلاق…", "from": "Closing…"},
+ "apps.running.desc": {"text": "التطبيقات المفتوحة حالياً أو المحمّلة في ذاكرة التلفاز. إغلاق التطبيق يوقف عمليته ويحرّر ذاكرته فوراً.", "from": "Apps currently open or loaded in memory on the TV. Closing an app stops its process and frees its memory right away."},
+ "apps.running.inFront": {"text": "في الواجهة", "from": "In front"},
+ "apps.running.mb": {"text": "{mb} ميغابايت", "from": "{mb} MB"},
+ "apps.running.none": {"text": "لا يوجد قيد التشغيل", "from": "None running"},
+ "apps.running.noneDesc": {"text": "لا توجد تطبيقات قيد التشغيل في الذاكرة حالياً.", "from": "No apps are currently running in memory."},
+ "apps.running.summaryMb": {"text": "{n} تطبيقات · {mb} ميغابايت", "from": "{n} apps · {mb} MB"},
+ "apps.running.summaryOneMb": {"text": "تطبيق واحد · {mb} ميغابايت", "from": "1 app · {mb} MB"},
+ "apps.running.title": {"text": "التطبيقات في الذاكرة", "from": "Apps in memory"}
 }

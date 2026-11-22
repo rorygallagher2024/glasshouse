@@ -4041,3 +4041,12 @@ unavailable and closes. On this TV, setting it to `false` removed both at
 once, without restarting anything, and `true` brought them back.
 LG has no brightness bar to copy; the level bar of a Brightness key takes this
 layout.
+
+## Live audio decoder state under `/proc/lg/amst0` (B8, webOS 4.4.3)
+
+Measured on 22 November 2026 on an OLED65B8SLC (`05.50.70`) while Spotify (`spotify-beehive`) played in the foreground. The TV answers `Unknown method` for `com.webos.service.audio/tv/getAudioInputProperty` and has no `/proc/lgtv-driver/audio` files, while `/proc/lg/amst0/` exposes DSP decoder and renderer state:
+
+- `/proc/lg/amst0/status` reports `Main Decoder : 1`.
+- `/proc/lg/amst0/dec0/status` (idle HDMI 2) reports `bStarted: OFF`, `codec: AUD_CODEC_UNKNOWN`, `samplingFreq: 0`.
+- `/proc/lg/amst0/dec1/status` (active Spotify) reports `bStarted: ON`, `input: AUD_INPUT_SYSTEM`, `codec: AUD_CODEC_AAC`, `samplingFreq: 44100`, `avgBitRate: 128000`.
+- `/proc/lg/amst0/ren{0,1}/status` report `bStarted`, `input` (`AUD_INPUT_HDMI2`, `AUD_INPUT_SYSTEM`), `bSetMainRen`, and `samplingFreq`.

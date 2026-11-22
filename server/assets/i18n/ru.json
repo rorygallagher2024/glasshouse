@@ -3878,5 +3878,17 @@
  "ha.picker.selected": {"text": "Выбрано", "from": "Selected"},
  "ha.picker.showMore": {"text": "Показать ещё (осталось {n})", "from": "Show more ({n} remaining)"},
  "ha.picker.showingOf": {"text": "Показано {shown} из {n} найденных (всего {total})", "from": "Showing {shown} of {n} matching ({total} total)"},
- "ha.picker.withUnit": {"text": "С единицей", "from": "With unit"}
+ "ha.picker.withUnit": {"text": "С единицей", "from": "With unit"},
+ "apps.running.close": {"text": "Закрыть", "from": "Close"},
+ "apps.running.closeAll": {"text": "Закрыть все", "from": "Close all"},
+ "apps.running.closeFailed": {"text": "Не удалось закрыть приложение: {error}", "from": "Could not close app: {error}"},
+ "apps.running.closing": {"text": "Закрытие…", "from": "Closing…"},
+ "apps.running.desc": {"text": "Приложения, открытые или загруженные сейчас в память телевизора. Закрытие останавливает процесс и сразу освобождает память.", "from": "Apps currently open or loaded in memory on the TV. Closing an app stops its process and frees its memory right away."},
+ "apps.running.inFront": {"text": "На экране", "from": "In front"},
+ "apps.running.mb": {"text": "{mb} МБ", "from": "{mb} MB"},
+ "apps.running.none": {"text": "Нет запущенных", "from": "None running"},
+ "apps.running.noneDesc": {"text": "Сейчас в памяти нет запущенных приложений.", "from": "No apps are currently running in memory."},
+ "apps.running.summaryMb": {"text": "{n} прил. · {mb} МБ", "from": "{n} apps · {mb} MB"},
+ "apps.running.summaryOneMb": {"text": "1 прил. · {mb} МБ", "from": "1 app · {mb} MB"},
+ "apps.running.title": {"text": "Приложения в памяти", "from": "Apps in memory"}
 }

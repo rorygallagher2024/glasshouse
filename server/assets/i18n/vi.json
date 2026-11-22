@@ -3881,5 +3881,17 @@
  "ha.picker.selected": {"text": "Đã chọn", "from": "Selected"},
  "ha.picker.showMore": {"text": "Hiện thêm (còn {n})", "from": "Show more ({n} remaining)"},
  "ha.picker.showingOf": {"text": "Hiển thị {shown} trên {n} kết quả khớp (tổng {total})", "from": "Showing {shown} of {n} matching ({total} total)"},
- "ha.picker.withUnit": {"text": "Có đơn vị", "from": "With unit"}
+ "ha.picker.withUnit": {"text": "Có đơn vị", "from": "With unit"},
+ "apps.running.close": {"text": "Đóng", "from": "Close"},
+ "apps.running.closeAll": {"text": "Đóng tất cả", "from": "Close all"},
+ "apps.running.closeFailed": {"text": "Không thể đóng ứng dụng: {error}", "from": "Could not close app: {error}"},
+ "apps.running.closing": {"text": "Đang đóng…", "from": "Closing…"},
+ "apps.running.desc": {"text": "Các ứng dụng đang mở hoặc được tải trong bộ nhớ của TV. Đóng một ứng dụng sẽ dừng tiến trình của nó và giải phóng bộ nhớ ngay lập tức.", "from": "Apps currently open or loaded in memory on the TV. Closing an app stops its process and frees its memory right away."},
+ "apps.running.inFront": {"text": "Đang hiển thị", "from": "In front"},
+ "apps.running.mb": {"text": "{mb} MB", "from": "{mb} MB"},
+ "apps.running.none": {"text": "Không có ứng dụng nào", "from": "None running"},
+ "apps.running.noneDesc": {"text": "Hiện không có ứng dụng nào đang chạy trong bộ nhớ.", "from": "No apps are currently running in memory."},
+ "apps.running.summaryMb": {"text": "{n} ứng dụng · {mb} MB", "from": "{n} apps · {mb} MB"},
+ "apps.running.summaryOneMb": {"text": "1 ứng dụng · {mb} MB", "from": "1 app · {mb} MB"},
+ "apps.running.title": {"text": "Ứng dụng trong bộ nhớ", "from": "Apps in memory"}
 }

@@ -3878,5 +3878,17 @@
  "ha.picker.selected": {"text": "Selezionata", "from": "Selected"},
  "ha.picker.showMore": {"text": "Mostra altre ({n} rimanenti)", "from": "Show more ({n} remaining)"},
  "ha.picker.showingOf": {"text": "{shown} di {n} corrispondenti ({total} totali)", "from": "Showing {shown} of {n} matching ({total} total)"},
- "ha.picker.withUnit": {"text": "Con unità", "from": "With unit"}
+ "ha.picker.withUnit": {"text": "Con unità", "from": "With unit"},
+ "apps.running.close": {"text": "Chiudi", "from": "Close"},
+ "apps.running.closeAll": {"text": "Chiudi tutte", "from": "Close all"},
+ "apps.running.closeFailed": {"text": "Impossibile chiudere l’app: {error}", "from": "Could not close app: {error}"},
+ "apps.running.closing": {"text": "Chiusura…", "from": "Closing…"},
+ "apps.running.desc": {"text": "App attualmente aperte o caricate in memoria sulla TV. Chiudere un’app ne arresta il processo e ne libera subito la memoria.", "from": "Apps currently open or loaded in memory on the TV. Closing an app stops its process and frees its memory right away."},
+ "apps.running.inFront": {"text": "In primo piano", "from": "In front"},
+ "apps.running.mb": {"text": "{mb} MB", "from": "{mb} MB"},
+ "apps.running.none": {"text": "Nessuna in esecuzione", "from": "None running"},
+ "apps.running.noneDesc": {"text": "Nessuna app è attualmente caricata in memoria.", "from": "No apps are currently running in memory."},
+ "apps.running.summaryMb": {"text": "{n} app · {mb} MB", "from": "{n} apps · {mb} MB"},
+ "apps.running.summaryOneMb": {"text": "1 app · {mb} MB", "from": "1 app · {mb} MB"},
+ "apps.running.title": {"text": "App in memoria", "from": "Apps in memory"}
 }
