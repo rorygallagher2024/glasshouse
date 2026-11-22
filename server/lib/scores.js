@@ -62,6 +62,23 @@ function text(v, max) {
  * its name, such as STATUS_HALFTIME or STATUS_POSTPONED. null where it is
  * not a match between two sides.
  */
+/*
+ * A side's short name, whole. ESPN cuts shortDisplayName at 12 characters
+ * (swe.1: "Brommapojkar" for "IF Brommapojkarna"), so a short name that is
+ * the start of a longer word of displayName is that word.
+ */
+function shortName(short, display) {
+  if (typeof short !== 'string' || !short) return '';
+  var words = typeof display === 'string' ? display.split(/\s+/) : [];
+  var last = short.split(/\s+/).pop();
+  for (var i = 0; i < words.length; i++) {
+    if (words[i].length > last.length && words[i].indexOf(last) === 0) {
+      return short.slice(0, short.length - last.length) + words[i];
+    }
+  }
+  return short;
+}
+
 function matchOf(leagueId, e) {
   var c = e && e.competitions && e.competitions[0];
   if (!c || !c.competitors || c.competitors.length !== 2) return null;
@@ -77,7 +94,8 @@ function matchOf(leagueId, e) {
   var type = (c.status && c.status.type) || {};
   var start = Date.parse(e.date || c.date || '');
   function side(t) {
-    return text(t.team && (t.team.shortDisplayName || t.team.displayName || t.team.abbreviation), NAME_MAX);
+    var team = t.team || {};
+    return text(shortName(team.shortDisplayName, team.displayName) || team.displayName || team.abbreviation, NAME_MAX);
   }
   return {
     league: leagueId,
@@ -211,6 +229,7 @@ module.exports = {
   LEAGUES: LEAGUES,
   saverBoard: saverBoard,
   resetCache: resetCache,
+  shortName: shortName,
   init: init,
   league: league,
   matchOf: matchOf,

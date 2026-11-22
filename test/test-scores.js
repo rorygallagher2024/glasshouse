@@ -52,6 +52,12 @@ scores.today(['soccer/eng.1', 'soccer/uefa.champions', 'soccer/nowhere'], now, f
     status: 'STATUS_IN_PROGRESS', clock: "67'", home: 'Hull', away: 'Brighton', homeScore: '2', awayScore: '1' }, 'by kick-off');
   assert.strictEqual(matches[1].state, 'pre');
   console.log('  ✓ matches are read per league, sorted by kick-off, with a failed league left out');
+  assert.strictEqual(scores.shortName('Brommapojkar', 'IF Brommapojkarna'), 'Brommapojkarna', 'cut at 12 by ESPN');
+  assert.strictEqual(scores.shortName('Man Utd', 'Manchester United'), 'Man Utd');
+  assert.strictEqual(scores.shortName('Malmö', 'Malmö FF'), 'Malmö');
+  assert.strictEqual(scores.shortName('Paris SG', 'Paris Saint-Germain'), 'Paris SG');
+  assert.strictEqual(scores.shortName('', 'Örgryte IS'), '');
+  console.log('  ✓ a short name ESPN cut off is completed from the full name');
 
   answers['eng.1'] = new Error('offline');
   scores.today(['soccer/eng.1'], now, function (err2) {
