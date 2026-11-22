@@ -3892,5 +3892,9 @@
  "apps.running.summaryMb": {"text": "{n} прил. · {mb} МБ", "from": "{n} apps · {mb} MB"},
  "apps.running.summaryOneMb": {"text": "1 прил. · {mb} МБ", "from": "1 app · {mb} MB"},
  "apps.running.title": {"text": "Приложения в памяти", "from": "Apps in memory"},
- "ha.verify.desc": {"text": "Отключите для самоподписанного сертификата или HTTPS-адреса, открываемого по локальному IP.", "from": "Turn off for a self-signed certificate or an HTTPS address reached by LAN IP."}
+ "ha.verify.desc": {"text": "Отключите для самоподписанного сертификата или HTTPS-адреса, открываемого по локальному IP.", "from": "Turn off for a self-signed certificate or an HTTPS address reached by LAN IP."},
+ "tab.keyboard": {"text": "Клавиатура", "from": "Keyboard"},
+ "apps.keyboardKeys": {"text": "Клавиши клавиатуры", "from": "Keyboard keys"},
+ "apps.keyboardKeys.desc": {"text": "Что делают клавиши F клавиатуры USB: как в LG, ничего, или открытие приложения или входа.", "from": "What a USB keyboard's F-keys do: as LG has it, nothing, or opening an app or input instead."},
+ "apps.keyboardKeys.f": {"text": "Клавиши F", "from": "F keys"}
 }

@@ -2711,7 +2711,12 @@ function handleRequest(req, res) {
   // What the remote's keys do, on its own for the Home tab's Guide button choice.
   if (pathname === '/api/remotekeys' && req.method === 'GET') {
     if (!remoteKeysModule) return send(res, 200, JSON.stringify({ ok: true, supported: false }));
-    return remoteKeysModule.getRemoteKeys(function (rk) { send(res, 200, JSON.stringify(rk || { ok: true, supported: false })); });
+    return remoteKeysModule.getRemoteKeys(function (rk) {
+      // Whether a key can be set, so a page that asks for the keys alone still
+      // knows if the tiles should be live.
+      if (rk) rk.writable = !!config.allowControl;
+      send(res, 200, JSON.stringify(rk || { ok: true, supported: false }));
+    });
   }
   // The bar's page asks for it while a Brightness key is held.
   if (pathname === '/api/remotekeys/brightness' && req.method === 'GET') {

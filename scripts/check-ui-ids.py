@@ -54,6 +54,19 @@ for where, text in parts:
 
 for where, n, name in problems:
     print('%s:%d: no element with id "%s"' % (where, n, name))
-print('%d defined, %d dynamic prefixes, %d unguarded and missing'
-      % (len(defined), len(dynamic), len(problems)))
-sys.exit(1 if problems else 0)
+
+# An id used twice in the markup: getElementById returns the first, so a script
+# fills one element while the other sits on screen empty. A page that renders a
+# block into two places has to give each copy its own id.
+seen, twice = set(), []
+for name in re.findall(r'\bid="([^"$]+)"', page):
+    if name in seen and name not in twice:
+        twice.append(name)
+    seen.add(name)
+for name in twice:
+    print('%s: id "%s" is used more than once' % (path, name))
+
+total = len(problems) + len(twice)
+print('%d defined, %d dynamic prefixes, %d unguarded and missing, %d used twice'
+      % (len(defined), len(dynamic), len(problems), len(twice)))
+sys.exit(1 if total else 0)

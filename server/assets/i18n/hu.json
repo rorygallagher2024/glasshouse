@@ -3892,5 +3892,9 @@
  "apps.running.summaryMb": {"text": "{n} alkalmazás · {mb} MB", "from": "{n} apps · {mb} MB"},
  "apps.running.summaryOneMb": {"text": "1 alkalmazás · {mb} MB", "from": "1 app · {mb} MB"},
  "apps.running.title": {"text": "Alkalmazások a memóriában", "from": "Apps in memory"},
- "ha.verify.desc": {"text": "Kapcsolja ki önaláírt tanúsítvány vagy helyi IP-címmel elért HTTPS-cím esetén.", "from": "Turn off for a self-signed certificate or an HTTPS address reached by LAN IP."}
+ "ha.verify.desc": {"text": "Kapcsolja ki önaláírt tanúsítvány vagy helyi IP-címmel elért HTTPS-cím esetén.", "from": "Turn off for a self-signed certificate or an HTTPS address reached by LAN IP."},
+ "tab.keyboard": {"text": "Billentyűzet", "from": "Keyboard"},
+ "apps.keyboardKeys": {"text": "Klaviatúra gombjai", "from": "Keyboard keys"},
+ "apps.keyboardKeys.desc": {"text": "Mit tesznek egy USB-s billentyűzet F gombjai: ahogy az LG-nél, semmi, vagy helyette egy alkalmazás vagy bemenet megnyitása.", "from": "What a USB keyboard's F-keys do: as LG has it, nothing, or opening an app or input instead."},
+ "apps.keyboardKeys.f": {"text": "F gombok", "from": "F keys"}
 }

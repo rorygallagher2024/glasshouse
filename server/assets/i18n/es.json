@@ -3878,5 +3878,9 @@
  "apps.running.summaryMb": {"text": "{n} apps · {mb} MB", "from": "{n} apps · {mb} MB"},
  "apps.running.summaryOneMb": {"text": "1 app · {mb} MB", "from": "1 app · {mb} MB"},
  "apps.running.title": {"text": "Apps en memoria", "from": "Apps in memory"},
- "ha.verify.desc": {"text": "Desactívalo para un certificado autofirmado o una dirección HTTPS a la que se accede por IP local.", "from": "Turn off for a self-signed certificate or an HTTPS address reached by LAN IP."}
+ "ha.verify.desc": {"text": "Desactívalo para un certificado autofirmado o una dirección HTTPS a la que se accede por IP local.", "from": "Turn off for a self-signed certificate or an HTTPS address reached by LAN IP."},
+ "tab.keyboard": {"text": "Teclado", "from": "Keyboard"},
+ "apps.keyboardKeys": {"text": "Teclas del teclado", "from": "Keyboard keys"},
+ "apps.keyboardKeys.desc": {"text": "Qué hacen las teclas F de un teclado USB: como LG, nada, o abrir una aplicación o entrada en su lugar.", "from": "What a USB keyboard's F-keys do: as LG has it, nothing, or opening an app or input instead."},
+ "apps.keyboardKeys.f": {"text": "Teclas F", "from": "F keys"}
 }

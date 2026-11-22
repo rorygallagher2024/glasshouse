@@ -3892,5 +3892,9 @@
  "apps.running.summaryMb": {"text": "{n} app · {mb} MB", "from": "{n} apps · {mb} MB"},
  "apps.running.summaryOneMb": {"text": "1 app · {mb} MB", "from": "1 app · {mb} MB"},
  "apps.running.title": {"text": "App in memoria", "from": "Apps in memory"},
- "ha.verify.desc": {"text": "Disattiva per un certificato autofirmato o un indirizzo HTTPS raggiunto tramite IP locale.", "from": "Turn off for a self-signed certificate or an HTTPS address reached by LAN IP."}
+ "ha.verify.desc": {"text": "Disattiva per un certificato autofirmato o un indirizzo HTTPS raggiunto tramite IP locale.", "from": "Turn off for a self-signed certificate or an HTTPS address reached by LAN IP."},
+ "tab.keyboard": {"text": "Tastiera", "from": "Keyboard"},
+ "apps.keyboardKeys": {"text": "Tasti della tastiera", "from": "Keyboard keys"},
+ "apps.keyboardKeys.desc": {"text": "Cosa fanno i tasti F di una tastiera USB: come LG, niente, oppure aprire un'app o un ingresso.", "from": "What a USB keyboard's F-keys do: as LG has it, nothing, or opening an app or input instead."},
+ "apps.keyboardKeys.f": {"text": "Tasti F", "from": "F keys"}
 }

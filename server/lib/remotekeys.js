@@ -307,7 +307,36 @@ var KEYS = [
   { key: 'red', symbol: 'WebOS.Key_webOS_Red', title: 'Red', color: true },
   { key: 'green', symbol: 'WebOS.Key_webOS_Green', title: 'Green', color: true },
   { key: 'yellow', symbol: 'WebOS.Key_webOS_Yellow', title: 'Yellow', color: true },
-  { key: 'blue', symbol: 'WebOS.Key_webOS_Blue', title: 'Blue', color: true }
+  { key: 'blue', symbol: 'WebOS.Key_webOS_Blue', title: 'Blue', color: true },
+  /*
+   * A USB keyboard's F-keys. Fn+F1 to Fn+F12 send the real keys, which the TV
+   * hands to the filter under Qt's own names, so they need no measuring.
+   *
+   * An assigned key is consumed here before LG's own filters, which matters on
+   * F2, F4, F5, F7 and F10 to F12: LG would otherwise open the inputs panel,
+   * Home, quick settings or LG Channels, or change the volume.
+   *
+   * There is no Ctrl set. A press of Ctrl+F6 reaches the filter as Meta and D,
+   * and Ctrl+F5 as a single code of its own, so the TV rewrites the chord before
+   * any filter runs and the F-key is never seen. Measured on a 43UR78006LK.
+   *
+   * The bare top row is not these keys. Without Fn, F1 sends Browser Back and the
+   * rest send browser and media codes, which the TV renames before the filter
+   * sees them (bare F1 arrives as WebOS.Key_webOS_CursorHide), so they are left
+   * out. Offered only where the JavaScript filter runs, webOS 4 to 10 (qtKey).
+   */
+  { key: 'kbdF1', symbol: 'Qt.Key_F1', title: 'F1', qtKey: true },
+  { key: 'kbdF2', symbol: 'Qt.Key_F2', title: 'F2', qtKey: true },
+  { key: 'kbdF3', symbol: 'Qt.Key_F3', title: 'F3', qtKey: true },
+  { key: 'kbdF4', symbol: 'Qt.Key_F4', title: 'F4', qtKey: true },
+  { key: 'kbdF5', symbol: 'Qt.Key_F5', title: 'F5', qtKey: true },
+  { key: 'kbdF6', symbol: 'Qt.Key_F6', title: 'F6', qtKey: true },
+  { key: 'kbdF7', symbol: 'Qt.Key_F7', title: 'F7', qtKey: true },
+  { key: 'kbdF8', symbol: 'Qt.Key_F8', title: 'F8', qtKey: true },
+  { key: 'kbdF9', symbol: 'Qt.Key_F9', title: 'F9', qtKey: true },
+  { key: 'kbdF10', symbol: 'Qt.Key_F10', title: 'F10', qtKey: true },
+  { key: 'kbdF11', symbol: 'Qt.Key_F11', title: 'F11', qtKey: true },
+  { key: 'kbdF12', symbol: 'Qt.Key_F12', title: 'F12', qtKey: true }
 ];
 
 var lunaFn = null;
@@ -442,9 +471,13 @@ function readKeyTable(file) {
 function keysOnTv() {
   if (tvKeys) return tvKeys;
   var src = '';
+  var jsFilters = false;
   try {
     fs.readdirSync(filtersDir).forEach(function (f) {
-      if (/\.js$/.test(f)) src += fs.readFileSync(path.join(filtersDir, f), 'utf8') + '\n';
+      if (/\.js$/.test(f)) {
+        src += fs.readFileSync(path.join(filtersDir, f), 'utf8') + '\n';
+        jsFilters = true;
+      }
     });
   } catch (e) {
     return null;
@@ -467,6 +500,9 @@ function keysOnTv() {
       if (!table) table = readKeyTable();
       return !!(table[k.lg] && table[k.lg].qt === qtName(k.symbol));
     }
+    // A keyboard's spare keys have no case in LG's own files, so they are
+    // offered wherever the JavaScript filter runs, which is what reaches them.
+    if (k.qtKey) return jsFilters;
     if ((k.color && hasColor) || src.indexOf(k.symbol) !== -1) return true;
     return !!k.fromPlugin && inPlugin(k.symbol);
   });

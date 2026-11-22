@@ -155,7 +155,8 @@ function guard(fn) {
 step(function (next) {
   rk.getRemoteKeys(guard(function (r) {
     assert.strictEqual(r.supported, true);
-    assert.deepEqual(r.keys.map(function (k) { return k.key; }), ['netflix', 'amazon', 'movies', 'guide', 'red', 'green', 'yellow', 'blue']);
+    assert.deepEqual(r.keys.map(function (k) { return k.key; }), ['netflix', 'amazon', 'movies', 'guide', 'red', 'green', 'yellow', 'blue',
+      'kbdF1', 'kbdF2', 'kbdF3', 'kbdF4', 'kbdF5', 'kbdF6', 'kbdF7', 'kbdF8', 'kbdF9', 'kbdF10', 'kbdF11', 'kbdF12']);
     assert.ok(r.keys.every(function (k) { return k.action === 'lg' && k.id === ''; }));
     assert.strictEqual(r.inChain, false);
     assert.deepEqual(r.choices.map(function (c) { return c.id; }),
@@ -239,7 +240,9 @@ step(function (next) {
 
 step(function (next) {
   rk.getRemoteKeys(guard(function (r) {
-    assert.deepEqual(r.keys.map(function (k) { return k.action + ':' + k.opens; }), ['open:YouTube', 'lg:', 'open:Netflix', 'nothing:', 'lg:', 'lg:', 'lg:', 'lg:']);
+    assert.deepEqual(r.keys.map(function (k) { return k.action + ':' + k.opens; }), ['open:YouTube', 'lg:', 'open:Netflix', 'nothing:',
+      'lg:', 'lg:', 'lg:', 'lg:',
+      'lg:', 'lg:', 'lg:', 'lg:', 'lg:', 'lg:', 'lg:', 'lg:', 'lg:', 'lg:', 'lg:', 'lg:']);
     assert.strictEqual(r.inChain, true);
     rk.setRemoteKey('disneyplus', 'open', 'netflix', guard(function (s1) {
       assert.strictEqual(s1.ok, false);
@@ -1319,6 +1322,17 @@ step(function (next) {
       }));
     }));
   }));
+});
+
+step(function (next) {
+  var src = rk.filterSource();
+  assert.ok(src.indexOf('codes["kbdF1"] = Qt.Key_F1') !== -1, 'F1 is in the map');
+  assert.ok(src.indexOf('codes["kbdF12"] = Qt.Key_F12') !== -1, 'F12 is in the map');
+  // The TV rewrites Ctrl chords before any filter runs, so nothing here waits on Ctrl.
+  assert.strictEqual(src.indexOf('glasshouseCtrlKeyCodes'), -1, 'no Ctrl map is generated');
+  assert.strictEqual(src.indexOf('Qt.Key_Control'), -1, 'the filter does not track Ctrl');
+  console.log('  ✓ the F-keys are in the filter and nothing depends on Ctrl, which the TV rewrites');
+  next();
 });
 
 function done() {

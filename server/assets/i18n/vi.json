@@ -3894,5 +3894,9 @@
  "apps.running.summaryMb": {"text": "{n} ứng dụng · {mb} MB", "from": "{n} apps · {mb} MB"},
  "apps.running.summaryOneMb": {"text": "1 ứng dụng · {mb} MB", "from": "1 app · {mb} MB"},
  "apps.running.title": {"text": "Ứng dụng trong bộ nhớ", "from": "Apps in memory"},
- "ha.verify.desc": {"text": "Tắt tùy chọn này đối với chứng chỉ tự ký hoặc địa chỉ HTTPS truy cập bằng IP mạng nội bộ.", "from": "Turn off for a self-signed certificate or an HTTPS address reached by LAN IP."}
+ "ha.verify.desc": {"text": "Tắt tùy chọn này đối với chứng chỉ tự ký hoặc địa chỉ HTTPS truy cập bằng IP mạng nội bộ.", "from": "Turn off for a self-signed certificate or an HTTPS address reached by LAN IP."},
+ "tab.keyboard": {"text": "Bàn phím", "from": "Keyboard"},
+ "apps.keyboardKeys": {"text": "Các phím bàn phím", "from": "Keyboard keys"},
+ "apps.keyboardKeys.desc": {"text": "Phím F của bàn phím USB làm gì: như LG, không làm gì, hoặc mở ứng dụng hay đầu vào.", "from": "What a USB keyboard's F-keys do: as LG has it, nothing, or opening an app or input instead."},
+ "apps.keyboardKeys.f": {"text": "Phím F", "from": "F keys"}
 }
