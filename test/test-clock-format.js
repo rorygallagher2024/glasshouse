@@ -84,11 +84,17 @@ var answer = null;
 var asked = 0;
 // What settingsservice answers for localeInfo, or null.
 var localeAnswer = null;
+// And without a category, asked only when the answer above has no locale.
+var localeAnswerAnyCategory = null;
 var written = [];
 function luna(uri, payload, cb) {
   if (uri === 'com.webos.settingsservice/getSystemSettings') {
-    assert.deepEqual(payload, { category: 'option', keys: ['localeInfo'] });
-    return cb(localeAnswer);
+    if (payload.category) {
+      assert.deepEqual(payload, { category: 'option', keys: ['localeInfo'] });
+      return cb(localeAnswer);
+    }
+    assert.deepEqual(payload, { keys: ['localeInfo'] });
+    return cb(localeAnswerAnyCategory);
   }
   if (uri === 'com.webos.service.systemservice/getPreferences') {
     asked++;
@@ -204,8 +210,12 @@ function statsBody() {
   localeAnswer = { returnValue: true, settings: { localeInfo: { locales: { UI: 'not a locale!' } } } };
   clock.refresh();
   assert.strictEqual(clock.qtLocale(), 'sv_SE', 'a malformed answer keeps the last');
+  localeAnswer = { returnValue: true, settings: {} };
+  localeAnswerAnyCategory = { returnValue: true, settings: { localeInfo: { locales: { UI: 'de-DE' } } } };
+  clock.refresh();
+  assert.strictEqual(clock.qtLocale(), 'de_DE', 'asked again without a category');
   env.restore();
-  console.log('  ✓ the staged screen saver is written with the TV\'s hour cycle and menu language');
+  console.log('  ✓ the staged screen saver is written with the TV\'s hour cycle and menu language, asked for with or without a category');
 })();
 
 // 5. The Advanced tab's clockHour12 control writes HH12 or HH24 through systemservice.
