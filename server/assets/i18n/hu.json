@@ -3444,5 +3444,17 @@
  "home.sub.iptv": {"text": "Internetes TV", "from": "Internet TV"},
  "apps.remoteKeys.guideNative": {"text": "Ezen a TV-n a Guide gombhoz módosítani kell az LG gombkezelőjét. A beállítása egyszer újraindítja a TV képernyőjét, majd a TV minden indításakor újra.", "from": "On this TV the Guide key needs a change to LG’s key handler. Setting it restarts the TV’s screen once, and again each time the TV starts."},
  "apps.remoteKeys.inputNative": {"text": "Ezen a TV-n az Input gombhoz módosítani kell az LG gombkezelőjét. A beállítása vagy az LG listájára való visszaállítása egyszer újraindítja a TV képernyőjét, a módosítás pedig a TV minden indításakor újra megtörténik.", "from": "On this TV the Input key needs a change to LG’s key handler. Setting it, or setting it back to LG’s list, restarts the TV’s screen once, and the change is made again each time the TV starts."},
- "home.bar.native": {"text": "Ezen a TV-n a Home gombhoz módosítani kell az LG gombkezelőjét a Glasshouse Bar miatt. A sáv, vagy utána egy másik indító kiválasztása egyszer újraindítja a TV képernyőjét, a módosítás pedig a TV minden indításakor újra megtörténik.", "from": "On this TV the Home key needs a change to LG’s key handler for Glasshouse Bar. Choosing the bar, or any other launcher after it, restarts the TV’s screen once, and the change is made again each time the TV starts."}
+ "home.bar.native": {"text": "Ezen a TV-n a Home gombhoz módosítani kell az LG gombkezelőjét a Glasshouse Bar miatt. A sáv, vagy utána egy másik indító kiválasztása egyszer újraindítja a TV képernyőjét, a módosítás pedig a TV minden indításakor újra megtörténik.", "from": "On this TV the Home key needs a change to LG’s key handler for Glasshouse Bar. Choosing the bar, or any other launcher after it, restarts the TV’s screen once, and the change is made again each time the TV starts."},
+ "apps.running.close": {"text": "Bezárás", "from": "Close"},
+ "apps.running.closeAll": {"text": "Összes bezárása", "from": "Close all"},
+ "apps.running.closeFailed": {"text": "Nem sikerült bezárni az alkalmazást: {error}", "from": "Could not close app: {error}"},
+ "apps.running.closing": {"text": "Bezárás…", "from": "Closing…"},
+ "apps.running.desc": {"text": "A TV memóriájában jelenleg nyitott vagy betöltött alkalmazások. Egy alkalmazás bezárása leállítja a folyamatát, és azonnal felszabadítja a memóriáját.", "from": "Apps currently open or loaded in memory on the TV. Closing an app stops its process and frees its memory right away."},
+ "apps.running.inFront": {"text": "Előtérben", "from": "In front"},
+ "apps.running.mb": {"text": "{mb} MB", "from": "{mb} MB"},
+ "apps.running.none": {"text": "Nincs futó", "from": "None running"},
+ "apps.running.noneDesc": {"text": "Jelenleg nincs alkalmazás a memóriában.", "from": "No apps are currently running in memory."},
+ "apps.running.summaryMb": {"text": "{n} alkalmazás · {mb} MB", "from": "{n} apps · {mb} MB"},
+ "apps.running.summaryOneMb": {"text": "1 alkalmazás · {mb} MB", "from": "1 app · {mb} MB"},
+ "apps.running.title": {"text": "Alkalmazások a memóriában", "from": "Apps in memory"}
 }

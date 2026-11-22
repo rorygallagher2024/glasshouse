@@ -3430,5 +3430,17 @@
  "home.sub.iptv": {"text": "Telewizja internetowa", "from": "Internet TV"},
  "apps.remoteKeys.guideNative": {"text": "Na tym telewizorze przycisk Guide wymaga zmiany w obsłudze klawiszy LG. Ustawienie restartuje ekran telewizora jeden raz, a potem przy każdym uruchomieniu telewizora.", "from": "On this TV the Guide key needs a change to LG’s key handler. Setting it restarts the TV’s screen once, and again each time the TV starts."},
  "apps.remoteKeys.inputNative": {"text": "Na tym telewizorze klawisz Input wymaga zmiany w obsłudze klawiszy LG. Ustawienie go, albo przywrócenie listy LG, restartuje ekran telewizora jeden raz, a zmiana jest wykonywana ponownie przy każdym uruchomieniu telewizora.", "from": "On this TV the Input key needs a change to LG’s key handler. Setting it, or setting it back to LG’s list, restarts the TV’s screen once, and the change is made again each time the TV starts."},
- "home.bar.native": {"text": "Na tym telewizorze klawisz Home wymaga zmiany w obsłudze klawiszy LG dla Glasshouse Bar. Wybranie paska, albo innego launchera po nim, restartuje ekran telewizora jeden raz, a zmiana jest wykonywana ponownie przy każdym uruchomieniu telewizora.", "from": "On this TV the Home key needs a change to LG’s key handler for Glasshouse Bar. Choosing the bar, or any other launcher after it, restarts the TV’s screen once, and the change is made again each time the TV starts."}
+ "home.bar.native": {"text": "Na tym telewizorze klawisz Home wymaga zmiany w obsłudze klawiszy LG dla Glasshouse Bar. Wybranie paska, albo innego launchera po nim, restartuje ekran telewizora jeden raz, a zmiana jest wykonywana ponownie przy każdym uruchomieniu telewizora.", "from": "On this TV the Home key needs a change to LG’s key handler for Glasshouse Bar. Choosing the bar, or any other launcher after it, restarts the TV’s screen once, and the change is made again each time the TV starts."},
+ "apps.running.close": {"text": "Zamknij", "from": "Close"},
+ "apps.running.closeAll": {"text": "Zamknij wszystkie", "from": "Close all"},
+ "apps.running.closeFailed": {"text": "Nie udało się zamknąć aplikacji: {error}", "from": "Could not close app: {error}"},
+ "apps.running.closing": {"text": "Zamykanie…", "from": "Closing…"},
+ "apps.running.desc": {"text": "Aplikacje otwarte lub utrzymywane w pamięci telewizora. Zamknięcie aplikacji zatrzymuje jej proces i od razu zwalnia pamięć.", "from": "Apps currently open or loaded in memory on the TV. Closing an app stops its process and frees its memory right away."},
+ "apps.running.inFront": {"text": "Na wierzchu", "from": "In front"},
+ "apps.running.mb": {"text": "{mb} MB", "from": "{mb} MB"},
+ "apps.running.none": {"text": "Brak uruchomionych", "from": "None running"},
+ "apps.running.noneDesc": {"text": "Żadne aplikacje nie działają teraz w pamięci.", "from": "No apps are currently running in memory."},
+ "apps.running.summaryMb": {"text": "{n} aplikacji · {mb} MB", "from": "{n} apps · {mb} MB"},
+ "apps.running.summaryOneMb": {"text": "1 aplikacja · {mb} MB", "from": "1 app · {mb} MB"},
+ "apps.running.title": {"text": "Aplikacje w pamięci", "from": "Apps in memory"}
 }

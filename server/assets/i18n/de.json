@@ -1014,5 +1014,53 @@
  "rp.standby": {"text": "Der Fernseher ist im Standby. Schalten Sie ihn ein, um die Fernbedienung zu nutzen.", "from": "The TV is in standby. Power on to use the remote."},
  "apps.remoteKeys.guideNative": {"text": "Bei diesem Fernseher braucht die Guide-Taste eine Änderung an LGs Tastenverwaltung. Beim Einstellen startet der Bildschirm einmal neu, danach bei jedem Start des Fernsehers erneut.", "from": "On this TV the Guide key needs a change to LG’s key handler. Setting it restarts the TV’s screen once, and again each time the TV starts."},
  "apps.remoteKeys.inputNative": {"text": "Bei diesem Fernseher braucht die Input-Taste eine Änderung an LGs Tastenverwaltung. Beim Einstellen und beim Zurücksetzen auf LGs Liste startet der Bildschirm einmal neu, und die Änderung wird bei jedem Start des Fernsehers erneut vorgenommen.", "from": "On this TV the Input key needs a change to LG’s key handler. Setting it, or setting it back to LG’s list, restarts the TV’s screen once, and the change is made again each time the TV starts."},
- "home.bar.native": {"text": "Bei diesem Fernseher braucht die Home-Taste für Glasshouse Bar eine Änderung an LGs Tastenverwaltung. Das Wählen der Leiste, oder danach eines anderen Launchers, startet den Bildschirm einmal neu, und die Änderung wird bei jedem Start des Fernsehers erneut vorgenommen.", "from": "On this TV the Home key needs a change to LG’s key handler for Glasshouse Bar. Choosing the bar, or any other launcher after it, restarts the TV’s screen once, and the change is made again each time the TV starts."}
+ "home.bar.native": {"text": "Bei diesem Fernseher braucht die Home-Taste für Glasshouse Bar eine Änderung an LGs Tastenverwaltung. Das Wählen der Leiste, oder danach eines anderen Launchers, startet den Bildschirm einmal neu, und die Änderung wird bei jedem Start des Fernsehers erneut vorgenommen.", "from": "On this TV the Home key needs a change to LG’s key handler for Glasshouse Bar. Choosing the bar, or any other launcher after it, restarts the TV’s screen once, and the change is made again each time the TV starts."},
+  "apps.running.close": {
+    "text": "Schließen",
+    "from": "Close"
+  },
+  "apps.running.closeAll": {
+    "text": "Alle schließen",
+    "from": "Close all"
+  },
+  "apps.running.closeFailed": {
+    "text": "App konnte nicht geschlossen werden: {error}",
+    "from": "Could not close app: {error}"
+  },
+  "apps.running.closing": {
+    "text": "Wird geschlossen…",
+    "from": "Closing…"
+  },
+  "apps.running.desc": {
+    "text": "Apps, die aktuell auf dem TV geöffnet oder im Arbeitsspeicher geladen sind. Das Schließen beendet den Prozess und gibt den Speicher sofort frei.",
+    "from": "Apps currently open or loaded in memory on the TV. Closing an app stops its process and frees its memory right away."
+  },
+  "apps.running.inFront": {
+    "text": "Im Vordergrund",
+    "from": "In front"
+  },
+  "apps.running.mb": {
+    "text": "{mb} MB",
+    "from": "{mb} MB"
+  },
+  "apps.running.none": {
+    "text": "Keine aktiv",
+    "from": "None running"
+  },
+  "apps.running.noneDesc": {
+    "text": "Derzeit sind keine Apps im Speicher aktiv.",
+    "from": "No apps are currently running in memory."
+  },
+  "apps.running.summaryMb": {
+    "text": "{n} Apps · {mb} MB",
+    "from": "{n} apps · {mb} MB"
+  },
+  "apps.running.summaryOneMb": {
+    "text": "1 App · {mb} MB",
+    "from": "1 app · {mb} MB"
+  },
+  "apps.running.title": {
+    "text": "Apps im Speicher",
+    "from": "Apps in memory"
+  }
 }
