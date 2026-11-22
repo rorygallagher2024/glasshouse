@@ -3290,15 +3290,15 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
       };
       /*
        * Arriving at under half of real time for 30 s, with something every few
-       * seconds and the cushion nearly gone: the rate, else 0. A stall, or a slow
-       * patch that catches up, is the refill's, which keeps the burst that follows.
+       * seconds and the cushion nearly gone, or held for a refill: the rate, else 0.
+       * A stall, or a slow patch that catches up, is the refill's, which keeps the
+       * burst that follows. Measured over holds too: at 40% of real time, a channel
+       * played 14 s and was held 22 s, and no 30 s of playing came to judge.
        */
-      var trickling = function (now, end, ahead) {
-        arrivals.push([now, end]);
-        while (arrivals.length > 2 && now - arrivals[1][0] >= TRICKLE_MS) arrivals.shift();
+      var trickling = function (now, end, ahead, holding) {
         if (now - arrivals[0][0] < TRICKLE_MS || now - startedAt < TRICKLE_MS || now - tvStream.trickleAt < TRICKLE_EVERY_MS) return 0;
         var rate = (end - arrivals[0][1]) / ((now - arrivals[0][0]) / 1000);
-        if (rate >= TRICKLE_RATE || rate < 0.05 || ahead > Math.max(2.5, base) || ahead < 0.8) return 0;
+        if (rate >= TRICKLE_RATE || rate < 0.05 || (!holding && (ahead > Math.max(2.5, base) || ahead < 0.8))) return 0;
         for (var i = 1, since = arrivals[0][0]; i < arrivals.length; i++) {
           if (arrivals[i][1] > arrivals[i - 1][1] + 0.01) since = arrivals[i][0];
           else if (arrivals[i][0] - since > TRICKLE_GAP_MS) return 0;
@@ -3437,6 +3437,8 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
         // When the end of what is buffered last moved: a hold with nothing arriving is reopened.
         if (mse) {
           end = bufferedAhead(v).end;
+          arrivals.push([now, end]);
+          while (arrivals.length > 2 && now - arrivals[1][0] >= TRICKLE_MS) arrivals.shift();
           if (end > grewEnd + 0.05 || end < grewEnd - 1) {
             if (end > grewEnd && grewEnd > 0 && !aheadHeld) tvStream.gapMax = Math.max(tvStream.gapMax, Math.min(now - grewAt, REFILL_DRY_MAX_MS));
             grewEnd = end;
@@ -3483,7 +3485,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
             try { v.currentTime = buf.next + 0.1; } catch (e) {}
             return;
           }
-          var held = now - refillSince, to = goal();
+          var held = now - refillSince, to = goal(), rate;
           var dryMs = Math.min(REFILL_DRY_MAX_MS, Math.max(REFILL_DRY_MS, tvStream.gapMax * 4 / 3));
           var holdMax = Math.max(6000 + to * 1000, dryMs + 2000);
           /*
@@ -3494,8 +3496,11 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
             streamEvent('refilled', { held: held, to: round1(to), ahead: round1(buf.ahead) });
             refillSince = 0;
             lastMove = cleanFrom = now;
-            arrivals = [];
             playNow();
+          } else if (held > 3000 && (rate = trickling(now, end, buf.ahead, true))) {
+            refillSince = 0;
+            tvStream.starved = true;
+            lost(gen, 'slow', { ahead: round1(buf.ahead), held: held, detail: 'rate-' + Math.round(rate * 100) });
           } else if ((held > 3000 && now - grewAt > dryMs && now - startedAt > REFILL_DRY_MAX_MS) || held > holdMax) {
             /*
              * Nothing arriving: the provider stopped sending, and a new connection
@@ -3531,7 +3536,6 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
            */
           if (buf.next < 0 && buf.ahead < REFILL_LOW_S) {
             refillSince = now;
-            arrivals = [];
             ranDry();
             try { v.pause(); } catch (e) {}
             return;
@@ -3543,7 +3547,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
           }
           if (aheadHeld && buf.ahead < AHEAD_REOPEN_S) return lost(gen, 'ahead', { ahead: round1(buf.ahead) });
           // Arriving slower than it plays: reopened while there is still some to show.
-          var rate = !aheadHeld && !v.paused && trickling(now, end, buf.ahead);
+          var rate = !aheadHeld && !v.paused && trickling(now, end, buf.ahead, false);
           if (rate) {
             ranDry();
             tvStream.starved = true;
