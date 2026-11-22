@@ -346,8 +346,6 @@ function init(opts) {
   compositorRestartedFn = opts.compositorRestarted || function () {};
   messagesPath = opts.messagesPath || MESSAGES_LOG;
   if (typeof opts.reapplyDelayMs === 'number') reapplyDelayMs = opts.reapplyDelayMs;
-  repeatStepMs = typeof opts.repeatStepMs === 'number' ? opts.repeatStepMs : REPEAT_STEP_MS;
-  lastRepeatStep = {};
   muteToastsMs = opts.muteToastsMs || 0;
   powerTimers.forEach(function (t) { clearTimeout(t); });
   powerTimers = [];
@@ -1278,13 +1276,14 @@ var BUTTON_CLICK = /NL_BUTTON_CLICK\b.*"button_type"\s*:\s*"([A-Z0-9_]+)"/;
 /*
  * The channel rocker. LG's first key filter takes the key while it is set, so
  * only what is chosen here happens, and the copy lib/guidepatch mounts logs
- * every event of it as LSM NL_INPUT_KEYFILTER_USE, { glasshouse_key: code,
- * ev }: 0 pressed, 1 released, 2 repeated, every 50 ms from half a second
- * held (a C5, 11.2.0). lginput2 logs a press as NL_NON_LIST_BUTTON_CLICK as
- * well, but a held key only now and then, so its line is not read. Each
- * press is answered; set to a Brightness action, quick presses each count,
- * and a held key steps every REPEAT_STEP_MS, as fast as the panel was seen
- * to follow; anything else is answered once within half a second.
+ * it as LSM NL_INPUT_KEYFILTER_USE, { glasshouse_key: code, ev }: 0 pressed,
+ * 1 released, 2 repeated, the key repeating every 50 ms from half a second
+ * held and every fourth repeat logged, one every 200 ms, as fast as the panel
+ * was seen to follow (a C5, 11.2.0). lginput2 logs a press as
+ * NL_NON_LIST_BUTTON_CLICK as well, but a held key only now and then, so its
+ * line is not read. Each press is answered; set to a Brightness action, quick
+ * presses each count and each repeat logged is a step; anything else is
+ * answered once within half a second.
  */
 var CHANNEL_BUTTONS = { channelup: 'KEY_CHANNELUP', channeldown: 'KEY_CHANNELDOWN' };
 var CHANNEL_CODES = { 402: 'KEY_CHANNELUP', 403: 'KEY_CHANNELDOWN' };
@@ -1292,9 +1291,6 @@ var REPEATING_BUTTONS = { KEY_CHANNELUP: true, KEY_CHANNELDOWN: true };
 var KEY_EVENT = /\bLSM NL_INPUT_KEYFILTER_USE\b.*"glasshouse_key"\s*:\s*(\d+)\s*,\s*"ev"\s*:\s*(\d+)/;
 var KEY_PRESSED = 0;
 var KEY_REPEATED = 2;
-var REPEAT_STEP_MS = 200;
-var repeatStepMs = REPEAT_STEP_MS;
-var lastRepeatStep = {};
 var PRESS_DEBOUNCE_MS = 500;
 var POLL_MS = 200;
 // One read at most this much, as the syslog forwarder's: a log that has grown
@@ -1435,21 +1431,14 @@ function logChanged(cur) {
 }
 
 // An event of a key LG's filter takes: a press as any button's, and a repeat
-// of a key set to a Brightness action a step every repeatStepMs.
+// of a key set to a Brightness action a step. The filter paces the repeats.
 function keyEvent(code, ev) {
   var button = CHANNEL_CODES[code];
   if (!button) return;
-  if (ev === KEY_PRESSED) {
-    lastRepeatStep[button] = Date.now();
-    return buttonPressed(button);
-  }
-  if (ev !== KEY_REPEATED || !lunaFn) return;
+  if (ev === KEY_PRESSED) return buttonPressed(button);
+  if (ev !== KEY_REPEATED || !lunaFn || !Object.prototype.hasOwnProperty.call(pressTargets, button)) return;
   var id = pressTargets[button];
-  if (!Object.prototype.hasOwnProperty.call(BRIGHTNESS_DELTAS, id)) return;
-  var now = Date.now();
-  if (now - (lastRepeatStep[button] || 0) < repeatStepMs) return;
-  lastRepeatStep[button] = now;
-  stepBrightness(BRIGHTNESS_DELTAS[id] * brightnessStep());
+  if (Object.prototype.hasOwnProperty.call(BRIGHTNESS_DELTAS, id)) stepBrightness(BRIGHTNESS_DELTAS[id] * brightnessStep());
 }
 
 // lginput2 logs a press once; a second within half a second is the same one,
@@ -1473,8 +1462,8 @@ function buttonPressed(button) {
 /*
  * One step of the current picture mode's brightness, read first since the
  * settings service keeps one value per mode and input (controls.js's
- * backlight). Quick presses of a channel key can come faster than one is read
- * and written, so one runs at a time and those meanwhile are added up for the
+ * backlight). A channel key's presses and repeats can come faster than one is
+ * read and written, so one runs at a time and those meanwhile are added up for the
  * next, never past the whole range.
  */
 var brightnessBusy = false;

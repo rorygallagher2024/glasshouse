@@ -416,7 +416,6 @@ function fakeLibrary(homeOn) {
   opts.profileOverrideDir = PROFILE_DIR;
   opts.profileWaitMs = 300;
   opts.profilePollMs = 5;
-  opts.repeatStepMs = 0;
   opts.guideMounts = function (file) { return stackOf(file).length; };
   opts.homeGuide = function () { return lab.homeOn; };
   // Glasshouse Bar chosen as the launcher (lib/homebar).
@@ -583,8 +582,8 @@ step('the channel keys are taken by LG\'s first key filter where its library can
             logLine(channelLine(403, 0) + channelLine(403, 1));
             until(function () { return panel.backlight === 50; }, 5000, function () {
               assert.strictEqual(panel.backlight, 50, 'channel down a step down');
-              // Held: the press and each repeat a step (repeatStepMs 0 here), none lost while
-              // one is written; the release nothing, and lginput2's own line is not read.
+              // Held: the press and each repeat logged a step, none lost while one is written;
+              // the release nothing, and lginput2's own line is not read.
               logLine(channelLine(403, 0) + channelLine(403, 2) + channelLine(403, 2) + channelLine(403, 1) + LGINPUT_CHANNEL_LINE);
               until(function () { return panel.backlight === 20; }, 5000, function () {
               assert.strictEqual(panel.backlight, 20, 'a held key steps at its repeats');

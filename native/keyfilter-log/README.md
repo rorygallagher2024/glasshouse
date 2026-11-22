@@ -5,15 +5,17 @@ LG's first key filter on webOS 11, `handleKeyBlockByApp` in
 a "button not available" toast for them. While a channel key is set on the
 Remote tab, `server/lib/guidepatch.js` mounts a copy of that library in which
 the filter reads Glasshouse's list instead, and calls the code here in place
-of the toast. It logs every event of channel up and down, pressed, repeated
-every 50 ms while held, and released, as
+of the toast. It logs the press and the release of channel up and down, and
+of the repeats, every 50 ms from half a second held, the first and every
+fourth after it, one line every 200 ms, as
 
 ```
 LSM NL_INPUT_KEYFILTER_USE {"glasshouse_key":402,"ev":2}
 ```
 
 which PmLogDaemon's whitelist passes to `/var/log/messages`, where the server
-reads it. `lginput2` logs a channel press there too, but not reliably while the
+reads it. The repeats are counted in a word past the library's `.bss`, in the
+page the loader zeroes after it. `lginput2` logs a channel press there too, but not reliably while the
 key is held.
 
 `channel-keys.s` is the source; `build.py` assembles it with clang and prints

@@ -2110,6 +2110,10 @@ manager launched only HDMI 4 in nine minutes of the same file, and set back to
   page) and called in place of the toast logged, for a 3 s hold, a press (`ev`
   0), 61 repeats (`ev` 2) 50 ms apart from 0.5 s after it, and the release (`ev`
   1). The compositor ran on it without a restart.
+- **A word past `.bss` is free and writable.** The library's `.bss` ends at
+  0x1a2b4; the loader zeroes the rest of that page, which the library does not
+  use. A repeat counter at 0x1a2c0 let the code log the first repeat and every
+  fourth after it: a 2.5 s hold logged 11 repeats, 200 ms apart from 0.5 s.
 - **The panel follows OLED Light written every 0.2 s,** read before each write
   or not, and with a key held: five steps of 10 in a second were each seen.
 - **After a restart of the compositor nothing is in front** until Home is

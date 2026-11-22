@@ -3,8 +3,9 @@
 
 Needs clang with the ARM backend (Xcode's does). The two calls into LG's PLT,
 PmLogGetContext at 0x4878 and PmLogString_ at 0x473c, are nop.w in the source
-and filled in here for the stub's address, 0x18858. --check compares the
-result with CHANNEL_STUB in server/lib/guidepatch.js.
+and filled in here for the stub's address, 0x18858, as is the repeat counter's
+offset (0x5eedc0de in the source) from the add r6, pc that reads it. --check
+compares the result with CHANNEL_STUB in server/lib/guidepatch.js.
 """
 import os
 import re
@@ -18,6 +19,9 @@ BASE = 0x18858
 END = 0x18a20  # the page's data (.init_array's file offset)
 CALLS = ((0x4878, 'PmLogGetContext'), (0x473c, 'PmLogString_'))
 NOP_W = bytes.fromhex('aff30080')
+COUNTER = 0x1a2c0  # past .bss (0x1a2b4), in the page the loader zeroes
+COUNTER_MARK = struct.pack('<I', 0x5eedc0de)
+ADD_R6_PC = struct.pack('<H', 0x447e)
 
 
 def blx(addr, target):
@@ -53,6 +57,11 @@ def build():
         raise SystemExit('expected %d nop.w, found %d' % (len(CALLS), len(nops)))
     for at, (target, _) in zip(nops, CALLS):
         stub[at:at + 4] = blx(BASE + at, target)
+    marks = [i for i in range(0, len(stub) - 3, 4) if stub[i:i + 4] == COUNTER_MARK]
+    adds = [i for i in range(0, marks[0] if marks else 0, 2) if stub[i:i + 2] == ADD_R6_PC]
+    if len(marks) != 1 or len(adds) != 1:
+        raise SystemExit('expected one counter offset and one add r6, pc')
+    stub[marks[0]:marks[0] + 4] = struct.pack('<i', COUNTER - (BASE + adds[0] + 4))
     if BASE + len(stub) > END:
         raise SystemExit('the stub does not fit before 0x%x' % END)
     return bytes(stub)
