@@ -157,7 +157,7 @@ function fetchFeed(url, cb) {
     feeds[url] = { at: nowFn(), ok: false, error: error, source: prev ? prev.source : '', items: prev ? prev.items : [] };
   }
   fetchFile(url, file, function (err) {
-    var xml = null, error = err ? 'fetch' : '';
+    var xml = null, error = err ? (err.tooBig ? 'size' : 'fetch') : '';
     try {
       if (!err && fs.statSync(file).size > FEED_MAX_BYTES) error = 'size';
       else if (!err) xml = decodeFeed(fs.readFileSync(file));
@@ -264,6 +264,7 @@ function status(list, cb) {
 }
 
 module.exports = {
+  FEED_MAX_BYTES: FEED_MAX_BYTES,
   status: status,
   MAX_FEEDS: MAX_FEEDS,
   init: init,

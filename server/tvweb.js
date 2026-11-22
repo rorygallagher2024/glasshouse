@@ -2291,7 +2291,8 @@ function startGlasshouseHome() {
   var weather = require('./lib/weather');
   weather.init({ getJson: fetchLib.getJson });
   var news = require('./lib/news');
-  news.init({ fetchFile: fetchLib.probeFetch });
+  // A feed is stopped at its size limit as it downloads, not after (lib/fetch).
+  news.init({ fetchFile: function (url, file, cb) { return fetchLib.fetchLimited(url, file, news.FEED_MAX_BYTES, cb); } });
   glasshouseHome.init({
     // webOS 11 with the Home key changed: LG's Home stays drawn under Glasshouse Bar unless it is closed.
     lgHomeUnderBar: remoteKeys.nativeHomeBarOn,
