@@ -698,10 +698,6 @@ screensavers.init({
   mediaState: telemetry.readMediaState,
   homeVideoBackground: function () { return !!(glasshouseHome && glasshouseHome.videoBackgroundActive()); },
   haEntity: haEntity,
-  // The Scores saver's leagues are Glasshouse Home's board's.
-  leagues: glasshouseHome ? function () { return glasshouseHome.boardLeagues(); } : undefined,
-  setLeagues: glasshouseHome ? function (list, cb) { glasshouseHome.setBoardLeagues(list, cb); } : undefined,
-  crests: glasshouseHome ? function () { return glasshouseHome.boardCrests(); } : undefined,
   // The News saver's feeds are those on the Home tab.
   newsFeeds: glasshouseHome ? function () { return glasshouseHome.newsFeeds(); } : undefined
 });
@@ -1113,8 +1109,7 @@ routes.init({
   audio: audioCapabilities,
   btAudio: btAudio,
   clock: clockFormat,
-  // The Scores and News screen savers' reads; given their fetch with Home's, below.
-  scores: require('./lib/scores'),
+  // The News screen saver's reads; given their fetch with Home's, below.
   news: require('./lib/news'),
   piccapStatus: piccap.status,
   huesyncStatus: huesync.status,
@@ -2257,8 +2252,6 @@ function startGlasshouseHome() {
   });
   var weather = require('./lib/weather');
   weather.init({ getJson: fetchLib.getJson });
-  var scores = require('./lib/scores');
-  scores.init({ getJson: fetchLib.getJson, fetchFile: fetchLib.probeFetch });
   var news = require('./lib/news');
   news.init({ fetchFile: fetchLib.probeFetch });
   glasshouseHome.init({
@@ -2266,9 +2259,9 @@ function startGlasshouseHome() {
     lgHomeUnderBar: remoteKeys.nativeHomeBarOn,
     screensavers: screensavers,
     weather: weather,
-    scores: scores,
     news: news,
     haEntity: haEntity,
+    mqttOn: function () { return !!(CONFIG.mqtt && CONFIG.mqtt.enabled && CONFIG.mqtt.host); },
     // What the dashboard's Remote section shows: the level, the step it stands
     // in for, and whether it can be read at all. null with no remote paired.
     remoteBattery: function () {
@@ -2305,7 +2298,6 @@ function startGlasshouseHome() {
     },
     pictureDetails: function (on) { homePicture.want('details', on); },
     onDeviceNames: function () { telemetry.expireInputNames(); },
-    onBoardLeagues: function () { screensavers.leaguesChanged(); },
     handOverTileHiding: function (hide) { appsModule.handOverToHome(hide); }
   });
   homeLauncher.init({ stateDir: __dirname, version: TVWEB_DISPLAY_VERSION });

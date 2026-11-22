@@ -25,7 +25,6 @@ var saverPowerOff = require('./saverpoweroff');
 var qmlcheck = require('./qmlcheck');
 var homeWallpapers = require('./home-wallpapers');
 var art = require('./art');
-var scoresLib = require('./scores');
 
 var SCREENSAVER_APP_ID = 'com.webos.app.screensaver';
 var SCREENSAVER_APP_DIR = '/usr/palm/applications/' + SCREENSAVER_APP_ID;
@@ -34,22 +33,8 @@ var SCREENSAVER_MARKER = '.tvweb-screensaver';
 var SCREENSAVER_LEVEL_MARKER = '.tvweb-brightness';
 var SCREENSAVER_ENTITIES_FILE = '/var/lib/tvweb/screensaver-entities.json';
 var SCREENSAVER_COLORS_FILE = '/var/lib/tvweb/screensaver-colors.json';
-// The leagues a screen saver with "scores" in uses shows: Glasshouse Home's
-// board's, through these, so one list serves both. The file keeps them, by
-// saver id, only where Home is not there to.
-var SCREENSAVER_LEAGUES_FILE = '/var/lib/tvweb/screensaver-leagues.json';
-/** @type {null|function(): Array<string>} */
-var leaguesFn = null;
-/** @type {null|function(Array<string>, function(any): void): void} */
-var setLeaguesFn = null;
-/** @type {null|function(): string} */
-var crestsFn = null;
 /** @type {null|function(): Array<{url: string, name: string}>} */
 var newsFeedsFn = null;
-var DEFAULT_SAVER_LEAGUES = ['soccer/eng.1'];
-// As many as Home's board takes: one list for both, so none is lost when it
-// is changed on the Screensaver tab.
-var MAX_SAVER_LEAGUES = scoresLib.LEAGUES.length;
 /** @type {typeof import('./haentity') | null} */
 var haEntityModule = null;
 /*
@@ -150,7 +135,7 @@ var MAX_SAVER_FILES = 200;
 // "ha" has one placeholder per entity it declares, so it carries no value here.
 // "video-busy" is the address of videoBusy's answer, for a saver that plays video.
 // "audio" is the address of the sound output's levels and beat (audiolevels.js).
-var USES = { level: '__TVWEB_LEVEL__', stats: '__TVWEB_URL__', audio: '__TVWEB_AUDIO__', choice: '__TVWEB_CHOICE__', videos: '__TVWEB_VIDEOS__', 'home-weather': '__TVWEB_HOME_WEATHER__', 'video-busy': '__TVWEB_VIDEO_BUSY__', ha: '', 'ha-list': '__TVWEB_HA_LIST__', 'ha-all': '__TVWEB_HA_ALL__', color: '__TVWEB_COLOR__', art: '__TVWEB_ART__', scores: '__TVWEB_SCORES__', news: '__TVWEB_NEWS__' };
+var USES = { level: '__TVWEB_LEVEL__', stats: '__TVWEB_URL__', audio: '__TVWEB_AUDIO__', choice: '__TVWEB_CHOICE__', videos: '__TVWEB_VIDEOS__', 'home-weather': '__TVWEB_HOME_WEATHER__', 'video-busy': '__TVWEB_VIDEO_BUSY__', ha: '', 'ha-list': '__TVWEB_HA_LIST__', 'ha-all': '__TVWEB_HA_ALL__', color: '__TVWEB_COLOR__', art: '__TVWEB_ART__', news: '__TVWEB_NEWS__' };
 var DEFAULT_SAVER_COLOR = 'white';
 var COLOR_PRESETS = [
   { id: 'white', label: msg('srv.saver.color.white', 'White'), bright: '#ffffff', dim: '#a8aeb6' },
@@ -284,9 +269,6 @@ function readSaver(root, name) {
   // And the addresses of the day's matches and of the headlines.
   if (!root.builtin && uses.indexOf('news') !== -1) {
     return problem(msg('srv.saver.noNews', 'It asks for the news headlines, which only Glasshouse\'s own screen savers are given.'));
-  }
-  if (!root.builtin && uses.indexOf('scores') !== -1) {
-    return problem(msg('srv.saver.noScores', 'It asks for the day\'s matches, which only Glasshouse\'s own screen savers are given.'));
   }
   if (m.choices !== undefined) {
     var choices = readChoices(m.choices, id);
@@ -899,9 +881,6 @@ function init(opts) {
   haEntityModule = opts.haEntity || null;
   hour12Fn = opts.hour12 || function () { return false; };
   qtLocaleFn = opts.qtLocale || function () { return ''; };
-  leaguesFn = opts.leagues || null;
-  setLeaguesFn = opts.setLeagues || null;
-  crestsFn = opts.crests || null;
   newsFeedsFn = opts.newsFeeds || null;
   webosVersion = opts.webosVersion || null;
   saverRoots = opts.saverRoots || DEFAULT_ROOTS;
@@ -1304,71 +1283,6 @@ function screensaverColor(e) {
   return findColorPreset(raw).id;
 }
 
-function readStoredLeagues() {
-  try {
-    if (fs.existsSync(SCREENSAVER_LEAGUES_FILE)) {
-      return JSON.parse(fs.readFileSync(SCREENSAVER_LEAGUES_FILE, 'utf8')) || {};
-    }
-  } catch (e) {}
-  return {};
-}
-
-function knownLeagues(list) {
-  var out = [];
-  if (!isArray(list)) return out;
-  for (var i = 0; i < list.length && out.length < MAX_SAVER_LEAGUES; i++) {
-    if (typeof list[i] === 'string' && scoresLib.league(list[i]) && out.indexOf(list[i]) === -1) out.push(list[i]);
-  }
-  return out;
-}
-
-// The leagues a screen saver with "scores" in uses shows: the owner's, or
-// the Premier League until some are picked.
-function screensaverLeagues(e) {
-  if (!e || !e.uses || e.uses.indexOf('scores') === -1) return undefined;
-  var shared = null;
-  if (leaguesFn) {
-    try { shared = leaguesFn(); } catch (err) { shared = null; }
-  }
-  var picked = knownLeagues(shared || readStoredLeagues()[e.id]);
-  return picked.length ? picked : DEFAULT_SAVER_LEAGUES.slice();
-}
-
-function setSaverLeagues(saverId, leagues, cb) {
-  cb = cb || function () {};
-  var saver = saverById(saverId);
-  if (!saver) return cb({ ok: false, error: 'unknown screen saver: ' + saverId });
-  if (!saver.uses || saver.uses.indexOf('scores') === -1) {
-    return cb({ ok: false, error: saverId + ' does not show scores' });
-  }
-  var picked = knownLeagues(leagues);
-  if (!picked.length) return cb({ ok: false, error: msg('srv.saver.noLeagues', 'Pick at least one league.') });
-  if (setLeaguesFn) {
-    // Home's board takes them and calls leaguesChanged(), which restages.
-    return setLeaguesFn(picked, function (r) {
-      cb(r && r.ok ? { ok: true, leagues: picked } : { ok: false, error: (r && r.error) || 'could not save the leagues' });
-    });
-  }
-  var stored = readStoredLeagues();
-  stored[saverId] = picked;
-  try {
-    writeJsonAtomic(SCREENSAVER_LEAGUES_FILE, stored);
-  } catch (e) {
-    return cb({ ok: false, error: e.message });
-  }
-  leaguesChanged();
-  cb({ ok: true, leagues: picked });
-}
-
-// The leagues changed, here or on the Home tab: the saver showing scores is
-// staged again with them.
-function leaguesChanged() {
-  var staged = saverById(stagedScreensaver());
-  if (!staged || !staged.uses || staged.uses.indexOf('scores') === -1) return;
-  restageScreensaver();
-  restartScreensaverApp(function () {});
-}
-
 function setSaverColor(saverId, colorId, cb) {
   cb = cb || function () {};
   var saver = saverById(saverId);
@@ -1429,14 +1343,8 @@ function screensaverList() {
       // Optional value color selection for savers declaring "color" in uses.
       color: hasColor ? screensaverColor(e) : undefined,
       colors: hasColor ? screensaverColorOptions() : undefined,
-      // The leagues a Scores screen saver shows, and those it can.
-      leagues: screensaverLeagues(e),
-      // How it shows a side, shared with Home's board.
-      crests: e.uses && e.uses.indexOf('scores') !== -1 ? (crestsFn ? crestsFn() : 'names') : undefined,
       // The feeds a saver showing the news reads, shared with Home's strip.
       newsFeeds: e.uses && e.uses.indexOf('news') !== -1 ? (newsFeedsFn ? newsFeedsFn() : []) : undefined,
-      leagueOptions: e.uses && e.uses.indexOf('scores') !== -1
-        ? scoresLib.LEAGUES.map(function (l) { return { id: l.id, label: l.name }; }) : undefined,
       // The Video saver's clock, weather and captions, kept with Home's playlist.
       videoStyle: e.id === 'video' ? homeWallpapers.videoSources().style : undefined,
       art: e.id === 'art' ? art.status() : undefined,
@@ -1752,12 +1660,6 @@ function fillSaverQml(e, qml, level, choice, effEnts, entityList) {
     qml = qml.replace(/__TVWEB_HA_LIST__/g, function () { return listJson; });
   }
   if (e.uses.indexOf('level') !== -1) qml = qml.replace(/__TVWEB_LEVEL__/g, String(tunedLevel(level)));
-  // The day's matches for the leagues picked, worded by the server.
-  if (e.uses.indexOf('scores') !== -1) {
-    var scoresUrl = 'http://127.0.0.1:' + port + '/api/scores?leagues=' +
-      encodeURIComponent(screensaverLeagues(e).join(',')) + (token ? '&k=' + encodeURIComponent(token) : '');
-    qml = qml.replace(/__TVWEB_SCORES__/g, function () { return scoresUrl; });
-  }
   // The headlines from the feeds on the Home tab.
   if (e.uses.indexOf('news') !== -1) {
     var newsUrl = 'http://127.0.0.1:' + port + '/api/news' + (token ? '?k=' + encodeURIComponent(token) : '');
@@ -2426,8 +2328,6 @@ module.exports = {
   setScreensaver: setScreensaver,
   setSaverEntities: setSaverEntities,
   setSaverColor: setSaverColor,
-  setSaverLeagues: setSaverLeagues,
-  leaguesChanged: leaguesChanged,
   screensaverColor: function () {
     var mode = screensaverMode();
     if (mode === 'random') mode = stagedScreensaver();

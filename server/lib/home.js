@@ -60,16 +60,11 @@ var WEATHER_SOURCES = ['off', 'ha', 'internet'];
 // Where the lines beside the clock come from: nowhere, Home Assistant
 // entities chosen on the dashboard, or lines Home Assistant sends.
 var INFO_SOURCES = ['off', 'entities', 'ha'];
-// Where the board beside them comes from: nowhere, the day's matches in the
-// leagues chosen on the dashboard (lib/scores), or a board Home Assistant sends.
-var BOARD_SOURCES = ['off', 'scores', 'ha'];
-// How the board and the Scores screen saver show a side: its name, its crest
-// and name, or its crest alone (the name where it has none).
-var BOARD_CRESTS = ['names', 'both', 'crests'];
+// Whether the board beside them shows: off, or a board Home Assistant sends.
+var BOARD_SOURCES = ['off', 'ha'];
 var newsLib = require('./news');
 /** @type {typeof import('./news')} */
 var newsModule = null;
-var scoresLib = require('./scores');
 // The Magic Remote's battery beside the date: never, only once it is low, or always.
 var REMOTE_BATTERY = ['off', 'low', 'always'];
 // At or under this, the badge shows in 'low' and is drawn as low. A remote
@@ -325,8 +320,6 @@ var homeKeysFn = function () {};
 var handOverFn = function () {};
 /** @type {function(): void} */
 var onDeviceNamesFn = function () {};
-// Called when the board's leagues change: the Scores screen saver shows the same.
-var onBoardLeaguesFn = function () {};
 // Told whether the plate's picture details are on, at start and on each change.
 /** @type {function(boolean): void} */
 var pictureDetailsFn = function () {};
@@ -524,8 +517,6 @@ function defaults() {
     info: 'entities',
     infoLines: [],
     board: 'off',
-    boardLeagues: [],
-    boardCrests: 'names',
     // The news strip along the bottom, and the feeds it and the News screen
     // saver read.
     news: false,
@@ -680,8 +671,6 @@ function normalise(raw) {
   d.info = INFO_SOURCES.indexOf(raw.info) !== -1 ? raw.info : 'entities';
   d.infoLines = infoLinesOf(raw.infoLines);
   d.board = BOARD_SOURCES.indexOf(raw.board) !== -1 ? raw.board : 'off';
-  d.boardLeagues = stringList(raw.boardLeagues).filter(function (id) { return !!scoresLib.league(id); });
-  d.boardCrests = BOARD_CRESTS.indexOf(raw.boardCrests) !== -1 ? raw.boardCrests : 'names';
   d.news = raw.news === true;
   d.boardStrip = raw.boardStrip === true;
   d.newsFeeds = newsLib.feedsOf(raw.newsFeeds);
@@ -926,8 +915,6 @@ function setLayout(body, cb) {
     info: body.info !== undefined ? body.info : c.info,
     infoLines: body.infoLines !== undefined ? body.infoLines : c.infoLines,
     board: body.board !== undefined ? body.board : c.board,
-    boardLeagues: body.boardLeagues !== undefined ? body.boardLeagues : c.boardLeagues,
-    boardCrests: body.boardCrests !== undefined ? body.boardCrests : c.boardCrests,
     news: typeof body.news === 'boolean' ? body.news : c.news,
     boardStrip: typeof body.boardStrip === 'boolean' ? body.boardStrip : c.boardStrip,
     newsFeeds: body.newsFeeds !== undefined ? body.newsFeeds : c.newsFeeds,
@@ -987,8 +974,6 @@ function setLayout(body, cb) {
   if (JSON.stringify(c.deviceNames) !== JSON.stringify(config.deviceNames)) onDeviceNamesFn();
   if (config.weather === 'internet') setTimeout(internetWeatherTick, 0);
   if (JSON.stringify(c.infoLines) !== JSON.stringify(config.infoLines)) { entityInfo = null; entityInfoAt = 0; }
-  if (JSON.stringify(c.boardLeagues) !== JSON.stringify(config.boardLeagues) || c.board !== config.board) { scores = null; scoresAt = 0; }
-  if (JSON.stringify(c.boardLeagues) !== JSON.stringify(config.boardLeagues)) onBoardLeaguesFn();
   // A row back in its own order keeps no record of what was opened.
   ROWS.forEach(function (r) { if (config.sort[r] !== 'recent') recent.forget(r); });
   cb({ ok: true, layout: layoutOf(config), layoutVersion: layoutVersion() });
@@ -1083,7 +1068,7 @@ function layoutOf(c) {
     searchHintSeen: c.searchHintSeen, picture: c.picture, livePreview: c.livePreview, search: c.search, recommended: c.recommended,
     fade: c.fade, wallDrift: c.wallDrift, wallCrossfade: c.wallCrossfade, smoothScroll: c.smoothScroll, slidePanels: c.slidePanels,
     darkening: c.darkening, hideUnused: c.hideUnused, showMediaServers: c.showMediaServers, deviceNames: devNamesNow(c.deviceNames), appNames: c.appNames, appCards: c.appCards, focusPulse: c.focusPulse, navSound: c.navSound, pointerSound: c.pointerSound, ownSound: ownSoundInfo(), cardFade: c.cardFade, appIcons: c.appIcons, inputBarTransparent: c.inputBarTransparent, inputBarSwitchOnOk: c.inputBarSwitchOnOk, showClock: c.showClock, rowsBottom: c.rowsBottom, view: c.view,
-    showLastOn: c.showLastOn, showAppCount: c.showAppCount, showAppLabels: c.showAppLabels, showCec: c.showCec, showTvLogos: c.showTvLogos, showPointer: c.showPointer, reopenAfterWake: c.reopenAfterWake, weather: c.weather, weatherPlace: c.weatherPlace, info: c.info, infoLines: c.infoLines, board: c.board, boardLeagues: c.boardLeagues, boardCrests: c.boardCrests, news: c.news, newsFeeds: c.newsFeeds, newsSpeed: c.newsSpeed, newsStyle: c.newsStyle, boardStrip: c.boardStrip, scoresLeagues: scoresLib.LEAGUES, previewAlways: c.previewAlways, previewInTile: c.previewInTile, previewSize: c.previewSize, previewSound: c.previewSound, wallAnim: c.wallAnim,
+    showLastOn: c.showLastOn, showAppCount: c.showAppCount, showAppLabels: c.showAppLabels, showCec: c.showCec, showTvLogos: c.showTvLogos, showPointer: c.showPointer, reopenAfterWake: c.reopenAfterWake, weather: c.weather, weatherPlace: c.weatherPlace, info: c.info, infoLines: c.infoLines, board: c.board, boardStrip: c.boardStrip, news: c.news, newsFeeds: c.newsFeeds, newsSpeed: c.newsSpeed, newsStyle: c.newsStyle, previewAlways: c.previewAlways, previewInTile: c.previewInTile, previewSize: c.previewSize, previewSound: c.previewSound, wallAnim: c.wallAnim,
     remoteBattery: c.remoteBattery,
     animTheme: c.animTheme, animSky: c.animSky, animLight: c.animLight, animThemes: ANIM_THEMES,
     wallShuffleMinutes: c.wallShuffleMinutes, shuffleMinutes: SHUFFLE_MINUTES, colours: c.colours,
@@ -2081,6 +2066,8 @@ var haEntityModule = null;
 var entityInfo = null;     // [{ icon, label, before, v, unit }] as last read
 var entityInfoAt = 0;
 var entityInfoReading = false;
+// Whether the MQTT bridge is set up, so lines can be sent from Home Assistant.
+var mqttOnFn = function () { return false; };
 
 function infoLinesOf(raw) {
   var out = [];
@@ -2136,8 +2123,9 @@ function refreshEntityInfo() {
 // The lines the view shows, from the chosen source.
 function currentInfo() {
   var c = readConfig();
-  if (c.info === 'ha') return homeInfo;
-  if (c.info === 'entities') return entityInfo || [];
+  // Lines sent while MQTT was set up are not left on screen once it is not.
+  if (c.info === 'ha') return mqttOnFn() ? homeInfo : [];
+  if (c.info === 'entities') return haEntityModule && haEntityModule.configured() ? entityInfo || [] : [];
   return [];
 }
 
@@ -2166,57 +2154,19 @@ function setHomeBoard(raw) {
   homeBoard = title || lines.length ? { title: title, lines: lines, until: minutes ? nowMs() + minutes * 60000 : 0 } : null;
 }
 
-/*
- * The day's matches in the leagues chosen on the dashboard, read from ESPN
- * (lib/scores) at most every SCORES_MS while Home is on screen and the TV
- * on. A read that fails keeps the last for SCORES_STALE_MS; a new day starts
- * empty.
- */
-var SCORES_MS = 60000;
-var SCORES_STALE_MS = 15 * 60000;
-/** @type {typeof import('./scores')} */
-var scoresModule = null;
-var scores = null;          // { day, at, matches }
-var scoresAt = 0;
-var scoresReading = false;
-
-function refreshScores() {
-  var c = readConfig();
-  if (c.board !== 'scores' || !c.boardLeagues.length || !scoresModule || !powerActive) return;
-  if (scoresReading || nowMs() - scoresAt < SCORES_MS) return;
-  scoresReading = true;
-  scoresAt = nowMs();
-  var wanted = c.boardLeagues.join(',');
-  scoresModule.today(c.boardLeagues, nowMs(), function (err, matches) {
-    scoresReading = false;
-    if (readConfig().boardLeagues.join(',') !== wanted) return;
-    if (err) return console.error('home: could not read the scores: ' + err.message);
-    scores = { day: scoresModule.dayOf(nowMs()), at: nowMs(), matches: matches };
-  });
-}
-
 function currentBoard() {
   var c = readConfig();
+  // As the lines: a board sent while MQTT was set up goes once it is not.
   if (c.board === 'ha') {
-    if (!homeBoard) return null;
+    if (!homeBoard || !mqttOnFn()) return null;
     if (homeBoard.until && nowMs() > homeBoard.until) { homeBoard = null; return null; }
     return { title: homeBoard.title, lines: homeBoard.lines };
-  }
-  if (c.board === 'scores' && c.boardLeagues.length && scores && scoresModule) {
-    if (scores.day !== scoresModule.dayOf(nowMs()) || nowMs() - scores.at > SCORES_STALE_MS) return null;
-    return { kind: 'scores', crests: c.boardCrests, leagues: c.boardLeagues.map(function (id) { return scoresLib.league(id).short; }),
-             matches: scores.matches.map(function (m) {
-               var o = {}; for (var k in m) o[k] = m[k];
-               o.league = scoresLib.league(m.league).short;
-               return o;
-             }) };
   }
   return null;
 }
 
 function info(cb) {
   refreshEntityInfo();
-  refreshScores();
   refreshNews();
   cb({ ok: true, lines: currentInfo(), board: currentBoard(), news: currentNews() });
 }
@@ -3522,7 +3472,7 @@ function beat(body) {
   // Whether Internet TV is in front, its guide or a player: Home Assistant's media player shows IPTV then.
   if (iptvModule && body && typeof body.iptv === 'boolean') iptvModule.front(body.iptv && viewInFront());
   beats++;
-  if (viewInFront()) { watchBeat(beatGraceMs); refreshEntityInfo(); refreshScores(); refreshNews(); }
+  if (viewInFront()) { watchBeat(beatGraceMs); refreshEntityInfo(); refreshNews(); }
   var saver = powerState === 'Screen Saver' || !!(screensaversModule && screensaversModule.launchedShowing());
   // As last seen: the reply does not wait for videooutput.
   var onScreen = wallVideoOnScreen;
@@ -4038,6 +3988,9 @@ function status(cb) {
       var c = readConfig();
       var out = {
         ok: true,
+        // What the lines beside the clock can come from: entities through the
+        // Home Assistant API, and lines sent over MQTT.
+        haLines: { api: !!(haEntityModule && haEntityModule.configured()), mqtt: !!mqttOnFn() },
         // Both dashboards leave Home out where it is false, as for other features a TV lacks.
         available: sup.ok || c.enabled || c.restorePending,
         supported: sup,
@@ -4139,7 +4092,6 @@ function init(opts) {
   handOverFn = opts.handOverTileHiding || function () {};
   pictureDetailsFn = opts.pictureDetails || function () {};
   onDeviceNamesFn = opts.onDeviceNames || function () {};
-  onBoardLeaguesFn = opts.onBoardLeagues || function () {};
   setHomeKeyFn = opts.setHomeKey || function (id, cb) { cb({ ok: true, none: true }); };
   readsHomeKeyFn = opts.readsHomeKey || function () { return false; };
   holdMs = opts.holdMs || HOLD_MS;
@@ -4152,11 +4104,8 @@ function init(opts) {
   loadHomeInfo();
   weatherModule = opts.weather || null;
   haEntityModule = opts.haEntity || null;
-  scoresModule = opts.scores || null;
+  mqttOnFn = typeof opts.mqttOn === 'function' ? opts.mqttOn : function () { return false; };
   newsModule = opts.news || null;
-  scores = null;
-  scoresAt = 0;
-  scoresReading = false;
   homeBoard = null;
   entityInfo = null;
   entityInfoAt = 0;
@@ -4411,14 +4360,6 @@ function stop() {
   recent.flush();
 }
 
-// The leagues picked for the board, which the Scores screen saver shares:
-// picked on either tab, they are the same list.
-function boardLeagues() { return readConfig().boardLeagues.slice(); }
-
-function setBoardLeagues(list, cb) { setLayout({ boardLeagues: list }, cb); }
-
-function boardCrests() { return readConfig().boardCrests; }
-
 // The feeds, which the News screen saver shares.
 function newsFeeds() { return readConfig().newsFeeds.slice(); }
 
@@ -4433,13 +4374,11 @@ function setNewsFeeds(list, cb) { setLayout({ newsFeeds: list }, cb); }
 
 module.exports = {
   LG_HOME: LG_HOME,
-  boardLeagues: boardLeagues,
-  setBoardLeagues: setBoardLeagues,
-  boardCrests: boardCrests,
   newsFeeds: newsFeeds,
   newsSpeed: newsSpeed,
   newsFlipMs: newsFlipMs,
   setNewsFeeds: setNewsFeeds,
+
   viewInFront: viewInFront,
   barOpened: barOpened,
   reopenAfterCompositor: reopenAfterCompositor,

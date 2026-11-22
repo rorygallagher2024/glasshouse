@@ -232,16 +232,6 @@ every 30 minutes at most and only while the screen is on. Only the search text
 or the place's latitude and longitude are sent. The last reply is kept in
 `/var/lib/tvweb/home-weather-internet.json`.
 
-With Glasshouse Home's **Board** set to **Today's matches**, the server
-connects to `site.api.espn.com` for each chosen league's scoreboard, once a
-minute at most and only while Home is on screen and the TV is on. Only the
-league and the date are sent, and nothing is kept on the TV. The **Scores**
-screen saver reads the same scoreboards for its leagues, once a minute at
-most and only while it shows; its leagues are kept in
-`/var/lib/tvweb/screensaver-leagues.json`. With crests shown, each team's
-crest is fetched once from ESPN's image server (`a.espncdn.com`) and kept in
-`/var/lib/tvweb/crests/`.
-
 With the **News strip** on, or the **News** screen saver showing, the server
 reads each news feed given on the Home tab at most every 10 minutes: a plain
 request for the feed's address, nothing else sent. The feed is downloaded to

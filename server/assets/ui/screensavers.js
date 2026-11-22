@@ -121,13 +121,6 @@ async function loadScreensavers() {
     if (colors && colors.length) renderSsColorPick(colors, active.color, locked);
   }
 
-  q('ss-leagues-row').hidden = !(active && active.leagueOptions);
-  if (active && active.leagueOptions) {
-    renderSsLeagues(active.leagueOptions, active.leagues || [], locked);
-    q('ss-crests').value = active.crests || 'names';
-    q('ss-crests').disabled = locked;
-  }
-
   q('ss-news-row').hidden = !(active && active.newsFeeds);
   if (active && active.newsFeeds) renderNewsFeeds('ss-news', active.newsFeeds, !locked);
 
@@ -1159,35 +1152,6 @@ async function ssArtRemove(id) {
     if (!r.ok) throw new Error(r.error || t('common.unknownError', 'unknown error'));
   } catch (e) { showErr(e.message); }
   frameChanged();
-}
-
-// The Scores saver's leagues, each a pill that adds or takes it away. The
-// last one stays: a board of no leagues would be empty.
-let ssLeagues = [];
-function renderSsLeagues(options, chosen, locked) {
-  ssLeagues = chosen.slice();
-  q('ss-leagues').innerHTML = options.map(l => {
-    const on = chosen.indexOf(l.id) !== -1;
-    const off = locked || (on && chosen.length < 2);
-    return `<button type="button" class="pill ${on ? 'good' : 'idle'}" translate="no" aria-pressed="${on}" ${off ? 'disabled' : ''}
-      onclick="ssToggleLeague('${jsq(l.id)}')">${esc(l.label)}</button>`;
-  }).join('');
-}
-
-// Shared with the board on Glasshouse Home, so it is saved in Home's layout.
-async function ssCrests(value) {
-  q('ss-crests').disabled = true;
-  try { await homePost('/api/home/layout', { boardCrests: value }); } catch (e) { showErr(e.message); }
-  loadScreensavers();
-}
-
-async function ssToggleLeague(id) {
-  const next = ssLeagues.slice();
-  const at = next.indexOf(id);
-  if (at === -1) next.push(id); else next.splice(at, 1);
-  q('ss-leagues').querySelectorAll('button').forEach(b => { b.disabled = true; });
-  await sendCommand('screensaverLeagues', { saver: ssCurrent, leagues: next });
-  loadScreensavers();
 }
 
 async function pickSsColor(id) {

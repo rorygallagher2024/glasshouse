@@ -89,8 +89,6 @@ var remoteKeysModule = null;
 var homeScreenModule = null;
 /** @type {typeof import('./home')} */
 var homeModule = null;
-/** @type {typeof import('./scores')} */
-var scoresModule = null;
 /** @type {typeof import('./news')} */
 var newsModule = null;
 /** @type {typeof import('./clock')} */
@@ -685,6 +683,11 @@ function preloadWithIcons(cb) {
  * the order listed, so they behave as one script: a function declared in any
  * of them can be called from the others. Returns the page, or null with
  * UI_MISSING set to the part that could not be read.
+ *
+ * A line may end in CR LF: Git for Windows checks ui.html out that way, and
+ * deploy.sh copies it as it is. Matched on LF alone, the page went out with
+ * its scripts left as files, which a browser keeps from before an update, so
+ * the dashboard showed new controls driven by old script.
  */
 function inlineUI(html) {
   var missing = null;
@@ -696,10 +699,10 @@ function inlineUI(html) {
     if (!missing) missing = rel;
     return '';
   }
-  html = html.replace(/<link rel="stylesheet" href="\/assets\/(ui\/[\w-]+\.css)">\n/g, function (m, rel) {
+  html = html.replace(/<link rel="stylesheet" href="\/assets\/(ui\/[\w-]+\.css)">\r?\n/g, function (m, rel) {
     return '<style>\n' + part(rel) + '</style>\n';
   });
-  html = html.replace(/(?:<script src="\/assets\/ui\/[\w-]+\.js"><\/script>\n)+/g, function (run) {
+  html = html.replace(/(?:<script src="\/assets\/ui\/[\w-]+\.js"><\/script>\r?\n)+/g, function (run) {
     var scripts = run.match(/ui\/[\w-]+\.js/g);
     return '<script>\n' + scripts.map(part).join('') + '</script>\n';
   });
@@ -1845,23 +1848,6 @@ function handleRequest(req, res) {
     }));
   }
 
-  /* The Scores screen saver's matches, for the leagues in its address, worded
-     in the TV's menu language: the saver sends no language of its own. */
-  if (pathname === '/api/scores' && req.method === 'GET') {
-    if (!authed(u.query, req)) return send(res, 401, JSON.stringify({ ok: false, error: 'unauthorised' }));
-    if (!scoresModule) return send(res, 503, JSON.stringify({ ok: false, error: 'scores are not available' }));
-    var wantLeagues = String(u.query && u.query.leagues || '').split(',');
-    // The TV's language before the request's: the saver's own requests say
-    // en-US whatever the TV is set to.
-    var tvLocale = clockModule && clockModule.qtLocale ? clockModule.qtLocale() : '';
-    var scoresLang = tvLocale ? say.langOfLocale(tvLocale) : res.glasshouseLang;
-    return scoresModule.saverBoard(wantLeagues, Date.now(), clockHour12(), function (body) {
-      /** @type {any} */ (body).crests = homeModule && homeModule.boardCrests ? homeModule.boardCrests() : 'names';
-      /** @type {any} */ (res).glasshouseLang = scoresLang;
-      send(res, 200, JSON.stringify(body));
-    });
-  }
-
   /* The News screen saver's headlines, from the feeds on the Home tab, with
      its note worded in the TV's menu language. */
   if (pathname === '/api/news' && req.method === 'GET') {
@@ -1887,20 +1873,6 @@ function handleRequest(req, res) {
     if (!newsModule || !homeModule) return send(res, 503, JSON.stringify({ ok: false, error: 'news is not available' }));
     return newsModule.status(homeModule.newsFeeds(), function (list) {
       send(res, 200, JSON.stringify({ ok: true, feeds: list }));
-    });
-  }
-
-  // A team's crest for the board and the Scores screen saver, kept on the TV.
-  if (pathname === '/api/scores/crest' && req.method === 'GET') {
-    if (!authed(u.query, req)) return send(res, 401, JSON.stringify({ ok: false, error: 'unauthorised' }));
-    if (!scoresModule) return send(res, 404, '');
-    return scoresModule.crest(String(u.query && u.query.team || ''), function (file) {
-      if (!file) return send(res, 404, '');
-      fs.readFile(file, function (err, data) {
-        if (err) return send(res, 404, '');
-        res.writeHead(200, { 'Content-Type': 'image/png', 'Cache-Control': 'max-age=86400' });
-        res.end(data);
-      });
     });
   }
 
@@ -2966,7 +2938,6 @@ function init(opts) {
   if (opts.remoteKeys) remoteKeysModule = opts.remoteKeys;
   if (opts.homeScreen) homeScreenModule = opts.homeScreen;
   if (opts.home) homeModule = opts.home;
-  if (opts.scores) scoresModule = opts.scores;
   if (opts.news) newsModule = opts.news;
   if (opts.clock) clockModule = opts.clock;
   if (opts.homePicture) homePictureModule = opts.homePicture;

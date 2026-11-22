@@ -1269,96 +1269,197 @@ async function homeReadHaList() {
   homeHaListReading = false;
   const dl = q('home-info-entities');
   if (dl) dl.innerHTML = homeHaList.entities.map(e => `<option value="${esc(e.id)}">${esc(e.name || '')}</option>`).join('');
-  if (homeStatus) renderHomeInfo(homeStatus, true);
+  if (homeStatus) renderHomeInfo(homeStatus);
 }
 
-function renderHomeInfo(st, force) {
+// The lines as last saved or edited here: edits change this copy and save it
+// whole, so two quick changes cannot undo each other.
+let homeInfoList = null;
+let homeInfoMsgTimer = null;
+
+function homeInfoSay(text, warn) {
+  const msg = q('home-info-msg');
+  if (!msg) return;
+  msg.textContent = text || '';
+  msg.className = 'home-info-msg' + (warn ? ' warn' : '');
+  clearTimeout(homeInfoMsgTimer);
+  if (text && !warn) homeInfoMsgTimer = setTimeout(() => { msg.textContent = ''; }, 4000);
+}
+
+function renderHomeInfo(st) {
   const sel = q('home-info-sel');
   if (!sel) return;
-  const source = (st.layout && st.layout.info) || 'entities';
+  // Each source only where it can work: entities with the Home Assistant API
+  // set up on the HA & MQTT tab, sent lines with MQTT. With neither, no row.
+  const can = st.haLines || { api: false, mqtt: false };
+  const row = q('home-info-row');
+  if (row) row.hidden = !st.supported.ok || !(can.api || can.mqtt);
+  // Disabled too: Safari shows an option that is only hidden.
+  [['entities', can.api], ['ha', can.mqtt]].forEach(([v, ok]) => {
+    const o = sel.querySelector('option[value="' + v + '"]');
+    o.hidden = !ok;
+    o.disabled = !ok;
+  });
+  let source = (st.layout && st.layout.info) || 'entities';
+  // A source that can no longer work reads as off until it can again.
+  if ((source === 'entities' && !can.api) || (source === 'ha' && !can.mqtt)) source = 'off';
   sel.value = source;
   sel.disabled = !homeWritable();
   const panel = q('home-info-panel');
-  panel.hidden = !st.supported.ok || source !== 'entities';
+  panel.hidden = !st.supported.ok || source === 'off';
   if (panel.hidden) return;
-  homeReadHaList();
   const note = q('home-info-note');
-  if (homeHaList && !homeHaList.configured) {
-    note.textContent = t('ss.haNotConfigured', 'Home Assistant API is not configured. Save the address and access token in the HA and MQTT tab.');
+  const entities = source === 'entities';
+  q('home-info-addbox').hidden = !entities;
+  if (!entities) {
+    note.textContent = t('home.info.haDesc', 'A Home Assistant automation sends the lines to the TV\'s Home Info Push entity, as a list of up to four, each with a label and a value. The Home Assistant guide has an example.');
+    note.className = 'sub';
+    q('home-info-lines').innerHTML = '';
+    return;
+  }
+  homeReadHaList();
+  if (homeHaList && homeHaList.error) {
+    note.textContent = homeHaList.error;
     note.className = 'set-note warn';
   } else {
-    note.textContent = homeHaList && homeHaList.error ? homeHaList.error
-      : t('home.info.entitiesDesc', 'Choose an entity for each line. A date shows as today, tomorrow or a weekday, a number with its unit. Read every 30 seconds while Home is on screen.');
-    note.className = homeHaList && homeHaList.error ? 'set-note warn' : 'sub';
+    note.textContent = t('home.info.entitiesDesc', 'Each line shows one Home Assistant entity, read every 30 seconds while Home is on screen. A date reads as today, tomorrow or a weekday, and a number has its unit.');
+    note.className = 'sub';
   }
-  // Not rebuilt under a field being typed in, unless a save asks for it.
+  if (!homeInfoList || !homeSaving) homeInfoList = ((st.layout && st.layout.infoLines) || []).map(l => Object.assign({}, l));
+  homeInfoDraw();
+}
+
+// The list, drawn from homeInfoList. Not drawn again under a field being
+// typed in: its change saves, and the next draw shows it.
+function homeInfoDraw() {
+  const lines = homeInfoList || [];
+  const locked = !homeWritable();
+  const full = lines.length >= HOME_INFO_SLOTS;
+  q('home-info-count').textContent = lines.length + ' / ' + HOME_INFO_SLOTS;
+  // An entity id, the same in every language.
+  q('home-info-add').placeholder = 'sensor.bin_collection';
+  q('home-info-add').disabled = locked || full;
+  q('home-info-add-btn').disabled = locked || full;
+  q('home-info-add-hint').textContent = full ? t('home.info.full', 'Four lines at most: remove one to add another.')
+    : t('home.info.addHint', 'Start typing to pick one of Home Assistant\'s entities.');
   const box = q('home-info-lines');
-  if (!force && box.contains(document.activeElement)) return;
-  const lines = (st.layout && st.layout.infoLines) || [];
-  const dis = homeWritable() ? '' : 'disabled';
+  const typing = box.contains(document.activeElement) && document.activeElement.tagName === 'INPUT';
+  if (typing) return;
+  const dis = locked ? 'disabled' : '';
+  const field = (i, key, label, value, max, hint) => `
+        <div class="home-info-field">
+          <label for="home-info-${key}-${i}">${esc(label)}</label>
+          <div class="home-info-input">
+            <input type="text" id="home-info-${key}-${i}" value="${esc(value || '')}" maxlength="${max}" ${dis}
+              autocomplete="off" spellcheck="false" onchange="homeInfoField(${i}, '${key}', this.value)">
+            <div class="home-info-hint">${esc(hint)}</div>
+          </div>
+        </div>`;
   let html = '';
-  for (let i = 0; i < HOME_INFO_SLOTS; i++) {
-    const l = lines[i] || {};
-    const name = l.entity && homeHaList ? (homeHaList.entities.find(e => e.id === l.entity) || {}).name : '';
-    html += `<div class="home-info-line">
-      <div class="home-info-n">${esc(t('home.info.line', 'Line {n}', { n: i + 1 }))}${name ? ' · ' + esc(name) : ''}</div>
-      <input type="text" list="home-info-entities" id="home-info-entity-${i}" value="${esc(l.entity || '')}" ${dis}
-        placeholder="${esc(t('home.info.entity', 'Entity, such as sensor.bin_collection'))}" aria-label="${esc(t('home.info.entityLabel', 'Entity'))}"
-        autocomplete="off" spellcheck="false" onchange="homeInfoSave()">
-      <input type="text" id="home-info-attr-${i}" value="${esc(l.attribute || '')}" maxlength="64" ${dis}
-        placeholder="${esc(t('home.info.attribute', 'Attribute (optional)'))}" aria-label="${esc(t('home.info.attribute', 'Attribute (optional)'))}"
-        autocomplete="off" spellcheck="false" onchange="homeInfoSave()">
-      <input type="text" id="home-info-label-${i}" value="${esc(l.label || '')}" maxlength="32" ${dis}
-        placeholder="${esc(t('home.info.label', 'Label'))}" aria-label="${esc(t('home.info.label', 'Label'))}" onchange="homeInfoSave()">
-      <input type="text" id="home-info-before-${i}" value="${esc(l.before || '')}" maxlength="24" ${dis}
-        placeholder="${esc(t('home.info.before', 'Before the value'))}" aria-label="${esc(t('home.info.before', 'Before the value'))}" onchange="homeInfoSave()">
-    </div>`;
-  }
+  if (lines.length) html += '<div class="ss-li-scroll home-info-list">';
+  lines.forEach((l, i) => {
+    const hit = homeHaList ? homeHaList.entities.find(e => e.id === l.entity) : null;
+    const own = (hit && hit.name) || l.entity;
+    // How the line reads beside the clock, with a made-up value.
+    const value = l.attribute ? t('home.info.tomorrow', 'tomorrow') : '…' + (hit && hit.unit ? ' ' + hit.unit : '');
+    const shown = (l.label || own) + ' · ' + (l.before ? l.before + ' ' : '') + value;
+    html += `
+      <div class="ss-li-item">
+        <div class="ss-li-top">
+          <span class="ss-li-num num">${i + 1}</span>
+          <div class="ss-li-info" title="${esc(l.entity)}">
+            <div class="ss-li-name">${esc(own)}</div>
+            ${hit && hit.name ? `<div class="ss-li-id">${esc(l.entity)}</div>` : ''}
+          </div>
+          <div class="ss-li-acts">
+            <button type="button" title="${esc(t('ss.entityList.moveUp', 'Move up'))}" aria-label="${esc(t('ss.entityList.moveUp', 'Move up'))}" ${(locked || i === 0) ? 'disabled' : ''} onclick="homeInfoMove(${i}, -1)">&#8593;</button>
+            <button type="button" title="${esc(t('ss.entityList.moveDown', 'Move down'))}" aria-label="${esc(t('ss.entityList.moveDown', 'Move down'))}" ${(locked || i === lines.length - 1) ? 'disabled' : ''} onclick="homeInfoMove(${i}, 1)">&#8595;</button>
+            <button type="button" title="${esc(t('ss.entityList.remove', 'Remove'))}" aria-label="${esc(t('ss.entityList.remove', 'Remove'))}" ${dis} onclick="homeInfoRemove(${i})">&times;</button>
+          </div>
+        </div>
+        <details class="home-info-more"${l.label || l.attribute || l.before ? ' open' : ''}>
+        <summary>${esc(t('home.info.customise', 'Customise'))}</summary>
+        ${field(i, 'label', t('home.info.name', 'Name'), l.label, 32, t('home.info.nameHint', 'Optional. Replaces the entity\'s own name.'))}
+        ${field(i, 'attribute', t('home.info.attributeLabel', 'Attribute'), l.attribute, 64, t('home.info.attributeHint', 'Optional. An attribute such as next_date, shown instead of the state.'))}
+        ${field(i, 'before', t('home.info.beforeLabel', 'Text before'), l.before, 24, t('home.info.beforeHint', 'Optional. Words in front of the value, such as collected.'))}
+        </details>
+        <div class="home-info-preview">${esc(t('home.info.preview', 'Shows as: {line}', { line: shown }))}</div>
+      </div>`;
+  });
+  if (lines.length) html += '</div>';
   box.innerHTML = html;
+}
+
+function homeInfoCommit(lines) {
+  homeInfoList = lines;
+  homeInfoDraw();
+  homeSaveLayout({ infoLines: lines });
+}
+
+function homeInfoAdd() {
+  const input = q('home-info-add');
+  const entity = input.value.trim().toLowerCase();
+  const lines = (homeInfoList || []).map(l => Object.assign({}, l));
+  if (!entity) {
+    homeInfoSay(t('home.info.needEntity', 'Type or pick an entity first.'), true);
+    input.focus();
+    return;
+  }
+  if (!/^[a-z0-9_]+\.[a-z0-9_]+$/.test(entity)) {
+    homeInfoSay(t('home.info.badEntity', 'An entity looks like sensor.bin_collection: a domain, a dot and a name.'), true);
+    return;
+  }
+  if (homeHaList && homeHaList.entities.length && !homeHaList.entities.some(e => e.id === entity)) {
+    homeInfoSay(t('home.info.noSuchEntity', 'Home Assistant has no entity called {entity}.', { entity }), true);
+    return;
+  }
+  if (lines.length >= HOME_INFO_SLOTS) return;
+  lines.push({ entity, attribute: '', label: '', before: '' });
+  input.value = '';
+  homeInfoCommit(lines);
+  const hit = homeHaList ? homeHaList.entities.find(e => e.id === entity) : null;
+  homeInfoSay(t('home.info.added', 'Added {name} as line {n}.', { name: (hit && hit.name) || entity, n: lines.length }));
+}
+
+function homeInfoRemove(i) {
+  const lines = (homeInfoList || []).slice();
+  const gone = lines.splice(i, 1)[0];
+  homeInfoCommit(lines);
+  if (gone) homeInfoSay(t('home.info.removed', 'Removed line {n}.', { n: i + 1 }));
+}
+
+function homeInfoMove(i, by) {
+  const lines = (homeInfoList || []).slice();
+  const j = i + by;
+  if (j < 0 || j >= lines.length) return;
+  [lines[i], lines[j]] = [lines[j], lines[i]];
+  homeInfoCommit(lines);
+}
+
+function homeInfoField(i, key, value) {
+  const lines = (homeInfoList || []).map(l => Object.assign({}, l));
+  if (!lines[i]) return;
+  lines[i][key] = value.trim();
+  homeInfoList = lines;
+  homeSaveLayout({ infoLines: lines });
 }
 
 function homeInfoSource(value) {
   homeSaveLayout({ info: value });
 }
 
-function homeInfoSave() {
-  const lines = [];
-  for (let i = 0; i < HOME_INFO_SLOTS; i++) {
-    const entity = q('home-info-entity-' + i).value.trim();
-    if (!entity) continue;
-    lines.push({ entity, attribute: q('home-info-attr-' + i).value.trim(), label: q('home-info-label-' + i).value.trim(),
-                 before: q('home-info-before-' + i).value.trim() });
-  }
-  homeSaveLayout({ infoLines: lines });
-}
-
-/*
- * The board: off, today's matches in the leagues chosen here, read by the TV
- * from ESPN (lib/scores), or a board Home Assistant sends. The leagues come
- * with the layout, each a pill that adds or takes it away.
- */
+// The board: off, or a board Home Assistant sends.
 function renderHomeBoard(st) {
   const sel = q('home-board-sel');
   if (!sel) return;
-  const source = (st.layout && st.layout.board) || 'off';
-  sel.value = source;
+  sel.value = (st.layout && st.layout.board) || 'off';
   sel.disabled = !homeWritable();
   const panel = q('home-board-panel');
-  panel.hidden = !st.supported.ok || source !== 'scores';
+  panel.hidden = !st.supported.ok || sel.value === 'off';
   if (panel.hidden) return;
-  const chosen = (st.layout && st.layout.boardLeagues) || [];
-  const all = (st.layout && st.layout.scoresLeagues) || [];
-  const crests = q('home-board-crests');
-  crests.value = (st.layout && st.layout.boardCrests) || 'names';
-  crests.disabled = !homeWritable();
   const place = q('home-board-place');
   place.value = st.layout && st.layout.boardStrip ? 'strip' : 'beside';
   place.disabled = !homeWritable();
-  q('home-board-leagues').innerHTML = all.map(l => {
-    const on = chosen.indexOf(l.id) !== -1;
-    return `<button type="button" class="pill ${on ? 'good' : 'idle'}" translate="no" aria-pressed="${on}" ${homeWritable() ? '' : 'disabled'}
-      onclick="homeBoardLeague('${jsq(l.id)}')">${esc(l.name)}</button>`;
-  }).join('');
 }
 
 /*
@@ -1469,21 +1570,8 @@ function homeNewsOn(on) {
   homeSaveLayout({ news: on });
 }
 
-// How a side shows on the board and the Scores screen saver: name, crest and
-// name, or crest.
-function homeBoardCrests(value) {
-  homeSaveLayout({ boardCrests: value });
-}
-
 function homeBoardSource(value) {
   homeSaveLayout({ board: value });
-}
-
-function homeBoardLeague(id) {
-  const chosen = ((homeLayout && homeLayout.boardLeagues) || []).slice();
-  const at = chosen.indexOf(id);
-  if (at === -1) chosen.push(id); else chosen.splice(at, 1);
-  homeSaveLayout({ boardLeagues: chosen });
 }
 
 function homeShow(key) {

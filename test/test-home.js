@@ -3613,7 +3613,7 @@ step('the weather Home Assistant pushes is kept across a restart, capped, hidden
 });
 
 step('the info lines Home Assistant pushes are capped, kept across a restart and cleared by an empty push', function (done) {
-  start({ enabled: false, info: 'ha' });
+  start({ enabled: false, info: 'ha' }, { mqttOn: function () { return true; } });
   home.setHomeInfo('not json');
   home.setHomeInfo('{"label":"one"}');
   assert.deepEqual(home.beat().info, [], 'nothing shown from a push that is not a list');
@@ -3658,7 +3658,8 @@ step('lines from entities chosen on the dashboard are read through Home Assistan
       cb({ ok: true, entities: out, errors: {} });
     }
   };
-  start(null, { now: function () { return clock; }, haEntity: ha });
+  var mqtt = true;
+  start(null, { now: function () { return clock; }, haEntity: ha, mqttOn: function () { return mqtt; } });
   assert.strictEqual(home.layout().info, 'entities', 'entities unless chosen otherwise');
   home.setLayout({ infoLines: [
     { entity: 'sensor.bin_1', attribute: 'next_date', label: 'Bin 1', before: 'collected' },
@@ -3686,79 +3687,54 @@ step('lines from entities chosen on the dashboard are read through Home Assistan
         home.setLayout({ info: 'ha' }, function () {
           home.setHomeInfo(JSON.stringify([{ label: 'Pushed', value: 'x' }]));
           assert.strictEqual(home.beat().info[0].label, 'Pushed', 'Home Assistant\'s pushes shown while chosen');
-          done();
+          mqtt = false;
+          assert.deepEqual(home.beat().info, [], 'not once MQTT is no longer set up');
+          home.status(function (st) {
+            assert.deepEqual(st.haLines, { api: true, mqtt: false }, 'the dashboard is told which sources can work');
+            done();
+          });
         });
       });
     });
   });
 });
 
-step('the board: today\'s matches in the leagues chosen, read at most once a minute, or a board Home Assistant pushes', function (done) {
+step('the board: off unless chosen, or a board Home Assistant pushes while MQTT is set up', function (done) {
   var clock = Date.now();
-  var asked = 0;
-  var matches = [{ league: 'soccer/eng.1', start: clock, state: 'in', status: 'STATUS_HALFTIME', clock: "45'",
-                   home: 'Hull', away: 'Brighton', homeScore: '1', awayScore: '0' }];
-  var fail = false;
-  var scoresFake = {
-    dayOf: require('../server/lib/scores').dayOf,
-    today: function (ids, now, cb) { asked++; return fail ? cb(new Error('offline')) : cb(null, matches); }
-  };
-  var leagueChanges = 0;
-  start(null, { now: function () { return clock; }, scores: scoresFake, onBoardLeagues: function () { leagueChanges++; } });
+  var mqtt = true;
+  start(null, { now: function () { return clock; }, mqttOn: function () { return mqtt; } });
   assert.strictEqual(home.layout().board, 'off', 'off unless chosen');
-  assert.ok(home.layout().scoresLeagues.length > 5, 'the leagues offered come with the layout');
-  home.setLayout({ board: 'scores', boardLeagues: ['soccer/eng.1', 'soccer/nowhere', 'soccer/uefa.champions'] }, function (r) {
-    assert.deepEqual(r.layout.boardLeagues, ['soccer/eng.1', 'soccer/uefa.champions'], 'unknown leagues left out');
-    assert.deepEqual(home.boardLeagues(), ['soccer/eng.1', 'soccer/uefa.champions'], 'shared with the Scores screen saver');
-    assert.strictEqual(leagueChanges, 1, 'which is told they changed');
-    assert.strictEqual(r.layout.boardCrests, 'names', 'names unless chosen');
-    assert.strictEqual(r.layout.news, false, 'the news strip is off unless chosen');
-    assert.deepEqual(home.normalise({ news: true, newsFeeds: [{ url: 'https://svt.example/rss', name: 'SVT' }, { url: 'nope' }] }).newsFeeds,
-      [{ url: 'https://svt.example/rss', name: 'SVT' }], 'only http and https feeds');
-    assert.strictEqual(home.beat().news, null, 'no headlines with the strip off');
-    assert.strictEqual(home.normalise({ boardCrests: 'logos' }).boardCrests, 'names');
-    assert.strictEqual(home.normalise({ boardCrests: 'both' }).boardCrests, 'both');
-    assert.strictEqual(r.layout.boardStrip, false, 'the board stays beside the lines unless chosen');
-    assert.strictEqual(home.normalise({ boardStrip: 'yes' }).boardStrip, false);
-    assert.strictEqual(home.normalise({ boardStrip: true }).boardStrip, true);
-    assert.strictEqual(r.layout.newsSpeed, 'slow', 'slow unless chosen');
-    assert.strictEqual(home.normalise({ newsSpeed: 'warp' }).newsSpeed, 'slow');
-    assert.strictEqual(home.normalise({ newsSpeed: 'fast' }).newsSpeed, 'normal', 'fast is no longer offered');
-    assert.strictEqual(r.layout.newsStyle, 'flip', 'one headline at a time unless chosen');
-    assert.strictEqual(home.normalise({ newsStyle: 'scroll' }).newsStyle, 'scroll');
-    assert.strictEqual(home.newsFlipMs(), 8000, 'each headline for 8 s at the slow speed');
-    assert.strictEqual(home.newsSpeed(), 60, 'pixels a second for the News screen saver');
-    home.info(function (i1) {
-      assert.strictEqual(asked, 1);
-      var b = i1.board || home.beat().board;
-      assert.strictEqual(b.kind, 'scores');
-      assert.deepEqual(b.leagues, ['PL', 'CL']);
-      assert.strictEqual(b.matches[0].league, 'PL', 'each match by its league\'s short name');
-      assert.strictEqual(b.crests, 'names', 'how the view shows a side comes with the board');
-      home.info(function () {});
-      assert.strictEqual(asked, 1, 'not again within a minute');
-      clock += 61000;
-      fail = true;
-      home.info(function () {});
-      assert.strictEqual(asked, 2, 'again after a minute');
-      assert.strictEqual(home.beat().board.matches.length, 1, 'a failed read keeps the last');
-      clock += 16 * 60000;
-      assert.strictEqual(home.beat().board, null, 'gone once 15 minutes old');
-      home.setLayout({ board: 'ha' }, function () {
-        var lines = [];
-        for (var i = 0; i < 25; i++) lines.push({ label: 'Team ' + i, value: "67'" });
-        home.setHomeBoard(JSON.stringify({ title: 'Football today', minutes: 10, lines: lines }));
-        var pushed = home.beat().board;
-        assert.strictEqual(pushed.title, 'Football today');
-        assert.strictEqual(pushed.lines.length, 20, 'twenty at most');
-        clock += 10 * 60000 + 1000;
-        assert.strictEqual(home.beat().board, null, 'a pushed board goes once its minutes are up');
-        home.setHomeBoard(JSON.stringify({ title: 'x', lines: [] }));
-        home.setHomeBoard('');
-        assert.strictEqual(home.beat().board, null, 'an empty push takes it away');
-        done();
-      });
-    });
+  assert.strictEqual(home.normalise({ board: 'scores' }).board, 'off', 'no other source');
+  assert.strictEqual(home.layout().news, false, 'the news strip is off unless chosen');
+  assert.deepEqual(home.normalise({ news: true, newsFeeds: [{ url: 'https://svt.example/rss', name: 'SVT' }, { url: 'nope' }] }).newsFeeds,
+    [{ url: 'https://svt.example/rss', name: 'SVT' }], 'only http and https feeds');
+  assert.strictEqual(home.beat().news, null, 'no headlines with the strip off');
+  assert.strictEqual(home.layout().boardStrip, false, 'the board stays beside the lines unless chosen');
+  assert.strictEqual(home.normalise({ boardStrip: 'yes' }).boardStrip, false);
+  assert.strictEqual(home.normalise({ boardStrip: true }).boardStrip, true);
+  assert.strictEqual(home.layout().newsSpeed, 'slow', 'slow unless chosen');
+  assert.strictEqual(home.normalise({ newsSpeed: 'warp' }).newsSpeed, 'slow');
+  assert.strictEqual(home.normalise({ newsSpeed: 'fast' }).newsSpeed, 'normal', 'fast is no longer offered');
+  assert.strictEqual(home.layout().newsStyle, 'flip', 'one headline at a time unless chosen');
+  assert.strictEqual(home.normalise({ newsStyle: 'scroll' }).newsStyle, 'scroll');
+  assert.strictEqual(home.newsFlipMs(), 8000, 'each headline for 8 s at the slow speed');
+  assert.strictEqual(home.newsSpeed(), 60, 'pixels a second for the News screen saver');
+  home.setLayout({ board: 'ha' }, function () {
+    var lines = [];
+    for (var i = 0; i < 25; i++) lines.push({ label: 'Team ' + i, value: "67'" });
+    home.setHomeBoard(JSON.stringify({ title: 'Football today', minutes: 10, lines: lines }));
+    var pushed = home.beat().board;
+    assert.strictEqual(pushed.title, 'Football today');
+    assert.strictEqual(pushed.lines.length, 20, 'twenty at most');
+    mqtt = false;
+    assert.strictEqual(home.beat().board, null, 'not shown once MQTT is not set up');
+    mqtt = true;
+    clock += 10 * 60000 + 1000;
+    assert.strictEqual(home.beat().board, null, 'a pushed board goes once its minutes are up');
+    home.setHomeBoard(JSON.stringify({ title: 'x', lines: [] }));
+    home.setHomeBoard('');
+    assert.strictEqual(home.beat().board, null, 'an empty push takes it away');
+    done();
   });
 });
 

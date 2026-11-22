@@ -69,7 +69,7 @@ For config-file deployments, `deploy.sh` checks for `server/config.<tv-ip>.json`
 
 ### Which settings live where?
 
-The dashboard can change the broker, credentials, topic prefix and device identity — the settings that decide *where* telemetry goes — along with the Home Assistant API URL and token used by screen savers.
+The dashboard can change the broker, credentials, topic prefix and device identity, the settings that decide *where* telemetry goes, along with the Home Assistant API URL and token used by screen savers and Glasshouse Home's values at a glance.
 
 `port`, `host`, `allowControl`, `allowPower` and `token` are file-only. They decide *who can reach the server at all*, and a web UI able to widen its own exposure would defeat the point of setting them. `syslog` is file-only too. `allowTileHiding`, `allowExperimentalScreensavers`, `allowNetworkDebugger`, `prometheus.enabled` and `ntp` can be set in `config.json` or from the Server tab, and `iconServer` from the HA & MQTT tab ([App icons](#app-icons-for-launchers)).
 
@@ -116,27 +116,31 @@ mosquitto_sub -h <broker> -t 'lgtv/#' -v
 
 Node-RED, Telegraf into InfluxDB, or scripts subscribing to that topic work the same way. The Home Assistant Discovery messages are simply ignored by non-Home Assistant clients.
 
-### Screen savers reading Home Assistant
+### Reading Home Assistant entities
 
 **Home Assistant API** and **MQTT bridge** do separate jobs and are arranged in two sections on the **HA & MQTT** tab (`/?tab=mqtt`):
 
 * **MQTT bridge** publishes the TV's telemetry, sensors, and settings to your broker and receives remote control commands from Home Assistant.
-* **Home Assistant API** connects straight from the TV to Home Assistant over HTTP/HTTPS (using Home Assistant's REST API, without MQTT) so built-in screen savers and custom QML screen savers can read live entities from your smart home.
+* **Home Assistant API** connects straight from the TV to Home Assistant over HTTP/HTTPS (using Home Assistant's REST API, without MQTT) so built-in screen savers, custom QML screen savers and Glasshouse Home's [values at a glance](dashboard/home.md#home-assistant-values-at-a-glance) can read live entities from your smart home.
 
 ![HA & MQTT tab showing MQTT bridge and Home Assistant API separated](screenshots/mqtt.png)
 
-*The HA & MQTT tab cleanly separates the MQTT bridge (controlling and observing the TV) from the Home Assistant API (reading Home Assistant entities into screen savers).*
+*The HA & MQTT tab separates the MQTT bridge (controlling and observing the TV) from the Home Assistant API (reading Home Assistant entities into screen savers and Glasshouse Home).*
 
 #### Configuring the Home Assistant API
 
 1. In Home Assistant, open your profile (bottom-left) → **Security** → **Long-Lived Access Tokens** → **Create Token** and copy the token.
 2. Open Glasshouse in a browser and navigate to **HA & MQTT** → **Home Assistant API**.
 3. Enter your **Home Assistant address** (for example `http://192.168.1.10:8123` or `http://homeassistant.local:8123`) and paste the **Long-Lived Access Token** (or set `homeAssistant.url` and `homeAssistant.token` in `config.json`).
-4. Click **Save** — credentials apply immediately without restarting the server — and Glasshouse checks the connection. The **Connection** box beside the settings draws the TV and Home Assistant as the MQTT bridge's box draws the TV and its broker: the link reads **Reachable** with Home Assistant's response time and how long ago a screen saver last read an entity, **Off**, or **Unreachable** with the reason. You can switch the **Home Assistant API** button off at any time to disable Home Assistant screen savers while keeping your saved address and token.
+4. Click **Save**. The settings apply at once, without restarting the server, and Glasshouse checks the connection. The **Connection** box beside the settings draws the TV and Home Assistant as the MQTT bridge's box draws the TV and its broker: the link reads **Reachable** with Home Assistant's response time and how long ago Glasshouse last read an entity, **Off**, or **Unreachable** with the reason. You can switch the **Home Assistant API** button off at any time to disable Home Assistant screen savers while keeping your saved address and token.
 
 ![Home Assistant API settings showing the toggle, address, saved token, and the Connection box with Home Assistant reachable](screenshots/ha-api.png)
 
-Once enabled and connected, two Home Assistant screen savers appear on the **Screensaver** tab (while off or unconfigured, they stay hidden):
+Once enabled and connected, the API is used in two places. While it is off or unconfigured, neither offers it.
+
+**On Glasshouse Home**, [values at a glance](dashboard/home.md#home-assistant-values-at-a-glance) shows up to four entities beside the clock, picked on the **Home** tab: a bin collection, a parcel on its way, a share price.
+
+**On the Screensaver tab**, two Home Assistant screen savers appear:
 
 * [**Home Assistant: Ambient**](dashboard/screen-savers.md#home-assistant-ambient) — shows the TV clock, date, and up to three configurable entities with optional custom display labels.
 * [**Home Assistant: Data Display**](dashboard/screen-savers.md#home-assistant-data-display) — cycles sequentially through 2 to 100 entities one at a time on black.
@@ -377,7 +381,7 @@ action:
 The temperature is shown as sent, in the unit the weather entity uses. `city` is optional.
 
 ### 7. Your own lines on Glasshouse Home
-Glasshouse Home shows up to four lines of your own beside the clock, each an icon, a label and a value. The Home tab can read them from entities with no automation at all ([Home tab](dashboard/home.md#lines-from-home-assistant)); with **Sent from Home Assistant** chosen there, an automation writes them instead, for text the entities do not have. This sends the next bin collection and the next post delivery whenever one changes and when Home Assistant starts. The list goes straight to the command topic, as `text.set_value` takes 255 characters at most. They stay until the next push; an empty payload takes them away.
+Glasshouse Home shows up to four lines of your own beside the clock, each an icon, a label and a value. The Home tab's **Home Assistant: values at a glance** can read them from entities with no automation at all ([Home tab](dashboard/home.md#home-assistant-values-at-a-glance)); with **Sent by an automation** chosen there, an automation writes them instead, for text the entities do not have. This sends the next bin collection and the next post delivery whenever one changes and when Home Assistant starts. The list goes straight to the command topic, as `text.set_value` takes 255 characters at most. They stay until the next push; an empty payload takes them away.
 
 ```yaml
 alias: "Lines on Glasshouse Home"
@@ -399,6 +403,35 @@ action:
           {'icon': 'mdi:mailbox', 'label': 'Post',
            'value': 'in ' ~ states('sensor.post_delivery') ~ ' days'}
         ] | to_json }}
+```
+
+### 8. A board on Glasshouse Home
+With the Home tab's **Board** set to **Sent from Home Assistant**, an automation can put a titled list of up to twenty lines beside the lines, shown four at a time, such as today's matches. Glasshouse fetches nothing for it: the lines come from whatever integration you choose, and its terms are between you and it. With `minutes`, the board goes that long after the last push, so results that stop coming are not left up; an empty payload takes it away at once. It is not kept across a restart.
+
+This sends the matches of the teams followed with [Team Tracker](https://github.com/vasqued2/ha-teamtracker) whenever one of them changes:
+
+```yaml
+alias: "Board on Glasshouse Home"
+trigger:
+  - platform: state
+    entity_id:
+      - sensor.team_tracker_malmo
+      - sensor.team_tracker_arsenal
+action:
+  - action: mqtt.publish
+    data:
+      topic: lgtv/command/homeBoard
+      payload: >-
+        {% set ns = namespace(lines=[]) %}
+        {% for s in ['sensor.team_tracker_malmo', 'sensor.team_tracker_arsenal'] %}
+          {% set a = states[s].attributes %}
+          {% if states(s) in ['PRE', 'IN', 'POST'] %}
+            {% set score = a.team_score ~ '–' ~ a.opponent_score if states(s) != 'PRE' else '–' %}
+            {% set ns.lines = ns.lines + [{'label': a.team_name ~ ' ' ~ score ~ ' ' ~ a.opponent_name,
+                                           'value': a.clock if states(s) == 'IN' else (a.kickoff_in or '')}] %}
+          {% endif %}
+        {% endfor %}
+        {{ {'title': 'Football today', 'minutes': 30, 'lines': ns.lines} | to_json }}
 ```
 
 ---

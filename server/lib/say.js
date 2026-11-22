@@ -116,8 +116,8 @@ function langOf(req) {
   return LANG_CODE.test(want) && want !== 'en' && dicts[want] ? want : null;
 }
 
-// The language file for a TV locale such as sv-SE or pt_BR, region first:
-// pt-br where it has its own file, otherwise pt. null for English or none.
+// The language file for a locale as Qt or LG names it (sv_SE, pt-BR), or
+// null without one: for what the TV shows, which follows the TV's language.
 function langOfLocale(locale) {
   var parts = String(locale || '').toLowerCase().replace(/_/g, '-').split('-');
   var tries = parts.length > 1 ? [parts[0] + '-' + parts[1], parts[0]] : [parts[0]];

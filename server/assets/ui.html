@@ -1112,24 +1112,6 @@
     <select class="pill-sel ss-sel" id="ss-color" aria-labelledby="ss-color-lbl ss-color" onchange="pickSsColor(this.value)"></select>
   </div>
 
-  <!-- The Scores saver's leagues -->
-  <div class="ss-level-row" id="ss-leagues-row" hidden>
-    <div class="ss-level-lbl" data-t="ss.leagues">Leagues</div>
-    <div class="ss-leagues-box">
-      <div class="sub" data-t="ss.leaguesDesc">The same leagues as the board on Glasshouse Home. Glasshouse reads their matches from ESPN at most once a minute while the screen saver shows. Nothing else is sent.</div>
-      <div class="home-weather-results" id="ss-leagues"></div>
-      <div class="home-crests-row">
-        <label for="ss-crests" data-t="home.board.crests">Teams shown as</label>
-        <select class="pill-sel" id="ss-crests" onchange="ssCrests(this.value)">
-          <option value="names" data-t="home.board.crests.names">Names</option>
-          <option value="both" data-t="home.board.crests.both">Crest and name</option>
-          <option value="crests" data-t="home.board.crests.crests">Crests only</option>
-        </select>
-      </div>
-      <div class="sub" data-t="home.board.crestsDesc">Crests come from ESPN's image server, each fetched once and kept on the TV. The same setting is used by the Scores screen saver.</div>
-    </div>
-  </div>
-
   <!-- The News saver's feeds, the same as the Home tab's news strip -->
   <div class="ss-level-row" id="ss-news-row" hidden>
     <div class="ss-level-lbl" data-t="home.news.feeds">News feeds</div>
@@ -1696,45 +1678,48 @@
       <div class="sub" id="home-weather-chosen" role="status"></div>
       <div class="sub home-weather-credit" data-t="home.weather.credits">Weather data by Open-Meteo.com. Location data based on GeoNames.</div>
     </div>
-    <div class="prot-row home-gh-row home-show-row" hidden>
+    <div class="prot-row home-gh-row home-show-row" id="home-info-row" hidden>
       <div class="prot-main">
-        <div class="prot-title" data-t="home.info">Lines from Home Assistant</div>
-        <div class="prot-desc" data-t="home.infoDesc">Beside the clock: up to four lines, each an entity's value, such as the next bin collection, the post or a share price. Or lines Home Assistant sends itself.</div>
+        <div class="prot-title" data-t="home.info">Home Assistant: values at a glance</div>
+        <div class="prot-desc" data-t="home.infoDesc">For Home Assistant users: up to four of its values as short lines beside the clock on Glasshouse Home, such as the next bin collection, a parcel on its way or a share price.</div>
       </div>
-      <div class="prot-status"><select class="pill-sel" id="home-info-sel" onchange="homeInfoSource(this.value)" aria-label="Lines from Home Assistant" data-t-aria-label="home.info">
+      <div class="prot-status"><select class="pill-sel" id="home-info-sel" onchange="homeInfoSource(this.value)" aria-label="Home Assistant: values at a glance" data-t-aria-label="home.info">
         <option value="off" data-t="common.off">Off</option>
-        <option value="entities" data-t="home.info.fromEntities">Entities you choose</option>
-        <option value="ha" data-t="home.info.fromHa">Sent from Home Assistant</option>
+        <option value="entities" data-t="home.info.fromEntities">Entities you pick</option>
+        <option value="ha" data-t="home.info.fromHa">Sent by an automation</option>
       </select></div>
     </div>
     <div class="home-info-panel" id="home-info-panel" hidden>
       <div class="sub" id="home-info-note"></div>
+      <!-- Kept out of the list below, which is drawn again after each change. -->
+      <div class="home-info-addbox" id="home-info-addbox">
+        <div class="ss-li-head">
+          <label for="home-info-add" data-t="home.info.add">Add a line</label>
+          <span class="ss-li-count num" id="home-info-count"></span>
+        </div>
+        <div class="ss-li-add">
+          <input type="text" id="home-info-add" list="home-info-entities" autocomplete="off" spellcheck="false"
+            aria-describedby="home-info-add-hint home-info-msg"
+            onkeydown="if(event.key==='Enter'){event.preventDefault();homeInfoAdd();}">
+          <button type="button" class="ss-li-add-btn" id="home-info-add-btn" onclick="homeInfoAdd()" data-t="ss.entityList.addBtn">Add</button>
+        </div>
+        <div class="home-info-hint" id="home-info-add-hint"></div>
+        <div class="home-info-msg" id="home-info-msg" role="status" aria-live="polite"></div>
+      </div>
       <div id="home-info-lines"></div>
       <datalist id="home-info-entities"></datalist>
     </div>
     <div class="prot-row home-gh-row home-show-row" hidden>
       <div class="prot-main">
         <div class="prot-title" data-t="home.board">Board</div>
-        <div class="prot-desc" data-t="home.boardDesc">Beside the lines: today's matches in the leagues you choose, with their kick-off times and live scores, four at a time. Or a board Home Assistant sends.</div>
+        <div class="prot-desc" data-t="home.boardDesc">Beside the lines: a list Home Assistant sends, such as today's matches from a sports integration, four lines at a time.</div>
       </div>
       <div class="prot-status"><select class="pill-sel" id="home-board-sel" onchange="homeBoardSource(this.value)" aria-label="Board" data-t-aria-label="home.board">
         <option value="off" data-t="common.off">Off</option>
-        <option value="scores" data-t="home.board.fromScores">Today's matches</option>
         <option value="ha" data-t="home.board.fromHa">Sent from Home Assistant</option>
       </select></div>
     </div>
     <div class="home-info-panel" id="home-board-panel" hidden>
-      <div class="sub" data-t="home.board.leaguesDesc">Choose the leagues. Glasshouse reads their matches from ESPN once a minute while Home is on screen and the TV is on. Nothing else is sent.</div>
-      <div class="home-weather-results home-board-leagues" id="home-board-leagues"></div>
-      <div class="home-crests-row">
-        <label for="home-board-crests" data-t="home.board.crests">Teams shown as</label>
-        <select class="pill-sel" id="home-board-crests" onchange="homeBoardCrests(this.value)">
-          <option value="names" data-t="home.board.crests.names">Names</option>
-          <option value="both" data-t="home.board.crests.both">Crest and name</option>
-          <option value="crests" data-t="home.board.crests.crests">Crests only</option>
-        </select>
-      </div>
-      <div class="sub" data-t="home.board.crestsDesc">Crests come from ESPN's image server, each fetched once and kept on the TV. The same setting is used by the Scores screen saver.</div>
       <div class="home-crests-row">
         <label for="home-board-place" data-t="home.board.place">Shown</label>
         <select class="pill-sel" id="home-board-place" onchange="homeBoardStrip(this.value === 'strip')">
@@ -1742,7 +1727,7 @@
           <option value="strip" data-t="home.board.place.strip">Running along the bottom</option>
         </select>
       </div>
-      <div class="sub" data-t="home.board.placeDesc">Along the bottom, the matches open every run of the strip the news uses, by name only, with the next headlines after them.</div>
+      <div class="sub" data-t="home.board.placeDesc2">Along the bottom, the board's lines open every run of the strip the news uses, with the next headlines after them.</div>
     </div>
     <div class="prot-row home-gh-row home-show-row" hidden>
       <div class="prot-main">
@@ -2375,7 +2360,7 @@
 
   <div class="ha-api-section" id="ha-api-section">
     <div class="pv-h" style="margin-top:0" data-t="ha.api">Home Assistant API</div>
-    <div class="pv-sub" data-t="ha.api.desc">Enables the Home Assistant screen savers (Ambient and Data Display) on the Screensaver tab to show live Home Assistant entities. Connects straight to Home Assistant over HTTP/HTTPS without using MQTT, and saves without restarting.</div>
+    <div class="pv-sub" data-t="ha.api.desc">Reads live Home Assistant entities for the Home Assistant screen savers (Ambient and Data Display) on the Screensaver tab, and for the values at a glance beside Glasshouse Home's clock on the Home tab. Connects straight to Home Assistant over HTTP/HTTPS without using MQTT, and saves without restarting.</div>
 
     <div class="cfg-cols">
       <div class="cfg-side">
