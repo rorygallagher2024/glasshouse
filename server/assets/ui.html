@@ -1747,7 +1747,7 @@
     <div class="prot-row home-gh-row home-show-row" hidden>
       <div class="prot-main">
         <div class="prot-title" data-t="home.news">News strip</div>
-        <div class="prot-desc" data-t="home.newsDesc">Along the bottom: the headlines of up to three news feeds (RSS or Atom), running right to left with each one's source.</div>
+        <div class="prot-desc" data-t="home.newsDesc">Along the bottom: the headlines of up to three news feeds (RSS or Atom), one at a time or running, each after its source.</div>
       </div>
       <div class="prot-status"><select class="pill-sel" id="home-news-sel" onchange="homeNewsOn(this.value === 'on')" aria-label="News strip" data-t-aria-label="home.news">
         <option value="off" data-t="common.off">Off</option>
@@ -1758,14 +1758,20 @@
       <div class="sub" data-t="home.news.feedsDesc">The address of each feed, and a name to show before its headlines if you want another than the feed's own. Each is read every 10 minutes while the strip or the News screen saver shows. The News screen saver reads the same feeds.</div>
       <div id="home-news-feeds"></div>
       <div class="home-crests-row">
+        <label for="home-news-style" data-t="home.news.style">Headlines</label>
+        <select class="pill-sel" id="home-news-style" onchange="homeSaveLayout({ newsStyle: this.value })">
+          <option value="flip" data-t="home.news.style.flip">One at a time</option>
+          <option value="scroll" data-t="home.news.style.scroll">Running</option>
+        </select>
+      </div>
+      <div class="home-crests-row">
         <label for="home-news-speed" data-t="home.news.speed">Speed</label>
         <select class="pill-sel" id="home-news-speed" onchange="homeSaveLayout({ newsSpeed: this.value })">
           <option value="slow" data-t="home.news.speed.slow">Slow</option>
           <option value="normal" data-t="home.news.speed.normal">Normal</option>
-          <option value="fast" data-t="home.news.speed.fast">Fast</option>
         </select>
       </div>
-      <div class="sub" data-t="home.news.speedDesc">How fast the strip runs, with the matches in it too, and the News screen saver.</div>
+      <div class="sub" data-t="home.news.speedDesc2">One at a time shows each headline for 8 or 6 seconds, and fades to the next. Running moves them right to left, less smoothly on TVs that cannot draw every frame. Both apply to the matches in the strip and to the News screen saver too.</div>
     </div>
     <div class="prot-row home-gh-row" id="home-remote-battery-row" hidden>
       <div class="prot-main">

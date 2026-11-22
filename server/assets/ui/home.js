@@ -1453,6 +1453,9 @@ function renderHomeNews(st) {
   const panel = q('home-news-panel');
   panel.hidden = !st.supported.ok || !on;
   if (!panel.hidden) renderNewsFeeds('home-news', st.layout.newsFeeds, homeWritable());
+  const style = q('home-news-style');
+  style.value = st.layout.newsStyle || 'flip';
+  style.disabled = !homeWritable();
   const speed = q('home-news-speed');
   speed.value = st.layout.newsSpeed || 'slow';
   speed.disabled = !homeWritable();

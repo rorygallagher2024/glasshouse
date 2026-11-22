@@ -3818,7 +3818,7 @@
  "home.board.crests.crests": {"from": "Crests only", "text": "Tylko herby"},
  "home.board.crestsDesc": {"from": "Crests come from ESPN's image server, each fetched once and kept on the TV. The same setting is used by the Scores screen saver.", "text": "Herby pochodzą z serwera obrazów ESPN, każdy pobierany raz i przechowywany w telewizorze. Wygaszacz Wyniki używa tego samego ustawienia."},
  "home.news": {"from": "News strip", "text": "Pasek wiadomości"},
- "home.newsDesc": {"from": "Along the bottom: the headlines of up to three news feeds (RSS or Atom), running right to left with each one's source.", "text": "Na dole: nagłówki z maksymalnie trzech kanałów wiadomości (RSS lub Atom), przewijane od prawej do lewej ze źródłem."},
+ "home.newsDesc": {"from": "Along the bottom: the headlines of up to three news feeds (RSS or Atom), one at a time or running, each after its source.", "text": "Na dole: nagłówki z maksymalnie trzech kanałów wiadomości (RSS lub Atom), po jednym lub przewijane, każdy po swoim źródle."},
  "home.news.feedsDesc": {"from": "The address of each feed, and a name to show before its headlines if you want another than the feed's own. Each is read every 10 minutes while the strip or the News screen saver shows. The News screen saver reads the same feeds.", "text": "Adres każdego kanału i, jeśli chcesz inną niż jego własna, nazwa wyświetlana przed nagłówkami. Każdy kanał jest odczytywany co 10 minut, gdy widać pasek lub wygaszacz Wiadomości. Wygaszacz Wiadomości czyta te same kanały."},
  "home.news.feeds": {"from": "News feeds", "text": "Kanały wiadomości"},
  "home.news.url": {"from": "Feed address, such as https://www.svt.se/rss.xml", "text": "Adres kanału, np. https://www.svt.se/rss.xml"},
@@ -3839,6 +3839,8 @@
  "home.news.speed": {"from": "Speed", "text": "Prędkość"},
  "home.news.speed.slow": {"from": "Slow", "text": "Wolno"},
  "home.news.speed.normal": {"from": "Normal", "text": "Normalnie"},
- "home.news.speed.fast": {"from": "Fast", "text": "Szybko"},
- "home.news.speedDesc": {"from": "How fast the strip runs, with the matches in it too, and the News screen saver.", "text": "Jak szybko przewija się pasek, także z meczami, i wygaszacz News."}
+ "home.news.style": {"from": "Headlines", "text": "Nagłówki"},
+ "home.news.style.flip": {"from": "One at a time", "text": "Po jednym"},
+ "home.news.style.scroll": {"from": "Running", "text": "Przewijane"},
+ "home.news.speedDesc2": {"from": "One at a time shows each headline for 8 or 6 seconds, and fades to the next. Running moves them right to left, less smoothly on TVs that cannot draw every frame. Both apply to the matches in the strip and to the News screen saver too.", "text": "Po jednym pokazuje każdy nagłówek przez 8 lub 6 sekund i przechodzi płynnie do następnego. Przewijane przesuwa je od prawej do lewej, mniej płynnie na telewizorach, które nie rysują każdej klatki. Oba dotyczą też meczów w pasku i wygaszacza News."}
 }

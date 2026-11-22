@@ -3818,7 +3818,7 @@
  "home.board.crests.crests": {"from": "Crests only", "text": "Chỉ huy hiệu"},
  "home.board.crestsDesc": {"from": "Crests come from ESPN's image server, each fetched once and kept on the TV. The same setting is used by the Scores screen saver.", "text": "Huy hiệu lấy từ máy chủ hình ảnh của ESPN, mỗi cái tải một lần và lưu trên TV. Trình bảo vệ màn hình Tỷ số dùng cùng cài đặt này."},
  "home.news": {"from": "News strip", "text": "Dải tin tức"},
- "home.newsDesc": {"from": "Along the bottom: the headlines of up to three news feeds (RSS or Atom), running right to left with each one's source.", "text": "Ở phía dưới: tiêu đề từ tối đa ba nguồn tin (RSS hoặc Atom), chạy từ phải sang trái kèm nguồn."},
+ "home.newsDesc": {"from": "Along the bottom: the headlines of up to three news feeds (RSS or Atom), one at a time or running, each after its source.", "text": "Ở phía dưới: tiêu đề từ tối đa ba nguồn tin (RSS hoặc Atom), từng cái một hoặc chạy, mỗi tiêu đề sau nguồn của nó."},
  "home.news.feedsDesc": {"from": "The address of each feed, and a name to show before its headlines if you want another than the feed's own. Each is read every 10 minutes while the strip or the News screen saver shows. The News screen saver reads the same feeds.", "text": "Địa chỉ của mỗi nguồn, và một tên hiển thị trước các tiêu đề nếu bạn muốn khác tên của nguồn. Mỗi nguồn được đọc 10 phút một lần khi dải tin hoặc trình bảo vệ màn hình Tin tức hiển thị. Trình bảo vệ màn hình Tin tức đọc cùng các nguồn."},
  "home.news.feeds": {"from": "News feeds", "text": "Nguồn tin tức"},
  "home.news.url": {"from": "Feed address, such as https://www.svt.se/rss.xml", "text": "Địa chỉ nguồn, ví dụ https://www.svt.se/rss.xml"},
@@ -3839,6 +3839,8 @@
  "home.news.speed": {"from": "Speed", "text": "Tốc độ"},
  "home.news.speed.slow": {"from": "Slow", "text": "Chậm"},
  "home.news.speed.normal": {"from": "Normal", "text": "Bình thường"},
- "home.news.speed.fast": {"from": "Fast", "text": "Nhanh"},
- "home.news.speedDesc": {"from": "How fast the strip runs, with the matches in it too, and the News screen saver.", "text": "Tốc độ chạy của dải, kể cả các trận, và trình bảo vệ màn hình News."}
+ "home.news.style": {"from": "Headlines", "text": "Tiêu đề"},
+ "home.news.style.flip": {"from": "One at a time", "text": "Từng cái một"},
+ "home.news.style.scroll": {"from": "Running", "text": "Chạy"},
+ "home.news.speedDesc2": {"from": "One at a time shows each headline for 8 or 6 seconds, and fades to the next. Running moves them right to left, less smoothly on TVs that cannot draw every frame. Both apply to the matches in the strip and to the News screen saver too.", "text": "Từng cái một hiển thị mỗi tiêu đề trong 8 hoặc 6 giây rồi chuyển mờ sang tiêu đề tiếp theo. Chạy di chuyển chúng từ phải sang trái, kém mượt hơn trên những TV không vẽ kịp mọi khung hình. Cả hai đều áp dụng cho các trận trong dải và trình bảo vệ màn hình News."}
 }

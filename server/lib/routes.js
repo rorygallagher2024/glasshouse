@@ -1872,6 +1872,7 @@ function handleRequest(req, res) {
     var newsFeedList = homeModule.newsFeeds();
     return newsModule.headlines(newsFeedList, function (r) {
       /** @type {any} */ (r).speed = homeModule.newsSpeed();
+      /** @type {any} */ (r).flipMs = homeModule.newsFlipMs();
       /** @type {any} */ (r).note = r.items.length ? ''
         : !newsFeedList.length ? msg('home.news.noFeeds', 'Add news feeds on the Screensaver tab')
         : msg('home.news.none', 'No headlines yet');

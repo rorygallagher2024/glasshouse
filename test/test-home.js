@@ -3723,7 +3723,10 @@ step('the board: today\'s matches in the leagues chosen, read at most once a min
     assert.strictEqual(home.normalise({ boardStrip: true }).boardStrip, true);
     assert.strictEqual(r.layout.newsSpeed, 'slow', 'slow unless chosen');
     assert.strictEqual(home.normalise({ newsSpeed: 'warp' }).newsSpeed, 'slow');
-    assert.strictEqual(home.normalise({ newsSpeed: 'fast' }).newsSpeed, 'fast');
+    assert.strictEqual(home.normalise({ newsSpeed: 'fast' }).newsSpeed, 'normal', 'fast is no longer offered');
+    assert.strictEqual(r.layout.newsStyle, 'flip', 'one headline at a time unless chosen');
+    assert.strictEqual(home.normalise({ newsStyle: 'scroll' }).newsStyle, 'scroll');
+    assert.strictEqual(home.newsFlipMs(), 8000, 'each headline for 8 s at the slow speed');
     assert.strictEqual(home.newsSpeed(), 60, 'pixels a second for the News screen saver');
     home.info(function (i1) {
       assert.strictEqual(asked, 1);

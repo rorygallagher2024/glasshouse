@@ -65,8 +65,14 @@ WebOSWindow {
     property int batch: 8
     property string note: ""
     // Pixels a second, as chosen for Home's strip and given with the
-    // headlines: 60, 120 or 180, whole pixels a frame on a 60 Hz panel.
+    // headlines: 60 or 100.
     property real speed: 60
+    // Each headline on its own for this long, fading to the next, as Home's
+    // strip shows them unless set to running: 0 runs them right to left.
+    property int flipMs: 8000
+    property var flipPart: []
+    property int flipAt: 0
+    property bool flipShown: false
 
     function two(n) { return n < 10 ? "0" + n : "" + n }
 
@@ -102,6 +108,7 @@ WebOSWindow {
                 var items = d.items || [];
                 win.note = items.length ? "" : (d.note || "");
                 if (d.speed > 0) win.speed = d.speed;
+                if (typeof d.flipMs === "number") win.flipMs = d.flipMs;
                 // A failed read keeps what runs; new headlines wait for the
                 // next run.
                 if (items.length) win.waiting = items;
@@ -121,16 +128,51 @@ WebOSWindow {
         if (!win.items.length) return;
         var part = win.items.slice(win.at, win.at + win.batch);
         win.at = win.at + win.batch >= win.items.length ? 0 : win.at + win.batch;
-        ticker.text = win.runOf(part);
         run.stop();
-        // A whole distance, a multiple of 18 pixels, so the run lasts whole
-        // milliseconds and each 60 Hz frame lands on a whole pixel.
-        var distance = Math.max(Math.ceil((strip.width + ticker.paintedWidth) / 18) * 18, win.speed);
+        flipTimer.stop();
+        if (win.flipMs > 0) {
+            var margin = Math.round(112 * win.unit);
+            ticker.x = margin;
+            ticker.width = strip.width - margin * 2;
+            ticker.elide = Text.ElideRight;
+            win.flipPart = part;
+            win.flipAt = 0;
+            win.nextFlip();
+            return;
+        }
+        ticker.elide = Text.ElideNone;
+        ticker.width = Qt.binding(function () { return ticker.implicitWidth; });
+        ticker.opacity = 1;
+        win.flipShown = false;
+        ticker.text = win.runOf(part);
+        // A whole distance, a multiple of 6 pixels, so the run lasts whole
+        // milliseconds at 60 and 100 pixels a second.
+        var distance = Math.max(Math.ceil((strip.width + ticker.paintedWidth) / 6) * 6, win.speed);
         run.from = strip.width;
         run.to = strip.width - distance;
         run.duration = Math.round(distance / win.speed * 1000);
         run.start();
     }
+
+    // Fade out, then the next headline in; after the run's last, the next run.
+    function nextFlip() {
+        if (win.flipShown) {
+            win.flipShown = false;
+            ticker.opacity = 0;
+            flipTimer.interval = 400;
+            flipTimer.start();
+            return;
+        }
+        if (win.flipAt >= win.flipPart.length) { win.startRun(); return; }
+        ticker.text = win.runOf([win.flipPart[win.flipAt]]);
+        win.flipAt = win.flipAt + 1;
+        ticker.opacity = 1;
+        win.flipShown = true;
+        flipTimer.interval = 400 + win.flipMs;
+        flipTimer.start();
+    }
+
+    Timer { id: flipTimer; repeat: false; onTriggered: win.nextFlip() }
 
     Item {
         id: block
@@ -195,6 +237,8 @@ WebOSWindow {
             color: win.inkBright
             wrapMode: Text.NoWrap
             text: ""
+
+            Behavior on opacity { NumberAnimation { duration: 400 } }
 
             NumberAnimation on x {
                 id: run

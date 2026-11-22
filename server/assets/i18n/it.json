@@ -3814,7 +3814,7 @@
  "home.board.crests.crests": {"from": "Crests only", "text": "Solo stemmi"},
  "home.board.crestsDesc": {"from": "Crests come from ESPN's image server, each fetched once and kept on the TV. The same setting is used by the Scores screen saver.", "text": "Gli stemmi arrivano dal server di immagini di ESPN, ciascuno scaricato una volta e conservato sul televisore. Il salvaschermo Risultati usa la stessa impostazione."},
  "home.news": {"from": "News strip", "text": "Striscia notizie"},
- "home.newsDesc": {"from": "Along the bottom: the headlines of up to three news feeds (RSS or Atom), running right to left with each one's source.", "text": "In basso: i titoli di un massimo di tre feed di notizie (RSS o Atom), che scorrono da destra a sinistra con la loro fonte."},
+ "home.newsDesc": {"from": "Along the bottom: the headlines of up to three news feeds (RSS or Atom), one at a time or running, each after its source.", "text": "In basso: i titoli di un massimo di tre feed di notizie (RSS o Atom), uno alla volta o scorrevoli, ciascuno dopo la sua fonte."},
  "home.news.feedsDesc": {"from": "The address of each feed, and a name to show before its headlines if you want another than the feed's own. Each is read every 10 minutes while the strip or the News screen saver shows. The News screen saver reads the same feeds.", "text": "L'indirizzo di ogni feed e, se ne vuoi uno diverso dal suo, un nome da mostrare prima dei titoli. Ogni feed viene letto ogni 10 minuti mentre è visibile la striscia o il salvaschermo Notizie. Il salvaschermo Notizie legge gli stessi feed."},
  "home.news.feeds": {"from": "News feeds", "text": "Feed di notizie"},
  "home.news.url": {"from": "Feed address, such as https://www.svt.se/rss.xml", "text": "Indirizzo del feed, ad esempio https://www.svt.se/rss.xml"},
@@ -3835,6 +3835,8 @@
  "home.news.speed": {"from": "Speed", "text": "Velocità"},
  "home.news.speed.slow": {"from": "Slow", "text": "Lenta"},
  "home.news.speed.normal": {"from": "Normal", "text": "Normale"},
- "home.news.speed.fast": {"from": "Fast", "text": "Veloce"},
- "home.news.speedDesc": {"from": "How fast the strip runs, with the matches in it too, and the News screen saver.", "text": "La velocità della striscia, anche con le partite, e del salvaschermo News."}
+ "home.news.style": {"from": "Headlines", "text": "Titoli"},
+ "home.news.style.flip": {"from": "One at a time", "text": "Uno alla volta"},
+ "home.news.style.scroll": {"from": "Running", "text": "Scorrevole"},
+ "home.news.speedDesc2": {"from": "One at a time shows each headline for 8 or 6 seconds, and fades to the next. Running moves them right to left, less smoothly on TVs that cannot draw every frame. Both apply to the matches in the strip and to the News screen saver too.", "text": "Uno alla volta mostra ogni titolo per 8 o 6 secondi e sfuma nel successivo. Scorrevole li sposta da destra a sinistra, meno fluido sui televisori che non disegnano ogni fotogramma. Entrambi valgono anche per le partite nella striscia e per il salvaschermo News."}
 }

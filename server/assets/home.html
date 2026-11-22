@@ -192,6 +192,7 @@ html.resting #wall .layer{-webkit-animation-play-state:paused;animation-play-sta
   /* A layer of its own, moved by the GPU rather than repainted each frame. */
   will-change:transform;-webkit-backface-visibility:hidden;backface-visibility:hidden}
 #newsRun .src{color:#a39d93;margin-right:.6em}
+#news.flip #newsRun{display:block;padding-left:0;width:auto;overflow:hidden;text-overflow:ellipsis;-webkit-animation:none;animation:none;-webkit-transition:opacity .4s;transition:opacity .4s}
 #newsRun .sep{color:#a39d93;margin:0 1.2em}
 @-webkit-keyframes newsRun{from{-webkit-transform:translate3d(0,0,0)}to{-webkit-transform:translate3d(-100%,0,0)}}
 @keyframes newsRun{from{transform:translate3d(0,0,0)}to{transform:translate3d(-100%,0,0)}}
@@ -2183,15 +2184,22 @@ html[lang="vi"] #srcTitle,html[lang="vi"] #plMode,html[lang="vi"] #pvMode,html[l
    * the moving line stays a few thousand pixels wide: all of them at once,
    * up to 45 across three feeds, came to 20,000 and moved in jerks on a C6.
    * New headlines are taken at the start of a run, so none is cut off on
-   * screen, and a run's time follows its length, at newsSpeed() pixels a second:
-   * 60, 120 or 180 as the owner picks: one, two or three whole pixels a frame
-   * on a 60 Hz panel, where 90 stepped one and two pixels by turns and looked
-   * jerky.
+   * screen, and a run's time follows its length, at newsSpeed() pixels a second.
    */
-  var NEWS_SPEEDS = { slow: 60, normal: 120, fast: 180 };
+  var NEWS_SPEEDS = { slow: 60, normal: 100 };
   function newsSpeed() { return NEWS_SPEEDS[layout && layout.newsSpeed] || NEWS_SPEEDS.slow; }
+  /*
+   * Flipping, the default, shows one headline at a time and fades to the next
+   * after 8 or 6 s: a C6 draws about 49 frames a second of 60 with the strip
+   * running, and each one missed jerks a running line.
+   */
+  var NEWS_FLIP_MS = { slow: 8000, normal: 6000 };
+  var NEWS_FADE_MS = 400;
+  function newsFlips() { return !layout || layout.newsStyle !== 'scroll'; }
+  function newsFlipMs() { return NEWS_FLIP_MS[layout && layout.newsSpeed] || NEWS_FLIP_MS.slow; }
   var NEWS_BATCH = 8;
   var newsItems = [], runBoard = [], newsWaiting = null, newsKey = '', newsAt = 0, runAt = 0, runSpeed = 0, newsShown = false;
+  var runFlips = null, flipItems = [], flipAt = 0, flipTimer = null;
   // The board's lines, when it is put in the strip, open every run and the
   // headlines take turns after them: scores change, so they come round each
   // run rather than once in every 45 headlines.
@@ -2214,14 +2222,23 @@ html[lang="vi"] #srcTitle,html[lang="vi"] #plMode,html[lang="vi"] #pvMode,html[l
     var batch = runBoard.concat(newsItems.slice(newsAt, newsAt + NEWS_BATCH));
     newsAt = newsAt + NEWS_BATCH >= newsItems.length ? 0 : newsAt + NEWS_BATCH;
     var run = $('newsRun');
+    clearTimeout(flipTimer); flipTimer = null;
+    runSpeed = newsSpeed();
+    runFlips = newsFlips();
+    $('news').className = runFlips ? 'flip' : '';
+    if (runFlips) {
+      run.style.width = '';
+      flipItems = batch; flipAt = 0;
+      return showFlip(true);
+    }
+    run.style.opacity = '';
     run.innerHTML = newsHtml(batch);
     run.style.width = '';
-    // A whole number of pixels, a multiple of 18, so the run lasts a whole
-    // number of milliseconds and every frame at 60 Hz lands on a whole pixel
-    // at 60, 120 and 180 pixels a second: a fractional width put the text a
-    // fraction of a pixel off each frame, which reads as a shimmer.
-    var speed = runSpeed = newsSpeed();
-    var px = Math.max(Math.ceil(run.getBoundingClientRect().width / 18) * 18, speed * 10);
+    // A whole number of pixels, a multiple of 6, so the run lasts a whole
+    // number of milliseconds at 60 and 100 pixels a second and the text is not
+    // put a drifting fraction of a pixel off each frame.
+    var speed = runSpeed;
+    var px = Math.max(Math.ceil(run.getBoundingClientRect().width / 6) * 6, speed * 10);
     run.style.width = px + 'px';
     var ms = Math.round(px * 1000 / speed);
     run.style.webkitAnimationDuration = ms + 'ms';
@@ -2238,6 +2255,7 @@ html[lang="vi"] #srcTitle,html[lang="vi"] #plMode,html[lang="vi"] #pvMode,html[l
       if (!newsShown) return;
       newsShown = false;
       newsItems = []; runBoard = []; newsWaiting = null; newsKey = ''; newsAt = 0;
+      clearTimeout(flipTimer); flipTimer = null;
       $('news').className = 'none';
       $('newsRun').innerHTML = '';
       stageClass();
@@ -2252,12 +2270,25 @@ html[lang="vi"] #srcTitle,html[lang="vi"] #plMode,html[lang="vi"] #pvMode,html[l
       return;
     }
     newsShown = true;
-    $('news').className = '';
     startNewsRun();
     stageClass();
   }
   function newsRunEnded() {
-    startNewsRun();
+    if (!runFlips) startNewsRun();
+  }
+  // One headline, faded in; at the end of the run's headlines the next run.
+  function showFlip(first) {
+    var run = $('newsRun');
+    if (flipAt >= flipItems.length) return startNewsRun();
+    var item = flipItems[flipAt++];
+    function show() {
+      run.innerHTML = newsHtml([item]);
+      run.style.opacity = '1';
+      flipTimer = setTimeout(function () { showFlip(false); }, newsFlipMs());
+    }
+    if (first && !run.innerHTML) return show();
+    run.style.opacity = '0';
+    flipTimer = setTimeout(show, NEWS_FADE_MS);
   }
 
   function drawBoardPage() {
@@ -6921,7 +6952,7 @@ html[lang="vi"] #srcTitle,html[lang="vi"] #plMode,html[lang="vi"] #pvMode,html[l
       // The board and the headlines may have come before the layout that says
       // where the board goes and how fast the strip runs.
       if (lastBoard) renderBoard(lastBoard);
-      if (newsShown && runSpeed !== newsSpeed()) { newsAt = runAt; startNewsRun(); }
+      if (newsShown && (runSpeed !== newsSpeed() || runFlips !== newsFlips())) { newsAt = runAt; startNewsRun(); }
       preloadNavSounds();
       if (!searchOn()) { closeSearch(); state.rail = false; }
       setFadeOn(layout.fade === true);
