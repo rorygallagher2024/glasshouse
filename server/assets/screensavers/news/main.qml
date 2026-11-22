@@ -57,8 +57,12 @@ WebOSWindow {
     property string tvLocale: "__TVWEB_LOCALE__"
     property string newsUrl: "__TVWEB_NEWS__"
 
-    // The headlines as the strip will run them next, and what it runs now.
-    property string nextRun: ""
+    // The headlines, eight a run and the next eight the run after, so the
+    // moving text stays a few thousand pixels wide rather than all of them.
+    property var items: []
+    property var waiting: null
+    property int at: 0
+    property int batch: 8
     property string note: ""
     // Pixels a second: slow enough to read a headline in one go.
     property real speed: 110 * win.unit
@@ -96,9 +100,10 @@ WebOSWindow {
                 var d = JSON.parse(xhr.responseText);
                 var items = d.items || [];
                 win.note = items.length ? "" : (d.note || "");
-                // A failed read keeps what runs.
-                if (items.length) win.nextRun = win.runOf(items);
-                if (!ticker.text && win.nextRun) win.startRun();
+                // A failed read keeps what runs; new headlines wait for the
+                // next run.
+                if (items.length) win.waiting = items;
+                if (!ticker.text && win.waiting) win.startRun();
             } catch (e) {}
         };
         xhr.open("GET", win.newsUrl, true);
@@ -106,7 +111,15 @@ WebOSWindow {
     }
 
     function startRun() {
-        ticker.text = win.nextRun;
+        if (win.waiting) {
+            win.items = win.waiting;
+            win.waiting = null;
+            if (win.at >= win.items.length) win.at = 0;
+        }
+        if (!win.items.length) return;
+        var part = win.items.slice(win.at, win.at + win.batch);
+        win.at = win.at + win.batch >= win.items.length ? 0 : win.at + win.batch;
+        ticker.text = win.runOf(part);
         run.stop();
         run.from = strip.width;
         run.to = -ticker.paintedWidth;
@@ -182,7 +195,7 @@ WebOSWindow {
                 id: run
                 running: false
                 // At the end of a run the next set, which may be new.
-                onStopped: { if (win.nextRun && ticker.x <= run.to + 1) win.startRun(); }
+                onStopped: { if (ticker.x <= run.to + 1) win.startRun(); }
             }
         }
     }

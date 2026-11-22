@@ -188,11 +188,13 @@ html.resting #wall .layer{-webkit-animation-play-state:paused;animation-play-sta
    by its own width with that padding, so it ends off the left. */
 #news{position:absolute;left:112px;right:112px;bottom:44px;height:40px;overflow:hidden;white-space:nowrap;font-size:24px;font-weight:300;color:#ece7df}
 #news.none,.arranging #news,.playing #news{display:none}
-#newsRun{display:inline-block;padding-left:100%;line-height:40px;-webkit-animation:newsRun 60s linear infinite;animation:newsRun 60s linear infinite}
+#newsRun{display:inline-block;padding-left:100%;line-height:40px;-webkit-animation:newsRun 60s linear infinite;animation:newsRun 60s linear infinite;
+  /* A layer of its own, moved by the GPU rather than repainted each frame. */
+  will-change:transform;-webkit-backface-visibility:hidden;backface-visibility:hidden}
 #newsRun .src{color:#a39d93;margin-right:.6em}
 #newsRun .sep{color:#a39d93;margin:0 1.2em}
-@-webkit-keyframes newsRun{from{-webkit-transform:translateX(0)}to{-webkit-transform:translateX(-100%)}}
-@keyframes newsRun{from{transform:translateX(0)}to{transform:translateX(-100%)}}
+@-webkit-keyframes newsRun{from{-webkit-transform:translate3d(0,0,0)}to{-webkit-transform:translate3d(-100%,0,0)}}
+@keyframes newsRun{from{transform:translate3d(0,0,0)}to{transform:translate3d(-100%,0,0)}}
 .alternative #news{left:90px;right:90px}
 /* The rows end above the strip, so the last one is not run over. */
 .has-news #rows{bottom:96px}
@@ -2169,12 +2171,15 @@ html[lang="vi"] #srcTitle,html[lang="vi"] #plMode,html[lang="vi"] #pvMode,html[l
   var shownBoard = null, board = null, boardPage = 0, boardTimer = null;
 
   /*
-   * The news strip. New headlines wait for the end of a run, so one is never
-   * cut off on screen; the run's time follows its length, at a steady
-   * NEWS_SPEED pixels a second.
+   * The news strip. Eight headlines a run, the next eight the run after, so
+   * the moving line stays a few thousand pixels wide: all of them at once,
+   * up to 45 across three feeds, came to 20,000 and moved in jerks on a C6.
+   * New headlines are taken at the start of a run, so none is cut off on
+   * screen, and a run's time follows its length, at NEWS_SPEED pixels a second.
    */
   var NEWS_SPEED = 90;
-  var newsShown = '', newsNext = '';
+  var NEWS_BATCH = 8;
+  var newsItems = [], newsWaiting = null, newsKey = '', newsAt = 0, newsShown = false;
   function newsHtml(items) {
     var parts = [];
     for (var i = 0; i < items.length; i++) {
@@ -2183,9 +2188,11 @@ html[lang="vi"] #srcTitle,html[lang="vi"] #plMode,html[lang="vi"] #pvMode,html[l
     return parts.join('<span class="sep">\u2022</span>');
   }
   function startNewsRun() {
+    if (newsWaiting) { newsItems = newsWaiting; newsWaiting = null; if (newsAt >= newsItems.length) newsAt = 0; }
+    var batch = newsItems.slice(newsAt, newsAt + NEWS_BATCH);
+    newsAt = newsAt + NEWS_BATCH >= newsItems.length ? 0 : newsAt + NEWS_BATCH;
     var run = $('newsRun');
-    newsShown = newsNext;
-    run.innerHTML = newsShown;
+    run.innerHTML = newsHtml(batch);
     var px = run.offsetWidth;
     var secs = Math.max(10, Math.round(px / NEWS_SPEED));
     run.style.webkitAnimationDuration = secs + 's';
@@ -2198,22 +2205,27 @@ html[lang="vi"] #srcTitle,html[lang="vi"] #plMode,html[lang="vi"] #pvMode,html[l
     run.style.animationName = '';
   }
   function renderNews(items) {
-    var html = items && items.length ? newsHtml(items) : '';
-    if (!html) {
+    if (!items || !items.length) {
       if (!newsShown) return;
-      newsNext = newsShown = '';
+      newsShown = false;
+      newsItems = []; newsWaiting = null; newsKey = ''; newsAt = 0;
       $('news').className = 'none';
       $('newsRun').innerHTML = '';
       stageClass();
       return;
     }
-    newsNext = html;
+    var key = JSON.stringify(items);
+    if (key !== newsKey) { newsKey = key; newsWaiting = items; }
+    if (newsShown) return;
+    newsShown = true;
     $('news').className = '';
-    if (!newsShown) { startNewsRun(); stageClass(); }
+    startNewsRun();
+    stageClass();
   }
   function newsRunEnded() {
-    if (newsNext && newsNext !== newsShown) startNewsRun();
+    startNewsRun();
   }
+
   function drawBoardPage() {
     var pages = Math.ceil(board.lines.length / BOARD_PAGE);
     if (boardPage >= pages) boardPage = 0;
