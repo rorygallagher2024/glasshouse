@@ -3893,5 +3893,7 @@
  "apps.running.noneDesc": {"text": "Hiện không có ứng dụng nào đang chạy trong bộ nhớ.", "from": "No apps are currently running in memory."},
  "apps.running.summaryMb": {"text": "{n} ứng dụng · {mb} MB", "from": "{n} apps · {mb} MB"},
  "apps.running.summaryOneMb": {"text": "1 ứng dụng · {mb} MB", "from": "1 app · {mb} MB"},
- "apps.running.title": {"text": "Ứng dụng trong bộ nhớ", "from": "Apps in memory"}
+ "apps.running.title": {"text": "Ứng dụng trong bộ nhớ", "from": "Apps in memory"},
+ "inputs.noSignal.dvd": {"text": "Kiểu DVD", "from": "DVD style"},
+ "inputs.noSignal.dvdDesc": {"text": "Logo “Không có tín hiệu” nảy khỏi các cạnh màn hình và đổi màu sau mỗi lần nảy.", "from": "A “No Signal” logo bounces off the edges of the screen, changing colour at each bounce."}
 }

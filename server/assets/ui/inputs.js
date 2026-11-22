@@ -208,6 +208,9 @@ function renderInputsPreview(kind) {
   if (kind === 'nsart') {
     return `<span class="hm-s hm-s-nsart"><span class="hm-nsart-pic"><i></i></span></span>`;
   }
+  if (kind === 'nsdvd') {
+    return `<span class="hm-s hm-s-nsdvd"><span class="hm-nsdvd-logo"></span></span>`;
+  }
   return `<span class="hm-s hm-s-nsplain"><span class="hm-nsplain-txt">No Signal</span></span>`;
 }
 
@@ -281,7 +284,7 @@ async function setInputKey(ours) {
 }
 
 /*
- * LG's No Signal screen as just "No Signal", a cable icon or the picture frame:
+ * LG's No Signal screen as just "No Signal", a cable icon, the picture frame or DVD style:
  * offered where the TV's own screen is the one the server knows how to change.
  */
 function renderNoSignal() {
@@ -300,6 +303,9 @@ function renderNoSignal() {
   q('inputs-nosignal-art').hidden = !ns.art && mode !== 'art';
   setInputsCard(q('inputs-nosignal-art'), 'nsart', t('inputs.noSignal.art', 'Picture frame'),
     t('inputs.noSignal.artDesc2', 'The picture frame\u2019s pictures, with \u201cNo Signal\u201d on each picture\u2019s label.'), mode === 'art', !writable);
+  q('inputs-nosignal-dvd').hidden = !ns.dvd && mode !== 'dvd';
+  setInputsCard(q('inputs-nosignal-dvd'), 'nsdvd', t('inputs.noSignal.dvd', 'DVD style'),
+    t('inputs.noSignal.dvdDesc', 'A \u201cNo Signal\u201d logo bounces off the edges of the screen, changing colour at each bounce.'), mode === 'dvd', !writable);
   // Its settings, shared with the Screensaver tab; what it shows now, while it is the No Signal screen.
   const frame = q('inputs-frame');
   frame.hidden = !ns.art && mode !== 'art';
@@ -316,9 +322,9 @@ function renderNoSignal() {
 async function setNoSignal(mode) {
   const ns = (inputsData && inputsData.noSignal) || {};
   const cur = ns.mode || (ns.on ? 'plain' : 'lg');
-  const next = mode === 'icon' || mode === 'plain' || mode === 'art' ? mode : 'lg';
+  const next = ['icon', 'plain', 'art', 'dvd'].includes(mode) ? mode : 'lg';
   if (cur === next) return;
-  q('inputs-nosignal-lg').disabled = q('inputs-nosignal-plain').disabled = q('inputs-nosignal-icon').disabled = q('inputs-nosignal-art').disabled = true;
+  ['lg', 'plain', 'icon', 'art', 'dvd'].forEach(m => { q('inputs-nosignal-' + m).disabled = true; });
   await sendCommand('plainNoSignal', next);
   loadInputs();
 }

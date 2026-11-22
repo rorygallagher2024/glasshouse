@@ -3877,5 +3877,7 @@
  "apps.running.noneDesc": {"text": "Aucune application n’est actuellement chargée en mémoire.", "from": "No apps are currently running in memory."},
  "apps.running.summaryMb": {"text": "{n} apps · {mb} Mo", "from": "{n} apps · {mb} MB"},
  "apps.running.summaryOneMb": {"text": "1 app · {mb} Mo", "from": "1 app · {mb} MB"},
- "apps.running.title": {"text": "Applications en mémoire", "from": "Apps in memory"}
+ "apps.running.title": {"text": "Applications en mémoire", "from": "Apps in memory"},
+ "inputs.noSignal.dvd": {"text": "Style DVD", "from": "DVD style"},
+ "inputs.noSignal.dvdDesc": {"text": "Un logo « Aucun signal » rebondit sur les bords de l’écran et change de couleur à chaque rebond.", "from": "A “No Signal” logo bounces off the edges of the screen, changing colour at each bounce."}
 }

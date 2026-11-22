@@ -1352,7 +1352,7 @@ function doControl(action, value, cb) {
         cb(getUpdateSummary());
       });
 
-    // LG's No Signal screen: as LG made it, plain "No Signal", a disconnected cable icon, or Art's pictures.
+    // LG's No Signal screen: as LG made it, plain "No Signal", a disconnected cable icon, Art's pictures or DVD style.
     case 'plainNoSignal':
       return nosignal.set(value, cb);
 

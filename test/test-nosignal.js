@@ -1,5 +1,5 @@
 /**
- * test/test-nosignal.js - the plain, icon and Art No Signal screens (lib/nosignal):
+ * test/test-nosignal.js - the plain, icon, Art and DVD style No Signal screens (lib/nosignal):
  * LG's file patched only where the expected lines are there once, mounted and
  * updated or taken away, and the input app restarted only once no input is in front.
  */
@@ -84,7 +84,16 @@ assert.ok(art.indexOf('visible: element.isDynamic && (headerText.text || bodyTex
 assert.ok(art.indexOf('text: headerText.text') !== -1, 'LG\'s own words for No Signal on the label');
 assert.strictEqual(nosignal.patch(LG.replace('    RandomMoveItem {\n', '    Item {\n'), 'art'), null, 'no drifting box, no Art');
 assert.ok(nosignal.patch(LG.replace('    RandomMoveItem {\n', '    Item {\n'), 'icon'), 'while the others are still offered');
-assert.deepEqual(nosignal.status(), { ok: true, available: true, art: true, on: false, mode: 'lg', applied: false, restartPending: false });
+// DVD style: the same place as Art, its logo from this server, LG's box fading once it is in.
+var dvd = nosignal.patch(LG, 'dvd');
+assert.ok(dvd.indexOf('    Item {\n        id: glasshouseDvd\n') !== -1, 'the logo sits beside the box, at its level');
+assert.ok(dvd.indexOf('id: glasshouseDvd') < dvd.indexOf('    RandomMoveItem {'), 'and before it, so the box is drawn over it');
+assert.ok(dvd.indexOf('        id: element\n        opacity: currentKey === "noSignal" && glasshouseDvd.started ? 0 : 1\n') !== -1, 'the box fades once the logo is in');
+assert.ok(dvd.indexOf('source: glasshouseDvd.active ? "http://127.0.0.1:8080/assets/nosignal/dvd.png" : ""') !== -1, 'the logo from this server, only while it shows');
+assert.strictEqual(dvd.indexOf('glasshouseArt'), -1, 'and none of Art');
+assert.strictEqual(nosignal.patch(LG.replace('    RandomMoveItem {\n', '    Item {\n'), 'dvd'), null, 'no drifting box, no DVD style');
+assert.ok(fs.existsSync(path.join(__dirname, '..', 'server', 'assets', 'nosignal', 'dvd.png')), 'the logo is there to be served');
+assert.deepEqual(nosignal.status(), { ok: true, available: true, art: true, dvd: true, on: false, mode: 'lg', applied: false, restartPending: false });
 console.log('  ✓ LG\'s file is patched only where the expected lines are there once');
 
 var steps = [
@@ -140,6 +149,24 @@ var steps = [
           }, 'the restart back to icon', 2000);
         });
       }, 'the restart after switching to Art', 2000);
+    });
+  },
+  function (next) {
+    // To DVD style in place, kept across a server start, and back.
+    execs = [];
+    nosignal.set('dvd', function (r) {
+      assert.strictEqual(r.mode, 'dvd');
+      assert.strictEqual(r.dvd, true);
+      assert.strictEqual(fs.readFileSync(path.join(state, 'nosignal', 'Screensaver.qml'), 'utf8'), dvd);
+      assert.strictEqual(fs.readFileSync(path.join(state, 'nosignal_plain'), 'utf8'), 'dvd\n', 'the choice saved');
+      waitFor(function () { return execs.length === 1; }, function () {
+        nosignal.set('icon', function () {
+          waitFor(function () { return execs.length === 2; }, function () {
+            console.log('  ✓ switched to DVD style and back while mounted');
+            next();
+          }, 'the restart back to icon', 2000);
+        });
+      }, 'the restart after switching to DVD style', 2000);
     });
   },
   function (next) {

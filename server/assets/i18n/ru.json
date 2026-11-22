@@ -3891,5 +3891,7 @@
  "apps.running.noneDesc": {"text": "Сейчас в памяти нет запущенных приложений.", "from": "No apps are currently running in memory."},
  "apps.running.summaryMb": {"text": "{n} прил. · {mb} МБ", "from": "{n} apps · {mb} MB"},
  "apps.running.summaryOneMb": {"text": "1 прил. · {mb} МБ", "from": "1 app · {mb} MB"},
- "apps.running.title": {"text": "Приложения в памяти", "from": "Apps in memory"}
+ "apps.running.title": {"text": "Приложения в памяти", "from": "Apps in memory"},
+ "inputs.noSignal.dvd": {"text": "В стиле DVD", "from": "DVD style"},
+ "inputs.noSignal.dvdDesc": {"text": "Логотип «Нет сигнала» отскакивает от краёв экрана и меняет цвет при каждом отскоке.", "from": "A “No Signal” logo bounces off the edges of the screen, changing colour at each bounce."}
 }

@@ -1,6 +1,6 @@
 'use strict';
 /*
- * lib/nosignal.js - LG's No Signal screen as just "No Signal", an icon or Art
+ * lib/nosignal.js - LG's No Signal screen as just "No Signal", an icon, Art or DVD style
  *
  * An input with nothing coming in shows LG's No Signal screen, drawn by the
  * input app (com.webos.app.inputcommon, QML) in its Screensaver.qml: an
@@ -27,6 +27,11 @@
  * LG's drifting box, which fades once the first picture is in, so until then,
  * or with nothing to show, LG's "No Signal" stays. It asks Art's address only
  * while the No Signal screen shows.
+ *
+ * DVD style draws the same way: a "No Signal" logo (assets/nosignal/dvd.png,
+ * fetched from this server) that bounces off the screen's edges, as an idle
+ * DVD player's did, taking a new colour at each bounce. LG's box fades once
+ * the logo is in, so if it cannot be fetched LG's "No Signal" stays.
  *
  * Strict ES5: runs on node 0.12 (0.10 on webOS 2).
  */
@@ -238,6 +243,89 @@ function artBlock(indent, api) {
   return lines.map(function (l) { return indent + l; }).join('\n');
 }
 
+/*
+ * The "No Signal" logo bouncing off the edges, a new colour at each bounce.
+ * One animation runs `travel` (seconds) up linearly; each axis folds it into
+ * a back-and-forth over the room the logo has, so the motion is drawn by
+ * QML's animation timer rather than script on every frame, and a bounce is a
+ * change in which leg an axis is on. The logo is white, so the shader tints
+ * it by its brightness: its dark outline stays dark. 2e9 ms is under the
+ * animation's 32-bit limit and is 23 days; it starts again each time the
+ * screen shows.
+ */
+var DVD_SHADER = 'varying highp vec2 qt_TexCoord0; uniform sampler2D source; uniform lowp vec4 tint; uniform lowp float qt_Opacity; ' +
+  'void main() { lowp vec4 p = texture2D(source, qt_TexCoord0); ' +
+  'gl_FragColor = vec4(tint.rgb * dot(p.rgb, vec3(0.299, 0.587, 0.114)), p.a) * qt_Opacity; }';
+
+function dvdBlock(indent, logo) {
+  var lines = [
+    'Item {',
+    '    id: glasshouseDvd',
+    '    property bool active: currentKey === "noSignal" && screensaverRoot.visible',
+    '    property bool started: false',
+    '    property real k: height / 1080',
+    '    property real speed: 140 * k',
+    '    property real travel: 0',
+    '    property real startX: 0',
+    '    property real startY: 0',
+    '    property real roomX: Math.max(1, width - glasshouseDvdMark.width)',
+    '    property real roomY: Math.max(1, height - glasshouseDvdMark.height)',
+    '    property real pathX: startX + travel * speed',
+    '    property real pathY: startY + travel * speed',
+    '    property int legX: Math.floor(pathX / roomX)',
+    '    property int legY: Math.floor(pathY / roomY)',
+    '    property real hue: Math.random()',
+    '    visible: active',
+    '    x: -screensaverRoot.x',
+    '    y: -screensaverRoot.y',
+    '    width: screensaverRoot.parent ? screensaverRoot.parent.width : screensaverRoot.width',
+    '    height: screensaverRoot.parent ? screensaverRoot.parent.height : screensaverRoot.height',
+    '    function fold(p, room) { var r = p % (2 * room); return r < room ? r : 2 * room - r; }',
+    // A hue at least a sixth of the way round from the last, so each bounce is seen.
+    '    function recolour() { hue = (hue + 0.17 + Math.random() * 0.66) % 1; }',
+    '    function begin() {',
+    '        if (started || !active) return;',
+    '        started = true;',
+    '        glasshouseDvdRun.restart();',
+    '    }',
+    '    onLegXChanged: if (started) recolour()',
+    '    onLegYChanged: if (started) recolour()',
+    '    onActiveChanged: {',
+    '        glasshouseDvdRun.stop();',
+    '        started = false;',
+    '        travel = 0;',
+    '        if (!active) return;',
+    // Anywhere on screen, heading either way on each axis.
+    '        startX = Math.random() * 2 * roomX;',
+    '        startY = Math.random() * 2 * roomY;',
+    '        if (glasshouseDvdLogo.status === Image.Ready) begin();',
+    '    }',
+    '    NumberAnimation { id: glasshouseDvdRun; target: glasshouseDvd; property: "travel"; from: 0; to: 2000000; duration: 2000000000 }',
+    '    Rectangle { anchors.fill: parent; color: "black" }',
+    '    Image {',
+    '        id: glasshouseDvdLogo',
+    '        source: glasshouseDvd.active ? ' + JSON.stringify(logo) + ' : ""',
+    '        visible: false',
+    '        asynchronous: true',
+    '        smooth: true',
+    '        onStatusChanged: if (status === Image.Ready) glasshouseDvd.begin()',
+    '    }',
+    '    ShaderEffect {',
+    '        id: glasshouseDvdMark',
+    '        property variant source: glasshouseDvdLogo',
+    '        property color tint: Qt.hsla(glasshouseDvd.hue, 1, 0.55, 1)',
+    '        width: Math.round(400 * glasshouseDvd.k)',
+    '        height: Math.round(width * glasshouseDvdLogo.implicitHeight / Math.max(1, glasshouseDvdLogo.implicitWidth))',
+    '        x: glasshouseDvd.fold(glasshouseDvd.pathX, glasshouseDvd.roomX)',
+    '        y: glasshouseDvd.fold(glasshouseDvd.pathY, glasshouseDvd.roomY)',
+    '        visible: glasshouseDvd.started',
+    '        fragmentShader: ' + JSON.stringify(DVD_SHADER),
+    '    }',
+    '}'
+  ];
+  return lines.map(function (l) { return indent + l; }).join('\n');
+}
+
 function iconBlock(indent) {
   var pad = indent + '    ';
   var body = pad + '    ';
@@ -323,6 +411,17 @@ function artUrl() {
   return 'http://127.0.0.1:' + port + '/api/art/next' + (config.token ? '?k=' + encodeURIComponent(config.token) : '');
 }
 
+// DVD style's logo, an asset this server gives without a token.
+function logoUrl() {
+  return 'http://127.0.0.1:' + (config.port || 8080) + '/assets/nosignal/dvd.png';
+}
+
+// The modes drawn full screen under LG's drifting box, which fades once each has started.
+var LAYERS = {
+  art: { id: 'glasshouseArt', block: function (indent, artApi) { return artBlock(indent, artApi || artUrl()); } },
+  dvd: { id: 'glasshouseDvd', block: function (indent) { return dvdBlock(indent, logoUrl()); } }
+};
+
 function init(opts) {
   opts = opts || {};
   luna = opts.luna || null;
@@ -346,6 +445,7 @@ function origFile() { return path.join(ownDir(), 'Screensaver.lg.qml'); }
 function normalizeMode(val) {
   if (val === 'icon') return 'icon';
   if (val === 'art') return 'art';
+  if (val === 'dvd') return 'dvd';
   if (val === 'plain' || val === true || val === 'on' || val === 'true') return 'plain';
   return 'lg';
 }
@@ -354,7 +454,7 @@ function wanted() {
   if (!fs.existsSync(flagFile())) return 'lg';
   try {
     var saved = fs.readFileSync(flagFile(), 'utf8').trim();
-    return saved === 'icon' || saved === 'art' ? saved : 'plain';
+    return saved === 'icon' || saved === 'art' || saved === 'dvd' ? saved : 'plain';
   } catch (e) {
     return 'plain';
   }
@@ -363,6 +463,7 @@ function wanted() {
 function modeLabel(mode) {
   if (mode === 'icon') return 'disconnected-cable';
   if (mode === 'art') return 'picture frame';
+  if (mode === 'dvd') return 'DVD style';
   if (mode === 'plain') return 'plain';
   return 'LG\'s';
 }
@@ -386,7 +487,7 @@ function mounted(file) {
 }
 
 /*
- * The TV's own file patched for the requested mode ('plain', 'icon' or 'art'),
+ * The TV's own file patched for the requested mode ('plain', 'icon', 'art' or 'dvd'),
  * or null where a line this looks for is not there exactly once. artApi: the
  * address Art asks for its pictures, for 'art'.
  */
@@ -409,16 +510,17 @@ function patch(text, mode, artApi) {
       return line + '\n' + indent + 'visible: currentKey !== "noSignal"';
     });
   }
-  if (mode === 'art') {
+  var layer = Object.prototype.hasOwnProperty.call(LAYERS, mode) ? LAYERS[mode] : null;
+  if (layer) {
     var movers = out.match(MOVER_START);
     if (!movers || movers.length !== 1) return null;
     var moverIds = out.match(MOVER_ID);
     if (!moverIds || moverIds.length !== 1) return null;
     out = out.replace(MOVER_START, function (match, indent) {
-      return '\n' + artBlock(indent, artApi || artUrl()) + match;
+      return '\n' + layer.block(indent, artApi) + match;
     });
     out = out.replace(MOVER_ID, function (match, line, indent) {
-      return line + '\n' + indent + 'opacity: currentKey === "noSignal" && glasshouseArt.started ? 0 : 1';
+      return line + '\n' + indent + 'opacity: currentKey === "noSignal" && ' + layer.id + '.started ? 0 : 1';
     });
   }
   return out;
@@ -600,10 +702,11 @@ function status() {
     var lgText = null;
     try { lgText = fs.readFileSync(isMounted ? origFile() : file, 'utf8'); } catch (e) { lgText = null; }
     available = isMounted || (lgText !== null && !!patch(lgText, 'icon'));
+    // Art and DVD style need the same drifting box to draw under.
     art = lgText !== null && !!patch(lgText, 'art');
-    return { ok: true, available: available, art: art, on: mode !== 'lg', mode: mode, applied: isMounted, restartPending: restartPending };
+    return { ok: true, available: available, art: art, dvd: art, on: mode !== 'lg', mode: mode, applied: isMounted, restartPending: restartPending };
   }
-  return { ok: true, available: false, art: false, on: mode !== 'lg', mode: mode, applied: false, restartPending: false };
+  return { ok: true, available: false, art: false, dvd: false, on: mode !== 'lg', mode: mode, applied: false, restartPending: false };
 }
 
 module.exports = { init: init, apply: apply, set: set, status: status, patch: patch };

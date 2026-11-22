@@ -3893,5 +3893,7 @@
  "apps.running.noneDesc": {"text": "Det finns inga appar inlästa i minnet just nu.", "from": "No apps are currently running in memory."},
  "apps.running.summaryMb": {"text": "{n} appar · {mb} MB", "from": "{n} apps · {mb} MB"},
  "apps.running.summaryOneMb": {"text": "1 app · {mb} MB", "from": "1 app · {mb} MB"},
- "apps.running.title": {"text": "Appar i minnet", "from": "Apps in memory"}
+ "apps.running.title": {"text": "Appar i minnet", "from": "Apps in memory"},
+ "inputs.noSignal.dvd": {"text": "DVD-stil", "from": "DVD style"},
+ "inputs.noSignal.dvdDesc": {"text": "En ”Ingen signal”-logga studsar mot skärmens kanter och byter färg vid varje studs.", "from": "A “No Signal” logo bounces off the edges of the screen, changing colour at each bounce."}
 }

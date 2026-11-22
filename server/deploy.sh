@@ -97,6 +97,7 @@ assets/screensavers/neo/main.qml assets/screensavers/neo/saver.json \
 assets/screensavers/news/main.qml assets/screensavers/news/saver.json \
 assets/screensavers/starfield/main.qml assets/screensavers/starfield/saver.json \
 assets/screensavers/starfield/star.png assets/screensavers/tesseract/main.qml \
+assets/nosignal/dvd.png \
 assets/screensavers/tesseract/saver.json assets/screensavers/tesseract/tesseract.js \
 assets/screensavers/video/saver.json assets/screensavers/video/web/index.html \
 assets/screensavers/veils/main.qml \
