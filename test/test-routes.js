@@ -468,12 +468,17 @@ function createMockRes(cb) {
   var script = scripts[1];
   assert.ok(script.indexOf('const K = (() => {') < script.indexOf('startPolling();'), 'core.js first, main.js last');
 
+  // As Git for Windows checks it out.
+  var crlf = routes.inlineUI(html.replace(/\r?\n/g, '\r\n'));
+  assert.ok(crlf, 'a page with CR LF line ends');
+  assert.strictEqual(crlf.indexOf('/assets/ui/'), -1, 'is put inline too, leaving no part to fetch');
+
   gone = 'ui/game.js';
   assert.strictEqual(routes.inlineUI(html), null, 'a missing part means no page');
   assert.ok(routes.missingAssetsPage().indexOf('<code>ui/game.js</code> was not found') !== -1,
             'and the missing-assets page names it');
 
-  console.log('  ✓ inlineUI puts the stylesheet and scripts back inline, and names a missing one');
+  console.log('  ✓ inlineUI puts the stylesheet and scripts back inline, CR LF or not, and names a missing one');
 })();
 
 // 6. Route Dispatching via handleRequest
