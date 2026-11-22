@@ -405,7 +405,7 @@ action:
         ] | to_json }}
 ```
 
-### 8. A board on Glasshouse Home
+### 9. A board on Glasshouse Home
 With the Home tab's **Board** set to **Sent from Home Assistant**, an automation can put a titled list of up to twenty lines beside the lines, shown four at a time, such as today's matches. Glasshouse fetches nothing for it: the lines come from whatever integration you choose, and its terms are between you and it. With `minutes`, the board goes that long after the last push, so results that stop coming are not left up; an empty payload takes it away at once. It is not kept across a restart.
 
 This sends the matches of the teams followed with [Team Tracker](https://github.com/vasqued2/ha-teamtracker) whenever one of them changes:
