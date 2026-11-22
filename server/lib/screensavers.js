@@ -722,6 +722,8 @@ var webosVersion = null;  // as the TV reports it
 var lunaFn = null;
 var configObj = null;
 var hour12Fn = function () { return false; };
+/** @type {function(): string} */
+var qtLocaleFn = function () { return ''; };
 var injectKeyFn = null;
 var keyBackVal = null;
 // An app id's short id, an HDMI input's port key (hdmi3) under any app id.
@@ -872,6 +874,7 @@ function init(opts) {
   configObj = opts.config;
   haEntityModule = opts.haEntity || null;
   hour12Fn = opts.hour12 || function () { return false; };
+  qtLocaleFn = opts.qtLocale || function () { return ''; };
   webosVersion = opts.webosVersion || null;
   saverRoots = opts.saverRoots || DEFAULT_ROOTS;
   catalogCache = null;
@@ -1672,6 +1675,8 @@ function fillSaverQml(e, qml, level, choice, effEnts, entityList) {
   }
   // The hour cycle the clock screen savers draw: the TV's own (lib/clock).
   qml = qml.replace(/__TVWEB_CLOCK12__/g, hour12Fn() ? 'true' : 'false');
+  // The TV's menu language, for dates: the saver app's own locale is en_US (lib/clock).
+  qml = qml.replace(/__TVWEB_LOCALE__/g, qtLocaleFn());
   if (!e.fromApp) qml = withLayer(qml, layerOpacity(e, level));
   return qml;
 }

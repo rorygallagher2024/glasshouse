@@ -784,6 +784,17 @@ On an OLED65B8SLC (webOS 4.4.3) and an OLED42C24LA (webOS 9.2.2) set to the UK
 `systemprefs.db`. The clocks Glasshouse draws follow it, and a TV that answers
 without `timeFormat` is taken as 24-hour.
 
+## The screen saver app's QML locale (C6, webOS 11.1)
+
+QML screen savers run inside LG's `com.webos.app.screensaver`, whose QML
+locale stays `en_US` whatever the TV's menu language: on an OLED77C64LA
+(webOS 11.1.0) set to Swedish, `Qt.formatDate(now, "dddd d MMMM")` gave
+"Sunday 22 November". The menu language is read from
+`com.webos.settingsservice/getSystemSettings` with `keys: ["localeInfo"]`, as
+`settings.localeInfo.locales.UI` (`sv-SE`): on that TV, adding
+`category: "option"` gave an answer without `localeInfo`, and the dates stayed
+English until the key was asked for without a category.
+
 ## Home input titles (G3, webOS 9.2.2)
 
 HDMI launch points added by Glasshouse are bookmarks with `systemApp: false`.
