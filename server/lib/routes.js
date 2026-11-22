@@ -1849,7 +1849,10 @@ function handleRequest(req, res) {
     if (!authed(u.query, req)) return send(res, 401, JSON.stringify({ ok: false, error: 'unauthorised' }));
     if (!scoresModule) return send(res, 503, JSON.stringify({ ok: false, error: 'scores are not available' }));
     var wantLeagues = String(u.query && u.query.leagues || '').split(',');
-    var scoresLang = res.glasshouseLang || (clockModule && clockModule.qtLocale ? say.langOfLocale(clockModule.qtLocale()) : null);
+    // The TV's language before the request's: the saver's own requests say
+    // en-US whatever the TV is set to.
+    var tvLocale = clockModule && clockModule.qtLocale ? clockModule.qtLocale() : '';
+    var scoresLang = tvLocale ? say.langOfLocale(tvLocale) : res.glasshouseLang;
     return scoresModule.saverBoard(wantLeagues, Date.now(), clockHour12(), function (body) {
       /** @type {any} */ (res).glasshouseLang = scoresLang;
       send(res, 200, JSON.stringify(body));

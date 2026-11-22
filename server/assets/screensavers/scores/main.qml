@@ -63,6 +63,8 @@ WebOSWindow {
     property var matches: []
     property string boardTitle: ""
     property string boardNote: ""
+    // Wide enough for "Paris Saint-Germain" at 44 px.
+    property int teamWidth: Math.round(480 * win.unit)
 
     function two(n) { return n < 10 ? "0" + n : "" + n }
 
@@ -75,6 +77,13 @@ WebOSWindow {
     }
 
     ListModel { id: shown }
+
+    // The league, when more than one is picked, and the match's state, as one
+    // small line under the score.
+    function joined(a, b) {
+        if (a && b) return a + " · " + b;
+        return a || b || "";
+    }
 
     function pageCount() {
         return Math.max(1, Math.ceil(win.matches.length / win.rowsPerPage));
@@ -90,8 +99,12 @@ WebOSWindow {
                 league: m.league || "",
                 home: m.home || "",
                 away: m.away || "",
-                score: m.state === "pre" ? "–" : (m.homeScore + " – " + m.awayScore),
-                detail: m.detail || "",
+                // Between the teams: the kick-off before it starts, the score
+                // after; under it the minute, half time or full time. A match
+                // called off before it started has words, not a time.
+                middle: m.state !== "pre" ? (m.homeScore + " – " + m.awayScore)
+                      : (/\d/.test(m.detail || "") ? m.detail : "–"),
+                under: win.joined(m.league, m.state !== "pre" || !/\d/.test(m.detail || "") ? m.detail : ""),
                 live: m.state === "in"
             });
         }
@@ -191,26 +204,18 @@ WebOSWindow {
 
             Column {
                 id: board
-                width: Math.round(1440 * win.unit)
+                width: win.teamWidth * 2 + Math.round(200 * win.unit) + Math.round(48 * win.unit)
                 spacing: Math.round(6 * win.unit)
 
                 Repeater {
                     model: shown
 
                     Row {
-                        height: Math.round(66 * win.unit)
-                        spacing: Math.round(20 * win.unit)
+                        height: Math.round(80 * win.unit)
+                        spacing: Math.round(24 * win.unit)
 
                         Text {
-                            width: Math.round(90 * win.unit)
-                            height: parent.height
-                            verticalAlignment: Text.AlignVCenter
-                            font.pixelSize: Math.round(30 * win.unit)
-                            color: win.inkDim
-                            text: model.league
-                        }
-                        Text {
-                            width: Math.round(450 * win.unit)
+                            width: win.teamWidth
                             height: parent.height
                             verticalAlignment: Text.AlignVCenter
                             horizontalAlignment: Text.AlignRight
@@ -219,33 +224,38 @@ WebOSWindow {
                             color: win.inkBright
                             text: model.home
                         }
-                        Text {
-                            width: Math.round(170 * win.unit)
+                        Item {
+                            width: Math.round(200 * win.unit)
                             height: parent.height
-                            verticalAlignment: Text.AlignVCenter
-                            horizontalAlignment: Text.AlignHCenter
-                            font.family: win.digitFamily
-                            font.pixelSize: Math.round(52 * win.unit)
-                            color: model.live ? win.inkLive : win.inkBright
-                            text: model.score
+
+                            Text {
+                                id: middleText
+                                width: parent.width
+                                y: model.under !== "" ? Math.round(4 * win.unit) : Math.round((parent.height - height) / 2)
+                                horizontalAlignment: Text.AlignHCenter
+                                font.family: win.digitFamily
+                                font.pixelSize: Math.round(48 * win.unit)
+                                color: model.live ? win.inkLive : win.inkBright
+                                text: model.middle
+                            }
+                            Text {
+                                width: parent.width
+                                anchors.top: middleText.bottom
+                                horizontalAlignment: Text.AlignHCenter
+                                font.pixelSize: Math.round(24 * win.unit)
+                                color: model.live ? win.inkLive : win.inkDim
+                                visible: text !== ""
+                                text: model.under
+                            }
                         }
                         Text {
-                            width: Math.round(450 * win.unit)
+                            width: win.teamWidth
                             height: parent.height
                             verticalAlignment: Text.AlignVCenter
                             elide: Text.ElideRight
                             font.pixelSize: Math.round(44 * win.unit)
                             color: win.inkBright
                             text: model.away
-                        }
-                        Text {
-                            width: Math.round(180 * win.unit)
-                            height: parent.height
-                            verticalAlignment: Text.AlignVCenter
-                            horizontalAlignment: Text.AlignRight
-                            font.pixelSize: Math.round(36 * win.unit)
-                            color: model.live ? win.inkLive : win.inkDim
-                            text: model.detail
                         }
                     }
                 }
