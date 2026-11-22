@@ -681,6 +681,11 @@ function preloadWithIcons(cb) {
  * the order listed, so they behave as one script: a function declared in any
  * of them can be called from the others. Returns the page, or null with
  * UI_MISSING set to the part that could not be read.
+ *
+ * A line may end in CR LF: Git for Windows checks ui.html out that way, and
+ * deploy.sh copies it as it is. Matched on LF alone, the page went out with
+ * its scripts left as files, which a browser keeps from before an update, so
+ * the dashboard showed new controls driven by old script.
  */
 function inlineUI(html) {
   var missing = null;
@@ -692,10 +697,10 @@ function inlineUI(html) {
     if (!missing) missing = rel;
     return '';
   }
-  html = html.replace(/<link rel="stylesheet" href="\/assets\/(ui\/[\w-]+\.css)">\n/g, function (m, rel) {
+  html = html.replace(/<link rel="stylesheet" href="\/assets\/(ui\/[\w-]+\.css)">\r?\n/g, function (m, rel) {
     return '<style>\n' + part(rel) + '</style>\n';
   });
-  html = html.replace(/(?:<script src="\/assets\/ui\/[\w-]+\.js"><\/script>\n)+/g, function (run) {
+  html = html.replace(/(?:<script src="\/assets\/ui\/[\w-]+\.js"><\/script>\r?\n)+/g, function (run) {
     var scripts = run.match(/ui\/[\w-]+\.js/g);
     return '<script>\n' + scripts.map(part).join('') + '</script>\n';
   });

@@ -232,11 +232,6 @@ every 30 minutes at most and only while the screen is on. Only the search text
 or the place's latitude and longitude are sent. The last reply is kept in
 `/var/lib/tvweb/home-weather-internet.json`.
 
-With Glasshouse Home's **Board** set to **Today's matches**, the server
-connects to `site.api.espn.com` for each chosen league's scoreboard, once a
-minute at most and only while Home is on screen and the TV is on. Only the
-league and the date are sent, and nothing is kept on the TV.
-
 With **Lines from Home Assistant** set to **Entities you choose**, the server
 reads the chosen entities from Home Assistant's API, every 30 seconds at most
 and only while Home is on screen.

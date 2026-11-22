@@ -2215,34 +2215,7 @@ html[lang="vi"] #srcTitle,html[lang="vi"] #plMode,html[lang="vi"] #pvMode,html[l
       $('boardLines').className = '';
     }, 300);
   }
-  /*
-   * The day's matches (lib/scores) as board lines, in the page's language:
-   * the sides and kick-off before, the score and the minute during, the score
-   * and full time after. Two leagues or more mark each line with its own.
-   */
-  function scoresBoard(b) {
-    var many = false, first = null;
-    for (var i = 0; i < b.matches.length; i++) {
-      if (first === null) first = b.matches[i].league;
-      else if (b.matches[i].league !== first) many = true;
-    }
-    var lines = [];
-    for (var j = 0; j < b.matches.length; j++) {
-      var m = b.matches[j];
-      var label = m.state === 'pre' ? m.home + ' – ' + m.away
-        : m.home + ' ' + m.homeScore + '–' + m.awayScore + ' ' + m.away;
-      var value = /POSTPONED|CANCELED|CANCELLED/.test(m.status) ? t('home.board.postponed', 'Postponed')
-        : m.state === 'pre' ? (m.start ? hm(new Date(m.start)) : '')
-        : m.state === 'post' ? t('home.board.fullTime', 'FT')
-        : m.status === 'STATUS_HALFTIME' ? t('home.board.halfTime', 'HT')
-        : m.clock;
-      lines.push({ label: (many ? m.league + ' · ' : '') + label, value: value });
-    }
-    if (!lines.length) lines.push({ label: t('home.board.none', 'No matches today'), value: '' });
-    return { title: t('home.board.scoresTitle', 'Today’s matches'), lines: lines };
-  }
   function renderBoard(b) {
-    if (b && b.kind === 'scores') b = scoresBoard(b);
     var key = b && (b.title || (b.lines && b.lines.length)) ? JSON.stringify(b) : '';
     if (key === shownBoard) return;
     shownBoard = key;

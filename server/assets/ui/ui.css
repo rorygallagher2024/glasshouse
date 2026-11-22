@@ -1606,15 +1606,42 @@ footer{margin-top:38px;font-size:13px;letter-spacing:.08em;text-transform:upperc
 .home-weather-results{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px}
 .home-weather-results:empty{display:none}
 .home-weather-credit{opacity:.7;margin-top:6px}
+/* At a glance: the lines beside Glasshouse Home's clock, added one by one,
+   in the screen saver entity list's layout. */
+/* Home Assistant values at a glance: the lines beside Glasshouse Home's
+   clock, added one by one. Each field has its label above and its help under
+   it, so nothing has to fit inside the box. */
 .home-info-panel{padding:4px 0 16px;border-bottom:1px solid var(--w06);grid-column:1/-1}
-.home-info-line{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:8px;margin-top:10px}
-.home-info-line input{min-width:0;box-sizing:border-box;font-family:'Manrope';font-size:14px;color:var(--w100);background:transparent;
-  border:1px solid var(--edge);padding:9px 12px;min-height:42px;border-radius:var(--r-sm);outline:none}
-.home-info-line input:focus{border-color:var(--w100)}
-.home-info-line input:disabled{opacity:.45}
-.home-info-line input::placeholder{color:var(--w60)}
-.home-info-line .home-info-n{grid-column:1/-1;font-size:.85em;opacity:.7}
-@media (max-width:700px){.home-info-line{grid-template-columns:1fr 1fr}}
+.home-info-panel #home-info-note{margin-bottom:14px;max-width:62ch}
+.home-info-addbox,.home-info-list{max-width:560px}
+.home-info-addbox .ss-li-head{max-width:none}
+.home-info-addbox .ss-li-add{max-width:none}
+.home-info-addbox .ss-li-add input{width:auto}
+.home-info-more{margin-top:10px;padding-left:28px}
+.home-info-more summary{cursor:pointer;font-size:14px;color:var(--w80);min-height:32px;display:flex;align-items:center;gap:8px;list-style:none}
+.home-info-more summary::-webkit-details-marker{display:none}
+.home-info-more summary::before{content:'';width:6px;height:6px;border-right:1.5px solid currentColor;border-bottom:1.5px solid currentColor;transform:rotate(-45deg);transition:transform .15s}
+.home-info-more[open] summary::before{transform:rotate(45deg)}
+.home-info-more .home-info-field{padding-left:0}
+.home-info-addbox input,.home-info-input input{
+  flex:1;width:100%;min-width:0;box-sizing:border-box;font-family:'Manrope';font-size:14px;letter-spacing:.03em;
+  color:var(--w100);background:transparent;border:1px solid var(--edge);padding:10px 12px;min-height:44px;border-radius:var(--r-sm);outline:none}
+.home-info-addbox input:focus,.home-info-input input:focus{border-color:var(--w100)}
+.home-info-addbox input::placeholder,.home-info-input input::placeholder{color:var(--w60)}
+.home-info-addbox input:disabled,.home-info-input input:disabled{opacity:.45}
+.home-info-hint{font-size:13px;color:var(--w70);line-height:1.4;margin-top:6px}
+.home-info-msg{font-size:14px;color:var(--w90);margin-top:6px;min-height:20px}
+.home-info-msg.warn{color:var(--warn,#e5534b)}
+.home-info-list{margin-top:14px;max-height:none}
+.home-info-field{display:grid;grid-template-columns:110px 1fr;gap:4px 12px;align-items:start;margin-top:12px;padding-left:28px}
+.home-info-field label{font-size:14px;color:var(--w80);padding-top:12px}
+.home-info-preview{font-size:13px;color:var(--w90);margin-top:12px;padding-left:28px}
+@media (max-width:560px){
+  .home-info-field{grid-template-columns:1fr;padding-left:0}
+  .home-info-more{padding-left:0}
+  .home-info-field label{padding-top:0}
+  .home-info-preview{padding-left:0}
+}
 .prot-title{
   font-family:'Manrope',sans-serif;font-weight:600;font-size:var(--h-row);
   color:var(--w90);letter-spacing:.02em;
