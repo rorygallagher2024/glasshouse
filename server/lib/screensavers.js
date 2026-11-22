@@ -44,6 +44,8 @@ var leaguesFn = null;
 var setLeaguesFn = null;
 /** @type {null|function(): string} */
 var crestsFn = null;
+/** @type {null|function(): Array<{url: string, name: string}>} */
+var newsFeedsFn = null;
 var DEFAULT_SAVER_LEAGUES = ['soccer/eng.1'];
 var MAX_SAVER_LEAGUES = 4;
 /** @type {typeof import('./haentity') | null} */
@@ -146,7 +148,7 @@ var MAX_SAVER_FILES = 200;
 // "ha" has one placeholder per entity it declares, so it carries no value here.
 // "video-busy" is the address of videoBusy's answer, for a saver that plays video.
 // "audio" is the address of the sound output's levels and beat (audiolevels.js).
-var USES = { level: '__TVWEB_LEVEL__', stats: '__TVWEB_URL__', audio: '__TVWEB_AUDIO__', choice: '__TVWEB_CHOICE__', videos: '__TVWEB_VIDEOS__', 'home-weather': '__TVWEB_HOME_WEATHER__', 'video-busy': '__TVWEB_VIDEO_BUSY__', ha: '', 'ha-list': '__TVWEB_HA_LIST__', 'ha-all': '__TVWEB_HA_ALL__', color: '__TVWEB_COLOR__', art: '__TVWEB_ART__', scores: '__TVWEB_SCORES__' };
+var USES = { level: '__TVWEB_LEVEL__', stats: '__TVWEB_URL__', audio: '__TVWEB_AUDIO__', choice: '__TVWEB_CHOICE__', videos: '__TVWEB_VIDEOS__', 'home-weather': '__TVWEB_HOME_WEATHER__', 'video-busy': '__TVWEB_VIDEO_BUSY__', ha: '', 'ha-list': '__TVWEB_HA_LIST__', 'ha-all': '__TVWEB_HA_ALL__', color: '__TVWEB_COLOR__', art: '__TVWEB_ART__', scores: '__TVWEB_SCORES__', news: '__TVWEB_NEWS__' };
 var DEFAULT_SAVER_COLOR = 'white';
 var COLOR_PRESETS = [
   { id: 'white', label: msg('srv.saver.color.white', 'White'), bright: '#ffffff', dim: '#a8aeb6' },
@@ -277,7 +279,10 @@ function readSaver(root, name) {
   if (!root.builtin && uses.indexOf('art') !== -1) {
     return problem(msg('srv.saver.noArt', 'It asks for the picture frame\'s pictures, which only Glasshouse\'s own screen savers are given.'));
   }
-  // And the address of the day's matches.
+  // And the addresses of the day's matches and of the headlines.
+  if (!root.builtin && uses.indexOf('news') !== -1) {
+    return problem(msg('srv.saver.noNews', 'It asks for the news headlines, which only Glasshouse\'s own screen savers are given.'));
+  }
   if (!root.builtin && uses.indexOf('scores') !== -1) {
     return problem(msg('srv.saver.noScores', 'It asks for the day\'s matches, which only Glasshouse\'s own screen savers are given.'));
   }
@@ -895,6 +900,7 @@ function init(opts) {
   leaguesFn = opts.leagues || null;
   setLeaguesFn = opts.setLeagues || null;
   crestsFn = opts.crests || null;
+  newsFeedsFn = opts.newsFeeds || null;
   webosVersion = opts.webosVersion || null;
   saverRoots = opts.saverRoots || DEFAULT_ROOTS;
   catalogCache = null;
@@ -1425,6 +1431,8 @@ function screensaverList() {
       leagues: screensaverLeagues(e),
       // How it shows a side, shared with Home's board.
       crests: e.uses && e.uses.indexOf('scores') !== -1 ? (crestsFn ? crestsFn() : 'names') : undefined,
+      // The feeds a saver showing the news reads, shared with Home's strip.
+      newsFeeds: e.uses && e.uses.indexOf('news') !== -1 ? (newsFeedsFn ? newsFeedsFn() : []) : undefined,
       leagueOptions: e.uses && e.uses.indexOf('scores') !== -1
         ? scoresLib.LEAGUES.map(function (l) { return { id: l.id, label: l.name }; }) : undefined,
       // The Video saver's clock, weather and captions, kept with Home's playlist.
@@ -1747,6 +1755,11 @@ function fillSaverQml(e, qml, level, choice, effEnts, entityList) {
     var scoresUrl = 'http://127.0.0.1:' + port + '/api/scores?leagues=' +
       encodeURIComponent(screensaverLeagues(e).join(',')) + (token ? '&k=' + encodeURIComponent(token) : '');
     qml = qml.replace(/__TVWEB_SCORES__/g, function () { return scoresUrl; });
+  }
+  // The headlines from the feeds on the Home tab.
+  if (e.uses.indexOf('news') !== -1) {
+    var newsUrl = 'http://127.0.0.1:' + port + '/api/news' + (token ? '?k=' + encodeURIComponent(token) : '');
+    qml = qml.replace(/__TVWEB_NEWS__/g, function () { return newsUrl; });
   }
   // Art's next picture, asked for each time; the address carries the token.
   if (e.uses.indexOf('art') !== -1) {

@@ -3798,5 +3798,14 @@
  "home.board.crests.names": {"from": "Names", "text": "Noms"},
  "home.board.crests.both": {"from": "Crest and name", "text": "Écusson et nom"},
  "home.board.crests.crests": {"from": "Crests only", "text": "Écussons seuls"},
- "home.board.crestsDesc": {"from": "Crests come from ESPN's image server, each fetched once and kept on the TV. The same setting is used by the Scores screen saver.", "text": "Les écussons viennent du serveur d'images d'ESPN ; chacun est téléchargé une fois et gardé sur le téléviseur. L'économiseur d'écran Scores utilise le même réglage."}
+ "home.board.crestsDesc": {"from": "Crests come from ESPN's image server, each fetched once and kept on the TV. The same setting is used by the Scores screen saver.", "text": "Les écussons viennent du serveur d'images d'ESPN ; chacun est téléchargé une fois et gardé sur le téléviseur. L'économiseur d'écran Scores utilise le même réglage."},
+ "home.news": {"from": "News strip", "text": "Bandeau d'actualités"},
+ "home.newsDesc": {"from": "Along the bottom: the headlines of up to three news feeds (RSS or Atom), running right to left with each one's source.", "text": "En bas : les titres de trois flux d'actualités au plus (RSS ou Atom), qui défilent de droite à gauche avec leur source."},
+ "home.news.feedsDesc": {"from": "The address of each feed, and a name to show before its headlines if you want another than the feed's own. Each is read every 10 minutes while the strip or the News screen saver shows. The News screen saver reads the same feeds.", "text": "L'adresse de chaque flux, et un nom à afficher devant ses titres si vous en voulez un autre que le sien. Chaque flux est lu toutes les 10 minutes tant que le bandeau ou l'économiseur d'écran Actualités s'affiche. L'économiseur d'écran Actualités lit les mêmes flux."},
+ "home.news.feeds": {"from": "News feeds", "text": "Flux d'actualités"},
+ "home.news.url": {"from": "Feed address, such as https://www.svt.se/rss.xml", "text": "Adresse du flux, par exemple https://www.svt.se/rss.xml"},
+ "home.news.urlLabel": {"from": "Feed address", "text": "Adresse du flux"},
+ "home.news.name": {"from": "Name (optional)", "text": "Nom (facultatif)"},
+ "home.news.none": {"from": "No headlines yet", "text": "Pas encore de titres"},
+ "srv.saver.noNews": {"from": "It asks for the news headlines, which only Glasshouse's own screen savers are given.", "text": "Il demande les titres d'actualités, que seuls les économiseurs d'écran de Glasshouse reçoivent."}
 }

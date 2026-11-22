@@ -847,6 +847,13 @@ button.key-hit{background:var(--w10)}
 .ss-tag{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--green);margin-left:10px}
 .ss-level-row{margin-top:22px;max-width:760px}
 .ss-leagues-box .sub{margin:4px 0 10px}
+.news-feed-line{display:grid;grid-template-columns:3fr 1fr;gap:8px;margin-top:10px}
+.news-feed-line input{min-width:0;box-sizing:border-box;font-family:'Manrope';font-size:14px;color:var(--w100);background:transparent;
+  border:1px solid var(--edge);padding:9px 12px;min-height:42px;border-radius:var(--r-sm);outline:none}
+.news-feed-line input:focus{border-color:var(--w100)}
+.news-feed-line input:disabled{opacity:.45}
+.news-feed-line input::placeholder{color:var(--w60)}
+@media (max-width:700px){.news-feed-line{grid-template-columns:1fr}}
 .home-crests-row{display:flex;align-items:center;gap:12px;margin-top:14px}
 .home-crests-row label{font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--w60)}
 .ss-head{margin-bottom:0}

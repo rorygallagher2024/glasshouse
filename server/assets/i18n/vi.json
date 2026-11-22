@@ -3816,5 +3816,14 @@
  "home.board.crests.names": {"from": "Names", "text": "Tên"},
  "home.board.crests.both": {"from": "Crest and name", "text": "Huy hiệu và tên"},
  "home.board.crests.crests": {"from": "Crests only", "text": "Chỉ huy hiệu"},
- "home.board.crestsDesc": {"from": "Crests come from ESPN's image server, each fetched once and kept on the TV. The same setting is used by the Scores screen saver.", "text": "Huy hiệu lấy từ máy chủ hình ảnh của ESPN, mỗi cái tải một lần và lưu trên TV. Trình bảo vệ màn hình Tỷ số dùng cùng cài đặt này."}
+ "home.board.crestsDesc": {"from": "Crests come from ESPN's image server, each fetched once and kept on the TV. The same setting is used by the Scores screen saver.", "text": "Huy hiệu lấy từ máy chủ hình ảnh của ESPN, mỗi cái tải một lần và lưu trên TV. Trình bảo vệ màn hình Tỷ số dùng cùng cài đặt này."},
+ "home.news": {"from": "News strip", "text": "Dải tin tức"},
+ "home.newsDesc": {"from": "Along the bottom: the headlines of up to three news feeds (RSS or Atom), running right to left with each one's source.", "text": "Ở phía dưới: tiêu đề từ tối đa ba nguồn tin (RSS hoặc Atom), chạy từ phải sang trái kèm nguồn."},
+ "home.news.feedsDesc": {"from": "The address of each feed, and a name to show before its headlines if you want another than the feed's own. Each is read every 10 minutes while the strip or the News screen saver shows. The News screen saver reads the same feeds.", "text": "Địa chỉ của mỗi nguồn, và một tên hiển thị trước các tiêu đề nếu bạn muốn khác tên của nguồn. Mỗi nguồn được đọc 10 phút một lần khi dải tin hoặc trình bảo vệ màn hình Tin tức hiển thị. Trình bảo vệ màn hình Tin tức đọc cùng các nguồn."},
+ "home.news.feeds": {"from": "News feeds", "text": "Nguồn tin tức"},
+ "home.news.url": {"from": "Feed address, such as https://www.svt.se/rss.xml", "text": "Địa chỉ nguồn, ví dụ https://www.svt.se/rss.xml"},
+ "home.news.urlLabel": {"from": "Feed address", "text": "Địa chỉ nguồn"},
+ "home.news.name": {"from": "Name (optional)", "text": "Tên (tùy chọn)"},
+ "home.news.none": {"from": "No headlines yet", "text": "Chưa có tiêu đề"},
+ "srv.saver.noNews": {"from": "It asks for the news headlines, which only Glasshouse's own screen savers are given.", "text": "Nó yêu cầu các tiêu đề tin tức, thứ chỉ các trình bảo vệ màn hình của chính Glasshouse được nhận."}
 }

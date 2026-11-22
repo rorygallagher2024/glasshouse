@@ -3712,6 +3712,10 @@ step('the board: today\'s matches in the leagues chosen, read at most once a min
     assert.deepEqual(home.boardLeagues(), ['soccer/eng.1', 'soccer/uefa.champions'], 'shared with the Scores screen saver');
     assert.strictEqual(leagueChanges, 1, 'which is told they changed');
     assert.strictEqual(r.layout.boardCrests, 'names', 'names unless chosen');
+    assert.strictEqual(r.layout.news, false, 'the news strip is off unless chosen');
+    assert.deepEqual(home.normalise({ news: true, newsFeeds: [{ url: 'https://svt.example/rss', name: 'SVT' }, { url: 'nope' }] }).newsFeeds,
+      [{ url: 'https://svt.example/rss', name: 'SVT' }], 'only http and https feeds');
+    assert.strictEqual(home.beat().news, null, 'no headlines with the strip off');
     assert.strictEqual(home.normalise({ boardCrests: 'logos' }).boardCrests, 'names');
     assert.strictEqual(home.normalise({ boardCrests: 'both' }).boardCrests, 'both');
     home.info(function (i1) {
@@ -3742,6 +3746,29 @@ step('the board: today\'s matches in the leagues chosen, read at most once a min
         home.setHomeBoard(JSON.stringify({ title: 'x', lines: [] }));
         home.setHomeBoard('');
         assert.strictEqual(home.beat().board, null, 'an empty push takes it away');
+        done();
+      });
+    });
+  });
+});
+
+step('the news strip: the headlines as last read, with the strip on and feeds given', function (done) {
+  var refreshed = [];
+  var newsFake = {
+    refresh: function (feeds) { refreshed.push(feeds.length); },
+    cached: function (feeds) { return { ok: true, items: [{ source: 'SVT', title: 'Rubrik' }], feeds: feeds }; }
+  };
+  start(null, { news: newsFake });
+  assert.strictEqual(home.beat().news, null, 'off');
+  home.setLayout({ news: true }, function () {
+    assert.strictEqual(home.beat().news, null, 'on, but no feeds');
+    home.setLayout({ newsFeeds: [{ url: 'https://svt.example/rss', name: '' }] }, function (r) {
+      assert.deepEqual(r.layout.newsFeeds, [{ url: 'https://svt.example/rss', name: '' }]);
+      assert.deepEqual(home.beat().news, [{ source: 'SVT', title: 'Rubrik' }]);
+      assert.deepEqual(home.newsFeeds(), [{ url: 'https://svt.example/rss', name: '' }], 'shared with the News screen saver');
+      home.info(function (i) {
+        assert.deepEqual(i.news, [{ source: 'SVT', title: 'Rubrik' }]);
+        assert.ok(refreshed.length >= 1, 'feeds due a read are fetched');
         done();
       });
     });

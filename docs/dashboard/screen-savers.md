@@ -16,6 +16,7 @@ A firmware update restores the LG default.
 * **Brightness:** A slider from 5% to 100% in 5% steps, set when it is let go. 100% and 65% are what were **Bright** and **Dim**, each screen saver drawn as designed for them; every other step lays black over the nearer one above. An installed app's screen saver has its own settings instead. On the TV app, OK on **Brightness** gives a bar that Left and Right move, sent with OK.
 * **Options:** For a screen saver with options to pick from (its `saver.json` lists them as `choices`), a list under Brightness picks the one it shows: Clock's **Show**, or **Animation** for one with several animations. It stays picked when the brightness changes.
 * **Value colour:** For Home Assistant screen savers (**Home Assistant: Ambient** and **Home Assistant: Data Display**), picks the value colour (defaulting to **White**, with Blue, Green, Amber, Red, and Purple presets).
+* **News feeds:** For the **News** screen saver, up to three feed addresses, each with an optional name, the same as the Home tab's news strip.
 * **Leagues:** For the **Scores** screen saver, pills pick up to four leagues whose matches it shows, the Premier League until others are picked. They are the same leagues as the board on [Glasshouse Home](home.md#board): picked on either tab, both show them. **Teams shown as**, below them, is shared the same way: names, crest and name, or crests only.
 * **Home Assistant Entities:** Screen savers that pull live readings from Home Assistant (**Home Assistant: Ambient** and **Home Assistant: Data Display**) appear on the tab once **Home Assistant API** is enabled and configured under the **HA & MQTT** tab (otherwise they stay hidden). Once ready, **Home Assistant Entities** offers a searchable dropdown of your Home Assistant entities, optional custom display labels, and slot fields or an ordered entity list (depending on the selected screen saver), without editing files on the TV.
 * **Random rotation:** Picking **Random** selects a different custom screen saver each time the screen saver appears on the TV. When active, the card shows which screen saver is up next, and an **Included in rotation** section lets individual screen savers be checked or unchecked from the rotation pool (with quick **Select all** and **Deselect all** buttons). Dismissing the active screen saver automatically rotates and stages the next selection in the background so it launches immediately when the TV next idles.
@@ -70,6 +71,10 @@ A digital clock showing hours and minutes against pure black. The readout moves 
 ![Clock screen saver with seconds, weekday and date](../screenshots/screensaver-clock-date.png)
 
 Clock with date used to be a screen saver of its own. A TV that had it in use keeps it, as Clock with that option, and Home Assistant and the API still take `clock-date`.
+
+### News
+
+The time and date, moving every minute, with the headlines of the news feeds given on the Home tab running along the bottom, each after its source. The **News feeds** row on this tab sets the same feeds as the Home tab's [news strip](home.md#news-strip): up to three addresses, each with an optional name. The headlines come from the server, which reads each feed every 10 minutes at most while the screen saver shows; until the first read, it says there are no headlines yet.
 
 ### Scores
 

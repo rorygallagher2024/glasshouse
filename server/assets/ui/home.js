@@ -397,6 +397,7 @@ function renderHome() {
   renderHomeWeather(st);
   renderHomeInfo(st);
   renderHomeBoard(st);
+  renderHomeNews(st);
   const countAlt = q('home-show-count-alt');
   if (countAlt) countAlt.hidden = !altView;
   const searchRow = q('home-search-row');
@@ -1348,6 +1349,60 @@ function renderHomeBoard(st) {
     return `<button type="button" class="pill ${on ? 'good' : 'idle'}" translate="no" aria-pressed="${on}" ${homeWritable() ? '' : 'disabled'}
       onclick="homeBoardLeague('${jsq(l.id)}')">${esc(l.name)}</button>`;
   }).join('');
+}
+
+/*
+ * News feeds: three slots of an address and an optional name, on the Home tab
+ * for the strip and on the Screensaver tab for the News saver, both saved as
+ * Home's newsFeeds. prefix names the slots' ids.
+ */
+const NEWS_SLOTS = 3;
+function newsFeedsHtml(prefix, feeds, writable) {
+  const dis = writable ? '' : 'disabled';
+  let html = '';
+  for (let i = 0; i < NEWS_SLOTS; i++) {
+    const f = feeds[i] || {};
+    html += `<div class="news-feed-line">
+      <input type="url" id="${prefix}-url-${i}" value="${esc(f.url || '')}" maxlength="2048" ${dis}
+        placeholder="${esc(t('home.news.url', 'Feed address, such as https://www.svt.se/rss.xml'))}" aria-label="${esc(t('home.news.urlLabel', 'Feed address'))}"
+        autocomplete="off" spellcheck="false" onchange="newsFeedsSave('${prefix}')">
+      <input type="text" id="${prefix}-name-${i}" value="${esc(f.name || '')}" maxlength="40" ${dis}
+        placeholder="${esc(t('home.news.name', 'Name (optional)'))}" aria-label="${esc(t('home.news.name', 'Name (optional)'))}" onchange="newsFeedsSave('${prefix}')">
+    </div>`;
+  }
+  return html;
+}
+
+function renderNewsFeeds(prefix, feeds, writable) {
+  const box = q(prefix + '-feeds');
+  // Not rebuilt under a field being typed in.
+  if (!box || box.contains(document.activeElement)) return;
+  box.innerHTML = newsFeedsHtml(prefix, feeds || [], writable);
+}
+
+async function newsFeedsSave(prefix) {
+  const list = [];
+  for (let i = 0; i < NEWS_SLOTS; i++) {
+    const url = (q(`${prefix}-url-${i}`).value || '').trim();
+    if (url) list.push({ url, name: (q(`${prefix}-name-${i}`).value || '').trim() });
+  }
+  try { await homePost('/api/home/layout', { newsFeeds: list }); } catch (e) { showErr(e.message); }
+  if (prefix === 'home-news') loadHome(true); else loadScreensavers();
+}
+
+function renderHomeNews(st) {
+  const sel = q('home-news-sel');
+  if (!sel) return;
+  const on = !!(st.layout && st.layout.news);
+  sel.value = on ? 'on' : 'off';
+  sel.disabled = !homeWritable();
+  const panel = q('home-news-panel');
+  panel.hidden = !st.supported.ok || !on;
+  if (!panel.hidden) renderNewsFeeds('home-news', st.layout.newsFeeds, homeWritable());
+}
+
+function homeNewsOn(on) {
+  homeSaveLayout({ news: on });
 }
 
 // How a side shows on the board and the Scores screen saver: name, crest and

@@ -241,6 +241,12 @@ most and only while it shows; its leagues are kept in
 crest is fetched once from ESPN's image server (`a.espncdn.com`) and kept in
 `/var/lib/tvweb/crests/`.
 
+With the **News strip** on, or the **News** screen saver showing, the server
+reads each news feed given on the Home tab at most every 10 minutes: a plain
+request for the feed's address, nothing else sent. The feed is downloaded to
+the system's temporary folder, its titles kept in memory, and the file
+removed.
+
 With **Lines from Home Assistant** set to **Entities you choose**, the server
 reads the chosen entities from Home Assistant's API, every 30 seconds at most
 and only while Home is on screen.

@@ -66,6 +66,9 @@ var BOARD_SOURCES = ['off', 'scores', 'ha'];
 // How the board and the Scores screen saver show a side: its name, its crest
 // and name, or its crest alone (the name where it has none).
 var BOARD_CRESTS = ['names', 'both', 'crests'];
+var newsLib = require('./news');
+/** @type {typeof import('./news')} */
+var newsModule = null;
 var scoresLib = require('./scores');
 // The Magic Remote's battery beside the date: never, only once it is low, or always.
 var REMOTE_BATTERY = ['off', 'low', 'always'];
@@ -523,6 +526,10 @@ function defaults() {
     board: 'off',
     boardLeagues: [],
     boardCrests: 'names',
+    // The news strip along the bottom, and the feeds it and the News screen
+    // saver read.
+    news: false,
+    newsFeeds: [],
     // The live preview kept on what was last on whenever the view is on
     // screen, rather than only while a tile is chosen.
     previewAlways: false,
@@ -666,6 +673,8 @@ function normalise(raw) {
   d.board = BOARD_SOURCES.indexOf(raw.board) !== -1 ? raw.board : 'off';
   d.boardLeagues = stringList(raw.boardLeagues).filter(function (id) { return !!scoresLib.league(id); });
   d.boardCrests = BOARD_CRESTS.indexOf(raw.boardCrests) !== -1 ? raw.boardCrests : 'names';
+  d.news = raw.news === true;
+  d.newsFeeds = newsLib.feedsOf(raw.newsFeeds);
   d.rowsBottom = raw.rowsBottom === true;
   d.reopenAfterWake = raw.reopenAfterWake !== false;
   d.view = raw.view === 'alternative' ? 'alternative' : 'standard';
@@ -907,6 +916,8 @@ function setLayout(body, cb) {
     board: body.board !== undefined ? body.board : c.board,
     boardLeagues: body.boardLeagues !== undefined ? body.boardLeagues : c.boardLeagues,
     boardCrests: body.boardCrests !== undefined ? body.boardCrests : c.boardCrests,
+    news: typeof body.news === 'boolean' ? body.news : c.news,
+    newsFeeds: body.newsFeeds !== undefined ? body.newsFeeds : c.newsFeeds,
     previewAlways: typeof body.previewAlways === 'boolean' ? body.previewAlways : c.previewAlways,
     previewInTile: typeof body.previewInTile === 'boolean' ? body.previewInTile : c.previewInTile,
     previewSize: body.previewSize !== undefined ? body.previewSize : c.previewSize,
@@ -1057,7 +1068,7 @@ function layoutOf(c) {
     searchHintSeen: c.searchHintSeen, picture: c.picture, livePreview: c.livePreview, search: c.search, recommended: c.recommended,
     fade: c.fade, wallDrift: c.wallDrift, wallCrossfade: c.wallCrossfade, smoothScroll: c.smoothScroll, slidePanels: c.slidePanels,
     darkening: c.darkening, hideUnused: c.hideUnused, showMediaServers: c.showMediaServers, deviceNames: devNamesNow(c.deviceNames), appNames: c.appNames, appCards: c.appCards, focusPulse: c.focusPulse, navSound: c.navSound, pointerSound: c.pointerSound, ownSound: ownSoundInfo(), cardFade: c.cardFade, appIcons: c.appIcons, inputBarTransparent: c.inputBarTransparent, inputBarSwitchOnOk: c.inputBarSwitchOnOk, showClock: c.showClock, rowsBottom: c.rowsBottom, view: c.view,
-    showLastOn: c.showLastOn, showAppCount: c.showAppCount, showAppLabels: c.showAppLabels, showCec: c.showCec, showTvLogos: c.showTvLogos, showPointer: c.showPointer, reopenAfterWake: c.reopenAfterWake, weather: c.weather, weatherPlace: c.weatherPlace, info: c.info, infoLines: c.infoLines, board: c.board, boardLeagues: c.boardLeagues, boardCrests: c.boardCrests, scoresLeagues: scoresLib.LEAGUES, previewAlways: c.previewAlways, previewInTile: c.previewInTile, previewSize: c.previewSize, previewSound: c.previewSound, wallAnim: c.wallAnim,
+    showLastOn: c.showLastOn, showAppCount: c.showAppCount, showAppLabels: c.showAppLabels, showCec: c.showCec, showTvLogos: c.showTvLogos, showPointer: c.showPointer, reopenAfterWake: c.reopenAfterWake, weather: c.weather, weatherPlace: c.weatherPlace, info: c.info, infoLines: c.infoLines, board: c.board, boardLeagues: c.boardLeagues, boardCrests: c.boardCrests, news: c.news, newsFeeds: c.newsFeeds, scoresLeagues: scoresLib.LEAGUES, previewAlways: c.previewAlways, previewInTile: c.previewInTile, previewSize: c.previewSize, previewSound: c.previewSound, wallAnim: c.wallAnim,
     remoteBattery: c.remoteBattery,
     animTheme: c.animTheme, animSky: c.animSky, animLight: c.animLight, animThemes: ANIM_THEMES,
     wallShuffleMinutes: c.wallShuffleMinutes, shuffleMinutes: SHUFFLE_MINUTES, colours: c.colours,
@@ -2191,7 +2202,22 @@ function currentBoard() {
 function info(cb) {
   refreshEntityInfo();
   refreshScores();
-  cb({ ok: true, lines: currentInfo(), board: currentBoard() });
+  refreshNews();
+  cb({ ok: true, lines: currentInfo(), board: currentBoard(), news: currentNews() });
+}
+
+// The feeds due a read, fetched in the background while the strip is shown.
+function refreshNews() {
+  var c = readConfig();
+  if (!c.news || !c.newsFeeds.length || !newsModule || !powerActive) return;
+  newsModule.refresh(c.newsFeeds);
+}
+
+// The strip's headlines as last read, or null with the strip off.
+function currentNews() {
+  var c = readConfig();
+  if (!c.news || !c.newsFeeds.length || !newsModule) return null;
+  return newsModule.cached(c.newsFeeds).items;
 }
 
 function loadWeather() {
@@ -3481,7 +3507,7 @@ function beat(body) {
   // Whether Internet TV is in front, its guide or a player: Home Assistant's media player shows IPTV then.
   if (iptvModule && body && typeof body.iptv === 'boolean') iptvModule.front(body.iptv && viewInFront());
   beats++;
-  if (viewInFront()) { watchBeat(beatGraceMs); refreshEntityInfo(); refreshScores(); }
+  if (viewInFront()) { watchBeat(beatGraceMs); refreshEntityInfo(); refreshScores(); refreshNews(); }
   var saver = powerState === 'Screen Saver' || !!(screensaversModule && screensaversModule.launchedShowing());
   // As last seen: the reply does not wait for videooutput.
   var onScreen = wallVideoOnScreen;
@@ -3491,7 +3517,7 @@ function beat(body) {
            build: buildId, wallpapers: wallpapers.status(),
            layoutVersion: layoutVersion(), sleeps: sleeps, trace: fs.existsSync(traceFile()),
            // So a push shows within a heartbeat rather than at the next poll.
-           weather: currentWeather(), remoteBattery: remoteBatteryBadge(), info: currentInfo(), board: currentBoard() };
+           weather: currentWeather(), remoteBattery: remoteBatteryBadge(), info: currentInfo(), board: currentBoard(), news: currentNews() };
 }
 
 /*
@@ -4112,6 +4138,7 @@ function init(opts) {
   weatherModule = opts.weather || null;
   haEntityModule = opts.haEntity || null;
   scoresModule = opts.scores || null;
+  newsModule = opts.news || null;
   scores = null;
   scoresAt = 0;
   scoresReading = false;
@@ -4377,11 +4404,18 @@ function setBoardLeagues(list, cb) { setLayout({ boardLeagues: list }, cb); }
 
 function boardCrests() { return readConfig().boardCrests; }
 
+// The feeds, which the News screen saver shares.
+function newsFeeds() { return readConfig().newsFeeds.slice(); }
+
+function setNewsFeeds(list, cb) { setLayout({ newsFeeds: list }, cb); }
+
 module.exports = {
   LG_HOME: LG_HOME,
   boardLeagues: boardLeagues,
   setBoardLeagues: setBoardLeagues,
   boardCrests: boardCrests,
+  newsFeeds: newsFeeds,
+  setNewsFeeds: setNewsFeeds,
   viewInFront: viewInFront,
   barOpened: barOpened,
   reopenAfterCompositor: reopenAfterCompositor,

@@ -183,6 +183,17 @@ html.resting #wall .layer{-webkit-animation-play-state:paused;animation-play-sta
 #wxCredit{position:absolute;right:112px;bottom:12px;font-size:16px;font-weight:300;opacity:.45}
 .alternative #wxCredit{right:90px}
 #wxCredit:empty,.arranging #wxCredit{display:none}
+/* The news strip: one line along the bottom, running right to left. The run
+   is padded by the strip's width so it starts off the right edge, and moves
+   by its own width with that padding, so it ends off the left. */
+#news{position:absolute;left:112px;right:112px;bottom:44px;height:40px;overflow:hidden;white-space:nowrap;font-size:24px;font-weight:300;color:#ece7df}
+#news.none,.arranging #news,.playing #news{display:none}
+#newsRun{display:inline-block;padding-left:100%;line-height:40px;-webkit-animation:newsRun 60s linear infinite;animation:newsRun 60s linear infinite}
+#newsRun .src{color:#a39d93;margin-right:.6em}
+#newsRun .sep{color:#a39d93;margin:0 1.2em}
+@-webkit-keyframes newsRun{from{-webkit-transform:translateX(0)}to{-webkit-transform:translateX(-100%)}}
+@keyframes newsRun{from{transform:translateX(0)}to{transform:translateX(-100%)}}
+.alternative #news{left:90px;right:90px}
 .alternative #weather{-webkit-order:4;order:4;margin:0 0 0 48px}
 
 /* Lines from Home Assistant (text.lg_tv_home_info): an icon, a label and a
@@ -773,6 +784,7 @@ html[lang="vi"] #srcTitle,html[lang="vi"] #plMode,html[lang="vi"] #pvMode,html[l
 
   <main id="rows"></main>
   <div id="wxCredit"></div>
+  <div id="news" class="none"><div id="newsRun"></div></div>
   <div id="rail"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5 21 21"/></svg><span class="word" data-t="home.search.rail">Search</span></div>
   <section id="finder">
     <div id="ask"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5 21 21"/></svg><input id="query" type="text" autocomplete="off" spellcheck="false" maxlength="80" placeholder="Film or series" data-t-placeholder="home.search.placeholder"></div>
@@ -2151,6 +2163,51 @@ html[lang="vi"] #srcTitle,html[lang="vi"] #plMode,html[lang="vi"] #pvMode,html[l
   var BOARD_PAGE = 4;
   var BOARD_TURN_MS = 8000;
   var shownBoard = null, board = null, boardPage = 0, boardTimer = null;
+
+  /*
+   * The news strip. New headlines wait for the end of a run, so one is never
+   * cut off on screen; the run's time follows its length, at a steady
+   * NEWS_SPEED pixels a second.
+   */
+  var NEWS_SPEED = 90;
+  var newsShown = '', newsNext = '';
+  function newsHtml(items) {
+    var parts = [];
+    for (var i = 0; i < items.length; i++) {
+      parts.push('<span class="src">' + esc(items[i].source || '') + '</span>' + esc(items[i].title || ''));
+    }
+    return parts.join('<span class="sep">\u2022</span>');
+  }
+  function startNewsRun() {
+    var run = $('newsRun');
+    newsShown = newsNext;
+    run.innerHTML = newsShown;
+    var px = run.offsetWidth;
+    var secs = Math.max(10, Math.round(px / NEWS_SPEED));
+    run.style.webkitAnimationDuration = secs + 's';
+    run.style.animationDuration = secs + 's';
+    // Restarted from the right edge.
+    run.style.webkitAnimationName = 'none';
+    run.style.animationName = 'none';
+    void run.offsetWidth;
+    run.style.webkitAnimationName = '';
+    run.style.animationName = '';
+  }
+  function renderNews(items) {
+    var html = items && items.length ? newsHtml(items) : '';
+    if (!html) {
+      newsNext = newsShown = '';
+      $('news').className = 'none';
+      $('newsRun').innerHTML = '';
+      return;
+    }
+    newsNext = html;
+    $('news').className = '';
+    if (!newsShown) startNewsRun();
+  }
+  function newsRunEnded() {
+    if (newsNext && newsNext !== newsShown) startNewsRun();
+  }
   function drawBoardPage() {
     var pages = Math.ceil(board.lines.length / BOARD_PAGE);
     if (boardPage >= pages) boardPage = 0;
@@ -2232,6 +2289,7 @@ html[lang="vi"] #srcTitle,html[lang="vi"] #plMode,html[lang="vi"] #pvMode,html[l
     getJson('/api/home/info', function (r) {
       renderInfo(r && r.ok ? r.lines : null);
       renderBoard(r && r.ok ? r.board : null);
+      renderNews(r && r.ok ? r.news : null);
     });
   }
 
@@ -6917,6 +6975,7 @@ html[lang="vi"] #srcTitle,html[lang="vi"] #plMode,html[lang="vi"] #pvMode,html[l
         renderWeather(r.weather || null);
         renderInfo(r.info || null);
         renderBoard(r.board || null);
+        renderNews(r.news || null);
         renderRemoteBattery(r.remoteBattery || null);
         // webOS 4: two minutes behind another app, not the screen saver, the
         // view closes itself to give its memory back; Home opens it afresh.
@@ -7060,6 +7119,8 @@ html[lang="vi"] #srcTitle,html[lang="vi"] #plMode,html[lang="vi"] #pvMode,html[l
   load();
   refreshWeather();
   refreshInfo();
+  $('newsRun').addEventListener('webkitAnimationIteration', newsRunEnded);
+  $('newsRun').addEventListener('animationiteration', newsRunEnded);
   setInterval(function () {
     renderNow(); updateWall(); if (!document.hidden) refreshPicture();
     if (guide.open) {

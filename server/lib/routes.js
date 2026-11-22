@@ -91,6 +91,8 @@ var homeScreenModule = null;
 var homeModule = null;
 /** @type {typeof import('./scores')} */
 var scoresModule = null;
+/** @type {typeof import('./news')} */
+var newsModule = null;
 /** @type {typeof import('./clock')} */
 var clockModule = null;
 /** @type {typeof import('./home-picture')} */
@@ -1860,6 +1862,20 @@ function handleRequest(req, res) {
     });
   }
 
+  /* The News screen saver's headlines, from the feeds on the Home tab, with
+     its note worded in the TV's menu language. */
+  if (pathname === '/api/news' && req.method === 'GET') {
+    if (!authed(u.query, req)) return send(res, 401, JSON.stringify({ ok: false, error: 'unauthorised' }));
+    if (!newsModule || !homeModule) return send(res, 503, JSON.stringify({ ok: false, error: 'news is not available' }));
+    var newsLocale = clockModule && clockModule.qtLocale ? clockModule.qtLocale() : '';
+    var newsLang = newsLocale ? say.langOfLocale(newsLocale) : res.glasshouseLang;
+    return newsModule.headlines(homeModule.newsFeeds(), function (r) {
+      /** @type {any} */ (r).note = r.items.length ? '' : msg('home.news.none', 'No headlines yet');
+      /** @type {any} */ (res).glasshouseLang = newsLang;
+      send(res, 200, JSON.stringify(r));
+    });
+  }
+
   // A team's crest for the board and the Scores screen saver, kept on the TV.
   if (pathname === '/api/scores/crest' && req.method === 'GET') {
     if (!authed(u.query, req)) return send(res, 401, JSON.stringify({ ok: false, error: 'unauthorised' }));
@@ -2937,6 +2953,7 @@ function init(opts) {
   if (opts.homeScreen) homeScreenModule = opts.homeScreen;
   if (opts.home) homeModule = opts.home;
   if (opts.scores) scoresModule = opts.scores;
+  if (opts.news) newsModule = opts.news;
   if (opts.clock) clockModule = opts.clock;
   if (opts.homePicture) homePictureModule = opts.homePicture;
   if (opts.homeLauncher) homeLauncherModule = opts.homeLauncher;

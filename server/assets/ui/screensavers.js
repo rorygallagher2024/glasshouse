@@ -128,6 +128,9 @@ async function loadScreensavers() {
     q('ss-crests').disabled = locked;
   }
 
+  q('ss-news-row').hidden = !(active && active.newsFeeds);
+  if (active && active.newsFeeds) renderNewsFeeds('ss-news', active.newsFeeds, !locked);
+
   q('ss-video-row').hidden = !(active && active.videoStyle);
   if (active && active.videoStyle) renderSsVideo(active.videoStyle, locked);
 

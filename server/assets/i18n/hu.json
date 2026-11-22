@@ -3812,5 +3812,14 @@
  "home.board.crests.names": {"from": "Names", "text": "Nevek"},
  "home.board.crests.both": {"from": "Crest and name", "text": "Címer és név"},
  "home.board.crests.crests": {"from": "Crests only", "text": "Csak címerek"},
- "home.board.crestsDesc": {"from": "Crests come from ESPN's image server, each fetched once and kept on the TV. The same setting is used by the Scores screen saver.", "text": "A címerek az ESPN képszerveréről származnak, mindegyiket egyszer tölti le és a tévén tárolja. Az Eredmények képernyővédő ugyanezt a beállítást használja."}
+ "home.board.crestsDesc": {"from": "Crests come from ESPN's image server, each fetched once and kept on the TV. The same setting is used by the Scores screen saver.", "text": "A címerek az ESPN képszerveréről származnak, mindegyiket egyszer tölti le és a tévén tárolja. Az Eredmények képernyővédő ugyanezt a beállítást használja."},
+ "home.news": {"from": "News strip", "text": "Hírszalag"},
+ "home.newsDesc": {"from": "Along the bottom: the headlines of up to three news feeds (RSS or Atom), running right to left with each one's source.", "text": "Alul: legfeljebb három hírcsatorna (RSS vagy Atom) címei jobbról balra futva, a forrással előttük."},
+ "home.news.feedsDesc": {"from": "The address of each feed, and a name to show before its headlines if you want another than the feed's own. Each is read every 10 minutes while the strip or the News screen saver shows. The News screen saver reads the same feeds.", "text": "Minden csatorna címe, és ha a sajátja helyett mást szeretne, egy név a címek előtt. Mindegyiket 10 percenként olvassa, amíg a szalag vagy a Hírek képernyővédő látszik. A Hírek képernyővédő ugyanezeket a csatornákat olvassa."},
+ "home.news.feeds": {"from": "News feeds", "text": "Hírcsatornák"},
+ "home.news.url": {"from": "Feed address, such as https://www.svt.se/rss.xml", "text": "A csatorna címe, például https://www.svt.se/rss.xml"},
+ "home.news.urlLabel": {"from": "Feed address", "text": "A csatorna címe"},
+ "home.news.name": {"from": "Name (optional)", "text": "Név (nem kötelező)"},
+ "home.news.none": {"from": "No headlines yet", "text": "Még nincsenek hírek"},
+ "srv.saver.noNews": {"from": "It asks for the news headlines, which only Glasshouse's own screen savers are given.", "text": "A hírek címeit kéri, amelyeket csak a Glasshouse saját képernyővédői kapnak meg."}
 }

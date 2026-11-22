@@ -601,6 +601,10 @@ Beside the lines, a board of up to twenty lines shown four at a time, turning to
 * **Sent from Home Assistant:** whatever was last written to the `text.lg_tv_home_board` entity, `{"title":"Football today","minutes":10,"lines":[{"label":"Arsenal 2–1 Chelsea","value":"67'"}]}`. It is not kept across a restart, and with `minutes` it goes that long after the last push. An empty value takes it away at once.
 * **Off (default).**
 
+### News strip
+
+Along the bottom, below the rows: the headlines of up to three news feeds, each after its source, running right to left in one line at a steady speed. The **News strip** setting turns it on, and its panel takes each feed's address (RSS 2.0, RSS 1.0 or Atom, such as `https://www.svt.se/rss.xml`) and, optionally, a name to show in place of the feed's own. The feeds take turns, up to fifteen headlines from each. Each feed is read every 10 minutes at most while the strip is on screen, and new headlines join at the end of a run, so none is cut off. The [News screen saver](screen-savers.md#news) reads the same feeds.
+
 ### Remote battery
 
 The Magic Remote's battery, as a remote outline and a percentage after the date, in orange once it is down to 20%. It is the level the remote last reported, the same one the dashboard's Remote section shows. A remote that reports only High, Medium or Low (such as an MR19) shows that word instead, in orange at Low. The **Remote battery** setting chooses when it appears:
