@@ -500,8 +500,8 @@ function renderHaEnabledToggle() {
   if (btn) btn.classList.toggle('on', cfgHaEnabled);
   if (note) {
     note.textContent = cfgHaEnabled
-      ? t('ha.enabled.on', 'Screen savers can read configured Home Assistant entities.')
-      : t('ha.enabled.off', 'Turned off. Home Assistant screen savers are disabled while keeping your saved address and token.');
+      ? t('ha.enabled.on', 'Glasshouse can read the Home Assistant entities chosen for its screen savers and for the values at a glance on Glasshouse Home.')
+      : t('ha.enabled.off', 'Turned off. The Home Assistant screen savers and the values at a glance read from entities are unavailable. The saved address and token are kept.');
   }
 }
 

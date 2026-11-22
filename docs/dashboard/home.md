@@ -561,7 +561,7 @@ The badge appears once data is received, is kept when the TV restarts, and is hi
 
 ### Home Assistant: values at a glance
 
-Up to four lines of your own after the weather, or before the clock in the Alternative View, each an icon, a name and a value: *Bin 1 · collected on Wednesday*, *PostNord · arrives tomorrow*, *Viscaria · 14.58 SEK*. For Home Assistant users. The setting chooses where they come from, and offers only what is set up: **Entities you pick** needs the [Home Assistant API](../HOME-ASSISTANT.md#screen-savers-reading-home-assistant) on the HA & MQTT tab, and **Sent by an automation** needs MQTT. With neither, the setting is not shown.
+Up to four lines of your own after the weather, or before the clock in the Alternative View, each an icon, a name and a value: *Bin 1 · collected on Wednesday*, *PostNord · arrives tomorrow*, *Viscaria · 14.58 SEK*. For Home Assistant users. The setting chooses where they come from, and offers only what is set up: **Entities you pick** needs the [Home Assistant API](../HOME-ASSISTANT.md#reading-home-assistant-entities) on the HA & MQTT tab, and **Sent by an automation** needs MQTT. With neither, the setting is not shown.
 
 * **Entities you pick (default):** each line reads a Home Assistant entity, every 30 seconds while Home is on screen. **Add a line** takes an entity (the field suggests Home Assistant's), up to four, and says what it added, or why it could not. Each line can be moved or removed, and **Customise** gives it, all optional:
   * **Name:** shown in place of the entity's own name.
