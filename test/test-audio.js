@@ -483,6 +483,28 @@ add('HDMI_PORT driver fallback preserves Hz sample rate', function () {
   assert.deepEqual(st.live.input, { codec: 'PCM', sampleRate: 48000 });
 });
 
+add('B8 reads active system audio codec and sample rate from /proc/lg/amst0', function () {
+  c9Setup();
+  mock.files['/proc/lg/amst0/status'] = 'AUDIO DSP F/W Ver : 04.00.27. .00\nMain Decoder      : 1\n';
+  mock.files['/proc/lg/amst0/dec0/status'] = 'bStarted:        OFF\ninput:           AUD_INPUT_HDMI2\ncodec:           AUD_CODEC_UNKNOWN\nsamplingFreq:    0\n';
+  mock.files['/proc/lg/amst0/dec1/status'] = 'bStarted:        ON\ninput:           AUD_INPUT_SYSTEM\ncodec:           AUD_CODEC_AAC\nsamplingFreq:    44100\n';
+}, function (code, st) {
+  assert.strictEqual(code, 200);
+  assert.strictEqual(st.live.inputReadable, true);
+  assert.deepEqual(st.live.input, { codec: 'AAC', sampleRate: 44100 });
+});
+
+add('B8 reports no live audio when /proc/lg/amst0 decoders are off', function () {
+  c9Setup();
+  mock.files['/proc/lg/amst0/status'] = 'AUDIO DSP F/W Ver : 04.00.27. .00\nMain Decoder      : 1\n';
+  mock.files['/proc/lg/amst0/dec0/status'] = 'bStarted:        OFF\ncodec:           AUD_CODEC_UNKNOWN\nsamplingFreq:    0\n';
+  mock.files['/proc/lg/amst0/dec1/status'] = 'bStarted:        OFF\ncodec:           AUD_CODEC_UNKNOWN\nsamplingFreq:    0\n';
+}, function (code, st) {
+  assert.strictEqual(code, 200);
+  assert.strictEqual(st.live.inputReadable, true);
+  assert.strictEqual(st.live.input, null);
+});
+
 function restore() {
   os.release = originalRelease; child.execFile = originalExec; crypto.createHash = originalHash; fs.statSync = originalStat; mock.restore();
 }
@@ -494,7 +516,7 @@ function next() {
   calls = [];
   Object.keys(fixture.files).forEach(function (key) { mock.files[key] = fixture.files[key]; });
   Object.keys(mock.files).forEach(function (key) {
-    if (/^\/(var\/lib\/lg-dts-|sys\/module\/gh_dts_native|proc\/aaudio\/|run\/systemd\/|proc\/lgtv-driver\/hdmi_status\/)/.test(key)) delete mock.files[key];
+    if (/^\/(var\/lib\/lg-dts-|sys\/module\/gh_dts_native|proc\/aaudio\/|proc\/lg\/amst0\/|run\/systemd\/|proc\/lgtv-driver\/hdmi_status\/)/.test(key)) delete mock.files[key];
   });
   child.execFile = refuseLaunch;
   crypto.createHash = originalHash;
