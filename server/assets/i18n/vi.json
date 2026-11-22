@@ -3826,5 +3826,10 @@
  "home.news.name": {"from": "Name (optional)", "text": "Tên (tùy chọn)"},
  "home.news.none": {"from": "No headlines yet", "text": "Chưa có tiêu đề"},
  "srv.saver.noNews": {"from": "It asks for the news headlines, which only Glasshouse's own screen savers are given.", "text": "Nó yêu cầu các tiêu đề tin tức, thứ chỉ các trình bảo vệ màn hình của chính Glasshouse được nhận."},
- "home.news.noFeeds": {"from": "Add news feeds on the Screensaver tab", "text": "Thêm nguồn tin tức trong thẻ Trình bảo vệ màn hình"}
+ "home.news.noFeeds": {"from": "Add news feeds on the Screensaver tab", "text": "Thêm nguồn tin tức trong thẻ Trình bảo vệ màn hình"},
+ "home.news.checking": {"from": "Reading the feed…", "text": "Đang đọc nguồn…"},
+ "home.news.feedOk": {"from": "{source}: {n} headlines", "text": "{source}: {n} tiêu đề"},
+ "home.news.notFeed": {"from": "Read, but it is not an RSS or Atom feed. Check the address.", "text": "Tải được nhưng không phải nguồn RSS hay Atom. Hãy kiểm tra địa chỉ."},
+ "home.news.tooBig": {"from": "Larger than 2 MB, so it is not read.", "text": "Lớn hơn 2 MB nên không được đọc."},
+ "home.news.fetchFailed": {"from": "Could not be read. Check the address, and that the TV is online.", "text": "Không đọc được. Hãy kiểm tra địa chỉ và kết nối internet của TV."}
 }

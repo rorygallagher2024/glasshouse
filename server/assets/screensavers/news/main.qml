@@ -64,8 +64,9 @@ WebOSWindow {
     property int at: 0
     property int batch: 8
     property string note: ""
-    // Pixels a second: slow enough to read a headline in one go.
-    property real speed: 110 * win.unit
+    // Pixels a second: one a frame on a 60 Hz panel, slow enough to read a
+    // headline in one go; a speed between whole pixels a frame looks jerky.
+    property real speed: 60
 
     function two(n) { return n < 10 ? "0" + n : "" + n }
 

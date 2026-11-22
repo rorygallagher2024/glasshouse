@@ -3822,5 +3822,10 @@
  "home.news.name": {"from": "Name (optional)", "text": "Név (nem kötelező)"},
  "home.news.none": {"from": "No headlines yet", "text": "Még nincsenek hírek"},
  "srv.saver.noNews": {"from": "It asks for the news headlines, which only Glasshouse's own screen savers are given.", "text": "A hírek címeit kéri, amelyeket csak a Glasshouse saját képernyővédői kapnak meg."},
- "home.news.noFeeds": {"from": "Add news feeds on the Screensaver tab", "text": "Adjon hozzá hírcsatornákat a Képernyővédő lapon"}
+ "home.news.noFeeds": {"from": "Add news feeds on the Screensaver tab", "text": "Adjon hozzá hírcsatornákat a Képernyővédő lapon"},
+ "home.news.checking": {"from": "Reading the feed…", "text": "Csatorna olvasása…"},
+ "home.news.feedOk": {"from": "{source}: {n} headlines", "text": "{source}: {n} cím"},
+ "home.news.notFeed": {"from": "Read, but it is not an RSS or Atom feed. Check the address.", "text": "Letölthető, de nem RSS- vagy Atom-csatorna. Ellenőrizze a címet."},
+ "home.news.tooBig": {"from": "Larger than 2 MB, so it is not read.", "text": "Nagyobb 2 MB-nál, ezért nem olvassa be."},
+ "home.news.fetchFailed": {"from": "Could not be read. Check the address, and that the TV is online.", "text": "Nem olvasható. Ellenőrizze a címet és a tévé internetkapcsolatát."}
 }

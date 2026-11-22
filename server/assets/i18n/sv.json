@@ -3826,5 +3826,10 @@
  "home.news.name": {"from": "Name (optional)", "text": "Namn (valfritt)"},
  "home.news.none": {"from": "No headlines yet", "text": "Inga rubriker än"},
  "srv.saver.noNews": {"from": "It asks for the news headlines, which only Glasshouse's own screen savers are given.", "text": "Den ber om nyhetsrubrikerna, som bara Glasshouses egna skärmsläckare får."},
- "home.news.noFeeds": {"from": "Add news feeds on the Screensaver tab", "text": "Lägg till nyhetsflöden på fliken Skärmsläckare"}
+ "home.news.noFeeds": {"from": "Add news feeds on the Screensaver tab", "text": "Lägg till nyhetsflöden på fliken Skärmsläckare"},
+ "home.news.checking": {"from": "Reading the feed…", "text": "Läser flödet…"},
+ "home.news.feedOk": {"from": "{source}: {n} headlines", "text": "{source}: {n} rubriker"},
+ "home.news.notFeed": {"from": "Read, but it is not an RSS or Atom feed. Check the address.", "text": "Gick att hämta, men det är inte ett RSS- eller Atom-flöde. Kontrollera adressen."},
+ "home.news.tooBig": {"from": "Larger than 2 MB, so it is not read.", "text": "Större än 2 MB, så det läses inte."},
+ "home.news.fetchFailed": {"from": "Could not be read. Check the address, and that the TV is online.", "text": "Gick inte att läsa. Kontrollera adressen och att TV:n är ansluten till internet."}
 }

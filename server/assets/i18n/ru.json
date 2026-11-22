@@ -3822,5 +3822,10 @@
  "home.news.name": {"from": "Name (optional)", "text": "Название (необязательно)"},
  "home.news.none": {"from": "No headlines yet", "text": "Заголовков пока нет"},
  "srv.saver.noNews": {"from": "It asks for the news headlines, which only Glasshouse's own screen savers are given.", "text": "Она запрашивает заголовки новостей, которые получают только собственные заставки Glasshouse."},
- "home.news.noFeeds": {"from": "Add news feeds on the Screensaver tab", "text": "Добавьте новостные ленты на вкладке «Заставка»"}
+ "home.news.noFeeds": {"from": "Add news feeds on the Screensaver tab", "text": "Добавьте новостные ленты на вкладке «Заставка»"},
+ "home.news.checking": {"from": "Reading the feed…", "text": "Чтение ленты…"},
+ "home.news.feedOk": {"from": "{source}: {n} headlines", "text": "{source}: заголовков — {n}"},
+ "home.news.notFeed": {"from": "Read, but it is not an RSS or Atom feed. Check the address.", "text": "Загружено, но это не лента RSS или Atom. Проверьте адрес."},
+ "home.news.tooBig": {"from": "Larger than 2 MB, so it is not read.", "text": "Больше 2 МБ, поэтому не читается."},
+ "home.news.fetchFailed": {"from": "Could not be read. Check the address, and that the TV is online.", "text": "Не удалось прочитать. Проверьте адрес и подключение телевизора к интернету."}
 }

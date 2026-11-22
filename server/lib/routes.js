@@ -1879,6 +1879,15 @@ function handleRequest(req, res) {
     });
   }
 
+  // Each news feed's state for the dashboard: read now if it is due.
+  if (pathname === '/api/news/status' && req.method === 'GET') {
+    if (!authed(u.query, req)) return send(res, 401, JSON.stringify({ ok: false, error: 'unauthorised' }));
+    if (!newsModule || !homeModule) return send(res, 503, JSON.stringify({ ok: false, error: 'news is not available' }));
+    return newsModule.status(homeModule.newsFeeds(), function (list) {
+      send(res, 200, JSON.stringify({ ok: true, feeds: list }));
+    });
+  }
+
   // A team's crest for the board and the Scores screen saver, kept on the TV.
   if (pathname === '/api/scores/crest' && req.method === 'GET') {
     if (!authed(u.query, req)) return send(res, 401, JSON.stringify({ ok: false, error: 'unauthorised' }));

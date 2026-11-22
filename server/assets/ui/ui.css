@@ -853,6 +853,10 @@ button.key-hit{background:var(--w10)}
 .news-feed-line input:focus{border-color:var(--w100)}
 .news-feed-line input:disabled{opacity:.45}
 .news-feed-line input::placeholder{color:var(--w60)}
+.news-feed-status{grid-column:1/-1;font-size:13px;color:var(--w60);min-height:0}
+.news-feed-status:empty{display:none}
+.news-feed-status.good{color:var(--green)}
+.news-feed-status.warn{color:var(--cand)}
 @media (max-width:700px){.news-feed-line{grid-template-columns:1fr}}
 .home-crests-row{display:flex;align-items:center;gap:12px;margin-top:14px}
 .home-crests-row label{font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--w60)}

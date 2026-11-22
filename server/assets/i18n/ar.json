@@ -3808,5 +3808,10 @@
  "home.news.name": {"from": "Name (optional)", "text": "الاسم (اختياري)"},
  "home.news.none": {"from": "No headlines yet", "text": "لا عناوين بعد"},
  "srv.saver.noNews": {"from": "It asks for the news headlines, which only Glasshouse's own screen savers are given.", "text": "تطلب عناوين الأخبار، التي لا تحصل عليها إلا شاشات التوقف الخاصة بـ Glasshouse."},
- "home.news.noFeeds": {"from": "Add news feeds on the Screensaver tab", "text": "أضف خلاصات الأخبار في علامة تبويب شاشة التوقف"}
+ "home.news.noFeeds": {"from": "Add news feeds on the Screensaver tab", "text": "أضف خلاصات الأخبار في علامة تبويب شاشة التوقف"},
+ "home.news.checking": {"from": "Reading the feed…", "text": "جارٍ قراءة الخلاصة…"},
+ "home.news.feedOk": {"from": "{source}: {n} headlines", "text": "{source}: {n} عنوانًا"},
+ "home.news.notFeed": {"from": "Read, but it is not an RSS or Atom feed. Check the address.", "text": "تم تنزيلها، لكنها ليست خلاصة RSS أو Atom. تحقق من العنوان."},
+ "home.news.tooBig": {"from": "Larger than 2 MB, so it is not read.", "text": "أكبر من 2 ميغابايت، لذا لا تُقرأ."},
+ "home.news.fetchFailed": {"from": "Could not be read. Check the address, and that the TV is online.", "text": "تعذرت قراءتها. تحقق من العنوان ومن اتصال التلفاز بالإنترنت."}
 }

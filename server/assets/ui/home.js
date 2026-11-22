@@ -1375,16 +1375,56 @@ function newsFeedsHtml(prefix, feeds, writable) {
         autocomplete="off" spellcheck="false" onchange="newsFeedsSave('${prefix}')">
       <input type="text" id="${prefix}-name-${i}" value="${esc(f.name || '')}" maxlength="40" ${dis}
         placeholder="${esc(t('home.news.name', 'Name (optional)'))}" aria-label="${esc(t('home.news.name', 'Name (optional)'))}" onchange="newsFeedsSave('${prefix}')">
+      <div class="news-feed-status" id="${prefix}-status-${i}" role="status"></div>
     </div>`;
   }
   return html;
 }
 
+// Rebuilt only when the feeds change, and then each is checked; never under
+// a field being typed in.
 function renderNewsFeeds(prefix, feeds, writable) {
   const box = q(prefix + '-feeds');
-  // Not rebuilt under a field being typed in.
   if (!box || box.contains(document.activeElement)) return;
+  const key = JSON.stringify(feeds || []) + writable;
+  if (box.dataset.key === key) return;
+  box.dataset.key = key;
   box.innerHTML = newsFeedsHtml(prefix, feeds || [], writable);
+  newsCheck(prefix);
+}
+
+/*
+ * Under each address, what the server made of it: the feed's name and how
+ * many headlines it has, or why it could not be read. The server reads a feed
+ * at once when it is new, so a wrong address shows straight after saving.
+ */
+async function newsCheck(prefix) {
+  // By the address in each slot, as an empty slot between two is not saved.
+  const urls = [];
+  for (let i = 0; i < NEWS_SLOTS; i++) {
+    const input = q(`${prefix}-url-${i}`);
+    urls.push(input ? input.value.trim() : '');
+    const el = q(`${prefix}-status-${i}`);
+    if (el) { el.textContent = urls[i] ? t('home.news.checking', 'Reading the feed…') : ''; el.className = 'news-feed-status'; }
+  }
+  if (!urls.some(Boolean)) return;
+  let r = null;
+  try { r = await homeGet('/api/news/status'); } catch (e) { r = null; }
+  urls.forEach((url, i) => {
+    const el = q(`${prefix}-status-${i}`);
+    if (!el || !url) return;
+    const st = r && r.feeds && r.feeds.find(x => x.url === url);
+    if (!st) { el.textContent = ''; return; }
+    if (st.ok) {
+      el.textContent = t('home.news.feedOk', '{source}: {n} headlines', { source: st.source, n: st.count });
+      el.className = 'news-feed-status good';
+    } else {
+      el.textContent = st.error === 'feed' ? t('home.news.notFeed', 'Read, but it is not an RSS or Atom feed. Check the address.')
+        : st.error === 'size' ? t('home.news.tooBig', 'Larger than 2 MB, so it is not read.')
+        : t('home.news.fetchFailed', 'Could not be read. Check the address, and that the TV is online.');
+      el.className = 'news-feed-status warn';
+    }
+  });
 }
 
 async function newsFeedsSave(prefix) {
@@ -1394,6 +1434,10 @@ async function newsFeedsSave(prefix) {
     if (url) list.push({ url, name: (q(`${prefix}-name-${i}`).value || '').trim() });
   }
   try { await homePost('/api/home/layout', { newsFeeds: list }); } catch (e) { showErr(e.message); }
+  // At once, as the fields are not rebuilt while the next one has the focus.
+  const box = q(prefix + '-feeds');
+  if (box) box.dataset.key = JSON.stringify(list) + true;
+  newsCheck(prefix);
   if (prefix === 'home-news') loadHome(true); else loadScreensavers();
 }
 

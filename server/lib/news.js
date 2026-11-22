@@ -151,18 +151,21 @@ function fetchFeed(url, cb) {
   }
   var file = path.join(tmpDir, 'tvweb-news-' + process.pid + '-' + Math.random().toString(36).slice(2) + '.xml');
   var prev = feeds[url];
-  function failed() {
-    feeds[url] = { at: nowFn(), ok: false, source: prev ? prev.source : '', items: prev ? prev.items : [] };
+  // error: 'fetch' when nothing came back, 'size' for a file over 2 MB,
+  // 'feed' for something that is not RSS or Atom.
+  function failed(error) {
+    feeds[url] = { at: nowFn(), ok: false, error: error, source: prev ? prev.source : '', items: prev ? prev.items : [] };
   }
   fetchFile(url, file, function (err) {
-    var xml = null;
+    var xml = null, error = err ? 'fetch' : '';
     try {
-      if (!err && fs.statSync(file).size <= FEED_MAX_BYTES) xml = decodeFeed(fs.readFileSync(file));
-    } catch (e) { xml = null; }
+      if (!err && fs.statSync(file).size > FEED_MAX_BYTES) error = 'size';
+      else if (!err) xml = decodeFeed(fs.readFileSync(file));
+    } catch (e) { xml = null; error = 'fetch'; }
     try { fs.unlinkSync(file); } catch (e) {}
     var doc = xml ? parse(xml) : null;
-    if (!doc) failed();
-    else feeds[url] = { at: nowFn(), ok: true, source: doc.source, items: doc.items };
+    if (!doc) failed(error || 'feed');
+    else feeds[url] = { at: nowFn(), ok: true, error: '', source: doc.source, items: doc.items };
     done();
   });
 }
@@ -233,7 +236,35 @@ function refresh(list) {
   wanted.forEach(function (f) { if (stale(f.url)) fetchFeed(f.url, function () {}); });
 }
 
+/*
+ * status(list, cb) - cb([{ url, ok, source, count, error }]) for each feed,
+ * reading any not read in the last 10 minutes (2 after a failure) first: what
+ * the dashboard shows under each address, so a wrong one is seen at once.
+ */
+function status(list, cb) {
+  var wanted = feedsOf(list);
+  function answer() {
+    cb(wanted.map(function (f) {
+      var got = feeds[f.url];
+      return {
+        url: f.url,
+        ok: !!(got && got.ok),
+        source: f.name || (got && got.source) || hostOf(f.url),
+        count: got ? got.items.length : 0,
+        error: got ? got.error || '' : 'fetch'
+      };
+    }));
+  }
+  var left = 0;
+  if (fetchFile) wanted.forEach(function (f) { if (stale(f.url)) left++; });
+  if (!left) return setTimeout(answer, 0);
+  wanted.forEach(function (f) {
+    if (stale(f.url)) fetchFeed(f.url, function () { if (--left === 0) answer(); });
+  });
+}
+
 module.exports = {
+  status: status,
   MAX_FEEDS: MAX_FEEDS,
   init: init,
   feedsOf: feedsOf,

@@ -3808,5 +3808,10 @@
  "home.news.name": {"from": "Name (optional)", "text": "Nombre (opcional)"},
  "home.news.none": {"from": "No headlines yet", "text": "Aún no hay titulares"},
  "srv.saver.noNews": {"from": "It asks for the news headlines, which only Glasshouse's own screen savers are given.", "text": "Pide los titulares de noticias, que solo reciben los salvapantallas propios de Glasshouse."},
- "home.news.noFeeds": {"from": "Add news feeds on the Screensaver tab", "text": "Añade fuentes de noticias en la pestaña Salvapantallas"}
+ "home.news.noFeeds": {"from": "Add news feeds on the Screensaver tab", "text": "Añade fuentes de noticias en la pestaña Salvapantallas"},
+ "home.news.checking": {"from": "Reading the feed…", "text": "Leyendo la fuente…"},
+ "home.news.feedOk": {"from": "{source}: {n} headlines", "text": "{source}: {n} titulares"},
+ "home.news.notFeed": {"from": "Read, but it is not an RSS or Atom feed. Check the address.", "text": "Se ha descargado, pero no es una fuente RSS ni Atom. Revisa la dirección."},
+ "home.news.tooBig": {"from": "Larger than 2 MB, so it is not read.", "text": "Ocupa más de 2 MB, así que no se lee."},
+ "home.news.fetchFailed": {"from": "Could not be read. Check the address, and that the TV is online.", "text": "No se ha podido leer. Revisa la dirección y que el televisor tenga conexión."}
 }

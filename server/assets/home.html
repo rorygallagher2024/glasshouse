@@ -2175,9 +2175,11 @@ html[lang="vi"] #srcTitle,html[lang="vi"] #plMode,html[lang="vi"] #pvMode,html[l
    * the moving line stays a few thousand pixels wide: all of them at once,
    * up to 45 across three feeds, came to 20,000 and moved in jerks on a C6.
    * New headlines are taken at the start of a run, so none is cut off on
-   * screen, and a run's time follows its length, at NEWS_SPEED pixels a second.
+   * screen, and a run's time follows its length, at NEWS_SPEED pixels a second:
+   * 60, one pixel a frame on a 60 Hz panel, where 90 stepped one and two pixels
+   * by turns and looked jerky.
    */
-  var NEWS_SPEED = 90;
+  var NEWS_SPEED = 60;
   var NEWS_BATCH = 8;
   var newsItems = [], newsWaiting = null, newsKey = '', newsAt = 0, newsShown = false;
   function newsHtml(items) {
@@ -2194,7 +2196,8 @@ html[lang="vi"] #srcTitle,html[lang="vi"] #plMode,html[lang="vi"] #pvMode,html[l
     var run = $('newsRun');
     run.innerHTML = newsHtml(batch);
     var px = run.offsetWidth;
-    var secs = Math.max(10, Math.round(px / NEWS_SPEED));
+    // Not rounded to whole seconds, which would put it off a pixel a frame.
+    var secs = Math.max(10, px / NEWS_SPEED).toFixed(3);
     run.style.webkitAnimationDuration = secs + 's';
     run.style.animationDuration = secs + 's';
     // Restarted from the right edge.

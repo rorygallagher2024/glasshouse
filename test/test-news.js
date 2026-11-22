@@ -87,14 +87,23 @@ news.headlines(feeds, function (r) {
       news.refresh(feeds);
       assert.strictEqual(fetched.length, 5, 'but is after them');
       setTimeout(function () {
-        news.init({ fetchFile: function (url, out, cb) { fs.writeFileSync(out, '<html>moved</html>'); cb(null); } });
+        news.init({ fetchFile: function (url, out, cb) {
+          fs.writeFileSync(out, /gone/.test(url) ? '<html>moved</html>' : '<rss><channel><title>X</title><item><title>T</title></item></channel></rss>');
+          cb(null);
+        } });
         news.headlines([{ url: 'https://gone.example/rss', name: '' }], function (r3) {
           assert.strictEqual(r3.ok, false, 'no feed could be read');
           assert.deepEqual(r3.items, []);
           news.headlines([], function (r4) {
             assert.strictEqual(r4.ok, true, 'no feeds is not a failure');
+          news.status([{ url: 'https://gone.example/rss', name: '' }, { url: 'https://svt.example/rss', name: '' }], function (st) {
+            assert.deepEqual(st[0], { url: 'https://gone.example/rss', ok: false, source: 'gone.example', count: 0, error: 'feed' }, 'read, but not a feed');
+            assert.strictEqual(st[1].ok, true, 'a feed read now');
+            assert.strictEqual(st[1].source, 'X');
+            console.log('  ✓ each feed\'s state says what it is called and how many headlines it has, or why it failed');
             console.log('  ✓ each feed is read every 10 minutes at most, 2 after a failure, keeping its last headlines');
             console.log('\nALL test-news.js assertions passed!\n');
+          });
           });
         });
       }, 10);

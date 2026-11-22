@@ -3826,5 +3826,10 @@
  "home.news.name": {"from": "Name (optional)", "text": "Nazwa (opcjonalnie)"},
  "home.news.none": {"from": "No headlines yet", "text": "Brak nagłówków"},
  "srv.saver.noNews": {"from": "It asks for the news headlines, which only Glasshouse's own screen savers are given.", "text": "Prosi o nagłówki wiadomości, które dostają tylko własne wygaszacze Glasshouse."},
- "home.news.noFeeds": {"from": "Add news feeds on the Screensaver tab", "text": "Dodaj kanały wiadomości na karcie Wygaszacz"}
+ "home.news.noFeeds": {"from": "Add news feeds on the Screensaver tab", "text": "Dodaj kanały wiadomości na karcie Wygaszacz"},
+ "home.news.checking": {"from": "Reading the feed…", "text": "Odczytywanie kanału…"},
+ "home.news.feedOk": {"from": "{source}: {n} headlines", "text": "{source}: {n} nagłówków"},
+ "home.news.notFeed": {"from": "Read, but it is not an RSS or Atom feed. Check the address.", "text": "Pobrano, ale to nie jest kanał RSS ani Atom. Sprawdź adres."},
+ "home.news.tooBig": {"from": "Larger than 2 MB, so it is not read.", "text": "Większy niż 2 MB, więc nie jest odczytywany."},
+ "home.news.fetchFailed": {"from": "Could not be read. Check the address, and that the TV is online.", "text": "Nie można odczytać. Sprawdź adres i połączenie telewizora z internetem."}
 }

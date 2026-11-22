@@ -3808,5 +3808,10 @@
  "home.news.name": {"from": "Name (optional)", "text": "Nom (facultatif)"},
  "home.news.none": {"from": "No headlines yet", "text": "Pas encore de titres"},
  "srv.saver.noNews": {"from": "It asks for the news headlines, which only Glasshouse's own screen savers are given.", "text": "Il demande les titres d'actualités, que seuls les économiseurs d'écran de Glasshouse reçoivent."},
- "home.news.noFeeds": {"from": "Add news feeds on the Screensaver tab", "text": "Ajoutez des flux d'actualités dans l'onglet Économiseur d'écran"}
+ "home.news.noFeeds": {"from": "Add news feeds on the Screensaver tab", "text": "Ajoutez des flux d'actualités dans l'onglet Économiseur d'écran"},
+ "home.news.checking": {"from": "Reading the feed…", "text": "Lecture du flux…"},
+ "home.news.feedOk": {"from": "{source}: {n} headlines", "text": "{source} : {n} titres"},
+ "home.news.notFeed": {"from": "Read, but it is not an RSS or Atom feed. Check the address.", "text": "Téléchargé, mais ce n'est pas un flux RSS ou Atom. Vérifiez l'adresse."},
+ "home.news.tooBig": {"from": "Larger than 2 MB, so it is not read.", "text": "Plus de 2 Mo, il n'est donc pas lu."},
+ "home.news.fetchFailed": {"from": "Could not be read. Check the address, and that the TV is online.", "text": "Impossible de le lire. Vérifiez l'adresse et que le téléviseur est connecté."}
 }
