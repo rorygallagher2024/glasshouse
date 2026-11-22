@@ -85,7 +85,7 @@ function loadFilter(broken, extra) {
   var ctx = {
     genericTimer: { set: function (ms, fn) { timers.push({ ms: ms, fn: fn }); return timers.length; } },
     WebOS: { Key_webOS_Netflix: 1001, Key_webOS_Amazon: 1002, Key_webOS_TVGuide: 1003, Key_webOS_Red: 1004,
-             Key_webOS_USP: 1005 },
+             Key_webOS_USP: 1005, Key_webOS_ChannelUp: 1006 },
     Qt: { Key_Super_L: 2001 },
     KeyPolicy: { NextPolicy: 'next', Accepted: 'accepted', NotAccepted: 'notAccepted' },
     lunaCall: {
@@ -735,6 +735,37 @@ step(function (next) {
         rk.getRemoteKeys(guard(function (ae) {
           assert.deepEqual(elsewhere(ae), ['hulu', 'iplayer', 'globoplay']);
           console.log('  ✓ a key only another country\'s remotes have is marked as from elsewhere, and none is before the country is known');
+          next();
+        }));
+      }));
+    }));
+  }));
+});
+
+step(function (next) {
+  // On webOS <=10 CH+ and CH- are offered where the filter names them, and a key set to open an app is consumed.
+  var channelKeys = function (r) {
+    return r.keys.filter(function (k) { return /^channel/.test(k.key); }).map(function (k) { return k.key; });
+  };
+  rk.getRemoteKeys(guard(function (without) {
+    assert.deepEqual(channelKeys(without), []);
+    fs.writeFileSync(path.join(filtersDir, 'channel.js'), 'case WebOS.Key_webOS_ChannelUp: case WebOS.Key_webOS_ChannelDown:');
+    rk.init({ luna: luna, stateDir: stateDir, filtersDir: filtersDir });
+    rk.getRemoteKeys(guard(function (withKeys) {
+      assert.deepEqual(channelKeys(withKeys), ['channelup', 'channeldown']);
+      rk.setRemoteKey('channelup', 'open', 'netflix', guard(function (s) {
+        assert.strictEqual(s.ok, true);
+        // The fake firmware has no ChannelDown symbol, as a remote without the key: left alone.
+        var f = loadFilter();
+        assert.strictEqual(f.handle(1006, true, false), 'accepted');
+        assert.strictEqual(f.handle(1006, false, false), 'accepted');
+        assert.deepEqual(f.launched, [{ id: 'netflix', params: '{}' }]);
+        assert.strictEqual(f.handle(1007, true, false), 'next');
+        rk.setRemoteKey('channelup', 'lg', '', guard(function () {
+          assert.strictEqual(loadFilter().handle(1006, true, false), 'next');
+          fs.unlinkSync(path.join(filtersDir, 'channel.js'));
+          rk.init({ luna: luna, stateDir: stateDir, filtersDir: filtersDir });
+          console.log('  ✓ the channel keys are offered only where the filter names them; one set to an app is consumed and opens it, and As LG has it passes it on');
           next();
         }));
       }));

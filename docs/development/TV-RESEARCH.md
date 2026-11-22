@@ -4050,3 +4050,12 @@ Measured on 22 November 2026 on an OLED65B8SLC (`05.50.70`) while Spotify (`spot
 - `/proc/lg/amst0/dec0/status` (idle HDMI 2) reports `bStarted: OFF`, `codec: AUD_CODEC_UNKNOWN`, `samplingFreq: 0`.
 - `/proc/lg/amst0/dec1/status` (active Spotify) reports `bStarted: ON`, `input: AUD_INPUT_SYSTEM`, `codec: AUD_CODEC_AAC`, `samplingFreq: 44100`, `avgBitRate: 128000`.
 - `/proc/lg/amst0/ren{0,1}/status` report `bStarted`, `input` (`AUD_INPUT_HDMI2`, `AUD_INPUT_SYSTEM`), `bSetMainRen`, and `samplingFreq`.
+
+## The channel keys reach the JavaScript key filter (OLED48C56LB, webOS 10.3.0)
+
+On an OLED48C56LB (webOS 10.3.0, firmware 33.30.80), `appLaunch.js` and
+`systemUi.js` name `WebOS.Key_webOS_ChannelUp` and `WebOS.Key_webOS_ChannelDown`,
+so Glasshouse offers the channel keys on webOS 10 and below: a key that is set is
+accepted by the filter, so LG's channel change no longer happens for it. On webOS
+11 the filters no longer carry them (see the OLED48C54LA section above); they are
+offered through `lib/guidepatch` instead.

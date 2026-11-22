@@ -36,9 +36,13 @@
  *
  * A key is offered only where this TV's own filter files name it, since LG's
  * key names differ by model and region (a C5 has a Disney+ button, a CX does
- * not). Home, Back, volume, mute, channel and power are not offered: the first
- * two are what the dashboard's own controls depend on, and the rest the
- * microcontroller handles before any filter sees them.
+ * not). Home, Back, volume, mute and power are not offered: the first two are
+ * what the dashboard's own controls depend on, and the rest the microcontroller
+ * handles before any filter sees them. The channel keys are offered where a
+ * filter names them (appLaunch.js does on an OLED48C56LB, webOS 10.3.0); a key
+ * that is set is accepted by the filter, so only As LG has it keeps LG's channel
+ * change. On webOS 11 they are offered through lib/guidepatch (blockCode)
+ * instead, since the native filters do not carry them.
  *
  * Home: earlier builds of Glasshouse Home pointed it at their own app, kept
  * beside the keys as `home`; lib/home.js clears it. Glasshouse Home now runs
@@ -265,11 +269,13 @@ var KEYS = [
   { key: 'ai', title: 'AI', nativeOnly: true, turnsOffVoice: true },
   { key: 'multikey', title: '? button', nativeOnly: true, noNothing: true },
   { key: 'multikeyhold', title: '? button, held', nativeOnly: true, noNothing: true },
-  // The channel rocker, on webOS 11 where lib/guidepatch knows LG's first key
-  // filter: it is told to take the key (blockCode, the Linux key code), and the
+  // The channel rocker. On webOS 10 and below the JavaScript key filter names
+  // it (symbol), where a key that is set is accepted and so no longer changes
+  // the channel. On webOS 11 the filter does not carry it; lib/guidepatch has
+  // LG's first key filter take the key (blockCode, the Linux key code) and the
   // press is answered from that filter's own log line (KEY_EVENT).
-  { key: 'channelup', title: 'Channel up', nativeOnly: true, blockCode: 402 },
-  { key: 'channeldown', title: 'Channel down', nativeOnly: true, blockCode: 403 },
+  { key: 'channelup', symbol: 'WebOS.Key_webOS_ChannelUp', title: 'Channel up', blockCode: 402 },
+  { key: 'channeldown', symbol: 'WebOS.Key_webOS_ChannelDown', title: 'Channel down', blockCode: 403 },
   { key: 'guide', symbol: 'WebOS.Key_webOS_TVGuide', title: 'Guide' },
   { key: 'input', symbol: 'WebOS.Key_webOS_InputSource', title: 'Input' },
   { key: 'livetv', symbol: 'WebOS.Key_webOS_InputTV', title: 'TV' },
@@ -1189,7 +1195,7 @@ function applyNativeMap(cb, map) {
     (nextList || []).forEach(function (entry) {
       Object.keys(entry || {}).forEach(function (name) {
         var def = keyByName(name);
-        if (!def || def.nativeOnly || NATIVE_ACTIONS[name]) return;
+        if (!def || def.nativeOnly || def.blockCode || NATIVE_ACTIONS[name]) return;
         var v = reconcile(name, entry[name], function (lgEntry) { return mappingWanted(map, name, lgEntry); },
           lg.mapping, lg.mappingWritten);
         if (v !== undefined) { entry[name] = v; listChanged = true; }
