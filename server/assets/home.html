@@ -2130,7 +2130,9 @@ html[lang="vi"] #srcTitle,html[lang="vi"] #plMode,html[lang="vi"] #pvMode,html[l
           : t('home.info.date', '{day} {month}', { day: d.getDate(), month: part({ month: 'short' }) });
       }
     } else if (num) {
-      var places = num[1] ? num[1].length - 1 : 0;
+      // Its own decimals, two at most: the API gives a computed sensor's raw
+      // value (14.583333333), not the precision Home Assistant shows.
+      var places = Math.min(num[1] ? num[1].length - 1 : 0, 2);
       var n = parseFloat(v);
       try { text = n.toLocaleString(loc, { minimumFractionDigits: places, maximumFractionDigits: places }); } catch (e) { text = v; }
       if (l.unit) text += (l.unit === '%' ? ' ' : ' ') + l.unit;
