@@ -1447,11 +1447,14 @@ function homeInfoSource(value) {
   homeSaveLayout({ info: value });
 }
 
-// The board: off, or a board Home Assistant sends.
+// The board: off, or a board Home Assistant sends, offered only with MQTT set
+// up, as the lines it sends; without it the board reads as off.
 function renderHomeBoard(st) {
   const sel = q('home-board-sel');
   if (!sel) return;
-  sel.value = (st.layout && st.layout.board) || 'off';
+  const mqtt = !!(st.haLines && st.haLines.mqtt);
+  q('home-board-row').hidden = !st.supported.ok || !mqtt;
+  sel.value = mqtt ? (st.layout && st.layout.board) || 'off' : 'off';
   sel.disabled = !homeWritable();
 }
 
