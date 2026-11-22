@@ -64,9 +64,9 @@ WebOSWindow {
     property int at: 0
     property int batch: 8
     property string note: ""
-    // Pixels a second: two a frame on a 60 Hz panel, as Home's strip; a speed
-    // between whole pixels a frame looks jerky.
-    property real speed: 120
+    // Pixels a second, as chosen for Home's strip and given with the
+    // headlines: 60, 120 or 180, whole pixels a frame on a 60 Hz panel.
+    property real speed: 60
 
     function two(n) { return n < 10 ? "0" + n : "" + n }
 
@@ -101,6 +101,7 @@ WebOSWindow {
                 var d = JSON.parse(xhr.responseText);
                 var items = d.items || [];
                 win.note = items.length ? "" : (d.note || "");
+                if (d.speed > 0) win.speed = d.speed;
                 // A failed read keeps what runs; new headlines wait for the
                 // next run.
                 if (items.length) win.waiting = items;
@@ -122,9 +123,12 @@ WebOSWindow {
         win.at = win.at + win.batch >= win.items.length ? 0 : win.at + win.batch;
         ticker.text = win.runOf(part);
         run.stop();
+        // A whole distance, a multiple of 18 pixels, so the run lasts whole
+        // milliseconds and each 60 Hz frame lands on a whole pixel.
+        var distance = Math.max(Math.ceil((strip.width + ticker.paintedWidth) / 18) * 18, win.speed);
         run.from = strip.width;
-        run.to = -ticker.paintedWidth;
-        run.duration = Math.max(1000, (strip.width + ticker.paintedWidth) / win.speed * 1000);
+        run.to = strip.width - distance;
+        run.duration = Math.round(distance / win.speed * 1000);
         run.start();
     }
 

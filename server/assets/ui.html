@@ -1757,6 +1757,15 @@
     <div class="home-info-panel" id="home-news-panel" hidden>
       <div class="sub" data-t="home.news.feedsDesc">The address of each feed, and a name to show before its headlines if you want another than the feed's own. Each is read every 10 minutes while the strip or the News screen saver shows. The News screen saver reads the same feeds.</div>
       <div id="home-news-feeds"></div>
+      <div class="home-crests-row">
+        <label for="home-news-speed" data-t="home.news.speed">Speed</label>
+        <select class="pill-sel" id="home-news-speed" onchange="homeSaveLayout({ newsSpeed: this.value })">
+          <option value="slow" data-t="home.news.speed.slow">Slow</option>
+          <option value="normal" data-t="home.news.speed.normal">Normal</option>
+          <option value="fast" data-t="home.news.speed.fast">Fast</option>
+        </select>
+      </div>
+      <div class="sub" data-t="home.news.speedDesc">How fast the strip runs, with the matches in it too, and the News screen saver.</div>
     </div>
     <div class="prot-row home-gh-row" id="home-remote-battery-row" hidden>
       <div class="prot-main">

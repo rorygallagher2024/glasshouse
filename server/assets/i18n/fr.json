@@ -3817,5 +3817,10 @@
  "home.board.place": {"from": "Shown", "text": "Affichage"},
  "home.board.place.beside": {"from": "Beside the lines", "text": "À côté des lignes"},
  "home.board.place.strip": {"from": "Running along the bottom", "text": "En défilement en bas"},
- "home.board.placeDesc": {"from": "Along the bottom, the matches open every run of the strip the news uses, by name only, with the next headlines after them.", "text": "En bas, les matchs ouvrent chaque passage du bandeau des actualités, par leur nom seulement, suivis des titres suivants."}
+ "home.board.placeDesc": {"from": "Along the bottom, the matches open every run of the strip the news uses, by name only, with the next headlines after them.", "text": "En bas, les matchs ouvrent chaque passage du bandeau des actualités, par leur nom seulement, suivis des titres suivants."},
+ "home.news.speed": {"from": "Speed", "text": "Vitesse"},
+ "home.news.speed.slow": {"from": "Slow", "text": "Lente"},
+ "home.news.speed.normal": {"from": "Normal", "text": "Normale"},
+ "home.news.speed.fast": {"from": "Fast", "text": "Rapide"},
+ "home.news.speedDesc": {"from": "How fast the strip runs, with the matches in it too, and the News screen saver.", "text": "La vitesse du bandeau, matchs compris, et de l'économiseur d'écran News."}
 }

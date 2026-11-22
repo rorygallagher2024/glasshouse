@@ -3721,6 +3721,10 @@ step('the board: today\'s matches in the leagues chosen, read at most once a min
     assert.strictEqual(r.layout.boardStrip, false, 'the board stays beside the lines unless chosen');
     assert.strictEqual(home.normalise({ boardStrip: 'yes' }).boardStrip, false);
     assert.strictEqual(home.normalise({ boardStrip: true }).boardStrip, true);
+    assert.strictEqual(r.layout.newsSpeed, 'slow', 'slow unless chosen');
+    assert.strictEqual(home.normalise({ newsSpeed: 'warp' }).newsSpeed, 'slow');
+    assert.strictEqual(home.normalise({ newsSpeed: 'fast' }).newsSpeed, 'fast');
+    assert.strictEqual(home.newsSpeed(), 60, 'pixels a second for the News screen saver');
     home.info(function (i1) {
       assert.strictEqual(asked, 1);
       var b = i1.board || home.beat().board;

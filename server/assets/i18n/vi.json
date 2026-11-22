@@ -3835,5 +3835,10 @@
  "home.board.place": {"from": "Shown", "text": "Hiển thị"},
  "home.board.place.beside": {"from": "Beside the lines", "text": "Bên cạnh các dòng"},
  "home.board.place.strip": {"from": "Running along the bottom", "text": "Chạy ở phía dưới"},
- "home.board.placeDesc": {"from": "Along the bottom, the matches open every run of the strip the news uses, by name only, with the next headlines after them.", "text": "Ở phía dưới, các trận mở đầu mỗi vòng của dải tin tức, chỉ với tên, tiếp theo là các tiêu đề kế tiếp."}
+ "home.board.placeDesc": {"from": "Along the bottom, the matches open every run of the strip the news uses, by name only, with the next headlines after them.", "text": "Ở phía dưới, các trận mở đầu mỗi vòng của dải tin tức, chỉ với tên, tiếp theo là các tiêu đề kế tiếp."},
+ "home.news.speed": {"from": "Speed", "text": "Tốc độ"},
+ "home.news.speed.slow": {"from": "Slow", "text": "Chậm"},
+ "home.news.speed.normal": {"from": "Normal", "text": "Bình thường"},
+ "home.news.speed.fast": {"from": "Fast", "text": "Nhanh"},
+ "home.news.speedDesc": {"from": "How fast the strip runs, with the matches in it too, and the News screen saver.", "text": "Tốc độ chạy của dải, kể cả các trận, và trình bảo vệ màn hình News."}
 }

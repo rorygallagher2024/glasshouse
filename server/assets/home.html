@@ -188,7 +188,7 @@ html.resting #wall .layer{-webkit-animation-play-state:paused;animation-play-sta
    by its own width with that padding, so it ends off the left. */
 #news{position:absolute;left:112px;right:112px;bottom:44px;height:40px;overflow:hidden;white-space:nowrap;font-size:24px;font-weight:300;color:#ece7df}
 #news.none,.arranging #news,.playing #news{display:none}
-#newsRun{display:inline-block;padding-left:100%;line-height:40px;-webkit-animation:newsRun 60s linear infinite;animation:newsRun 60s linear infinite;
+#newsRun{display:inline-block;box-sizing:border-box;padding-left:100%;line-height:40px;-webkit-animation:newsRun 60s linear infinite;animation:newsRun 60s linear infinite;
   /* A layer of its own, moved by the GPU rather than repainted each frame. */
   will-change:transform;-webkit-backface-visibility:hidden;backface-visibility:hidden}
 #newsRun .src{color:#a39d93;margin-right:.6em}
@@ -2183,13 +2183,15 @@ html[lang="vi"] #srcTitle,html[lang="vi"] #plMode,html[lang="vi"] #pvMode,html[l
    * the moving line stays a few thousand pixels wide: all of them at once,
    * up to 45 across three feeds, came to 20,000 and moved in jerks on a C6.
    * New headlines are taken at the start of a run, so none is cut off on
-   * screen, and a run's time follows its length, at NEWS_SPEED pixels a second:
-   * 120, two whole pixels a frame on a 60 Hz panel; 90 stepped one and two
-   * pixels by turns and looked jerky, and 60 was slower than wanted.
+   * screen, and a run's time follows its length, at newsSpeed() pixels a second:
+   * 60, 120 or 180 as the owner picks: one, two or three whole pixels a frame
+   * on a 60 Hz panel, where 90 stepped one and two pixels by turns and looked
+   * jerky.
    */
-  var NEWS_SPEED = 120;
+  var NEWS_SPEEDS = { slow: 60, normal: 120, fast: 180 };
+  function newsSpeed() { return NEWS_SPEEDS[layout && layout.newsSpeed] || NEWS_SPEEDS.slow; }
   var NEWS_BATCH = 8;
-  var newsItems = [], runBoard = [], newsWaiting = null, newsKey = '', newsAt = 0, runAt = 0, newsShown = false;
+  var newsItems = [], runBoard = [], newsWaiting = null, newsKey = '', newsAt = 0, runAt = 0, runSpeed = 0, newsShown = false;
   // The board's lines, when it is put in the strip, open every run and the
   // headlines take turns after them: scores change, so they come round each
   // run rather than once in every 45 headlines.
@@ -2213,11 +2215,17 @@ html[lang="vi"] #srcTitle,html[lang="vi"] #plMode,html[lang="vi"] #pvMode,html[l
     newsAt = newsAt + NEWS_BATCH >= newsItems.length ? 0 : newsAt + NEWS_BATCH;
     var run = $('newsRun');
     run.innerHTML = newsHtml(batch);
-    var px = run.offsetWidth;
-    // Not rounded to whole seconds, which would put it off a pixel a frame.
-    var secs = Math.max(10, px / NEWS_SPEED).toFixed(3);
-    run.style.webkitAnimationDuration = secs + 's';
-    run.style.animationDuration = secs + 's';
+    run.style.width = '';
+    // A whole number of pixels, a multiple of 18, so the run lasts a whole
+    // number of milliseconds and every frame at 60 Hz lands on a whole pixel
+    // at 60, 120 and 180 pixels a second: a fractional width put the text a
+    // fraction of a pixel off each frame, which reads as a shimmer.
+    var speed = runSpeed = newsSpeed();
+    var px = Math.max(Math.ceil(run.getBoundingClientRect().width / 18) * 18, speed * 10);
+    run.style.width = px + 'px';
+    var ms = Math.round(px * 1000 / speed);
+    run.style.webkitAnimationDuration = ms + 'ms';
+    run.style.animationDuration = ms + 'ms';
     // Restarted from the right edge.
     run.style.webkitAnimationName = 'none';
     run.style.animationName = 'none';
@@ -6910,8 +6918,10 @@ html[lang="vi"] #srcTitle,html[lang="vi"] #plMode,html[lang="vi"] #pvMode,html[l
       data = r;
       loadLineup();
       layout = r.layout;
-      // The board may have come before the layout that says where it goes.
+      // The board and the headlines may have come before the layout that says
+      // where the board goes and how fast the strip runs.
       if (lastBoard) renderBoard(lastBoard);
+      if (newsShown && runSpeed !== newsSpeed()) { newsAt = runAt; startNewsRun(); }
       preloadNavSounds();
       if (!searchOn()) { closeSearch(); state.rail = false; }
       setFadeOn(layout.fade === true);

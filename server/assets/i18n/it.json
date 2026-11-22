@@ -3831,5 +3831,10 @@
  "home.board.place": {"from": "Shown", "text": "Mostrato"},
  "home.board.place.beside": {"from": "Beside the lines", "text": "Accanto alle righe"},
  "home.board.place.strip": {"from": "Running along the bottom", "text": "Scorrevole in basso"},
- "home.board.placeDesc": {"from": "Along the bottom, the matches open every run of the strip the news uses, by name only, with the next headlines after them.", "text": "In basso, le partite aprono ogni giro della striscia delle notizie, solo con i nomi, seguite dai titoli successivi."}
+ "home.board.placeDesc": {"from": "Along the bottom, the matches open every run of the strip the news uses, by name only, with the next headlines after them.", "text": "In basso, le partite aprono ogni giro della striscia delle notizie, solo con i nomi, seguite dai titoli successivi."},
+ "home.news.speed": {"from": "Speed", "text": "Velocità"},
+ "home.news.speed.slow": {"from": "Slow", "text": "Lenta"},
+ "home.news.speed.normal": {"from": "Normal", "text": "Normale"},
+ "home.news.speed.fast": {"from": "Fast", "text": "Veloce"},
+ "home.news.speedDesc": {"from": "How fast the strip runs, with the matches in it too, and the News screen saver.", "text": "La velocità della striscia, anche con le partite, e del salvaschermo News."}
 }

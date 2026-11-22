@@ -3831,5 +3831,10 @@
  "home.board.place": {"from": "Shown", "text": "Показ"},
  "home.board.place.beside": {"from": "Beside the lines", "text": "Рядом со строками"},
  "home.board.place.strip": {"from": "Running along the bottom", "text": "Бегущей строкой внизу"},
- "home.board.placeDesc": {"from": "Along the bottom, the matches open every run of the strip the news uses, by name only, with the next headlines after them.", "text": "Внизу матчи открывают каждый круг новостной строки, только с названиями, а за ними идут следующие заголовки."}
+ "home.board.placeDesc": {"from": "Along the bottom, the matches open every run of the strip the news uses, by name only, with the next headlines after them.", "text": "Внизу матчи открывают каждый круг новостной строки, только с названиями, а за ними идут следующие заголовки."},
+ "home.news.speed": {"from": "Speed", "text": "Скорость"},
+ "home.news.speed.slow": {"from": "Slow", "text": "Медленно"},
+ "home.news.speed.normal": {"from": "Normal", "text": "Обычно"},
+ "home.news.speed.fast": {"from": "Fast", "text": "Быстро"},
+ "home.news.speedDesc": {"from": "How fast the strip runs, with the matches in it too, and the News screen saver.", "text": "Как быстро бежит строка, вместе с матчами, и заставка News."}
 }

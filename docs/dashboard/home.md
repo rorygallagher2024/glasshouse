@@ -605,7 +605,7 @@ Beside the lines, a board of up to twenty lines shown four at a time, turning to
 
 ### News strip
 
-Along the bottom, below the rows: the headlines of up to three news feeds, each after its source, running right to left in one line at a steady speed, eight headlines a run and the next eight the run after. The **News strip** setting turns it on, and its panel takes each feed's address (RSS 2.0, RSS 1.0 or Atom, such as `https://www.svt.se/rss.xml`) and, optionally, a name to show in place of the feed's own. The feeds take turns, up to fifteen headlines from each. Each feed is read every 10 minutes at most while the strip is on screen, and new headlines join at the end of a run, so none is cut off. The [News screen saver](screen-savers.md#news) reads the same feeds.
+Along the bottom, below the rows: the headlines of up to three news feeds, each after its source, running right to left in one line at a steady speed, eight headlines a run and the next eight the run after. The **News strip** setting turns it on, and its panel takes each feed's address (RSS 2.0, RSS 1.0 or Atom, such as `https://www.svt.se/rss.xml`) and, optionally, a name to show in place of the feed's own. The feeds take turns, up to fifteen headlines from each. Each feed is read every 10 minutes at most while the strip is on screen, and new headlines join at the end of a run, so none is cut off. The [News screen saver](screen-savers.md#news) reads the same feeds. **Speed** sets how fast the strip runs, with the board's matches when they are in it, and the News screen saver too: **Slow** (default), **Normal** or **Fast**, 60, 120 or 180 pixels a second. The faster two move further between frames and look less smooth on some TVs.
 
 ### Remote battery
 
