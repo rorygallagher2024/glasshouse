@@ -31,10 +31,11 @@ body{font-family:'Manrope',sans-serif;color:#fff;
 #clock{font-family:'Manrope',sans-serif;font-weight:400;font-size:4.4vh;letter-spacing:.01em;
   line-height:1;opacity:.65}
 
-#tabs{display:flex;display:-webkit-flex;align-items:baseline;-webkit-align-items:baseline;flex:0 0 auto;-webkit-flex:0 0 auto;margin:0 4vw 3.2vh 0;
-  /* the bar clips so it can scroll, and at line-height 1 that takes the tails
-     of g and y with it; the padding makes room and the margin gives it back */
-  padding-bottom:1.2vh;white-space:nowrap;overflow:hidden}
+#tabs{display:flex;display:-webkit-flex;align-items:baseline;-webkit-align-items:baseline;flex:0 0 auto;-webkit-flex:0 0 auto;margin:-1.2vh 4vw 3.2vh 0;
+  /* the bar clips so it can scroll, and at line-height 1 that takes tall
+     accents (such as Vietnamese) and the tails of g and y with it; the
+     padding makes room and the negative top margin keeps the baseline level */
+  padding:1.2vh 0;white-space:nowrap;overflow:hidden}
 #tabs.clip-r{-webkit-mask-image:linear-gradient(to right,#000 88%,transparent);mask-image:linear-gradient(to right,#000 88%,transparent)}
 #tabs.clip-l{-webkit-mask-image:linear-gradient(to left,#000 88%,transparent);mask-image:linear-gradient(to left,#000 88%,transparent)}
 #tabs.clip-l.clip-r{-webkit-mask-image:linear-gradient(to right,transparent,#000 12%,#000 88%,transparent);
@@ -1045,6 +1046,14 @@ function saverRows(d) {
              act: 'plainNoSignal', target: 'icon', on: nsIcon,
              press: nsIcon ? t('tv.saver.allow.off', 'Press OK to switch off') : t('tv.noSignal.on', 'Press OK to switch on'),
              hint: t('inputs.noSignal.iconDesc', 'Shows a subtle disconnected cable icon instead of \u201cNo Signal\u201d.') });
+    if (d.noSignal.art || nsMode === 'art') {
+      var nsArt = nsMode === 'art';
+      r.push({ label: t('inputs.noSignal.art', 'Picture frame'),
+               value: nsArt ? t('common.on', 'On') : t('common.off', 'Off'), cls: nsArt ? 'on' : 'off',
+               act: 'plainNoSignal', target: 'art', on: nsArt,
+               press: nsArt ? t('tv.saver.allow.off', 'Press OK to switch off') : t('tv.noSignal.on', 'Press OK to switch on'),
+               hint: t('inputs.noSignal.artDescTv', 'The picture frame\u2019s pictures, with \u201cNo Signal\u201d on each picture\u2019s label. Pick them in Picture frame settings, on the Screensaver or Inputs tab of the dashboard in a browser.') });
+    }
   }
   r.push(head(t('tv.saver.head.aFirmwareUpdatePuts', 'A firmware update puts LG’s own back')));
   return r;

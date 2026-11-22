@@ -3406,6 +3406,22 @@ step('on webOS 11, Glasshouse Home is closed and opened again once after a wake,
   });
 });
 
+step('the Reopen Home after a wake switch off skips the reopening', function (done) {
+  start(null, webos11());
+  home.enable(function () {
+    home.setLayout({ reopenAfterWake: false }, function (r) {
+      assert.strictEqual(r.layout.reopenAfterWake, false, 'the switch is saved');
+      foreground(LG_HOME);
+      power(false);
+      power(true);
+      wait(4500, function () {
+        assert.strictEqual(tv.events.indexOf('close ' + LG_HOME), -1, 'skipped when switched off');
+        home.disable(function () { done(); });
+      });
+    });
+  });
+});
+
 step('on webOS 11, an app opened after the wake, or a switch-off, cancels it; other webOS never does it', function (done) {
   start(null, webos11());
   home.enable(function () {
@@ -4006,6 +4022,7 @@ step('apps take card icons from the folder by title, or the one chosen, and the 
       assert.strictEqual(r.layout.appCards, true);
       assert.strictEqual(r.layout.focusPulse, true);
       assert.strictEqual(r.layout.navSound, 'off', 'only a sound Home has');
+      assert.strictEqual(r.layout.pointerSound, 'off', 'the pointer follows the keys until chosen');
       assert.strictEqual(fs.existsSync(home.navSoundFile('click').path), true, 'the click ships with Glasshouse');
       assert.strictEqual(fs.existsSync(home.navSoundFile('rollover').path), true);
       assert.strictEqual(home.navSoundFile('own'), null, 'no own sound until one is put on the TV');

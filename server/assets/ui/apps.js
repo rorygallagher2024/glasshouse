@@ -505,7 +505,7 @@ function renderRemoteKeys(d) {
   const more = away.length ? `<details class="rk-more"${rkMoreOpen ? ' open' : ''} ontoggle="rkMoreOpen = this.open">
       <summary class="rk-grp">${esc(t('apps.remoteKeys.elsewhere', 'Buttons on remotes sold elsewhere ({n})', { n: away.length }))}</summary>
       <div class="rk-grid">${away.map(tile).join('')}</div></details>` : '';
-  // How far a Brightness key moves the picture, once a key is set to one.
+  // The settings of the Brightness keys, in a section of their own that shows once a key is set to one.
   let stepRow = '';
   if (rk.keys.some(k => k.id === 'action:brightnessUp' || k.id === 'action:brightnessDown')) {
     const sizes = [5, 10, 15, 20, 25];
@@ -518,7 +518,20 @@ function renderRemoteKeys(d) {
         ${sizes.map(n => `<option value="${n}"${n === rk.brightnessStep ? ' selected' : ''}>${n}</option>`).join('')}
       </select></div></div>`;
   }
-  list.innerHTML = groups + more + stepRow;
+  // How the level bar a Brightness key shows looks, where the filter and the bar's app can show it.
+  let barStyleRow = '';
+  if (stepRow && rk.brightnessBar) {
+    barStyleRow = `<div class="prot-row">
+      <div class="prot-main"><div class="prot-title"><label for="apps-rk-bar-style">${esc(t('apps.remoteKeys.barStyle', 'Level bar style'))}</label></div>
+        <div class="prot-desc">${esc(t('apps.remoteKeys.barStyleDesc', 'How the bar that a Brightness key shows looks: laid out like the TV\'s volume bar, a horizontal bar low on the screen, the same bar vertical at the right edge, or no bar.'))}</div></div>
+      <div class="prot-status"><select id="apps-rk-bar-style" class="pill-sel" ${rkWritable ? '' : 'disabled'} onchange="rkSetBrightnessBarStyle(this.value)">
+        ${[['lg', t('apps.remoteKeys.barStyleLg', 'LG style')], ['horizontal', t('apps.remoteKeys.barStyleHorizontal', 'Horizontal')],
+           ['vertical', t('apps.remoteKeys.barStyleVertical', 'Vertical')], ['none', t('apps.remoteKeys.barStyleNone', 'No bar')]]
+          .map(o => `<option value="${o[0]}"${o[0] === (rk.brightnessBarStyle || 'lg') ? ' selected' : ''}>${esc(o[1])}</option>`).join('')}
+      </select></div></div>`;
+  }
+  const brightness = stepRow ? `<div class="rk-grp">${esc(t('apps.remoteKeys.brightnessSection', 'Brightness key settings'))}</div>${stepRow}${barStyleRow}` : '';
+  list.innerHTML = groups + more + brightness;
   if (rkOpen) {
     const tile = list.querySelector(`.rk-key[data-key="${CSS.escape(rkOpen)}"]`);
     rkOpen = null;
@@ -646,6 +659,23 @@ async function rkSetBrightnessStep(value) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ brightnessStep: Number(value) })
+    });
+    const r = await res.json();
+    if (!r || !r.ok) error = (r && r.error) || t('common.unknownError', 'unknown error');
+  } catch (e) {
+    error = e.message;
+  }
+  if (error) alert(t('apps.remoteKeys.failed', 'Could not change it: {error}', { error }));
+  await loadApps();
+}
+
+async function rkSetBrightnessBarStyle(value) {
+  let error = null;
+  try {
+    const res = await fetch(api('/api/remotekeys'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ brightnessBarStyle: value })
     });
     const r = await res.json();
     if (!r || !r.ok) error = (r && r.error) || t('common.unknownError', 'unknown error');

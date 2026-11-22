@@ -3,11 +3,13 @@
   "version": "1.0.0",
   "name": {
     "en": "Pigs - Three Different Ones",
-    "es": "Cerdos - Tres distintos"
+    "es": "Cerdos - Tres distintos",
+    "vi": "Lợn bay - Ba chú khác nhau"
   },
   "description": {
     "en": "A pink pig, a saddleback and a razorback, big and small, flapping across a pixel-art night over Chicago.",
-    "es": "Un cerdo rosa, un saddleback y un razorback, grandes y pequeños, aleteando sobre una noche de Chicago en pixel art."
+    "es": "Un cerdo rosa, un saddleback y un razorback, grandes y pequeños, aleteando sobre una noche de Chicago en pixel art.",
+    "vi": "Một chú lợn hồng, một chú lợn yên ngựa và một chú lợn rừng, lớn nhỏ vỗ cánh bay qua bầu trời đêm pixel ở Chicago."
   },
   "author": "Michael Nestrud",
   "license": "MIT",

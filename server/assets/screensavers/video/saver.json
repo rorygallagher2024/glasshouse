@@ -15,7 +15,9 @@
     "pt": "Vídeo",
     "pt-br": "Vídeo",
     "ru": "Видео",
-    "en": "Video"
+    "en": "Video",
+    "sv": "Video",
+    "vi": "Video"
   },
   "description": {
     "ar": "مقاطع فيديو بلا صوت من قائمة Home، مع عرض التعليقات الزمنية عند توفرها.",
@@ -28,7 +30,9 @@
     "pt": "Vídeos sem som da lista do Home, com legendas sincronizadas quando disponíveis.",
     "pt-br": "Vídeos sem som da playlist do Home, com legendas sincronizadas quando disponíveis.",
     "ru": "Видео без звука из списка Home с временными подписями, если они доступны.",
-    "en": "Muted videos from the Home playlist, with timed captions where available."
+    "en": "Muted videos from the Home playlist, with timed captions where available.",
+    "sv": "Ljudlösa videor från Home-spellistan, med tidsstyrda bildtexter där de finns.",
+    "vi": "Video tắt tiếng từ danh sách phát của Màn hình chính, kèm chú thích theo thời gian khi có sẵn."
   },
   "license": "MIT",
   "uses": [

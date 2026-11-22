@@ -240,6 +240,7 @@ async function main() {
   fs.writeFileSync(path.join(root, 'var/lib/tvweb/home.json'), JSON.stringify(homeCfg, null, 2));
 
   const fakeLuna = path.join(ROOT, 'test', 'mocks', 'fake-luna-send.js');
+  const pointerSocket = startFakePointer(root);
 
   console.log(`\n======================================================`);
   console.log(`  📺 Starting Glasshouse TV Emulator`);
@@ -255,6 +256,7 @@ async function main() {
       FAKE_ROOT: root,
       TVWEB_LUNA_SEND: fakeLuna,
       TV_MODEL: model,
+      FAKE_POINTER_SOCKET: pointerSocket,
       // What the mock system property service answers (test/mocks/fake-luna-send.js).
       TV_PROFILE: JSON.stringify({ modelName: profile.modelName, firmwareVersion: profile.firmwareVersion,
         boardType: profile.boardType, sdkVersion: profile.sdkVersion })
@@ -318,6 +320,49 @@ async function main() {
     const cmd = process.platform === 'darwin' ? `open "${base}/"` : (process.platform === 'win32' ? `start "" "${base}/"` : `xdg-open "${base}/"`);
     child.exec(cmd);
   }
+}
+
+/*
+ * LG's network input, for the remote's Touchpad and Motion: a Unix socket
+ * taking its length-prefixed "type:move\ndx:.." commands. Moves are summed and logged
+ * twice a second with where the cursor would be on a 1920x1080 screen.
+ */
+function startFakePointer(root) {
+  const socketPath = path.join(root, 'pointer.sock');
+  const cursor = { x: 960, y: 540 };
+  let moved = null;
+  const report = setInterval(() => {
+    if (!moved) return;
+    console.log(`  🖱  pointer: moved ${moved.dx},${moved.dy} in ${moved.count} -> cursor ${cursor.x},${cursor.y}`);
+    moved = null;
+  }, 500);
+  report.unref();
+  net.createServer(conn => {
+    let buffered = Buffer.alloc(0);
+    conn.on('data', chunk => {
+      buffered = Buffer.concat([buffered, chunk]);
+      // Each command is a 4-byte big-endian length, then its text.
+      while (buffered.length >= 4 && buffered.length >= 4 + buffered.readUInt32BE(0)) {
+        const size = buffered.readUInt32BE(0);
+        const fields = {};
+        buffered.toString('utf8', 4, 4 + size).split('\n').forEach(line => {
+          const at = line.indexOf(':');
+          if (at > 0) fields[line.slice(0, at)] = line.slice(at + 1);
+        });
+        buffered = buffered.subarray(4 + size);
+        if (fields.type === 'move') {
+          const dx = Number(fields.dx) || 0, dy = Number(fields.dy) || 0;
+          cursor.x = Math.max(0, Math.min(1919, cursor.x + dx));
+          cursor.y = Math.max(0, Math.min(1079, cursor.y + dy));
+          moved = moved || { dx: 0, dy: 0, count: 0 };
+          moved.dx += dx; moved.dy += dy; moved.count++;
+        } else if (fields.type) {
+          console.log(`  🖱  pointer: ${fields.type} at ${cursor.x},${cursor.y}`);
+        }
+      }
+    });
+  }).listen(socketPath).unref();
+  return socketPath;
 }
 
 main().catch(err => {

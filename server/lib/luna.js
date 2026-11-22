@@ -28,8 +28,10 @@ var _serviceName = {};
  * (a 43UJ750V) a call to an unlisted one, such as com.webos.service.audio,
  * gets no answer until luna-send's 2 s wait runs out, and the TV logs
  * LSHUB_NOT_LSTED as an error each time; readings polled every few seconds
- * filled its log (#1112). A failed call to an unlisted LG service makes later
- * calls to it fail at once, for 10 minutes in case the list read was wrong.
+ * filled its log (#1112). An unlisted LG service that does not answer, or that
+ * the hub says does not exist, makes later calls to it fail at once, for 10
+ * minutes in case the list read was wrong. One that answers, even with an
+ * error, is there: some TVs leave a service they have out of the list.
  * Homebrew services are left out: they are listed when installed.
  */
 var SERVICE_DIRS = (process.env.TVWEB_LUNA_SERVICE_DIRS ||
@@ -77,8 +79,17 @@ function isUnlistedLgService(service) {
   return listedCount > 0 && !listedServices[service];
 }
 
+/*
+ * A failure that says the service is not there: no answer at all, or the
+ * hub's own refusal. An error from the service itself, such as a B8's
+ * com.webos.service.tv.capture answering "Invalid argument" (#1640's check for
+ * which capture service a TV has), shows it is there, though not listed.
+ */
+var HUB_ABSENT = /Service does not exist|not (?:be )?listed|LSHUB_NOT_LSTED|no such service/i;
+
 function noteFailure(uri, parsed) {
   if (parsed && parsed.returnValue !== false) return;
+  if (parsed && !HUB_ABSENT.test(String(parsed.errorText || ''))) return;
   // A renamed service is never skipped: its other name is tried instead.
   if (findServiceMapping(uri)) return;
   var service = uri.split('/')[0];

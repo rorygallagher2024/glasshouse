@@ -15,6 +15,13 @@ it before exposing it more widely.
   if asked, the kernel's - to whoever can reach the dashboard, as `/api/logs`.
   They name the apps in use, the network and the broker the TV talks to. A
   token gates them with the rest of the API.
+- **Music highway listens to what the TV plays.** While that screen saver is
+  on screen, the server records the TV's sound output (the mix it plays, not
+  a microphone) with `arecord` and turns it into levels and beats as it
+  arrives, keeping only the last fraction of a second; nothing is saved or
+  sent anywhere, and recording stops 3 seconds after the screen saver
+  closes. Whoever can reach the dashboard can read those levels at
+  `/api/audio/levels`, which a token gates with the rest of the API.
 - **Syslog forwarding is off by default.** With `syslog.server` set in
   `config.json` the same logs go to that server as plain UDP: unencrypted,
   unauthenticated, and readable by anything on the path. Addresses,
@@ -148,6 +155,9 @@ files 600), and they stay there:
 - Logos and guide links found in a playlist are fetched only over http or
   https and only without a user name in them; a logo is kept only if its
   first bytes are a PNG, JPEG or WebP, and is 256 KB at most.
+- A login written into the owner's own guide link (`http://user:pass@host/...`)
+  is sent as HTTP Basic, to curl on its standard input and never in a command
+  line, and the address is asked for without it.
 
 A satellite tuner's login is kept the same way. It goes to curl on its
 standard input, never in a command line, and is sent only to the tuner's own

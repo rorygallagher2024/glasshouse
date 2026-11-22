@@ -1,0 +1,40 @@
+{
+  "manifest": 1,
+  "version": "1.1.0",
+  "name": {
+    "ar": "إطار الصور",
+    "de": "Bilderrahmen",
+    "es": "Marco de fotos",
+    "fr": "Cadre photo",
+    "hu": "Képkeret",
+    "it": "Cornice digitale",
+    "pl": "Ramka na zdjęcia",
+    "pt": "Moldura de fotos",
+    "pt-br": "Porta-retratos",
+    "ru": "Фоторамка",
+    "en": "Picture frame",
+    "sv": "Bildram",
+    "vi": "Khung ảnh"
+  },
+  "description": {
+    "ar": "صورك الخاصة وصور من شبكتك ولوحات من الملك العام، تتلاشى الواحدة في الأخرى.",
+    "de": "Ihre eigenen Bilder, Fotos aus Ihrem Netzwerk und gemeinfreie Gemälde, die ineinander überblenden.",
+    "es": "Tus propias imágenes, fotos de tu red y pinturas de dominio público, fundiéndose una en otra.",
+    "fr": "Vos propres images, des photos de votre réseau et des peintures du domaine public, en fondu de l’une à l’autre.",
+    "hu": "Saját képei, fotók a hálózatáról és közkincs festmények, egymásba áttűnve.",
+    "it": "Le tue immagini, foto dalla tua rete e dipinti di pubblico dominio, in dissolvenza l’uno nell’altro.",
+    "pl": "Twoje własne zdjęcia, zdjęcia z sieci i obrazy z domeny publicznej, przechodzące jedno w drugie.",
+    "pt": "As suas próprias imagens, fotos da sua rede e pinturas do domínio público, a desvanecer de uma para outra.",
+    "pt-br": "Suas próprias imagens, fotos da sua rede e pinturas em domínio público, uma se fundindo na outra.",
+    "ru": "Ваши собственные изображения, фото из вашей сети и картины из общественного достояния, плавно сменяющие друг друга.",
+    "en": "Your own pictures, photos from your network and paintings in the public domain, each fading into the next.",
+    "sv": "Dina egna bilder, foton från ditt nätverk och fria målningar, som tonar över i varandra.",
+    "vi": "Ảnh của riêng bạn, ảnh từ mạng của bạn và tranh thuộc phạm vi công cộng, lần lượt chuyển mờ sang nhau."
+  },
+  "license": "MIT",
+  "uses": [
+    "level",
+    "art"
+  ],
+  "order": 55
+}

@@ -1,5 +1,7 @@
 /**
- * test/test-luna-absent.js - A failed call to an LG service the TV does not list fails at once for 10 minutes
+ * test/test-luna-absent.js - A call to an LG service the TV does not list that
+ * gets no answer, or the hub's "does not exist", fails at once for 10 minutes;
+ * one the service itself answers with an error is called again.
  */
 
 var assert = require('assert');
@@ -36,6 +38,9 @@ child.execFile = function (file, args, opts, cb) {
   process.nextTick(function () {
     if (/^com\.webos\.service\.(audio|videooutput|settings)\//.test(uri) || /^org\.webosbrew\./.test(uri)) return cb(new Error('exit 1'), '');
     if (/^com\.webos\.service\.tv\.display\//.test(uri)) return cb(null, '{"returnValue":false,"errorText":"busy"}');
+    // Unlisted on a B8, but there: it refuses a capture with no path.
+    if (/^com\.webos\.service\.tv\.capture\//.test(uri)) return cb(null, '{"returnValue":false,"errorCode":"ERROR_06","errorText":"Invalid argument"}');
+    if (/^com\.webos\.service\.gone\//.test(uri)) return cb(null, '{"returnValue":false,"errorCode":-1,"errorText":"Service does not exist: com.webos.service.gone."}');
     cb(null, '{"returnValue":true}');
   });
 };
@@ -79,6 +84,26 @@ series([
               assert.strictEqual(calls.length, 5);
               next();
             });
+          });
+        });
+      });
+    });
+  },
+  // An unlisted service that answers with an error of its own is there, and
+  // is asked again (#1640's capture check on a B8). One the hub says does not
+  // exist is skipped like one that does not answer.
+  function (next) {
+    calls = [];
+    call('com.webos.service.tv.capture/executeOneShot', function (r) {
+      assert.strictEqual(r.errorText, 'Invalid argument');
+      call('com.webos.service.tv.capture/executeOneShot', function (r2) {
+        assert.deepEqual(calls, ['com.webos.service.tv.capture/executeOneShot', 'com.webos.service.tv.capture/executeOneShot']);
+        assert.strictEqual(r2.errorText, 'Invalid argument', 'from the service, not made up');
+        assert.ok(!logs.some(function (l) { return /tv\.capture is not on this TV/.test(l); }));
+        call('com.webos.service.gone/x', function () {
+          call('com.webos.service.gone/x', function () {
+            assert.strictEqual(calls.length, 3, 'the hub\'s "does not exist" skips it');
+            next();
           });
         });
       });

@@ -78,4 +78,8 @@ console.log('  ✓ older browser: page language, month on its own');
 assert.strictEqual(dateIn('pt-br'), 'Sábado 24 outubro');
 console.log('  ✓ page language with a region');
 
+// 5. Vietnamese page gets Vietnamese weekday and month
+assert.strictEqual(dateIn('vi'), 'Thứ Bảy 24 tháng 10');
+console.log('  ✓ Vietnamese page: weekday and month in Vietnamese');
+
 console.log('ALL test-home-date.js assertions passed!\n');

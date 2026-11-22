@@ -9,7 +9,9 @@
     "pl": "Włókna",
     "pt": "Filamento",
     "pt-br": "Filamento",
-    "ru": "Нити"
+    "ru": "Нити",
+    "sv": "Glödtråd",
+    "vi": "Sợi sáng"
   },
   "description": {
     "en": "Swarms of light circling and trailing across black, slowly changing color.",
@@ -19,7 +21,9 @@
     "pl": "Roje światła krążące i ciągnące smugi po czerni, powoli zmieniające kolor.",
     "pt": "Enxames de luz que giram e deixam rastos sobre fundo preto, mudando lentamente de cor.",
     "pt-br": "Enxames de luz que circulam e deixam rastros sobre o preto, mudando de cor lentamente.",
-    "ru": "Рои света кружат и тянутся по чёрному фону, медленно меняя цвет."
+    "ru": "Рои света кружат и тянутся по чёрному фону, медленно меняя цвет.",
+    "sv": "Ljussvärmar som cirklar och drar spår över svart, med långsamt skiftande färg.",
+    "vi": "Những luồng sáng xoay vòng và kéo vệt trên nền đen, chậm rãi chuyển màu."
   },
   "license": "MIT",
   "uses": [

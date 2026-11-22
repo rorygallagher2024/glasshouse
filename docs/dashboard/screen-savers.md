@@ -1,6 +1,6 @@
 # Screen savers
 
-The **Screensaver** tab, `/?tab=screensaver`, provides sixteen alternatives to LG's default screen saver, alongside a **Random** rotation mode, support for screen savers added on the TV or bundled with homebrew applications.
+The **Screensaver** tab, `/?tab=screensaver`, provides seventeen alternatives to LG's default screen saver, alongside a **Random** rotation mode, support for screen savers added on the TV or bundled with homebrew applications.
 
 ![Screensaver tab: screen saver list with Starfield selected, Brightness toggles, Start screen saver, and Power off after](../screenshots/screensaver.png)
 
@@ -27,6 +27,37 @@ A firmware update restores the LG default.
 
 Plays the muted video playlist configured under **Home → Background → Video**. A [playlist](home.md#which-video-links-work) adds its scenes' names and timed captions. The same list is shared with Glasshouse Home; the screen saver appears on webOS 10 and later once at least one usable video is saved. The playlist repeats in order or random order as configured there, and its captions are placed and styled as set there. With Video chosen, this tab sets the rest of what shows over it: the clock, date, weather and captions can each be switched off, the clock and weather placed in any corner, made one of four sizes and set in Outfit or Manrope, the date, weather and captions set in either, and all of it given one text colour. **Use the default look** puts these back as Glasshouse Home has them. Weather from Open-Meteo is credited in the corner, as on Home. Each video fades out at its end and the next fades in; while the first is still loading, the screen saver says so.
 
+### Picture frame
+
+Shows your own pictures, photos from your network and paintings in the public domain, one at a time, each fading into the next. With Picture frame chosen, this tab shows what is on screen, a line saying where its pictures come from and how often they change, and **Picture frame settings**, which opens its settings in a dialog. The same dialog opens from the [Inputs](inputs.md#no-signal-screen) tab, and from search ("picture frame", "photos", "slideshow"); on a phone it fills the screen.
+
+On this tab:
+
+* **Now showing:** the picture on screen, with its title, and **Previous** and **Next**, which the screen saver takes up within a couple of seconds. Previous goes back through the last five pictures; Next after going back comes forward through them before a new one. They work while the picture frame is on screen, as the screen saver or on an input's [No Signal screen](inputs.md#no-signal-screen).
+
+In **Picture frame settings**:
+
+* **Your pictures:** up to 100 JPEG, PNG or WebP images, added from the browser or dropped on **Add pictures**. Each is made 1920 × 1080 or smaller before it is uploaded, and kept on the TV in `/var/lib/tvweb/art-pictures`, which an update leaves alone.
+* **Collections:** fourteen, in three groups, each free to show with its credit.
+  * **Space:** the [James Webb](https://esawebb.org/images/) Space Telescope's Picture of the Month, nebulae and galaxies, and the [Hubble](https://esahubble.org/images/potw/) Space Telescope's Picture of the Week, from ESA. Diagrams, annotated versions and artists' impressions are left out. They are CC BY 4.0, and ESA asks for each image's credit line to be shown in full and unaltered.
+  * **Photography:** Wikimedia Commons' [featured pictures](https://commons.wikimedia.org/wiki/Commons:Featured_pictures), the community's pick of its best photographs, by topic: landscapes, skies and weather, the night sky, animals, plants and flowers, and architecture. Only those in the public domain or under CC0, CC BY or CC BY-SA are shown, each credited to its photographer with its licence.
+  * **Paintings:** two from the [Rijksmuseum](https://data.rijksmuseum.nl/): Dutch Golden Age paintings, and Dutch paintings of the 1700s and 1800s. and four from [the Cleveland Museum of Art's open access collection](https://www.clevelandart.org/open-access): European paintings to the 1700s, European paintings of the 1800s, American paintings, and Japanese and Chinese paintings. All are in the public domain.
+
+  Very long scrolls, folios and panoramas, which would be tiny on a TV, are left out, and so are pictures too small to fill it.
+
+  A picture whose licence asks for its credit (ESA's, and a photographer's under CC BY or CC BY-SA) keeps it on screen, small, in a bottom corner, whenever its label is not up, whichever label setting is picked.
+* **Network folders:** up to 10 folders on media servers on your network, such as Plex, Jellyfin, Emby, MiniDLNA or a NAS, shared over DLNA. **Add a network folder** looks for servers, then lets you open folders one level at a time and pick one; the JPEG pictures directly in it are shown, not those in its subfolders. Each picture's label gives its title and year, and the folder and server it is from. Where the server offers several sizes of a picture, the smallest that still fills the screen is fetched. A server that moves to another address on the network is found again. Speakers such as Sonos, which answer as media servers with music only, are left out.
+
+Your pictures, collections and folders take turns: your own every other picture, the collections and folders between them. Under **Showing them**, a new picture comes every 30 seconds, every 1, 2, 5, 10, 15 or 30 minutes, or every hour, either whole on black or filling the screen, and its label (title, artist or photographer, date, and where it is from) shows for 20 seconds after each change, all the time, or not at all. A change applies from the next picture.
+
+Nothing is fetched until a collection or folder is picked. Then the TV fetches one painting at a time from the museum, keeping the next one or two ready, so the screen saver never waits on the network; older ones are deleted. A museum that cannot be reached is said under the settings.
+
+The same pictures can be the [No Signal screen](inputs.md#no-signal-screen) of an input with nothing coming in.
+
+The remote's arrows cannot step the screen saver: the TV ends a screen saver on any key, before Glasshouse can see it, and changing that means changing LG's key handling, which differs between webOS versions. On the No Signal screen they can: left goes back and right goes forward.
+
+For an OLED, each picture drifts slowly across a few dozen pixels while it is up, too slowly to be seen, and the label moves to another corner with each picture. A painting is still a still picture, so keep **Power off after** set, and choose a shorter time between pictures on an OLED.
+
 ### Clock
 
 ![Clock screen saver: digital clock on pure black](../screenshots/screensaver-clock.png)
@@ -45,7 +76,9 @@ Clock with date used to be a screen saver of its own. A TV that had it in use ke
 
 A digital clock, date, and up to three live Home Assistant readings on pure black, using the TV's 12-hour or 24-hour setting. **Readings** switches between **Names and values** and **Values only**, and **Sensor 1**, **Sensor 2**, and **Sensor 3** can be picked from your Home Assistant entities with an optional custom display **Label** (or cleared to hide) once **Home Assistant API** is saved on the **HA & MQTT** tab. The sensors start blank. Sensors left blank or unavailable stay omitted, leaving the clock and date.
 
-![Screensaver tab with Home Assistant: Ambient selected and three entity slots configured](../screenshots/screensaver-ha-ambient-ui.png)
+With either Home Assistant screen saver chosen, the tab says what it reads, and **Screen saver settings** opens a dialog with its options and entities; on a phone it fills the screen.
+
+![Home Assistant: Ambient's settings dialog: Readings and Value colour, then three sensor slots, each with an entity and a label](../screenshots/screensaver-ha-ambient-ui.png)
 
 ### Home Assistant: Data Display
 
@@ -55,7 +88,7 @@ Cycles sequentially through **2 to 100** configured Home Assistant entities one 
 
 Use **Add entity** to search or enter entity IDs, reorder items with the arrow buttons, set an optional custom display **Label** per entry (blank uses Home Assistant's friendly name), pick a **Value colour** (White by default), and choose how quickly entries advance under **Cycle speed** (every 5, 10, 15, 30, or 60 seconds). Requires **Home Assistant API** on the **HA & MQTT** tab.
 
-![Screensaver tab with Home Assistant: Data Display selected and ordered entities configured](../screenshots/screensaver-ha-display-ui.png)
+![Home Assistant: Data Display's settings dialog: Cycle speed and Value colour, then Add entity and the ordered list of entities with their labels](../screenshots/screensaver-ha-display-ui.png)
 
 ### Starfield
 
@@ -134,6 +167,17 @@ A four-dimensional hypercube turning through the fourth dimension, rendered in f
 ![Panel vitals screen saver: OLED hours, refresher countdown, silicon and network readings](../screenshots/screensaver-vitals.png)
 
 A live panel diagnostics dashboard on black, showing the TV's cumulative panel hours, short clean and refresher countdowns, processor silicon, Wi-Fi link quality, and remote battery. The card cluster periodically moves to protect the panel.
+
+### Music highway
+
+A neon track floating in the dark, rising over hills, dipping and banking through bends, with a small spaceship riding it. It moves to whatever the TV is playing: busier music makes the track faster, steeper and more twisting, and turns it from blue toward magenta. Its edges flare on every beat, hardest on the first of each bar; walls of laser beams lean out from both sides of the road and flash on hits; the bass lights the horizon; and blocks in three lanes come for the ship, whose engines flare and throw sparks as it catches them. With nothing playing, the track cruises slowly and dimly, and nothing on the screen ever stands still.
+
+**Blocks** picks how they are placed:
+
+* **On the beat** (the default) follows the music's tempo and reads it the way dance music is written, in bars of four beats and phrases of eight bars. Each block arrives at the craft exactly on an eighth note, in the lane of whatever plays loudest there: kicks on the left, claps and snares in the middle, hi-hats on the right. The track surges on every beat, and a gate across the track marks the start of each phrase. When the bass drops out for a few bars, the track slows, flattens and cools for the breakdown; a build climbs and speeds up, filling every eighth note for its last bars, toward the drop it expects on the next phrase line; and the drop arrives as a big gate with a flash, the track at full speed with its biggest hills and bends. Until the tempo is found, a few seconds into a song, blocks come as in the other mode.
+* **React to each hit** starts a block on each beat or hit as it is heard. It reacts to anything, tempo or not, but its blocks reach the craft a few seconds later, off the beat.
+
+To hear the music, Glasshouse reads the TV's own sound output (what it plays, not a microphone) while this screen saver is on screen, and stops 3 seconds after it closes. The sound is turned into levels and beats as it arrives; none of it is kept or sent anywhere. The TV does not start a screen saver while a video plays, but it does over music apps such as Spotify.
 
 ## Adding your own
 

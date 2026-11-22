@@ -378,6 +378,16 @@ function renderHome() {
     soundSel.disabled = !homeWritable();
     renderHomeNavSound(st);
   }
+  const pointerSel = q('home-pointer-sound-sel');
+  if (pointerSel) {
+    const pointerName = (st.layout && st.layout.pointerSound) || 'off';
+    pointerSel.value = pointerName;
+    // Not shown with no Magic Remote paired to point, and unavailable while the pointer is switched off.
+    const noPointer = st.layout && st.layout.showPointer === false;
+    q('home-pointer-sound-row').hidden = !st.supported.ok || st.remoteBatteryAvailable === false;
+    pointerSel.disabled = !homeWritable() || noPointer;
+    q('home-pointer-sound-play').disabled = noPointer || pointerName === 'off' || (pointerName === 'own' && !(st.layout && st.layout.ownSound));
+  }
   const fadeSel = q('home-card-fade-sel');
   if (fadeSel) {
     fadeSel.value = String(st.layout && typeof st.layout.cardFade === 'number' ? st.layout.cardFade : 20);
@@ -403,6 +413,15 @@ function renderHome() {
     if (searchBlocked) q('home-search-blocked-text').textContent = searchBlocked.by === 'list'
       ? t('home.searchBlockedList', 'Unavailable: the ad blocker\u2019s hosts list blocks {host}, which LG\u2019s search needs, so the search mark is hidden on Glasshouse Home. Take {host} out of the list to use it. This switch keeps its setting.', { host: searchBlocked.host })
       : t('home.searchBlockedLevel', 'Unavailable: the ad blocker\u2019s Everything setting blocks {host}, which LG\u2019s search needs, so the search mark is hidden on Glasshouse Home. Set the ad blocker to Ads & telemetry or off to use it. This switch keeps its setting.', { host: searchBlocked.host });
+  }
+  // On unless switched off, and for webOS 11 only.
+  const wakeRow = q('home-reopen-wake-row');
+  if (wakeRow) wakeRow.hidden = !st.supported.ok || !(parseInt(st.supported.webos, 10) >= 11);
+  const wakeBtn = q('home-reopen-wake');
+  if (wakeBtn) {
+    const on = !st.layout || st.layout.reopenAfterWake !== false;
+    updateToggle(wakeBtn, { cls: on ? 'good' : 'idle', label: on ? t('common.on', 'On') : t('common.off', 'Off') });
+    wakeBtn.disabled = !homeWritable();
   }
   // Fading, as Picture details.
   [['home-fade', 'fade'], ['home-rows-bottom', 'rowsBottom']].forEach(([id, field]) => {
@@ -1234,6 +1253,10 @@ function homeNavSound(v) {
   homeSaveLayout({ navSound: v });
 }
 
+function homePointerSound(v) {
+  homeSaveLayout({ pointerSound: v });
+}
+
 /*
  * The card icons on the TV (lib/home cardIconNames), read once a visit: each
  * app's row picks one of them, or uploads one under its title's name.
@@ -1438,8 +1461,8 @@ function renderHomeNavSound(st) {
 }
 
 let homeNavPreview = null;
-function homeNavSoundPlay() {
-  const name = q('home-nav-sound-sel').value;
+function homeNavSoundPlay(which) {
+  const name = q(which === 'pointer' ? 'home-pointer-sound-sel' : 'home-nav-sound-sel').value;
   if (name === 'off') return;
   if (homeNavPreview) homeNavPreview.pause();
   homeNavPreview = new Audio(api('/api/home/nav-sound?name=' + encodeURIComponent(name) + '&t=' + Date.now()));
@@ -1646,6 +1669,10 @@ async function homeVideoSave() {
     await loadHome();
     renderHomeWalls();
   }
+}
+
+function homeReopenWake() {
+  homeSaveLayout({ reopenAfterWake: homeLayout.reopenAfterWake === false });
 }
 
 function homeRowsBottom() {

@@ -80,8 +80,8 @@ html.resting #wall .layer{-webkit-animation-play-state:paused;animation-play-sta
 #source{-webkit-flex:1 1 auto;flex:1 1 auto;min-width:0;padding-left:24px;border-left:1px solid #2a2825;padding-bottom:2px}
 #source.none{visibility:hidden}
 #srcKind{font-size:23px;color:#e9ad55}
-/* Room below the line for descenders, which overflow:hidden cut at line-height 1 ("g" in "Logik"); the margin gives it back. */
-#srcTitle{font-family:'Outfit',sans-serif;font-size:70px;line-height:1;font-weight:400;letter-spacing:-1px;margin:8px 0 4px;padding-bottom:8px;
+/* Room above and below the line for tall accents and descenders, which overflow:hidden cut at line-height 1 ("g" in "Logik"); the padding makes room while keeping the baseline unchanged. */
+#srcTitle{font-family:'Outfit',sans-serif;font-size:70px;line-height:1;font-weight:400;letter-spacing:-1px;margin:-4px 0 4px;padding:12px 0 8px;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #srcVia{font-size:26px;color:#a39d93}
 
@@ -704,6 +704,8 @@ html.faded #stage{opacity:0}
 body.no-drift #wall .layer{-webkit-animation:none;animation:none}
 body.no-crossfade #wall .layer{-webkit-transition:none;transition:none}
 body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide #folderGrid,body.no-slide #hits{-webkit-transition:none;transition:none}
+/* Outfit lacks Vietnamese horn and stacked-tone glyphs; use Manrope for text headings in Vietnamese. */
+html[lang="vi"] #srcTitle,html[lang="vi"] #plMode,html[lang="vi"] #pvMode,html[lang="vi"] #pvNameTitle,html[lang="vi"] .dev .nm,html[lang="vi"] #recents h2,html[lang="vi"] #recents .empty b,html[lang="vi"] #folder h2,html[lang="vi"] #fault h1,html[lang="vi"] #query,html[lang="vi"] .hit .ttl,html[lang="vi"] .tv .gname,html[lang="vi"] #bdName,html[lang="vi"] #pmsg b,html[lang="vi"] #clGroup,html[lang="vi"] #adder h2,html[lang="vi"] #adQuery{font-family:'Manrope',sans-serif}
 </style>
 </head>
 <body>
@@ -1733,7 +1735,8 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
   }
   function clickAsOk() {
     if (Date.now() - lastOkKeyAt < OK_CLICK_MS) return;
-    var press = { keyCode: KEY.ok, preventDefault: function () {}, stopPropagation: function () {} };
+    soundFrom = 'pointer';
+    var press = { keyCode: KEY.ok, pointer: true, preventDefault: function () {}, stopPropagation: function () {} };
     onKeyDown(press);
     onKeyUp(press);
   }
@@ -1757,6 +1760,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
    */
   function onWheel(e) {
     e.preventDefault();
+    soundFrom = 'pointer';
     if (!data || !layout || layoutBusy || state.held || folder.open) return;
     var d = e.deltaY !== undefined ? e.deltaY : -e.wheelDelta;
     if (e.deltaX && Math.abs(e.deltaX) > Math.abs(d || 0)) d = e.deltaX;
@@ -2206,36 +2210,47 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
    * that follows a key. It plays whenever focus lands on another tile, from a
    * key or from the Magic Remote's pointer.
    */
-  var navAudio = null, navBuffer = null, navBufferFor = '';
+  var navAudio = null, navBuffers = {};
   // key: the sound's name, and for the own sound its revision, so one replaced is loaded again.
   function loadNavSound(name, key) {
-    navBufferFor = key;
-    navBuffer = null;
+    navBuffers[key] = null;
     var x = new XMLHttpRequest();
     x.open('GET', '/api/home/nav-sound?name=' + encodeURIComponent(name) + '&v=' + encodeURIComponent(key));
     x.responseType = 'arraybuffer';
     x.onload = function () {
       if (x.status !== 200 || !navAudio) return;
       try {
-        navAudio.decodeAudioData(x.response, function (b) { if (navBufferFor === key) navBuffer = b; }, function () {});
+        navAudio.decodeAudioData(x.response, function (b) { navBuffers[key] = b; }, function () {});
       } catch (e) {}
     };
     x.send();
   }
-  function navTick() {
-    var name = layout && layout.navSound;
-    if (name !== 'click' && name !== 'rollover' && name !== 'own') return;
+  // The sound's decoded buffer, or null while it loads: the load starts at the first call.
+  function navSoundBuffer(name) {
+    if (name !== 'click' && name !== 'rollover' && name !== 'own') return null;
+    var Ctx = window.AudioContext || window.webkitAudioContext;
+    if (!Ctx) return null;
+    if (!navAudio) navAudio = new Ctx();
+    var key = name === 'own' ? 'own@' + (layout.ownSound ? layout.ownSound.rev : '') : name;
+    if (name === 'own' && !layout.ownSound) return null;
+    if (navBuffers[key] === undefined) loadNavSound(name, key);
+    return navBuffers[key] || null;
+  }
+  // Loaded when Home opens or a choice changes, so the first move already sounds.
+  function preloadNavSounds() {
     try {
-      var Ctx = window.AudioContext || window.webkitAudioContext;
-      if (!Ctx) return;
-      if (!navAudio) navAudio = new Ctx();
+      if (!layout) return;
+      navSoundBuffer(layout.navSound);
+      navSoundBuffer(layout.pointerSound);
+    } catch (e) {}
+  }
+  function playNavSound(name) {
+    try {
+      var buffer = navSoundBuffer(name);
+      if (!buffer) return;
       if (navAudio.state === 'suspended' && navAudio.resume) navAudio.resume();
-      var key = name === 'own' ? 'own@' + (layout.ownSound ? layout.ownSound.rev : '') : name;
-      if (name === 'own' && !layout.ownSound) return;
-      if (navBufferFor !== key) loadNavSound(name, key);
-      if (!navBuffer) return;
       var src = navAudio.createBufferSource();
-      src.buffer = navBuffer;
+      src.buffer = buffer;
       // The bundled sounds at half volume (-6 dB): at full, every move cut
       // through what was playing. An owner's own file plays as they made it.
       if (name === 'own' || !navAudio.createGain) src.connect(navAudio.destination);
@@ -2248,6 +2263,11 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
       src.start(0);
     } catch (e) {}
   }
+  // What moved focus: the keys, or the Magic Remote's pointer and wheel. Each has its own sound.
+  var soundFrom = 'key';
+  function navTick() { playNavSound(layout && (soundFrom === 'pointer' ? layout.pointerSound : layout.navSound)); }
+  // OK and Back always sound, once per press: a move may not follow.
+  var okSoundDown = false, backSoundDown = false;
 
   // Medium or Large beside the clock; in the tile, the tile sets its size.
   function previewSizeClass() {
@@ -4314,7 +4334,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
       var list = groupItems(), listAt = player.group + '|' + player.lcol;
       if (k === KEY.up) player.lcol = Math.max(0, player.lcol - 1);
       else if (k === KEY.down) player.lcol = Math.min(list.length - 1, player.lcol + 1);
-      else if (k === KEY.right) return closeList();
+      else if (k === KEY.right) { navTick(); return closeList(); }
       else if (k === KEY.ok) {
         var pick = list[player.lcol];
         if (pick && pick.id !== playerChannel().id) { closeList(); return zapTo(indexIn(player.items, pick.id)); }
@@ -4334,7 +4354,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     if (k === KEY.down) return zapTo(player.idx - 1);
     // In a recording, left and right go back and forward; OK opens the list.
     if ((k === KEY.left || k === KEY.right) && tsCanSeek()) return tsSeek(k === KEY.left ? TS_STEP_S : -TS_STEP_S);
-    if (k === KEY.left) return openList();
+    if (k === KEY.left) { navTick(); return openList(); }
   }
 
   function otherFormat() { return tvStream.format === 'MPEG-TS' ? 'HLS' : 'MPEG-TS'; }
@@ -5723,9 +5743,13 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
       scheduleBeat(0);
       return;
     }
+    if (!e.pointer) soundFrom = 'key';
     stopPointing();
     landAll();
     if (!data || !layout) return;
+    // OK or Back held repeats on webOS: the sound is made once, at the first press.
+    if (e.keyCode === KEY.ok && !okSoundDown && !finder.typing && !adder.typing) { okSoundDown = true; navTick(); }
+    if (e.keyCode === KEY.back && !backSoundDown) { backSoundDown = true; navTick(); }
     if (player.open) {
       e.preventDefault();
       // OK held repeats on webOS: acted on once, at its first press.
@@ -5804,8 +5828,8 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
   }
 
   function onKeyUp(e) {
-    if (e.keyCode === KEY.back) { backDown = false; return; }
-    if (e.keyCode === KEY.ok) { finder.okDown = false; player.okDown = false; adder.okDown = false; guide.okDown = false; }
+    if (e.keyCode === KEY.back) { backDown = false; backSoundDown = false; return; }
+    if (e.keyCode === KEY.ok) { okSoundDown = false; finder.okDown = false; player.okDown = false; adder.okDown = false; guide.okDown = false; }
     if (player.open || adder.open || guide.open) return;
     if (e.keyCode !== KEY.ok || !okDownAt) return;
     e.preventDefault();
@@ -5829,6 +5853,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
   }
   function onPointer(e) {
     if (pointerOff()) return;
+    soundFrom = 'pointer';
     pointerX = e.clientX;
     pointerY = e.clientY;
     pointing = true;
@@ -7135,6 +7160,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
       data = r;
       loadLineup();
       layout = r.layout;
+      preloadNavSounds();
       if (!searchOn()) { closeSearch(); state.rail = false; }
       setFadeOn(layout.fade === true);
       applyMotion(layout);

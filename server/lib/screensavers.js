@@ -24,6 +24,7 @@ var names = require('./names');
 var saverPowerOff = require('./saverpoweroff');
 var qmlcheck = require('./qmlcheck');
 var homeWallpapers = require('./home-wallpapers');
+var art = require('./art');
 
 var SCREENSAVER_APP_ID = 'com.webos.app.screensaver';
 var SCREENSAVER_APP_DIR = '/usr/palm/applications/' + SCREENSAVER_APP_ID;
@@ -131,7 +132,8 @@ var MAX_SAVER_FILES = 200;
 // What a saver may ask Glasshouse to fill in, and the placeholder for each.
 // "ha" has one placeholder per entity it declares, so it carries no value here.
 // "video-busy" is the address of videoBusy's answer, for a saver that plays video.
-var USES = { level: '__TVWEB_LEVEL__', stats: '__TVWEB_URL__', choice: '__TVWEB_CHOICE__', videos: '__TVWEB_VIDEOS__', 'home-weather': '__TVWEB_HOME_WEATHER__', 'video-busy': '__TVWEB_VIDEO_BUSY__', ha: '', 'ha-list': '__TVWEB_HA_LIST__', 'ha-all': '__TVWEB_HA_ALL__', color: '__TVWEB_COLOR__' };
+// "audio" is the address of the sound output's levels and beat (audiolevels.js).
+var USES = { level: '__TVWEB_LEVEL__', stats: '__TVWEB_URL__', audio: '__TVWEB_AUDIO__', choice: '__TVWEB_CHOICE__', videos: '__TVWEB_VIDEOS__', 'home-weather': '__TVWEB_HOME_WEATHER__', 'video-busy': '__TVWEB_VIDEO_BUSY__', ha: '', 'ha-list': '__TVWEB_HA_LIST__', 'ha-all': '__TVWEB_HA_ALL__', color: '__TVWEB_COLOR__', art: '__TVWEB_ART__' };
 var DEFAULT_SAVER_COLOR = 'white';
 var COLOR_PRESETS = [
   { id: 'white', label: msg('srv.saver.color.white', 'White'), bright: '#ffffff', dim: '#a8aeb6' },
@@ -254,9 +256,13 @@ function readSaver(root, name) {
     }
   }
   e.uses = uses;
-  // The stats address carries the dashboard's access token.
-  if (!root.builtin && uses.indexOf('stats') !== -1) {
+  // The stats and audio addresses carry the dashboard's access token.
+  if (!root.builtin && (uses.indexOf('stats') !== -1 || uses.indexOf('audio') !== -1)) {
     return problem(msg('srv.saver.noStats', 'It asks for the TV\'s readings, which only Glasshouse\'s own screen savers are given.'));
+  }
+  // So does the address of Art's pictures.
+  if (!root.builtin && uses.indexOf('art') !== -1) {
+    return problem(msg('srv.saver.noArt', 'It asks for the picture frame\'s pictures, which only Glasshouse\'s own screen savers are given.'));
   }
   if (m.choices !== undefined) {
     var choices = readChoices(m.choices, id);
@@ -1329,6 +1335,7 @@ function screensaverList() {
       colors: hasColor ? screensaverColorOptions() : undefined,
       // The Video saver's clock, weather and captions, kept with Home's playlist.
       videoStyle: e.id === 'video' ? homeWallpapers.videoSources().style : undefined,
+      art: e.id === 'art' ? art.status() : undefined,
       // Home Assistant entities declared by the saver, with effective overrides.
       entities: e.entities ? Object.keys(e.entities).map(function (k) {
         var lbl = k.replace(/_/g, ' ').replace(/\b\w/g, function (c) { return c.toUpperCase(); });
@@ -1605,6 +1612,10 @@ function fillSaverQml(e, qml, level, choice, effEnts, entityList) {
     qml = qml.replace(/__TVWEB_URL__/g,
       'http://127.0.0.1:' + port + '/api/stats' + (token ? '?k=' + encodeURIComponent(token) : ''));
   }
+  if (e.uses.indexOf('audio') !== -1) {
+    qml = qml.replace(/__TVWEB_AUDIO__/g,
+      'http://127.0.0.1:' + port + '/api/audio/levels' + (token ? '?k=' + encodeURIComponent(token) : ''));
+  }
   effEnts = effEnts || effectiveSaverEntities(e);
   // One address per declared entity, carrying the token like any other read.
   if (effEnts) {
@@ -1637,6 +1648,11 @@ function fillSaverQml(e, qml, level, choice, effEnts, entityList) {
     qml = qml.replace(/__TVWEB_HA_LIST__/g, function () { return listJson; });
   }
   if (e.uses.indexOf('level') !== -1) qml = qml.replace(/__TVWEB_LEVEL__/g, String(tunedLevel(level)));
+  // Art's next picture, asked for each time; the address carries the token.
+  if (e.uses.indexOf('art') !== -1) {
+    var artUrl = 'http://127.0.0.1:' + port + '/api/art/next' + (token ? '?k=' + encodeURIComponent(token) : '');
+    qml = qml.replace(/__TVWEB_ART__/g, function () { return artUrl; });
+  }
   if (e.uses.indexOf('videos') !== -1) {
     var videoJson = JSON.stringify(homeWallpapers.videoSources()).replace(/\u2028/g, '\\u2028').replace(/\u2029/g, '\\u2029');
     qml = qml.replace(/__TVWEB_VIDEOS__/g, function () { return videoJson; });
