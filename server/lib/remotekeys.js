@@ -274,8 +274,11 @@ var KEYS = [
   // the channel. On webOS 11 the filter does not carry it; lib/guidepatch has
   // LG's first key filter take the key (blockCode, the Linux key code) and the
   // press is answered from that filter's own log line (KEY_EVENT).
-  { key: 'channelup', symbol: 'WebOS.Key_webOS_ChannelUp', title: 'Channel up', blockCode: 402 },
-  { key: 'channeldown', symbol: 'WebOS.Key_webOS_ChannelDown', title: 'Channel down', blockCode: 403 },
+  // fromPlugin: offered too where LG's filters leave the key out but the
+  // TV's WebOS module defines it, as on a B8 (webOS 4.4), whose filters name
+  // no channel key though every LG remote has them.
+  { key: 'channelup', symbol: 'WebOS.Key_webOS_ChannelUp', title: 'Channel up', blockCode: 402, fromPlugin: true },
+  { key: 'channeldown', symbol: 'WebOS.Key_webOS_ChannelDown', title: 'Channel down', blockCode: 403, fromPlugin: true },
   { key: 'guide', symbol: 'WebOS.Key_webOS_TVGuide', title: 'Guide' },
   { key: 'input', symbol: 'WebOS.Key_webOS_InputSource', title: 'Input' },
   { key: 'livetv', symbol: 'WebOS.Key_webOS_InputTV', title: 'TV' },
@@ -311,6 +314,10 @@ function barAvailable() { return !!barAppFn && barAllowedFn(); }
 var inputNames = null;
 var stateDir = '/var/lib/tvweb';
 var filtersDir = LG_FILTERS_DIR;
+// The QML module that defines WebOS.Key_webOS_*, for keys LG's own filters do
+// not name (fromPlugin).
+var WEBOS_PLUGIN = '/usr/lib/qt5/qml/WebOS/Global/libwebosglobalplugin.so';
+var webosPlugin = WEBOS_PLUGIN;
 var tvKeys = null;      // the symbols this TV's filters name, read once
 var nativeFilters = null; // whether configd names native filters, once answered
 var switcherFound = null; // whether the TV has INPUT_SWITCHER, once answered
@@ -344,6 +351,7 @@ function init(opts) {
     exec: opts.guideExec, mounts: opts.guideMounts, mountInfo: opts.guideMountInfo, luna: lunaFn,
     profileOverrideDir: opts.profileOverrideDir, profileWaitMs: opts.profileWaitMs, profilePollMs: opts.profilePollMs });
   filtersDir = opts.filtersDir || LG_FILTERS_DIR;
+  webosPlugin = opts.webosPlugin || WEBOS_PLUGIN;
   tvKeys = null;
   nativeFilters = null;
   switcherFound = null;
@@ -398,8 +406,18 @@ function keysOnTv() {
     return null;
   }
   var hasColor = KEYS.some(function (k) { return k.color && src.indexOf(k.symbol) !== -1; });
+  var plugin = null;
+  // Whether the WebOS module defines a key's name, read once and only if needed.
+  function inPlugin(symbol) {
+    if (plugin === null) {
+      try { plugin = fs.readFileSync(webosPlugin).toString('binary'); } catch (e) { plugin = ''; }
+    }
+    return plugin.indexOf(symbol.replace(/^WebOS\./, '') + '\u0000') !== -1;
+  }
   tvKeys = KEYS.filter(function (k) {
-    return !k.nativeOnly && !k.nativeMapping && ((k.color && hasColor) || src.indexOf(k.symbol) !== -1);
+    if (k.nativeOnly || k.nativeMapping) return false;
+    if ((k.color && hasColor) || src.indexOf(k.symbol) !== -1) return true;
+    return !!k.fromPlugin && inPlugin(k.symbol);
   });
   return tvKeys;
 }

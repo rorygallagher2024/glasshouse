@@ -764,9 +764,24 @@ step(function (next) {
         rk.setRemoteKey('channelup', 'lg', '', guard(function () {
           assert.strictEqual(loadFilter().handle(1006, true, false), 'next');
           fs.unlinkSync(path.join(filtersDir, 'channel.js'));
-          rk.init({ luna: luna, stateDir: stateDir, filtersDir: filtersDir });
-          console.log('  ✓ the channel keys are offered only where the filter names them; one set to an app is consumed and opens it, and As LG has it passes it on');
-          next();
+          // A B8 (webOS 4.4): no filter names them, but the WebOS module defines them.
+          var plugin = path.join(stateDir, 'libwebosglobalplugin.so');
+          fs.writeFileSync(plugin, 'x\u0000Key_webOS_ChannelUp\u0000Key_webOS_ChannelDown\u0000Key_webOS_ChannelDash\u0000');
+          rk.init({ luna: luna, stateDir: stateDir, filtersDir: filtersDir, webosPlugin: plugin });
+          rk.getRemoteKeys(guard(function (fromPlugin) {
+            assert.deepEqual(channelKeys(fromPlugin), ['channelup', 'channeldown'], 'offered from the WebOS module where no filter names them');
+            var others = function (r) { return r.keys.map(function (k) { return k.key; }).filter(function (k) { return !/^channel/.test(k); }); };
+            assert.deepEqual(others(fromPlugin), others(without), 'only the channel keys are taken from the module');
+            fs.writeFileSync(plugin, 'x\u0000Key_webOS_ChannelUpX\u0000');
+            rk.init({ luna: luna, stateDir: stateDir, filtersDir: filtersDir, webosPlugin: plugin });
+            rk.getRemoteKeys(guard(function (none) {
+              assert.deepEqual(channelKeys(none), [], 'a longer name is not taken for the key');
+              fs.unlinkSync(plugin);
+              rk.init({ luna: luna, stateDir: stateDir, filtersDir: filtersDir });
+              console.log('  ✓ the channel keys are offered where a filter names them, or else where the WebOS module defines them; one set to an app is consumed and opens it, and As LG has it passes it on');
+              next();
+            }));
+          }));
         }));
       }));
     }));
