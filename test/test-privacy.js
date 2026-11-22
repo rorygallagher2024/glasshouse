@@ -219,7 +219,8 @@ test("switching updates off lifts the Homebrew Channel's layer, and leaves anoth
     // goes over it with that tool's lines and without the update block.
     switchOff(COPY + LGWSS.join('\n') + '\n', HBC_LAYER +
       '1329 1113 179:59 /var/lib/webosbrew/lifesgoodwithoutspying.hosts /etc/hosts rw,nosuid,relatime shared:39 - ext4 /dev/mmcblk0p59 rw,data=ordered\n');
-    assert.deepEqual(ran, ['/bin/mount --bind ' + TABLE + ' /etc/hosts'], "the other tool's layer is not unmounted");
+    assert.deepEqual(ran, ['/bin/mount --make-slave /etc/hosts', '/bin/mount --bind ' + TABLE + ' /etc/hosts'],
+      "the other tool's layer is not unmounted, and the table is kept off its file (#1571)");
     LGWSS.forEach(function (line) { assert.ok(mockEnv.files[TABLE].indexOf(line) !== -1, line + ' was dropped'); });
     UPDATE_HOSTS.forEach(function (host) {
       assert.ok(!sinkholed(mockEnv.files[TABLE], host) && mockEnv.files[TABLE].indexOf(host) === -1, host + ' is still blocked');
@@ -236,6 +237,84 @@ test("switching updates off lifts the Homebrew Channel's layer, and leaves anoth
     delete mockEnv.files[HBC_FLAG];
     delete mockEnv.files[TABLE];
     delete mockEnv.files[MOUNTS];
+    if (saved === undefined) delete mockEnv.files['/etc/hosts'];
+    else mockEnv.files['/etc/hosts'] = saved;
+    privacy.clearCache();
+  }
+});
+
+// #1571: a mount on a shared /etc/hosts reached the file under it too, and
+// switching off put the table back up for other tools' lines.
+test("the table's mount is kept to /etc/hosts, and other tools' lines go back under it on switching off", function () {
+  var TABLE = '/var/lib/tvweb/adblock_hosts', MOUNTS = '/proc/self/mountinfo', ENABLED = '/var/lib/tvweb/adblock_enabled';
+  var saved = mockEnv.files['/etc/hosts'];
+  var LGWS_LAYER = '2008 50 179:59 /var/lib/webosbrew/lifesgoodwithoutspying.hosts /etc/hosts rw,nosuid,relatime shared:39 - ext4 /dev/mmcblk0p59 rw\n';
+  var PRIVATE_LAYER = '2008 50 179:59 /var/lib/webosbrew/lifesgoodwithoutspying.hosts /etc/hosts rw,nosuid,relatime - ext4 /dev/mmcblk0p59 rw\n';
+  var BELOW = '127.0.0.1 localhost\n' + LGWSS.join('\n') + '\n';
+  // LG App Update Blocker's, written into /etc/hosts while the table was up.
+  var ADDED = ['0.0.0.0 snu.lge.com'];
+  var ran = [];
+  // umount uncovers the layer below; mount covers it with the table.
+  privacy.init({ exec: function (file, args, opts, cb) {
+    ran.push([file].concat(args).join(' '));
+    if (file === '/bin/umount') mockEnv.files['/etc/hosts'] = below;
+    cb(null, '', '');
+  } });
+  var below = BELOW;
+  try {
+    // Switched on over a shared layer: made a slave, then bound.
+    mockEnv.files[MOUNTS] = LGWS_LAYER;
+    mockEnv.files['/etc/hosts'] = BELOW;
+    privacy.clearCache();
+    var r1;
+    privacy.setAdBlock('ads', function (r) { r1 = r; });
+    assert.ok(r1 && r1.ok, JSON.stringify(r1));
+    assert.deepEqual(ran, ['/bin/mount --make-slave /etc/hosts', '/bin/mount --bind ' + TABLE + ' /etc/hosts']);
+
+    // Over a layer that shares nothing: bound as before.
+    ran = [];
+    mockEnv.files[MOUNTS] = PRIVATE_LAYER;
+    mockEnv.files['/etc/hosts'] = BELOW;
+    privacy.clearCache();
+    privacy.setAdBlock('ads', function () {});
+    assert.deepEqual(ran, ['/bin/mount --bind ' + TABLE + ' /etc/hosts']);
+
+    // Switched off with another tool's line added to the table: it goes into
+    // the writable layer below, and the table is not mounted again.
+    ran = [];
+    mockEnv.files['/etc/hosts'] = mockEnv.files[TABLE] + ADDED.join('\n') + '\n';
+    below = BELOW;
+    privacy.clearCache();
+    var r2;
+    privacy.setAdBlock('off', function (r) { r2 = r; });
+    assert.ok(r2 && r2.ok, JSON.stringify(r2));
+    assert.deepEqual(ran, ['/bin/umount /etc/hosts'], 'not mounted again: ' + ran.join(', '));
+    ADDED.concat(LGWSS).forEach(function (line) {
+      assert.ok(mockEnv.files['/etc/hosts'].indexOf(line) !== -1, line + ' is not under the table');
+    });
+
+    // Where the layer below cannot be written, the table goes back up, as before.
+    privacy.setAdBlock('ads', function () {});
+    ran = [];
+    mockEnv.files['/etc/hosts'] = mockEnv.files[TABLE] + ADDED.join('\n') + '\n';
+    below = BELOW;
+    privacy.clearCache();
+    var write = fs.writeFileSync;
+    fs.writeFileSync = function (p) {
+      if (p === '/etc/hosts') { var e = new Error('EROFS'); e.code = 'EROFS'; throw e; }
+      return write.apply(fs, arguments);
+    };
+    try {
+      privacy.setAdBlock('off', function () {});
+    } finally {
+      fs.writeFileSync = write;
+    }
+    assert.deepEqual(ran, ['/bin/umount /etc/hosts', '/bin/mount --bind ' + TABLE + ' /etc/hosts']);
+  } finally {
+    privacy.init({ exec: require('child_process').execFile });
+    delete mockEnv.files[TABLE];
+    delete mockEnv.files[MOUNTS];
+    delete mockEnv.files[ENABLED];
     if (saved === undefined) delete mockEnv.files['/etc/hosts'];
     else mockEnv.files['/etc/hosts'] = saved;
     privacy.clearCache();
