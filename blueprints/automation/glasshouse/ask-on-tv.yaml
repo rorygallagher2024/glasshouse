@@ -1,0 +1,204 @@
+blueprint:
+  name: Ask on the TV (Glasshouse)
+  description: >-
+    Shows a yes/no question on an LG TV running Glasshouse when something
+    happens, and runs one set of actions for Yes, another for No and a third
+    when nobody answers. The question can go to phones at the same time;
+    answering on one takes it off the TV.
+
+
+    Needs Glasshouse's MQTT connection to Home Assistant, which gives the TV's
+    Question Answer event entity.
+  domain: automation
+  source_url: https://github.com/rorygallagher2024/glasshouse/blob/main/blueprints/automation/glasshouse/ask-on-tv.yaml
+  homeassistant:
+    min_version: 2024.10.0
+  input:
+    when:
+      name: When
+      icon: mdi:play-circle-outline
+      input:
+        ask_triggers:
+          name: Ask when
+          description: What puts the question on the TV, for example a media player starting to play.
+          selector:
+            trigger: {}
+        ask_conditions:
+          name: Only if
+          description: Conditions that must hold for the question to be asked. Leave empty to always ask.
+          default: []
+          selector:
+            condition: {}
+    question:
+      name: Question
+      icon: mdi:help-box-outline
+      input:
+        answer_entity:
+          name: TV
+          description: The TV's Question Answer event entity, such as event.lg_tv_question_answer.
+          selector:
+            entity:
+              filter:
+                - integration: mqtt
+                  domain: event
+        topic_prefix:
+          name: Topic prefix
+          description: The TV's MQTT topic prefix, as on Glasshouse's Home Assistant tab.
+          default: lgtv
+          selector:
+            text: {}
+        title:
+          name: Question
+          selector:
+            text: {}
+        message:
+          name: Text under the question
+          default: ""
+          selector:
+            text:
+              multiline: true
+        yes_label:
+          name: Yes button
+          default: "Yes"
+          selector:
+            text: {}
+        no_label:
+          name: No button
+          default: "No"
+          selector:
+            text: {}
+        focus_no:
+          name: No focused at first
+          description: Pressing OK straight away answers No instead of Yes.
+          default: false
+          selector:
+            boolean: {}
+        timeout:
+          name: Time to answer
+          description: The question goes away by itself after this long and counts as not answered.
+          default: 30
+          selector:
+            number:
+              min: 5
+              max: 600
+              unit_of_measurement: seconds
+              mode: box
+        phones:
+          name: Also ask on these phones
+          description: Phones with the Home Assistant app. Leave empty to ask on the TV only.
+          default: []
+          selector:
+            device:
+              multiple: true
+              filter:
+                - integration: mobile_app
+    answers:
+      name: Answers
+      icon: mdi:gesture-tap-button
+      input:
+        yes_actions:
+          name: On Yes
+          default: []
+          selector:
+            action: {}
+        no_actions:
+          name: On No
+          default: []
+          selector:
+            action: {}
+        no_answer_actions:
+          name: When nobody answers
+          description: Also when the question is dismissed with Back or the TV could not show it.
+          default: []
+          selector:
+            action: {}
+
+mode: single
+max_exceeded: silent
+
+triggers: !input ask_triggers
+conditions: !input ask_conditions
+
+variables:
+  answer_entity: !input answer_entity
+  topic_prefix: !input topic_prefix
+  title: !input title
+  message: !input message
+  yes_label: !input yes_label
+  no_label: !input no_label
+  focus_no: !input focus_no
+  timeout: !input timeout
+  phones: !input phones
+
+actions:
+  # One id per run: it tells this question's answer from another's on the
+  # same TV, and names the phone notification so it can be cleared.
+  - variables:
+      question_id: "{{ 'ask_' ~ (context.id[-12:] | lower) }}"
+      phone_yes: "{{ 'GLASSHOUSE_YES_' ~ context.id }}"
+      phone_no: "{{ 'GLASSHOUSE_NO_' ~ context.id }}"
+  - action: mqtt.publish
+    data:
+      topic: "{{ topic_prefix }}/command/ask"
+      payload: >-
+        {{ {'id': question_id, 'title': title, 'message': message,
+            'options': [{'id': 'yes', 'label': yes_label}, {'id': 'no', 'label': no_label}],
+            'focus': 1 if focus_no else 0, 'timeout': timeout | int} | to_json }}
+  - repeat:
+      for_each: "{{ phones }}"
+      sequence:
+        - action: "notify.mobile_app_{{ device_attr(repeat.item, 'name') | slugify }}"
+          continue_on_error: true
+          data:
+            title: "{{ title }}"
+            message: "{{ message if message else title }}"
+            data:
+              tag: "{{ question_id }}"
+              actions:
+                - action: "{{ phone_yes }}"
+                  title: "{{ yes_label }}"
+                - action: "{{ phone_no }}"
+                  title: "{{ no_label }}"
+  - wait_for_trigger:
+      # The TV's event entity carries the id of the question it answers.
+      - trigger: template
+        value_template: "{{ state_attr(answer_entity, 'id') == question_id }}"
+      - trigger: event
+        event_type: mobile_app_notification_action
+        event_data:
+          action: "{{ phone_yes }}"
+      - trigger: event
+        event_type: mobile_app_notification_action
+        event_data:
+          action: "{{ phone_no }}"
+    # A little longer than the TV shows it, for its own timeout event to arrive.
+    timeout:
+      seconds: "{{ timeout | int + 10 }}"
+    continue_on_timeout: true
+  - variables:
+      answer: >-
+        {% set t = wait.trigger %}
+        {% if t is none %}none
+        {% elif t.platform == 'event' %}{{ 'yes' if t.event.data.action == phone_yes else 'no' }}
+        {% elif state_attr(answer_entity, 'event_type') == 'answer' %}{{ state_attr(answer_entity, 'choice') }}
+        {% else %}none{% endif %}
+  # Answered on a phone: off the TV, and off the other phones.
+  - action: mqtt.publish
+    data:
+      topic: "{{ topic_prefix }}/command/askClose"
+      payload: "{{ question_id }}"
+  - repeat:
+      for_each: "{{ phones }}"
+      sequence:
+        - action: "notify.mobile_app_{{ device_attr(repeat.item, 'name') | slugify }}"
+          continue_on_error: true
+          data:
+            message: clear_notification
+            data:
+              tag: "{{ question_id }}"
+  - choose:
+      - conditions: "{{ answer == 'yes' }}"
+        sequence: !input yes_actions
+      - conditions: "{{ answer == 'no' }}"
+        sequence: !input no_actions
+    default: !input no_answer_actions

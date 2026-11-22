@@ -3782,6 +3782,8 @@
  "ss.tvOff": {"text": "TV đang tắt. Hãy bật TV để bắt đầu trình bảo vệ màn hình.", "from": "The TV is off. Switch it on to start a screen saver."},
  "home.pointerSound": {"text": "Âm thanh khi di chuyển bằng con trỏ", "from": "Sound when moving with the pointer"},
  "home.pointerSoundDesc": {"text": "Một âm thanh mỗi khi con trỏ hoặc con lăn của Magic Remote di chuyển tiêu điểm, và mỗi khi nhấp: tiếng nhấp, tiếng lướt nhẹ hơn, hoặc âm thanh của riêng bạn.", "from": "A sound each time the Magic Remote's pointer or wheel moves focus, and each time it clicks: a click, a softer rollover, or a sound of your own."},
+ "srv.ask.yes": {"from": "Yes", "text": "Có"},
+ "srv.ask.no": {"from": "No", "text": "Không"},
  "home.info.date": {"from": "{day} {month}", "text": "{day} {month}"},
  "home.info.today": {"from": "today", "text": "hôm nay"},
  "home.info.tomorrow": {"from": "tomorrow", "text": "ngày mai"},
