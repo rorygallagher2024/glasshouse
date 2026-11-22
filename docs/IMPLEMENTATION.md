@@ -518,6 +518,15 @@ proved everything that matters. Certificate verification is never disabled: what
 comes back runs as root on the next restart. If verification fails, the download
 fails immediately and is not passed to subsequent clients, preventing fallbacks
 to BusyBox `wget` implementations that bypass TLS certificate checks.
+A curl that fails verification is tried once more with `--cacert
+lib/ca-roots.pem` in place of the TV's own list: ISRG Root X1 and the two
+USERTrust roots, which GitHub's hosts chain to. The API and `github.com` chain
+to USERTrust, release files on `release-assets.githubusercontent.com` to ISRG
+Root X1, which a 65SM8600 on webOS 4.9.5 did not have: its update check worked
+and every download failed with error 60
+([#1595](https://github.com/rorygallagher2024/glasshouse/issues/1595)). Still
+verified, only against roots that ship with Glasshouse; any other host fails the
+retry as before.
 
 **The directory is updated in place, not swapped.** `/var/lib/tvweb` holds more
 than code — `config.json`, `adblock_hosts`, `adblock_custom.json`, the staged screen saver the boot hook
