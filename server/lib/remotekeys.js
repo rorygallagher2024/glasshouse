@@ -41,8 +41,10 @@
  * handles before any filter sees them. The channel keys are offered where a
  * filter names them (appLaunch.js does on an OLED48C56LB, webOS 10.3.0); a key
  * that is set is accepted by the filter, so only As LG has it keeps LG's channel
- * change. On webOS 11 they are offered through lib/guidepatch (blockCode)
- * instead, since the native filters do not carry them.
+ * change. Where no filter names them, as on a B8 (webOS 4.4), the TV's WebOS
+ * module defining them is enough (fromPlugin). On webOS 11 they are offered
+ * through lib/guidepatch (blockCode) instead, since the native filters do not
+ * carry them.
  *
  * Home: earlier builds of Glasshouse Home pointed it at their own app, kept
  * beside the keys as `home`; lib/home.js clears it. Glasshouse Home now runs

@@ -961,8 +961,11 @@ offered, since the dashboard's own Home screen changes rely on them; volume,
 mute and power are handled by the microcontroller before any filter sees them,
 so there is nothing to change. Channel up and down are offered where the filters
 name `WebOS.Key_webOS_ChannelUp` and `ChannelDown` (appLaunch.js does on an
-OLED48C56LB, webOS 10.3.0); a key that is set is accepted by the filter, so LG's
-channel change no longer happens for it. On webOS 11 the filters do not carry
+OLED48C56LB, webOS 10.3.0), or else where the TV's WebOS module
+(`/usr/lib/qt5/qml/WebOS/Global/libwebosglobalplugin.so`) defines those names:
+a B8 (webOS 4.4) has them there though its filters name no channel key. A key
+that is set is accepted by the filter, so LG's channel change no longer happens
+for it. On webOS 11 the filters do not carry
 them, offering them through `lib/guidepatch` instead (see below).
 
 The compositor reloads only on a change of the key's value: configd says

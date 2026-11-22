@@ -4059,3 +4059,11 @@ so Glasshouse offers the channel keys on webOS 10 and below: a key that is set i
 accepted by the filter, so LG's channel change no longer happens for it. On webOS
 11 the filters no longer carry them (see the OLED48C54LA section above); they are
 offered through `lib/guidepatch` instead.
+
+On a B8 (OLED65B8SLC, webOS 4.4.3), no filter names a channel key (only
+`Key_webOS_ChannelDash`), but the WebOS module
+`/usr/lib/qt5/qml/WebOS/Global/libwebosglobalplugin.so` defines
+`Key_webOS_ChannelUp` and `Key_webOS_ChannelDown`, so Glasshouse's own filter
+can name them. With CH+ set to open the browser, a CH+ press written to the
+remote's input device (`LGE RCU`, event1) brought the browser to the front over
+HDMI 2; set back to As LG has it, the same press left HDMI 2 in front.
