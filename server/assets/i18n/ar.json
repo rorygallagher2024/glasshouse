@@ -3792,7 +3792,8 @@
  "home.info.added": {"text": "أُضيف {name} كسطر {n}.", "from": "Added {name} as line {n}."},
  "home.info.removed": {"text": "حُذف السطر {n}.", "from": "Removed line {n}."},
  "home.info.customise": {"text": "تخصيص", "from": "Customise"},
- "home.board": {"from": "Board", "text": "لوحة النتائج"},
- "home.board.fromHa": {"from": "Sent from Home Assistant", "text": "يرسلها Home Assistant"},
- "home.boardDesc": {"from": "Beside the lines: a list Home Assistant sends, such as today's matches from a sports integration, four lines at a time.", "text": "بجانب الأسطر: قائمة يرسلها Home Assistant، مثل مباريات اليوم من تكامل رياضي، أربعة أسطر في كل مرة."}
+ "home.board": {"text": "Home Assistant: لوحة", "from": "Home Assistant: board"},
+ "home.board.fromHa": {"text": "ترسلها أتمتة", "from": "Sent by an automation"},
+ "home.boardDesc": {"text": "لمستخدمي Home Assistant: قائمة لها عنوان ترسلها أتمتة، مثل مباريات اليوم من تكامل رياضي، تظهر بجانب الساعة في Glasshouse Home أربعة أسطر في كل مرة.", "from": "For Home Assistant users: a titled list an automation sends, such as today's matches from a sports integration, shown beside the clock on Glasshouse Home four lines at a time."},
+ "home.board.haDesc": {"text": "ترسل أتمتة اللوحة إلى كيان Home Board Push في التلفزيون: عنوانًا وحتى عشرين سطرًا، لكل منها تسمية وقيمة. لا يجلب Glasshouse شيئًا لها. يحتوي دليل Home Assistant على مثال.", "from": "An automation sends the board to the TV's Home Board Push entity: a title and up to twenty lines, each with a label and a value. Glasshouse fetches nothing for it. The Home Assistant guide has an example."}
 }

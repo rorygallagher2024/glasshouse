@@ -1700,15 +1700,18 @@
       <div id="home-info-lines"></div>
       <datalist id="home-info-entities"></datalist>
     </div>
-    <div class="prot-row home-gh-row home-show-row" hidden>
+    <div class="prot-row home-gh-row home-show-row" id="home-board-row" hidden>
       <div class="prot-main">
-        <div class="prot-title" data-t="home.board">Board</div>
-        <div class="prot-desc" data-t="home.boardDesc">Beside the lines: a list Home Assistant sends, such as today's matches from a sports integration, four lines at a time.</div>
+        <div class="prot-title" data-t="home.board">Home Assistant: board</div>
+        <div class="prot-desc" data-t="home.boardDesc">For Home Assistant users: a titled list an automation sends, such as today's matches from a sports integration, shown beside the clock on Glasshouse Home four lines at a time.</div>
       </div>
-      <div class="prot-status"><select class="pill-sel" id="home-board-sel" onchange="homeBoardSource(this.value)" aria-label="Board" data-t-aria-label="home.board">
+      <div class="prot-status"><select class="pill-sel" id="home-board-sel" onchange="homeBoardSource(this.value)" aria-label="Home Assistant: board" data-t-aria-label="home.board">
         <option value="off" data-t="common.off">Off</option>
-        <option value="ha" data-t="home.board.fromHa">Sent from Home Assistant</option>
+        <option value="ha" data-t="home.board.fromHa">Sent by an automation</option>
       </select></div>
+    </div>
+    <div class="home-info-panel" id="home-board-panel" hidden>
+      <div class="sub" data-t="home.board.haDesc">An automation sends the board to the TV's Home Board Push entity: a title and up to twenty lines, each with a label and a value. Glasshouse fetches nothing for it. The Home Assistant guide has an example.</div>
     </div>
     <div class="prot-row home-gh-row" id="home-remote-battery-row" hidden>
       <div class="prot-main">

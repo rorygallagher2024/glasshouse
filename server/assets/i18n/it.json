@@ -3806,7 +3806,8 @@
  "home.info.added": {"text": "{name} aggiunto come riga {n}.", "from": "Added {name} as line {n}."},
  "home.info.removed": {"text": "Riga {n} rimossa.", "from": "Removed line {n}."},
  "home.info.customise": {"text": "Personalizza", "from": "Customise"},
- "home.board": {"from": "Board", "text": "Tabellone"},
- "home.board.fromHa": {"from": "Sent from Home Assistant", "text": "Inviato da Home Assistant"},
- "home.boardDesc": {"from": "Beside the lines: a list Home Assistant sends, such as today's matches from a sports integration, four lines at a time.", "text": "Accanto alle righe: un elenco che Home Assistant invia, come le partite di oggi da un'integrazione sportiva, quattro righe alla volta."}
+ "home.board": {"text": "Home Assistant: tabellone", "from": "Home Assistant: board"},
+ "home.board.fromHa": {"text": "Inviato da un’automazione", "from": "Sent by an automation"},
+ "home.boardDesc": {"text": "Per chi usa Home Assistant: un elenco con titolo inviato da un’automazione, come le partite di oggi da un’integrazione sportiva, accanto all’orologio di Glasshouse Home, quattro righe alla volta.", "from": "For Home Assistant users: a titled list an automation sends, such as today's matches from a sports integration, shown beside the clock on Glasshouse Home four lines at a time."},
+ "home.board.haDesc": {"text": "Un’automazione invia il tabellone all’entità Home Board Push del televisore: un titolo e fino a venti righe, ciascuna con un’etichetta e un valore. Glasshouse non scarica nulla per esso. La guida di Home Assistant ha un esempio.", "from": "An automation sends the board to the TV's Home Board Push entity: a title and up to twenty lines, each with a label and a value. Glasshouse fetches nothing for it. The Home Assistant guide has an example."}
 }
