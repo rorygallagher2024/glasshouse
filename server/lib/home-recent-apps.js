@@ -20,7 +20,7 @@ var msg = require('./say').msg;
 
 var SERVICE = 'com.webos.service.recent/';
 // The view and the app it runs as are never offered.
-var LEFT_OUT = ['com.webos.app.home', 'com.tvweb.home', 'com.tvweb.homebar', 'com.tvweb.inputbar'];
+var LEFT_OUT = ['com.webos.app.home', 'com.tvweb.home', 'com.tvweb.homebar', 'com.tvweb.inputbar', 'com.tvweb.ask'];
 var IMAGE_RE = /\.(jpe?g|png)$/i;
 
 var lunaFn = null;

@@ -405,6 +405,47 @@ action:
         ] | to_json }}
 ```
 
+### 8. Ask a question on the TV
+`<topicPrefix>/command/ask` shows a question over the picture with a button for each answer, chosen with the remote's arrows and OK or with the pointer. Back dismisses it, and it goes away by itself after `timeout` seconds (30 unless given, at most 600). The question's app is put on the TV the first time one is asked, which takes a few seconds; after that it opens at once. A question with no `options` gets Yes and No in the TV's language. Like the other commands, it is refused when control is switched off in `config.json`.
+
+For a yes/no question there is a blueprint that needs no YAML: [![Open the blueprint in Home Assistant](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fraw.githubusercontent.com%2Frorygallagher2024%2Fglasshouse%2Fmain%2Fblueprints%2Fautomation%2Fglasshouse%2Fask-on-tv.yaml)
+
+Its form asks what puts the question up, the question and its buttons, how long it waits, which phones to ask at the same time, and what to do on Yes, on No and when nobody answers. An answer on a phone takes the question off the TV and the notification off the other phones. Without the button, import `https://raw.githubusercontent.com/rorygallagher2024/glasshouse/main/blueprints/automation/glasshouse/ask-on-tv.yaml` under **Settings → Automations & scenes → Blueprints**.
+
+The rest of this section is for writing the automation by hand, for more than two answers or a question that needs more than the form has.
+
+The answer fires `event.lg_tv_question_answer`: its event type is `answer` with the chosen option's `id` in its `choice` attribute, or `dismissed`, `timeout`, `replaced` (another question came first), `closed` or `failed` (the TV would not show it). Its `id` attribute is the question's, so one automation can tell its own question from another's. Up to four options; without any, the buttons are Yes and No (`yes`, `no`). `focus` picks the option focused at first, counted from 0.
+
+Sending the question's `id` to `<topicPrefix>/command/askClose` takes it off the screen, with `closed`, as when the same question was answered in a phone notification. An empty payload closes whichever question is up.
+
+```yaml
+alias: "Cinema lights?"
+trigger:
+  - platform: state
+    entity_id: media_player.formuler
+    to: playing
+action:
+  - action: mqtt.publish
+    data:
+      topic: lgtv/command/ask
+      payload: >-
+        {{ {'id': 'cinema', 'title': 'Cinema mode?', 'message': 'Dim the lights by the TV',
+            'options': [{'id': 'yes', 'label': 'Yes'}, {'id': 'no', 'label': 'No'}],
+            'timeout': 25} | to_json }}
+  - wait_for_trigger:
+      - trigger: state
+        entity_id: event.lg_tv_question_answer
+        attribute: event_type
+    timeout: "00:00:35"
+  - condition: template
+    value_template: >-
+      {{ wait.trigger is not none and wait.trigger.to_state.attributes.id == 'cinema'
+         and wait.trigger.to_state.attributes.choice == 'yes' }}
+  - action: scene.turn_on
+    target:
+      entity_id: scene.cinema
+```
+
 ---
 
 ## Universal Media Player Setup

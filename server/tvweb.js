@@ -65,6 +65,7 @@ var doh = require('./lib/doh');
 var quickAccess = require('./lib/quickaccess');
 var remoteKeys = require('./lib/remotekeys');
 var inputBar = require('./lib/inputbar');
+var askQuestion = require('./lib/ask');
 var compat = require('./lib/compat');
 
 /*
@@ -647,6 +648,18 @@ remoteKeys.init({ luna: luna, subscription: lunaTransport.Subscription, services
   homeBarApp: function (action, cb) { tvApp(action, cb, 'homebar-app'); },
   homeBarLauncher: function () { return homebar.enabled(); },
   onHomeBarKey: function () { homebar.keySet(); } });
+// A question on the screen from Home Assistant; the answer goes back to MQTT
+// once the bridge is up (onAskAnswer is set in setupHomeAssistant).
+var onAskAnswer = null;
+askQuestion.init({
+  luna: luna,
+  tvApp: function (action, cb) { tvApp(action, cb, 'ask-app'); },
+  publish: function (ev) {
+    console.log('ask: ' + ev.id + ' ' + ev.event_type + (ev.choice ? ' ' + ev.choice : ''));
+    if (onAskAnswer) onAskAnswer(ev);
+  }
+});
+
 inputBar.init({
   luna: luna,
   webosVersion: telemetry.detectWebosVersion(),
@@ -1104,6 +1117,7 @@ routes.init({
   audioLevels: audioLevels,
   pointer: pointer,
   inputBar: inputBar,
+  ask: askQuestion,
   audio: audioCapabilities,
   btAudio: btAudio,
   clock: clockFormat,
@@ -1290,6 +1304,11 @@ if (CLI_MODE) {
         // A reinstall closes the copy kept loaded, so it is loaded again now
         // rather than at the first press.
         homebar.poke();
+        // The question app, installed at the first question.
+        tvApp('refresh', function (r3) {
+          if (r3 && r3.refreshed && r3.ok) console.log('ask: app refreshed to current release');
+          if (r3 && r3.refreshed) askQuestion.forgetInstalled();
+        }, 'ask-app');
       }, 'homebar-app');
     }, 'inputbar-app');
   });
@@ -1393,6 +1412,10 @@ function setupHomeAssistant() {
       button: button
     });
     mqttClient.publish(mqttTopics.eventsButton, payload, false);
+  };
+  onAskAnswer = function (ev) {
+    if (!mqttClient || !mqttClient.connected) return;
+    mqttClient.publish(mqttTopics.eventsAsk, JSON.stringify(ev), false);
   };
   if (remotebuttons.isSupported()) {
     remotebuttons.want('mqtt', true);
@@ -2072,6 +2095,21 @@ function setupHomeAssistant() {
 
     if (action === 'toast') {
       doControl('toast', val, function() {});
+      return;
+    }
+
+    // A question with buttons (lib/ask.js), answered on events/ask.
+    // Refused with controls off, as doControl refuses the other commands: it
+    // installs and opens an app.
+    if (action === 'ask') {
+      if (!CONFIG.allowControl) return console.error('mqtt: ask failed: ' + msg('srv.controlsOff', 'controls disabled in config'));
+      askQuestion.ask(val, function (r) {
+        if (!r || !r.ok) console.error('mqtt: ask failed: ' + ((r && r.error) || 'unknown error'));
+      });
+      return;
+    }
+    if (action === 'askClose') {
+      askQuestion.close(val);
       return;
     }
 
