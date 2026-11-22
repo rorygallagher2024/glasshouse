@@ -710,7 +710,9 @@ screensavers.init({
   watchPointer: function (on) { if (!on || remotebuttons.isSupported()) remotebuttons.want('saverPointer', on); },
   mediaState: telemetry.readMediaState,
   homeVideoBackground: function () { return !!(glasshouseHome && glasshouseHome.videoBackgroundActive()); },
-  haEntity: haEntity
+  haEntity: haEntity,
+  // The News saver's feeds are those on the Home tab.
+  newsFeeds: glasshouseHome ? function () { return glasshouseHome.newsFeeds(); } : undefined
 });
 idlesaver.init({ luna: luna, mediaState: telemetry.readMediaState,
   homeVideoBackground: function () { return !!(glasshouseHome && glasshouseHome.videoBackgroundActive()); },
@@ -1121,6 +1123,8 @@ routes.init({
   audio: audioCapabilities,
   btAudio: btAudio,
   clock: clockFormat,
+  // The News screen saver's reads; given their fetch with Home's, below.
+  news: require('./lib/news'),
   piccapStatus: piccap.status,
   huesyncStatus: huesync.status,
   keyboardUp: function () {
@@ -2286,11 +2290,15 @@ function startGlasshouseHome() {
   });
   var weather = require('./lib/weather');
   weather.init({ getJson: fetchLib.getJson });
+  var news = require('./lib/news');
+  // A feed is stopped at its size limit as it downloads, not after (lib/fetch).
+  news.init({ fetchFile: function (url, file, cb) { return fetchLib.fetchLimited(url, file, news.FEED_MAX_BYTES, cb); } });
   glasshouseHome.init({
     // webOS 11 with the Home key changed: LG's Home stays drawn under Glasshouse Bar unless it is closed.
     lgHomeUnderBar: remoteKeys.nativeHomeBarOn,
     screensavers: screensavers,
     weather: weather,
+    news: news,
     haEntity: haEntity,
     mqttOn: function () { return !!(CONFIG.mqtt && CONFIG.mqtt.enabled && CONFIG.mqtt.host); },
     // What the dashboard's Remote section shows: the level, the step it stands

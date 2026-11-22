@@ -846,6 +846,12 @@ button.key-hit{background:var(--w10)}
 .ss-card.on .ss-name{color:var(--green)}
 .ss-tag{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--green);margin-left:10px}
 .ss-level-row{margin-top:22px;max-width:760px}
+.ss-leagues-box .sub{margin:4px 0 10px}
+.news-feed-status:empty{display:none}
+.news-feed-status.good{color:var(--green)}
+.news-feed-status.warn{color:var(--cand)}
+.home-crests-row{display:flex;align-items:center;gap:12px;margin-top:14px}
+.home-crests-row label{font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--w60)}
 .ss-head{margin-bottom:0}
 #sspane .ss-head+.ss-split .ss-list,#sspane .ss-head+.ss-split .ss-side{margin-top:26px}
 /* The choice on the left, and what to do with it - brightness, starting it,
@@ -1693,7 +1699,7 @@ footer{margin-top:38px;font-size:13px;letter-spacing:.08em;text-transform:upperc
    clock, added one by one. Each field has its label above and its help under
    it, so nothing has to fit inside the box. */
 .home-info-panel{padding:4px 0 16px;border-bottom:1px solid var(--w06);grid-column:1/-1}
-.home-info-panel #home-info-note{margin-bottom:14px;max-width:62ch}
+.home-info-panel #home-info-note,.home-info-panel .home-info-note{margin-bottom:14px;max-width:62ch}
 .home-info-addbox,.home-info-list{max-width:560px}
 .home-info-addbox .ss-li-head{max-width:none}
 .home-info-addbox .ss-li-add{max-width:none}

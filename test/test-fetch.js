@@ -167,8 +167,37 @@ function retries(done) {
       assert.ok(err && err.offline);
       assert.strictEqual(calls().length, 1);
       console.log('  ✓ wget is not retried');
-      require('child_process').execFile('rm', ['-rf', dir], function () {});
-      done();
+      limits();
+    });
+  }
+
+  // fetchLimited: a file that grows past the limit is stopped and removed,
+  // curl's own refusal (exit 63) reads the same, and a small one comes back.
+  function limits() {
+    var out = path.join(dir, 'feed.xml');
+    reset();
+    // Grows 1000 bytes every 50 ms, to 20000, with no size stated.
+    install('wget', 'o=""; while [ $# -gt 0 ]; do [ "$1" = "-O" ] && o="$2"; shift; done\n' +
+                    'i=0; while [ $i -lt 20 ]; do head -c 1000 /dev/zero >> "$o"; sleep 0.05; i=$((i+1)); done\nexit 0\n');
+    var started = Date.now();
+    fetch.fetchLimited('https://example.org/feed.xml', out, 5000, function (err) {
+      assert.ok(err && err.tooBig, 'stopped as it grew past the limit: ' + (err && err.message));
+      assert.ok(Date.now() - started < 900, 'stopped before the client finished');
+      assert.ok(!fs.existsSync(out), 'and nothing is left of it');
+      fs.unlinkSync(path.join(dir, 'wget'));
+      reset();
+      install('curl', 'case "$*" in *"--max-filesize 5000"*) echo "curl: (63) Maximum file size exceeded" >&2; exit 63;; esac\nexit 1\n');
+      fetch.fetchLimited('https://example.org/feed.xml', out, 5000, function (err2) {
+        assert.ok(err2 && err2.tooBig, "curl's own refusal reads as too big");
+        install('curl', 'o=""; while [ $# -gt 0 ]; do [ "$1" = "-o" ] && o="$2"; shift; done\nprintf "<rss></rss>" > "$o"\nexit 0\n');
+        fetch.fetchLimited('https://example.org/feed.xml', out, 5000, function (err3) {
+          assert.ifError(err3);
+          assert.strictEqual(fs.readFileSync(out, 'utf8'), '<rss></rss>');
+          console.log('  ✓ fetchLimited stops a file at its limit, and lets a small one through');
+          require('child_process').execFile('rm', ['-rf', dir], function () {});
+          done();
+        });
+      });
     });
   }
 }

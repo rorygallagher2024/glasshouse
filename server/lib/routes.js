@@ -89,6 +89,8 @@ var remoteKeysModule = null;
 var homeScreenModule = null;
 /** @type {typeof import('./home')} */
 var homeModule = null;
+/** @type {typeof import('./news')} */
+var newsModule = null;
 /** @type {typeof import('./clock')} */
 var clockModule = null;
 /** @type {typeof import('./home-picture')} */
@@ -1858,6 +1860,34 @@ function handleRequest(req, res) {
     }));
   }
 
+  /* The News screen saver's headlines, from the feeds on the Home tab, with
+     its note worded in the TV's menu language. */
+  if (pathname === '/api/news' && req.method === 'GET') {
+    if (!authed(u.query, req)) return send(res, 401, JSON.stringify({ ok: false, error: 'unauthorised' }));
+    if (!newsModule || !homeModule) return send(res, 503, JSON.stringify({ ok: false, error: 'news is not available' }));
+    var newsLocale = clockModule && clockModule.qtLocale ? clockModule.qtLocale() : '';
+    var newsLang = newsLocale ? say.langOfLocale(newsLocale) : res.glasshouseLang;
+    var newsFeedList = homeModule.newsFeeds();
+    return newsModule.headlines(newsFeedList, function (r) {
+      /** @type {any} */ (r).speed = homeModule.newsSpeed();
+      /** @type {any} */ (r).flipMs = homeModule.newsFlipMs();
+      /** @type {any} */ (r).note = r.items.length ? ''
+        : !newsFeedList.length ? msg('home.news.noFeeds', 'Add news feeds on the Screensaver tab')
+        : msg('home.news.none', 'No headlines yet');
+      /** @type {any} */ (res).glasshouseLang = newsLang;
+      send(res, 200, JSON.stringify(r));
+    });
+  }
+
+  // Each news feed's state for the dashboard: read now if it is due.
+  if (pathname === '/api/news/status' && req.method === 'GET') {
+    if (!authed(u.query, req)) return send(res, 401, JSON.stringify({ ok: false, error: 'unauthorised' }));
+    if (!newsModule || !homeModule) return send(res, 503, JSON.stringify({ ok: false, error: 'news is not available' }));
+    return newsModule.status(homeModule.newsFeeds(), function (list) {
+      send(res, 200, JSON.stringify({ ok: true, feeds: list }));
+    });
+  }
+
   // For a screen saver that plays video: whether an app holds the decoder (#1599).
   if (pathname === '/api/screensaver/video-busy' && req.method === 'GET') {
     if (!authed(u.query, req)) return send(res, 401, JSON.stringify({ ok: false, error: 'unauthorised' }));
@@ -2937,6 +2967,7 @@ function init(opts) {
   if (opts.remoteKeys) remoteKeysModule = opts.remoteKeys;
   if (opts.homeScreen) homeScreenModule = opts.homeScreen;
   if (opts.home) homeModule = opts.home;
+  if (opts.news) newsModule = opts.news;
   if (opts.clock) clockModule = opts.clock;
   if (opts.homePicture) homePictureModule = opts.homePicture;
   if (opts.homeLauncher) homeLauncherModule = opts.homeLauncher;

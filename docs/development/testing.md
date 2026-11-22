@@ -249,7 +249,7 @@ before its first read.
 
 `test-home-video-idle.js` checks that Home's video background fades out and lets the video go after two minutes without a key, that a key plays it again, and that with the TV's screen saver time known it plays until that time and then asks for the screen saver; `test-home.js` that the heartbeat brings that time from LG's settings and that the screen saver is started only with the view in front and the TV awake.
 
-`test-home.js` also checks the lines and the board beside the clock: lines from entities chosen on the dashboard are read through Home Assistant at most every 30 seconds and kept when a read fails, and lines and a board Home Assistant pushes are capped, cleared by an empty push and not shown without MQTT.
+`test-home.js` also checks the lines and the board beside the clock: lines from entities chosen on the dashboard are read through Home Assistant at most every 30 seconds and kept when a read fails, and lines and a board Home Assistant pushes are capped, cleared by an empty push and not shown without MQTT. `test-news.js` checks the news feeds: titles read from RSS 2.0, RSS 1.0 and Atom, decoded and stripped of markup; feeds kept to three http or https addresses; each read every 10 minutes at most, 2 after a failure, keeping its last headlines; and the feeds' headlines taking turns.
 
 `test-home.js` also checks that an input keeps its hiding, place and custom name whether the TV lists the device on its port or not, and that with two devices on a port neither takes a setting kept for the port.
 

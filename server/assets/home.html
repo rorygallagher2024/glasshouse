@@ -183,6 +183,22 @@ html.resting #wall .layer{-webkit-animation-play-state:paused;animation-play-sta
 #wxCredit{position:absolute;right:112px;bottom:12px;font-size:16px;font-weight:300;opacity:.45}
 .alternative #wxCredit{right:90px}
 #wxCredit:empty,.arranging #wxCredit{display:none}
+/* The news strip: one line along the bottom, running right to left. The run
+   is padded by the strip's width so it starts off the right edge, and moves
+   by its own width with that padding, so it ends off the left. */
+#news{position:absolute;left:112px;right:112px;bottom:44px;height:40px;overflow:hidden;white-space:nowrap;font-size:24px;font-weight:300;color:#ece7df}
+#news.none,.arranging #news,.playing #news{display:none}
+#newsRun{display:inline-block;box-sizing:border-box;padding-left:100%;line-height:40px;-webkit-animation:newsRun 60s linear infinite;animation:newsRun 60s linear infinite;
+  /* A layer of its own, moved by the GPU rather than repainted each frame. */
+  will-change:transform;-webkit-backface-visibility:hidden;backface-visibility:hidden}
+#newsRun .src{color:#a39d93;margin-right:.6em}
+#news.flip #newsRun{display:block;padding-left:0;width:auto;overflow:hidden;text-overflow:ellipsis;-webkit-animation:none;animation:none;-webkit-transition:opacity .4s;transition:opacity .4s}
+#newsRun .sep{color:#a39d93;margin:0 1.2em}
+@-webkit-keyframes newsRun{from{-webkit-transform:translate3d(0,0,0)}to{-webkit-transform:translate3d(-100%,0,0)}}
+@keyframes newsRun{from{transform:translate3d(0,0,0)}to{transform:translate3d(-100%,0,0)}}
+.alternative #news{left:90px;right:90px}
+/* The rows end above the strip, so the last one is not run over. */
+.has-news #rows{bottom:96px}
 .alternative #weather{-webkit-order:4;order:4;margin:0 0 0 48px}
 
 /* Lines from Home Assistant (text.lg_tv_home_info): an icon, a label and a
@@ -778,6 +794,7 @@ html[lang="vi"] #srcTitle,html[lang="vi"] #plMode,html[lang="vi"] #pvMode,html[l
 
   <main id="rows"></main>
   <div id="wxCredit"></div>
+  <div id="news" class="none"><div id="newsRun"></div></div>
   <div id="rail"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5 21 21"/></svg><span class="word" data-t="home.search.rail">Search</span></div>
   <section id="finder">
     <div id="ask"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5 21 21"/></svg><input id="query" type="text" autocomplete="off" spellcheck="false" maxlength="80" placeholder="Film or series" data-t-placeholder="home.search.placeholder"></div>
@@ -2157,6 +2174,119 @@ html[lang="vi"] #srcTitle,html[lang="vi"] #plMode,html[lang="vi"] #pvMode,html[l
   var BOARD_PAGE = 4;
   var BOARD_TURN_MS = 8000;
   var shownBoard = null, board = null, boardPage = 0, boardTimer = null;
+
+  /*
+   * The news strip. Eight headlines a run, the next eight the run after, so
+   * the moving line stays a few thousand pixels wide: all of them at once,
+   * up to 45 across three feeds, came to 20,000 and moved in jerks on a C6.
+   * New headlines are taken at the start of a run, so none is cut off on
+   * screen, and a run's time follows its length, at newsSpeed() pixels a second.
+   */
+  var NEWS_SPEEDS = { slow: 60, normal: 100 };
+  function newsSpeed() { return NEWS_SPEEDS[layout && layout.newsSpeed] || NEWS_SPEEDS.slow; }
+  /*
+   * Flipping, the default, shows one headline at a time and fades to the next
+   * after 8 or 6 s: a C6 draws about 49 frames a second of 60 with the strip
+   * running, and each one missed jerks a running line.
+   */
+  var NEWS_FLIP_MS = { slow: 8000, normal: 6000 };
+  var NEWS_FADE_MS = 400;
+  function newsFlips() { return !layout || layout.newsStyle !== 'scroll'; }
+  function newsFlipMs() { return NEWS_FLIP_MS[layout && layout.newsSpeed] || NEWS_FLIP_MS.slow; }
+  var NEWS_BATCH = 8;
+  var newsItems = [], runBoard = [], newsWaiting = null, newsKey = '', newsAt = 0, runAt = 0, runSpeed = 0, newsShown = false;
+  var runFlips = null, flipItems = [], flipAt = 0, flipTimer = null;
+  // The board's lines, when it is put in the strip, open every run and the
+  // headlines take turns after them: a board changes, so it comes round each
+  // run rather than once in every 45 headlines.
+  var stripBoard = [], stripNews = [];
+  function updateStrip() { renderStrip(stripBoard, stripNews); }
+  function renderNews(items) { stripNews = items || []; updateStrip(); }
+  function newsHtml(items) {
+    var parts = [];
+    for (var i = 0; i < items.length; i++) {
+      parts.push('<span class="src">' + esc(items[i].source || '') + '</span>' + esc(items[i].title || ''));
+    }
+    return parts.join('<span class="sep">\u2022</span>');
+  }
+  function startNewsRun() {
+    if (newsWaiting) {
+      runBoard = newsWaiting.board; newsItems = newsWaiting.news; newsWaiting = null;
+      if (newsAt >= newsItems.length) newsAt = 0;
+    }
+    runAt = newsAt;
+    var batch = runBoard.concat(newsItems.slice(newsAt, newsAt + NEWS_BATCH));
+    newsAt = newsAt + NEWS_BATCH >= newsItems.length ? 0 : newsAt + NEWS_BATCH;
+    var run = $('newsRun');
+    clearTimeout(flipTimer); flipTimer = null;
+    runSpeed = newsSpeed();
+    runFlips = newsFlips();
+    $('news').className = runFlips ? 'flip' : '';
+    if (runFlips) {
+      run.style.width = '';
+      flipItems = batch; flipAt = 0;
+      return showFlip(true);
+    }
+    run.style.opacity = '';
+    run.innerHTML = newsHtml(batch);
+    run.style.width = '';
+    // A whole number of pixels, a multiple of 6, so the run lasts a whole
+    // number of milliseconds at 60 and 100 pixels a second and the text is not
+    // put a drifting fraction of a pixel off each frame.
+    var speed = runSpeed;
+    var px = Math.max(Math.ceil(run.getBoundingClientRect().width / 6) * 6, speed * 10);
+    run.style.width = px + 'px';
+    var ms = Math.round(px * 1000 / speed);
+    run.style.webkitAnimationDuration = ms + 'ms';
+    run.style.animationDuration = ms + 'ms';
+    // Restarted from the right edge.
+    run.style.webkitAnimationName = 'none';
+    run.style.animationName = 'none';
+    void run.offsetWidth;
+    run.style.webkitAnimationName = '';
+    run.style.animationName = '';
+  }
+  function renderStrip(boardItems, items) {
+    if (!boardItems.length && !items.length) {
+      if (!newsShown) return;
+      newsShown = false;
+      newsItems = []; runBoard = []; newsWaiting = null; newsKey = ''; newsAt = 0;
+      clearTimeout(flipTimer); flipTimer = null;
+      $('news').className = 'none';
+      $('newsRun').innerHTML = '';
+      stageClass();
+      return;
+    }
+    var key = JSON.stringify([boardItems, items]);
+    if (key !== newsKey) { newsKey = key; newsWaiting = { board: boardItems, news: items }; }
+    if (newsShown) {
+      // Matches put in the strip after a run began start it again with them,
+      // from the same headlines, rather than a run later.
+      if (newsWaiting && boardItems.length && !runBoard.length) { newsAt = runAt; startNewsRun(); }
+      return;
+    }
+    newsShown = true;
+    startNewsRun();
+    stageClass();
+  }
+  function newsRunEnded() {
+    if (!runFlips) startNewsRun();
+  }
+  // One headline, faded in; at the end of the run's headlines the next run.
+  function showFlip(first) {
+    var run = $('newsRun');
+    if (flipAt >= flipItems.length) return startNewsRun();
+    var item = flipItems[flipAt++];
+    function show() {
+      run.innerHTML = newsHtml([item]);
+      run.style.opacity = '1';
+      flipTimer = setTimeout(function () { showFlip(false); }, newsFlipMs());
+    }
+    if (first && !run.innerHTML) return show();
+    run.style.opacity = '0';
+    flipTimer = setTimeout(show, NEWS_FADE_MS);
+  }
+
   function drawBoardPage() {
     var pages = Math.ceil(board.lines.length / BOARD_PAGE);
     if (boardPage >= pages) boardPage = 0;
@@ -2215,16 +2345,30 @@ html[lang="vi"] #srcTitle,html[lang="vi"] #plMode,html[lang="vi"] #pvMode,html[l
       $('boardLines').className = '';
     }, 300);
   }
+  // The board in the strip along the bottom, chosen on the Home tab.
+  function boardInStrip() { return !!layout && layout.boardStrip === true; }
+  var lastBoard = null;
   function renderBoard(b) {
-    var key = b && (b.title || (b.lines && b.lines.length)) ? JSON.stringify(b) : '';
+    lastBoard = b;
+    var key = b && (b.title || (b.lines && b.lines.length)) ? (boardInStrip() ? 'strip ' : '') + JSON.stringify(b) : '';
     if (key === shownBoard) return;
     shownBoard = key;
-    if (!key) {
+    if (!key || boardInStrip()) {
       board = null;
       clearInterval(boardTimer); boardTimer = null;
       $('board').className = 'none';
+      // Each line after its league (or the board's title), as the news runs.
+      stripBoard = [];
+      if (key) {
+        for (var i = 0; i < b.lines.length; i++) {
+          var l = b.lines[i];
+          stripBoard.push({ source: b.title || '', title: (l.label || '') + (l.value ? '  ' + l.value : '') });
+        }
+      }
+      updateStrip();
       return;
     }
+    if (stripBoard.length) { stripBoard = []; updateStrip(); }
     board = { title: b.title || '', lines: b.lines || [] };
     // Shown first: a board not displayed measures nothing.
     $('board').className = '';
@@ -2236,6 +2380,7 @@ html[lang="vi"] #srcTitle,html[lang="vi"] #plMode,html[lang="vi"] #pvMode,html[l
     getJson('/api/home/info', function (r) {
       renderInfo(r && r.ok ? r.lines : null);
       renderBoard(r && r.ok ? r.board : null);
+      renderNews(r && r.ok ? r.news : null);
     });
   }
 
@@ -2503,7 +2648,8 @@ html[lang="vi"] #srcTitle,html[lang="vi"] #plMode,html[lang="vi"] #pvMode,html[l
       (layout && layout.view === 'alternative' ? ' alternative' : '') + (layout && layout.showAppLabels === false ? ' no-app-labels' : '') +
       (cardsOn() ? ' cards' : '') + (layout && layout.focusPulse === true ? ' pulse' : '') +
       (player.open ? ' playing' : '') + (adder.open ? ' adding' : '') +
-      (adder.open && adder.typing ? ' adtyping' : '') + (guide.open ? ' guiding' : '') + previewSizeClass();
+      (adder.open && adder.typing ? ' adtyping' : '') + (guide.open ? ' guiding' : '') + previewSizeClass() +
+      (newsShown ? ' has-news' : '');
     // Home Assistant's media player shows IPTV while the guide or a player is up: told at once, not at the next heartbeat.
     var iptvUp = !!(player.open || guide.open);
     if (iptvUp !== iptvWasUp) { iptvWasUp = iptvUp; beat(); }
@@ -6753,6 +6899,10 @@ html[lang="vi"] #srcTitle,html[lang="vi"] #plMode,html[lang="vi"] #pvMode,html[l
       data = r;
       loadLineup();
       layout = r.layout;
+      // The board and the headlines may have come before the layout that says
+      // where the board goes and how fast the strip runs.
+      if (lastBoard) renderBoard(lastBoard);
+      if (newsShown && (runSpeed !== newsSpeed() || runFlips !== newsFlips())) { newsAt = runAt; startNewsRun(); }
       preloadNavSounds();
       if (!searchOn()) { closeSearch(); state.rail = false; }
       setFadeOn(layout.fade === true);
@@ -6921,6 +7071,7 @@ html[lang="vi"] #srcTitle,html[lang="vi"] #plMode,html[lang="vi"] #pvMode,html[l
         renderWeather(r.weather || null);
         renderInfo(r.info || null);
         renderBoard(r.board || null);
+        renderNews(r.news || null);
         renderRemoteBattery(r.remoteBattery || null);
         // webOS 4: two minutes behind another app, not the screen saver, the
         // view closes itself to give its memory back; Home opens it afresh.
@@ -7064,6 +7215,8 @@ html[lang="vi"] #srcTitle,html[lang="vi"] #plMode,html[lang="vi"] #pvMode,html[l
   load();
   refreshWeather();
   refreshInfo();
+  $('newsRun').addEventListener('webkitAnimationIteration', newsRunEnded);
+  $('newsRun').addEventListener('animationiteration', newsRunEnded);
   setInterval(function () {
     renderNow(); updateWall(); if (!document.hidden) refreshPicture();
     if (guide.open) {

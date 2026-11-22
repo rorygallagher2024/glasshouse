@@ -62,6 +62,9 @@ var WEATHER_SOURCES = ['off', 'ha', 'internet'];
 var INFO_SOURCES = ['off', 'entities', 'ha'];
 // Whether the board beside them shows: off, or a board Home Assistant sends.
 var BOARD_SOURCES = ['off', 'ha'];
+var newsLib = require('./news');
+/** @type {typeof import('./news')} */
+var newsModule = null;
 // The Magic Remote's battery beside the date: never, only once it is low, or always.
 var REMOTE_BATTERY = ['off', 'low', 'always'];
 // At or under this, the badge shows in 'low' and is drawn as low. A remote
@@ -514,6 +517,16 @@ function defaults() {
     info: 'entities',
     infoLines: [],
     board: 'off',
+    // The news strip along the bottom, and the feeds it and the News screen
+    // saver read.
+    news: false,
+    // The board running in the strip along the bottom instead of beside the lines.
+    boardStrip: false,
+    newsFeeds: [],
+    // How fast the strip and the News screen saver run: slow or normal.
+    newsSpeed: 'slow',
+    // One headline at a time (flip), or running right to left (scroll).
+    newsStyle: 'flip',
     // The live preview kept on what was last on whenever the view is on
     // screen, rather than only while a tile is chosen.
     previewAlways: false,
@@ -602,6 +615,9 @@ function defaults() {
   };
 }
 
+// Pixels a second for the running strip at each speed.
+var NEWS_SPEEDS = { slow: 60, normal: 100 };
+
 /*
  * A layout as stored or as sent, made whole: every row once, in a known
  * order, and lists of strings. What it cannot use is
@@ -655,6 +671,11 @@ function normalise(raw) {
   d.info = INFO_SOURCES.indexOf(raw.info) !== -1 ? raw.info : 'entities';
   d.infoLines = infoLinesOf(raw.infoLines);
   d.board = BOARD_SOURCES.indexOf(raw.board) !== -1 ? raw.board : 'off';
+  d.news = raw.news === true;
+  d.boardStrip = raw.boardStrip === true;
+  d.newsFeeds = newsLib.feedsOf(raw.newsFeeds);
+  d.newsSpeed = raw.newsSpeed === 'normal' || raw.newsSpeed === 'fast' ? 'normal' : 'slow';
+  d.newsStyle = raw.newsStyle === 'scroll' ? 'scroll' : 'flip';
   d.rowsBottom = raw.rowsBottom === true;
   d.reopenAfterWake = raw.reopenAfterWake !== false;
   d.view = raw.view === 'alternative' ? 'alternative' : 'standard';
@@ -894,6 +915,11 @@ function setLayout(body, cb) {
     info: body.info !== undefined ? body.info : c.info,
     infoLines: body.infoLines !== undefined ? body.infoLines : c.infoLines,
     board: body.board !== undefined ? body.board : c.board,
+    news: typeof body.news === 'boolean' ? body.news : c.news,
+    boardStrip: typeof body.boardStrip === 'boolean' ? body.boardStrip : c.boardStrip,
+    newsFeeds: body.newsFeeds !== undefined ? body.newsFeeds : c.newsFeeds,
+    newsSpeed: body.newsSpeed !== undefined ? body.newsSpeed : c.newsSpeed,
+    newsStyle: body.newsStyle !== undefined ? body.newsStyle : c.newsStyle,
     previewAlways: typeof body.previewAlways === 'boolean' ? body.previewAlways : c.previewAlways,
     previewInTile: typeof body.previewInTile === 'boolean' ? body.previewInTile : c.previewInTile,
     previewSize: body.previewSize !== undefined ? body.previewSize : c.previewSize,
@@ -1042,7 +1068,7 @@ function layoutOf(c) {
     searchHintSeen: c.searchHintSeen, picture: c.picture, livePreview: c.livePreview, search: c.search, recommended: c.recommended,
     fade: c.fade, wallDrift: c.wallDrift, wallCrossfade: c.wallCrossfade, smoothScroll: c.smoothScroll, slidePanels: c.slidePanels,
     darkening: c.darkening, hideUnused: c.hideUnused, showMediaServers: c.showMediaServers, deviceNames: devNamesNow(c.deviceNames), appNames: c.appNames, appCards: c.appCards, focusPulse: c.focusPulse, navSound: c.navSound, pointerSound: c.pointerSound, ownSound: ownSoundInfo(), cardFade: c.cardFade, appIcons: c.appIcons, inputBarTransparent: c.inputBarTransparent, inputBarSwitchOnOk: c.inputBarSwitchOnOk, showClock: c.showClock, rowsBottom: c.rowsBottom, view: c.view,
-    showLastOn: c.showLastOn, showAppCount: c.showAppCount, showAppLabels: c.showAppLabels, showCec: c.showCec, showTvLogos: c.showTvLogos, showPointer: c.showPointer, reopenAfterWake: c.reopenAfterWake, weather: c.weather, weatherPlace: c.weatherPlace, info: c.info, infoLines: c.infoLines, board: c.board, previewAlways: c.previewAlways, previewInTile: c.previewInTile, previewSize: c.previewSize, previewSound: c.previewSound, wallAnim: c.wallAnim,
+    showLastOn: c.showLastOn, showAppCount: c.showAppCount, showAppLabels: c.showAppLabels, showCec: c.showCec, showTvLogos: c.showTvLogos, showPointer: c.showPointer, reopenAfterWake: c.reopenAfterWake, weather: c.weather, weatherPlace: c.weatherPlace, info: c.info, infoLines: c.infoLines, board: c.board, boardStrip: c.boardStrip, news: c.news, newsFeeds: c.newsFeeds, newsSpeed: c.newsSpeed, newsStyle: c.newsStyle, previewAlways: c.previewAlways, previewInTile: c.previewInTile, previewSize: c.previewSize, previewSound: c.previewSound, wallAnim: c.wallAnim,
     remoteBattery: c.remoteBattery,
     animTheme: c.animTheme, animSky: c.animSky, animLight: c.animLight, animThemes: ANIM_THEMES,
     wallShuffleMinutes: c.wallShuffleMinutes, shuffleMinutes: SHUFFLE_MINUTES, colours: c.colours,
@@ -2141,7 +2167,22 @@ function currentBoard() {
 
 function info(cb) {
   refreshEntityInfo();
-  cb({ ok: true, lines: currentInfo(), board: currentBoard() });
+  refreshNews();
+  cb({ ok: true, lines: currentInfo(), board: currentBoard(), news: currentNews() });
+}
+
+// The feeds due a read, fetched in the background while the strip is shown.
+function refreshNews() {
+  var c = readConfig();
+  if (!c.news || !c.newsFeeds.length || !newsModule || !powerActive) return;
+  newsModule.refresh(c.newsFeeds);
+}
+
+// The strip's headlines as last read, or null with the strip off.
+function currentNews() {
+  var c = readConfig();
+  if (!c.news || !c.newsFeeds.length || !newsModule) return null;
+  return newsModule.cached(c.newsFeeds).items;
 }
 
 function loadWeather() {
@@ -3431,7 +3472,7 @@ function beat(body) {
   // Whether Internet TV is in front, its guide or a player: Home Assistant's media player shows IPTV then.
   if (iptvModule && body && typeof body.iptv === 'boolean') iptvModule.front(body.iptv && viewInFront());
   beats++;
-  if (viewInFront()) { watchBeat(beatGraceMs); refreshEntityInfo(); }
+  if (viewInFront()) { watchBeat(beatGraceMs); refreshEntityInfo(); refreshNews(); }
   var saver = powerState === 'Screen Saver' || !!(screensaversModule && screensaversModule.launchedShowing());
   // As last seen: the reply does not wait for videooutput.
   var onScreen = wallVideoOnScreen;
@@ -3441,7 +3482,7 @@ function beat(body) {
            build: buildId, wallpapers: wallpapers.status(),
            layoutVersion: layoutVersion(), sleeps: sleeps, trace: fs.existsSync(traceFile()),
            // So a push shows within a heartbeat rather than at the next poll.
-           weather: currentWeather(), remoteBattery: remoteBatteryBadge(), info: currentInfo(), board: currentBoard() };
+           weather: currentWeather(), remoteBattery: remoteBatteryBadge(), info: currentInfo(), board: currentBoard(), news: currentNews() };
 }
 
 /*
@@ -4064,6 +4105,7 @@ function init(opts) {
   weatherModule = opts.weather || null;
   haEntityModule = opts.haEntity || null;
   mqttOnFn = typeof opts.mqttOn === 'function' ? opts.mqttOn : function () { return false; };
+  newsModule = opts.news || null;
   homeBoard = null;
   entityInfo = null;
   entityInfoAt = 0;
@@ -4318,8 +4360,25 @@ function stop() {
   recent.flush();
 }
 
+// The feeds, which the News screen saver shares.
+function newsFeeds() { return readConfig().newsFeeds.slice(); }
+
+function newsSpeed() { return NEWS_SPEEDS[readConfig().newsSpeed] || NEWS_SPEEDS.slow; }
+
+// How long each headline shows when flipping, by the same choice.
+var NEWS_FLIP_MS = { slow: 8000, normal: 6000 };
+
+function newsFlipMs() { return readConfig().newsStyle === 'scroll' ? 0 : NEWS_FLIP_MS[readConfig().newsSpeed] || NEWS_FLIP_MS.slow; }
+
+function setNewsFeeds(list, cb) { setLayout({ newsFeeds: list }, cb); }
+
 module.exports = {
   LG_HOME: LG_HOME,
+  newsFeeds: newsFeeds,
+  newsSpeed: newsSpeed,
+  newsFlipMs: newsFlipMs,
+  setNewsFeeds: setNewsFeeds,
+
   viewInFront: viewInFront,
   barOpened: barOpened,
   reopenAfterCompositor: reopenAfterCompositor,

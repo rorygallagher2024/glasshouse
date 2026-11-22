@@ -598,7 +598,13 @@ Icons are [Material Design Icons](https://pictogrammers.com/library/mdi/) names,
 Beside the lines, a board of up to twenty lines that Home Assistant sends, shown four at a time, turning to the next four every 8 seconds, with a page count by its title. It keeps one width as the pages turn, that of its longest line, and a line too long for it slides to show its end and back. For Home Assistant users, and offered only with MQTT set up, as Home Assistant sends the board over it. The setting chooses whether it shows:
 
 * **Sent by an automation:** whatever was last written to the `text.lg_tv_home_board` entity, `{"title":"Football today","minutes":10,"lines":[{"label":"Arsenal 2–1 Chelsea","value":"67'"}]}`. It is not kept across a restart, and with `minutes` it goes that long after the last push. An empty value takes it away at once. Glasshouse fetches nothing for it: the matches, or anything else, come from an integration of the owner's choice, such as a sports one, through an automation that writes the entity. [Home Assistant](../HOME-ASSISTANT.md#9-a-board-on-glasshouse-home) has an example.
+
+  **Shown** puts the board **Beside the lines** (default) or **Running along the bottom**: there its lines open every run of the strip the news uses, with the next headlines after them, so a changed line comes round within a run. The strip shows even with the news off.
 * **Off (default).**
+
+### News strip
+
+Along the bottom, below the rows: the headlines of up to three news feeds, each after its source, on one line, eight headlines a run and the next eight the run after. The **News strip** setting turns it on. **Add a feed** takes a feed's address (RSS 2.0, RSS 1.0 or Atom, such as `https://www.svt.se/rss.xml`), up to three, and each feed's card then says whether it was read and how many headlines it gave, or why not: it could not be read, it is not a feed, or it is over 2 MB, which stops its download there. Feeds can be moved or removed, and **Customise** gives one a name to show in place of its own. The feeds take turns, up to fifteen headlines from each. Each feed is read every 10 minutes at most while the strip is on screen, and new headlines join at the end of a run, so none is cut off. The [News screen saver](screen-savers.md#news) reads the same feeds. **Headlines** shows them **One at a time** (default), each for a few seconds and fading to the next, or **Running** right to left. **Speed** is **Slow** (default) or **Normal**: 8 or 6 seconds a headline, or 60 or 100 pixels a second. Both apply to the board's matches when they are in the strip, and to the News screen saver. Running is less smooth on TVs whose browser cannot draw every frame, such as a C6.
 
 ### Remote battery
 
