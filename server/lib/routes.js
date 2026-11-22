@@ -89,6 +89,8 @@ var remoteKeysModule = null;
 var homeScreenModule = null;
 /** @type {typeof import('./home')} */
 var homeModule = null;
+/** @type {typeof import('./news')} */
+var newsModule = null;
 /** @type {typeof import('./clock')} */
 var clockModule = null;
 /** @type {typeof import('./home-picture')} */
@@ -107,6 +109,8 @@ var audioLevelsModule = null;
 var haEntityModule = null;
 /** @type {typeof import('./inputbar')} */
 var inputBarModule = null;
+/** @type {typeof import('./ask')} */
+var askModule = null;
 /** @type {typeof import('./updater')} */
 var updaterModule = null;
 /** @type {typeof import('./logs')} */
@@ -681,6 +685,11 @@ function preloadWithIcons(cb) {
  * the order listed, so they behave as one script: a function declared in any
  * of them can be called from the others. Returns the page, or null with
  * UI_MISSING set to the part that could not be read.
+ *
+ * A line may end in CR LF: Git for Windows checks ui.html out that way, and
+ * deploy.sh copies it as it is. Matched on LF alone, the page went out with
+ * its scripts left as files, which a browser keeps from before an update, so
+ * the dashboard showed new controls driven by old script.
  */
 function inlineUI(html) {
   var missing = null;
@@ -692,10 +701,10 @@ function inlineUI(html) {
     if (!missing) missing = rel;
     return '';
   }
-  html = html.replace(/<link rel="stylesheet" href="\/assets\/(ui\/[\w-]+\.css)">\n/g, function (m, rel) {
+  html = html.replace(/<link rel="stylesheet" href="\/assets\/(ui\/[\w-]+\.css)">\r?\n/g, function (m, rel) {
     return '<style>\n' + part(rel) + '</style>\n';
   });
-  html = html.replace(/(?:<script src="\/assets\/ui\/[\w-]+\.js"><\/script>\n)+/g, function (run) {
+  html = html.replace(/(?:<script src="\/assets\/ui\/[\w-]+\.js"><\/script>\r?\n)+/g, function (run) {
     var scripts = run.match(/ui\/[\w-]+\.js/g);
     return '<script>\n' + scripts.map(part).join('') + '</script>\n';
   });
@@ -837,6 +846,16 @@ function authed(q, req) {
   // token (there is no login prompt on a TV remote).  A process on the TV
   // already has root, so the token adds nothing for local requests.
   return !!(req && fromTV(req));
+}
+
+// The TV's menu language as a language file names it (sv, pt-br), or null
+// with no file for it or before the TV has said.
+function tvLang() {
+  var locale = clockModule && clockModule.qtLocale ? String(clockModule.qtLocale() || '') : '';
+  if (!locale) return null;
+  var parts = locale.toLowerCase().split(/[_-]/);
+  var ask = function (code) { return say.langOf({ headers: { 'x-glasshouse-lang': code } }); };
+  return (parts[1] && ask(parts[0] + '-' + parts[1])) || ask(parts[0]);
 }
 
 // A request made on the TV itself - the on-TV app, or anything else running
@@ -1330,6 +1349,7 @@ function handleHomeRoute(req, res, u, pathname) {
     // Glasshouse Bar's page, as it opens: whether LG's Home is drawn under it, to be covered.
     if (pathname === '/api/home/bar-open') return reply({ ok: true, lgHomeUnder: homeModule.barOpened() });
     if (pathname === '/api/home/weather') return homeModule.weather(reply);
+    if (pathname === '/api/home/info') return homeModule.info(reply);
     if (pathname === '/api/home/weather/places') {
       return homeModule.weatherPlaces(String(u.query && u.query.q || ''), String(u.query && u.query.lang || ''), reply);
     }
@@ -1839,6 +1859,34 @@ function handleRequest(req, res) {
       noSignal: nosignal.status(),
       inputBar: inputBarModule ? inputBarModule.summary() : null
     }));
+  }
+
+  /* The News screen saver's headlines, from the feeds on the Home tab, with
+     its note worded in the TV's menu language. */
+  if (pathname === '/api/news' && req.method === 'GET') {
+    if (!authed(u.query, req)) return send(res, 401, JSON.stringify({ ok: false, error: 'unauthorised' }));
+    if (!newsModule || !homeModule) return send(res, 503, JSON.stringify({ ok: false, error: 'news is not available' }));
+    var newsLocale = clockModule && clockModule.qtLocale ? clockModule.qtLocale() : '';
+    var newsLang = newsLocale ? say.langOfLocale(newsLocale) : res.glasshouseLang;
+    var newsFeedList = homeModule.newsFeeds();
+    return newsModule.headlines(newsFeedList, function (r) {
+      /** @type {any} */ (r).speed = homeModule.newsSpeed();
+      /** @type {any} */ (r).flipMs = homeModule.newsFlipMs();
+      /** @type {any} */ (r).note = r.items.length ? ''
+        : !newsFeedList.length ? msg('home.news.noFeeds', 'Add news feeds on the Screensaver tab')
+        : msg('home.news.none', 'No headlines yet');
+      /** @type {any} */ (res).glasshouseLang = newsLang;
+      send(res, 200, JSON.stringify(r));
+    });
+  }
+
+  // Each news feed's state for the dashboard: read now if it is due.
+  if (pathname === '/api/news/status' && req.method === 'GET') {
+    if (!authed(u.query, req)) return send(res, 401, JSON.stringify({ ok: false, error: 'unauthorised' }));
+    if (!newsModule || !homeModule) return send(res, 503, JSON.stringify({ ok: false, error: 'news is not available' }));
+    return newsModule.status(homeModule.newsFeeds(), function (list) {
+      send(res, 200, JSON.stringify({ ok: true, feeds: list }));
+    });
   }
 
   // For a screen saver that plays video: whether an app holds the decoder (#1599).
@@ -2511,6 +2559,14 @@ function handleRequest(req, res) {
     });
   }
 
+  if (pathname === '/api/apps/close' && req.method === 'POST') {
+    return readJsonBody(req, res, function (body) {
+      appsModule.closeRunningApp(body || {}, function (r) {
+        send(res, r && r.ok ? 200 : 400, JSON.stringify(r));
+      });
+    });
+  }
+
   if ((pathname === '/api/apps/hide' || pathname === '/api/apps/unhide') && fromHomebrewChannel()) {
     return send(res, 400, JSON.stringify({ ok: false, error: tileHidingOffMsg }));
   }
@@ -2594,6 +2650,23 @@ function handleRequest(req, res) {
       if (typeof body.banner === 'string') return homeScreenModule.setBanner(body.banner, done);
       if (typeof body.input === 'string') return homeScreenModule.setInput(body.input, !!body.onHome, done);
       done({ ok: false, error: 'part, banner, input or restore expected' });
+    });
+  }
+
+  // The question app (lib/ask.js), only from the TV and only with the
+  // question's token. The card is worded in the TV's language: it shows over
+  // the picture, not on a dashboard that says which it wants.
+  if ((pathname === '/api/ask/current' || pathname === '/api/ask/answer') && askModule) {
+    if (!fromTV(req)) return send(res, 403, JSON.stringify({ ok: false, error: 'only from the TV' }));
+    if (pathname === '/api/ask/current') {
+      var askLang = tvLang();
+      if (askLang) /** @type {any} */ (res).glasshouseLang = askLang;
+      return send(res, 200, JSON.stringify({ ok: true, question: askModule.current(String((u.query || {}).token || '')) }));
+    }
+    if (req.method !== 'POST') return send(res, 405, JSON.stringify({ ok: false, error: 'POST only' }));
+    return readJsonBody(req, res, function (body) {
+      var taken = askModule.answer(String(body.token || ''), String(body.choice || ''), String(body.how || ''));
+      send(res, 200, JSON.stringify({ ok: true, taken: taken }));
     });
   }
 
@@ -2903,6 +2976,7 @@ function init(opts) {
   if (opts.remoteKeys) remoteKeysModule = opts.remoteKeys;
   if (opts.homeScreen) homeScreenModule = opts.homeScreen;
   if (opts.home) homeModule = opts.home;
+  if (opts.news) newsModule = opts.news;
   if (opts.clock) clockModule = opts.clock;
   if (opts.homePicture) homePictureModule = opts.homePicture;
   if (opts.homeLauncher) homeLauncherModule = opts.homeLauncher;
@@ -2912,6 +2986,7 @@ function init(opts) {
   if (opts.audioLevels) audioLevelsModule = opts.audioLevels;
   if (opts.haEntity) haEntityModule = opts.haEntity;
   if (opts.inputBar) inputBarModule = opts.inputBar;
+  if (opts.ask) askModule = opts.ask;
   if (opts.updater) updaterModule = opts.updater;
   if (opts.logs) logsModule = opts.logs;
   if (opts.tvApp) tvAppFn = opts.tvApp;

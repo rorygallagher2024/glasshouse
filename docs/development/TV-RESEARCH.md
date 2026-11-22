@@ -4041,3 +4041,29 @@ unavailable and closes. On this TV, setting it to `false` removed both at
 once, without restarting anything, and `true` brought them back.
 LG has no brightness bar to copy; the level bar of a Brightness key takes this
 layout.
+
+## Live audio decoder state under `/proc/lg/amst0` (B8, webOS 4.4.3)
+
+Measured on 22 November 2026 on an OLED65B8SLC (`05.50.70`) while Spotify (`spotify-beehive`) played in the foreground. The TV answers `Unknown method` for `com.webos.service.audio/tv/getAudioInputProperty` and has no `/proc/lgtv-driver/audio` files, while `/proc/lg/amst0/` exposes DSP decoder and renderer state:
+
+- `/proc/lg/amst0/status` reports `Main Decoder : 1`.
+- `/proc/lg/amst0/dec0/status` (idle HDMI 2) reports `bStarted: OFF`, `codec: AUD_CODEC_UNKNOWN`, `samplingFreq: 0`.
+- `/proc/lg/amst0/dec1/status` (active Spotify) reports `bStarted: ON`, `input: AUD_INPUT_SYSTEM`, `codec: AUD_CODEC_AAC`, `samplingFreq: 44100`, `avgBitRate: 128000`.
+- `/proc/lg/amst0/ren{0,1}/status` report `bStarted`, `input` (`AUD_INPUT_HDMI2`, `AUD_INPUT_SYSTEM`), `bSetMainRen`, and `samplingFreq`.
+
+## The channel keys reach the JavaScript key filter (OLED48C56LB, webOS 10.3.0)
+
+On an OLED48C56LB (webOS 10.3.0, firmware 33.30.80), `appLaunch.js` and
+`systemUi.js` name `WebOS.Key_webOS_ChannelUp` and `WebOS.Key_webOS_ChannelDown`,
+so Glasshouse offers the channel keys on webOS 10 and below: a key that is set is
+accepted by the filter, so LG's channel change no longer happens for it. On webOS
+11 the filters no longer carry them (see the OLED48C54LA section above); they are
+offered through `lib/guidepatch` instead.
+
+On a B8 (OLED65B8SLC, webOS 4.4.3), no filter names a channel key (only
+`Key_webOS_ChannelDash`), but the WebOS module
+`/usr/lib/qt5/qml/WebOS/Global/libwebosglobalplugin.so` defines
+`Key_webOS_ChannelUp` and `Key_webOS_ChannelDown`, so Glasshouse's own filter
+can name them. With CH+ set to open the browser, a CH+ press written to the
+remote's input device (`LGE RCU`, event1) brought the browser to the front over
+HDMI 2; set back to As LG has it, the same press left HDMI 2 in front.

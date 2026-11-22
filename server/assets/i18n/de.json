@@ -805,7 +805,6 @@
     "from": "Nightly refresh reboot turned off"
   },
  "ha.api": {"text": "Home Assistant-API", "from": "Home Assistant API"},
- "ha.api.desc": {"text": "Aktiviert die Home Assistant-Bildschirmschoner (Ambient und Datenanzeige) auf dem Tab Bildschirmschoner zur Anzeige von Live-Entitäten aus Home Assistant. Verbindet sich direkt per HTTP/HTTPS ohne MQTT und speichert ohne Neustart.", "from": "Enables the Home Assistant screen savers (Ambient and Data Display) on the Screensaver tab to show live Home Assistant entities. Connects straight to Home Assistant over HTTP/HTTPS without using MQTT, and saves without restarting."},
  "ha.connected": {"text": "Verbunden: {msg}", "from": "Connected: {msg}"},
  "ha.test": {"text": "Verbindung testen", "from": "Test connection"},
  "ha.testFailed": {"text": "Verbindung fehlgeschlagen", "from": "Connection failed"},
@@ -856,8 +855,8 @@
  "ss.entityList.remove": {"text": "Entfernen", "from": "Remove"},
  "ss.entityList.statusNeedMore": {"text": "Fügen Sie mindestens {min} Entitäten hinzu ({count} von {max} eingerichtet). Wechselt der Reihe nach und verschiebt Pixel bei jedem Wechsel zum OLED-Schutz.", "from": "Add at least {min} entities ({count} of {max} configured). Cycles in order and shifts pixels on every change to prevent OLED burn-in."},
  "ss.entityList.statusReady": {"text": "Wechselt der Reihe nach durch {count} von {max} Entitäten. Feld leer lassen, um den Home Assistant-Namen zu nutzen.", "from": "Cycling through {count} of {max} entities in order. Leave a label blank to use the Home Assistant name."},
- "ha.enabled.off": {"text": "Ausgeschaltet. Home Assistant-Bildschirmschoner sind deaktiviert, Adresse und Token bleiben gespeichert.", "from": "Turned off. Home Assistant screen savers are disabled while keeping your saved address and token."},
- "ha.enabled.on": {"text": "Bildschirmschoner können eingerichtete Home Assistant-Entitäten lesen.", "from": "Screen savers can read configured Home Assistant entities."},
+ "ha.enabled.off": {"text": "Ausgeschaltet. Die Home-Assistant-Bildschirmschoner und die aus Entitäten gelesenen Werte auf einen Blick sind nicht verfügbar. Adresse und Token bleiben gespeichert.", "from": "Turned off. The Home Assistant screen savers and the values at a glance read from entities are unavailable. The saved address and token are kept."},
+ "ha.enabled.on": {"text": "Glasshouse kann die Home-Assistant-Entitäten lesen, die für die Bildschirmschoner und für die Werte auf einen Blick auf Glasshouse Home gewählt sind.", "from": "Glasshouse can read the Home Assistant entities chosen for its screen savers and for the values at a glance on Glasshouse Home."},
  "ha.savedOff": {"text": "Gespeichert (Home Assistant-API ist ausgeschaltet).", "from": "Saved (Home Assistant API is turned off)."},
  "ha.status.checking": {"text": "Wird geprüft...", "from": "Checking..."},
  "srv.saver.color.amber": {"text": "Bernstein", "from": "Amber"},
@@ -1015,6 +1014,7 @@
  "rp.standby": {"text": "Der Fernseher ist im Standby. Schalten Sie ihn ein, um die Fernbedienung zu nutzen.", "from": "The TV is in standby. Power on to use the remote."},
  "apps.remoteKeys.guideNative": {"text": "Bei diesem Fernseher braucht die Guide-Taste eine Änderung an LGs Tastenverwaltung. Beim Einstellen startet der Bildschirm einmal neu, danach bei jedem Start des Fernsehers erneut.", "from": "On this TV the Guide key needs a change to LG’s key handler. Setting it restarts the TV’s screen once, and again each time the TV starts."},
  "apps.remoteKeys.inputNative": {"text": "Bei diesem Fernseher braucht die Input-Taste eine Änderung an LGs Tastenverwaltung. Beim Einstellen und beim Zurücksetzen auf LGs Liste startet der Bildschirm einmal neu, und die Änderung wird bei jedem Start des Fernsehers erneut vorgenommen.", "from": "On this TV the Input key needs a change to LG’s key handler. Setting it, or setting it back to LG’s list, restarts the TV’s screen once, and the change is made again each time the TV starts."},
+ "apps.remoteKeys.channel": {"text": "Kanaltasten", "from": "Channel keys"},
  "apps.remoteKeys.channelNative": {"text": "Bei diesem Fernseher brauchen die Kanaltasten eine Änderung an LGs Tastenverwaltung. Beim Einstellen einer Taste, oder beim Zurücksetzen einer Taste auf „Wie von LG“, startet der Bildschirm einmal neu, und die Änderung wird bei jedem Start des Fernsehers erneut vorgenommen. Solange sie eingestellt ist, wechselt die Taste keinen Kanal mehr.", "from": "On this TV the channel keys need a change to LG’s key handler. Setting one, or setting one back to As LG has it, restarts the TV’s screen once, and the change is made again each time the TV starts. While set, the key no longer changes the channel."},
  "home.bar.native": {"text": "Bei diesem Fernseher braucht die Home-Taste für Glasshouse Bar eine Änderung an LGs Tastenverwaltung. Das Wählen der Leiste, oder danach eines anderen Launchers, startet den Bildschirm einmal neu, und die Änderung wird bei jedem Start des Fernsehers erneut vorgenommen.", "from": "On this TV the Home key needs a change to LG’s key handler for Glasshouse Bar. Choosing the bar, or any other launcher after it, restarts the TV’s screen once, and the change is made again each time the TV starts."},
  "ss.art.mine": {"text": "Ihre Bilder", "from": "Your pictures"},
@@ -1127,5 +1127,160 @@
  "ss.ha.reads": {"text": "Liest", "from": "Reads"},
  "ss.ha.settings": {"text": "Bildschirmschoner-Einstellungen", "from": "Screen saver settings"},
  "ss.entities2": {"text": "Entitäten", "from": "Entities"},
- "ss.tvOff": {"text": "Der Fernseher ist aus. Schalten Sie ihn ein, um einen Bildschirmschoner zu starten.", "from": "The TV is off. Switch it on to start a screen saver."}
+ "ss.tvOff": {"text": "Der Fernseher ist aus. Schalten Sie ihn ein, um einen Bildschirmschoner zu starten.", "from": "The TV is off. Switch it on to start a screen saver."},
+ "srv.ask.yes": {"from": "Yes", "text": "Ja"},
+ "srv.ask.no": {"from": "No", "text": "Nein"},
+ "home.info.date": {"from": "{day} {month}", "text": "{day}. {month}"},
+ "home.info.today": {"from": "today", "text": "heute"},
+ "home.info.tomorrow": {"from": "tomorrow", "text": "morgen"},
+ "home.info.weekday": {"from": "on {weekday}", "text": "am {weekday}"},
+ "ha.api.desc": {"text": "Liest Home-Assistant-Entitäten live für die Home-Assistant-Bildschirmschoner (Ambient und Data Display) im Tab Bildschirmschoner und für die Werte auf einen Blick neben der Uhr von Glasshouse Home im Tab Home. Verbindet sich direkt über HTTP/HTTPS mit Home Assistant, ohne MQTT, und speichert ohne Neustart.", "from": "Reads live Home Assistant entities for the Home Assistant screen savers (Ambient and Data Display) on the Screensaver tab, and for the values at a glance beside Glasshouse Home's clock on the Home tab. Connects straight to Home Assistant over HTTP/HTTPS without using MQTT, and saves without restarting."},
+  "ha.domain.all": {
+    "text": "Alle",
+    "from": "All"
+  },
+  "ha.domain.binarySensor": {
+    "text": "Binärsensoren",
+    "from": "Binary sensors"
+  },
+  "ha.domain.calendar": {
+    "text": "Kalender",
+    "from": "Calendars"
+  },
+  "ha.domain.climate": {
+    "text": "Klima",
+    "from": "Climate"
+  },
+  "ha.domain.counter": {
+    "text": "Zähler",
+    "from": "Counters"
+  },
+  "ha.domain.cover": {
+    "text": "Abdeckungen",
+    "from": "Covers"
+  },
+  "ha.domain.deviceTracker": {
+    "text": "Tracker",
+    "from": "Trackers"
+  },
+  "ha.domain.fan": {
+    "text": "Ventilatoren",
+    "from": "Fans"
+  },
+  "ha.domain.inputBoolean": {
+    "text": "Schalter-Helfer",
+    "from": "Input booleans"
+  },
+  "ha.domain.inputNumber": {
+    "text": "Zahlen-Helfer",
+    "from": "Input numbers"
+  },
+  "ha.domain.inputSelect": {
+    "text": "Auswahl-Helfer",
+    "from": "Input select"
+  },
+  "ha.domain.inputText": {
+    "text": "Text-Helfer",
+    "from": "Input text"
+  },
+  "ha.domain.light": {
+    "text": "Lichter",
+    "from": "Lights"
+  },
+  "ha.domain.lock": {
+    "text": "Schlösser",
+    "from": "Locks"
+  },
+  "ha.domain.mediaPlayer": {
+    "text": "Medien",
+    "from": "Media"
+  },
+  "ha.domain.number": {
+    "text": "Zahlen",
+    "from": "Numbers"
+  },
+  "ha.domain.person": {
+    "text": "Personen",
+    "from": "People"
+  },
+  "ha.domain.sensor": {
+    "text": "Sensoren",
+    "from": "Sensors"
+  },
+  "ha.domain.sun": {
+    "text": "Sonne",
+    "from": "Sun"
+  },
+  "ha.domain.switch": {
+    "text": "Schalter",
+    "from": "Switches"
+  },
+  "ha.domain.timer": {
+    "text": "Timer",
+    "from": "Timers"
+  },
+  "ha.domain.vacuum": {
+    "text": "Staubsauger",
+    "from": "Vacuums"
+  },
+  "ha.domain.weather": {
+    "text": "Wetter",
+    "from": "Weather"
+  },
+  "ha.picker.added": {
+    "text": "Hinzugefügt",
+    "from": "Added"
+  },
+  "ha.picker.countAll": {
+    "text": "{n} Entitäten",
+    "from": "{n} entities"
+  },
+  "ha.picker.countOne": {
+    "text": "1 Entität",
+    "from": "1 entity"
+  },
+  "ha.picker.filterType": {
+    "text": "Nach Typ filtern",
+    "from": "Filter by type"
+  },
+  "ha.picker.reset": {
+    "text": "Zurücksetzen",
+    "from": "Reset"
+  },
+  "ha.picker.searchLabel": {
+    "text": "Entitäten filtern",
+    "from": "Filter entities"
+  },
+  "ha.picker.searchPlaceholder": {
+    "text": "Nach Name, Entitäts-ID oder Einheit suchen…",
+    "from": "Search by name, entity ID, or unit…"
+  },
+  "ha.picker.selected": {
+    "text": "Ausgewählt",
+    "from": "Selected"
+  },
+  "ha.picker.showMore": {
+    "text": "Mehr anzeigen ({n} verbleibend)",
+    "from": "Show more ({n} remaining)"
+  },
+  "ha.picker.showingOf": {
+    "text": "{shown} von {n} Treffern ({total} gesamt)",
+    "from": "Showing {shown} of {n} matching ({total} total)"
+  },
+  "ha.picker.withUnit": {
+    "text": "Mit Einheit",
+    "from": "With unit"
+  },
+ "apps.running.close": {"text": "Schließen", "from": "Close"},
+ "apps.running.closeAll": {"text": "Alle schließen", "from": "Close all"},
+ "apps.running.closeFailed": {"text": "App konnte nicht geschlossen werden: {error}", "from": "Could not close app: {error}"},
+ "apps.running.closing": {"text": "Wird geschlossen…", "from": "Closing…"},
+ "apps.running.desc": {"text": "Apps, die aktuell auf dem TV geöffnet oder im Arbeitsspeicher geladen sind. Das Schließen beendet den Prozess und gibt den Speicher sofort frei.", "from": "Apps currently open or loaded in memory on the TV. Closing an app stops its process and frees its memory right away."},
+ "apps.running.inFront": {"text": "Im Vordergrund", "from": "In front"},
+ "apps.running.mb": {"text": "{mb} MB", "from": "{mb} MB"},
+ "apps.running.none": {"text": "Keine aktiv", "from": "None running"},
+ "apps.running.noneDesc": {"text": "Derzeit sind keine Apps im Speicher aktiv.", "from": "No apps are currently running in memory."},
+ "apps.running.summaryMb": {"text": "{n} Apps · {mb} MB", "from": "{n} apps · {mb} MB"},
+ "apps.running.summaryOneMb": {"text": "1 App · {mb} MB", "from": "1 app · {mb} MB"},
+ "apps.running.title": {"text": "Apps im Speicher", "from": "Apps in memory"}
 }

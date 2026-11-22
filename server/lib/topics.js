@@ -13,7 +13,8 @@ function topics(pfx) {
     commands: pfx + '/command/',   // what every command topic starts with
     command: function (name) { return pfx + '/command/' + name; },
     state: function (path) { return pfx + '/state/' + path; },
-    eventsButton: pfx + '/events/button'
+    eventsButton: pfx + '/events/button',
+    eventsAsk: pfx + '/events/ask'
   };
 }
 

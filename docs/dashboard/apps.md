@@ -48,6 +48,10 @@ Lists the web pages on the Home screen, each of which opens in the TV's browser.
 
 ## Background
 
+### Apps in memory
+
+Lists user-facing apps currently open or loaded in memory on the TV, sorted with the app in front (**In front**) first and then by resident memory (**{mb} MB**). Choosing **Close** stops an app's process and frees its memory right away, and **Close all** stops every listed app at once. Essential TV shell components, input overlays, the screensaver, AirPlay and Glasshouse's own views are left out and cannot be closed here.
+
 ### Apps kept ready in the background
 
 ![Apps kept ready in the background, each as a tile with the memory it takes when loaded, all switched off](../screenshots/apps-preload.png)
@@ -79,5 +83,5 @@ A change takes effect the next time the app starts, including when LG starts it 
 ## Notes
 
 * Live TV, Settings, Home, the HDMI inputs, the Homebrew Channel and Glasshouse itself are protected: they can't be hidden or uninstalled.
-* Everything on this tab also works from the TV app, except saved web pages and installing from a URL or a file, which are in the browser dashboard only.
+* Everything on this tab also works from the TV app, except saved web pages, closing apps in memory and installing from a URL or a file, which are in the browser dashboard only.
 * Apps that check they were installed from the LG store may refuse to run when installed another way, and apps built for a newer webOS than the TV runs may not launch.

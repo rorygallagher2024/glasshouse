@@ -1,0 +1,40 @@
+{
+  "manifest": 1,
+  "version": "1.0.0",
+  "name": {
+    "en": "News",
+    "ar": "الأخبار",
+    "es": "Noticias",
+    "de": "Nachrichten",
+    "fr": "Actualités",
+    "hu": "Hírek",
+    "it": "Notizie",
+    "pl": "Wiadomości",
+    "pt": "Notícias",
+    "pt-br": "Notícias",
+    "ru": "Новости",
+    "sv": "Nyheter",
+    "vi": "Tin tức"
+  },
+  "description": {
+    "en": "The time and date, with the headlines of the news feeds you add running along the bottom.",
+    "ar": "الوقت والتاريخ، مع عناوين خلاصات الأخبار التي تضيفها تمر في أسفل الشاشة.",
+    "es": "La hora y la fecha, con los titulares de las fuentes de noticias que añadas pasando por abajo.",
+    "de": "Uhrzeit und Datum, unten laufen die Schlagzeilen der hinzugefügten Nachrichten-Feeds durch.",
+    "fr": "L'heure et la date, avec les titres des flux d'actualités ajoutés qui défilent en bas.",
+    "hu": "Az idő és a dátum, alul a hozzáadott hírcsatornák címeivel futószalagon.",
+    "it": "Ora e data, con i titoli dei feed di notizie aggiunti che scorrono in basso.",
+    "pl": "Czas i data, a na dole przewijają się nagłówki dodanych kanałów wiadomości.",
+    "pt": "A hora e a data, com os títulos dos feeds de notícias adicionados a passar em baixo.",
+    "pt-br": "A hora e a data, com as manchetes dos feeds de notícias adicionados passando embaixo.",
+    "ru": "Время и дата, а внизу бегут заголовки добавленных новостных лент.",
+    "sv": "Tid och datum, med rubrikerna från de nyhetsflöden du lägger till rullande längst ner.",
+    "vi": "Giờ và ngày, với tiêu đề từ các nguồn tin bạn thêm chạy ở phía dưới."
+  },
+  "license": "MIT",
+  "uses": [
+    "level",
+    "news"
+  ],
+  "order": 13
+}

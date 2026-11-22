@@ -36,9 +36,15 @@
  *
  * A key is offered only where this TV's own filter files name it, since LG's
  * key names differ by model and region (a C5 has a Disney+ button, a CX does
- * not). Home, Back, volume, mute, channel and power are not offered: the first
- * two are what the dashboard's own controls depend on, and the rest the
- * microcontroller handles before any filter sees them.
+ * not). Home, Back, volume, mute and power are not offered: the first two are
+ * what the dashboard's own controls depend on, and the rest the microcontroller
+ * handles before any filter sees them. The channel keys are offered where a
+ * filter names them (appLaunch.js does on an OLED48C56LB, webOS 10.3.0); a key
+ * that is set is accepted by the filter, so only As LG has it keeps LG's channel
+ * change. Where no filter names them, as on a B8 (webOS 4.4), the TV's WebOS
+ * module defining them is enough (fromPlugin). On webOS 11 they are offered
+ * through lib/guidepatch (blockCode) instead, since the native filters do not
+ * carry them.
  *
  * Home: earlier builds of Glasshouse Home pointed it at their own app, kept
  * beside the keys as `home`; lib/home.js clears it. Glasshouse Home now runs
@@ -265,11 +271,16 @@ var KEYS = [
   { key: 'ai', title: 'AI', nativeOnly: true, turnsOffVoice: true },
   { key: 'multikey', title: '? button', nativeOnly: true, noNothing: true },
   { key: 'multikeyhold', title: '? button, held', nativeOnly: true, noNothing: true },
-  // The channel rocker, on webOS 11 where lib/guidepatch knows LG's first key
-  // filter: it is told to take the key (blockCode, the Linux key code), and the
+  // The channel rocker. On webOS 10 and below the JavaScript key filter names
+  // it (symbol), where a key that is set is accepted and so no longer changes
+  // the channel. On webOS 11 the filter does not carry it; lib/guidepatch has
+  // LG's first key filter take the key (blockCode, the Linux key code) and the
   // press is answered from that filter's own log line (KEY_EVENT).
-  { key: 'channelup', title: 'Channel up', nativeOnly: true, blockCode: 402 },
-  { key: 'channeldown', title: 'Channel down', nativeOnly: true, blockCode: 403 },
+  // fromPlugin: offered too where LG's filters leave the key out but the
+  // TV's WebOS module defines it, as on a B8 (webOS 4.4), whose filters name
+  // no channel key though every LG remote has them.
+  { key: 'channelup', symbol: 'WebOS.Key_webOS_ChannelUp', title: 'Channel up', blockCode: 402, fromPlugin: true },
+  { key: 'channeldown', symbol: 'WebOS.Key_webOS_ChannelDown', title: 'Channel down', blockCode: 403, fromPlugin: true },
   { key: 'guide', symbol: 'WebOS.Key_webOS_TVGuide', title: 'Guide' },
   { key: 'input', symbol: 'WebOS.Key_webOS_InputSource', title: 'Input' },
   { key: 'livetv', symbol: 'WebOS.Key_webOS_InputTV', title: 'TV' },
@@ -305,6 +316,10 @@ function barAvailable() { return !!barAppFn && barAllowedFn(); }
 var inputNames = null;
 var stateDir = '/var/lib/tvweb';
 var filtersDir = LG_FILTERS_DIR;
+// The QML module that defines WebOS.Key_webOS_*, for keys LG's own filters do
+// not name (fromPlugin).
+var WEBOS_PLUGIN = '/usr/lib/qt5/qml/WebOS/Global/libwebosglobalplugin.so';
+var webosPlugin = WEBOS_PLUGIN;
 var tvKeys = null;      // the symbols this TV's filters name, read once
 var nativeFilters = null; // whether configd names native filters, once answered
 var switcherFound = null; // whether the TV has INPUT_SWITCHER, once answered
@@ -338,6 +353,7 @@ function init(opts) {
     exec: opts.guideExec, mounts: opts.guideMounts, mountInfo: opts.guideMountInfo, luna: lunaFn,
     profileOverrideDir: opts.profileOverrideDir, profileWaitMs: opts.profileWaitMs, profilePollMs: opts.profilePollMs });
   filtersDir = opts.filtersDir || LG_FILTERS_DIR;
+  webosPlugin = opts.webosPlugin || WEBOS_PLUGIN;
   tvKeys = null;
   nativeFilters = null;
   switcherFound = null;
@@ -392,8 +408,18 @@ function keysOnTv() {
     return null;
   }
   var hasColor = KEYS.some(function (k) { return k.color && src.indexOf(k.symbol) !== -1; });
+  var plugin = null;
+  // Whether the WebOS module defines a key's name, read once and only if needed.
+  function inPlugin(symbol) {
+    if (plugin === null) {
+      try { plugin = fs.readFileSync(webosPlugin).toString('binary'); } catch (e) { plugin = ''; }
+    }
+    return plugin.indexOf(symbol.replace(/^WebOS\./, '') + '\u0000') !== -1;
+  }
   tvKeys = KEYS.filter(function (k) {
-    return !k.nativeOnly && !k.nativeMapping && ((k.color && hasColor) || src.indexOf(k.symbol) !== -1);
+    if (k.nativeOnly || k.nativeMapping) return false;
+    if ((k.color && hasColor) || src.indexOf(k.symbol) !== -1) return true;
+    return !!k.fromPlugin && inPlugin(k.symbol);
   });
   return tvKeys;
 }
@@ -1189,7 +1215,7 @@ function applyNativeMap(cb, map) {
     (nextList || []).forEach(function (entry) {
       Object.keys(entry || {}).forEach(function (name) {
         var def = keyByName(name);
-        if (!def || def.nativeOnly || NATIVE_ACTIONS[name]) return;
+        if (!def || def.nativeOnly || def.blockCode || NATIVE_ACTIONS[name]) return;
         var v = reconcile(name, entry[name], function (lgEntry) { return mappingWanted(map, name, lgEntry); },
           lg.mapping, lg.mappingWritten);
         if (v !== undefined) { entry[name] = v; listChanged = true; }

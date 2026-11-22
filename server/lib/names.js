@@ -401,9 +401,13 @@ var AUDIO_CODECS = {
 
 // A codec outside the table is shown as the TV gives it, in capitals.
 function audioCodec(raw) {
-  var codec = String(raw || '').toLowerCase();
+  var codec = String(raw || '').toLowerCase().replace(/^(?:lx_)?aud_codec_/, '');
+  var compact = codec.replace(/[_\s-]+/g, '');
+  var display = AUDIO_CODECS.hasOwnProperty(codec) ? AUDIO_CODECS[codec]
+    : AUDIO_CODECS.hasOwnProperty(compact) ? AUDIO_CODECS[compact]
+    : codec.toUpperCase();
   return {
-    display: AUDIO_CODECS.hasOwnProperty(codec) ? AUDIO_CODECS[codec] : codec.toUpperCase(),
+    display: display,
     label: snakeCase(codec)
   };
 }

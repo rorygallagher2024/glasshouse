@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Glasshouse Question</title>
+<style>
+@font-face{font-family:'Manrope';src:url('/assets/fonts/Manrope-Regular.ttf') format('truetype');font-weight:400}
+@font-face{font-family:'Manrope';src:url('/assets/fonts/Manrope-SemiBold.ttf') format('truetype');font-weight:600}
+*{margin:0;padding:0;box-sizing:border-box}
+/* The window is an overlay: the picture shows through around the card. */
+html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font-family:'Manrope',sans-serif;color:#fff;cursor:default}
+#shade{position:absolute;left:0;right:0;bottom:0;height:520px;opacity:0;
+  background:-webkit-linear-gradient(top,rgba(0,0,0,0),rgba(0,0,0,.75));background:linear-gradient(to bottom,rgba(0,0,0,0),rgba(0,0,0,.75));
+  -webkit-transition:opacity .18s ease-out;transition:opacity .18s ease-out}
+#card{position:absolute;left:50%;bottom:96px;width:1040px;margin-left:-520px;padding:40px 48px 44px;border-radius:28px;
+  background:#1c1c1e;border:2px solid #333;box-shadow:0 18px 60px rgba(0,0,0,.6);text-align:center;opacity:0;
+  -webkit-transform:translateY(24px);transform:translateY(24px);
+  -webkit-transition:opacity .18s ease-out,-webkit-transform .18s ease-out;transition:opacity .18s ease-out,transform .18s ease-out}
+.on #shade,.on #card{opacity:1}
+.on #card{-webkit-transform:none;transform:none}
+#title{font-size:44px;font-weight:600;line-height:1.2}
+#message{font-size:30px;color:#c8c8c8;margin-top:14px;line-height:1.3}
+#message:empty{display:none}
+#buttons{margin-top:36px;font-size:0;white-space:nowrap}
+.btn{display:inline-block;min-width:220px;max-width:440px;margin:0 14px;padding:22px 34px;border-radius:18px;font-size:32px;
+  background:#2c2c2e;color:#e0e0e0;border:2px solid #3a3a3c;overflow:hidden;text-overflow:ellipsis;
+  -webkit-transition:-webkit-transform .1s ease-out;transition:transform .1s ease-out}
+.btn.focus{background:#fff;color:#111;border-color:#fff;-webkit-transform:scale(1.08);transform:scale(1.08)}
+#bar{position:absolute;left:28px;right:28px;bottom:14px;height:6px;border-radius:3px;background:#333;overflow:hidden}
+#left{height:100%;width:100%;background:#8e8e93}
+</style>
+</head>
+<body>
+<div id="shade"></div>
+<div id="card">
+  <div id="title"></div>
+  <div id="message"></div>
+  <div id="buttons"></div>
+  <div id="bar"><div id="left"></div></div>
+</div>
+<script>
+/*
+ * A question from Home Assistant (lib/ask.js) over the picture, with a button
+ * for each answer. Left and Right move, OK answers, Back dismisses, and it
+ * closes itself when its time runs out. The pointer works too. It asks the
+ * server every second whether its question still stands, and closes when it
+ * was answered elsewhere or replaced by another. Strict ES5: the TV's own
+ * browser runs it.
+ *
+ * The question app (assets/ask-app/) opens this page from the server with
+ * the question's token, and a newer question reaches it as a relaunch with
+ * that question's token. Nothing is read or answered without it.
+ */
+(function () {
+  var KEY = { left: 37, up: 38, right: 39, down: 40, ok: 13, back: 461, backspace: 8 };
+  var CHECK_MS = 1000;
+  var q = null, focus = 0, deadline = 0, tick = null, check = null, closing = false, answered = false, closeTimer = null;
+  var token = (/[?&]token=([0-9a-f]+)/.exec(location.search) || [])[1] || '';
+
+  function $(id) { return document.getElementById(id); }
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c];
+    });
+  }
+  function request(method, url, body, cb) {
+    var x = new XMLHttpRequest();
+    x.open(method, url, true);
+    x.timeout = 4000;
+    if (body) x.setRequestHeader('Content-Type', 'application/json');
+    x.onload = function () { var j = null; try { j = JSON.parse(x.responseText); } catch (e) {} cb(j); };
+    x.onerror = x.ontimeout = function () { cb(null); };
+    x.send(body ? JSON.stringify(body) : null);
+  }
+  function current(cb) {
+    request('GET', '/api/ask/current?token=' + encodeURIComponent(token) + '&t=' + Date.now(), null, cb);
+  }
+
+  function close() {
+    if (closing) return;
+    closing = true;
+    clearInterval(tick);
+    clearInterval(check);
+    document.body.className = '';
+    // Left open a moment longer than the fade: a newer question's relaunch
+    // can come just after this one's end was seen.
+    closeTimer = setTimeout(function () { window.close(); }, 600);
+  }
+  // choice: an option's id, or '' with how it ended.
+  function report(choice, how) {
+    if (answered || !q) return close();
+    answered = true;
+    clearInterval(tick);
+    request('POST', '/api/ask/answer', { token: token, choice: choice || '', how: choice ? '' : how }, close);
+    // Closed whether or not the answer's reply gets back.
+    setTimeout(close, 1500);
+  }
+
+  function setFocus(i) {
+    if (!q) return;
+    var n = q.options.length;
+    focus = (i + n) % n;
+    var btns = $('buttons').childNodes;
+    for (var k = 0; k < btns.length; k++) btns[k].className = 'btn' + (k === focus ? ' focus' : '');
+  }
+  function countdown() {
+    var total = q.timeout * 1000;
+    var left = deadline - Date.now();
+    $('left').style.width = Math.max(0, Math.min(100, left / total * 100)) + '%';
+    if (left <= 0) report('', 'timeout');
+  }
+  function show(j) {
+    q = j;
+    answered = false;
+    closing = false;
+    clearTimeout(closeTimer);
+    $('title').textContent = q.title || '';
+    $('message').textContent = q.message || '';
+    var html = '';
+    q.options.forEach(function (o, i) {
+      html += '<div class="btn" data-i="' + i + '">' + esc(o.label) + '</div>';
+    });
+    $('buttons').innerHTML = html;
+    setFocus(q.focus || 0);
+    deadline = Date.now() + q.timeout * 1000;
+    clearInterval(tick);
+    tick = setInterval(countdown, 250);
+    countdown();
+    document.body.className = 'on';
+    clearInterval(check);
+    check = setInterval(stillAsked, CHECK_MS);
+  }
+  // Answered on a phone, or another question in its place.
+  function stillAsked() {
+    if (answered || closing) return;
+    current(function (j) {
+      if (answered || closing || !j) return;
+      if (!j.question) return close();
+      if (j.question.seq !== q.seq) show(j.question);
+    });
+  }
+  function load() {
+    current(function (j) {
+      if (!j || !j.question || !j.question.options || !j.question.options.length) return close();
+      // The same question opened again: left as it is.
+      if (q && q.seq === j.question.seq && !closing) return;
+      show(j.question);
+    });
+  }
+
+  document.addEventListener('keydown', function (e) {
+    var k = e.keyCode;
+    if (!q) {
+      if (k === KEY.back || k === KEY.backspace) { close(); e.preventDefault(); }
+      return;
+    }
+    if (k === KEY.right || k === KEY.down) setFocus(focus + 1);
+    else if (k === KEY.left || k === KEY.up) setFocus(focus - 1);
+    else if (k === KEY.ok) report(q.options[focus].id);
+    else if (k === KEY.back || k === KEY.backspace) report('', 'dismissed');
+    else return;
+    e.preventDefault();
+  }, true);
+  $('buttons').addEventListener('mouseover', function (e) {
+    var el = e.target;
+    while (el && el !== this && !el.getAttribute('data-i')) el = el.parentNode;
+    if (el && el !== this) setFocus(+el.getAttribute('data-i'));
+  });
+  $('buttons').addEventListener('click', function (e) {
+    var el = e.target;
+    while (el && el !== this && !el.getAttribute('data-i')) el = el.parentNode;
+    if (el && el !== this && q) report(q.options[+el.getAttribute('data-i')].id);
+  });
+  // A new question while one is up reaches the page as a relaunch, with its
+  // own token.
+  document.addEventListener('webOSRelaunch', function () {
+    var p = {};
+    try { p = JSON.parse(window.PalmSystem.launchParams || '{}') || {}; } catch (e) {}
+    if (/^[0-9a-f]+$/.test(String(p.token || ''))) token = String(p.token);
+    load();
+  });
+  load();
+})();
+</script>
+</body>
+</html>

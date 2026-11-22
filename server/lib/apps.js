@@ -46,6 +46,7 @@ var PROTECTED_APP_IDS = {
   'com.tvweb.home': true,
   'com.tvweb.homebar': true,
   'com.tvweb.inputbar': true,
+  'com.tvweb.ask': true,
   'org.webosbrew.hbchannel': true,
   'com.webos.app.livetv': true,
   'com.palm.app.settings': true,
@@ -68,6 +69,14 @@ var PROTECTED_APP_IDS = {
   // apps still open.
   'com.webos.app.browser': true
 };
+
+// System shells, inputs, overlays, screensavers and Glasshouse's own apps that
+// stay out of the "Apps in memory" list and cannot be closed from here.
+var RUNNING_INTERNAL = /^(com\.webos\.app\.(home|fullhome|livetv|livemenu|hdmi\d*|externalinput(\..+)?|usbc\d*|miracast(-overlay)?|voice|container|inputcommon|screensaver|firstuse|eula|webapphost|notificationcenter|starfish_flutter_systemui|factorywin|quicksettings|quickinputpicker|volume|systemmusic)|container|inputcommon|firstuse|eula|webapphost|airplay|com\.tvweb\.(home|homebar|inputbar|dashboard)|io\.github\.rorygallagher2024\.lg-webos-dashboard)$/;
+var CLOSE_POLLS = 10;
+var CLOSE_WAIT_MS = 200;
+var procRoot = '/proc';
+var closeWaitMs = CLOSE_WAIT_MS;
 
 /*
  * AirPlay has no tile of its own (its appinfo says visible: false); its tile is
@@ -130,6 +139,8 @@ function init(opts) {
   lunaFn = opts.luna;
   configObj = opts.config;
   execFn = opts.exec || execFile;
+  procRoot = opts.procRoot || '/proc';
+  closeWaitMs = (typeof opts.closeWaitMs === 'number') ? opts.closeWaitMs : CLOSE_WAIT_MS;
   if (lunaFn) {
     releaseProtected('airplay', 'AirPlay', function () {});
     releaseBrowser();
@@ -763,6 +774,7 @@ function getApps(cb) {
       error: 'luna bus not available',
       installed: [],
       systemTiles: [],
+      running: [],
       hiddenCount: Object.keys(hiddenMap).length,
       writable: false
     });
@@ -927,19 +939,164 @@ function getApps(cb) {
 
       // Where sam can be nudged or reread per app, hidden tiles come back at boot without a sam
       // restart, so the brief blank screen the restart causes does not happen.
-      samrescan.canNudge(function (nudge) {
-        cb({
-          ok: true,
-          installed: installed,
-          systemTiles: systemTiles,
-          savedPages: savedPages,
-          hiddenCount: Object.keys(hiddenMap).length,
-          tileHidingEnabled: isTileHidingEnabled(),
-          tileHidingNudge: (nudge || samrescan.canRereadApp()) ? true : nudge,
-          writable: !!(configObj && configObj.allowControl)
+      collectRunningApps(appMap, function (running) {
+        samrescan.canNudge(function (nudge) {
+          cb({
+            ok: true,
+            installed: installed,
+            systemTiles: systemTiles,
+            running: running,
+            savedPages: savedPages,
+            hiddenCount: Object.keys(hiddenMap).length,
+            tileHidingEnabled: isTileHidingEnabled(),
+            tileHidingNudge: (nudge || samrescan.canRereadApp()) ? true : nudge,
+            writable: !!(configObj && configObj.allowControl)
+          });
         });
       });
     });
+  });
+}
+
+/** Reads a process's resident memory in MB from procfs, rounded up to at least 1 MB. */
+function pidRssMb(pid) {
+  if (!pid) return null;
+  try {
+    var status = fs.readFileSync(path.join(procRoot, String(pid), 'status'), 'utf8');
+    var m = /^VmRSS:\s*(\d+)\s*kB/m.exec(status);
+    if (!m) return null;
+    var kb = parseInt(m[1], 10);
+    return kb > 0 ? Math.max(1, Math.round(kb / 1024)) : null;
+  } catch (e) {
+    return null;
+  }
+}
+
+function isKillableRunningEntry(entry) {
+  if (!entry || !entry.id || RUNNING_INTERNAL.test(entry.id)) return false;
+  if (entry.defaultWindowType && entry.defaultWindowType !== 'card') return false;
+  return true;
+}
+
+/** Collects user-facing card apps currently running in memory along with RSS MB and foreground flag. */
+function collectRunningApps(appMap, cb) {
+  if (!lunaFn) return cb([]);
+  var runRes = null;
+  var fgRes = null;
+  var pending = 2;
+  function finish() {
+    if (--pending > 0) return;
+    var fgId = (fgRes && fgRes.appId) || '';
+    var list = (runRes && runRes.running) || [];
+    var seen = {};
+    /** @type {any[]} */
+    var out = [];
+    for (var i = 0; i < list.length; i++) {
+      var r = list[i];
+      if (!isKillableRunningEntry(r) || seen[r.id]) continue;
+      seen[r.id] = true;
+      var pidStr = String(r.webprocessid || r.processid || '').trim();
+      var pid = /^\d+$/.test(pidStr) ? parseInt(pidStr, 10) : null;
+      var title = (appMap && appMap[r.id] && appMap[r.id].title) || r.title || r.id;
+      out.push({
+        id: r.id,
+        title: title,
+        appType: r.appType || '',
+        pid: pid,
+        mb: pid ? pidRssMb(pid) : null,
+        foreground: r.id === fgId,
+        iconUrl: '/api/apps/icon?id=' + encodeURIComponent(r.id)
+      });
+    }
+    out.sort(function (x, y) {
+      if (x.foreground !== y.foreground) return x.foreground ? -1 : 1;
+      var mbDiff = (y.mb || 0) - (x.mb || 0);
+      if (mbDiff !== 0) return mbDiff;
+      return String(x.title || '').localeCompare(String(y.title || ''));
+    });
+    cb(out);
+  }
+  lunaFn('com.webos.applicationManager/running', {}, function (res) { runRes = res; finish(); });
+  lunaFn('com.webos.applicationManager/getForegroundAppInfo', {}, function (res) { fgRes = res; finish(); });
+}
+
+function stopRunningEntry(entry, cb) {
+  var method = entry.appType === 'web'
+    ? 'com.palm.webappmanager/killApp'
+    : 'com.webos.applicationManager/closeByAppId';
+  var payload = entry.appType === 'web' ? { appId: entry.id } : { id: entry.id };
+  lunaFn(method, payload, cb);
+}
+
+function waitUntilClosed(targetIds, pollsLeft, cb) {
+  if (pollsLeft <= 0 || !targetIds.length) return cb();
+  lunaFn('com.webos.applicationManager/running', {}, function (res) {
+    var list = (res && res.running) || [];
+    var alive = {};
+    for (var i = 0; i < list.length; i++) {
+      if (list[i] && list[i].id) alive[list[i].id] = true;
+    }
+    var remaining = false;
+    for (var j = 0; j < targetIds.length; j++) {
+      if (alive[targetIds[j]]) { remaining = true; break; }
+    }
+    if (!remaining || pollsLeft <= 1) return cb();
+    setTimeout(function () {
+      waitUntilClosed(targetIds, pollsLeft - 1, cb);
+    }, closeWaitMs);
+  });
+}
+
+/** Stops one running app ({ id }) or all running apps ({ all: true }) and waits for SAM to drop them. */
+function closeRunningApp(opts, cb) {
+  if (!configObj || !configObj.allowControl) {
+    return cb({ ok: false, error: msg('srv.controlsOff.apps', 'Control is disabled in server configuration') });
+  }
+  if (!lunaFn) {
+    return cb({ ok: false, error: 'luna bus not available' });
+  }
+  opts = opts || {};
+  var closeAll = opts.all === true;
+  var targetId = typeof opts === 'string' ? opts : opts.id;
+  if (!closeAll) {
+    if (!targetId || typeof targetId !== 'string' || !/^[a-zA-Z0-9_.-]+$/.test(targetId)) {
+      return cb({ ok: false, error: 'Invalid app ID format' });
+    }
+    if (RUNNING_INTERNAL.test(targetId)) {
+      return cb({ ok: false, error: 'Cannot close a core system app' });
+    }
+  }
+  lunaFn('com.webos.applicationManager/running', {}, function (runRes) {
+    var list = (runRes && runRes.running) || [];
+    var seen = {};
+    /** @type {any[]} */
+    var targets = [];
+    for (var i = 0; i < list.length; i++) {
+      var r = list[i];
+      if (!isKillableRunningEntry(r) || seen[r.id]) continue;
+      if (!closeAll && r.id !== targetId) continue;
+      seen[r.id] = true;
+      targets.push(r);
+    }
+    if (!targets.length) {
+      return cb({ ok: true, closed: [] });
+    }
+    var pending = targets.length;
+    var closedIds = targets.map(function (t) { return t.id; });
+    var closeErr = null;
+    for (var j = 0; j < targets.length; j++) {
+      stopRunningEntry(targets[j], function (res) {
+        if (!closeAll && res && res.returnValue === false && res.errorText && !closeErr) {
+          closeErr = res.errorText;
+        }
+        if (--pending === 0) {
+          if (closeErr) return cb({ ok: false, error: closeErr });
+          waitUntilClosed(closedIds, CLOSE_POLLS, function () {
+            cb({ ok: true, closed: closedIds });
+          });
+        }
+      });
+    }
   });
 }
 
@@ -1362,6 +1519,7 @@ module.exports = {
   firstFileInside: firstFileInside,
   isProtected: isProtected,
   getApps: getApps,
+  closeRunningApp: closeRunningApp,
   getIconPath: getIconPath,
   findAllAppinfoPaths: findAllAppinfoPaths,
   findAppinfoPath: findAppinfoPath,

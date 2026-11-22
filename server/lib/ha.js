@@ -9,6 +9,7 @@ var msg = require('./say').msg;
 // Assistant without a second list to keep in step (Bokeh was missed once).
 var screensavers = require('./screensavers');
 var remotebuttons = require('./remotebuttons');
+var askQuestion = require('./ask');
 var topics = require('./topics');
 var names = require('./names');
 var hexColor = require('./util').hexColor;
@@ -94,6 +95,8 @@ var HA_ENTITIES = [
   // ({"condition":"partlycloudy","temp":14.2}) and Glasshouse Home shows it
   // as the weather badge next to the clock. See docs/dashboard/home.md.
   { id: 'weather', type: 'text', name: 'Weather Push', cat: 'controls' },
+  { id: 'home_info', type: 'text', name: 'Home Info Push', cat: 'controls' },
+  { id: 'home_board', type: 'text', name: 'Home Board Push', cat: 'controls' },
   { id: 'picture_mode', type: 'select', name: 'Picture Mode (Select)', cat: 'controls' },
   { id: 'energy_saving', type: 'select', name: 'Energy Saving Step', cat: 'controls' },
   { id: 'sound_output', type: 'select', name: 'Sound Output', cat: 'controls' },
@@ -114,6 +117,7 @@ var HA_ENTITIES = [
   { id: 'keyboard_enter', type: 'button', name: 'Keyboard Enter', cat: 'controls' },
   { id: 'keyboard_backspace', type: 'button', name: 'Keyboard Backspace', cat: 'controls' },
   { id: 'remote_button', type: 'event', name: 'Remote Button', cat: 'controls' },
+  { id: 'question_answer', type: 'event', name: 'Question Answer', cat: 'controls' },
   { id: 'play', type: 'button', name: 'Play', cat: 'controls' },
   { id: 'pause', type: 'button', name: 'Pause', cat: 'controls' },
   { id: 'play_pause', type: 'button', name: 'Play / Pause', cat: 'controls' },
@@ -1140,6 +1144,28 @@ function buildEntities(opts) {
         }
       },
       {
+        // Lines under Glasshouse Home's clock (lib/home.js, setHomeInfo).
+        type: 'text', id: 'home_info',
+        payload: {
+          name: 'Home Info Push',
+          command_topic: topic.command('homeInfo'),
+          icon: 'mdi:information-outline',
+          mode: 'text',
+          entity_category: 'config'
+        }
+      },
+      {
+        // A titled board of lines beside them, as the day's matches (setHomeBoard).
+        type: 'text', id: 'home_board',
+        payload: {
+          name: 'Home Board Push',
+          command_topic: topic.command('homeBoard'),
+          icon: 'mdi:scoreboard-outline',
+          mode: 'text',
+          entity_category: 'config'
+        }
+      },
+      {
         type: 'sensor', id: 'oled_panel_hours',
         payload: {
           name: 'OLED Panel Hours',
@@ -1622,6 +1648,17 @@ function buildEntities(opts) {
           // Home Assistant ignores an event type discovery does not name.
           event_types: remotebuttons.buttonNames(),
           icon: 'mdi:remote'
+        }
+      },
+      {
+        // The answer to a question sent to command/ask (lib/ask.js); the
+        // option chosen is the event's "choice" attribute.
+        type: 'event', id: 'question_answer',
+        payload: {
+          name: 'Question Answer',
+          state_topic: topic.eventsAsk,
+          event_types: askQuestion.EVENT_TYPES,
+          icon: 'mdi:help-box-outline'
         }
       },
       {
