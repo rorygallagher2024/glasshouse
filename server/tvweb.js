@@ -2087,6 +2087,12 @@ function setupHomeAssistant() {
       return;
     }
 
+    // Lines under Glasshouse Home's clock, kept like the weather.
+    if (action === 'homeInfo') {
+      if (glasshouseHome) glasshouseHome.setHomeInfo(val);
+      return;
+    }
+
     if (action === 'toast') {
       doControl('toast', val, function() {});
       return;
@@ -2281,6 +2287,8 @@ function startGlasshouseHome() {
     lgHomeUnderBar: remoteKeys.nativeHomeBarOn,
     screensavers: screensavers,
     weather: weather,
+    haEntity: haEntity,
+    mqttOn: function () { return !!(CONFIG.mqtt && CONFIG.mqtt.enabled && CONFIG.mqtt.host); },
     // What the dashboard's Remote section shows: the level, the step it stands
     // in for, and whether it can be read at all. null with no remote paired.
     remoteBattery: function () {

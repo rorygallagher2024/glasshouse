@@ -395,6 +395,7 @@ function renderHome() {
   }
   loadHomeCardIcons();
   renderHomeWeather(st);
+  renderHomeInfo(st);
   const countAlt = q('home-show-count-alt');
   if (countAlt) countAlt.hidden = !altView;
   const searchRow = q('home-search-row');
@@ -773,18 +774,24 @@ function homeSetSort(kind, value) {
   homeSaveLayout({ sort: { [kind]: value } });
 }
 
+// homeSaving is cleared however the save ends: left set by a render or a
+// reload that threw (the server restarting mid-save, say), it made every later
+// change on the tab do nothing, with no error, until the page was reloaded.
 async function homeSaveLayout(patch) {
   if (!homeWritable()) return;
   homeSaving = true;
-  homeLoadRevision++;
-  renderHome();
   try {
-    const r = await homePost('/api/home/layout', patch);
-    homeLayout = r.layout;
-    homeStatus.layout = r.layout;
-  } catch (e) { showErr(e.message); }
-  await loadHome(true);
-  homeSaving = false;
+    homeLoadRevision++;
+    renderHome();
+    try {
+      const r = await homePost('/api/home/layout', patch);
+      homeLayout = r.layout;
+      homeStatus.layout = r.layout;
+    } catch (e) { showErr(e.message); }
+    await loadHome(true);
+  } finally {
+    homeSaving = false;
+  }
   renderHome();
 }
 
@@ -1150,11 +1157,12 @@ async function homeHideLg() {
   homeArmed = null;
   clearTimeout(homeArmTimer);
   homeSaving = true;
-  renderHome();
   try {
+    renderHome();
     await homePost('/api/home/start-layout', { hideLgHomeAtStart: want });
-  } catch (e) { showErr(e.message); }
-  homeSaving = false;
+  } catch (e) { showErr(e.message); } finally {
+    homeSaving = false;
+  }
   loadHome();
 }
 
@@ -1234,6 +1242,210 @@ function homeWeatherPick(i) {
   q('home-weather-results').textContent = '';
   homeSaveLayout({ weather: 'internet', weatherPlace: place });
 }
+
+/*
+ * The lines beside the clock: off, entities chosen here, or lines Home
+ * Assistant sends. Each of the four takes an entity, optionally one of its
+ * attributes in place of its state, a label and a few words before the value.
+ * The entity list comes from Home Assistant's API, as the screen savers' does,
+ * and is read once.
+ */
+const HOME_INFO_SLOTS = 4;
+let homeHaList = null;       // { configured, entities, error } once read
+let homeHaListReading = false;
+
+async function homeReadHaList() {
+  if (homeHaList || homeHaListReading) return;
+  homeHaListReading = true;
+  try {
+    const r = await fetch(api('/api/ha/entities'));
+    const d = await r.json();
+    homeHaList = { configured: !!d.configured, entities: Array.isArray(d.entities) ? d.entities : [], error: d.ok ? '' : (d.error || '') };
+  } catch (e) {
+    homeHaList = { configured: true, entities: [], error: e.message };
+  }
+  homeHaListReading = false;
+  const dl = q('home-info-entities');
+  if (dl) dl.innerHTML = homeHaList.entities.map(e => `<option value="${esc(e.id)}">${esc(e.name || '')}</option>`).join('');
+  if (homeStatus) renderHomeInfo(homeStatus);
+}
+
+// The lines as last saved or edited here: edits change this copy and save it
+// whole, so two quick changes cannot undo each other.
+let homeInfoList = null;
+let homeInfoMsgTimer = null;
+
+function homeInfoSay(text, warn) {
+  const msg = q('home-info-msg');
+  if (!msg) return;
+  msg.textContent = text || '';
+  msg.className = 'home-info-msg' + (warn ? ' warn' : '');
+  clearTimeout(homeInfoMsgTimer);
+  if (text && !warn) homeInfoMsgTimer = setTimeout(() => { msg.textContent = ''; }, 4000);
+}
+
+function renderHomeInfo(st) {
+  const sel = q('home-info-sel');
+  if (!sel) return;
+  // Each source only where it can work: entities with the Home Assistant API
+  // set up on the HA & MQTT tab, sent lines with MQTT. With neither, no row.
+  const can = st.haLines || { api: false, mqtt: false };
+  const row = q('home-info-row');
+  if (row) row.hidden = !st.supported.ok || !(can.api || can.mqtt);
+  // Disabled too: Safari shows an option that is only hidden.
+  [['entities', can.api], ['ha', can.mqtt]].forEach(([v, ok]) => {
+    const o = sel.querySelector('option[value="' + v + '"]');
+    o.hidden = !ok;
+    o.disabled = !ok;
+  });
+  let source = (st.layout && st.layout.info) || 'entities';
+  // A source that can no longer work reads as off until it can again.
+  if ((source === 'entities' && !can.api) || (source === 'ha' && !can.mqtt)) source = 'off';
+  sel.value = source;
+  sel.disabled = !homeWritable();
+  const panel = q('home-info-panel');
+  panel.hidden = !st.supported.ok || source === 'off';
+  if (panel.hidden) return;
+  const note = q('home-info-note');
+  const entities = source === 'entities';
+  q('home-info-addbox').hidden = !entities;
+  if (!entities) {
+    note.textContent = t('home.info.haDesc', 'A Home Assistant automation sends the lines to the TV\'s Home Info Push entity, as a list of up to four, each with a label and a value. The Home Assistant guide has an example.');
+    note.className = 'sub';
+    q('home-info-lines').innerHTML = '';
+    return;
+  }
+  homeReadHaList();
+  if (homeHaList && homeHaList.error) {
+    note.textContent = homeHaList.error;
+    note.className = 'set-note warn';
+  } else {
+    note.textContent = t('home.info.entitiesDesc', 'Each line shows one Home Assistant entity, read every 30 seconds while Home is on screen. A date reads as today, tomorrow or a weekday, and a number has its unit.');
+    note.className = 'sub';
+  }
+  if (!homeInfoList || !homeSaving) homeInfoList = ((st.layout && st.layout.infoLines) || []).map(l => Object.assign({}, l));
+  homeInfoDraw();
+}
+
+// The list, drawn from homeInfoList. Not drawn again under a field being
+// typed in: its change saves, and the next draw shows it.
+function homeInfoDraw() {
+  const lines = homeInfoList || [];
+  const locked = !homeWritable();
+  const full = lines.length >= HOME_INFO_SLOTS;
+  q('home-info-count').textContent = lines.length + ' / ' + HOME_INFO_SLOTS;
+  // An entity id, the same in every language.
+  q('home-info-add').placeholder = 'sensor.bin_collection';
+  q('home-info-add').disabled = locked || full;
+  q('home-info-add-btn').disabled = locked || full;
+  q('home-info-add-hint').textContent = full ? t('home.info.full', 'Four lines at most: remove one to add another.')
+    : t('home.info.addHint', 'Start typing to pick one of Home Assistant\'s entities.');
+  const box = q('home-info-lines');
+  const typing = box.contains(document.activeElement) && document.activeElement.tagName === 'INPUT';
+  if (typing) return;
+  const dis = locked ? 'disabled' : '';
+  const field = (i, key, label, value, max, hint) => `
+        <div class="home-info-field">
+          <label for="home-info-${key}-${i}">${esc(label)}</label>
+          <div class="home-info-input">
+            <input type="text" id="home-info-${key}-${i}" value="${esc(value || '')}" maxlength="${max}" ${dis}
+              autocomplete="off" spellcheck="false" onchange="homeInfoField(${i}, '${key}', this.value)">
+            <div class="home-info-hint">${esc(hint)}</div>
+          </div>
+        </div>`;
+  let html = '';
+  if (lines.length) html += '<div class="ss-li-scroll home-info-list">';
+  lines.forEach((l, i) => {
+    const hit = homeHaList ? homeHaList.entities.find(e => e.id === l.entity) : null;
+    const own = (hit && hit.name) || l.entity;
+    // How the line reads beside the clock, with a made-up value.
+    const value = l.attribute ? t('home.info.tomorrow', 'tomorrow') : '…' + (hit && hit.unit ? ' ' + hit.unit : '');
+    const shown = (l.label || own) + ' · ' + (l.before ? l.before + ' ' : '') + value;
+    html += `
+      <div class="ss-li-item">
+        <div class="ss-li-top">
+          <span class="ss-li-num num">${i + 1}</span>
+          <div class="ss-li-info" title="${esc(l.entity)}">
+            <div class="ss-li-name">${esc(own)}</div>
+            ${hit && hit.name ? `<div class="ss-li-id">${esc(l.entity)}</div>` : ''}
+          </div>
+          <div class="ss-li-acts">
+            <button type="button" title="${esc(t('ss.entityList.moveUp', 'Move up'))}" aria-label="${esc(t('ss.entityList.moveUp', 'Move up'))}" ${(locked || i === 0) ? 'disabled' : ''} onclick="homeInfoMove(${i}, -1)">&#8593;</button>
+            <button type="button" title="${esc(t('ss.entityList.moveDown', 'Move down'))}" aria-label="${esc(t('ss.entityList.moveDown', 'Move down'))}" ${(locked || i === lines.length - 1) ? 'disabled' : ''} onclick="homeInfoMove(${i}, 1)">&#8595;</button>
+            <button type="button" title="${esc(t('ss.entityList.remove', 'Remove'))}" aria-label="${esc(t('ss.entityList.remove', 'Remove'))}" ${dis} onclick="homeInfoRemove(${i})">&times;</button>
+          </div>
+        </div>
+        <details class="home-info-more"${l.label || l.attribute || l.before ? ' open' : ''}>
+        <summary>${esc(t('home.info.customise', 'Customise'))}</summary>
+        ${field(i, 'label', t('home.info.name', 'Name'), l.label, 32, t('home.info.nameHint', 'Optional. Replaces the entity\'s own name.'))}
+        ${field(i, 'attribute', t('home.info.attributeLabel', 'Attribute'), l.attribute, 64, t('home.info.attributeHint', 'Optional. An attribute such as next_date, shown instead of the state.'))}
+        ${field(i, 'before', t('home.info.beforeLabel', 'Text before'), l.before, 24, t('home.info.beforeHint', 'Optional. Words in front of the value, such as collected.'))}
+        </details>
+        <div class="home-info-preview">${esc(t('home.info.preview', 'Shows as: {line}', { line: shown }))}</div>
+      </div>`;
+  });
+  if (lines.length) html += '</div>';
+  box.innerHTML = html;
+}
+
+function homeInfoCommit(lines) {
+  homeInfoList = lines;
+  homeInfoDraw();
+  homeSaveLayout({ infoLines: lines });
+}
+
+function homeInfoAdd() {
+  const input = q('home-info-add');
+  const entity = input.value.trim().toLowerCase();
+  const lines = (homeInfoList || []).map(l => Object.assign({}, l));
+  if (!entity) {
+    homeInfoSay(t('home.info.needEntity', 'Type or pick an entity first.'), true);
+    input.focus();
+    return;
+  }
+  if (!/^[a-z0-9_]+\.[a-z0-9_]+$/.test(entity)) {
+    homeInfoSay(t('home.info.badEntity', 'An entity looks like sensor.bin_collection: a domain, a dot and a name.'), true);
+    return;
+  }
+  if (homeHaList && homeHaList.entities.length && !homeHaList.entities.some(e => e.id === entity)) {
+    homeInfoSay(t('home.info.noSuchEntity', 'Home Assistant has no entity called {entity}.', { entity }), true);
+    return;
+  }
+  if (lines.length >= HOME_INFO_SLOTS) return;
+  lines.push({ entity, attribute: '', label: '', before: '' });
+  input.value = '';
+  homeInfoCommit(lines);
+  const hit = homeHaList ? homeHaList.entities.find(e => e.id === entity) : null;
+  homeInfoSay(t('home.info.added', 'Added {name} as line {n}.', { name: (hit && hit.name) || entity, n: lines.length }));
+}
+
+function homeInfoRemove(i) {
+  const lines = (homeInfoList || []).slice();
+  const gone = lines.splice(i, 1)[0];
+  homeInfoCommit(lines);
+  if (gone) homeInfoSay(t('home.info.removed', 'Removed line {n}.', { n: i + 1 }));
+}
+
+function homeInfoMove(i, by) {
+  const lines = (homeInfoList || []).slice();
+  const j = i + by;
+  if (j < 0 || j >= lines.length) return;
+  [lines[i], lines[j]] = [lines[j], lines[i]];
+  homeInfoCommit(lines);
+}
+
+function homeInfoField(i, key, value) {
+  const lines = (homeInfoList || []).map(l => Object.assign({}, l));
+  if (!lines[i]) return;
+  lines[i][key] = value.trim();
+  homeInfoList = lines;
+  homeSaveLayout({ infoLines: lines });
+}
+
+function homeInfoSource(value) {
+  homeSaveLayout({ info: value });
+}
+
 
 function homeShow(key) {
   homeSaveLayout({ [key]: homeLayout[key] === false });

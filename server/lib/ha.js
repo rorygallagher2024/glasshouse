@@ -95,6 +95,7 @@ var HA_ENTITIES = [
   // ({"condition":"partlycloudy","temp":14.2}) and Glasshouse Home shows it
   // as the weather badge next to the clock. See docs/dashboard/home.md.
   { id: 'weather', type: 'text', name: 'Weather Push', cat: 'controls' },
+  { id: 'home_info', type: 'text', name: 'Home Info Push', cat: 'controls' },
   { id: 'picture_mode', type: 'select', name: 'Picture Mode (Select)', cat: 'controls' },
   { id: 'energy_saving', type: 'select', name: 'Energy Saving Step', cat: 'controls' },
   { id: 'sound_output', type: 'select', name: 'Sound Output', cat: 'controls' },
@@ -1138,6 +1139,17 @@ function buildEntities(opts) {
           mode: 'text',
           // No state_topic: nothing to read back, so the entity never
           // reports a value of its own in Home Assistant.
+          entity_category: 'config'
+        }
+      },
+      {
+        // Lines under Glasshouse Home's clock (lib/home.js, setHomeInfo).
+        type: 'text', id: 'home_info',
+        payload: {
+          name: 'Home Info Push',
+          command_topic: topic.command('homeInfo'),
+          icon: 'mdi:information-outline',
+          mode: 'text',
           entity_category: 'config'
         }
       },

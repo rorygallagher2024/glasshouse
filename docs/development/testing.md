@@ -245,6 +245,8 @@ before its first read.
 
 `test-home.js` also checks that apps take card icons from the card icon folder by title, or by a part of their app id only where the title has it, or the one chosen for them, that only names an app title can match are listed or served, that the card and pulse switches are saved only when sent as true or false, that the sound as focus moves is one Home has and that the two it ships with are there, that card transparency keeps to steps of ten from 0 to 90, and that card icons and the own sound uploaded from a dashboard are held to a card icon name, a PNG of at most 1280 × 720, and an OGG, WAV or MP3 file, that a new sound replaces the last whatever its kind, and that removing an icon clears any app's choice of it.
 
+`test-home-save-ui.js` checks that a save on the dashboard's Home tab that ends in an error leaves the tab able to save the next change.
+
 `test-home-video-idle.js` checks that Home's video background fades out and lets the video go after two minutes without a key, that a key plays it again, and that with the TV's screen saver time known it plays until that time and then asks for the screen saver; `test-home.js` that the heartbeat brings that time from LG's settings and that the screen saver is started only with the view in front and the TV awake.
 
 `test-home.js` also checks that an input keeps its hiding, place and custom name whether the TV lists the device on its port or not, and that with two devices on a port neither takes a setting kept for the port.
@@ -327,7 +329,7 @@ scrolling; failed socket creation reports none. `test-pointer-websocket.js` chec
 WebSocket upgrade, 403 refusal with controls disabled and masked JSON messages
 into LG's pointer stream.
 
-`test-routes.js` checks that an upload aborted before its file opens leaves no staged file, including a disconnect while disk space is being reserved. Between uploads it waits, up to 5 s, for the last one's file to be cleared, rather than a fixed time a slow runner can outlast. It also checks that the phone's setup link serves its page, `i18n.js` and a language file with the one-time code, the page asking for `i18n.js` with it, and refuses them without.
+`test-routes.js` checks that an upload aborted before its file opens leaves no staged file, including a disconnect while disk space is being reserved. Between uploads it waits, up to 5 s, for the last one's file to be cleared, rather than a fixed time a slow runner can outlast. It also checks that the phone's setup link serves its page, `i18n.js` and a language file with the one-time code, the page asking for `i18n.js` with it, and refuses them without. And that the dashboard's stylesheet and scripts are put inline in its page whether ui.html's lines end in LF or in CR LF, as Git for Windows checks them out.
 
 `test-stats-timeout.js` checks that a stats collection past its limit answers its callers with the last complete one, or the empty stand-in when none has finished, and carries on with no second collection started beside it; that `expireStats` does not take that fallback away; and that one given up on after 60 s answers no caller of the next.
 
