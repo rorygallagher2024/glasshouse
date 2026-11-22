@@ -323,14 +323,19 @@ test("rewriting the mounted table keeps what other tools added to it", function 
   }
 });
 
-test('Customer data host cdpsvc is blocked in both Ads & telemetry and Everything modes', function () {
+test('LG Channels\' content API cdpsvc is blocked only in Everything mode, its beacons in both', function () {
   var adsList = privacy.adBlockList('ads');
-  assert.ok(adsList.indexOf('cdpsvc.lgtvcommon.com') !== -1, 'cdpsvc base domain must be in ads mode');
-  assert.ok(adsList.indexOf('gb.cdpsvc.lgtvcommon.com') !== -1, 'regional cdpsvc must be in ads mode');
+  ['cdpsvc.lgtvcommon.com', 'gb.cdpsvc.lgtvcommon.com', 'aic.cdpsvc.lgtvcommon.com'].forEach(function (h) {
+    assert.strictEqual(adsList.indexOf(h), -1, h + ' must not be in ads mode (#1662)');
+  });
+  ['cdpbeacon.lgtvcommon.com', 'aic.cdpbeacon.lgtvcommon.com', 'cdpbeacon2.lgtvcommon.com'].forEach(function (h) {
+    assert.ok(adsList.indexOf(h) !== -1, h + ' must be in ads mode');
+  });
 
   var fullList = privacy.adBlockList('full');
   assert.ok(fullList.indexOf('cdpsvc.lgtvcommon.com') !== -1, 'cdpsvc base domain must be in full mode');
   assert.ok(fullList.indexOf('gb.cdpsvc.lgtvcommon.com') !== -1, 'regional cdpsvc must be in full mode');
+  assert.ok(fullList.indexOf('eic.cdpsvc.lgtvcommon.com') !== -1, 'region-prefixed cdpsvc must be in full mode');
 });
 
 test('Google push messaging is blocked only in Everything mode, on both address families', function () {

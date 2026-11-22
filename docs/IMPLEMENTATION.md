@@ -1204,7 +1204,11 @@ Additional coverage comes from Life's Good Without Spying's categorized lists:
 SmartAd's `ad.lgsmartad.com`, regional `ads`, `videoads` and `cdpbeacon2` under
 `lgtvcommon.com`, the Alphonso ad-inserter and overlay configuration, `lgads.tv`,
 and APM reporting are on Ads & telemetry. Home, account, ThinQ and LG Channels
-dependencies stay on Everything. Existing country/region generation is used
+dependencies stay on Everything, among them `cdpsvc.lgtvcommon.com` with its
+region and country prefixes: it is LG Channels' content API, and blocked, the
+app's `/dashboard` and `/gnb` calls fail and it shows NH501
+([#1662](https://github.com/rorygallagher2024/glasshouse/issues/1662)). Its
+beacons, `cdpbeacon` and `cdpbeacon2`, stay on Ads & telemetry. Existing country/region generation is used
 instead of importing every country's names. Classification and unobserved
 variants are [documented as upstream evidence](development/TV-RESEARCH.md#additional-categorized-domain-coverage).
 
