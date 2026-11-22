@@ -96,7 +96,6 @@ var ADBLOCK_REGIONAL = [
   'ibsstat.lgappstv.com',
   'cdpbeacon.lgtvcommon.com',
   'cdpbeacon2.lgtvcommon.com',
-  'cdpsvc.lgtvcommon.com',
   'wau.lgtvcommon.com',
   // adlogservice, a Python script LG updates over the air and runs through
   // com.webos.service.lsa, posts app and channel use with the TV's MAC address
@@ -104,7 +103,12 @@ var ADBLOCK_REGIONAL = [
   // gates it on the general terms alone, not on any advertising consent.
   'api.adts.lgtvcommon.com'
 ];
-var ADBLOCK_REGION_PREFIXES = ['aic', 'eic', 'kic', 'eu'];
+/*
+ * LG's service regions, and the macro-regions its SDP names use, which its ad
+ * hosts take too: a C1 (webOS 6.5) looked up eu7.info.lgsmartad.com, which no
+ * tier blocked (#1556).
+ */
+var ADBLOCK_REGION_PREFIXES = ['aic', 'eic', 'kic', 'eu', 'eu7', 'af', 'as', 'la', 'me', 'na'];
 // Until the TV has reported its country, the countries LG is seen using.
 var ADBLOCK_FALLBACK_COUNTRIES = ['us', 'gb', 'au', 'br', 'ca', 'de', 'fr'];
 var COUNTRY_FILE = '/var/lib/tvweb/country';
@@ -211,7 +215,11 @@ var ADBLOCK_PLATFORM_REGIONAL = [
   'push.lgtviot.com',
   'sports.lgtviot.com',
   'buddy.lgtviot.com',
-  'lgeapi.com'
+  'lgeapi.com',
+  // LG Channels' content API (cdp_service_secure): blocked, its /dashboard
+  // and /gnb calls fail and the app shows NH501 (#1662). Its beacons,
+  // cdpbeacon and cdpbeacon2, stay on Ads & telemetry.
+  'cdpsvc.lgtvcommon.com'
 ];
 // Blocking the Content Store's interface and recommendations breaks the store.
 // Their documented variants use country prefixes (TV-RESEARCH.md).
@@ -1059,19 +1067,65 @@ function scheduleSdpBlock() {
  * taken for the Homebrew Channel's.
  */
 function hbcLayerOnTop() {
+  var top = topHostsLayer();
+  return !!top && top.fstype === 'tmpfs' && top.root === '/hosts';
+}
+
+// The mount on top of /etc/hosts, from the mount table, or null.
+function topHostsLayer() {
   var info;
-  try { info = fs.readFileSync(MOUNTINFO, 'utf8'); } catch (e) { return false; }
+  try { info = fs.readFileSync(MOUNTINFO, 'utf8'); } catch (e) { return null; }
   var layers = [], parents = {};
   info.split('\n').forEach(function (line) {
     var sides = line.split(' - ');
     var parts = sides[0].split(' ');
     if (sides.length < 2 || parts[4] !== '/etc/hosts') return;
-    layers.push({ id: parts[0], root: parts[3], fstype: sides[1].split(' ')[0] });
+    layers.push({ id: parts[0], root: parts[3], fstype: sides[1].split(' ')[0],
+                  shared: parts.slice(6).some(function (f) { return /^shared:/.test(f); }) });
     parents[parts[1]] = true;
   });
   // The top one is the one no other is mounted on.
-  var top = layers.filter(function (l) { return !parents[l.id]; })[0];
-  return !!top && top.fstype === 'tmpfs' && top.root === '/hosts';
+  return layers.filter(function (l) { return !parents[l.id]; })[0] || null;
+}
+
+/*
+ * Binds the table over /etc/hosts. Where /etc/hosts is itself a mount shared
+ * with others, a mount on it reaches them too: on a B4 (webOS 10.3.2) the
+ * table also covered Life's Good Without Spying's file, which that tool's
+ * layer is bound from, so the tool copying /etc/hosts into its file failed
+ * (#1571); on a C2 (webOS 9.2) it also covered /tmp/hosts, which LG's
+ * /etc/hosts is. Made a slave first, that mount still takes what reaches it
+ * from the others but no longer passes this one on.
+ */
+function mountTable(cb) {
+  var bind = function () {
+    execFn('/bin/mount', ['--bind', ADBLOCK_HOSTS_FILE, '/etc/hosts'], { timeout: 3000 }, function (err) { cb(err); });
+  };
+  var top = topHostsLayer();
+  if (!top || !top.shared) return bind();
+  execFn('/bin/mount', ['--make-slave', '/etc/hosts'], { timeout: 3000 }, function (err) {
+    if (err) console.log('adblock: could not keep the table to /etc/hosts alone: ' + (err.message || err));
+    bind();
+  });
+}
+
+/*
+ * Puts other tools' lines, written into the table while it was up, into the
+ * /etc/hosts now under it, where that can be written: Life's Good Without
+ * Spying's file on a B4, LG's /tmp/hosts on a C2 (#1571). False where it
+ * cannot, as on a C4 (webOS 10.3.1) where it is the read-only rootfs.
+ */
+function putBackBelow(lines) {
+  try {
+    var below = fs.readFileSync('/etc/hosts', 'utf8');
+    if (below.indexOf(ADBLOCK_MARKER) !== -1 || below.indexOf(ADBLOCK_LEGACY_MARKER) !== -1) return false;
+    var text = below.replace(/\n*$/, '\n') + lines.join('\n') + '\n';
+    fs.writeFileSync('/etc/hosts', text, 'utf8');
+    var now = currentForeignHostsLines();
+    return lines.every(function (line) { return now.indexOf(line) !== -1; });
+  } catch (e) {
+    return false;
+  }
 }
 
 /*
@@ -1093,21 +1147,23 @@ function applyHostsTable(cb) {
     if (waitsForSdp(mode)) scheduleSdpBlock();
     else clearSdpTimer();
     if (mounted) return done();
-    return execFn('/bin/mount', ['--bind', ADBLOCK_HOSTS_FILE, '/etc/hosts'], { timeout: 3000 },
-      function (err) { if (!err) return done(); clearCache(); cb('could not mount the hosts table'); });
+    return mountTable(function (err) { if (!err) return done(); clearCache(); cb('could not mount the hosts table'); });
   }
   clearSdpTimer();
-  // Other tools' lines went into the table while it was up, and the
-  // /etc/hosts underneath can be on the read-only rootfs (a C4 on webOS
-  // 10.3.1), where they cannot go back. Then the table goes back up, blocking
-  // nothing, until the next reboot.
+  // Other tools' lines went into the table while it was up. They go into the
+  // /etc/hosts underneath where it can be written (putBackBelow); where it is
+  // on the read-only rootfs (a C4 on webOS 10.3.1) they cannot, and the table
+  // goes back up, blocking nothing, until the next reboot.
   var foreign = mounted ? currentForeignHostsLines() : [];
   var settle = function () {
     var below = currentForeignHostsLines();
     var lost = foreign.filter(function (line) { return below.indexOf(line) === -1; });
     if (!lost.length) return done();
-    execFn('/bin/mount', ['--bind', ADBLOCK_HOSTS_FILE, '/etc/hosts'], { timeout: 3000 },
-      function (err) { if (!err) return done(); clearCache(); cb('could not mount the hosts table'); });
+    if (putBackBelow(lost)) {
+      console.log('adblock: ' + lost.length + ' line(s) other tools added put back into /etc/hosts under the table');
+      return done();
+    }
+    mountTable(function (err) { if (!err) return done(); clearCache(); cb('could not mount the hosts table'); });
   };
   var liftHbc = function () {
     var hosts = readTrimmed('/etc/hosts') || '';
@@ -1122,8 +1178,7 @@ function applyHostsTable(cb) {
     } catch (e) {
       return cb('could not write the hosts table: ' + e.message);
     }
-    execFn('/bin/mount', ['--bind', ADBLOCK_HOSTS_FILE, '/etc/hosts'], { timeout: 3000 },
-      function (err) { if (!err) return done(); clearCache(); cb('could not mount the hosts table'); });
+    mountTable(function (err) { if (!err) return done(); clearCache(); cb('could not mount the hosts table'); });
   };
   if (!mounted) return liftHbc();
   if (foreign.length) {
@@ -1180,7 +1235,7 @@ function checkBootAdBlock(cliMode) {
     var need = tableWanted(mode);
     if (need) writeHostsTable(mode);
     if (need && !isTableMounted()) {
-      execFn('/bin/mount', ['--bind', ADBLOCK_HOSTS_FILE, '/etc/hosts'], { timeout: 3000 }, function (err) {
+      mountTable(function (err) {
         clearCache();
         if (!err) {
           syncAppHosts();
