@@ -3765,6 +3765,8 @@
  "home.navSoundDesc": {"text": "Un sonido cada vez que las flechas mueven el foco y cada vez que se pulsa OK o Atrás: un clic, un roce más suave o un sonido propio.", "from": "A sound each time the arrow keys move focus, and each time OK or Back is pressed: a click, a softer rollover, or a sound of your own."},
  "home.pointerSound": {"text": "Sonido al moverse con el puntero", "from": "Sound when moving with the pointer"},
  "home.pointerSoundDesc": {"text": "Un sonido cada vez que el puntero o la rueda del Magic Remote mueven el foco y en cada clic: un clic, un roce más suave o un sonido propio.", "from": "A sound each time the Magic Remote's pointer or wheel moves focus, and each time it clicks: a click, a softer rollover, or a sound of your own."},
+ "srv.ask.yes": {"from": "Yes", "text": "Sí"},
+ "srv.ask.no": {"from": "No", "text": "No"},
  "home.info.date": {"from": "{day} {month}", "text": "{day} {month}"},
  "home.info.today": {"from": "today", "text": "hoy"},
  "home.info.tomorrow": {"from": "tomorrow", "text": "mañana"},
