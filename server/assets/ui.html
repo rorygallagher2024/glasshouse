@@ -1689,16 +1689,20 @@
           <span class="ss-li-count num" id="home-info-count"></span>
         </div>
         <div class="ss-li-add">
-          <input type="text" id="home-info-add" list="home-info-entities" autocomplete="off" spellcheck="false"
-            aria-describedby="home-info-add-hint home-info-msg"
-            onkeydown="if(event.key==='Enter'){event.preventDefault();homeInfoAdd();}">
+          <div class="ss-ent-wrap">
+            <input type="text" id="home-info-add" autocomplete="off" spellcheck="false"
+              aria-describedby="home-info-add-hint home-info-msg" aria-expanded="false"
+              oninput="homeInfoFilter()"
+              onkeydown="if(!haPickerKeydown(event,'home:info')&&event.key==='Enter'){event.preventDefault();homeInfoAdd();}">
+            <button type="button" class="ss-ent-btn" id="home-info-pick-btn" title="Choose entity" data-t-title="ss.chooseEntity" aria-label="Choose entity" data-t-aria-label="ss.chooseEntity" onclick="homeInfoTogglePicker()">&#9662;</button>
+            <div class="ss-pick-list ss-ha-list ha-picker" id="home-info-picker" hidden></div>
+          </div>
           <button type="button" class="ss-li-add-btn" id="home-info-add-btn" onclick="homeInfoAdd()" data-t="ss.entityList.addBtn">Add</button>
         </div>
         <div class="home-info-hint" id="home-info-add-hint"></div>
         <div class="home-info-msg" id="home-info-msg" role="status" aria-live="polite"></div>
       </div>
       <div id="home-info-lines"></div>
-      <datalist id="home-info-entities"></datalist>
     </div>
     <div class="prot-row home-gh-row" id="home-remote-battery-row" hidden>
       <div class="prot-main">
@@ -2859,6 +2863,7 @@
 <script src="/assets/ui/apps.js"></script>
 <script src="/assets/ui/install.js"></script>
 <script src="/assets/ui/inputs.js"></script>
+<script src="/assets/ui/ha-picker.js"></script>
 <script src="/assets/ui/home.js"></script>
 <script src="/assets/ui/iptv.js"></script>
 <script src="/assets/ui/tvchannels.js"></script>
