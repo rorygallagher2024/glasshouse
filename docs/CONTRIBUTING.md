@@ -127,6 +127,10 @@ covers.
   owner, in a sentence or two, without how it works.
 * Findings about LG's software go in `docs/development/TV-RESEARCH.md`, and
   anything the server changes on the TV in `docs/TV-CHANGES.md`.
+* [Remote keys](remote-keys.md) is made from the `KEYS` list in
+  `server/lib/remotekeys.js` by `scripts/gen-remote-keys-doc.js`: a key's LG
+  button name (`lg`) and logged name (`log`) go there, and the page is
+  regenerated.
 
 ## Code reviews
 
