@@ -80,6 +80,11 @@ if [ -f /var/lib/tvweb/adblock_enabled ] && [ -f /var/lib/tvweb/adblock_hosts ];
   } > /var/lib/tvweb/adblock_hosts.new 2>/dev/null \
     && cat /var/lib/tvweb/adblock_hosts.new > /var/lib/tvweb/adblock_hosts
   rm -f /var/lib/tvweb/adblock_hosts.new
+  # Where /etc/hosts is a shared mount, as LG's on a C2 and another tool's on a
+  # B4, the table would reach the file under it too (#1571): kept to /etc/hosts.
+  if awk '$5 == "/etc/hosts" { for (i = 7; $i != "-"; i++) if ($i ~ /^shared:/) s = 1 } END { exit !s }' /proc/self/mountinfo 2>/dev/null; then
+    mount --make-slave /etc/hosts 2>/dev/null || true
+  fi
   mount --bind /var/lib/tvweb/adblock_hosts /etc/hosts 2>/dev/null || true
 fi
 

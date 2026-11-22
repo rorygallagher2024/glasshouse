@@ -1124,9 +1124,20 @@ Good Without Spying and LG App Update Blocker write nothing else, and the table
 the Homebrew Channel's update block mounts would otherwise switch them off
 (#1370). They sit under a `# Kept from /etc/hosts` header, which tells them
 apart from the table's own sinkholes when it is written again. Switched off,
-the table comes down unless the file underneath lacks some of them: on a C4 on
-webOS 10.3.1 that file is on the read-only squashfs rootfs, so the table goes
-back up blocking nothing, and stays until the next reboot. A line is the
+the table comes down, and any of them the file underneath lacks are written
+into it. Where that file cannot be written, as on a C4 on webOS 10.3.1 where it
+is on the read-only squashfs rootfs, the table goes back up blocking nothing,
+and stays until the next reboot.
+
+`/etc/hosts` can itself be a shared mount: LG's on a C2 (webOS 9.2) is
+`/tmp/hosts` bound there, and on a B4 (webOS 10.3.2) Life's Good Without
+Spying binds its own file there. A mount on it then reaches its peers, so the
+table also covered `/tmp/hosts` or that tool's file, and the tool, which
+copies `/etc/hosts` into its file, failed
+([#1571](https://github.com/rorygallagher2024/glasshouse/issues/1571)). So
+before the table is bound, both by the server and by `50-tvweb`, the mount at
+`/etc/hosts` is made a slave (`mount --make-slave`): it still takes what
+reaches it from its peers, and no longer passes the table on. A line is the
 blocker's own if it is a comment, a localhost line, one of its sinkholes above
 that header, or a non-sinkhole line naming a host the table decides on, and
 anyone else's otherwise. The last rule is for the Homebrew Channel's update
