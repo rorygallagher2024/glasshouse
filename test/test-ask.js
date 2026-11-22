@@ -2,7 +2,7 @@
  * test/test-ask.js - A question sent to command/ask opens the question app,
  * installed the first time, and its answer, Back, its time running out or a
  * newer question each end it with one event; answers to a question already
- * ended are dropped.
+ * ended, or without the question's token, are dropped.
  *
  * Strict ES5: runs on node 0.12.
  */
@@ -19,6 +19,8 @@ var ask = require('../server/lib/ask');
 console.log('Running test-ask.js ...');
 
 var launches = [], events = [], appActions = [], installedNow = false, refuseLaunch = false;
+// The token the app was last launched with.
+function tok() { return launches[launches.length - 1].params.token; }
 ask.init({
   luna: function (uri, params, cb) {
     if (uri === 'com.webos.applicationManager/launch') launches.push(params);
@@ -53,15 +55,22 @@ assert.deepEqual(result, { ok: true });
 assert.deepEqual(appActions, ['status', 'install']);
 assert.strictEqual(launches.length, 1);
 assert.strictEqual(launches[0].id, ask.APP);
-var cur = ask.current();
+var token = tok();
+assert.ok(/^[0-9a-f]{32}$/.test(token), 'the app is launched with the question\'s token');
+assert.strictEqual(ask.current(), null, 'no token, no question');
+var wrong = (token.charAt(0) === 'a' ? 'b' : 'a') + token.slice(1);
+assert.strictEqual(ask.current(wrong), null, 'a wrong token reads nothing');
+var cur = ask.current(token);
 assert.strictEqual(cur.title, 'Cinema?');
 assert.strictEqual(cur.options[1].label, 'Nej');
-assert.strictEqual(ask.answer(cur.seq, 'maybe'), false, 'an option not offered is refused');
-assert.strictEqual(ask.answer(cur.seq + 1, 'ja'), false, 'another question\'s answer is refused');
-assert.strictEqual(ask.answer(cur.seq, 'ja'), true);
+assert.strictEqual(cur.token, undefined, 'the token is not handed back');
+assert.strictEqual(ask.answer(token, 'maybe'), false, 'an option not offered is refused');
+assert.strictEqual(ask.answer(String(cur.seq), 'ja'), false, 'the seq alone answers nothing');
+assert.strictEqual(ask.answer('', 'ja'), false);
+assert.strictEqual(ask.answer(token, 'ja'), true);
 assert.deepEqual(events, [{ event_type: 'answer', id: 'cinema', choice: 'ja', label: 'Ja' }]);
-assert.strictEqual(ask.current(), null);
-assert.strictEqual(ask.answer(cur.seq, 'ja'), false, 'answered once only');
+assert.strictEqual(ask.current(token), null);
+assert.strictEqual(ask.answer(token, 'ja'), false, 'answered once only');
 assert.strictEqual(timers.length, 0, 'the server\'s timeout is cleared by the answer');
 console.log('  ✓ the first question installs the app, and its answer is published once');
 
@@ -69,23 +78,25 @@ console.log('  ✓ the first question installs the app, and its answer is publis
 events = [];
 ask.ask({ id: 'q2', title: 'Two' });
 assert.deepEqual(appActions, ['status', 'install']);
-ask.answer(ask.current().seq, '', 'dismissed');
+ask.answer(tok(), '', 'dismissed');
 assert.deepEqual(events, [{ event_type: 'dismissed', id: 'q2' }]);
 console.log('  ✓ Back is published as dismissed');
 
 // A newer question replaces one waiting.
 events = [];
 ask.ask({ id: 'old', title: 'Old' });
-var oldSeq = ask.current().seq;
+var oldToken = tok();
 ask.ask({ id: 'new', title: 'New' });
 assert.deepEqual(events, [{ event_type: 'replaced', id: 'old' }]);
-assert.strictEqual(ask.answer(oldSeq, 'yes'), false);
-assert.strictEqual(ask.current().id, 'new');
+assert.notStrictEqual(tok(), oldToken, 'each question has its own token');
+assert.strictEqual(ask.answer(oldToken, 'yes'), false);
+assert.strictEqual(ask.current(oldToken), null);
+assert.strictEqual(ask.current(tok()).id, 'new');
 console.log('  ✓ a newer question replaces the one waiting');
 
 // The page timing out, and the server's own timeout behind it.
 events = [];
-ask.answer(ask.current().seq, '', 'timeout');
+ask.answer(tok(), '', 'timeout');
 assert.deepEqual(events, [{ event_type: 'timeout', id: 'new' }]);
 events = [];
 ask.ask({ id: 'lost', title: 'Lost', timeout: 10 });
@@ -101,7 +112,7 @@ ask.ask({ id: 'phone', title: 'Phone' });
 assert.strictEqual(ask.close('other'), false, 'another question\'s id leaves it');
 assert.strictEqual(ask.close('phone'), true);
 assert.deepEqual(events, [{ event_type: 'closed', id: 'phone' }]);
-assert.strictEqual(ask.current(), null);
+assert.strictEqual(ask.current(tok()), null);
 assert.strictEqual(ask.close(''), false);
 console.log('  ✓ askClose takes the question away and the page closes');
 
@@ -111,7 +122,7 @@ refuseLaunch = true;
 ask.ask({ id: 'nope', title: 'Nope' }, function (r) { result = r; });
 assert.strictEqual(result.ok, false);
 assert.deepEqual(events, [{ event_type: 'failed', id: 'nope' }]);
-assert.strictEqual(ask.current(), null);
+assert.strictEqual(ask.current(tok()), null);
 console.log('  ✓ a launch the TV refuses is published as failed');
 
 console.log('\nALL test-ask.js assertions passed!\n');

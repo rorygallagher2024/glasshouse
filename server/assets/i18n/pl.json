@@ -3783,5 +3783,7 @@
  "ss.entities2": {"text": "Encje", "from": "Entities"},
  "ss.tvOff": {"text": "Telewizor jest wyłączony. Włącz go, aby uruchomić wygaszacz.", "from": "The TV is off. Switch it on to start a screen saver."},
  "home.pointerSound": {"text": "Dźwięk przy przechodzeniu wskaźnikiem", "from": "Sound when moving with the pointer"},
- "home.pointerSoundDesc": {"text": "Dźwięk przy każdym przesunięciu fokusu wskaźnikiem lub rolką Magic Remote oraz przy każdym kliknięciu: kliknięcie, łagodniejsze muśnięcie albo własny dźwięk.", "from": "A sound each time the Magic Remote's pointer or wheel moves focus, and each time it clicks: a click, a softer rollover, or a sound of your own."}
+ "home.pointerSoundDesc": {"text": "Dźwięk przy każdym przesunięciu fokusu wskaźnikiem lub rolką Magic Remote oraz przy każdym kliknięciu: kliknięcie, łagodniejsze muśnięcie albo własny dźwięk.", "from": "A sound each time the Magic Remote's pointer or wheel moves focus, and each time it clicks: a click, a softer rollover, or a sound of your own."},
+ "srv.ask.yes": {"from": "Yes", "text": "Tak"},
+ "srv.ask.no": {"from": "No", "text": "Nie"}
 }

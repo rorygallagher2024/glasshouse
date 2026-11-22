@@ -377,7 +377,7 @@ action:
 The temperature is shown as sent, in the unit the weather entity uses. `city` is optional.
 
 ### 7. Ask a question on the TV
-`<topicPrefix>/command/ask` shows a question over the picture with a button for each answer, chosen with the remote's arrows and OK or with the pointer. Back dismisses it, and it goes away by itself after `timeout` seconds (30 unless given, at most 600). The question's app is put on the TV the first time one is asked, which takes a few seconds; after that it opens at once.
+`<topicPrefix>/command/ask` shows a question over the picture with a button for each answer, chosen with the remote's arrows and OK or with the pointer. Back dismisses it, and it goes away by itself after `timeout` seconds (30 unless given, at most 600). The question's app is put on the TV the first time one is asked, which takes a few seconds; after that it opens at once. A question with no `options` gets Yes and No in the TV's language. Like the other commands, it is refused when control is switched off in `config.json`.
 
 For a yes/no question there is a blueprint that needs no YAML: [![Open the blueprint in Home Assistant](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fraw.githubusercontent.com%2Frorygallagher2024%2Fglasshouse%2Fmain%2Fblueprints%2Fautomation%2Fglasshouse%2Fask-on-tv.yaml)
 

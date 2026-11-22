@@ -3782,5 +3782,7 @@
  "ss.entities2": {"text": "Entiteter", "from": "Entities"},
  "ss.tvOff": {"text": "TV:n är avstängd. Slå på den för att starta en skärmsläckare.", "from": "The TV is off. Switch it on to start a screen saver."},
  "ctl.pointer.motionHint": {"text": "Håll kvar här och peka med telefonen för att flytta. Släpp för att stanna. Tryck för att klicka.", "from": "Hold here and point the phone to move. Let go to stop. Tap to click."},
- "rp.motion": {"text": "Rörelse", "from": "Motion"}
+ "rp.motion": {"text": "Rörelse", "from": "Motion"},
+ "srv.ask.yes": {"from": "Yes", "text": "Ja"},
+ "srv.ask.no": {"from": "No", "text": "Nej"}
 }

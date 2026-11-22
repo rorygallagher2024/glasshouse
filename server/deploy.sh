@@ -73,8 +73,7 @@ assets/inputbar-app/appinfo.json assets/inputbar-app/index.html assets/inputbar-
 assets/homebar-app/appinfo.json assets/homebar-app/index.html assets/homebar-app/packageinfo.json \
 assets/homebar-app/assets/icon80.png assets/homebar-app/assets/icon130.png \
 assets/inputbar-app/assets/icon80.png assets/inputbar-app/assets/icon130.png \
-assets/ask-app/appinfo.json assets/ask-app/index.html assets/ask-app/packageinfo.json \
-assets/ask-app/assets/icon80.png assets/ask-app/assets/icon130.png \
+assets/ask-app/appinfo.json assets/ask-app/index.html assets/ask-app/packageinfo.json assets/ask.html \
 assets/home-app/appinfo.json assets/home-app/index.html assets/home-app/packageinfo.json \
 assets/home-app/assets/icon80.png assets/home-app/assets/icon130.png \
 assets/fonts/Outfit.ttf assets/fonts/Manrope.ttf \

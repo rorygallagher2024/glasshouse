@@ -2093,7 +2093,10 @@ function setupHomeAssistant() {
     }
 
     // A question with buttons (lib/ask.js), answered on events/ask.
+    // Refused with controls off, as doControl refuses the other commands: it
+    // installs and opens an app.
     if (action === 'ask') {
+      if (!CONFIG.allowControl) return console.error('mqtt: ask failed: ' + msg('srv.controlsOff', 'controls disabled in config'));
       askQuestion.ask(val, function (r) {
         if (!r || !r.ok) console.error('mqtt: ask failed: ' + ((r && r.error) || 'unknown error'));
       });

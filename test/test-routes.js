@@ -1616,5 +1616,41 @@ function createMockRes(cb) {
   }));
 })();
 
+// The question app's routes: from the TV only, the question read with its
+// token, the answer a JSON POST, worded in the TV's language.
+(function testAskRoutes() {
+  var asked = [];
+  routes.init({
+    config: { allowControl: true, token: 'secret', web: { enabled: true } },
+    clock: { hour12: function () { return false; }, qtLocale: function () { return 'sv_SE'; } },
+    ask: {
+      current: function (token) { asked.push(['current', token]); return token === 'abc' ? { seq: 1, title: 'Q', options: [] } : null; },
+      answer: function (token, choice, how) { asked.push(['answer', token, choice, how]); return token === 'abc'; }
+    }
+  });
+  routes.handleRequest(createMockReq({ url: '/api/ask/current?token=abc', remoteAddress: '192.168.1.50' }), createMockRes(function (r) {
+    assert.ok(r.statusCode === 401 || r.statusCode === 403, 'not from the network');
+  }));
+  routes.handleRequest(createMockReq({ url: '/api/ask/current?token=abc' }), createMockRes(function (r) {
+    assert.strictEqual(r.statusCode, 200);
+    assert.strictEqual(JSON.parse(r.body).question.title, 'Q');
+  }));
+  routes.handleRequest(createMockReq({ url: '/api/ask/answer?token=abc&choice=yes' }), createMockRes(function (r) {
+    assert.strictEqual(r.statusCode, 405, 'an answer is not taken from a GET');
+  }));
+  var post = createMockReq({ url: '/api/ask/answer', method: 'POST', headers: { 'content-type': 'text/plain' } });
+  routes.handleRequest(post, createMockRes(function (r) {
+    assert.strictEqual(r.statusCode, 415, 'a simple content type is refused');
+  }));
+  post = createMockReq({ url: '/api/ask/answer', method: 'POST', headers: { 'content-type': 'application/json' } });
+  var answered = null;
+  routes.handleRequest(post, createMockRes(function (r) { answered = JSON.parse(r.body); }));
+  post.emit('data', JSON.stringify({ token: 'abc', choice: 'yes' }));
+  post.emit('end');
+  assert.deepEqual(answered, { ok: true, taken: true });
+  assert.deepEqual(asked, [['current', 'abc'], ['answer', 'abc', 'yes', '']]);
+  console.log('  ✓ the question app reads with its token and answers with a JSON POST, from the TV only');
+})();
+
 console.log('ALL test-routes.js assertions passed!');
 process.exit(0);

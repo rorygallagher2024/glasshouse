@@ -3765,5 +3765,7 @@
  "home.navSound": {"text": "Som ao mover com os botões", "from": "Sound when moving with the buttons"},
  "home.navSoundDesc": {"text": "Um som sempre que as setas movem o foco e a cada toque em OK ou Voltar: um clique, um toque mais suave ou um som seu.", "from": "A sound each time the arrow keys move focus, and each time OK or Back is pressed: a click, a softer rollover, or a sound of your own."},
  "home.pointerSound": {"text": "Som ao mover com o ponteiro", "from": "Sound when moving with the pointer"},
- "home.pointerSoundDesc": {"text": "Um som sempre que o ponteiro ou a roda do Magic Remote movem o foco e a cada clique: um clique, um toque mais suave ou um som seu.", "from": "A sound each time the Magic Remote's pointer or wheel moves focus, and each time it clicks: a click, a softer rollover, or a sound of your own."}
+ "home.pointerSoundDesc": {"text": "Um som sempre que o ponteiro ou a roda do Magic Remote movem o foco e a cada clique: um clique, um toque mais suave ou um som seu.", "from": "A sound each time the Magic Remote's pointer or wheel moves focus, and each time it clicks: a click, a softer rollover, or a sound of your own."},
+ "srv.ask.yes": {"from": "Yes", "text": "Sim"},
+ "srv.ask.no": {"from": "No", "text": "Não"}
 }

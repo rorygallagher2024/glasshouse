@@ -841,6 +841,16 @@ function authed(q, req) {
   return !!(req && fromTV(req));
 }
 
+// The TV's menu language as a language file names it (sv, pt-br), or null
+// with no file for it or before the TV has said.
+function tvLang() {
+  var locale = clockModule && clockModule.qtLocale ? String(clockModule.qtLocale() || '') : '';
+  if (!locale) return null;
+  var parts = locale.toLowerCase().split(/[_-]/);
+  var ask = function (code) { return say.langOf({ headers: { 'x-glasshouse-lang': code } }); };
+  return (parts[1] && ask(parts[0] + '-' + parts[1])) || ask(parts[0]);
+}
+
 // A request made on the TV itself - the on-TV app, or anything else running
 // there, which has root already. Nothing on the network can present as this.
 function fromTV(req) {
@@ -2598,14 +2608,21 @@ function handleRequest(req, res) {
     });
   }
 
-  // The question app (lib/ask.js) on the TV: GETs, as it cannot POST from
-  // its file:// origin, so taken only from the TV itself.
+  // The question app (lib/ask.js), only from the TV and only with the
+  // question's token. The card is worded in the TV's language: it shows over
+  // the picture, not on a dashboard that says which it wants.
   if ((pathname === '/api/ask/current' || pathname === '/api/ask/answer') && askModule) {
     if (!fromTV(req)) return send(res, 403, JSON.stringify({ ok: false, error: 'only from the TV' }));
-    if (pathname === '/api/ask/current') return send(res, 200, JSON.stringify({ ok: true, question: askModule.current() }));
-    var askQuery = u.query || {};
-    var taken = askModule.answer(String(askQuery.seq || ''), String(askQuery.choice || ''), String(askQuery.how || ''));
-    return send(res, 200, JSON.stringify({ ok: true, taken: taken }));
+    if (pathname === '/api/ask/current') {
+      var askLang = tvLang();
+      if (askLang) /** @type {any} */ (res).glasshouseLang = askLang;
+      return send(res, 200, JSON.stringify({ ok: true, question: askModule.current(String((u.query || {}).token || '')) }));
+    }
+    if (req.method !== 'POST') return send(res, 405, JSON.stringify({ ok: false, error: 'POST only' }));
+    return readJsonBody(req, res, function (body) {
+      var taken = askModule.answer(String(body.token || ''), String(body.choice || ''), String(body.how || ''));
+      send(res, 200, JSON.stringify({ ok: true, taken: taken }));
+    });
   }
 
   if (pathname.indexOf('/api/home/') === 0 || pathname === '/api/home') {

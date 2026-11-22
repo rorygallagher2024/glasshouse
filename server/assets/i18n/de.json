@@ -1127,5 +1127,7 @@
  "ss.ha.reads": {"text": "Liest", "from": "Reads"},
  "ss.ha.settings": {"text": "Bildschirmschoner-Einstellungen", "from": "Screen saver settings"},
  "ss.entities2": {"text": "Entitäten", "from": "Entities"},
- "ss.tvOff": {"text": "Der Fernseher ist aus. Schalten Sie ihn ein, um einen Bildschirmschoner zu starten.", "from": "The TV is off. Switch it on to start a screen saver."}
+ "ss.tvOff": {"text": "Der Fernseher ist aus. Schalten Sie ihn ein, um einen Bildschirmschoner zu starten.", "from": "The TV is off. Switch it on to start a screen saver."},
+ "srv.ask.yes": {"from": "Yes", "text": "Ja"},
+ "srv.ask.no": {"from": "No", "text": "Nein"}
 }

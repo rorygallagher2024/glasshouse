@@ -16,12 +16,17 @@
  * elsewhere. The page asks every second whether its question still stands,
  * and closes when it does not.
  *
- * The page cannot POST to the server (its file:// origin is refused), so it
- * reads the question and hands back the answer with GETs, which routes.js
- * takes only from the TV itself.
+ * The app opens assets/ask.html from the server, as Glasshouse Home's app
+ * opens home.html, so the card has Glasshouse's font and answers with a POST
+ * behind the CSRF guard. Each question has a random token, handed to the app
+ * in its launch parameters: reading the question and answering it need it, so
+ * nothing else on the TV, such as a page counting through seq, can answer.
  *
  * Strict ES5: runs on node 0.12.
  */
+var crypto = require('crypto');
+var msg = require('./say').msg;
+
 var APP = 'com.tvweb.ask';
 var MAX_OPTIONS = 4;
 var MAX_TEXT = 200;
@@ -37,7 +42,7 @@ var tvAppFn = null;
 /** @type {function(Object): void} */
 var publishFn = function () {};
 var installed = null;   // whether the app is on the TV, once looked at
-var pending = null;     // { id, title, message, options, timeout, seq }
+var pending = null;     // { id, title, message, options, timeout, seq, token }
 var backstop = null;
 var seq = 0;
 
@@ -68,7 +73,9 @@ function parse(raw) {
     var id = trimmed(o.id || label || ('option' + (i + 1)), MAX_LABEL);
     if (label) options.push({ id: id, label: label });
   });
-  if (!options.length) options = [{ id: 'yes', label: 'Yes' }, { id: 'no', label: 'No' }];
+  if (!options.length) {
+    options = [{ id: 'yes', label: msg('srv.ask.yes', 'Yes') }, { id: 'no', label: msg('srv.ask.no', 'No') }];
+  }
   var timeout = parseInt(q.timeout, 10);
   if (!(timeout > 0)) timeout = DEFAULT_TIMEOUT_S;
   if (timeout > MAX_TIMEOUT_S) timeout = MAX_TIMEOUT_S;
@@ -102,7 +109,7 @@ function finish(eventType, choice) {
 }
 
 function launch(q, cb) {
-  lunaFn('com.webos.applicationManager/launch', { id: APP, params: { ask: q.seq } }, function (r) {
+  lunaFn('com.webos.applicationManager/launch', { id: APP, params: { ask: q.seq, token: q.token } }, function (r) {
     cb(!!(r && r.returnValue), r);
   });
 }
@@ -116,6 +123,7 @@ function ask(raw, cb) {
   finish('replaced');
   var q = parsed.question;
   q.seq = ++seq;
+  q.token = crypto.randomBytes(16).toString('hex');
   pending = q;
   backstop = setTimeout(function () {
     if (pending === q) finish('timeout');
@@ -155,9 +163,13 @@ function close(id) {
   return finish('closed');
 }
 
-// What the page shows: the question waiting, or null.
-function current() {
-  if (!pending) return null;
+function tokenMatches(token) {
+  return !!pending && typeof token === 'string' && token.length > 0 && token === pending.token;
+}
+
+// What the page shows: the question waiting, or null, for its token only.
+function current(token) {
+  if (!tokenMatches(token)) return null;
   return {
     seq: pending.seq, id: pending.id, title: pending.title, message: pending.message,
     options: pending.options, focus: pending.focus, timeout: pending.timeout
@@ -166,11 +178,11 @@ function current() {
 
 /*
  * From the page: choice is an option's id, or empty with how it ended
- * ('dismissed' or 'timeout'). A seq that is no longer the question waiting
- * is an answer to one already replaced, and is dropped.
+ * ('dismissed' or 'timeout'). A token that is not the question waiting's is
+ * an answer to one already replaced, or not from the app, and is dropped.
  */
-function answer(seqNo, choice, how) {
-  if (!pending || String(pending.seq) !== String(seqNo)) return false;
+function answer(token, choice, how) {
+  if (!tokenMatches(token)) return false;
   if (choice) {
     var picked = pending.options.filter(function (o) { return o.id === choice; })[0];
     if (!picked) return false;

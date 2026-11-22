@@ -3779,5 +3779,7 @@
  "home.navSound": {"text": "Hang a gombokkal való mozgáskor", "from": "Sound when moving with the buttons"},
  "home.navSoundDesc": {"text": "Hang minden alkalommal, amikor a nyílgombok mozgatják a fókuszt, és minden OK vagy Vissza gombnyomáskor: kattanás, lágyabb suhanás vagy saját hang.", "from": "A sound each time the arrow keys move focus, and each time OK or Back is pressed: a click, a softer rollover, or a sound of your own."},
  "home.pointerSound": {"text": "Hang a mutatóval való mozgáskor", "from": "Sound when moving with the pointer"},
- "home.pointerSoundDesc": {"text": "Hang minden alkalommal, amikor a Magic Remote mutatója vagy görgője mozgatja a fókuszt, és minden kattintáskor: kattanás, lágyabb suhanás vagy saját hang.", "from": "A sound each time the Magic Remote's pointer or wheel moves focus, and each time it clicks: a click, a softer rollover, or a sound of your own."}
+ "home.pointerSoundDesc": {"text": "Hang minden alkalommal, amikor a Magic Remote mutatója vagy görgője mozgatja a fókuszt, és minden kattintáskor: kattanás, lágyabb suhanás vagy saját hang.", "from": "A sound each time the Magic Remote's pointer or wheel moves focus, and each time it clicks: a click, a softer rollover, or a sound of your own."},
+ "srv.ask.yes": {"from": "Yes", "text": "Igen"},
+ "srv.ask.no": {"from": "No", "text": "Nem"}
 }

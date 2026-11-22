@@ -3779,5 +3779,7 @@
  "home.navSound": {"text": "Suono quando ti sposti con i tasti", "from": "Sound when moving with the buttons"},
  "home.navSoundDesc": {"text": "Un suono ogni volta che le frecce spostano il focus e a ogni pressione di OK o Indietro: un clic, un passaggio più morbido o un suono tuo.", "from": "A sound each time the arrow keys move focus, and each time OK or Back is pressed: a click, a softer rollover, or a sound of your own."},
  "home.pointerSound": {"text": "Suono quando ti sposti con il puntatore", "from": "Sound when moving with the pointer"},
- "home.pointerSoundDesc": {"text": "Un suono ogni volta che il puntatore o la rotella del Magic Remote spostano il focus e a ogni clic: un clic, un passaggio più morbido o un suono tuo.", "from": "A sound each time the Magic Remote's pointer or wheel moves focus, and each time it clicks: a click, a softer rollover, or a sound of your own."}
+ "home.pointerSoundDesc": {"text": "Un suono ogni volta che il puntatore o la rotella del Magic Remote spostano il focus e a ogni clic: un clic, un passaggio più morbido o un suono tuo.", "from": "A sound each time the Magic Remote's pointer or wheel moves focus, and each time it clicks: a click, a softer rollover, or a sound of your own."},
+ "srv.ask.yes": {"from": "Yes", "text": "Sì"},
+ "srv.ask.no": {"from": "No", "text": "No"}
 }
