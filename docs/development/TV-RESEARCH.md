@@ -784,6 +784,17 @@ On an OLED65B8SLC (webOS 4.4.3) and an OLED42C24LA (webOS 9.2.2) set to the UK
 `systemprefs.db`. The clocks Glasshouse draws follow it, and a TV that answers
 without `timeFormat` is taken as 24-hour.
 
+## The screen saver app's QML locale (C6, webOS 11.1)
+
+QML screen savers run inside LG's `com.webos.app.screensaver`, whose QML
+locale stays `en_US` whatever the TV's menu language: on an OLED77C64LA
+(webOS 11.1.0) set to Swedish, `Qt.formatDate(now, "dddd d MMMM")` gave
+"Sunday 22 November". The menu language is read from
+`com.webos.settingsservice/getSystemSettings` with `keys: ["localeInfo"]`, as
+`settings.localeInfo.locales.UI` (`sv-SE`): on that TV, adding
+`category: "option"` gave an answer without `localeInfo`, and the dates stayed
+English until the key was asked for without a category.
+
 ## Home input titles (G3, webOS 9.2.2)
 
 HDMI launch points added by Glasshouse are bookmarks with `systemApp: false`.
@@ -2098,6 +2109,56 @@ manager launched only HDMI 4 in nine minutes of the same file, and set back to
   own check closes it unseen.
 - **The compositor's restart leaves no app.** With Glasshouse Home off nothing
   opens LG's Home after it, and the screen stays black until an app is launched.
+
+## The channel keys, native key filters (OLED48C54LA, webOS 11.2.0, firmware 43.21.77)
+
+- **Volume and channel reach the key filters.** `libsystemUI.so`'s
+  `handleSystemKeys` names `KEY_CHANNELUP`, `KEY_CHANNELDOWN` and calls
+  `master/volumeUp` itself. Nothing in `com.webos.keyaction.*` names the channel
+  keys; `com.webos.keyaction.volume` is `{ action: "ignore" }`.
+- **The first filter blocks what the profile lists.** `handleKeyBlockByApp`
+  (`libpreProcess.so`, first in `keyFiltersCpp`) asks
+  `systemprofile/getProfiles` for `blockedKeys` once, as it loads, and accepts
+  every event of a key whose code is in it, after `createToast(0x2b)`, LG's
+  "This button is not available" notice. The list is empty on this TV.
+- **`blockedKeys` cannot be set from outside.** `profile_generator` reads each
+  JSON file in `/var/webos-profile/override/` (`[override_directory] file:`)
+  and copies a value it does not know into
+  `/var/webos-profile/platform/profile.json` as it is, an array included, but
+  recomputes `blockedKeys`, `blockedOrgKeys` and `blockedApps` from the feature
+  files in `/etc/webos-profile/platform/configuration/` (`[process] ignore
+  feature : blockedKeys`), each a list of key names that `profile_keymap.json`
+  turns into codes (`IR_KEY_CH_UP` 402). No feature lists the channel keys, and
+  a feature named only in an override is ignored too. `debug/rescan` runs the
+  generator again; `getProfiles` returns the new value within a few seconds.
+- **Two 11-character names make the list Glasshouse's.** The filter's request
+  `{"names":["blockedKeys"]}` (at 0x1533f) and the name it reads in the answer
+  (0x152a8, only used there) both made `tvwebBlocks`, an override value, and
+  the filter took 402 and 403, nothing of LG's acting on them, Live TV
+  included. The toast call (`blx` at 0xb7b8) has no result anyone reads.
+- **Only whitelisted log lines reach `/var/log/messages`.** PmLogDaemon passes
+  the context and message id pairs in `/etc/PmLogDaemon/whitelist.txt`; even
+  `PmLogCtl logkv LSM info ...` with another id is dropped, as are the filters'
+  own `[KEY_HANDLER]` lines. `LSM NL_INPUT_KEYFILTER_USE` and `lginput2
+  NL_NON_LIST_BUTTON_CLICK` are on it.
+- **`lginput2` logs presses, not holds.** It logs each press of a channel key as
+  `NL_NON_LIST_BUTTON_CLICK`, quick presses 160 ms apart included, but a key
+  held for 3 s logged once and another twice. It holds the remote's
+  `/dev/input/event*` devices: reading them gave nothing.
+- **The filter sees every event.** Code written into the zeros after
+  `.eh_frame` (0x18854 to 0x18a20, mapped executable with the segment's last
+  page) and called in place of the toast logged, for a 3 s hold, a press (`ev`
+  0), 61 repeats (`ev` 2) 50 ms apart from 0.5 s after it, and the release (`ev`
+  1). The compositor ran on it without a restart.
+- **A word past `.bss` is free and writable.** The library's `.bss` ends at
+  0x1a2b4; the loader zeroes the rest of that page, which the library does not
+  use. A repeat counter at 0x1a2c0 let the code log the first repeat and every
+  fourth after it: a 2.5 s hold logged 11 repeats, 200 ms apart from 0.5 s.
+- **The panel follows OLED Light written every 0.2 s,** read before each write
+  or not, and with a key held: five steps of 10 in a second were each seen.
+- **After a restart of the compositor nothing is in front** until Home is
+  pressed or an app opened: the screen stayed black after one, LG's Home showed
+  after another.
 
 ## Promoted stub apps (G3, webOS 9.2.2)
 
