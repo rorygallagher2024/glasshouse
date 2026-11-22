@@ -403,6 +403,7 @@ action:
           {'icon': 'mdi:mailbox', 'label': 'Post',
            'value': 'in ' ~ states('sensor.post_delivery') ~ ' days'}
         ] | to_json }}
+```
 
 ### 8. Ask a question on the TV
 `<topicPrefix>/command/ask` shows a question over the picture with a button for each answer, chosen with the remote's arrows and OK or with the pointer. Back dismisses it, and it goes away by itself after `timeout` seconds (30 unless given, at most 600). The question's app is put on the TV the first time one is asked, which takes a few seconds; after that it opens at once. A question with no `options` gets Yes and No in the TV's language. Like the other commands, it is refused when control is switched off in `config.json`.
