@@ -96,7 +96,6 @@ var ADBLOCK_REGIONAL = [
   'ibsstat.lgappstv.com',
   'cdpbeacon.lgtvcommon.com',
   'cdpbeacon2.lgtvcommon.com',
-  'cdpsvc.lgtvcommon.com',
   'wau.lgtvcommon.com',
   // adlogservice, a Python script LG updates over the air and runs through
   // com.webos.service.lsa, posts app and channel use with the TV's MAC address
@@ -211,7 +210,11 @@ var ADBLOCK_PLATFORM_REGIONAL = [
   'push.lgtviot.com',
   'sports.lgtviot.com',
   'buddy.lgtviot.com',
-  'lgeapi.com'
+  'lgeapi.com',
+  // LG Channels' content API (cdp_service_secure): blocked, its /dashboard
+  // and /gnb calls fail and the app shows NH501 (#1662). Its beacons,
+  // cdpbeacon and cdpbeacon2, stay on Ads & telemetry.
+  'cdpsvc.lgtvcommon.com'
 ];
 // Blocking the Content Store's interface and recommendations breaks the store.
 // Their documented variants use country prefixes (TV-RESEARCH.md).
