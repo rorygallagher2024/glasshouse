@@ -111,7 +111,10 @@ function getBrightness(cb) {
  * bar (WebOSCompositor's views/volume/StarfishVolume.qml and the "volume"
  * block of StarfishDefaultSettings.qml): sizes at 1920x1080 scaled to the
  * screen, LG's own track and fill images read from the TV at run time, the
- * level in LG Smart UI 85 with a shadow, a 150 ms fade and 1.5 s on screen.
+ * level in LG Smart UI 85 at its normal weight (LG's volume bar sets the
+ * family as its language-style.js gives it, and no weight) with a shadow, a
+ * 150 ms fade and 1.5 s on screen. The sun is about as big in its 72 box as
+ * LG's speaker in ic_speaker.png: 38 across, with 3-wide strokes.
  * show(level) returns false where the TV has no such images, so the filter
  * opens the bar's app instead. The sun is drawn, as LG has no image of one
  * beside the volume bar.
@@ -195,11 +198,11 @@ var COMPOSITOR_BAR_QML = [
   '            layer.effect: DropShadow { transparentBorder: true; verticalOffset: Math.ceil(2.5 * bar.s); color: "#b3000000"; radius: 8; samples: 17 }',
   '            Rectangle {',
   '                anchors.centerIn: parent',
-  '                width: 26 * bar.s',
+  '                width: 17 * bar.s',
   '                height: width',
   '                radius: width / 2',
   '                color: "transparent"',
-  '                border.width: 5 * bar.s',
+  '                border.width: 3 * bar.s',
   '                border.color: "#E6E5E5"',
   '                antialiasing: true',
   '            }',
@@ -208,11 +211,11 @@ var COMPOSITOR_BAR_QML = [
   '                model: 4',
   '                Item {',
   '                    anchors.centerIn: parent',
-  '                    width: parent.width',
-  '                    height: 5 * bar.s',
+  '                    width: 38 * bar.s',
+  '                    height: 3 * bar.s',
   '                    rotation: index * 45',
-  '                    Rectangle { x: 0; width: 13 * bar.s; height: parent.height; radius: height / 2; color: "#E6E5E5"; antialiasing: true }',
-  '                    Rectangle { x: parent.width - width; width: 13 * bar.s; height: parent.height; radius: height / 2; color: "#E6E5E5"; antialiasing: true }',
+  '                    Rectangle { x: 0; width: 7 * bar.s; height: parent.height; radius: height / 2; color: "#E6E5E5"; antialiasing: true }',
+  '                    Rectangle { x: parent.width - width; width: 7 * bar.s; height: parent.height; radius: height / 2; color: "#E6E5E5"; antialiasing: true }',
   '                }',
   '            }',
   '        }',
@@ -225,8 +228,7 @@ var COMPOSITOR_BAR_QML = [
   '                    text: bar.digits.charAt(index)',
   '                    width: bar.digitWidths[Number(text)] * bar.s',
   '                    horizontalAlignment: Text.AlignHCenter',
-  '                    font.family: "LG Smart UI"',
-  '                    font.weight: Font.DemiBold',
+  '                    font.family: "\\"LG Smart UI\\",\\"LG Smart UI Dingbat\\""',
   '                    font.pixelSize: 85 * bar.s',
   '                    color: "#E6E5E5"',
   '                    layer.enabled: true',
