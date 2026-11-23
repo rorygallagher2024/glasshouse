@@ -88,7 +88,8 @@ assert.ok(nosignal.patch(LG.replace('    RandomMoveItem {\n', '    Item {\n'), '
 var dvd = nosignal.patch(LG, 'dvd');
 assert.ok(dvd.indexOf('    Item {\n        id: glasshouseDvd\n') !== -1, 'the logo sits beside the box, at its level');
 assert.ok(dvd.indexOf('id: glasshouseDvd') < dvd.indexOf('    RandomMoveItem {'), 'and before it, so the box is drawn over it');
-assert.ok(dvd.indexOf('        id: element\n        opacity: currentKey === "noSignal" && glasshouseDvd.started ? 0 : 1\n') !== -1, 'the box fades once the logo is in');
+assert.ok(dvd.indexOf('        id: element\n        opacity: currentKey === "noSignal" && glasshouseDvd.hidesLg ? 0 : 1\n') !== -1, 'the box hidden from the start, not once the logo is in');
+assert.ok(dvd.indexOf('property bool hidesLg: started || (!late && glasshouseDvdLogo.status !== Image.Error)') !== -1, 'and back if the logo fails or is late');
 assert.ok(dvd.indexOf('source: glasshouseDvd.active ? "http://127.0.0.1:8080/assets/nosignal/dvd.png" : ""') !== -1, 'the logo from this server, only while it shows');
 assert.strictEqual(dvd.indexOf('glasshouseArt'), -1, 'and none of Art');
 assert.strictEqual(nosignal.patch(LG.replace('    RandomMoveItem {\n', '    Item {\n'), 'dvd'), null, 'no drifting box, no DVD style');

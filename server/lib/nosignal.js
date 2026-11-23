@@ -30,8 +30,9 @@
  *
  * DVD style draws the same way: a "No Signal" logo (assets/nosignal/dvd.png,
  * fetched from this server) that bounces off the screen's edges, as an idle
- * DVD player's did, taking a new colour at each bounce. LG's box fades once
- * the logo is in, so if it cannot be fetched LG's "No Signal" stays.
+ * DVD player's did, taking a new colour at each bounce. LG's box is hidden
+ * from the moment it shows, so LG's "No Signal" does not flash up while the
+ * logo loads; it comes back if the logo fails or is not in within 3 s.
  *
  * Strict ES5: runs on node 0.12 (0.10 on webOS 2).
  */
@@ -275,6 +276,8 @@ function dvdBlock(indent, logo) {
     '    property int legX: Math.floor(pathX / roomX)',
     '    property int legY: Math.floor(pathY / roomY)',
     '    property real hue: Math.random()',
+    '    property bool late: false',
+    '    property bool hidesLg: started || (!late && glasshouseDvdLogo.status !== Image.Error)',
     '    visible: active',
     '    x: -screensaverRoot.x',
     '    y: -screensaverRoot.y',
@@ -293,6 +296,7 @@ function dvdBlock(indent, logo) {
     '    onActiveChanged: {',
     '        glasshouseDvdRun.stop();',
     '        started = false;',
+    '        late = false;',
     '        travel = 0;',
     '        if (!active) return;',
     // Anywhere on screen, heading either way on each axis.
@@ -300,6 +304,7 @@ function dvdBlock(indent, logo) {
     '        startY = Math.random() * 2 * roomY;',
     '        if (glasshouseDvdLogo.status === Image.Ready) begin();',
     '    }',
+    '    Timer { interval: 3000; running: glasshouseDvd.active && !glasshouseDvd.started; onTriggered: glasshouseDvd.late = true }',
     '    NumberAnimation { id: glasshouseDvdRun; target: glasshouseDvd; property: "travel"; from: 0; to: 2000000; duration: 2000000000 }',
     '    Rectangle { anchors.fill: parent; color: "black" }',
     '    Image {',
@@ -416,10 +421,10 @@ function logoUrl() {
   return 'http://127.0.0.1:' + (config.port || 8080) + '/assets/nosignal/dvd.png';
 }
 
-// The modes drawn full screen under LG's drifting box, which fades once each has started.
+// The modes drawn full screen under LG's drifting box, hidden while the layer's `hides` holds.
 var LAYERS = {
-  art: { id: 'glasshouseArt', block: function (indent, artApi) { return artBlock(indent, artApi || artUrl()); } },
-  dvd: { id: 'glasshouseDvd', block: function (indent) { return dvdBlock(indent, logoUrl()); } }
+  art: { id: 'glasshouseArt', hides: 'started', block: function (indent, artApi) { return artBlock(indent, artApi || artUrl()); } },
+  dvd: { id: 'glasshouseDvd', hides: 'hidesLg', block: function (indent) { return dvdBlock(indent, logoUrl()); } }
 };
 
 function init(opts) {
@@ -520,7 +525,7 @@ function patch(text, mode, artApi) {
       return '\n' + layer.block(indent, artApi) + match;
     });
     out = out.replace(MOVER_ID, function (match, line, indent) {
-      return line + '\n' + indent + 'opacity: currentKey === "noSignal" && ' + layer.id + '.started ? 0 : 1';
+      return line + '\n' + indent + 'opacity: currentKey === "noSignal" && ' + layer.id + '.' + layer.hides + ' ? 0 : 1';
     });
   }
   return out;
