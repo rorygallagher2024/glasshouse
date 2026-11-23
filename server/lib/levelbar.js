@@ -20,8 +20,8 @@
  *
  * It also gives the part of the key filter that opens the bar, which the
  * filter's own source (remotekeys.js's filterSource) places in itself. On
- * webOS 10 and below the filter runs inside the compositor, so the 'lg' style
- * is drawn there as a QML item beside LG's own volume bar (COMPOSITOR_BAR_QML),
+ * webOS 10 and below the filter runs inside the compositor, so every style is
+ * drawn there as a QML item beside LG's own volume bar (COMPOSITOR_BAR_QML),
  * made once and then only shown and hidden as LG's is: no app is launched for a
  * press. The bar's app is the fallback where the item cannot be made.
  *
@@ -107,20 +107,33 @@ function getBrightness(cb) {
 }
 
 /*
- * The LG-style bar as a QML item in the compositor, laid out as LG's volume
- * bar (WebOSCompositor's views/volume/StarfishVolume.qml and the "volume"
- * block of StarfishDefaultSettings.qml): sizes at 1920x1080 scaled to the
- * screen, LG's own track and fill images read from the TV at run time, the
- * level in LG Smart UI 85 at its normal weight (LG's volume bar sets the
- * family as its language-style.js gives it, and no weight) with a shadow, a
- * 150 ms fade and 1.5 s on screen. The sun is about as big in its 72 box as
- * LG's speaker in ic_speaker.png: 38 across, with 3-wide strokes.
- * show(level) returns false where the TV has no such images, so the filter
- * opens the bar's app instead. The sun is drawn, as LG has no image of one
- * beside the volume bar. The two bars never show at once: a level shown closes
- * LG's volume bar early, and LG's volume bar or mute icon opening hides this
- * one once LG's has faded in under it, so the track stays drawn throughout. LG's mute icon is never closed, as it stays while the TV is
- * muted and LG shows it again only at the next volume change.
+ * The level bar as a QML item in the compositor, made once and then only shown
+ * and hidden, as LG's own volume bar is: no app is launched for a press. It has
+ * four looks, chosen by the style and by what this TV has:
+ *
+ *   lg       LG's volume bar (WebOSCompositor's views/volume/StarfishVolume.qml
+ *            and the "volume" block of StarfishDefaultSettings.qml): sizes at
+ *            1920x1080 scaled to the screen, LG's own track, fill and arrow
+ *            pictures read from the TV at run time, the level in LG Smart UI 85
+ *            at its normal weight (LG sets the family as its language-style.js
+ *            gives it, and no weight) with a shadow, a 150 ms fade and 1.5 s on
+ *            screen. Used where every one of the pictures loads and the
+ *            compositor's volume view holds LG's volume bar.
+ *   lgdrawn  The same layout drawn with shapes (a tube 18 x 552 with a 1 px
+ *            outline, a fill, + and -), where LG's pictures are not there.
+ *   h, v     The pill, low on the screen and upright at the right edge, as the
+ *            bar's app draws them (assets/inputbar-app).
+ *
+ * The sun is drawn in all of them, as LG has no picture of one: about as big
+ * as LG's speaker in ic_speaker.png, 38 across with 3 wide strokes.
+ *
+ * show(level, style) returns true once it has drawn the level, so the filter
+ * opens the bar's app only where the item could not be made. Where the look is
+ * at the right edge, showing it closes LG's volume bar early, and LG's volume
+ * bar or mute icon opening keeps this one drawn until LG's has faded in under
+ * it and then fades it out, so the track stays drawn throughout; LG's mute icon
+ * is never closed, as it stays while the TV is muted and LG shows it again only
+ * at the next volume change.
  */
 var COMPOSITOR_BAR = 'glasshouseBrightnessBar';
 var COMPOSITOR_BAR_QML = [
@@ -128,63 +141,77 @@ var COMPOSITOR_BAR_QML = [
   'import QtGraphicalEffects 1.0',
   'Item {',
   '    id: bar',
-  '    objectName: "' + COMPOSITOR_BAR + '"',
+  '    objectName: "glasshouseBrightnessBar"',
   '    anchors.fill: parent',
   '    enabled: false',
   '    opacity: 0',
   '    visible: opacity > 0',
+  '    // The screen in units of 1920 x 1080, as LG scales its own views.',
   '    property real s: width > 0 ? width / 1920 : 1',
-  // LG's imagePath: its 4k and qhd images at exactly 2 and 4/3, the 1080p ones otherwise.
+  '    // LG\'s imagePath: its 4k and qhd pictures at exactly 2 and 4/3, the 1080p ones otherwise.',
   '    property string img: "file:///usr/lib/qml/WebOSCompositor/images/" + (Math.abs(s - 2) < 0.000001 ? "4k/" : Math.abs(s - 4 / 3) < 0.000001 ? "qhd/" : "")',
   '    property int level: 0',
+  '    // lg: LG\'s own pictures; lgdrawn: the same layout drawn; h and v: the pill, low on the screen and upright at the right edge.',
+  '    property string mode: "lg"',
   '    property string digits: String(level)',
   '    property var digitWidths: [51, 39, 48, 49, 50, 48, 51, 45, 51, 51]',
   '    property var iconMargins: [18, 81, 131, 171]',
-  // LG's volume bar and mute icon (StarfishVolume, StarfishVolumeMute), set by the filter:
-  // the two never show at once, whichever came last having the place.
+  '    property string family: "\\"LG Smart UI\\",\\"LG Smart UI Dingbat\\""',
+  '    // LG\'s volume bar and mute icon (StarfishVolume, StarfishVolumeMute), set by the filter.',
   '    property Item volumeBar: null',
   '    property Item volumeMute: null',
-  // Whether every picture of LG's bar loaded from this TV; if not, show() says so and the bar's app is used.
-  '    property bool ready: track.status === Image.Ready && fillImage.status === Image.Ready && capTop.status === Image.Ready &&',
+  '    // Whether every picture of LG\'s bar loaded from this TV.',
+  '    property bool ready: trackImage.status === Image.Ready && fillImage.status === Image.Ready && capTop.status === Image.Ready &&',
   '                         capBottom.status === Image.Ready && arrowUp.status === Image.Ready && arrowDown.status === Image.Ready',
-  '    function show(value) {',
-  '        if (!ready) return false;',
+  '    // LG\'s pictures are used where they all loaded and the compositor\'s volume view is LG\'s: that is where this layout comes from.',
+  '    property bool nativeLook: ready && volumeBar !== null',
+  '    // The pill low on the screen does not meet LG\'s volume bar; the other looks are at its place.',
+  '    property bool rightEdge: mode !== "h"',
+  '    function show(value, style) {',
+  '        mode = style === "horizontal" ? "h" : style === "vertical" ? "v" : (nativeLook ? "lg" : "lgdrawn");',
   '        level = Math.max(0, Math.min(100, Math.round(value)));',
   '        fade.stop();',
   '        opacity = 1;',
   '        hold.restart();',
-  '        if (volumeBar && volumeBar.isOpen) volumeBar.closeView();',
+  '        if (rightEdge && volumeBar && volumeBar.isOpen) volumeBar.closeView();',
   '        return true;',
   '    }',
   '    function hide() { hold.stop(); fade.start(); }',
-  // This item is drawn over LG's volume view. Fading both at once would leave
-  // the track at three quarters for a moment, so this one stays until LG's has
-  // faded in underneath (opened), then fades out over it.
-  '    function giveWay(done) { hold.stop(); if (done && opacity > 0) fade.start(); }',
+  '    // Drawn over LG\'s volume view: fading both at once would leave the track at',
+  '    // three quarters for a moment, so this one stays until LG\'s has faded in',
+  '    // underneath (opened), then fades out over it.',
+  '    function giveWay(done) {',
+  '        if (!rightEdge) return;',
+  '        hold.stop();',
+  '        if (done && opacity > 0) fade.start();',
+  '    }',
   '    Connections { target: bar.volumeBar; ignoreUnknownSignals: true; onOpening: bar.giveWay(false); onOpened: bar.giveWay(true) }',
   '    Connections { target: bar.volumeMute; ignoreUnknownSignals: true; onOpening: bar.giveWay(false); onOpened: bar.giveWay(true) }',
-  '    Timer { id: hold; interval: 1500; onTriggered: fade.start() }',
+  '    Timer { id: hold; interval: bar.mode === "h" || bar.mode === "v" ? 1600 : 1500; onTriggered: fade.start() }',
   '    NumberAnimation { id: fade; target: bar; property: "opacity"; to: 0; duration: 150 }',
+  '    Text { id: widest; visible: false; text: "000"; font.family: bar.family; font.pixelSize: 36 * bar.s; font.weight: Font.Medium }',
+  '',
+  '    // LG\'s layout: the track at the right edge with + above and - below, the sun and the number to its left.',
   '    Item {',
   '        id: indicator',
-  '        height: 570 * bar.s',
-  '        width: height',
-  '        anchors.right: parent.right',
-  '        anchors.verticalCenter: parent.verticalCenter',
-  '        Image {',
+  '        anchors.fill: parent',
+  '        visible: bar.mode === "lg" || bar.mode === "lgdrawn"',
+  '        // The box of LG\'s track picture: 36 x 570, the tube 18 x 552 in the middle of it.',
+  '        Item {',
   '            id: track',
-  '            source: bar.img + "vol_bar_bg.png"',
-  '            asynchronous: false',
+  '            width: 36 * bar.s',
+  '            height: 570 * bar.s',
   '            anchors.right: parent.right',
   '            anchors.rightMargin: 51 * bar.s',
   '            anchors.verticalCenter: parent.verticalCenter',
+  '            Image { id: trackImage; anchors.fill: parent; source: bar.img + "vol_bar_bg.png"; visible: bar.mode === "lg" }',
   '            Image {',
   '                id: capTop',
   '                source: bar.img + "vol_gage_top.png"',
   '                anchors.top: parent.top',
   '                anchors.topMargin: 8 * bar.s',
   '                anchors.horizontalCenter: parent.horizontalCenter',
-  '                visible: bar.level >= 100',
+  '                visible: bar.mode === "lg" && bar.level >= 100',
   '            }',
   '            Image {',
   '                id: fillImage',
@@ -193,7 +220,7 @@ var COMPOSITOR_BAR_QML = [
   '                height: Math.max(0, Math.min(534 * bar.s, (bar.level - 1) * 534 * bar.s / 98))',
   '                anchors.bottom: capBottom.top',
   '                anchors.horizontalCenter: parent.horizontalCenter',
-  '                visible: bar.level > 1',
+  '                visible: bar.mode === "lg" && bar.level > 1',
   '            }',
   '            Image {',
   '                id: capBottom',
@@ -201,11 +228,54 @@ var COMPOSITOR_BAR_QML = [
   '                anchors.bottom: parent.bottom',
   '                anchors.bottomMargin: 10 * bar.s',
   '                anchors.horizontalCenter: parent.horizontalCenter',
-  '                visible: bar.level > 0',
+  '                visible: bar.mode === "lg" && bar.level > 0',
+  '            }',
+  '            Rectangle {',
+  '                id: tube',
+  '                visible: bar.mode === "lgdrawn"',
+  '                anchors.centerIn: parent',
+  '                width: 18 * bar.s',
+  '                height: 552 * bar.s',
+  '                radius: 9 * bar.s',
+  '                color: Qt.rgba(55 / 255, 58 / 255, 65 / 255, 0.66)',
+  '                border.width: Math.max(1, bar.s)',
+  '                border.color: "#e5e9eb"',
+  '                antialiasing: true',
+  '            }',
+  '            Rectangle {',
+  '                visible: bar.mode === "lgdrawn" && bar.level > 0',
+  '                width: 18 * bar.s',
+  '                height: Math.max(18 * bar.s, Math.round(bar.level * 547 / 100 * bar.s))',
+  '                radius: 9 * bar.s',
+  '                color: "#e4e7e6"',
+  '                anchors.bottom: tube.bottom',
+  '                anchors.bottomMargin: 3 * bar.s',
+  '                anchors.horizontalCenter: tube.horizontalCenter',
+  '                antialiasing: true',
   '            }',
   '        }',
-  '        Image { id: arrowUp; source: bar.img + "vol_up.png"; anchors.horizontalCenter: track.horizontalCenter; anchors.bottom: track.top; anchors.bottomMargin: -3 * bar.s }',
-  '        Image { id: arrowDown; source: bar.img + "vol_dn.png"; anchors.horizontalCenter: track.horizontalCenter; anchors.top: track.bottom; anchors.topMargin: -4 * bar.s }',
+  '        Image { id: arrowUp; source: bar.img + "vol_up.png"; visible: bar.mode === "lg"; anchors.horizontalCenter: track.horizontalCenter; anchors.bottom: track.top; anchors.bottomMargin: -3 * bar.s }',
+  '        Image { id: arrowDown; source: bar.img + "vol_dn.png"; visible: bar.mode === "lg"; anchors.horizontalCenter: track.horizontalCenter; anchors.top: track.bottom; anchors.topMargin: -4 * bar.s }',
+  '        // The + and - of the drawn look: 17 long and 3.8 thick in a 24 box, 10 above the tube and 9 below it.',
+  '        Item {',
+  '            visible: bar.mode === "lgdrawn"',
+  '            width: 24 * bar.s',
+  '            height: width',
+  '            anchors.horizontalCenter: track.horizontalCenter',
+  '            anchors.bottom: track.top',
+  '            anchors.bottomMargin: 1 * bar.s',
+  '            Rectangle { anchors.centerIn: parent; width: 17 * bar.s; height: 3.8 * bar.s; radius: height / 2; color: "#e5e9eb"; antialiasing: true }',
+  '            Rectangle { anchors.centerIn: parent; width: 3.8 * bar.s; height: 17 * bar.s; radius: width / 2; color: "#e5e9eb"; antialiasing: true }',
+  '        }',
+  '        Item {',
+  '            visible: bar.mode === "lgdrawn"',
+  '            width: 24 * bar.s',
+  '            height: width',
+  '            anchors.horizontalCenter: track.horizontalCenter',
+  '            anchors.top: track.bottom',
+  '            Rectangle { anchors.centerIn: parent; width: 17 * bar.s; height: 3.8 * bar.s; radius: height / 2; color: "#e5e9eb"; antialiasing: true }',
+  '        }',
+  '        // A thin sun about as big as LG\'s speaker: 38 across, 3 wide strokes.',
   '        Item {',
   '            id: sun',
   '            width: 72 * bar.s',
@@ -225,7 +295,7 @@ var COMPOSITOR_BAR_QML = [
   '                border.color: "#E6E5E5"',
   '                antialiasing: true',
   '            }',
-  // Four bars through the middle, each a ray on either side of the ring.
+  '            // Four bars through the middle, each a ray on either side of the ring.',
   '            Repeater {',
   '                model: 4',
   '                Item {',
@@ -247,7 +317,7 @@ var COMPOSITOR_BAR_QML = [
   '                    text: bar.digits.charAt(index)',
   '                    width: bar.digitWidths[Number(text)] * bar.s',
   '                    horizontalAlignment: Text.AlignHCenter',
-  '                    font.family: "\\"LG Smart UI\\",\\"LG Smart UI Dingbat\\""',
+  '                    font.family: bar.family',
   '                    font.pixelSize: 85 * bar.s',
   '                    color: "#E6E5E5"',
   '                    layer.enabled: true',
@@ -256,27 +326,94 @@ var COMPOSITOR_BAR_QML = [
   '            }',
   '        }',
   '    }',
+  '',
+  '    // The pill: 80 across, padded 32, the sun, a track of 460 and the number in 3 digits\' room; low on the screen (h) or upright at the right edge (v).',
+  '    Item {',
+  '        id: pill',
+  '        visible: bar.mode === "h" || bar.mode === "v"',
+  '        property bool horizontal: bar.mode === "h"',
+  '        property real pad: 32 * bar.s',
+  '        property real ico: 38 * bar.s',
+  '        property real gap: 24 * bar.s',
+  '        property real len: 460 * bar.s',
+  '        property real thick: 11 * bar.s',
+  '        property real after: pad + ico + gap + len + gap',
+  '        width: horizontal ? after + widest.implicitWidth + pad : 80 * bar.s',
+  '        height: horizontal ? 80 * bar.s : after + widest.implicitHeight + pad',
+  '        x: horizontal ? (bar.width - width) / 2 : bar.width - width - 60 * bar.s',
+  '        y: horizontal ? bar.height - height - 80 * bar.s : (bar.height - height) / 2',
+  '        Rectangle { anchors.fill: parent; radius: 40 * bar.s; color: "#F0222224" }',
+  '        Item {',
+  '            width: pill.ico',
+  '            height: width',
+  '            x: pill.horizontal ? pill.pad : (pill.width - width) / 2',
+  '            y: pill.horizontal ? (pill.height - height) / 2 : pill.pad',
+  '            property real u: width / 48',
+  '            Rectangle { anchors.centerIn: parent; width: 16 * parent.u; height: width; radius: width / 2; color: "white"; antialiasing: true }',
+  '            Repeater {',
+  '                model: 4',
+  '                Item {',
+  '                    anchors.centerIn: parent',
+  '                    width: 38 * parent.u',
+  '                    height: 3 * parent.u',
+  '                    rotation: index * 45',
+  '                    Rectangle { x: 0; width: 6 * parent.parent.u; height: parent.height; radius: height / 2; color: "white"; antialiasing: true }',
+  '                    Rectangle { x: parent.width - width; width: 6 * parent.parent.u; height: parent.height; radius: height / 2; color: "white"; antialiasing: true }',
+  '                }',
+  '            }',
+  '        }',
+  '        Rectangle {',
+  '            id: pillTrack',
+  '            width: pill.horizontal ? pill.len : pill.thick',
+  '            height: pill.horizontal ? pill.thick : pill.len',
+  '            x: pill.horizontal ? pill.pad + pill.ico + pill.gap : (pill.width - width) / 2',
+  '            y: pill.horizontal ? (pill.height - height) / 2 : pill.pad + pill.ico + pill.gap',
+  '            radius: pill.thick / 2',
+  '            color: Qt.rgba(1, 1, 1, 0.22)',
+  '            antialiasing: true',
+  '            Rectangle {',
+  '                visible: bar.level > 0',
+  '                width: pill.horizontal ? parent.width * bar.level / 100 : parent.width',
+  '                height: pill.horizontal ? parent.height : parent.height * bar.level / 100',
+  '                y: pill.horizontal ? 0 : parent.height - height',
+  '                radius: pill.thick / 2',
+  '                color: "white"',
+  '                antialiasing: true',
+  '            }',
+  '        }',
+  '        Text {',
+  '            text: bar.digits',
+  '            width: widest.implicitWidth',
+  '            horizontalAlignment: pill.horizontal ? Text.AlignRight : Text.AlignHCenter',
+  '            font.family: bar.family',
+  '            font.pixelSize: 36 * bar.s',
+  '            font.weight: Font.Medium',
+  '            color: "white"',
+  '            x: pill.horizontal ? pill.after : (pill.width - width) / 2',
+  '            y: pill.horizontal ? (pill.height - implicitHeight) / 2 : pill.after',
+  '        }',
+  '    }',
   '}'
 ].join('\n');
 
 /*
  * The filter's part. filterConfig() reads the two values of the configd
  * value glasshouse.remoteKeys that the bar needs: osd, whether a Brightness
- * key is set where the bar's app can be shown, and osdStyle. It makes the
+ * key is set where the bar can be shown, and osdStyle. It makes the
  * compositor's bar ahead of the first press, only while a Brightness key is
- * set and the LG style is chosen, and takes it off the compositor again when
- * neither holds. The compositor's bar is used only where all of LG's pictures
- * load from the TV and its volume view has LG's volume bar; elsewhere the
- * bar's app is. Only webOS 10.3.0 has been seen to look right.
- * filterShow(app) draws each level a press sets on the compositor's bar, or
- * else opens the bar's app once for each press, with the level and the style;
- * its page follows the level itself while the key is held.
+ * set, and takes it off the compositor again when none is (the keys cleared,
+ * Glasshouse restored). filterShow(app) draws each level a press sets on the
+ * compositor's bar in the chosen style, or else, where the compositor could not
+ * hold it (no volume view to place it beside, or a QML error), opens the bar's
+ * app once for each press, with the level and the style; its page follows the
+ * level itself while the key is held. Only webOS 10.3.0 has been seen to look
+ * right.
  */
 function filterConfig() {
   return [
     '        glasshouseOsd = value.osd === true;',
     '        glasshouseOsdStyle = value.osdStyle === "horizontal" || value.osdStyle === "vertical" ? value.osdStyle : "lg";',
-    '        if (glasshouseOsd && glasshouseOsdStyle === "lg") glasshouseCompositorBar();',
+    '        if (glasshouseOsd) glasshouseCompositorBar();',
     '        else glasshouseDropBar();'
   ].join('\n');
 }
@@ -305,12 +442,6 @@ function filterShow(inputBarId) {
     '        }',
     '        glasshouseOsdBar = Qt.createQmlObject(' + JSON.stringify(COMPOSITOR_BAR_QML) + ', host, ' + JSON.stringify(COMPOSITOR_BAR) + ') || false;',
     '        if (glasshouseOsdBar) glasshouseVolumeViews(glasshouseOsdBar, views.starfishVolume);',
-    // A volume view without LG's bar (restartClosingTimer, closeView) is not the one this layout was taken from.
-    '        if (glasshouseOsdBar && !glasshouseOsdBar.volumeBar) {',
-    '            glasshouseOsdBar.destroy();',
-    '            glasshouseOsdBar = false;',
-    '            console.warn("glasshouse keyfilter: no volume bar of LG\'s kind; the brightness bar opens as an app");',
-    '        }',
     '    } catch (e) {',
     '        glasshouseOsdBar = false;',
     '        console.warn("glasshouse keyfilter: " + e + "; the brightness bar opens as an app");',
@@ -318,7 +449,8 @@ function filterShow(inputBarId) {
     '    return glasshouseOsdBar;',
     '}',
     // LG's volume bar and mute icon, found by what they have, under the volume
-    // view or its positioner for rolling screens.
+    // view or its positioner for rolling screens. Without them the bar is still
+    // drawn, but not in LG's pictures.
     'function glasshouseVolumeViews(bar, view) {',
     '    var list = [view];',
     '    for (var i = 0; i < list.length && i < 50; i++) {',
@@ -332,17 +464,15 @@ function filterShow(inputBarId) {
     '        }',
     '    }',
     '}',
-    // Taken off the compositor again when no Brightness key needs it (keys cleared, another style, Glasshouse restored).
+    // Taken off the compositor again when no Brightness key needs it (keys cleared, Glasshouse restored).
     'function glasshouseDropBar() {',
     '    try { if (glasshouseOsdBar) glasshouseOsdBar.destroy(); } catch (e) {}',
     '    glasshouseOsdBar = null;',
     '}',
     'function glasshouseBrightnessShow(level, press) {',
     '    if (!glasshouseOsd) return;',
-    '    if (glasshouseOsdStyle === "lg") {',
-    '        var bar = glasshouseCompositorBar();',
-    '        try { if (bar && bar.show(level) === true) return; } catch (e) {}',
-    '    }',
+    '    var bar = glasshouseCompositorBar();',
+    '    try { if (bar && bar.show(level, glasshouseOsdStyle) === true) return; } catch (e) {}',
     '    if (press === glasshouseOsdPress) return;',
     '    glasshouseOsdPress = press;',
     '    try { applicationManager.launch(' + JSON.stringify(inputBarId) + ', JSON.stringify({ "glasshouse": "osd", "kind": "brightness", "level": level, "style": glasshouseOsdStyle })); } catch (e) {}',
