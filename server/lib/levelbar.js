@@ -19,7 +19,11 @@
  * gives, at most every STYLE_CACHE_MS.
  *
  * It also gives the part of the key filter that opens the bar, which the
- * filter's own source (remotekeys.js's filterSource) places in itself.
+ * filter's own source (remotekeys.js's filterSource) places in itself. On
+ * webOS 10 and below the filter runs inside the compositor, so the 'lg' style
+ * is drawn there as a QML item beside LG's own volume bar (COMPOSITOR_BAR_QML),
+ * made once and then only shown and hidden as LG's is: no app is launched for a
+ * press. The bar's app is the fallback where the item cannot be made.
  *
  * Strict ES5: runs on node 0.12.
  */
@@ -103,16 +107,152 @@ function getBrightness(cb) {
 }
 
 /*
+ * The LG-style bar as a QML item in the compositor, laid out as LG's volume
+ * bar (WebOSCompositor's views/volume/StarfishVolume.qml and the "volume"
+ * block of StarfishDefaultSettings.qml): sizes at 1920x1080 scaled to the
+ * screen, LG's own track and fill images read from the TV at run time, the
+ * level in LG Smart UI 85 with a shadow, a 150 ms fade and 1.5 s on screen.
+ * show(level) returns false where the TV has no such images, so the filter
+ * opens the bar's app instead. The sun is drawn, as LG has no image of one
+ * beside the volume bar.
+ */
+var COMPOSITOR_BAR = 'glasshouseBrightnessBar';
+var COMPOSITOR_BAR_QML = [
+  'import QtQuick 2.4',
+  'import QtGraphicalEffects 1.0',
+  'Item {',
+  '    id: bar',
+  '    objectName: "' + COMPOSITOR_BAR + '"',
+  '    anchors.fill: parent',
+  '    enabled: false',
+  '    opacity: 0',
+  '    visible: opacity > 0',
+  '    property real s: width > 0 ? width / 1920 : 1',
+  // LG's imagePath: its 4k and qhd images at exactly 2 and 4/3, the 1080p ones otherwise.
+  '    property string img: "file:///usr/lib/qml/WebOSCompositor/images/" + (Math.abs(s - 2) < 0.000001 ? "4k/" : Math.abs(s - 4 / 3) < 0.000001 ? "qhd/" : "")',
+  '    property int level: 0',
+  '    property string digits: String(level)',
+  '    property var digitWidths: [51, 39, 48, 49, 50, 48, 51, 45, 51, 51]',
+  '    property var iconMargins: [18, 81, 131, 171]',
+  '    function show(value) {',
+  '        if (track.status !== Image.Ready) return false;',
+  '        level = Math.max(0, Math.min(100, Math.round(value)));',
+  '        fade.stop();',
+  '        opacity = 1;',
+  '        hold.restart();',
+  '        return true;',
+  '    }',
+  '    function hide() { hold.stop(); fade.start(); }',
+  '    Timer { id: hold; interval: 1500; onTriggered: fade.start() }',
+  '    NumberAnimation { id: fade; target: bar; property: "opacity"; to: 0; duration: 150 }',
+  '    Item {',
+  '        id: indicator',
+  '        height: 570 * bar.s',
+  '        width: height',
+  '        anchors.right: parent.right',
+  '        anchors.verticalCenter: parent.verticalCenter',
+  '        Image {',
+  '            id: track',
+  '            source: bar.img + "vol_bar_bg.png"',
+  '            asynchronous: false',
+  '            anchors.right: parent.right',
+  '            anchors.rightMargin: 51 * bar.s',
+  '            anchors.verticalCenter: parent.verticalCenter',
+  '            Image {',
+  '                source: bar.img + "vol_gage_top.png"',
+  '                anchors.top: parent.top',
+  '                anchors.topMargin: 8 * bar.s',
+  '                anchors.horizontalCenter: parent.horizontalCenter',
+  '                visible: bar.level >= 100',
+  '            }',
+  '            Image {',
+  '                source: bar.img + "vol_gage.png"',
+  '                fillMode: Image.Stretch',
+  '                height: Math.max(0, Math.min(534 * bar.s, (bar.level - 1) * 534 * bar.s / 98))',
+  '                anchors.bottom: bottomCap.top',
+  '                anchors.horizontalCenter: parent.horizontalCenter',
+  '                visible: bar.level > 1',
+  '            }',
+  '            Image {',
+  '                id: bottomCap',
+  '                source: bar.img + "vol_gage_bottom.png"',
+  '                anchors.bottom: parent.bottom',
+  '                anchors.bottomMargin: 10 * bar.s',
+  '                anchors.horizontalCenter: parent.horizontalCenter',
+  '                visible: bar.level > 0',
+  '            }',
+  '        }',
+  '        Image { source: bar.img + "vol_up.png"; anchors.horizontalCenter: track.horizontalCenter; anchors.bottom: track.top; anchors.bottomMargin: -3 * bar.s }',
+  '        Image { source: bar.img + "vol_dn.png"; anchors.horizontalCenter: track.horizontalCenter; anchors.top: track.bottom; anchors.topMargin: -4 * bar.s }',
+  '        Item {',
+  '            id: sun',
+  '            width: 72 * bar.s',
+  '            height: width',
+  '            anchors.verticalCenter: parent.verticalCenter',
+  '            anchors.right: track.left',
+  '            anchors.rightMargin: bar.iconMargins[bar.digits.length] * bar.s',
+  '            layer.enabled: true',
+  '            layer.effect: DropShadow { transparentBorder: true; verticalOffset: Math.ceil(2.5 * bar.s); color: "#b3000000"; radius: 8; samples: 17 }',
+  '            Rectangle {',
+  '                anchors.centerIn: parent',
+  '                width: 26 * bar.s',
+  '                height: width',
+  '                radius: width / 2',
+  '                color: "transparent"',
+  '                border.width: 5 * bar.s',
+  '                border.color: "#E6E5E5"',
+  '                antialiasing: true',
+  '            }',
+  // Four bars through the middle, each a ray on either side of the ring.
+  '            Repeater {',
+  '                model: 4',
+  '                Item {',
+  '                    anchors.centerIn: parent',
+  '                    width: parent.width',
+  '                    height: 5 * bar.s',
+  '                    rotation: index * 45',
+  '                    Rectangle { x: 0; width: 13 * bar.s; height: parent.height; radius: height / 2; color: "#E6E5E5"; antialiasing: true }',
+  '                    Rectangle { x: parent.width - width; width: 13 * bar.s; height: parent.height; radius: height / 2; color: "#E6E5E5"; antialiasing: true }',
+  '                }',
+  '            }',
+  '        }',
+  '        Row {',
+  '            anchors.left: sun.right',
+  '            anchors.verticalCenter: parent.verticalCenter',
+  '            Repeater {',
+  '                model: bar.digits.length',
+  '                Text {',
+  '                    text: bar.digits.charAt(index)',
+  '                    width: bar.digitWidths[Number(text)] * bar.s',
+  '                    horizontalAlignment: Text.AlignHCenter',
+  '                    font.family: "LG Smart UI"',
+  '                    font.weight: Font.DemiBold',
+  '                    font.pixelSize: 85 * bar.s',
+  '                    color: "#E6E5E5"',
+  '                    layer.enabled: true',
+  '                    layer.effect: DropShadow { transparentBorder: true; verticalOffset: Math.ceil(2.5 * bar.s); color: "#b3000000"; radius: 8; samples: 17 }',
+  '                }',
+  '            }',
+  '        }',
+  '    }',
+  '}'
+].join('\n');
+
+/*
  * The filter's part. filterConfig() reads the two values of the configd
  * value glasshouse.remoteKeys that the bar needs: osd, whether a Brightness
- * key is set where the bar's app can be shown, and osdStyle. filterShow(app)
- * opens the bar's app once for each press, with the level and the style; its
- * page follows the level itself while the key is held.
+ * key is set where the bar's app can be shown, and osdStyle, and makes the
+ * compositor's bar ahead of the first press where the LG style is chosen.
+ * filterShow(app) draws each level a press sets on the compositor's bar, or
+ * else opens the bar's app once for each press, with the level and the style;
+ * its page follows the level itself while the key is held.
  */
 function filterConfig() {
   return [
     '        glasshouseOsd = value.osd === true;',
-    '        glasshouseOsdStyle = value.osdStyle === "horizontal" || value.osdStyle === "vertical" ? value.osdStyle : "lg";'
+    '        glasshouseOsdStyle = value.osdStyle === "horizontal" || value.osdStyle === "vertical" ? value.osdStyle : "lg";',
+    '        if (glasshouseOsd && glasshouseOsdStyle === "lg") glasshouseCompositorBar();',
+    '        else if (glasshouseOsdBar) glasshouseOsdBar.hide();'
   ].join('\n');
 }
 
@@ -121,8 +261,37 @@ function filterShow(inputBarId) {
     'var glasshouseOsd = false;',
     'var glasshouseOsdStyle = "lg";',
     'var glasshouseOsdPress = 0;',
+    // The compositor's bar: null until tried, false where it cannot be made.
+    'var glasshouseOsdBar = null;',
+    // views is the compositor's key-filter item's own property, reached by
+    // name from the filter's scope; its volume view's parent is the layer
+    // LG's system UI views share. The compositor keeps an item made here when
+    // configd hands it a new chain and this copy of the filter is dropped, so
+    // one left by an earlier copy is taken off first.
+    'function glasshouseCompositorBar() {',
+    '    if (glasshouseOsdBar !== null) return glasshouseOsdBar;',
+    '    glasshouseOsdBar = false;',
+    '    try {',
+    '        var host = typeof views !== "undefined" && views && views.starfishVolume ? views.starfishVolume.parent : null;',
+    '        if (!host || typeof Qt === "undefined" || typeof Qt.createQmlObject !== "function") return false;',
+    '        var kids = host.children || [];',
+    '        for (var i = kids.length - 1; i >= 0; i--) {',
+    '            if (kids[i] && kids[i].objectName === ' + JSON.stringify(COMPOSITOR_BAR) + ') kids[i].destroy();',
+    '        }',
+    '        glasshouseOsdBar = Qt.createQmlObject(' + JSON.stringify(COMPOSITOR_BAR_QML) + ', host, ' + JSON.stringify(COMPOSITOR_BAR) + ') || false;',
+    '    } catch (e) {',
+    '        glasshouseOsdBar = false;',
+    '        console.warn("glasshouse keyfilter: " + e + "; the brightness bar opens as an app");',
+    '    }',
+    '    return glasshouseOsdBar;',
+    '}',
     'function glasshouseBrightnessShow(level, press) {',
-    '    if (!glasshouseOsd || press === glasshouseOsdPress) return;',
+    '    if (!glasshouseOsd) return;',
+    '    if (glasshouseOsdStyle === "lg") {',
+    '        var bar = glasshouseCompositorBar();',
+    '        try { if (bar && bar.show(level) === true) return; } catch (e) {}',
+    '    }',
+    '    if (press === glasshouseOsdPress) return;',
     '    glasshouseOsdPress = press;',
     '    try { applicationManager.launch(' + JSON.stringify(inputBarId) + ', JSON.stringify({ "glasshouse": "osd", "kind": "brightness", "level": level, "style": glasshouseOsdStyle })); } catch (e) {}',
     '}'
@@ -137,6 +306,8 @@ module.exports = {
   isStyle: isStyle,
   filterConfig: filterConfig,
   filterShow: filterShow,
+  COMPOSITOR_BAR: COMPOSITOR_BAR,
+  COMPOSITOR_BAR_QML: COMPOSITOR_BAR_QML,
   STYLES: STYLES,
   BACKLIGHT_IDLE_MS: BACKLIGHT_IDLE_MS
 };

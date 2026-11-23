@@ -172,4 +172,38 @@ step('the filter opens the bar\'s app once for each press, with the level and th
   done();
 });
 
+step('the LG style is drawn on the compositor\'s own bar, made once, with each level, and no app opened', function (done) {
+  var launched = [], made = [], shown = [], destroyed = 0, ready = true;
+  var old = { objectName: levelBar.COMPOSITOR_BAR, destroy: function () { destroyed++; } };
+  var host = { children: [{ objectName: 'starfishVolumeView' }, old] };
+  var sandbox = {
+    console: console,
+    applicationManager: { launch: function (id, params) { launched.push(JSON.parse(params).level); } },
+    views: { starfishVolume: { parent: host } },
+    Qt: { createQmlObject: function (qml, parent, name) {
+      made.push({ qml: qml, parent: parent, name: name });
+      return { show: function (level) { shown.push(level); return ready; }, hide: function () {} };
+    } }
+  };
+  var code = 'var value = { osd: true };\n' + levelBar.filterShow('com.example.bar') + '\n' + levelBar.filterConfig() + '\n' +
+    'glasshouseBrightnessShow(60, 1); glasshouseBrightnessShow(70, 1); glasshouseBrightnessShow(80, 2);';
+  vm.runInNewContext(code, sandbox);
+  assert.strictEqual(made.length, 1, 'made once, ahead of the first press');
+  assert.strictEqual(made[0].parent, host, 'beside the volume view');
+  assert.strictEqual(destroyed, 1, 'one left by an earlier copy of the filter is taken off');
+  assert.ok(/objectName: "glasshouseBrightnessBar"/.test(made[0].qml));
+  assert.deepEqual(shown, [60, 70, 80], 'every level, not once for each press');
+  assert.deepEqual(launched, [], 'no app opened');
+  // A TV without LG's bar images: the app opens instead.
+  ready = false; made.length = 0; shown.length = 0;
+  vm.runInNewContext(code, sandbox);
+  assert.deepEqual(launched, [60, 80], 'the app, once for each press');
+  // Another style never makes it.
+  made.length = 0; launched.length = 0;
+  vm.runInNewContext('var value = { osd: true, osdStyle: "horizontal" };\n' + levelBar.filterShow('com.example.bar') + '\n' + levelBar.filterConfig() + '\nglasshouseBrightnessShow(60, 1);', sandbox);
+  assert.strictEqual(made.length, 0);
+  assert.deepEqual(launched, [60]);
+  done();
+});
+
 next();
