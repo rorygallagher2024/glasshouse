@@ -117,7 +117,10 @@ function getBrightness(cb) {
  * LG's speaker in ic_speaker.png: 38 across, with 3-wide strokes.
  * show(level) returns false where the TV has no such images, so the filter
  * opens the bar's app instead. The sun is drawn, as LG has no image of one
- * beside the volume bar.
+ * beside the volume bar. The two bars never show at once: a level shown closes
+ * LG's volume bar early, and LG's volume bar or mute icon opening hides this
+ * one at once. LG's mute icon is never closed, as it stays while the TV is
+ * muted and LG shows it again only at the next volume change.
  */
 var COMPOSITOR_BAR = 'glasshouseBrightnessBar';
 var COMPOSITOR_BAR_QML = [
@@ -137,15 +140,23 @@ var COMPOSITOR_BAR_QML = [
   '    property string digits: String(level)',
   '    property var digitWidths: [51, 39, 48, 49, 50, 48, 51, 45, 51, 51]',
   '    property var iconMargins: [18, 81, 131, 171]',
+  // LG's volume bar and mute icon (StarfishVolume, StarfishVolumeMute), set by the filter:
+  // the two never show at once, whichever came last having the place.
+  '    property Item volumeBar: null',
+  '    property Item volumeMute: null',
   '    function show(value) {',
   '        if (track.status !== Image.Ready) return false;',
   '        level = Math.max(0, Math.min(100, Math.round(value)));',
   '        fade.stop();',
   '        opacity = 1;',
   '        hold.restart();',
+  '        if (volumeBar && volumeBar.isOpen) volumeBar.closeView();',
   '        return true;',
   '    }',
   '    function hide() { hold.stop(); fade.start(); }',
+  '    function giveWay() { hold.stop(); fade.stop(); opacity = 0; }',
+  '    Connections { target: bar.volumeBar; ignoreUnknownSignals: true; onOpening: bar.giveWay() }',
+  '    Connections { target: bar.volumeMute; ignoreUnknownSignals: true; onOpening: bar.giveWay() }',
   '    Timer { id: hold; interval: 1500; onTriggered: fade.start() }',
   '    NumberAnimation { id: fade; target: bar; property: "opacity"; to: 0; duration: 150 }',
   '    Item {',
@@ -281,11 +292,27 @@ function filterShow(inputBarId) {
     '            if (kids[i] && kids[i].objectName === ' + JSON.stringify(COMPOSITOR_BAR) + ') kids[i].destroy();',
     '        }',
     '        glasshouseOsdBar = Qt.createQmlObject(' + JSON.stringify(COMPOSITOR_BAR_QML) + ', host, ' + JSON.stringify(COMPOSITOR_BAR) + ') || false;',
+    '        if (glasshouseOsdBar) glasshouseVolumeViews(glasshouseOsdBar, views.starfishVolume);',
     '    } catch (e) {',
     '        glasshouseOsdBar = false;',
     '        console.warn("glasshouse keyfilter: " + e + "; the brightness bar opens as an app");',
     '    }',
     '    return glasshouseOsdBar;',
+    '}',
+    // LG's volume bar and mute icon, found by what they have, under the volume
+    // view or its positioner for rolling screens.
+    'function glasshouseVolumeViews(bar, view) {',
+    '    var list = [view];',
+    '    for (var i = 0; i < list.length && i < 50; i++) {',
+    '        var kids = list[i].children || [];',
+    '        for (var j = 0; j < kids.length; j++) {',
+    '            var kid = kids[j];',
+    '            if (!kid || kid === bar) continue;',
+    '            if (typeof kid.restartClosingTimer === "function" && typeof kid.closeView === "function") bar.volumeBar = kid;',
+    '            else if (kid.moveDirection !== undefined && typeof kid.closeView === "function") bar.volumeMute = kid;',
+    '            list.push(kid);',
+    '        }',
+    '    }',
     '}',
     'function glasshouseBrightnessShow(level, press) {',
     '    if (!glasshouseOsd) return;',
