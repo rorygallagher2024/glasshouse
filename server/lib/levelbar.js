@@ -119,7 +119,7 @@ function getBrightness(cb) {
  * opens the bar's app instead. The sun is drawn, as LG has no image of one
  * beside the volume bar. The two bars never show at once: a level shown closes
  * LG's volume bar early, and LG's volume bar or mute icon opening hides this
- * one; both fade over 150 ms, so the switch is a crossfade either way. LG's mute icon is never closed, as it stays while the TV is
+ * one once LG's has faded in under it, so the track stays drawn throughout. LG's mute icon is never closed, as it stays while the TV is
  * muted and LG shows it again only at the next volume change.
  */
 var COMPOSITOR_BAR = 'glasshouseBrightnessBar';
@@ -154,9 +154,12 @@ var COMPOSITOR_BAR_QML = [
   '        return true;',
   '    }',
   '    function hide() { hold.stop(); fade.start(); }',
-  // Faded out over the 150 ms LG's volume bar takes to fade in, as LG's fades out when this one shows.
-  '    Connections { target: bar.volumeBar; ignoreUnknownSignals: true; onOpening: bar.hide() }',
-  '    Connections { target: bar.volumeMute; ignoreUnknownSignals: true; onOpening: bar.hide() }',
+  // This item is drawn over LG's volume view. Fading both at once would leave
+  // the track at three quarters for a moment, so this one stays until LG's has
+  // faded in underneath (opened), then fades out over it.
+  '    function giveWay(done) { hold.stop(); if (done && opacity > 0) fade.start(); }',
+  '    Connections { target: bar.volumeBar; ignoreUnknownSignals: true; onOpening: bar.giveWay(false); onOpened: bar.giveWay(true) }',
+  '    Connections { target: bar.volumeMute; ignoreUnknownSignals: true; onOpening: bar.giveWay(false); onOpened: bar.giveWay(true) }',
   '    Timer { id: hold; interval: 1500; onTriggered: fade.start() }',
   '    NumberAnimation { id: fade; target: bar; property: "opacity"; to: 0; duration: 150 }',
   '    Item {',
