@@ -1069,8 +1069,8 @@ be. Both are changes, which the library takes up, and a button set to
 **Nothing** stays off in both. The microcontroller's copy is not changed, so a streaming
 button pressed to switch the TV on opens LG's app.
 `tvwebctl restore-keys` writes LG's values back and deletes both files. The
-other keys Glasshouse offers elsewhere (Input, the color keys, Search, Info) are
-not offered: their handling on webOS 11 ignores these values, as does that of
+other keys Glasshouse intercepts elsewhere (Input, Search, Info) are
+not offered through these settings: their handling on webOS 11 ignores these values, as does that of
 Home and **123**. Home Hub, the AI button and the ? button are offered only
 there, and left out of the JavaScript filter, whose file is
 unchanged.
@@ -2404,3 +2404,7 @@ directly. The web Control page has the same toggles below Playback; they share
 state and write permissions with Ambient Light. Status callbacks check the apps’
 install paths before calling Luna, and unavailable integrations are hidden as
 complete categories and shortcuts.
+
+### Color-key shortcuts on webOS 11
+
+`remotekeys.js` offers the four colors when the native key-filter path and the existing remote-button input reader are available. Assignments use the same `remotekeys.json` map, picker and backup part as other keys. `tvweb.js` passes physical button events to `handleColorButton`; `startColorButtons` restores the worker owner before the periodic native-key check. Only Linux codes 398–401 launch a target: the delayed Qt copies from `inputcommon` are ignored. The worker is wanted independently of MQTT while any color is set and released after the last shortcut is cleared or all keys restored. Nothing is offered because observing a press cannot consume its original action. No native library or LG key assignment is changed.
