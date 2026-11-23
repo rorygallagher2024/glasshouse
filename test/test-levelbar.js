@@ -172,6 +172,58 @@ step('the filter opens the bar\'s app once for each press, with the level and th
   done();
 });
 
+step('the compositor\'s bar is only on the compositor while a Brightness key is set in the LG style, and needs LG\'s volume bar', function (done) {
+  var made = 0, destroyed = 0, launched = [];
+  function bar() { made++; return { show: function () { return true; }, hide: function () {}, destroy: function () { destroyed++; }, volumeBar: null }; }
+  var volumeBar = { restartClosingTimer: function () {}, closeView: function () {} };
+  var view = { children: [volumeBar] };
+  view.parent = { children: [view] };
+  var sandbox = vm.createContext({
+    console: console,
+    applicationManager: { launch: function (id, params) { launched.push(JSON.parse(params).level); } },
+    views: { starfishVolume: view },
+    Qt: { createQmlObject: bar }
+  });
+  var setup = levelBar.filterShow('com.example.bar');
+  var config = function (value) { return 'var value = ' + JSON.stringify(value) + ';\n' + levelBar.filterConfig(); };
+  vm.runInContext(setup, sandbox);
+  vm.runInContext(config({}), sandbox);
+  assert.strictEqual(made, 0, 'nothing is made with no Brightness key set');
+  vm.runInContext(config({ osd: true, osdStyle: 'horizontal' }), sandbox);
+  assert.strictEqual(made, 0, 'nor in another style');
+  vm.runInContext(config({ osd: true }), sandbox);
+  assert.strictEqual(made, 1, 'made with a key set in the LG style');
+  vm.runInContext(config({ osd: true }), sandbox);
+  assert.strictEqual(made, 1, 'and only once');
+  vm.runInContext(config({}), sandbox);
+  assert.strictEqual(destroyed, 1, 'taken off the compositor when the keys are cleared');
+  vm.runInContext(config({ osd: true }), sandbox);
+  assert.strictEqual(made, 2, 'made again when a key is set again');
+  vm.runInContext(config({ osd: true, osdStyle: 'vertical' }), sandbox);
+  assert.strictEqual(destroyed, 2, 'and taken off for another style');
+  // A volume view without LG\'s volume bar is not the one the layout comes from: the app is used and nothing is kept.
+  made = 0; destroyed = 0;
+  var other = { children: [{ children: [] }] };
+  other.parent = { children: [other] };
+  var sandbox2 = vm.createContext({
+    console: { warn: function () {}, log: console.log },
+    applicationManager: { launch: function (id, params) { launched.push(JSON.parse(params).level); } },
+    views: { starfishVolume: other },
+    Qt: { createQmlObject: bar }
+  });
+  launched.length = 0;
+  vm.runInContext(setup + '\n' + config({ osd: true }) + '\nglasshouseBrightnessShow(40, 1);', sandbox2);
+  assert.strictEqual(made, 1, 'tried once');
+  assert.strictEqual(destroyed, 1, 'and dropped');
+  assert.deepEqual(launched, [40], 'the app opens');
+  // Every picture is waited for, not only the track.
+  var qml = levelBar.COMPOSITOR_BAR_QML;
+  ['track', 'fillImage', 'capTop', 'capBottom', 'arrowUp', 'arrowDown'].forEach(function (id) {
+    assert.ok(new RegExp(id + '\\.status === Image\\.Ready').test(qml), id + ' is checked');
+  });
+  done();
+});
+
 step('the LG style is drawn on the compositor\'s own bar, made once, with each level, and no app opened', function (done) {
   var launched = [], made = [], shown = [], destroyed = 0, ready = true;
   var old = { objectName: levelBar.COMPOSITOR_BAR, destroy: function () { destroyed++; } };

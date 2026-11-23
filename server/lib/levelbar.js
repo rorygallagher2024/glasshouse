@@ -144,8 +144,11 @@ var COMPOSITOR_BAR_QML = [
   // the two never show at once, whichever came last having the place.
   '    property Item volumeBar: null',
   '    property Item volumeMute: null',
+  // Whether every picture of LG's bar loaded from this TV; if not, show() says so and the bar's app is used.
+  '    property bool ready: track.status === Image.Ready && fillImage.status === Image.Ready && capTop.status === Image.Ready &&',
+  '                         capBottom.status === Image.Ready && arrowUp.status === Image.Ready && arrowDown.status === Image.Ready',
   '    function show(value) {',
-  '        if (track.status !== Image.Ready) return false;',
+  '        if (!ready) return false;',
   '        level = Math.max(0, Math.min(100, Math.round(value)));',
   '        fade.stop();',
   '        opacity = 1;',
@@ -176,6 +179,7 @@ var COMPOSITOR_BAR_QML = [
   '            anchors.rightMargin: 51 * bar.s',
   '            anchors.verticalCenter: parent.verticalCenter',
   '            Image {',
+  '                id: capTop',
   '                source: bar.img + "vol_gage_top.png"',
   '                anchors.top: parent.top',
   '                anchors.topMargin: 8 * bar.s',
@@ -183,15 +187,16 @@ var COMPOSITOR_BAR_QML = [
   '                visible: bar.level >= 100',
   '            }',
   '            Image {',
+  '                id: fillImage',
   '                source: bar.img + "vol_gage.png"',
   '                fillMode: Image.Stretch',
   '                height: Math.max(0, Math.min(534 * bar.s, (bar.level - 1) * 534 * bar.s / 98))',
-  '                anchors.bottom: bottomCap.top',
+  '                anchors.bottom: capBottom.top',
   '                anchors.horizontalCenter: parent.horizontalCenter',
   '                visible: bar.level > 1',
   '            }',
   '            Image {',
-  '                id: bottomCap',
+  '                id: capBottom',
   '                source: bar.img + "vol_gage_bottom.png"',
   '                anchors.bottom: parent.bottom',
   '                anchors.bottomMargin: 10 * bar.s',
@@ -199,8 +204,8 @@ var COMPOSITOR_BAR_QML = [
   '                visible: bar.level > 0',
   '            }',
   '        }',
-  '        Image { source: bar.img + "vol_up.png"; anchors.horizontalCenter: track.horizontalCenter; anchors.bottom: track.top; anchors.bottomMargin: -3 * bar.s }',
-  '        Image { source: bar.img + "vol_dn.png"; anchors.horizontalCenter: track.horizontalCenter; anchors.top: track.bottom; anchors.topMargin: -4 * bar.s }',
+  '        Image { id: arrowUp; source: bar.img + "vol_up.png"; anchors.horizontalCenter: track.horizontalCenter; anchors.bottom: track.top; anchors.bottomMargin: -3 * bar.s }',
+  '        Image { id: arrowDown; source: bar.img + "vol_dn.png"; anchors.horizontalCenter: track.horizontalCenter; anchors.top: track.bottom; anchors.topMargin: -4 * bar.s }',
   '        Item {',
   '            id: sun',
   '            width: 72 * bar.s',
@@ -257,8 +262,12 @@ var COMPOSITOR_BAR_QML = [
 /*
  * The filter's part. filterConfig() reads the two values of the configd
  * value glasshouse.remoteKeys that the bar needs: osd, whether a Brightness
- * key is set where the bar's app can be shown, and osdStyle, and makes the
- * compositor's bar ahead of the first press where the LG style is chosen.
+ * key is set where the bar's app can be shown, and osdStyle. It makes the
+ * compositor's bar ahead of the first press, only while a Brightness key is
+ * set and the LG style is chosen, and takes it off the compositor again when
+ * neither holds. The compositor's bar is used only where all of LG's pictures
+ * load from the TV and its volume view has LG's volume bar; elsewhere the
+ * bar's app is. Only webOS 10.3.0 has been seen to look right.
  * filterShow(app) draws each level a press sets on the compositor's bar, or
  * else opens the bar's app once for each press, with the level and the style;
  * its page follows the level itself while the key is held.
@@ -268,7 +277,7 @@ function filterConfig() {
     '        glasshouseOsd = value.osd === true;',
     '        glasshouseOsdStyle = value.osdStyle === "horizontal" || value.osdStyle === "vertical" ? value.osdStyle : "lg";',
     '        if (glasshouseOsd && glasshouseOsdStyle === "lg") glasshouseCompositorBar();',
-    '        else if (glasshouseOsdBar) glasshouseOsdBar.hide();'
+    '        else glasshouseDropBar();'
   ].join('\n');
 }
 
@@ -296,6 +305,12 @@ function filterShow(inputBarId) {
     '        }',
     '        glasshouseOsdBar = Qt.createQmlObject(' + JSON.stringify(COMPOSITOR_BAR_QML) + ', host, ' + JSON.stringify(COMPOSITOR_BAR) + ') || false;',
     '        if (glasshouseOsdBar) glasshouseVolumeViews(glasshouseOsdBar, views.starfishVolume);',
+    // A volume view without LG's bar (restartClosingTimer, closeView) is not the one this layout was taken from.
+    '        if (glasshouseOsdBar && !glasshouseOsdBar.volumeBar) {',
+    '            glasshouseOsdBar.destroy();',
+    '            glasshouseOsdBar = false;',
+    '            console.warn("glasshouse keyfilter: no volume bar of LG\'s kind; the brightness bar opens as an app");',
+    '        }',
     '    } catch (e) {',
     '        glasshouseOsdBar = false;',
     '        console.warn("glasshouse keyfilter: " + e + "; the brightness bar opens as an app");',
@@ -316,6 +331,11 @@ function filterShow(inputBarId) {
     '            list.push(kid);',
     '        }',
     '    }',
+    '}',
+    // Taken off the compositor again when no Brightness key needs it (keys cleared, another style, Glasshouse restored).
+    'function glasshouseDropBar() {',
+    '    try { if (glasshouseOsdBar) glasshouseOsdBar.destroy(); } catch (e) {}',
+    '    glasshouseOsdBar = null;',
     '}',
     'function glasshouseBrightnessShow(level, press) {',
     '    if (!glasshouseOsd) return;',
