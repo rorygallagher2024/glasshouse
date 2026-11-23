@@ -4139,3 +4139,7 @@ On a B8 (OLED65B8SLC, webOS 4.4.3), no filter names a channel key (only
 can name them. With CH+ set to open the browser, a CH+ press written to the
 remote's input device (`LGE RCU`, event1) brought the browser to the front over
 HDMI 2; set back to As LG has it, the same press left HDMI 2 in front.
+
+## Color-key observation on a C3 with webOS 11.2
+
+An OLED65C31LA on webOS 11.2.0, firmware 43.21.71, reports physical Red, Green, Yellow and Blue presses to Glasshouse’s existing remote-button worker as Linux codes 398, 399, 400 and 401. `inputcommon` can repeat a press later as Qt codes 18874385–18874388; Red was observed again 685 ms after the physical event. A launch shortcut uses only the physical event so a delayed copy cannot reselect a previous input. Local shortcuts from those four events to HDMI 1–4 were confirmed with the physical remote. Reading the event does not consume it or suppress an app’s own use of the color key.

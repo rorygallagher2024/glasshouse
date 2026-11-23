@@ -772,3 +772,5 @@ before closing each page, so pending stats replies cannot outlive the page.
 `test-quickaccess-restore.js` checks that what LG had on a Quick Access key is kept the first time it is changed and only then, that As LG has it puts it back, Quick Help on 9 among them, that restoring puts back every key changed, the owner's own choices included, and that a key changed before anything was kept gets LG's default.
 
 `test-remote-availability.js` checks the lightweight Remote availability route: Quick Access needs one settings read, remote keys are checked only as a fallback, and neither path collects the Apps catalogue or writes settings.
+
+`test-remotekeys-colors.js` checks webOS 11 color shortcuts: the four dashboard keys and launch choices, physical presses without delayed Qt duplicates, app and HDMI targets, persistence across initialization, removal and restore, operation without MQTT, no native key-handling changes, and omission where the input reader or native filters are unavailable.
