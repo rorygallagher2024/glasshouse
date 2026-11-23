@@ -296,6 +296,7 @@
  "apps.remoteKeys.keyLabel": {"from": "{key} key", "text": "{key}-knappen"},
  "apps.remoteKeys.lg": {"from": "As LG has it", "text": "Som LG har det"},
  "apps.remoteKeys.nothing": {"from": "Nothing", "text": "Ingenting"},
+ "apps.remoteKeys.observedColor": {"text": "Glasshouse måste vara igång för den här genvägen. Knappen kan fortfarande utföra sin ursprungliga åtgärd i den aktuella appen.", "from": "Glasshouse must be running for this shortcut. The key may still perform its original action in the current app."},
  "apps.remoteKeys.opens": {"from": "Opens {app}", "text": "Öppnar {app}"},
  "apps.remoteKeys.other": {"from": "Other keys", "text": "Övriga knappar"},
  "apps.remoteKeys.replacesVoice": {"from": "Set to anything else, this button no longer starts voice control. As LG has it brings it back.", "text": "Ställs den in på något annat startar den här knappen inte längre röststyrning. Som LG har det återställer den."},

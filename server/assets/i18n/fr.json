@@ -269,6 +269,7 @@
  "apps.remoteKeys.keyLabel": {"from": "{key} key", "text": "Touche {key}"},
  "apps.remoteKeys.lg": {"from": "As LG has it", "text": "Comme LG l'a prévu"},
  "apps.remoteKeys.nothing": {"from": "Nothing", "text": "Rien"},
+ "apps.remoteKeys.observedColor": {"text": "Glasshouse doit être en cours d’exécution pour ce raccourci. La touche peut toujours effectuer son action d’origine dans l’application actuelle.", "from": "Glasshouse must be running for this shortcut. The key may still perform its original action in the current app."},
  "apps.remoteKeys.opens": {"from": "Opens {app}", "text": "Ouvre {app}"},
  "apps.remoteKeys.other": {"from": "Other keys", "text": "Autres touches"},
  "apps.remoteKeys.otherRemotes": {"from": "Buttons on other remotes ({n})", "text": "Boutons d’autres télécommandes ({n})"},
