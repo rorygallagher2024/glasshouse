@@ -14,12 +14,17 @@ Two kinds of reference are fine and are not reported:
   * an id built at runtime, from a template like id="row-${k}"; anything
     sharing that prefix could exist.
 
+The page is also checked for an id used twice in the markup: getElementById
+returns the first, so the second copy sits on screen empty while the script
+fills the first.
+
     ./scripts/check-ui-ids.py [file]
 
 The page is read with the scripts and stylesheet it loads from assets/ui/,
 which the server puts back inline before serving it.
 
-Exits non-zero if any id is reached for unguarded and never defined.
+Exits non-zero if any id is reached for unguarded and never defined, or is
+used twice in the markup.
 """
 import re, sys, pathlib
 
@@ -54,6 +59,20 @@ for where, text in parts:
 
 for where, n, name in problems:
     print('%s:%d: no element with id "%s"' % (where, n, name))
-print('%d defined, %d dynamic prefixes, %d unguarded and missing'
-      % (len(defined), len(dynamic), len(problems)))
-sys.exit(1 if problems else 0)
+
+# An id used twice in the markup: getElementById returns the first, so a script
+# fills one element while the other sits on screen empty. A page that renders a
+# block into two places has to give each copy its own id.
+seen, twice = set(), []
+for n, line in enumerate(page.split('\n'), 1):
+    for name in re.findall(r'\bid="([^"$]+)"', line):
+        if name in seen and (n, name) not in twice:
+            twice.append((n, name))
+        seen.add(name)
+for n, name in twice:
+    print('%s:%d: id "%s" is used more than once' % (path, n, name))
+
+total = len(problems) + len(twice)
+print('%d defined, %d dynamic prefixes, %d unguarded and missing, %d used twice'
+      % (len(defined), len(dynamic), len(problems), len(twice)))
+sys.exit(1 if total else 0)

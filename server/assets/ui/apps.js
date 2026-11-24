@@ -190,7 +190,54 @@ function renderAppsPanel() {
   renderAppDns(d);
   renderQuickAccess(d);
   renderRemoteKeys(d);
+  renderKeyboardKeys(d);
   showRemoteTab();
+  showKeyboardTab();
+}
+
+// The keyboard's tab: the same F-keys, shown only where the server offers them.
+// It asks for the keys alone rather than the whole Apps answer, so a slow or
+// failed /api/apps cannot leave the tab blank.
+async function loadKeyboardKeys() {
+  try {
+    const r = await fetch(api('/api/remotekeys'), { cache: 'no-store' });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const rk = await r.json();
+    if (!rk || !rk.keys) throw new Error('no keys in the answer');
+    renderKeyboardKeys({ remoteKeys: rk, writable: rk.writable });
+  } catch (e) {
+    // A server that answers the keys only inside /api/apps still gets there.
+    loadApps();
+  }
+}
+
+function renderKeyboardKeys(d) {
+  const btn = q('tab-btn-keyboard');
+  const disc = q('disc-kbdkeys');
+  const list = q('kbkeys-list');
+  const rk = d && d.remoteKeys;
+  const has = !!(rk && rk.keys.some(k => /^kbd/.test(k.key)));
+  if (btn) btn.hidden = !has;
+  if (disc) disc.hidden = !has;
+  if (!has) {
+    // No F-keys on this set: leave no tiles from an earlier answer behind, and
+    // do not sit on a pane with nothing in it.
+    if (list) list.innerHTML = '';
+    const remote = q('tab-btn-remote');
+    if (activeTab === 'keyboard') showTab(remote && !remote.hidden ? 'remote' : 'control');
+    return;
+  }
+  renderRemoteKeys(d, {
+    list: list, disc: disc, summary: q('kbkeys-summary'),
+    groups: KB_GROUPS, elsewhere: false, brightness: false
+  });
+}
+
+function showKeyboardTab() {
+  const has = appsData ? !!(appsData.remoteKeys && appsData.remoteKeys.keys.some(k => /^kbd/.test(k.key))) : false;
+  const btn = q('tab-btn-keyboard');
+  if (btn) btn.hidden = !has;
+  if (!has && activeTab === 'keyboard') showTab('control');
 }
 
 // Monochrome 24x24 vector glyphs matching devicons.js stroke weight for remote
@@ -414,10 +461,16 @@ const RK_GROUPS = [
   // Anything else, including keys a later server offers.
   { id: 'other', title: () => t('apps.remoteKeys.other', 'Other keys'), keys: null }
 ];
+// The keyboard's own tab: the F-keys.
+const KB_GROUPS = [
+  { id: 'kbf', title: () => t('apps.keyboardKeys.f', 'F keys'),
+    keys: ['kbdF1', 'kbdF2', 'kbdF3', 'kbdF4', 'kbdF5', 'kbdF6', 'kbdF7', 'kbdF8', 'kbdF9', 'kbdF10', 'kbdF11', 'kbdF12'] }
+];
 // The colour keys' own colours, the one place colour is the key's name.
 const RK_COLOURS = { red: 'var(--red)', green: 'var(--green)', yellow: '#f2c230', blue: 'var(--blue)' };
 let rkData = null;     // the last remoteKeys answer, for the picker
 let rkOpen = null;     // the key whose picker is open
+let rkOpenList = null; // the list it was opened in, Remote's or Keyboard's
 let rkCols = 0;        // the columns its grid had when it opened
 let rkWritable = false;
 let rkMoreOpen = false;  // the other countries' keys, folded until opened
@@ -457,16 +510,24 @@ function showRemoteTab() {
   if (has === false && activeTab === 'remote') showTab('control');
 }
 
-function renderRemoteKeys(d) {
-  const disc = q('disc-remotekeys');
-  const list = q('apps-rk-list');
+function renderRemoteKeys(d, opts) {
+  const o = opts || {};
+  const list = o.list || q('apps-rk-list');
+  const disc = o.disc === undefined ? q('disc-remotekeys') : o.disc;
+  const summary = o.summary || q('apps-rk-summary');
+  const groupsDef = o.groups || RK_GROUPS;
+  // Keys with their own tab are not a remote key's business.
+  const skip = o.skip || (o.groups ? null : /^kbd/);
   const rk = d.remoteKeys;
-  if (!disc) return;
-  disc.hidden = !rk;
+  if (!list) return;
+  if (disc) disc.hidden = !rk;
   if (!rk) return;
-  const changed = rk.keys.filter(k => k.action !== 'lg').length;
-  if (q('apps-rk-summary')) {
-    q('apps-rk-summary').textContent = changed
+  // A key counts as changed on the tab that shows it, not on the other tab.
+  const onThisTab = k => !(skip && skip.test(k.key)) &&
+    (!o.groups || groupsDef.some(g => !g.keys || g.keys.indexOf(k.key) !== -1));
+  const changed = rk.keys.filter(k => onThisTab(k) && k.action !== 'lg').length;
+  if (summary) {
+    summary.textContent = changed
       ? t('apps.remoteKeys.count', '{n} changed', { n: changed })
       : t('apps.remoteKeys.asLg', 'As LG has it');
   }
@@ -493,11 +554,12 @@ function renderRemoteKeys(d) {
   };
   // A key only another country's remotes have waits at the end, folded away,
   // unless it has been changed.
-  const away = rk.keys.filter(k => k.elsewhere && k.action === 'lg');
+  const away = o.elsewhere === false ? [] : rk.keys.filter(k => k.elsewhere && k.action === 'lg');
   const placed = new Set(away.map(k => k.key));
-  const groups = RK_GROUPS.map(g => {
+  const groups = groupsDef.map(g => {
     // In the group's own order, as the remote has them.
-    const inGroup = g.keys ? g.keys.map(name => rk.keys.find(k => k.key === name)).filter(Boolean) : rk.keys;
+    const inGroup = g.keys ? g.keys.map(name => rk.keys.find(k => k.key === name)).filter(Boolean)
+      : rk.keys.filter(k => !skip || !skip.test(k.key));
     const keys = inGroup.filter(k => !placed.has(k.key));
     keys.forEach(k => placed.add(k.key));
     if (!keys.length) return '';
@@ -509,7 +571,7 @@ function renderRemoteKeys(d) {
       <div class="rk-grid">${away.map(tile).join('')}</div></details>` : '';
   // The settings of the Brightness keys, in a section of their own that shows once a key is set to one.
   let stepRow = '';
-  if (rk.keys.some(k => k.id === 'action:brightnessUp' || k.id === 'action:brightnessDown')) {
+  if (o.brightness !== false && rk.keys.some(k => k.id === 'action:brightnessUp' || k.id === 'action:brightnessDown')) {
     const sizes = [5, 10, 15, 20, 25];
     if (sizes.indexOf(rk.brightnessStep) === -1) sizes.push(rk.brightnessStep);
     sizes.sort((a, b) => a - b);
@@ -534,7 +596,7 @@ function renderRemoteKeys(d) {
   }
   const brightness = stepRow ? `<div class="rk-grp">${esc(t('apps.remoteKeys.brightnessSection', 'Brightness key settings'))}</div>${stepRow}${barStyleRow}` : '';
   list.innerHTML = groups + more + brightness;
-  if (rkOpen) {
+  if (rkOpen && rkOpenList === list) {
     const tile = list.querySelector(`.rk-key[data-key="${CSS.escape(rkOpen)}"]`);
     rkOpen = null;
     if (tile) toggleRemoteKey(tile);
@@ -544,13 +606,14 @@ function renderRemoteKeys(d) {
 // Opens a key's picker as a full row after the tile's own row, so the tiles
 // around it keep their places; the arrow points up at the tile.
 function toggleRemoteKey(tile) {
-  const list = q('apps-rk-list');
+  const list = tile.closest('.rk-list') || q('apps-rk-list');
   const was = rkOpen;
   closeRemoteKeyPicker();
   if (!rkData || !list || was === tile.dataset.key) return;
   const k = rkData.keys.find(x => x.key === tile.dataset.key);
   if (!k) return;
   rkOpen = k.key;
+  rkOpenList = list;
   tile.classList.add('rk-open');
   tile.setAttribute('aria-expanded', 'true');
   const grid = tile.parentElement;
@@ -619,7 +682,7 @@ function rkAimArrow(tile, pick) {
 }
 
 function closeRemoteKeyPicker(refocus) {
-  const list = q('apps-rk-list');
+  const list = rkOpenList || q('apps-rk-list');
   const pick = list && list.querySelector('.rk-pick');
   if (pick) pick.remove();
   const tile = list && rkOpen ? list.querySelector(`.rk-key[data-key="${CSS.escape(rkOpen)}"]`) : null;
@@ -629,6 +692,7 @@ function closeRemoteKeyPicker(refocus) {
     if (refocus) tile.focus();
   }
   rkOpen = null;
+  rkOpenList = null;
 }
 
 async function chooseRemoteKey(btn) {
@@ -636,7 +700,7 @@ async function chooseRemoteKey(btn) {
   if (!key) return;
   const v = btn.dataset.value;
   const body = v === 'lg' || v === 'nothing' ? { key, action: v } : { key, action: 'open', id: v };
-  document.querySelectorAll('#apps-rk-list .rk-pick .rk-opt').forEach(b => { b.disabled = true; });
+  document.querySelectorAll('.rk-list .rk-pick .rk-opt').forEach(b => { b.disabled = true; });
   btn.classList.add('busy');
   let error = null;
   try {
@@ -696,7 +760,7 @@ document.addEventListener('keydown', e => {
 // open: it moves only when the columns change, and its arrow follows the tile.
 window.addEventListener('resize', () => {
   if (!rkOpen) return;
-  const list = q('apps-rk-list');
+  const list = rkOpenList || q('apps-rk-list');
   const tile = list && list.querySelector(`.rk-key[data-key="${CSS.escape(rkOpen)}"]`);
   const pick = list && list.querySelector('.rk-pick');
   if (!tile || !pick) return;

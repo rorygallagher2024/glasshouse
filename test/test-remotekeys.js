@@ -155,7 +155,8 @@ function guard(fn) {
 step(function (next) {
   rk.getRemoteKeys(guard(function (r) {
     assert.strictEqual(r.supported, true);
-    assert.deepEqual(r.keys.map(function (k) { return k.key; }), ['netflix', 'amazon', 'movies', 'guide', 'red', 'green', 'yellow', 'blue']);
+    assert.deepEqual(r.keys.map(function (k) { return k.key; }), ['netflix', 'amazon', 'movies', 'guide', 'red', 'green', 'yellow', 'blue',
+      'kbdF1', 'kbdF2', 'kbdF3', 'kbdF4', 'kbdF5', 'kbdF6', 'kbdF7', 'kbdF8', 'kbdF9', 'kbdF10', 'kbdF11', 'kbdF12']);
     assert.ok(r.keys.every(function (k) { return k.action === 'lg' && k.id === ''; }));
     assert.strictEqual(r.inChain, false);
     assert.deepEqual(r.choices.map(function (c) { return c.id; }),
@@ -239,7 +240,9 @@ step(function (next) {
 
 step(function (next) {
   rk.getRemoteKeys(guard(function (r) {
-    assert.deepEqual(r.keys.map(function (k) { return k.action + ':' + k.opens; }), ['open:YouTube', 'lg:', 'open:Netflix', 'nothing:', 'lg:', 'lg:', 'lg:', 'lg:']);
+    assert.deepEqual(r.keys.map(function (k) { return k.action + ':' + k.opens; }), ['open:YouTube', 'lg:', 'open:Netflix', 'nothing:',
+      'lg:', 'lg:', 'lg:', 'lg:',
+      'lg:', 'lg:', 'lg:', 'lg:', 'lg:', 'lg:', 'lg:', 'lg:', 'lg:', 'lg:', 'lg:', 'lg:']);
     assert.strictEqual(r.inChain, true);
     rk.setRemoteKey('disneyplus', 'open', 'netflix', guard(function (s1) {
       assert.strictEqual(s1.ok, false);
@@ -1318,6 +1321,41 @@ step(function (next) {
         }));
       }));
     }));
+  }));
+});
+
+step(function (next) {
+  var src = rk.filterSource();
+  assert.ok(src.indexOf('codes["kbdF1"] = Qt.Key_F1') !== -1, 'F1 is in the map');
+  assert.ok(src.indexOf('codes["kbdF12"] = Qt.Key_F12') !== -1, 'F12 is in the map');
+  // The TV rewrites Ctrl chords before any filter runs, so nothing here waits on Ctrl.
+  assert.strictEqual(src.indexOf('glasshouseCtrlKeyCodes'), -1, 'no Ctrl map is generated');
+  assert.strictEqual(src.indexOf('Qt.Key_Control'), -1, 'the filter does not track Ctrl');
+  console.log('  ✓ the F-keys are in the filter and nothing depends on Ctrl, which the TV rewrites');
+  next();
+});
+
+// webOS 11 has no JavaScript filters. A TV whose keys come from the WebOS module
+// alone still has keys to set, but none of the F-keys: there is no filter of
+// Glasshouse's for a keyboard key to be taken by.
+step(function (next) {
+  var nativeDir = path.join(dir, 'KeyFiltersNative');
+  fs.mkdirSync(nativeDir);
+  fs.writeFileSync(path.join(nativeDir, 'keyfilter.txt'), 'Qt.Key_F1 Qt.Key_F2');
+  var plugin = path.join(stateDir, 'libpluginnofilter.so');
+  fs.writeFileSync(plugin, 'x\u0000Key_webOS_ChannelUp\u0000Key_webOS_ChannelDown\u0000');
+  rk.init({ luna: luna, stateDir: stateDir, filtersDir: nativeDir, webosPlugin: plugin });
+  rk.getRemoteKeys(guard(function (r) {
+    var names = r.keys.map(function (k) { return k.key; });
+    assert.deepEqual(names.filter(function (n) { return /^channel/.test(n); }), ['channelup', 'channeldown'],
+      'the keys the WebOS module defines are still offered');
+    assert.deepEqual(names.filter(function (n) { return /^kbd/.test(n); }), [], 'no keyboard keys without JavaScript filters');
+    fs.unlinkSync(plugin);
+    fs.unlinkSync(path.join(nativeDir, 'keyfilter.txt'));
+    fs.rmdirSync(nativeDir);
+    rk.init({ luna: luna, stateDir: stateDir, filtersDir: filtersDir });
+    console.log('  ✓ where the key filters are not JavaScript, the module\'s keys are offered and no keyboard key is');
+    next();
   }));
 });
 

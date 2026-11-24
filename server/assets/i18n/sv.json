@@ -3894,5 +3894,9 @@
  "apps.running.summaryMb": {"text": "{n} appar · {mb} MB", "from": "{n} apps · {mb} MB"},
  "apps.running.summaryOneMb": {"text": "1 app · {mb} MB", "from": "1 app · {mb} MB"},
  "apps.running.title": {"text": "Appar i minnet", "from": "Apps in memory"},
- "ha.verify.desc": {"text": "Stäng av för ett självsignerat certifikat eller en HTTPS-adress som nås via lokal IP.", "from": "Turn off for a self-signed certificate or an HTTPS address reached by LAN IP."}
+ "ha.verify.desc": {"text": "Stäng av för ett självsignerat certifikat eller en HTTPS-adress som nås via lokal IP.", "from": "Turn off for a self-signed certificate or an HTTPS address reached by LAN IP."},
+ "tab.keyboard": {"text": "Tangentbord", "from": "Keyboard"},
+ "apps.keyboardKeys": {"text": "Tangentbordstangenter", "from": "Keyboard keys"},
+ "apps.keyboardKeys.desc": {"text": "Vad ett USB-tangentbords F-tangenter gör: som LG, inget, eller öppna en app eller ingång.", "from": "What a USB keyboard's F-keys do: as LG has it, nothing, or opening an app or input instead."},
+ "apps.keyboardKeys.f": {"text": "F-tangenter", "from": "F keys"}
 }

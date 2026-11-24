@@ -20,6 +20,8 @@ On webOS 11, **Ivi**, **Okko**, **Kinopoisk** and **LG Shop** are also offered u
 
 Core keys (**Home**, **Back**, volume, mute, and power) are reserved and cannot be reassigned. **Channel up** and **Channel down** can be reassigned where Glasshouse can take them: on webOS 4 to 10, and on some webOS 11 TVs (see below); a channel key that is set no longer changes the channel, so **As LG has it** brings that back. The microphone button can be reassigned; setting it to another action overrides both press and hold, replacing LG's voice control until returned to **As LG has it**. Where the TV's key filters name them, as on webOS 10, three more buttons of the MR25 remotes can be reassigned the same way: the **?** button (as LG has it, a press opens the accessibility menu and a hold its overlay), the **123 button** (a press shows LG's on-screen remote, with the user manual, Sport, Quick Help and the color keys, or an app's own menu in apps that handle the key, such as YouTube and the web browser; a hold switches audio description on or off) and **Home Hub** (it opens LG's Home Hub or the input picker), the last only where the TV's key table gives that key to the Home Hub button. Set, a key takes both press and hold.
 
+A USB keyboard's F-keys are set on their own page, [Keyboard](keyboard.md).
+
 ## Available actions
 
 * **As LG has it:** Keeps the TV's default behavior for that key.

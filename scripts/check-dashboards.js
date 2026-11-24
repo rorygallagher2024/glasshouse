@@ -4237,6 +4237,84 @@ async function visitInputsAndRemote(browser, base, problems) {
 }
 
 /*
+ * The Keyboard tab: the F-keys on a page of their own, the tab left out where
+ * the server offers none, and a change counted on the tab that shows the key,
+ * not on the other tab.
+ */
+async function visitKeyboardKeys(browser, base, problems) {
+  const page = await browser.newPage();
+  const fail = message => problems.push('Keyboard keys: ' + message);
+  page.on('pageerror', error => fail(error.message));
+  let fKeys = true;
+  let kbdChanged = true;
+  let remoteChanged = false;
+  const keysNow = () => {
+    const out = [];
+    if (fKeys) {
+      for (let i = 1; i <= 12; i++) {
+        const changed = i === 1 && kbdChanged;
+        out.push({ key: 'kbdF' + i, title: 'F' + i, action: changed ? 'open' : 'lg',
+          id: changed ? 'netflix' : '', opens: changed ? 'Netflix' : '' });
+      }
+    }
+    out.push({ key: 'netflix', title: 'Netflix', action: remoteChanged ? 'open' : 'lg',
+      id: remoteChanged ? 'youtube.leanback.v4' : '', opens: remoteChanged ? 'YouTube' : '' });
+    return out;
+  };
+  const answer = () => ({ ok: true, supported: true, writable: true, keys: keysNow(),
+    choices: [{ id: 'netflix', kind: 'app', title: 'Netflix' }, { id: 'youtube.leanback.v4', kind: 'app', title: 'YouTube' }] });
+  const summary = sel => page.locator(sel).textContent().then(t => (t || '').trim());
+  try {
+    await page.route('**/api/remote/available', route => route.fulfill({ json: { ok: true, available: true } }));
+    await page.route('**/api/apps', async route => {
+      // The page may close with this still on its way.
+      try {
+        const apps = await (await route.fetch()).json();
+        apps.writable = true;
+        apps.quickAccess = null;
+        apps.remoteKeys = answer();
+        await route.fulfill({ json: apps });
+      } catch (e) { /* closed */ }
+    });
+    await page.route('**/api/remotekeys', route => route.fulfill({ json: answer() }));
+
+    // A changed F-key belongs to the Keyboard tab and not to Remote.
+    await page.goto(base + '/?tab=keyboard');
+    await page.locator('#kbkeys-list .rk-key').first().waitFor();
+    if (!await page.locator('#tab-btn-keyboard').isVisible()) fail('the Keyboard tab is not offered where the server has F-keys');
+    if (await page.locator('#kbkeys-list .rk-key').count() !== 12) fail('the Keyboard tab does not show twelve keys');
+    if (await page.locator('#kbkeys-list .rk-key[data-key="netflix"]').count()) fail('the Keyboard tab shows a remote key');
+    if (await summary('#kbkeys-summary') !== '1 changed') fail('the Keyboard summary does not count the changed F-key');
+    await page.locator('#tab-btn-remote').click();
+    await page.locator('#apps-rk-list .rk-key').first().waitFor();
+    if (await page.locator('#apps-rk-list .rk-key[data-key="kbdF1"]').count()) fail('the Remote tab shows a keyboard key');
+    if (await summary('#apps-rk-summary') !== 'As LG has it') fail('the Remote summary counts a keyboard key');
+
+    // And a changed remote key is not counted on the Keyboard tab.
+    kbdChanged = false;
+    remoteChanged = true;
+    await page.goto(base + '/?tab=keyboard');
+    await page.locator('#kbkeys-list .rk-key').first().waitFor();
+    if (await summary('#kbkeys-summary') !== 'As LG has it') fail('the Keyboard summary counts a remote key');
+    await page.locator('#tab-btn-remote').click();
+    await page.locator('#apps-rk-list .rk-key').first().waitFor();
+    if (await summary('#apps-rk-summary') !== '1 changed') fail('the Remote summary does not count the changed remote key');
+
+    // Where the server offers no F-keys the tab is left out, and a link straight
+    // to it lands on another tab rather than an empty pane.
+    fKeys = false;
+    await page.goto(base + '/?tab=keyboard');
+    await page.locator('#tab-btn-keyboard').waitFor({ state: 'hidden' });
+    if (await page.evaluate(() => activeTab) === 'keyboard') fail('a link straight to the Keyboard tab stayed on an empty pane');
+  } catch (e) {
+    fail(e.message);
+  } finally {
+    await page.unrouteAll({ behavior: 'wait' });
+    await page.close();
+  }
+}
+
+/*
  * Brightness key settings: a section of its own on the Remote tab, there only
  * while a key is set to Brightness up or down. Brightness step and Level bar
  * style are its rows, the style offering LG's bar, a horizontal one, a vertical
@@ -4974,7 +5052,7 @@ async function visitRemoteView(browser, base, problems) {
 
 function groups(web, tv) {
   return [
-    { job: 'tabs', tabs: web.map(t => ({ path: '/?tab=' + t, label: 'web ' + t })), visits: [visitHomeAnimations, visitHuesyncSettings, visitInputsAndRemote, visitBrightnessKeySettings, visitAdblockCards, visitSaverEntitySlots, visitRemoteView, visitRemoteMotion] },
+    { job: 'tabs', tabs: web.map(t => ({ path: '/?tab=' + t, label: 'web ' + t })), visits: [visitHomeAnimations, visitHuesyncSettings, visitInputsAndRemote, visitKeyboardKeys, visitBrightnessKeySettings, visitAdblockCards, visitSaverEntitySlots, visitRemoteView, visitRemoteMotion] },
     { job: 'tabs', tabs: tv.map(t => ({ path: '/assets/dashboard.html?tab=' + t, label: 'TV ' + t })),
       visits: [visitTvDashboard, visitTvAudio, visitTvPictureWrites, visitPictureUnavailable, visitTvNonOled, visitTvHuesync] },
     { job: 'home', tabs: [], visits: [visitHomePicture, visitHomePreview, visitHomePreviewOptions, visitHomePreviewWebos4, visitHomePreviewSize, visitHomePreviewSizeDetails, visitInputBarBehindHome, visitInputBarSwitchOnOk, visitHomeBarPrewarm, visitHomeBarIconsReady, visitHomeBarTiles, visitHomeBarBesideHome, visitHomeBarScroll, visitHomeUpDown, visitHomeFolderKeys, visitHomePointerOff, visitHomeOrder, visitHomeAvailability, visitHomeSearch, visitHomeWeather, visitHomeWeatherSetting, visitHomeRemoteBattery, visitHomeRemoteBatterySetting] },
