@@ -434,11 +434,13 @@ const RK_GROUPS = [
 // The colour keys' own colours, the one place colour is the key's name.
 const RK_COLOURS = { red: 'var(--red)', green: 'var(--green)', yellow: '#f2c230', blue: 'var(--blue)' };
 let rkData = null;     // the last remoteKeys answer, for the picker
+let qaClosedForRemote = null; // whether Quick Access was last closed or opened for the remote in use
 let rkOpen = null;     // the key whose picker is open
 let rkDirty = false;   // a redraw skipped while a choice was open
 let rkCols = 0;        // the columns its grid had when it opened
 let rkWritable = false;
 let rkMoreOpen = false;  // the other countries' keys, folded until opened
+let rkOtherOpen = false; // the keys of other remotes, folded until opened
 
 function rkIcon(id) {
   return `<img class="rk-ico" src="${esc(api('/api/apps/icon?id=' + encodeURIComponent(id)))}" alt="" onerror="this.style.visibility='hidden'">`;
@@ -475,6 +477,50 @@ function showRemoteTab() {
   if (has === false && activeTab === 'remote') showTab('control');
 }
 
+// The Your remote section: one checkbox, on by default, that folds the Remote
+// keys list to the remote(s) detected in use; off shows every button.
+function renderRemoteChoice(rk) {
+  const disc = q('disc-remote');
+  const body = q('apps-remote-body');
+  if (!disc || !body) return;
+  const rs = rk && rk.remotes;
+  disc.hidden = !rs;
+  if (!rs) return;
+  const only = rs.mode !== 'all';
+  const known = rs.selected;
+  const shownNames = known.map(r => r.title).join(', ');
+  q('apps-remote-summary').textContent = !only ? t('apps.remote.all', 'All buttons')
+    : shownNames || t('apps.remote.auto', 'Automatic');
+  const pic = only && known.length ? known[0] : { image: 'generic.png', title: '' };
+  const detected = rs.detected.length
+    ? rs.detected.map(x => x.id ? x.title : t('apps.remote.detectedUnknown', '{name} (not in the list of remotes)', { name: x.name })).join(', ')
+    : t('apps.remote.noneDetected', 'No remote detected');
+  const dis = rkWritable ? '' : 'disabled';
+  const why = {
+    none: t('apps.remote.whyNone', 'No remote is detected, so every button is shown.'),
+    unknown: t('apps.remote.whyUnknown', 'A remote that is not in the list of remotes is in use, so every button is shown.'),
+    unfinished: t('apps.remote.whyUnfinished', 'This remote’s button list is not finished, so every button is shown.')
+  }[rs.why];
+  body.innerHTML = `<div class="rm-now"><img class="rm-pic" src="/assets/remotes/${esc(pic.image)}" alt="${esc(pic.title)}">
+    <label class="rm-check">
+      <input type="checkbox" ${only ? 'checked' : ''} ${dis} onchange="rkSetRemotes(this.checked)">
+      <span>${esc(t('apps.remote.only', 'Display only buttons for your remote'))}</span>
+    </label>
+    <div class="rm-detected">${esc(t('apps.remote.detected', 'Detected: {name}', { name: detected }))}</div>
+  </div>${why ? `<div class="pv-note rm-why">${esc(why)}</div>` : ''}`;
+}
+
+// Quick Access is for holding a number key, so it starts closed where every remote in use is known to
+// have none. Only a change of remote opens or closes it again: one opened by hand stays open.
+function foldQuickAccess(remotes) {
+  const disc = q('disc-quickaccess');
+  const selected = (remotes && remotes.selected) || [];
+  const noNumbers = !!(remotes && remotes.folding && selected.length && selected.every(r => r.numberKeys === false));
+  if (!disc || noNumbers === qaClosedForRemote) return;
+  qaClosedForRemote = noNumbers;
+  disc.open = !noNumbers;
+}
+
 function renderRemoteKeys(d) {
   const disc = q('disc-remotekeys');
   const list = q('apps-rk-list');
@@ -490,6 +536,8 @@ function renderRemoteKeys(d) {
   }
   rkData = rk;
   rkWritable = !!d.writable;
+  foldQuickAccess(rk.remotes);
+  renderRemoteChoice(rk);
   renderInputs();
   // Left alone while a choice is being made in it.
   if (!list || (rkOpen && list.contains(document.activeElement))) {
@@ -515,7 +563,10 @@ function renderRemoteKeys(d) {
   // A key only another country's remotes have waits at the end, folded away,
   // unless it has been changed.
   const away = rk.keys.filter(k => k.elsewhere && k.action === 'lg');
-  const placed = new Set(away.map(k => k.key));
+  // Keys none of the remotes in use has, where the server knows them all (the catalogue); one that is
+  // changed stays in sight whatever the remote.
+  const otherRemotes = rk.keys.filter(k => k.offRemote && !k.elsewhere && k.action === 'lg');
+  const placed = new Set(away.concat(otherRemotes).map(k => k.key));
   const groups = RK_GROUPS.map(g => {
     // In the group's own order, as the remote has them.
     const inGroup = g.keys ? g.keys.map(name => rk.keys.find(k => k.key === name)).filter(Boolean) : rk.keys;
@@ -554,7 +605,10 @@ function renderRemoteKeys(d) {
       </select></div></div>`;
   }
   const brightness = stepRow ? `<div class="rk-grp">${esc(t('apps.remoteKeys.brightnessSection', 'Brightness key settings'))}</div><div class="prot-table">${stepRow}${barStyleRow}</div>` : '';
-  list.innerHTML = groups + more + brightness;
+  const other = otherRemotes.length ? `<details class="rk-more"${rkOtherOpen ? ' open' : ''} ontoggle="rkOtherOpen = this.open">
+      <summary class="rk-grp">${esc(t('apps.remoteKeys.otherRemotes', 'Buttons on other remotes ({n})', { n: otherRemotes.length }))}</summary>
+      <div class="rk-grid">${otherRemotes.map(tile).join('')}</div></details>` : '';
+  list.innerHTML = groups + more + other + brightness;
   rkDirty = false;
   if (rkOpen) {
     const tile = list.querySelector(`.rk-key[data-key="${CSS.escape(rkOpen)}"]`);
@@ -758,6 +812,24 @@ async function rkSetBrightnessBarStyle(value) {
   }
   if (error) alert(t('apps.remoteKeys.failed', 'Could not change it: {error}', { error }));
   await refreshRemoteKeys();
+}
+
+// checked: fold to the remote(s) detected ('auto'); unchecked: every button ('all').
+async function rkSetRemotes(checked) {
+  let error = null;
+  try {
+    const res = await fetch(api('/api/remotekeys'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ remotes: { mode: checked ? 'auto' : 'all' } })
+    });
+    const r = await res.json();
+    if (!r || !r.ok) error = (r && r.error) || t('common.unknownError', 'unknown error');
+  } catch (e) {
+    error = e.message;
+  }
+  if (error) alert(t('apps.remoteKeys.failed', 'Could not change it: {error}', { error }));
+  await loadApps();
 }
 
 document.addEventListener('keydown', e => {

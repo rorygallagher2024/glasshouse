@@ -132,6 +132,7 @@ var audioCapabilities = require('./lib/audio');
 var btAudio = require('./lib/btaudio');
 var huesyncTransport = require('./lib/huesync');
 var remotebuttons = require('./lib/remotebuttons');
+var remoteDetect = require('./lib/remotedetect');
 var logsModule = require('./lib/logs');
 var syslogForwarder = require('./lib/syslog');
 var ntpClient = require('./lib/ntp');
@@ -632,7 +633,14 @@ preload.init({ luna: luna, stateDir: __dirname });
 doh.init({});
 appDns.init({ luna: luna, stateDir: __dirname, doh: doh });
 quickAccess.init({ luna: luna, inputNames: telemetry.inputNameMap });
-remoteKeys.init({ luna: luna, subscription: lunaTransport.Subscription, services: servicesModule, inputNames: telemetry.inputNameMap, stateDir: __dirname,
+remoteDetect.init({ pairing: telemetry.remoteInfo, stateDir: __dirname });
+// The remotes in use (paired, or seen lately, as Automatic reads them) and what was found, for the Remote tab.
+function detectRemotes(cb) {
+  remoteDetect.detect(function (found) {
+    cb({ auto: remoteDetect.autoSelected(found, Date.now()), detected: found.remotes });
+  });
+}
+remoteKeys.init({ detectRemotes: detectRemotes, luna: luna, subscription: lunaTransport.Subscription, services: servicesModule, inputNames: telemetry.inputNameMap, stateDir: __dirname,
   // The Guide key can open Glasshouse Home's Internet TV guide.
   homeGuide: function () { return !!(glasshouseHome && iptv && glasshouseHome.enabled() && iptv.hasPlaylists()); },
   // The compositor restarts for a change to LG's key handler: Glasshouse Home's view is opened afresh.
@@ -1197,6 +1205,7 @@ routes.init({
   appDns: appDns,
   quickAccess: quickAccess,
   remoteKeys: remoteKeys,
+  remoteDetect: remoteDetect,
   homeScreen: homeScreen,
   home: glasshouseHome,
   homePicture: homePicture,

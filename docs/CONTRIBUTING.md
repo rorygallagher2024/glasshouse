@@ -161,6 +161,10 @@ Modern JavaScript (ES6+) is permitted exclusively in client-side code running in
 
 The deploy script (`server/deploy.sh`) maintains an explicit list of files copied to the TV via SSH (`FILES`). Any new module or asset in `server/` required by the TV must be added to this list. `scripts/check-drift.py` verifies that all files on disk match the deploy manifest.
 
+### Documenting a remote
+
+The LG remotes Glasshouse knows are in `server/lib/remotes.json`, and [Remotes](remotes.md) is made from it with `scripts/gen-remotes-doc.py`. A remote that is missing, or a button a list lacks, is added there: see [Adding a remote](remotes.md#adding-a-remote).
+
 ### Localized strings
 
 All user-visible text on the dashboards is keyed for localization:
