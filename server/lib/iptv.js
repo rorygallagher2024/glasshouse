@@ -1658,6 +1658,11 @@ function reachableAddress(host, port, cb) {
 }
 function forgetAddress(host, port) { delete relayAddresses[host + ':' + port]; }
 
+function isLoopbackHost(host) {
+  var h = String(host || '').toLowerCase().replace(/^\[|\]$/g, '');
+  return h === 'localhost' || h === '::1' || h === '::' || h === '0.0.0.0' || /^127\./.test(h) || /^::ffff:127\./.test(h);
+}
+
 /*
  * A provider's stream that stops (closed after a burst, an error, 15 s with
  * nothing) is asked for again in the same response, waiting this long before
@@ -1691,6 +1696,7 @@ function relayStream(id, key, req, res, as) {
     var target = urlLib.parse(s.url), tuner = urlLib.parse(p.server || '');
     if (!target.hostname || target.protocol !== 'http:' || target.hostname.toLowerCase() !== String(tuner.hostname || '').toLowerCase()) return refuse(403, 'forbidden');
   } else if (s.format !== 'ts') return refuse(404, 'no-stream');
+  var originLoopback = isLoopbackHost(urlLib.parse(s.url).hostname);
   var splice = tunerLogin ? null : new Splice();
 
   // Before the stream has started, Home hears why; after, the stream is asked for again.
@@ -1744,9 +1750,15 @@ function relayStream(id, key, req, res, as) {
       clearTimeout(connectTimer);
       var to = up.headers.location;
       if (!tunerLogin && up.statusCode >= 300 && up.statusCode < 400 && to && hops < RELAY_HOPS) {
+        var nextUrl = urlLib.resolve(link, String(to));
+        if (!originLoopback && isLoopbackHost(urlLib.parse(nextUrl).hostname)) {
+          up.resume();
+          console.log('iptv: relay for ' + id + ' refused redirect to loopback');
+          return done(502, 'forbidden');
+        }
         settled = true;
         up.resume();
-        return ask(urlLib.resolve(link, String(to)), hops + 1);
+        return ask(nextUrl, hops + 1);
       }
       if (up.statusCode !== 200) {
         up.resume();
@@ -2118,5 +2130,6 @@ module.exports = {
   _tick: tick,
   _catchUp: catchUp,
   _gc: gc,
+  _isLoopbackHost: isLoopbackHost,
   BUDGET: BUDGET
 };

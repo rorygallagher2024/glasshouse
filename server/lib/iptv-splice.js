@@ -30,6 +30,8 @@ var WRAP = 8589934592;
 var HALF = WRAP / 2;
 // Further back than this, a timestamp starts the stream again rather than repeats it.
 var RESET_TICKS = 60 * 90000;
+// Bound a single held PES so a stream without PUSI packets cannot grow without limit.
+var MAX_PES_PACKETS = 2000;
 
 function Splice() {
   this.carry = null;
@@ -85,7 +87,10 @@ Splice.prototype.packet = function (p, out) {
       if (stream.keep) stream.ts = ts;
     }
   }
-  if (stream.keep) stream.packets.push(p);
+  if (stream.keep) {
+    stream.packets.push(p);
+    if (stream.packets.length >= MAX_PES_PACKETS) flush(stream, out);
+  }
 };
 
 Splice.prototype.readPat = function (p, at) {
@@ -159,4 +164,4 @@ function alignment(data, from) {
   return -1;
 }
 
-module.exports = { Splice: Splice, _after: after, _timestamp: timestamp };
+module.exports = { Splice: Splice, _after: after, _timestamp: timestamp, _MAX_PES_PACKETS: MAX_PES_PACKETS };

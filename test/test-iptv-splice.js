@@ -116,4 +116,12 @@ r.feed(stream(pes(VIDEO, 2 * T, 1, 4)));
 assert.ok(r.restarted, 'ten minutes back is the channel starting again');
 console.log('  ✓ timestamps wrap at 33 bits, and a big step back starts the stream again and is told');
 
+// A malformed stream missing PUSI packets flushes at MAX_PES_PACKETS instead of buffering without bound.
+var big = new splice.Splice();
+var flood = pes(VIDEO, 1 * T, splice._MAX_PES_PACKETS + 5, 9);
+var floodOut = big.feed(stream([PAT, PMT_PACKET], flood));
+assert.ok(floodOut && floodOut.length >= splice._MAX_PES_PACKETS * 188, 'flushed once held packets reach MAX_PES_PACKETS');
+assert.ok(big.streams[VIDEO].packets.length < splice._MAX_PES_PACKETS, 'held packet count stays bounded below MAX_PES_PACKETS');
+console.log('  ✓ a stream missing PUSI boundaries flushes at MAX_PES_PACKETS');
+
 console.log('ALL test-iptv-splice.js assertions passed!\n');

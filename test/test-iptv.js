@@ -737,6 +737,13 @@ step('a channel with DRM its playlist does not declare is found after it fails, 
 });
 
 step('a playlist with no reachable server is refused when added, before any download', function (done) {
+  assert.strictEqual(iptv._isLoopbackHost('localhost'), true);
+  assert.strictEqual(iptv._isLoopbackHost('127.0.0.1'), true);
+  assert.strictEqual(iptv._isLoopbackHost('[::1]'), true);
+  assert.strictEqual(iptv._isLoopbackHost('0.0.0.0'), true);
+  assert.strictEqual(iptv._isLoopbackHost('::ffff:127.0.0.1'), true);
+  assert.strictEqual(iptv._isLoopbackHost('stream.example'), false);
+  assert.strictEqual(iptv._isLoopbackHost('192.168.1.10'), false);
   iptv.playlistsAction({ action: 'add', kind: 'm3u', url: 'file:///etc/passwd' }, function (r) {
     assert.deepEqual([r.ok, r.error], [false, 'url']);
     iptv.playlistsAction({ action: 'add', kind: 'xtream', server: 'http://x.test', user: '', pass: 'p' }, function (r2) {
