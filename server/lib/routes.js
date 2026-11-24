@@ -365,6 +365,7 @@ function validateHaSettings(haObj) {
     var haTok = trimmedString(haObj.token);
     if (haTok || haObj.clearToken) out.token = haTok;
   }
+  if (typeof haObj.tlsRejectUnauthorized === 'boolean') out.tlsRejectUnauthorized = haObj.tlsRejectUnauthorized;
   return { errors: errors, value: out };
 }
 
@@ -374,6 +375,7 @@ function applyHaConfig(haPatch) {
   if (haPatch.enabled !== undefined) config.homeAssistant.enabled = haPatch.enabled;
   if (haPatch.url !== undefined) config.homeAssistant.url = haPatch.url;
   if (haPatch.token !== undefined) config.homeAssistant.token = haPatch.token;
+  if (haPatch.tlsRejectUnauthorized !== undefined) config.homeAssistant.tlsRejectUnauthorized = haPatch.tlsRejectUnauthorized;
   if (haEntityModule) haEntityModule.update(config.homeAssistant);
 }
 
@@ -1194,6 +1196,7 @@ function getSettingsPayload() {
       enabled: haCfg.enabled !== false,
       url: haCfg.url || '',
       tokenSet: !!haCfg.token,
+      tlsRejectUnauthorized: haCfg.tlsRejectUnauthorized !== false,
       configured: !!(haEntityModule && haEntityModule.configured()),
       status: (haEntityModule && typeof haEntityModule.status === 'function') ? haEntityModule.status() : null
     },
@@ -1562,18 +1565,19 @@ function handleIptvRoute(req, res, u, pathname) {
     if (pathname === '/api/iptv/stream') {
       // The play URL carries the login on Xtream: for the TV's own Home only.
       if (!fromTV(req)) return send(res, 403, JSON.stringify({ ok: false, error: 'forbidden' }));
-      // full=1: the full-screen player, which may play a recording it can pause (lib/iptv-timeshift).
+      // full=1: the full-screen player, which may play a recording it can pause (lib/iptv-timeshift);
+      // as=hls or ts: the channel's other kind of stream, for this play only.
       return iptvModule.playUrl(String(qs.pl || ''), String(qs.key || ''), qs.full === '1', function (stream) {
         if (!stream) return send(res, 404, JSON.stringify({ ok: false, error: 'no-stream' }));
         res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
         res.end(JSON.stringify({ ok: true, url: stream.url, format: stream.format, account: stream.account, maxConnections: stream.maxConnections,
-          switchable: stream.switchable, timeshift: stream.timeshift === true }));
-      });
+          switchable: stream.switchable, timeshift: stream.timeshift === true, relay: stream.relay || null }));
+      }, qs.as === 'hls' || qs.as === 'ts' ? qs.as : '');
     }
     if (pathname === '/api/iptv/relay') {
-      // A tuner's stream with the owner's login: for the TV's own Home only, like the play link.
+      // A channel's stream, with a tuner's login or for Home's own player: for the TV's own Home only, like the play link.
       if (!fromTV(req)) return send(res, 403, JSON.stringify({ ok: false, error: 'forbidden' }));
-      return iptvModule.relay(String(qs.pl || ''), String(qs.key || ''), req, res);
+      return iptvModule.relay(String(qs.pl || ''), String(qs.key || ''), req, res, qs.as === 'hls' || qs.as === 'ts' ? qs.as : '');
     }
     if (pathname === '/api/iptv/timeshift') {
       if (qs.pl === undefined) return iptvModule.timeshiftStatus(reply);
@@ -2053,9 +2057,9 @@ function handleRequest(req, res) {
     }
     return readJsonBody(req, res, function (body) {
       if (!haEntityModule) return send(res, 503, JSON.stringify({ ok: false, error: 'Home Assistant module not loaded' }));
-      var testUrl = body && body.url;
-      var testToken = body && body.token;
-      haEntityModule.test({ url: testUrl, token: testToken }, function (r) {
+      var testOpts = { url: body && body.url, token: body && body.token };
+      if (body && typeof body.tlsRejectUnauthorized === 'boolean') testOpts.tlsRejectUnauthorized = body.tlsRejectUnauthorized;
+      haEntityModule.test(testOpts, function (r) {
         send(res, r.ok ? 200 : 400, JSON.stringify(r));
       });
     });
@@ -2084,6 +2088,7 @@ function handleRequest(req, res) {
           enabled: config.homeAssistant.enabled !== false,
           url: config.homeAssistant.url || '',
           tokenSet: !!(config.homeAssistant.token),
+          tlsRejectUnauthorized: config.homeAssistant.tlsRejectUnauthorized !== false,
           configured: haEntityModule.configured(),
           status: (typeof haEntityModule.status === 'function') ? haEntityModule.status() : null
         }));

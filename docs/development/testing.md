@@ -586,10 +586,20 @@ folder deleted, and a channel whose variant playlist names FairPlay found to
 be protected once checked, marked in the lineup and given no play link,
 while one with a plain AES-128 key is not. It also checks a channel's saved
 HLS or MPEG-TS choice across a restart, stream event logging without URLs,
+the relay asking again for a stream that goes quiet in the same response,
 and that pausing live TV is off by default, kept across a restart, and
 never records a preview, an HLS channel or without a USB stick.
 It is skipped where there is no curl. `test-iptv-drm.js` checks which HLS keys the TV's player cannot use,
 and the resolving of a master playlist's first variant.
+
+`test-iptv-splice.js` checks how the Internet TV relay joins an MPEG-TS stream
+across a provider's reconnect. Fed in pieces that cut packets in half, a
+connection's PES packets pass in order. A PES cut short by the close comes whole
+from the next connection, and the seconds that connection sends again are dropped.
+Before a PMT, a stream passes as it is. Timestamps compare across the 33-bit wrap,
+and a step back of more than a minute counts as the stream starting again and is reported, so the relay can end the response.
+
+`test-home-iptv.js` checks Home's Internet TV player module (`assets/home-iptv.js`): buffer depth and next-gap calculations, provider prebuffer levels and persisted per-channel cushion/format settings, and wiring of play, native playback, stream events, leases and stop.
 
 `test-iptv-timeshift.js` runs the recording for pausing live TV: the real
 worker records a local provider's MPEG-TS packets through curl into a folder

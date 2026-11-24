@@ -3891,5 +3891,6 @@
  "apps.running.noneDesc": {"text": "Jelenleg nincs alkalmazás a memóriában.", "from": "No apps are currently running in memory."},
  "apps.running.summaryMb": {"text": "{n} alkalmazás · {mb} MB", "from": "{n} apps · {mb} MB"},
  "apps.running.summaryOneMb": {"text": "1 alkalmazás · {mb} MB", "from": "1 app · {mb} MB"},
- "apps.running.title": {"text": "Alkalmazások a memóriában", "from": "Apps in memory"}
+ "apps.running.title": {"text": "Alkalmazások a memóriában", "from": "Apps in memory"},
+ "ha.verify.desc": {"text": "Kapcsolja ki önaláírt tanúsítvány vagy helyi IP-címmel elért HTTPS-cím esetén.", "from": "Turn off for a self-signed certificate or an HTTPS address reached by LAN IP."}
 }

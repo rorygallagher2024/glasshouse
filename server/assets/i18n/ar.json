@@ -3877,5 +3877,6 @@
  "apps.running.noneDesc": {"text": "لا توجد تطبيقات قيد التشغيل في الذاكرة حالياً.", "from": "No apps are currently running in memory."},
  "apps.running.summaryMb": {"text": "{n} تطبيقات · {mb} ميغابايت", "from": "{n} apps · {mb} MB"},
  "apps.running.summaryOneMb": {"text": "تطبيق واحد · {mb} ميغابايت", "from": "1 app · {mb} MB"},
- "apps.running.title": {"text": "التطبيقات في الذاكرة", "from": "Apps in memory"}
+ "apps.running.title": {"text": "التطبيقات في الذاكرة", "from": "Apps in memory"},
+ "ha.verify.desc": {"text": "أوقف هذا الخيار لشهادة موقعة ذاتياً أو عنوان HTTPS يُوصل إليه عبر عنوان IP محلي.", "from": "Turn off for a self-signed certificate or an HTTPS address reached by LAN IP."}
 }

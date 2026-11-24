@@ -59,9 +59,10 @@ function setup(wallLoaded) {
     'function unloadWallVideo() { unloads++; wallVideoEl.removeAttribute("src"); }' +
     'function updateWall() { walls++; }' +
     'function blankPreview() { blanks++; releaseVideo(); }' +
+    'function releaseMse() {}' +
     between('  var PREVIEW_START_MS', '  var PREVIEW_SIGNAL_MS') +
     'var PREVIEW_SIGNAL_TRIES = 3, PREVIEW_CHANNEL_INFO_MS = 1500;' +
-    'var tilePreview = { gen: 0, timer: null, playing: false, opening: null };' +
+    'var tilePreview = { gen: 0, timer: null, playing: false, opening: null }, tvStream = { gen: 0, claim: -1, item: null };' +
     between('  function releaseVideo(', '  function stopPreview()') +
     between('  function startPreview(target) {', '  function checkSignal(') +
     between('  function previewHoldsVideo() {', '  /*\n   * How much of the wallpaper') +

@@ -2396,7 +2396,7 @@ if (!CLI_MODE) {
     if (ev.group === 'power' && ev.key === 'systemOn' && ev.value === true) setTimeout(refreshHomeTitles, 20000);
     if (homePicture && ev.group === 'power' && ev.key === 'systemOn') homePicture.want('tv', ev.value !== false);
     // LG puts its own streaming buttons back around each change, not always announced.
-    if (ev.group === 'power' && ev.key === 'state') remoteKeys.powerChanged();
+    if (ev.group === 'power' && ev.key === 'state') remoteKeys.powerChanged(ev.value);
     if (ev.group === 'surface' && ev.key === 'control_app_id' && ev.value === 'com.webos.app.home') refreshHomeTitles();
   });
 

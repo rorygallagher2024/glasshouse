@@ -3877,5 +3877,6 @@
  "apps.running.noneDesc": {"text": "Não há aplicações carregadas na memória neste momento.", "from": "No apps are currently running in memory."},
  "apps.running.summaryMb": {"text": "{n} aplicações · {mb} MB", "from": "{n} apps · {mb} MB"},
  "apps.running.summaryOneMb": {"text": "1 aplicação · {mb} MB", "from": "1 app · {mb} MB"},
- "apps.running.title": {"text": "Aplicações em memória", "from": "Apps in memory"}
+ "apps.running.title": {"text": "Aplicações em memória", "from": "Apps in memory"},
+ "ha.verify.desc": {"text": "Desative para um certificado autoassinado ou um endereço HTTPS acedido por IP local.", "from": "Turn off for a self-signed certificate or an HTTPS address reached by LAN IP."}
 }
