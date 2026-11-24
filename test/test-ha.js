@@ -145,6 +145,7 @@ console.log('Running test-ha.js ...');
   assert.strictEqual(oledIds.oled_screen_shift, true, 'OLED must retain oled_screen_shift');
   assert.strictEqual(oledIds.oled_logo_dimming, true, 'OLED must retain oled_logo_dimming');
   assert.strictEqual(oledIds.pixel_refresher_schedule, true, 'OLED must retain pixel_refresher_schedule');
+  assert.strictEqual(oledIds.oled_gsr_stress_count, true, 'OLED must retain oled_gsr_stress_count');
   assert.strictEqual(!oledIds.panel_dimming, true, 'OLED must withhold panel_dimming');
 
   // LCD set (non-OLED)
@@ -167,6 +168,7 @@ console.log('Running test-ha.js ...');
   assert.strictEqual(!lcdIds.oled_screen_shift, true, 'LCD must withhold oled_screen_shift');
   assert.strictEqual(!lcdIds.oled_logo_dimming, true, 'LCD must withhold oled_logo_dimming');
   assert.strictEqual(!lcdIds.pixel_refresher_schedule, true, 'LCD must withhold pixel_refresher_schedule');
+  assert.strictEqual(!lcdIds.oled_gsr_stress_count, true, 'LCD must withhold oled_gsr_stress_count');
   assert.strictEqual(lcdIds.panel_dimming, true, 'LCD must retain panel_dimming');
 
   // Missing sensors
