@@ -3900,5 +3900,6 @@
  "ha.verify.desc": {"text": "Отключите для самоподписанного сертификата или HTTPS-адреса, открываемого по локальному IP.", "from": "Turn off for a self-signed certificate or an HTTPS address reached by LAN IP."},
  "srv.updateAsk.installing": {"from": "Updating Glasshouse to {version}. It restarts when done.", "text": "Glasshouse обновляется до {version}. После этого он перезапустится."},
  "srv.updateAsk.failed": {"from": "Glasshouse could not update: {error}", "text": "Не удалось обновить Glasshouse: {error}"},
- "srv.updateAsk.noReason": {"from": "no reason given", "text": "причина не указана"}
+ "srv.updateAsk.noReason": {"from": "no reason given", "text": "причина не указана"},
+ "srv.configUnreadable": {"from": "{file} could not be read, so it was left as it is. Correct it, or remove it to start again, then restart Glasshouse.", "text": "Не удалось прочитать {file}, поэтому он оставлен без изменений. Исправьте его или удалите, чтобы начать заново, затем перезапустите Glasshouse."}
 }

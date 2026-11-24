@@ -1291,5 +1291,6 @@
  "server.askOnTv.desc": {"from": "When the daily check finds a new release, asks on the TV whether to install it, with Update now and Later, after the TV is next switched on. Each release is asked about until it is answered.", "text": "Findet die tägliche Prüfung eine neue Version, fragt der Fernseher nach dem nächsten Einschalten, ob sie installiert werden soll, mit Jetzt aktualisieren und Später. Zu jeder Version wird gefragt, bis eine Antwort kommt."},
  "srv.updateAsk.installing": {"from": "Updating Glasshouse to {version}. It restarts when done.", "text": "Glasshouse wird auf {version} aktualisiert. Danach startet es neu."},
  "srv.updateAsk.failed": {"from": "Glasshouse could not update: {error}", "text": "Glasshouse konnte nicht aktualisiert werden: {error}"},
- "srv.updateAsk.noReason": {"from": "no reason given", "text": "kein Grund angegeben"}
+ "srv.updateAsk.noReason": {"from": "no reason given", "text": "kein Grund angegeben"},
+ "srv.configUnreadable": {"from": "{file} could not be read, so it was left as it is. Correct it, or remove it to start again, then restart Glasshouse.", "text": "{file} konnte nicht gelesen werden und wurde daher nicht verändert. Korrigiere die Datei oder entferne sie, um neu zu beginnen, und starte Glasshouse dann neu."}
 }

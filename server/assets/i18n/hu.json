@@ -3900,5 +3900,6 @@
  "ha.verify.desc": {"text": "Kapcsolja ki önaláírt tanúsítvány vagy helyi IP-címmel elért HTTPS-cím esetén.", "from": "Turn off for a self-signed certificate or an HTTPS address reached by LAN IP."},
  "srv.updateAsk.installing": {"from": "Updating Glasshouse to {version}. It restarts when done.", "text": "A Glasshouse frissítése erre: {version}. Utána újraindul."},
  "srv.updateAsk.failed": {"from": "Glasshouse could not update: {error}", "text": "A Glasshouse frissítése nem sikerült: {error}"},
- "srv.updateAsk.noReason": {"from": "no reason given", "text": "nincs megadva ok"}
+ "srv.updateAsk.noReason": {"from": "no reason given", "text": "nincs megadva ok"},
+ "srv.configUnreadable": {"from": "{file} could not be read, so it was left as it is. Correct it, or remove it to start again, then restart Glasshouse.", "text": "A(z) {file} nem olvasható, ezért változatlan maradt. Javítsd ki, vagy töröld az újrakezdéshez, majd indítsd újra a Glasshouse-t."}
 }

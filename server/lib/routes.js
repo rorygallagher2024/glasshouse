@@ -256,15 +256,23 @@ function setupPending() {
  * prometheus.enabled are writable from the Server tab, and iconServer from the
  * MQTT tab: its port answers nothing but the icons the dashboard serves.
  */
+/*
+ * config.json as it is on disk, {} where there is none yet, or null where it
+ * is there but cannot be read. A writer given null refuses: writing a setting
+ * into {} would replace the whole file with that one setting.
+ */
 function readConfigFile() {
+  if (!configFilePath || !fs.existsSync(configFilePath)) return {};
   try {
-    if (configFilePath && fs.existsSync(configFilePath)) {
-      return JSON.parse(fs.readFileSync(configFilePath, 'utf8'));
-    }
+    return JSON.parse(fs.readFileSync(configFilePath, 'utf8'));
   } catch (e) {
-    console.warn('config: could not re-read ' + configFilePath + ': ' + e.message);
+    console.error('config: could not read ' + configFilePath + ': ' + e.message);
+    return null;
   }
-  return {};
+}
+
+function unreadableConfigError() {
+  return new Error(msg('srv.configUnreadable', '{file} could not be read, so it was left as it is. Correct it, or remove it to start again, then restart Glasshouse.', { file: configFilePath }));
 }
 
 function trimmedString(v) { return typeof v === 'string' ? v.trim() : ''; }
@@ -381,6 +389,7 @@ function applyHaConfig(haPatch) {
 
 function writeSettings(patch, cb) {
   var file = readConfigFile();
+  if (!file) return cb(unreadableConfigError());
   for (var section in patch) {
     if (patch[section] !== null && typeof patch[section] === 'object' && !Array.isArray(patch[section])) {
       file[section] = file[section] || {};
@@ -404,6 +413,7 @@ function writeSettings(patch, cb) {
  */
 function setNetworkAccess(open, cb) {
   var file = readConfigFile();
+  if (!file) return cb(unreadableConfigError());
   // Unset, host defaults to dual-stack '::'.
   if (open) delete file.host;
   else file.host = '127.0.0.1';
@@ -468,6 +478,8 @@ function handoffUrl() {
  */
 function ownIdentity() {
   var file = readConfigFile();
+  // Unreadable, it may well hold an identity: none is made up over it.
+  if (!file) return null;
   var fm = file.mqtt || {};
   // One already set up keeps what it has, defaults included: its entities in
   // Home Assistant are named from it.

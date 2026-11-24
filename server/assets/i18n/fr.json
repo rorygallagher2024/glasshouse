@@ -3886,5 +3886,6 @@
  "ha.verify.desc": {"text": "Désactivez cette option pour un certificat autosigné ou une adresse HTTPS jointe par IP locale.", "from": "Turn off for a self-signed certificate or an HTTPS address reached by LAN IP."},
  "srv.updateAsk.installing": {"from": "Updating Glasshouse to {version}. It restarts when done.", "text": "Mise à jour de Glasshouse vers {version}. Il redémarre une fois terminé."},
  "srv.updateAsk.failed": {"from": "Glasshouse could not update: {error}", "text": "Glasshouse n'a pas pu être mis à jour : {error}"},
- "srv.updateAsk.noReason": {"from": "no reason given", "text": "aucune raison donnée"}
+ "srv.updateAsk.noReason": {"from": "no reason given", "text": "aucune raison donnée"},
+ "srv.configUnreadable": {"from": "{file} could not be read, so it was left as it is. Correct it, or remove it to start again, then restart Glasshouse.", "text": "{file} n'a pas pu être lu, il a donc été laissé tel quel. Corrigez-le, ou supprimez-le pour repartir de zéro, puis redémarrez Glasshouse."}
 }
