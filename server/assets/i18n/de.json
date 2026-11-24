@@ -1285,5 +1285,6 @@
  "apps.running.title": {"text": "Apps im Speicher", "from": "Apps in memory"},
  "srv.updateAsk.title": {"from": "Glasshouse {version} is out", "text": "Glasshouse {version} ist da"},
  "srv.updateAsk.install": {"from": "Update now", "text": "Jetzt aktualisieren"},
- "srv.updateAsk.later": {"from": "Later", "text": "Später"}
+ "srv.updateAsk.later": {"from": "Later", "text": "Später"},
+ "ha.verify.desc": {"text": "Für ein selbstsigniertes Zertifikat oder eine per LAN-IP aufgerufene HTTPS-Adresse ausschalten.", "from": "Turn off for a self-signed certificate or an HTTPS address reached by LAN IP."}
 }

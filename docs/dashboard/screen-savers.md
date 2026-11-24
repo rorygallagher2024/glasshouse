@@ -75,6 +75,8 @@ Clock with date used to be a screen saver of its own. A TV that had it in use ke
 
 The time and date, moving every minute, with the headlines of the news feeds given on the Home tab along the bottom, each after its source, one at a time or running as the Home tab's **Headlines** and **Speed** choose. The **News feeds** row on this tab sets the same feeds as the Home tab's [news strip](home.md#news-strip): up to three addresses, each with an optional name. The headlines come from the server, which reads each feed every 10 minutes at most while the screen saver shows; until the first read, it says there are no headlines yet.
 
+Its **Headlines** choice puts them at the bottom left (the default), centre or right, or under the clock, a little wider than it and moving with it. Running headlines use the whole width at the bottom, or the width under the clock.
+
 ### Home Assistant: Ambient
 
 ![Home Assistant: Ambient screen saver: clock, date and three Home Assistant readings on pure black](../screenshots/screensaver-ha-ambient.png)

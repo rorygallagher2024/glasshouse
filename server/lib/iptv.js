@@ -39,7 +39,11 @@ var crypto = require('crypto');
 var lineupLib = require('./iptv-lineup');
 var memory = require('./iptv-memory');
 var timeshift = require('./iptv-timeshift');
+var Splice = require('./iptv-splice').Splice;
 var http = require('http');
+var https = require('https');
+var dns = require('dns');
+var net = require('net');
 var urlLib = require('url');
 var toBuffer = require('./util').toBuffer;
 var spawn = require('child_process').spawn;
@@ -1402,9 +1406,11 @@ function logoPath(id, logoId) {
 
 /*
  * The play URL, for the TV's own page only (routes.js checks). Read fresh
- * each time: Xtream's live URLs redirect to a token that expires.
+ * each time: Xtream's live URLs redirect to a token that expires. as: 'hls'
+ * or 'ts', the other kind of stream for this play only, where the channel can
+ * be either (Home's player trying the one that holds up).
  */
-function streamUrl(id, key) {
+function streamUrl(id, key, as) {
   var p = playlist(id), cur = current[id] || {};
   if (!p || !cur.sel || typeof key !== 'string' || !/^[a-z][0-9a-z]{1,24}$/.test(key)) return null;
   var added = cache.added[id];
@@ -1423,6 +1429,8 @@ function streamUrl(id, key) {
     var switchable = p.kind === 'xtream' && /\.(m3u8|ts)(\?|$)/i.test(url) &&
       !(account && isArray(account.formats) && (account.formats.indexOf('m3u8') === -1 || account.formats.indexOf('ts') === -1));
     if (switchable && isArray(p.ts) && p.ts.indexOf(key) !== -1) url = url.replace(/\.m3u8(\?|$)/i, '.ts$1');
+    if (switchable && as === 'ts') url = url.replace(/\.m3u8(\?|$)/i, '.ts$1');
+    else if (switchable && as === 'hls') url = url.replace(/\.ts(\?|$)/i, '.m3u8$1');
     return { url: url, format: /\.m3u8(\?|$)/i.test(url) ? 'hls' : /\.ts(\?|$)/i.test(url) ? 'ts' : 'unknown',
       account: !!account, maxConnections: account ? account.maxConnections : null, switchable: switchable };
   } catch (e) { return null; }
@@ -1595,45 +1603,236 @@ function enigma2Free(p, streamUrlText, cb) {
 }
 
 /*
- * A tuner's stream passed on to Home with the owner's login, for a tuner
- * whose stream port asks for one: a <video> cannot send a login, and one in
- * its URL is dropped by the browser. Only the tuner's own host is asked, so
- * the login cannot go elsewhere through a channel's address, and nothing is
- * kept or parsed: the transport stream is piped through as it arrives.
+ * A channel's MPEG-TS stream passed on to Home as it arrives, nothing kept.
+ * Two users:
+ * - a tuner whose stream port asks for a login: a <video> cannot send one,
+ *   and one in its URL is dropped by the browser. Only the tuner's own host is
+ *   asked, so the login cannot go elsewhere through a channel's address;
+ * - Home's own player (mpegts.js), which reads the stream with fetch, and a
+ *   provider sends no CORS headers. Xtream's live links redirect to a token
+ *   on another host, followed here, a few hops at most.
  */
-var RELAY_CONNECT_MS = 10000;
+// A provider seen taking 7.5 to 11 s to accept a connection, on each of its two hops.
+var RELAY_CONNECT_MS = 20000;
 var RELAY_IDLE_MS = 20000;
-function relayStream(id, key, req, res) {
+var RELAY_HOPS = 4;
+/*
+ * Node 0.12's https has no CA bundle worth trusting (docs/IMPLEMENTATION.md), so on
+ * such a TV an https link goes to the TV's player rather than through the relay.
+ */
+var RELAY_HTTPS = +String(process.versions.node).split('.')[0] >= 12;
+/*
+ * A provider's host can name several servers of which only some answer: one
+ * seen with five, four never accepting a connection. Node connects to the first
+ * and waits on it; curl and the TV's player go on to the next, after seconds
+ * each. All are tried at once here and the first to connect is used, and kept
+ * for the host's next request until it fails one.
+ */
+var RELAY_PROBE_MS = 4000;
+var RELAY_ADDRESS_MS = 10 * 60 * 1000;
+var relayAddresses = {};
+function reachableAddress(host, port, cb) {
+  if (net.isIP(host)) return cb(host);
+  var key = host + ':' + port, known = relayAddresses[key];
+  if (known && nowMs() - known.at < RELAY_ADDRESS_MS) return cb(known.address);
+  dns.resolve4(host, function (err, addresses) {
+    if (err || !addresses || !addresses.length) return cb(null);
+    if (addresses.length === 1) return cb(addresses[0]);
+    var done = false, left = addresses.length, sockets = [];
+    var finish = function (address) {
+      if (done) return;
+      done = true;
+      clearTimeout(timer);
+      sockets.forEach(function (sock) { sock.destroy(); });
+      if (address) relayAddresses[key] = { address: address, at: nowMs() };
+      cb(address);
+    };
+    var timer = setTimeout(function () { finish(null); }, RELAY_PROBE_MS);
+    addresses.forEach(function (address) {
+      var sock = net.connect({ host: address, port: port });
+      sockets.push(sock);
+      sock.on('connect', function () { finish(address); });
+      sock.on('error', function () { if (--left === 0) finish(null); });
+    });
+  });
+}
+function forgetAddress(host, port) { delete relayAddresses[host + ':' + port]; }
+
+function isLoopbackHost(host) {
+  var h = String(host || '').toLowerCase().replace(/^\[|\]$/g, '');
+  return h === 'localhost' || h === '::1' || h === '::' || h === '0.0.0.0' || /^127\./.test(h) || /^::ffff:127\./.test(h);
+}
+
+/*
+ * A provider's stream that stops (closed after a burst, an error, 15 s with
+ * nothing) is asked for again in the same response, waiting this long before
+ * each try, and lib/iptv-splice joins it up: Home's player plays on from its
+ * buffer and never sees the join. The tries start again after a minute of
+ * steady stream. A satellite tuner's stream is passed on as it comes.
+ */
+var RELAY_RETRY_MS = [300, 1000, 2000, 3000, 4000, 5000, 5000];
+var relayRetryMs = RELAY_RETRY_MS;
+var RELAY_STEADY_MS = 60000;
+var RELAY_REJOIN_LOGS = 20;
+/*
+ * Silence that long is a stream stopped. A provider seen sending a channel in
+ * bursts about 10 s apart, and going quiet for good without closing.
+ */
+var RELAY_STALL_MS = 15000;
+var relayStallMs = RELAY_STALL_MS;
+
+function relayStream(id, key, req, res, as) {
+  var upstream = null, closed = false, tries = 0, retryTimer = null, flowingSince = 0, lostAt = 0, rejoins = 0;
   function refuse(code, why) {
     if (res.headersSent) return res.end();
     res.writeHead(code, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
     res.end(JSON.stringify({ ok: false, error: why }));
   }
-  var p = playlist(id), s = streamUrl(id, key);
-  if (!p || p.kind !== 'enigma2' || p.streamLogin !== true || !p.user || !s) return refuse(404, 'no-stream');
-  var target = urlLib.parse(s.url), tuner = urlLib.parse(p.server || '');
-  if (!target.hostname || target.protocol !== 'http:' || target.hostname.toLowerCase() !== String(tuner.hostname || '').toLowerCase()) return refuse(403, 'forbidden');
-  var upstream = http.request({
-    host: target.hostname, port: target.port || 80, path: target.path, method: 'GET', agent: false,
-    headers: { Authorization: 'Basic ' + toBuffer(p.user + ':' + (p.pass || ''), 'utf8').toString('base64'), 'User-Agent': 'Glasshouse/' + version, Connection: 'close' }
-  }, function (up) {
-    if (up.statusCode !== 200) {
-      up.resume();
-      console.log('iptv: relay for ' + id + ' answered ' + up.statusCode);
-      return refuse(502, up.statusCode === 401 || up.statusCode === 403 ? 'login' : 'http');
+  var p = playlist(id), s = streamUrl(id, key, as);
+  if (!p || !s) return refuse(404, 'no-stream');
+  var tunerLogin = p.kind === 'enigma2' && p.streamLogin === true && !!p.user;
+  if (p.kind === 'enigma2' && !tunerLogin) return refuse(404, 'no-stream');
+  if (tunerLogin) {
+    var target = urlLib.parse(s.url), tuner = urlLib.parse(p.server || '');
+    if (!target.hostname || target.protocol !== 'http:' || target.hostname.toLowerCase() !== String(tuner.hostname || '').toLowerCase()) return refuse(403, 'forbidden');
+  } else if (s.format !== 'ts') return refuse(404, 'no-stream');
+  var originLoopback = isLoopbackHost(urlLib.parse(s.url).hostname);
+  var splice = tunerLogin ? null : new Splice();
+
+  // Before the stream has started, Home hears why; after, the stream is asked for again.
+  function fail(code, why) {
+    if (closed) return;
+    if (!res.headersSent) return refuse(code, why);
+    if (!splice) return res.end();
+    if (flowingSince && nowMs() - flowingSince > RELAY_STEADY_MS) tries = 0;
+    if (tries >= relayRetryMs.length) {
+      console.log('iptv: relay for ' + id + ' gave up rejoining after ' + tries + ' tries');
+      return res.end();
     }
-    up.socket.setTimeout(RELAY_IDLE_MS, function () { upstream.abort(); });
-    res.writeHead(200, { 'Content-Type': 'video/MP2T', 'Cache-Control': 'no-store' });
-    up.on('end', function () { res.end(); });
-    up.on('error', function () { res.end(); });
-    up.pipe(res, { end: false });
-  });
-  upstream.setTimeout(RELAY_CONNECT_MS, function () { upstream.abort(); });
-  upstream.on('error', function () { refuse(502, 'network'); });
-  function closed() { upstream.abort(); }
-  req.on('close', closed);
-  res.on('close', closed);
-  upstream.end();
+    if (!lostAt) lostAt = nowMs();
+    flowingSince = 0;
+    splice.restart();
+    clearTimeout(retryTimer);
+    retryTimer = setTimeout(function () {
+      retryTimer = null;
+      if (!closed) ask(s.url, 0);
+    }, relayRetryMs[tries++]);
+  }
+
+  function ask(link, hops) {
+    var u = urlLib.parse(link), lib = u.protocol === 'https:' ? https : u.protocol === 'http:' ? http : null;
+    if (!lib || !u.hostname) return fail(502, 'network');
+    var headers = { 'User-Agent': tunerLogin ? 'Glasshouse/' + version : timeshift.UA, Connection: 'close' };
+    if (tunerLogin) headers.Authorization = 'Basic ' + toBuffer(p.user + ':' + (p.pass || ''), 'utf8').toString('base64');
+    var port = +(u.port || (lib === https ? 443 : 80));
+    reachableAddress(u.hostname, port, function (address) {
+      if (closed) return;
+      // The host's name still goes in Host and, over https, in SNI and the certificate check.
+      if (address) headers.Host = u.host;
+      askAt(lib, u, port, address || u.hostname, headers, link, hops);
+    });
+  }
+
+  function askAt(lib, u, port, address, headers, link, hops) {
+    var options = { host: address, port: port, path: u.path, method: 'GET', agent: false, headers: headers };
+    if (lib === https) options.servername = u.hostname;
+    var settled = false;
+    // Once per request: on node 0.12 an abort also raises 'error', and a response closes with 'end' and 'close'.
+    function done(code, why, forget) {
+      if (settled) return;
+      settled = true;
+      clearTimeout(connectTimer);
+      if (forget) forgetAddress(u.hostname, port);
+      if (upstream === mine) fail(code, why);
+    }
+    // Each hop its own request: a late timeout or error on one that redirected must not touch the next.
+    var mine = lib.request(options, function (up) {
+      clearTimeout(connectTimer);
+      var to = up.headers.location;
+      if (!tunerLogin && up.statusCode >= 300 && up.statusCode < 400 && to && hops < RELAY_HOPS) {
+        var nextUrl = urlLib.resolve(link, String(to));
+        if (!originLoopback && isLoopbackHost(urlLib.parse(nextUrl).hostname)) {
+          up.resume();
+          console.log('iptv: relay for ' + id + ' refused redirect to loopback');
+          return done(502, 'forbidden');
+        }
+        settled = true;
+        up.resume();
+        return ask(nextUrl, hops + 1);
+      }
+      if (up.statusCode !== 200) {
+        up.resume();
+        console.log('iptv: relay for ' + id + ' answered ' + up.statusCode);
+        return done(502, up.statusCode === 401 || up.statusCode === 403 ? 'login' : 'http');
+      }
+      if (!res.headersSent) res.writeHead(200, { 'Content-Type': 'video/MP2T', 'Cache-Control': 'no-store' });
+      else if (rejoins++ < RELAY_REJOIN_LOGS) console.log('iptv: relay for ' + id + ' rejoined the stream after ' + (nowMs() - lostAt) + ' ms');
+      lostAt = 0;
+      flowingSince = nowMs();
+      var quiet = function () {
+        if (closed || settled) return;
+        console.log('iptv: relay for ' + id + ' heard nothing for ' + relayStallMs + ' ms');
+        done(502, 'stalled');
+        mine.abort();
+      };
+      // Timed only while reading: held back for a player that has enough is no silence.
+      var stallTimer = null;
+      var listen = function () {
+        clearTimeout(stallTimer);
+        stallTimer = splice && !settled ? setTimeout(quiet, relayStallMs) : null;
+      };
+      listen();
+      if (!splice) up.socket.setTimeout(RELAY_IDLE_MS, function () { mine.abort(); });
+      up.on('data', function (chunk) {
+        clearTimeout(stallTimer);
+        if (upstream !== mine || closed) return;
+        var out = splice ? splice.feed(chunk) : chunk;
+        /*
+         * The channel started again from new timestamps (a provider seen doing so,
+         * refusing and repeating meanwhile): ended here, Home opens it again at once
+         * with a player that takes them, where its last discarded all it was sent.
+         */
+        if (splice && splice.restarted) {
+          console.log('iptv: relay for ' + id + ' ended at the channel starting again');
+          closed = true;
+          upstream.abort();
+          return res.end();
+        }
+        if (out && !res.write(out)) {
+          up.pause();
+          return res.once('drain', function () { up.resume(); listen(); });
+        }
+        listen();
+      });
+      // Node 16 ends an aborted response with 'close' alone, no 'end' or 'error'.
+      var stopped = function () { clearTimeout(stallTimer); done(502, 'ended'); };
+      up.on('end', stopped);
+      up.on('error', stopped);
+      up.on('close', stopped);
+    });
+    upstream = mine;
+    /*
+     * From the request, not the socket: a request's own timeout starts only once
+     * connected, so a server that never accepts was waited on for good. Answered
+     * here: an abort raises no 'error' on node 16.
+     */
+    var connectTimer = setTimeout(function () {
+      done(504, 'timeout', true);
+      mine.abort();
+    }, RELAY_CONNECT_MS);
+    mine.on('error', function () { done(502, 'network', true); });
+    mine.end();
+  }
+  // A channel change hangs up at once: an account may allow one connection.
+  function hangUp() {
+    if (closed) return;
+    closed = true;
+    clearTimeout(retryTimer);
+    if (upstream) upstream.abort();
+  }
+  req.on('close', hangUp);
+  res.on('close', hangUp);
+  ask(s.url, 0);
 }
 
 /*
@@ -1643,9 +1842,10 @@ function relayStream(id, key, req, res) {
  * own segments. A preview of the channel being recorded plays the recording
  * too; any other channel's play ends it. cb(stream or null).
  */
-function playUrl(id, key, full, cb) {
-  var s = streamUrl(id, key);
+function playUrl(id, key, full, cb, as) {
+  var s = streamUrl(id, key, as);
   if (!s) return cb(null);
+  if (as) s.as = as;
   var owner = playlist(id);
   if (owner && owner.kind === 'enigma2' && owner.takeOver === true) {
     return enigma2Free(owner, s.url, function () { deliverStream(id, key, full, s, cb); });
@@ -1666,9 +1866,11 @@ function deliverStream(id, key, full, s, cb) {
   }
   var local = timeshift.current(at);
   if (local) { s.url = local; s.timeshift = true; return cb(s); }
+  // Home's own player reads MPEG-TS through the relay (relayStream); the TV's player takes s.url.
+  if (s.format === 'ts' && !(owner && owner.kind === 'enigma2') && (RELAY_HTTPS || !/^https:/i.test(s.url))) s.relay = '/api/iptv/relay?pl=' + encodeURIComponent(id) + '&key=' + encodeURIComponent(key) + (s.as ? '&as=' + s.as : '');
   if (!full || config.timeshift !== true || s.format !== 'ts') return cb(s);
   timeshift.open(at, s.url, function (r) {
-    if (r) { s.url = r.url; s.timeshift = true; }
+    if (r) { s.url = r.url; s.timeshift = true; delete s.relay; }
     cb(s);
   });
 }
@@ -1792,7 +1994,7 @@ function setOutput(body) {
  * most 120 an hour, so a stream failing in a loop cannot fill the log.
  */
 var EVENTS_PER_HOUR = 120;
-var EVENT_FIELDS = ['why', 'after', 'lostFor', 'still', 'ahead', 'gap', 'wait', 'tries', 'code', 'state', 'net', 'size', 'dropped', 'format'];
+var EVENT_FIELDS = ['why', 'after', 'lostFor', 'still', 'ahead', 'gap', 'wait', 'tries', 'code', 'state', 'net', 'size', 'dropped', 'format', 'engine', 'held', 'to', 'detail'];
 var events = { hour: 0, count: 0 };
 function streamEvent(body) {
   var name = body && str(body.event, 20);
@@ -1817,7 +2019,7 @@ function streamEvent(body) {
  * @param {{ stateDir?: string, launch?: function(function(): void): void, clients?: function(): string[],
  *   version?: string, nowMs?: function(): number, onChange?: function(): void, onFront?: function(): void, catchupMs?: number,
  *   procDir?: string, nodePath?: string, usbRoot?: string, mountsFile?: string, timeshiftChunkBytes?: number,
- *   timeshiftMaxBytes?: number, timeshiftSpareBytes?: number, timeshiftMinBytes?: number }} opts
+ *   timeshiftMaxBytes?: number, timeshiftSpareBytes?: number, timeshiftMinBytes?: number, relayRetryMs?: number[], relayStallMs?: number }} opts
  */
 function init(opts) {
   opts = opts || {};
@@ -1826,6 +2028,8 @@ function init(opts) {
   if (opts.clients) clientsFn = opts.clients;
   if (opts.version) version = opts.version;
   if (opts.nowMs) nowMs = opts.nowMs;
+  relayRetryMs = opts.relayRetryMs || RELAY_RETRY_MS;
+  relayStallMs = opts.relayStallMs || RELAY_STALL_MS;
   if (opts.onChange) changedFn = opts.onChange;
   if (opts.onFront) frontFn = opts.onFront;
   if (typeof opts.catchupMs === 'number') catchupMs = opts.catchupMs;
@@ -1926,5 +2130,6 @@ module.exports = {
   _tick: tick,
   _catchUp: catchUp,
   _gc: gc,
+  _isLoopbackHost: isLoopbackHost,
   BUDGET: BUDGET
 };

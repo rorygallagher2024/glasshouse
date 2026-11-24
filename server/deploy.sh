@@ -68,7 +68,8 @@ assets/qr.js assets/i18n.js assets/video-order.js assets/i18n/es.json assets/i18
 assets/dashboard-app/appinfo.json assets/dashboard-app/index.html \
 assets/dashboard-app/packageinfo.json assets/dashboard-app/install-app.sh \
 assets/dashboard-app/assets/icon80.png assets/dashboard-app/assets/icon130.png assets/dashboard-app/assets/splash.png \
-assets/home.html assets/home-kit.js assets/home-web.html assets/home-minimal.html assets/devicons.js \
+assets/home.html assets/home-iptv.js assets/home-kit.js assets/home-web.html assets/home-minimal.html assets/devicons.js \
+assets/vendor/mpegts.js assets/vendor/mpegts-LICENSE.txt assets/vendor/mpegts-TiviBro-LICENSE.txt \
 assets/inputbar-app/appinfo.json assets/inputbar-app/index.html assets/inputbar-app/packageinfo.json \
 assets/homebar-app/appinfo.json assets/homebar-app/index.html assets/homebar-app/packageinfo.json \
 assets/homebar-app/assets/icon80.png assets/homebar-app/assets/icon130.png \
@@ -76,10 +77,10 @@ assets/inputbar-app/assets/icon80.png assets/inputbar-app/assets/icon130.png \
 assets/ask-app/appinfo.json assets/ask-app/index.html assets/ask-app/packageinfo.json assets/ask.html \
 assets/home-app/appinfo.json assets/home-app/index.html assets/home-app/packageinfo.json \
 assets/home-app/assets/icon80.png assets/home-app/assets/icon130.png \
-assets/fonts/Outfit.ttf assets/fonts/Manrope.ttf \
+assets/fonts/Outfit.ttf assets/fonts/Onest.ttf assets/fonts/Manrope.ttf \
 assets/fonts/Outfit-Light.ttf assets/fonts/Outfit-Regular.ttf \
 assets/fonts/Manrope-Regular.ttf assets/fonts/Manrope-SemiBold.ttf \
-assets/fonts/OFL-Outfit.txt assets/fonts/OFL-Manrope.txt \
+assets/fonts/OFL-Outfit.txt assets/fonts/OFL-Onest.txt assets/fonts/OFL-Manrope.txt \
 assets/sounds/click.wav assets/sounds/rollover.wav assets/sounds/LICENSE-Kenney.txt \
 assets/screensavers/ambient/main.qml assets/screensavers/ambient/saver.json \
 assets/screensavers/art/main.qml assets/screensavers/art/Frame.qml assets/screensavers/art/saver.json \
@@ -106,7 +107,7 @@ assets/screensavers/music-highway/saver.json assets/screensavers/vortex/main.qml
 assets/screensavers/vortex/saver.json \
 screensavers/pigs/main.qml screensavers/pigs/saver.json \
 lib/mqtt.js lib/ha.js lib/updater.js lib/updateask.js lib/fetch.js lib/repo.js lib/installer.js lib/privacy.js lib/devtools.js lib/oled.js lib/screensavers.js lib/qmlcheck.js lib/haentity.js lib/saverpoweroff.js lib/idlesaver.js lib/nosignal.js lib/typing.js lib/pointer.js lib/telemetry.js \
-lib/apps.js lib/ca-roots.pem lib/samrescan.js lib/children.js lib/audiolevels.js lib/beattrack.js lib/luna.js lib/piccap.js lib/huesync.js lib/state.js lib/mqtt-state.js lib/reconnect-status.js lib/notifications.js lib/screentime.js lib/services.js lib/preload.js lib/appdns.js lib/apphosts.js lib/doh.js lib/quickaccess.js lib/remotekeys.js lib/guidepatch.js lib/homescreen.js lib/homescreen-webos9.js lib/homescreen-webos10.js lib/say.js lib/controls.js lib/routes.js lib/lgsettings.js lib/game.js lib/topics.js lib/timers.js lib/util.js lib/names.js lib/prometheus.js lib/remotebuttons.js lib/remotebuttons.py lib/logs.js lib/syslog.js lib/ntp.js lib/power.js lib/resettime.js lib/history.js lib/perfhistory.js lib/storagescan.js lib/hdmilink.js lib/sysinfo.js lib/screencolour.js lib/art.js lib/dlna.js lib/sshkeys.js lib/remotebattery.js lib/backup.js lib/backup-parts.js lib/iconserver.js lib/home.js lib/weather.js lib/home-picture.js lib/home-launcher.js lib/home-takeover.js lib/bootwake.js lib/home-wallpapers.js lib/home-recent.js lib/clock.js lib/inputbar.js lib/ask.js lib/news.js lib/levelbar.js lib/homebar.js lib/compat.js lib/home-recent-apps.js lib/home-recommended.js lib/home-search.js lib/audio.js lib/btaudio.js lib/iptv.js lib/iptv-lineup.js lib/iptv-memory.js lib/iptv-worker.js lib/iptv-parse.js lib/iptv-timeshift.js lib/iptv-timeshift-worker.js"
+lib/apps.js lib/ca-roots.pem lib/samrescan.js lib/children.js lib/audiolevels.js lib/beattrack.js lib/luna.js lib/piccap.js lib/huesync.js lib/state.js lib/mqtt-state.js lib/reconnect-status.js lib/notifications.js lib/screentime.js lib/services.js lib/preload.js lib/appdns.js lib/apphosts.js lib/doh.js lib/quickaccess.js lib/remotekeys.js lib/guidepatch.js lib/homescreen.js lib/homescreen-webos9.js lib/homescreen-webos10.js lib/say.js lib/controls.js lib/routes.js lib/lgsettings.js lib/game.js lib/topics.js lib/timers.js lib/util.js lib/names.js lib/prometheus.js lib/remotebuttons.js lib/remotebuttons.py lib/logs.js lib/syslog.js lib/ntp.js lib/power.js lib/resettime.js lib/history.js lib/perfhistory.js lib/storagescan.js lib/hdmilink.js lib/sysinfo.js lib/screencolour.js lib/art.js lib/dlna.js lib/sshkeys.js lib/remotebattery.js lib/backup.js lib/backup-parts.js lib/iconserver.js lib/home.js lib/weather.js lib/home-picture.js lib/home-launcher.js lib/home-takeover.js lib/bootwake.js lib/home-wallpapers.js lib/home-recent.js lib/clock.js lib/inputbar.js lib/ask.js lib/news.js lib/levelbar.js lib/homebar.js lib/compat.js lib/home-recent-apps.js lib/home-recommended.js lib/home-search.js lib/audio.js lib/btaudio.js lib/iptv.js lib/iptv-lineup.js lib/iptv-memory.js lib/iptv-worker.js lib/iptv-parse.js lib/iptv-timeshift.js lib/iptv-timeshift-worker.js lib/iptv-splice.js"
 
 for t in tar base64 fold; do
   command -v "$t" >/dev/null 2>&1 && continue

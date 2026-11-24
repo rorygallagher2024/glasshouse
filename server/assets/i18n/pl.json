@@ -3900,5 +3900,6 @@
  "server.askOnTv.desc": {"from": "When the daily check finds a new release, asks on the TV whether to install it, with Update now and Later, the next time the picture is on. Each release is asked about until it is answered.", "text": "Gdy codzienne sprawdzanie znajdzie nową wersję, telewizor zapyta, czy ją zainstalować, z przyciskami Aktualizuj teraz i Później, gdy następnym razem będzie obraz. O każdą wersję pyta do czasu odpowiedzi."},
  "srv.updateAsk.title": {"from": "Glasshouse {version} is out", "text": "Dostępny jest Glasshouse {version}"},
  "srv.updateAsk.install": {"from": "Update now", "text": "Aktualizuj teraz"},
- "srv.updateAsk.later": {"from": "Later", "text": "Później"}
+ "srv.updateAsk.later": {"from": "Later", "text": "Później"},
+ "ha.verify.desc": {"text": "Wyłącz dla certyfikatu z podpisem własnym lub adresu HTTPS wywoływanego po lokalnym adresie IP.", "from": "Turn off for a self-signed certificate or an HTTPS address reached by LAN IP."}
 }

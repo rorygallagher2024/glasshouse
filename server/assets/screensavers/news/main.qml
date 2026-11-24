@@ -56,6 +56,10 @@ WebOSWindow {
     property bool hour12: __TVWEB_CLOCK12__
     property string tvLocale: "__TVWEB_LOCALE__"
     property string newsUrl: "__TVWEB_NEWS__"
+    // Where the headlines sit, as picked on the Screensaver tab: along the
+    // bottom at the left, centre or right, or under the clock, moving with it.
+    property string place: "__TVWEB_CHOICE__"
+    property bool withClock: place === "clock"
 
     // The headlines, eight a run and the next eight the run after, so the
     // moving text stays a few thousand pixels wide rather than all of them.
@@ -131,16 +135,19 @@ WebOSWindow {
         run.stop();
         flipTimer.stop();
         if (win.flipMs > 0) {
-            var margin = Math.round(112 * win.unit);
+            var margin = win.withClock ? 0 : Math.round(112 * win.unit);
             ticker.x = margin;
             ticker.width = strip.width - margin * 2;
             ticker.elide = Text.ElideRight;
+            ticker.horizontalAlignment = win.withClock || win.place === "center" ? Text.AlignHCenter
+                                       : win.place === "right" ? Text.AlignRight : Text.AlignLeft;
             win.flipPart = part;
             win.flipAt = 0;
             win.nextFlip();
             return;
         }
         ticker.elide = Text.ElideNone;
+        ticker.horizontalAlignment = Text.AlignLeft;
         ticker.width = Qt.binding(function () { return ticker.implicitWidth; });
         ticker.opacity = 1;
         win.flipShown = false;
@@ -218,11 +225,12 @@ WebOSWindow {
     }
 
     // The strip: the whole width, clipped, a little higher or lower each
-    // minute with the clock.
+    // minute with the clock; or, under the clock, a little wider than it and
+    // moving with it.
     Item {
         id: strip
-        x: 0
-        width: win.width
+        x: win.withClock ? Math.max(0, Math.min(win.width - width, block.x + (block.width - width) / 2)) : 0
+        width: win.withClock ? Math.round(1200 * win.unit) : win.width
         height: Math.round(70 * win.unit)
         y: win.height - height - Math.round(60 * win.unit)
         clip: true
@@ -273,6 +281,16 @@ WebOSWindow {
     function move() {
         var margin = Math.round(40 * win.unit);
         var spanX = Math.max(0, win.width - block.width - margin * 2);
+        if (win.withClock) {
+            var gap = Math.round(20 * win.unit);
+            var spanUnder = Math.max(0, win.height - block.height - gap - strip.height - margin * 2);
+            // From the new place, not block.y, which its Behavior is still moving.
+            var underY = margin + Math.random() * spanUnder;
+            block.x = margin + Math.random() * spanX;
+            block.y = underY;
+            strip.y = underY + block.height + gap;
+            return;
+        }
         var spanY = Math.max(0, strip.y - block.height - margin * 2);
         block.x = margin + Math.random() * spanX;
         block.y = margin + Math.random() * spanY;
