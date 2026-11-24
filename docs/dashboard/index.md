@@ -40,6 +40,12 @@ The top of every tab shows what the TV is doing: its state (On, Screen off, Scre
 
     What the remote's buttons and held number keys do.
 
+-   **[Keyboard](keyboard.md)**
+
+    ---
+
+    What a USB keyboard's F-keys do.
+
 -   **[Home](home.md)**
 
     ---

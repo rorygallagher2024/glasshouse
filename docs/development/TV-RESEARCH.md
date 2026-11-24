@@ -4110,3 +4110,30 @@ On a B8 (OLED65B8SLC, webOS 4.4.3), no filter names a channel key (only
 can name them. With CH+ set to open the browser, a CH+ press written to the
 remote's input device (`LGE RCU`, event1) brought the browser to the front over
 HDMI 2; set back to As LG has it, the same press left HDMI 2 in front.
+
+## A USB keyboard's F-keys (43UR78006LK, webOS 10.3.2)
+
+With Fn held, the top row reaches the key filter as Qt's own keys, `Qt.Key_F1`
+to `Qt.Key_F12`. LG's `systemUi.js` answers eight of them in
+`handleKeyboardKeys`, before any other handler:
+
+- `Qt.Key_Escape`, `Qt.Key_F2`, `Qt.Key_F4` and `Qt.Key_F5` are mapped to
+  native keys: Back, `WebOS.Key_webOS_InputSource` (the inputs panel), Meta with
+  the Home scan code, and `WebOS.Key_webOS_Settings` (quick settings).
+- `Qt.Key_F7` launches `com.webos.app.lgchannels`.
+- `Qt.Key_F10` mutes, and a press or release of `Qt.Key_F11` and `Qt.Key_F12`
+  turns the volume down or up.
+
+F1, F3, F6, F8 and F9 have no case there. A filter placed first in
+`com.webos.surfacemanager.keyFilters` therefore takes its own keys before LG
+does, and a key it has no setting for returns `KeyPolicy.NextPolicy`, so LG's
+handling still happens: a filter that sets F1 leaves Fn+F5 opening quick
+settings.
+
+Without Fn the top row is not these keys. The keyboard sends browser and media
+codes, which the TV renames before the filter sees them: a bare F1 arrived at
+the filter as `WebOS.Key_webOS_CursorHide`.
+
+Ctrl chords do not reach the filter as chords. Measured on the same TV, Ctrl+F6
+arrives as Meta followed by the letter D, and Ctrl+F5 as a single code of its
+own, so the F-key is never there to take.

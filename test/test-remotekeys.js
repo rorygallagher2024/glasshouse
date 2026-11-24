@@ -1335,6 +1335,30 @@ step(function (next) {
   next();
 });
 
+// webOS 11 has no JavaScript filters. A TV whose keys come from the WebOS module
+// alone still has keys to set, but none of the F-keys: there is no filter of
+// Glasshouse's for a keyboard key to be taken by.
+step(function (next) {
+  var nativeDir = path.join(dir, 'KeyFiltersNative');
+  fs.mkdirSync(nativeDir);
+  fs.writeFileSync(path.join(nativeDir, 'keyfilter.txt'), 'Qt.Key_F1 Qt.Key_F2');
+  var plugin = path.join(stateDir, 'libpluginnofilter.so');
+  fs.writeFileSync(plugin, 'x\u0000Key_webOS_ChannelUp\u0000Key_webOS_ChannelDown\u0000');
+  rk.init({ luna: luna, stateDir: stateDir, filtersDir: nativeDir, webosPlugin: plugin });
+  rk.getRemoteKeys(guard(function (r) {
+    var names = r.keys.map(function (k) { return k.key; });
+    assert.deepEqual(names.filter(function (n) { return /^channel/.test(n); }), ['channelup', 'channeldown'],
+      'the keys the WebOS module defines are still offered');
+    assert.deepEqual(names.filter(function (n) { return /^kbd/.test(n); }), [], 'no keyboard keys without JavaScript filters');
+    fs.unlinkSync(plugin);
+    fs.unlinkSync(path.join(nativeDir, 'keyfilter.txt'));
+    fs.rmdirSync(nativeDir);
+    rk.init({ luna: luna, stateDir: stateDir, filtersDir: filtersDir });
+    console.log('  ✓ where the key filters are not JavaScript, the module\'s keys are offered and no keyboard key is');
+    next();
+  }));
+});
+
 function done() {
   fs.readdirSync(filtersDir).forEach(function (f) { fs.unlinkSync(path.join(filtersDir, f)); });
   fs.rmdirSync(filtersDir);

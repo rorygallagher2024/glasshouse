@@ -198,14 +198,12 @@ function renderAppsPanel() {
 // The keyboard's tab: the same F-keys, shown only where the server offers them.
 // It asks for the keys alone rather than the whole Apps answer, so a slow or
 // failed /api/apps cannot leave the tab blank.
-let kbData = null;
 async function loadKeyboardKeys() {
   try {
     const r = await fetch(api('/api/remotekeys'), { cache: 'no-store' });
     if (!r.ok) throw new Error('HTTP ' + r.status);
     const rk = await r.json();
     if (!rk || !rk.keys) throw new Error('no keys in the answer');
-    kbData = rk;
     renderKeyboardKeys({ remoteKeys: rk, writable: rk.writable });
   } catch (e) {
     // A server that answers the keys only inside /api/apps still gets there.
@@ -216,13 +214,21 @@ async function loadKeyboardKeys() {
 function renderKeyboardKeys(d) {
   const btn = q('tab-btn-keyboard');
   const disc = q('disc-kbdkeys');
+  const list = q('kbkeys-list');
   const rk = d && d.remoteKeys;
   const has = !!(rk && rk.keys.some(k => /^kbd/.test(k.key)));
   if (btn) btn.hidden = !has;
   if (disc) disc.hidden = !has;
-  if (!has) return;
+  if (!has) {
+    // No F-keys on this set: leave no tiles from an earlier answer behind, and
+    // do not sit on a pane with nothing in it.
+    if (list) list.innerHTML = '';
+    const remote = q('tab-btn-remote');
+    if (activeTab === 'keyboard') showTab(remote && !remote.hidden ? 'remote' : 'control');
+    return;
+  }
   renderRemoteKeys(d, {
-    list: q('kbkeys-list'), disc: disc, summary: q('kbkeys-summary'),
+    list: list, disc: disc, summary: q('kbkeys-summary'),
     groups: KB_GROUPS, elsewhere: false, brightness: false
   });
 }
@@ -516,7 +522,10 @@ function renderRemoteKeys(d, opts) {
   if (!list) return;
   if (disc) disc.hidden = !rk;
   if (!rk) return;
-  const changed = rk.keys.filter(k => k.action !== 'lg').length;
+  // A key counts as changed on the tab that shows it, not on the other tab.
+  const onThisTab = k => !(skip && skip.test(k.key)) &&
+    (!o.groups || groupsDef.some(g => !g.keys || g.keys.indexOf(k.key) !== -1));
+  const changed = rk.keys.filter(k => onThisTab(k) && k.action !== 'lg').length;
   if (summary) {
     summary.textContent = changed
       ? t('apps.remoteKeys.count', '{n} changed', { n: changed })

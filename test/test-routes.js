@@ -115,6 +115,27 @@ function createMockRes(cb) {
   console.log('  \u2713 ambient integration state and write permissions');
 })();
 
+// The keys endpoint says whether they can be set, so a page that asks for the
+// keys alone can keep its tiles live.
+(function testRemoteKeysWritable() {
+  var cfg = { allowControl: false, web: { enabled: false }, port: 8080 };
+  var asked = 0;
+  routes.init({ config: cfg, remoteKeys: { getRemoteKeys: function (cb) {
+    asked++;
+    cb({ ok: true, supported: true, keys: [{ key: 'kbdF1', title: 'F1', action: 'lg', id: '' }], choices: [] });
+  } } });
+  [false, true].forEach(function (writable) {
+    cfg.allowControl = writable;
+    routes.handleRequest(createMockReq({ url: '/api/remotekeys' }), createMockRes(function (res) {
+      assert.strictEqual(res.statusCode, 200);
+      assert.strictEqual(JSON.parse(res.body).writable, writable);
+    }));
+  });
+  assert.strictEqual(asked, 2);
+  routes.init({ config: cfg });
+  console.log('  \u2713 the keys endpoint reports whether keys can be set');
+})();
+
 // The setup state gives the local addresses and the name, each with the port.
 (function testSetupStateAddress() {
   var origInterfaces = os.networkInterfaces;
