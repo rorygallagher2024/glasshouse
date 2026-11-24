@@ -49,6 +49,47 @@ function configured() {
 }
 
 /**
+ * Turns a low-level Node/OpenSSL socket failure into a clear message for logs
+ * and the dashboard, hiding raw file paths and cipher/record stack strings.
+ */
+function formatRequestError(e, host, isHttps, verifyTls) {
+  var code = /** @type {any} */ (e);
+  var errCode = (code && code.code) ? String(code.code) : '';
+  var errMsg = (e && e.message) ? String(e.message) : String(e || '');
+
+  if (errCode === 'ECONNREFUSED') {
+    return 'Home Assistant refused the connection at ' + host + '. Check the address and port.';
+  }
+  if (errCode === 'ENOTFOUND' || errCode === 'EAI_AGAIN') {
+    return 'Could not find ' + host + ' on the network. Check the address.';
+  }
+  if (errCode === 'EHOSTUNREACH' || errCode === 'ENETUNREACH') {
+    return 'Could not reach ' + host + ' on the network. Check the address and that Home Assistant is running.';
+  }
+  if (errCode === 'ETIMEDOUT') {
+    return 'Home Assistant at ' + host + ' did not answer in time.';
+  }
+  if (isHttps) {
+    if (/wrong version number|ssl3_get_record|packet length too long|http request/i.test(errMsg) || errCode === 'EPROTO') {
+      return 'Home Assistant is not using HTTPS on this address. Try http:// instead.';
+    }
+    if (/socket hang up/i.test(errMsg) || errCode === 'ECONNRESET') {
+      return 'Home Assistant closed the HTTPS connection. If it is not using HTTPS, try http:// instead.';
+    }
+    if (/^(DEPTH_ZERO_SELF_SIGNED_CERT|SELF_SIGNED_CERT_IN_CHAIN|UNABLE_TO_VERIFY_LEAF_SIGNATURE|UNABLE_TO_GET_ISSUER_CERT|UNABLE_TO_GET_ISSUER_CERT_LOCALLY|CERT_HAS_EXPIRED|CERT_NOT_YET_VALID|ERR_TLS_CERT_ALTNAME_INVALID)$/.test(errCode) || /certificate|self[- ]signed|altname/i.test(errMsg)) {
+      return verifyTls
+        ? 'Home Assistant\'s HTTPS certificate could not be verified. For a self-signed or LAN IP certificate, turn off Verify certificate.'
+        : 'Home Assistant\'s HTTPS certificate was rejected.';
+    }
+  } else if (/socket hang up/i.test(errMsg) || errCode === 'ECONNRESET') {
+    return 'Home Assistant closed the connection unexpectedly.';
+  }
+
+  var firstLine = errMsg.split('\n')[0].replace(/:?\.\.\/openssl[^\n]*/i, '').trim();
+  return firstLine ? 'Could not reach Home Assistant (' + firstLine + ').' : 'Could not reach Home Assistant.';
+}
+
+/**
  * Performs a bounded GET request against Home Assistant's REST API and parses JSON.
  */
 function requestHaJson(targetUrl, token, opts, cb) {
@@ -123,20 +164,7 @@ function requestHaJson(targetUrl, token, opts, cb) {
     fail('Home Assistant did not answer within ' + timeoutMs + ' ms' + (opts && opts.entityId ? ' for ' + opts.entityId : ''));
   });
   req.on('error', function (e) {
-    var code = /** @type {any} */ (e);
-    if (code && code.code === 'ECONNREFUSED') {
-      return fail('Home Assistant refused the connection at ' + parsed.hostname);
-    }
-    var errMsg = (e && e.message) ? e.message : String(e);
-    var errCode = (code && code.code) ? String(code.code) : '';
-    if (isHttps) {
-      if (/socket hang up|wrong version number|ssl3_get_record|packet length too long/i.test(errMsg) || errCode === 'EPROTO') {
-        errMsg += ' (if Home Assistant is not using HTTPS, try http:// instead)';
-      } else if (verifyTls && (/^(DEPTH_ZERO_SELF_SIGNED_CERT|SELF_SIGNED_CERT_IN_CHAIN|UNABLE_TO_VERIFY_LEAF_SIGNATURE|UNABLE_TO_GET_ISSUER_CERT|UNABLE_TO_GET_ISSUER_CERT_LOCALLY|CERT_HAS_EXPIRED|ERR_TLS_CERT_ALTNAME_INVALID)$/.test(errCode) || /certificate|self[- ]signed|altname/i.test(errMsg))) {
-        errMsg += ' (for a self-signed or LAN IP certificate, turn off Verify certificate)';
-      }
-    }
-    fail('could not reach Home Assistant: ' + errMsg);
+    fail(formatRequestError(e, parsed.hostname, isHttps, verifyTls));
   });
   req.end();
 }
