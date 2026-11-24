@@ -8,6 +8,8 @@ let cfgHaEnabled = true;
 let cfgHaUrl = '';
 let cfgHaTokenSet = false;
 let cfgHaWritable = true;
+let cfgHaVerify = true;
+let cfgHaSavedVerify = true;
 
 function toggleMqtt() { showTab(activeTab === 'mqtt' ? 'control' : 'mqtt'); }
 
@@ -367,11 +369,17 @@ async function loadSettings(keepMsg) {
     cfgHaUrl = ha.url || '';
     cfgHaTokenSet = !!ha.tokenSet;
     cfgHaWritable = !!j.writable;
+    cfgHaVerify = ha.tlsRejectUnauthorized !== false;
+    cfgHaSavedVerify = cfgHaVerify;
     const haUrlInput = q('cfg-ha-url');
     if (haUrlInput) {
       haUrlInput.value = cfgHaUrl;
       if (!cfgHaUrl && m.host) {
         haUrlInput.placeholder = 'http://' + m.host + ':8123';
+      }
+      if (!haUrlInput._haBound) {
+        haUrlInput._haBound = true;
+        haUrlInput.addEventListener('input', renderHaVerifyToggle);
       }
     }
     const haTokenInput = q('cfg-ha-token');
@@ -387,6 +395,7 @@ async function loadSettings(keepMsg) {
     const haToggleBtn = q('cfg-ha-enabled');
     if (haToggleBtn) haToggleBtn.disabled = !j.writable;
     renderHaEnabledToggle();
+    renderHaVerifyToggle();
     const haMsgEl = q('cfg-ha-msg');
     if (haMsgEl && !keepMsg) {
       haMsgEl.textContent = '';
@@ -459,8 +468,8 @@ async function saveSettings() {
   const haTokenEl = q('cfg-ha-token');
   const haUrl = haUrlEl ? haUrlEl.value.trim() : '';
   const haToken = haTokenEl ? haTokenEl.value.trim() : '';
-  if (haUrl !== '' || haToken !== '' || cfgHaUrl !== '' || cfgHaTokenSet) {
-    body.homeAssistant = { enabled: cfgHaEnabled, url: haUrl };
+  if (haUrl !== '' || haToken !== '' || cfgHaUrl !== '' || cfgHaTokenSet || cfgHaVerify !== cfgHaSavedVerify) {
+    body.homeAssistant = { enabled: cfgHaEnabled, url: haUrl, tlsRejectUnauthorized: cfgHaVerify };
     if (haToken !== '') body.homeAssistant.token = haToken;
   }
 
@@ -503,6 +512,24 @@ function renderHaEnabledToggle() {
       ? t('ha.enabled.on', 'Glasshouse can read the Home Assistant entities chosen for its screen savers and for the values at a glance on Glasshouse Home.')
       : t('ha.enabled.off', 'Turned off. The Home Assistant screen savers and the values at a glance read from entities are unavailable. The saved address and token are kept.');
   }
+}
+
+function renderHaVerifyToggle() {
+  const row = q('cfg-ha-verify-row');
+  const urlVal = q('cfg-ha-url') ? q('cfg-ha-url').value.trim() : cfgHaUrl;
+  if (row) row.hidden = !/^https:/i.test(urlVal);
+  updateToggle('cfg-ha-verify', {
+    cls: cfgHaVerify ? 'good' : 'idle',
+    label: cfgHaVerify ? t('mqtt.cat.enabled', 'Enabled') : t('mqtt.cat.disabled', 'Disabled'),
+    on: cfgHaVerify,
+    disabled: !cfgHaWritable
+  });
+}
+
+function toggleHaVerify() {
+  if (!cfgHaWritable) return;
+  cfgHaVerify = !cfgHaVerify;
+  renderHaVerifyToggle();
 }
 
 async function toggleHaEnabled() {
@@ -658,7 +685,7 @@ async function saveHaSettings() {
   if (!btn || !msgEl) return;
   const url = q('cfg-ha-url') ? q('cfg-ha-url').value.trim() : '';
   const token = q('cfg-ha-token') ? q('cfg-ha-token').value.trim() : '';
-  const payload = { enabled: cfgHaEnabled, url: url };
+  const payload = { enabled: cfgHaEnabled, url: url, tlsRejectUnauthorized: cfgHaVerify };
   if (token !== '') payload.token = token;
   else if (url === '') payload.clearToken = true;
 
@@ -681,7 +708,10 @@ async function saveHaSettings() {
     cfgHaEnabled = j.enabled !== false;
     cfgHaUrl = j.url || '';
     cfgHaTokenSet = !!j.tokenSet;
+    cfgHaVerify = j.tlsRejectUnauthorized !== false;
+    cfgHaSavedVerify = cfgHaVerify;
     renderHaEnabledToggle();
+    renderHaVerifyToggle();
     const tokenInput = q('cfg-ha-token');
     if (tokenInput) tokenInput.value = '';
     const tokenHint = q('cfg-ha-token-hint');
@@ -744,10 +774,10 @@ async function testHaConnection() {
     const r = await fetch(api('/api/ha/test'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ url: url, token: token || undefined })
+      body: JSON.stringify({ url: url, token: token || undefined, tlsRejectUnauthorized: cfgHaVerify })
     });
     const j = await r.json();
-    const unsaved = (url !== cfgHaUrl) || (token !== '');
+    const unsaved = (url !== cfgHaUrl) || (token !== '') || (cfgHaVerify !== cfgHaSavedVerify);
     if (j.ok) {
       if (!unsaved && cfgHaEnabled) renderHaStatus({ state: 'connected', message: j.message });
       msgEl.textContent = unsaved

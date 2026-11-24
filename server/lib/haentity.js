@@ -19,7 +19,7 @@ var MAX_BYTES = 65536;
 // 4,557 entities in another. Parsed whole, so it is held in memory at once.
 var MAX_LIST_BYTES = 8 * 1024 * 1024;
 
-var cfg = { enabled: true, url: '', token: '' };
+var cfg = { enabled: true, url: '', token: '', tlsRejectUnauthorized: true };
 var lastStatus = { ok: null, message: '', error: '', checkedAt: 0 };
 // For the HA & MQTT tab's Connection box, as the MQTT one shows its broker:
 // how long Home Assistant last took to answer, and when an entity was last read.
@@ -32,7 +32,8 @@ function init(opts) {
   cfg = {
     enabled: ha.enabled !== false,
     url: typeof ha.url === 'string' ? ha.url.replace(/\/+$/, '') : '',
-    token: typeof ha.token === 'string' ? ha.token : ''
+    token: typeof ha.token === 'string' ? ha.token : '',
+    tlsRejectUnauthorized: ha.tlsRejectUnauthorized !== false
   };
   lastStatus = { ok: null, message: '', error: '', checkedAt: 0 };
   lastLatencyMs = null;
@@ -55,7 +56,11 @@ function requestHaJson(targetUrl, token, opts, cb) {
   var timeoutMs = (opts && opts.timeoutMs) || TIMEOUT_MS;
   var label = (opts && opts.label) || 'Home Assistant';
   var parsed = url.parse(targetUrl);
-  var lib = parsed.protocol === 'https:' ? https : http;
+  var isHttps = parsed.protocol === 'https:';
+  var lib = isHttps ? https : http;
+  var verifyTls = opts && typeof opts.rejectUnauthorized === 'boolean'
+    ? opts.rejectUnauthorized
+    : (cfg.tlsRejectUnauthorized !== false);
   var answered = false;
   var startedAt = Date.now();
 
@@ -65,16 +70,20 @@ function requestHaJson(targetUrl, token, opts, cb) {
     cb(tooLarge ? { ok: false, error: error, tooLarge: true } : { ok: false, error: error });
   }
 
-  var req = lib.request({
+  /** @type {https.RequestOptions} */
+  var reqOpts = {
     hostname: parsed.hostname,
-    port: parsed.port || (parsed.protocol === 'https:' ? 443 : 80),
+    port: parsed.port || (isHttps ? 443 : 80),
     path: parsed.path,
     method: 'GET',
     headers: {
       'Authorization': 'Bearer ' + token,
       'Accept': 'application/json'
     }
-  }, function (res) {
+  };
+  if (isHttps) reqOpts.rejectUnauthorized = verifyTls;
+
+  var req = lib.request(reqOpts, function (res) {
     var chunks = [];
     var bytes = 0;
     res.on('data', function (chunk) {
@@ -115,9 +124,19 @@ function requestHaJson(targetUrl, token, opts, cb) {
   });
   req.on('error', function (e) {
     var code = /** @type {any} */ (e);
-    fail((code && code.code === 'ECONNREFUSED')
-      ? 'Home Assistant refused the connection at ' + parsed.hostname
-      : 'could not reach Home Assistant: ' + (e && e.message ? e.message : String(e)));
+    if (code && code.code === 'ECONNREFUSED') {
+      return fail('Home Assistant refused the connection at ' + parsed.hostname);
+    }
+    var errMsg = (e && e.message) ? e.message : String(e);
+    var errCode = (code && code.code) ? String(code.code) : '';
+    if (isHttps) {
+      if (/socket hang up|wrong version number|ssl3_get_record|packet length too long/i.test(errMsg) || errCode === 'EPROTO') {
+        errMsg += ' (if Home Assistant is not using HTTPS, try http:// instead)';
+      } else if (verifyTls && (/^(DEPTH_ZERO_SELF_SIGNED_CERT|SELF_SIGNED_CERT_IN_CHAIN|UNABLE_TO_VERIFY_LEAF_SIGNATURE|UNABLE_TO_GET_ISSUER_CERT|UNABLE_TO_GET_ISSUER_CERT_LOCALLY|CERT_HAS_EXPIRED|ERR_TLS_CERT_ALTNAME_INVALID)$/.test(errCode) || /certificate|self[- ]signed|altname/i.test(errMsg))) {
+        errMsg += ' (for a self-signed or LAN IP certificate, turn off Verify certificate)';
+      }
+    }
+    fail('could not reach Home Assistant: ' + errMsg);
   });
   req.end();
 }
@@ -166,6 +185,7 @@ function update(ha) {
   if (typeof ha.enabled === 'boolean') cfg.enabled = ha.enabled;
   if (typeof ha.url === 'string') cfg.url = ha.url.replace(/\/+$/, '');
   if (typeof ha.token === 'string') cfg.token = ha.token;
+  if (typeof ha.tlsRejectUnauthorized === 'boolean') cfg.tlsRejectUnauthorized = ha.tlsRejectUnauthorized;
   lastStatus = { ok: null, message: '', error: '', checkedAt: 0 };
   lastLatencyMs = null;
   lastReadAt = 0;
@@ -179,6 +199,9 @@ function test(opts, cb) {
   // brings its own, or the token would be handed to whatever address is named.
   var testToken = (typeof opts.token === 'string' && opts.token) ? opts.token
     : testUrl === cfg.url ? cfg.token : '';
+  var testVerify = typeof opts.tlsRejectUnauthorized === 'boolean'
+    ? opts.tlsRejectUnauthorized
+    : (cfg.tlsRejectUnauthorized !== false);
 
   if (!/^https?:\/\//i.test(testUrl)) {
     return cb({ ok: false, error: 'URL must start with http:// or https://' });
@@ -189,7 +212,7 @@ function test(opts, cb) {
       : 'A Long-Lived Access Token is required' });
   }
 
-  requestHaJson(testUrl + '/api/', testToken, { maxBytes: MAX_BYTES, label: 'Home Assistant' }, function (r) {
+  requestHaJson(testUrl + '/api/', testToken, { maxBytes: MAX_BYTES, label: 'Home Assistant', rejectUnauthorized: testVerify }, function (r) {
     if (!r.ok) {
       if (cfg.enabled && testUrl === cfg.url) {
         lastStatus = { ok: false, message: '', error: r.error || 'Connection failed', checkedAt: Date.now() };

@@ -2440,6 +2440,15 @@
             <div class="hint" id="cfg-ha-token-hint" data-t="ha.token.hint">From your Home Assistant profile &rarr; Long-Lived Access Tokens.</div>
           </div>
         </div>
+        <div class="pv-table" id="cfg-ha-verify-row" style="margin-top:8px" hidden>
+          <div class="pv-row">
+            <div>
+              <div class="n" data-t="mqtt.verify">Verify certificate</div>
+              <div class="d" data-t="ha.verify.desc">Turn off for a self-signed certificate or an HTTPS address reached by LAN IP.</div>
+            </div>
+            <button type="button" class="pill idle" id="cfg-ha-verify" onclick="toggleHaVerify()">&mdash;</button>
+          </div>
+        </div>
         <div class="cfg-save" style="margin-top:14px">
           <button type="button" id="cfg-ha-save-btn" onclick="saveHaSettings()" data-t="ha.save">Save</button>
           <button type="button" id="cfg-ha-test-btn" onclick="testHaConnection()" data-t="ha.test">Test connection</button>

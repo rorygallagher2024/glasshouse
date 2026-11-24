@@ -5,6 +5,8 @@
  */
 var assert = require('assert');
 var http = require('http');
+var https = require('https');
+var EventEmitter = require('events').EventEmitter;
 
 var haEntity = require('../server/lib/haentity');
 
@@ -211,8 +213,74 @@ server.listen(0, '127.0.0.1', function () {
                                     assert.ok(/not configured/.test(off.errors['sensor.outdoor_temperature']));
                                     assert.strictEqual(hits, beforeOff, 'switched off, Home Assistant is not asked');
                                     console.log('  \u2713 readMany reads every id together and reports each failure under its id');
-                                    server.close();
-                                    console.log('ALL test-haentity.js assertions passed!');
+
+                                    // HTTPS rejectUnauthorized and error hints.
+                                    var realHttpsRequest = https.request;
+                                    var httpsOpts = [];
+                                    var nextHttpsErr = null;
+                                    https.request = function (opts, cb) {
+                                      httpsOpts.push(opts);
+                                      var req = new EventEmitter();
+                                      req.setTimeout = function () {};
+                                      req.abort = function () {};
+                                      req.end = function () {
+                                        var errToEmit = nextHttpsErr;
+                                        nextHttpsErr = null;
+                                        process.nextTick(function () {
+                                          if (errToEmit) return req.emit('error', errToEmit);
+                                          var res = new EventEmitter();
+                                          res.statusCode = 200;
+                                          cb(res);
+                                          res.emit('data', new Buffer(JSON.stringify({ message: 'API running.', state: '20', attributes: {} }), 'utf8'));
+                                          res.emit('end');
+                                        });
+                                      };
+                                      return req;
+                                    };
+
+                                    haEntity.init({ config: { homeAssistant: { url: 'https://ha.local:8123', token: 'tok' } } });
+                                    haEntity.read('sensor.outdoor_temperature', function (h1) {
+                                      assert.strictEqual(h1.ok, true);
+                                      assert.strictEqual(httpsOpts[0].rejectUnauthorized, true, 'verify certificate defaults to true');
+
+                                      haEntity.update({ tlsRejectUnauthorized: false });
+                                      haEntity.read('sensor.outdoor_temperature', function (h2) {
+                                        assert.strictEqual(h2.ok, true);
+                                        assert.strictEqual(httpsOpts[1].rejectUnauthorized, false, 'update disables verify certificate');
+
+                                        haEntity.test({ tlsRejectUnauthorized: true }, function (h3) {
+                                          assert.strictEqual(h3.ok, true);
+                                          assert.strictEqual(httpsOpts[2].rejectUnauthorized, true, 'test overrides verify certificate on');
+
+                                          nextHttpsErr = new Error('socket hang up');
+                                          haEntity.test({ url: 'https://ha.local:8123', token: 'tok' }, function (hHang) {
+                                            assert.strictEqual(hHang.ok, false);
+                                            assert.ok(/try http:\/\/ instead/.test(hHang.error), hHang.error);
+
+                                            var certErr = new Error('self signed certificate');
+                                            certErr.code = 'DEPTH_ZERO_SELF_SIGNED_CERT';
+                                            nextHttpsErr = certErr;
+                                            haEntity.test({ url: 'https://ha.local:8123', token: 'tok', tlsRejectUnauthorized: true }, function (hCertOn) {
+                                              assert.strictEqual(hCertOn.ok, false);
+                                              assert.ok(/turn off Verify certificate/.test(hCertOn.error), hCertOn.error);
+
+                                              var certErrOff = new Error('self signed certificate');
+                                              certErrOff.code = 'DEPTH_ZERO_SELF_SIGNED_CERT';
+                                              nextHttpsErr = certErrOff;
+                                              haEntity.test({ url: 'https://ha.local:8123', token: 'tok', tlsRejectUnauthorized: false }, function (hCertOff) {
+                                                assert.strictEqual(hCertOff.ok, false);
+                                                assert.strictEqual(hCertOff.error.indexOf('turn off Verify certificate'), -1, hCertOff.error);
+
+                                                https.request = realHttpsRequest;
+                                                console.log('  \u2713 HTTPS passes rejectUnauthorized and adds plain-HTTP and self-signed cert hints');
+                                                server.close();
+                                                console.log('ALL test-haentity.js assertions passed!');
+                                              });
+                                            });
+                                          });
+                                        });
+                                      });
+                                    });
                                   });
                                 });
                               });
