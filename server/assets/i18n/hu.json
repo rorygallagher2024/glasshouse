@@ -3893,9 +3893,12 @@
  "apps.running.summaryOneMb": {"text": "1 alkalmazás · {mb} MB", "from": "1 app · {mb} MB"},
  "apps.running.title": {"text": "Alkalmazások a memóriában", "from": "Apps in memory"},
  "server.askOnTv": {"from": "Ask on the TV", "text": "Kérdés a tévén"},
- "server.askOnTv.desc": {"from": "When the daily check finds a new release, asks on the TV whether to install it, with Update now and Later, the next time the picture is on. Each release is asked about until it is answered.", "text": "Ha a napi ellenőrzés új verziót talál, a tévén megkérdezi, telepítse-e, Frissítés most és Később gombokkal, amikor legközelebb van kép. Minden verzióra addig kérdez rá, amíg válasz nem érkezik."},
+ "server.askOnTv.desc": {"from": "When the daily check finds a new release, asks on the TV whether to install it, with Update now and Later, after the TV is next switched on. Each release is asked about until it is answered.", "text": "Ha a napi ellenőrzés új verziót talál, a tévé következő bekapcsolása után megkérdezi, telepítse-e, Frissítés most és Később gombokkal. Minden verzióra addig kérdez rá, amíg válasz nem érkezik."},
  "srv.updateAsk.title": {"from": "Glasshouse {version} is out", "text": "Megjelent a Glasshouse {version}"},
  "srv.updateAsk.install": {"from": "Update now", "text": "Frissítés most"},
  "srv.updateAsk.later": {"from": "Later", "text": "Később"},
- "ha.verify.desc": {"text": "Kapcsolja ki önaláírt tanúsítvány vagy helyi IP-címmel elért HTTPS-cím esetén.", "from": "Turn off for a self-signed certificate or an HTTPS address reached by LAN IP."}
+ "ha.verify.desc": {"text": "Kapcsolja ki önaláírt tanúsítvány vagy helyi IP-címmel elért HTTPS-cím esetén.", "from": "Turn off for a self-signed certificate or an HTTPS address reached by LAN IP."},
+ "srv.updateAsk.installing": {"from": "Updating Glasshouse to {version}. It restarts when done.", "text": "A Glasshouse frissítése erre: {version}. Utána újraindul."},
+ "srv.updateAsk.failed": {"from": "Glasshouse could not update: {error}", "text": "A Glasshouse frissítése nem sikerült: {error}"},
+ "srv.updateAsk.noReason": {"from": "no reason given", "text": "nincs megadva ok"}
 }

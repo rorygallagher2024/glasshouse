@@ -3895,9 +3895,12 @@
  "apps.running.summaryOneMb": {"text": "1 app · {mb} MB", "from": "1 app · {mb} MB"},
  "apps.running.title": {"text": "Appar i minnet", "from": "Apps in memory"},
  "server.askOnTv": {"from": "Ask on the TV", "text": "Fråga på TV:n"},
- "server.askOnTv.desc": {"from": "When the daily check finds a new release, asks on the TV whether to install it, with Update now and Later, the next time the picture is on. Each release is asked about until it is answered.", "text": "När den dagliga kontrollen hittar en ny version frågar TV:n om den ska installeras, med Uppdatera nu och Senare, nästa gång bilden är på. Varje version frågas om tills frågan besvaras."},
+ "server.askOnTv.desc": {"from": "When the daily check finds a new release, asks on the TV whether to install it, with Update now and Later, after the TV is next switched on. Each release is asked about until it is answered.", "text": "När den dagliga kontrollen hittar en ny version frågar TV:n om den ska installeras, med Uppdatera nu och Senare, nästa gång TV:n slås på. Varje version frågas om tills frågan besvaras."},
  "srv.updateAsk.title": {"from": "Glasshouse {version} is out", "text": "Glasshouse {version} finns"},
  "srv.updateAsk.install": {"from": "Update now", "text": "Uppdatera nu"},
  "srv.updateAsk.later": {"from": "Later", "text": "Senare"},
- "ha.verify.desc": {"text": "Stäng av för ett självsignerat certifikat eller en HTTPS-adress som nås via lokal IP.", "from": "Turn off for a self-signed certificate or an HTTPS address reached by LAN IP."}
+ "ha.verify.desc": {"text": "Stäng av för ett självsignerat certifikat eller en HTTPS-adress som nås via lokal IP.", "from": "Turn off for a self-signed certificate or an HTTPS address reached by LAN IP."},
+ "srv.updateAsk.installing": {"from": "Updating Glasshouse to {version}. It restarts when done.", "text": "Glasshouse uppdateras till {version}. Den startar om när den är klar."},
+ "srv.updateAsk.failed": {"from": "Glasshouse could not update: {error}", "text": "Glasshouse kunde inte uppdateras: {error}"},
+ "srv.updateAsk.noReason": {"from": "no reason given", "text": "inget skäl angavs"}
 }

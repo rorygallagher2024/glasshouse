@@ -1286,5 +1286,10 @@
  "srv.updateAsk.title": {"from": "Glasshouse {version} is out", "text": "Glasshouse {version} ist da"},
  "srv.updateAsk.install": {"from": "Update now", "text": "Jetzt aktualisieren"},
  "srv.updateAsk.later": {"from": "Later", "text": "Später"},
- "ha.verify.desc": {"text": "Für ein selbstsigniertes Zertifikat oder eine per LAN-IP aufgerufene HTTPS-Adresse ausschalten.", "from": "Turn off for a self-signed certificate or an HTTPS address reached by LAN IP."}
+ "ha.verify.desc": {"text": "Für ein selbstsigniertes Zertifikat oder eine per LAN-IP aufgerufene HTTPS-Adresse ausschalten.", "from": "Turn off for a self-signed certificate or an HTTPS address reached by LAN IP."},
+ "server.askOnTv": {"from": "Ask on the TV", "text": "Auf dem Fernseher fragen"},
+ "server.askOnTv.desc": {"from": "When the daily check finds a new release, asks on the TV whether to install it, with Update now and Later, after the TV is next switched on. Each release is asked about until it is answered.", "text": "Findet die tägliche Prüfung eine neue Version, fragt der Fernseher nach dem nächsten Einschalten, ob sie installiert werden soll, mit Jetzt aktualisieren und Später. Zu jeder Version wird gefragt, bis eine Antwort kommt."},
+ "srv.updateAsk.installing": {"from": "Updating Glasshouse to {version}. It restarts when done.", "text": "Glasshouse wird auf {version} aktualisiert. Danach startet es neu."},
+ "srv.updateAsk.failed": {"from": "Glasshouse could not update: {error}", "text": "Glasshouse konnte nicht aktualisiert werden: {error}"},
+ "srv.updateAsk.noReason": {"from": "no reason given", "text": "kein Grund angegeben"}
 }

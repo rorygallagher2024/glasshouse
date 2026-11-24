@@ -3893,9 +3893,12 @@
  "apps.running.summaryOneMb": {"text": "1 app · {mb} MB", "from": "1 app · {mb} MB"},
  "apps.running.title": {"text": "App in memoria", "from": "Apps in memory"},
  "server.askOnTv": {"from": "Ask on the TV", "text": "Chiedi sulla TV"},
- "server.askOnTv.desc": {"from": "When the daily check finds a new release, asks on the TV whether to install it, with Update now and Later, the next time the picture is on. Each release is asked about until it is answered.", "text": "Quando il controllo giornaliero trova una nuova versione, chiede sulla TV se installarla, con Aggiorna ora e Più tardi, la prossima volta che l'immagine è accesa. Ogni versione viene proposta finché non si risponde."},
+ "server.askOnTv.desc": {"from": "When the daily check finds a new release, asks on the TV whether to install it, with Update now and Later, after the TV is next switched on. Each release is asked about until it is answered.", "text": "Quando il controllo giornaliero trova una nuova versione, chiede sulla TV se installarla, con Aggiorna ora e Più tardi, alla prossima accensione della TV. Ogni versione viene proposta finché non si risponde."},
  "srv.updateAsk.title": {"from": "Glasshouse {version} is out", "text": "È disponibile Glasshouse {version}"},
  "srv.updateAsk.install": {"from": "Update now", "text": "Aggiorna ora"},
  "srv.updateAsk.later": {"from": "Later", "text": "Più tardi"},
- "ha.verify.desc": {"text": "Disattiva per un certificato autofirmato o un indirizzo HTTPS raggiunto tramite IP locale.", "from": "Turn off for a self-signed certificate or an HTTPS address reached by LAN IP."}
+ "ha.verify.desc": {"text": "Disattiva per un certificato autofirmato o un indirizzo HTTPS raggiunto tramite IP locale.", "from": "Turn off for a self-signed certificate or an HTTPS address reached by LAN IP."},
+ "srv.updateAsk.installing": {"from": "Updating Glasshouse to {version}. It restarts when done.", "text": "Aggiornamento di Glasshouse a {version}. Si riavvia al termine."},
+ "srv.updateAsk.failed": {"from": "Glasshouse could not update: {error}", "text": "Impossibile aggiornare Glasshouse: {error}"},
+ "srv.updateAsk.noReason": {"from": "no reason given", "text": "nessun motivo indicato"}
 }

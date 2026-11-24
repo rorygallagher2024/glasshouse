@@ -1093,23 +1093,34 @@ updater.init({
 
 // Whether the picture is on, not a screen saver, as tvpower last said.
 var pictureOn = false;
+// Off since the picture was last on: a screen saver ending is not a wake.
+var pictureOffSince = true;
 function pictureOnChanged(raw) {
   var state = (raw && typeof raw === 'object') ? (raw.raw || raw.state || raw) : raw;
   var mapped = power.mapState(state);
-  var on = !!mapped.screenOn && !power.isScreenSaver(mapped);
-  if (on && !pictureOn) updateAsk.onScreenOn();
+  var saver = power.isScreenSaver(mapped);
+  var on = !!mapped.screenOn && !saver;
+  if (!mapped.screenOn && !saver) pictureOffSince = true;
+  if (on && !pictureOn && pictureOffSince) {
+    pictureOffSince = false;
+    updateAsk.onWake();
+  }
   pictureOn = on;
 }
-// A new release asked about on the TV, where switched on on the Server tab.
+// A new release asked about on the TV after a wake, where switched on on the Server tab.
 updateAsk.init({
   config: CONFIG,
   updater: updater,
   ask: askQuestion,
   writeSettings: routes.writeSettings,
   install: function (cb) { doControl('update', null, cb); },
+  toast: function (text) {
+    doControl('toast', text, function (r) {
+      if (!r || !r.ok) console.error('update: toast failed: ' + ((r && r.error) || 'no answer'));
+    });
+  },
   screenOn: function () { return pictureOn; }
 });
-updater.onChange(updateAsk.onUpdateChange);
 
 // Bare in the user agent: a catalog has no use for the commit.
 fetchLib.init({ config: CONFIG, version: TVWEB_VERSION });

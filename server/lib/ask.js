@@ -163,6 +163,11 @@ function close(id) {
   return finish('closed');
 }
 
+// Whether a question is on screen or waiting to be.
+function busy() {
+  return !!pending;
+}
+
 function tokenMatches(token) {
   return !!pending && typeof token === 'string' && token.length > 0 && token === pending.token;
 }
@@ -214,6 +219,7 @@ module.exports = {
   parse: parse,
   ask: ask,
   current: current,
+  busy: busy,
   answer: answer,
   close: close,
   forgetInstalled: forgetInstalled

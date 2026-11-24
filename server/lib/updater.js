@@ -64,18 +64,10 @@ var packageStageDir = '/media/developer/temp/glasshouse-update';
 var updateFirstTimer = null;
 var updateEveryTimer = null;
 
-// Told of each change of state, alongside Home Assistant's publish.
-var changeListeners = [];
-
 function setUpdateState(state, err) {
   UPDATE.state = state;
   UPDATE.error = err || null;
   if (publishUpdateFn) publishUpdateFn();
-  changeListeners.forEach(function (fn) { fn(); });
-}
-
-function onChange(fn) {
-  if (typeof fn === 'function') changeListeners.push(fn);
 }
 
 function verParts(v) {
@@ -559,7 +551,6 @@ module.exports = {
   init: init,
   UPDATE: UPDATE,
   setPublishHandler: setPublishHandler,
-  onChange: onChange,
   updateSummary: updateSummary,
   checkForUpdate: checkForUpdate,
   installUpdate: installUpdate,
