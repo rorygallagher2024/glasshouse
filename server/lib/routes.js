@@ -1565,18 +1565,19 @@ function handleIptvRoute(req, res, u, pathname) {
     if (pathname === '/api/iptv/stream') {
       // The play URL carries the login on Xtream: for the TV's own Home only.
       if (!fromTV(req)) return send(res, 403, JSON.stringify({ ok: false, error: 'forbidden' }));
-      // full=1: the full-screen player, which may play a recording it can pause (lib/iptv-timeshift).
+      // full=1: the full-screen player, which may play a recording it can pause (lib/iptv-timeshift);
+      // as=hls or ts: the channel's other kind of stream, for this play only.
       return iptvModule.playUrl(String(qs.pl || ''), String(qs.key || ''), qs.full === '1', function (stream) {
         if (!stream) return send(res, 404, JSON.stringify({ ok: false, error: 'no-stream' }));
         res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
         res.end(JSON.stringify({ ok: true, url: stream.url, format: stream.format, account: stream.account, maxConnections: stream.maxConnections,
-          switchable: stream.switchable, timeshift: stream.timeshift === true }));
-      });
+          switchable: stream.switchable, timeshift: stream.timeshift === true, relay: stream.relay || null }));
+      }, qs.as === 'hls' || qs.as === 'ts' ? qs.as : '');
     }
     if (pathname === '/api/iptv/relay') {
-      // A tuner's stream with the owner's login: for the TV's own Home only, like the play link.
+      // A channel's stream, with a tuner's login or for Home's own player: for the TV's own Home only, like the play link.
       if (!fromTV(req)) return send(res, 403, JSON.stringify({ ok: false, error: 'forbidden' }));
-      return iptvModule.relay(String(qs.pl || ''), String(qs.key || ''), req, res);
+      return iptvModule.relay(String(qs.pl || ''), String(qs.key || ''), req, res, qs.as === 'hls' || qs.as === 'ts' ? qs.as : '');
     }
     if (pathname === '/api/iptv/timeshift') {
       if (qs.pl === undefined) return iptvModule.timeshiftStatus(reply);
