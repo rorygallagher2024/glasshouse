@@ -33,6 +33,8 @@ var SCREENSAVER_MARKER = '.tvweb-screensaver';
 var SCREENSAVER_LEVEL_MARKER = '.tvweb-brightness';
 var SCREENSAVER_ENTITIES_FILE = '/var/lib/tvweb/screensaver-entities.json';
 var SCREENSAVER_COLORS_FILE = '/var/lib/tvweb/screensaver-colors.json';
+/** @type {null|function(): Array<{url: string, name: string}>} */
+var newsFeedsFn = null;
 /** @type {typeof import('./haentity') | null} */
 var haEntityModule = null;
 /*
@@ -133,7 +135,7 @@ var MAX_SAVER_FILES = 200;
 // "ha" has one placeholder per entity it declares, so it carries no value here.
 // "video-busy" is the address of videoBusy's answer, for a saver that plays video.
 // "audio" is the address of the sound output's levels and beat (audiolevels.js).
-var USES = { level: '__TVWEB_LEVEL__', stats: '__TVWEB_URL__', audio: '__TVWEB_AUDIO__', choice: '__TVWEB_CHOICE__', videos: '__TVWEB_VIDEOS__', 'home-weather': '__TVWEB_HOME_WEATHER__', 'video-busy': '__TVWEB_VIDEO_BUSY__', ha: '', 'ha-list': '__TVWEB_HA_LIST__', 'ha-all': '__TVWEB_HA_ALL__', color: '__TVWEB_COLOR__', art: '__TVWEB_ART__' };
+var USES = { level: '__TVWEB_LEVEL__', stats: '__TVWEB_URL__', audio: '__TVWEB_AUDIO__', choice: '__TVWEB_CHOICE__', videos: '__TVWEB_VIDEOS__', 'home-weather': '__TVWEB_HOME_WEATHER__', 'video-busy': '__TVWEB_VIDEO_BUSY__', ha: '', 'ha-list': '__TVWEB_HA_LIST__', 'ha-all': '__TVWEB_HA_ALL__', color: '__TVWEB_COLOR__', art: '__TVWEB_ART__', news: '__TVWEB_NEWS__' };
 var DEFAULT_SAVER_COLOR = 'white';
 var COLOR_PRESETS = [
   { id: 'white', label: msg('srv.saver.color.white', 'White'), bright: '#ffffff', dim: '#a8aeb6' },
@@ -263,6 +265,10 @@ function readSaver(root, name) {
   // So does the address of Art's pictures.
   if (!root.builtin && uses.indexOf('art') !== -1) {
     return problem(msg('srv.saver.noArt', 'It asks for the picture frame\'s pictures, which only Glasshouse\'s own screen savers are given.'));
+  }
+  // And the addresses of the day's matches and of the headlines.
+  if (!root.builtin && uses.indexOf('news') !== -1) {
+    return problem(msg('srv.saver.noNews', 'It asks for the news headlines, which only Glasshouse\'s own screen savers are given.'));
   }
   if (m.choices !== undefined) {
     var choices = readChoices(m.choices, id);
@@ -722,6 +728,8 @@ var webosVersion = null;  // as the TV reports it
 var lunaFn = null;
 var configObj = null;
 var hour12Fn = function () { return false; };
+/** @type {function(): string} */
+var qtLocaleFn = function () { return ''; };
 var injectKeyFn = null;
 var keyBackVal = null;
 // An app id's short id, an HDMI input's port key (hdmi3) under any app id.
@@ -872,6 +880,8 @@ function init(opts) {
   configObj = opts.config;
   haEntityModule = opts.haEntity || null;
   hour12Fn = opts.hour12 || function () { return false; };
+  qtLocaleFn = opts.qtLocale || function () { return ''; };
+  newsFeedsFn = opts.newsFeeds || null;
   webosVersion = opts.webosVersion || null;
   saverRoots = opts.saverRoots || DEFAULT_ROOTS;
   catalogCache = null;
@@ -1333,6 +1343,8 @@ function screensaverList() {
       // Optional value color selection for savers declaring "color" in uses.
       color: hasColor ? screensaverColor(e) : undefined,
       colors: hasColor ? screensaverColorOptions() : undefined,
+      // The feeds a saver showing the news reads, shared with Home's strip.
+      newsFeeds: e.uses && e.uses.indexOf('news') !== -1 ? (newsFeedsFn ? newsFeedsFn() : []) : undefined,
       // The Video saver's clock, weather and captions, kept with Home's playlist.
       videoStyle: e.id === 'video' ? homeWallpapers.videoSources().style : undefined,
       art: e.id === 'art' ? art.status() : undefined,
@@ -1648,6 +1660,11 @@ function fillSaverQml(e, qml, level, choice, effEnts, entityList) {
     qml = qml.replace(/__TVWEB_HA_LIST__/g, function () { return listJson; });
   }
   if (e.uses.indexOf('level') !== -1) qml = qml.replace(/__TVWEB_LEVEL__/g, String(tunedLevel(level)));
+  // The headlines from the feeds on the Home tab.
+  if (e.uses.indexOf('news') !== -1) {
+    var newsUrl = 'http://127.0.0.1:' + port + '/api/news' + (token ? '?k=' + encodeURIComponent(token) : '');
+    qml = qml.replace(/__TVWEB_NEWS__/g, function () { return newsUrl; });
+  }
   // Art's next picture, asked for each time; the address carries the token.
   if (e.uses.indexOf('art') !== -1) {
     var artUrl = 'http://127.0.0.1:' + port + '/api/art/next' + (token ? '?k=' + encodeURIComponent(token) : '');
@@ -1672,6 +1689,8 @@ function fillSaverQml(e, qml, level, choice, effEnts, entityList) {
   }
   // The hour cycle the clock screen savers draw: the TV's own (lib/clock).
   qml = qml.replace(/__TVWEB_CLOCK12__/g, hour12Fn() ? 'true' : 'false');
+  // The TV's menu language, for dates: the saver app's own locale is en_US (lib/clock).
+  qml = qml.replace(/__TVWEB_LOCALE__/g, qtLocaleFn());
   if (!e.fromApp) qml = withLayer(qml, layerOpacity(e, level));
   return qml;
 }

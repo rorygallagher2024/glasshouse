@@ -518,6 +518,15 @@ proved everything that matters. Certificate verification is never disabled: what
 comes back runs as root on the next restart. If verification fails, the download
 fails immediately and is not passed to subsequent clients, preventing fallbacks
 to BusyBox `wget` implementations that bypass TLS certificate checks.
+A curl that fails verification is tried once more with `--cacert
+lib/ca-roots.pem` in place of the TV's own list: ISRG Root X1 and the two
+USERTrust roots, which GitHub's hosts chain to. The API and `github.com` chain
+to USERTrust, release files on `release-assets.githubusercontent.com` to ISRG
+Root X1, which a 65SM8600 on webOS 4.9.5 did not have: its update check worked
+and every download failed with error 60
+([#1595](https://github.com/rorygallagher2024/glasshouse/issues/1595)). Still
+verified, only against roots that ship with Glasshouse; any other host fails the
+retry as before.
 
 **The directory is updated in place, not swapped.** `/var/lib/tvweb` holds more
 than code — `config.json`, `adblock_hosts`, `adblock_custom.json`, the staged screen saver the boot hook
@@ -949,8 +958,15 @@ is named, since webOS 4's filters only match `WebOS.Key_webOS_Yellow` and
 The compositor's enum knows more names than a given remote sends,
 and a case on an unknown symbol would never match. Home and Back are not
 offered, since the dashboard's own Home screen changes rely on them; volume,
-mute, channel and power are handled by the microcontroller before any filter
-sees them, so there is nothing to change.
+mute and power are handled by the microcontroller before any filter sees them,
+so there is nothing to change. Channel up and down are offered where the filters
+name `WebOS.Key_webOS_ChannelUp` and `ChannelDown` (appLaunch.js does on an
+OLED48C56LB, webOS 10.3.0), or else where the TV's WebOS module
+(`/usr/lib/qt5/qml/WebOS/Global/libwebosglobalplugin.so`) defines those names:
+a B8 (webOS 4.4) has them there though its filters name no channel key. A key
+that is set is accepted by the filter, so LG's channel change no longer happens
+for it. On webOS 11 the filters do not carry
+them, offering them through `lib/guidepatch` instead (see below).
 
 The compositor reloads only on a change of the key's value: configd says
 nothing to a subscriber when the same list is written again. When an update
@@ -1010,8 +1026,8 @@ values again a second after any change; more than twelve such writes in a
 minute are left to the next check, so it never takes turns with LG without
 end. Not every write is announced: around one switch off and on LG wrote nine
 times, five of them unannounced, the last a minute after the TV came on. So
-each change of power state is also followed by checks 3 s, 15 s, 1, 3 and 10
-minutes after it, and the server checks at its start and every 30 minutes,
+each change of power state is also followed by checks at once and 3 s, 15 s,
+1, 3 and 10 minutes after it, and the server checks at its start and every 30 minutes,
 writing nothing while all is in place. After a wake from standby, though, a
 list that reads as set is not always the one LG's launch library acts on: on a
 C6 (webOS 11, 43.11.77) a Netflix button set to **Nothing** opened Netflix
@@ -1061,6 +1077,35 @@ makes the service refuse new ones rather than queue them, and back on with
 `enable`; any other toast in that time is refused too. `remotekeys-toasts-off`
 in `/var/lib/tvweb` marks toasts off, and the server's start switches them back
 on from it.
+
+The channel rocker is handled by `/usr/lib/libpreProcess.so`'s first filter,
+`handleKeyBlockByApp`, before any other: it takes every key the system profile's
+`blockedKeys` lists, which LG's profile generator works out from its own feature
+files and which an override file cannot add to (the generator logs `ignore
+feature : blockedKeys`). Where the library is a build `lib/guidepatch.js` lists,
+setting **Channel up** or **Channel down** writes
+`/var/webos-profile/override/glasshouse_keys.json`, `{"tvwebBlocks":[402,403]}`
+with the Linux codes of the keys set. The generator copies a value it does not
+know into the profile as it is, and `debug/rescan` has the service read it
+again; the server waits until `getProfiles` returns it. The library's copy
+reads `tvwebBlocks` in place of `blockedKeys` (the name in its `getProfiles`
+request and in its reading of the answer, both 11 characters), so it takes the
+keys set. Where it takes one it called `createToast` for LG's "This button is
+not available" notice at every event; that call goes to 336 bytes of code
+written into the zeros after `.eh_frame`, still in the executable segment's
+last page (`native/keyfilter-log/channel-keys.s`), which logs the event
+through PmLog's `LSM` context as `NL_INPUT_KEYFILTER_USE`, one of the pairs
+PmLogDaemon's whitelist sends to `/var/log/messages`:
+`{"glasshouse_key":402,"ev":2}`, with `ev` 0 pressed, 1 released and 2
+repeated. A held key repeats every 50 ms from half a second, and the code logs
+the first repeat and every fourth after it, a line every 200 ms, the pace the
+panel was seen to follow, counting them in a word past `.bss` (0x1a2c0), in
+the page the loader zeroes after it, which nothing of the library uses. A 3 s
+hold writes about 15 lines. The server follows the log as for the AI button,
+and answers a press at once and each repeat logged with a step. `lginput2` also logs a press as
+`NL_NON_LIST_BUTTON_CLICK`, but a held key only now and then, so that line is
+not read. The filter asks for the profile once, as it loads, so a change of the
+keys set restarts the compositor, as the other changes to LG's libraries do.
 
 ## The input bar
 
@@ -1123,9 +1168,20 @@ Good Without Spying and LG App Update Blocker write nothing else, and the table
 the Homebrew Channel's update block mounts would otherwise switch them off
 (#1370). They sit under a `# Kept from /etc/hosts` header, which tells them
 apart from the table's own sinkholes when it is written again. Switched off,
-the table comes down unless the file underneath lacks some of them: on a C4 on
-webOS 10.3.1 that file is on the read-only squashfs rootfs, so the table goes
-back up blocking nothing, and stays until the next reboot. A line is the
+the table comes down, and any of them the file underneath lacks are written
+into it. Where that file cannot be written, as on a C4 on webOS 10.3.1 where it
+is on the read-only squashfs rootfs, the table goes back up blocking nothing,
+and stays until the next reboot.
+
+`/etc/hosts` can itself be a shared mount: LG's on a C2 (webOS 9.2) is
+`/tmp/hosts` bound there, and on a B4 (webOS 10.3.2) Life's Good Without
+Spying binds its own file there. A mount on it then reaches its peers, so the
+table also covered `/tmp/hosts` or that tool's file, and the tool, which
+copies `/etc/hosts` into its file, failed
+([#1571](https://github.com/rorygallagher2024/glasshouse/issues/1571)). So
+before the table is bound, both by the server and by `50-tvweb`, the mount at
+`/etc/hosts` is made a slave (`mount --make-slave`): it still takes what
+reaches it from its peers, and no longer passes the table on. A line is the
 blocker's own if it is a comment, a localhost line, one of its sinkholes above
 that header, or a non-sinkhole line naming a host the table decides on, and
 anyone else's otherwise. The last rule is for the Homebrew Channel's update
@@ -1212,9 +1268,17 @@ Additional coverage comes from Life's Good Without Spying's categorized lists:
 SmartAd's `ad.lgsmartad.com`, regional `ads`, `videoads` and `cdpbeacon2` under
 `lgtvcommon.com`, the Alphonso ad-inserter and overlay configuration, `lgads.tv`,
 and APM reporting are on Ads & telemetry. Home, account, ThinQ and LG Channels
-dependencies stay on Everything. Existing country/region generation is used
+dependencies stay on Everything, among them `cdpsvc.lgtvcommon.com` with its
+region and country prefixes: it is LG Channels' content API, and blocked, the
+app's `/dashboard` and `/gnb` calls fail and it shows NH501
+([#1662](https://github.com/rorygallagher2024/glasshouse/issues/1662)). Its
+beacons, `cdpbeacon` and `cdpbeacon2`, stay on Ads & telemetry. Existing country/region generation is used
 instead of importing every country's names. Classification and unobserved
 variants are [documented as upstream evidence](development/TV-RESEARCH.md#additional-categorized-domain-coverage).
+
+The ad hosts take the same macro-regions as prefixes, beside `aic`, `eic`, `kic`,
+`eu` and the country: a C1 on webOS 6.5 looked up `eu7.info.lgsmartad.com`,
+which no tier blocked ([#1556](https://github.com/rorygallagher2024/glasshouse/issues/1556)).
 
 The clock gate also covers the documented SDP macro-regions `af`, `as`, `la`,
 `me`, `na` and `eu7`, and WiseLG's `ruc` host. A saved country gets its `country7`

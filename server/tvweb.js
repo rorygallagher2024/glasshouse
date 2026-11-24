@@ -19,7 +19,7 @@
  * first 4096 bytes of a downloaded tvweb.js for this line (up to 0.82.2), and
  * refuses a release where it is further down (#586).
  */
-var TVWEB_VERSION = '0.158.1';
+var TVWEB_VERSION = '0.159.0';
 
 var http = require('http');
 var fs = require('fs');
@@ -65,6 +65,7 @@ var doh = require('./lib/doh');
 var quickAccess = require('./lib/quickaccess');
 var remoteKeys = require('./lib/remotekeys');
 var inputBar = require('./lib/inputbar');
+var askQuestion = require('./lib/ask');
 var compat = require('./lib/compat');
 
 /*
@@ -647,6 +648,18 @@ remoteKeys.init({ luna: luna, subscription: lunaTransport.Subscription, services
   homeBarApp: function (action, cb) { tvApp(action, cb, 'homebar-app'); },
   homeBarLauncher: function () { return homebar.enabled(); },
   onHomeBarKey: function () { homebar.keySet(); } });
+// A question on the screen from Home Assistant; the answer goes back to MQTT
+// once the bridge is up (onAskAnswer is set in setupHomeAssistant).
+var onAskAnswer = null;
+askQuestion.init({
+  luna: luna,
+  tvApp: function (action, cb) { tvApp(action, cb, 'ask-app'); },
+  publish: function (ev) {
+    console.log('ask: ' + ev.id + ' ' + ev.event_type + (ev.choice ? ' ' + ev.choice : ''));
+    if (onAskAnswer) onAskAnswer(ev);
+  }
+});
+
 inputBar.init({
   luna: luna,
   webosVersion: telemetry.detectWebosVersion(),
@@ -687,6 +700,7 @@ haEntity.init({ config: CONFIG });
 screensavers.init({
   luna: luna,
   hour12: clockFormat.hour12,
+  qtLocale: clockFormat.qtLocale,
   webosVersion: telemetry.detectWebosVersion(),
   config: CONFIG,
   injectKey: controls.injectKey,
@@ -696,7 +710,9 @@ screensavers.init({
   watchPointer: function (on) { if (!on || remotebuttons.isSupported()) remotebuttons.want('saverPointer', on); },
   mediaState: telemetry.readMediaState,
   homeVideoBackground: function () { return !!(glasshouseHome && glasshouseHome.videoBackgroundActive()); },
-  haEntity: haEntity
+  haEntity: haEntity,
+  // The News saver's feeds are those on the Home tab.
+  newsFeeds: glasshouseHome ? function () { return glasshouseHome.newsFeeds(); } : undefined
 });
 idlesaver.init({ luna: luna, mediaState: telemetry.readMediaState,
   homeVideoBackground: function () { return !!(glasshouseHome && glasshouseHome.videoBackgroundActive()); },
@@ -1103,9 +1119,12 @@ routes.init({
   audioLevels: audioLevels,
   pointer: pointer,
   inputBar: inputBar,
+  ask: askQuestion,
   audio: audioCapabilities,
   btAudio: btAudio,
   clock: clockFormat,
+  // The News screen saver's reads; given their fetch with Home's, below.
+  news: require('./lib/news'),
   piccapStatus: piccap.status,
   huesyncStatus: huesync.status,
   keyboardUp: function () {
@@ -1289,6 +1308,11 @@ if (CLI_MODE) {
         // A reinstall closes the copy kept loaded, so it is loaded again now
         // rather than at the first press.
         homebar.poke();
+        // The question app, installed at the first question.
+        tvApp('refresh', function (r3) {
+          if (r3 && r3.refreshed && r3.ok) console.log('ask: app refreshed to current release');
+          if (r3 && r3.refreshed) askQuestion.forgetInstalled();
+        }, 'ask-app');
       }, 'homebar-app');
     }, 'inputbar-app');
   });
@@ -1392,6 +1416,10 @@ function setupHomeAssistant() {
       button: button
     });
     mqttClient.publish(mqttTopics.eventsButton, payload, false);
+  };
+  onAskAnswer = function (ev) {
+    if (!mqttClient || !mqttClient.connected) return;
+    mqttClient.publish(mqttTopics.eventsAsk, JSON.stringify(ev), false);
   };
   if (remotebuttons.isSupported()) {
     remotebuttons.want('mqtt', true);
@@ -2063,8 +2091,33 @@ function setupHomeAssistant() {
       return;
     }
 
+    // Lines under Glasshouse Home's clock, kept like the weather.
+    if (action === 'homeInfo') {
+      if (glasshouseHome) glasshouseHome.setHomeInfo(val);
+      return;
+    }
+    if (action === 'homeBoard') {
+      if (glasshouseHome) glasshouseHome.setHomeBoard(val);
+      return;
+    }
+
     if (action === 'toast') {
       doControl('toast', val, function() {});
+      return;
+    }
+
+    // A question with buttons (lib/ask.js), answered on events/ask.
+    // Refused with controls off, as doControl refuses the other commands: it
+    // installs and opens an app.
+    if (action === 'ask') {
+      if (!CONFIG.allowControl) return console.error('mqtt: ask failed: ' + msg('srv.controlsOff', 'controls disabled in config'));
+      askQuestion.ask(val, function (r) {
+        if (!r || !r.ok) console.error('mqtt: ask failed: ' + ((r && r.error) || 'unknown error'));
+      });
+      return;
+    }
+    if (action === 'askClose') {
+      askQuestion.close(val);
       return;
     }
 
@@ -2237,11 +2290,17 @@ function startGlasshouseHome() {
   });
   var weather = require('./lib/weather');
   weather.init({ getJson: fetchLib.getJson });
+  var news = require('./lib/news');
+  // A feed is stopped at its size limit as it downloads, not after (lib/fetch).
+  news.init({ fetchFile: function (url, file, cb) { return fetchLib.fetchLimited(url, file, news.FEED_MAX_BYTES, cb); } });
   glasshouseHome.init({
     // webOS 11 with the Home key changed: LG's Home stays drawn under Glasshouse Bar unless it is closed.
     lgHomeUnderBar: remoteKeys.nativeHomeBarOn,
     screensavers: screensavers,
     weather: weather,
+    news: news,
+    haEntity: haEntity,
+    mqttOn: function () { return !!(CONFIG.mqtt && CONFIG.mqtt.enabled && CONFIG.mqtt.host); },
     // What the dashboard's Remote section shows: the level, the step it stands
     // in for, and whether it can be read at all. null with no remote paired.
     remoteBattery: function () {

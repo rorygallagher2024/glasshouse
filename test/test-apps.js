@@ -548,6 +548,116 @@ test('dirSize computes folder size on disk', function () {
   assert.ok(sz > 0, 'dirSize should be positive for mock directory');
 });
 
+test('getApps lists running user card apps with RAM and foreground flag, filtering internal/overlays', function (done) {
+  var runningList = [
+    { id: 'airplay', appType: 'web', defaultWindowType: 'card', webprocessid: '12038', processid: '12038' },
+    { id: 'com.tvweb.home', appType: 'web', defaultWindowType: 'card', webprocessid: '14574', processid: '14574' },
+    { id: 'com.tvweb.homebar', appType: 'web', defaultWindowType: 'overlay', webprocessid: '22193', processid: '22193' },
+    { id: 'com.webos.app.container', appType: 'web', defaultWindowType: 'card', webprocessid: '313', processid: '313' },
+    { id: 'com.webos.app.screensaver', appType: 'native_qml', defaultWindowType: 'screenSaver', webprocessid: '', processid: '17203' },
+    { id: 'com.webos.app.discovery', appType: 'web', defaultWindowType: 'card', webprocessid: '5369', processid: '5369' },
+    { id: 'spotify-beehive', appType: 'web', defaultWindowType: 'card', webprocessid: '814', processid: '814' },
+    { id: 'com.netflix.ninja', appType: 'native', defaultWindowType: 'card', webprocessid: '', processid: '9001' },
+    { id: 'com.example.floating', appType: 'web', defaultWindowType: 'overlay', webprocessid: '7777', processid: '7777' }
+  ];
+  mockEnv.files['/proc/814/status'] = 'Name:\tWebAppMgr\nVmRSS:\t   92160 kB\n';
+  mockEnv.files['/proc/5369/status'] = 'Name:\tWebAppMgr\nVmRSS:\t  122880 kB\n';
+  mockEnv.files['/proc/9001/status'] = 'Name:\tnetflix\nVmRSS:\t    400 kB\n';
+
+  var luna = function (uri, params, cb) {
+    if (uri === 'com.webos.applicationManager/listApps') {
+      return cb({
+        returnValue: true,
+        apps: [
+          { id: 'com.webos.app.discovery', title: 'LG Content Store', systemApp: true },
+          { id: 'spotify-beehive', title: 'Spotify' },
+          { id: 'com.netflix.ninja', title: 'Netflix' }
+        ]
+      });
+    }
+    if (uri === 'com.webos.applicationManager/listLaunchPoints') {
+      return cb({ returnValue: true, launchPoints: [] });
+    }
+    if (uri === 'com.webos.applicationManager/running') {
+      return cb({ returnValue: true, running: runningList });
+    }
+    if (uri === 'com.webos.applicationManager/getForegroundAppInfo') {
+      return cb({ returnValue: true, appId: 'spotify-beehive' });
+    }
+    cb({ returnValue: true });
+  };
+
+  init({ luna: luna, config: { allowControl: true }, closeWaitMs: 0 });
+  apps.getApps(function (d) {
+    assert.strictEqual(d.ok, true);
+    assert.strictEqual(d.running.length, 3);
+    // Foreground app comes first, then descending by MB
+    assert.strictEqual(d.running[0].id, 'spotify-beehive');
+    assert.strictEqual(d.running[0].title, 'Spotify');
+    assert.strictEqual(d.running[0].foreground, true);
+    assert.strictEqual(d.running[0].mb, 90);
+    assert.strictEqual(d.running[1].id, 'com.webos.app.discovery');
+    assert.strictEqual(d.running[1].foreground, false);
+    assert.strictEqual(d.running[1].mb, 120);
+    assert.strictEqual(d.running[2].id, 'com.netflix.ninja');
+    assert.strictEqual(d.running[2].mb, 1);
+    delete mockEnv.files['/proc/814/status'];
+    delete mockEnv.files['/proc/5369/status'];
+    delete mockEnv.files['/proc/9001/status'];
+    done();
+  });
+});
+
+test('closeRunningApp kills web apps, closes native apps, handles close all, and rejects unsafe targets', function (done) {
+  var runningState = [
+    { id: 'com.webos.app.discovery', appType: 'web', defaultWindowType: 'card', webprocessid: '5369' },
+    { id: 'com.netflix.ninja', appType: 'native', defaultWindowType: 'card', processid: '9001' },
+    { id: 'com.webos.app.home', appType: 'native', defaultWindowType: 'home', processid: '200' }
+  ];
+  var calls = [];
+  var luna = function (uri, params, cb) {
+    if (uri === 'com.webos.applicationManager/running') {
+      return cb({ returnValue: true, running: runningState.slice() });
+    }
+    if (uri === 'com.palm.webappmanager/killApp') {
+      calls.push([uri, params.appId]);
+      runningState = runningState.filter(function (r) { return r.id !== params.appId; });
+      return cb({ returnValue: true });
+    }
+    if (uri === 'com.webos.applicationManager/closeByAppId') {
+      calls.push([uri, params.id]);
+      runningState = runningState.filter(function (r) { return r.id !== params.id; });
+      return cb({ returnValue: true });
+    }
+    cb({ returnValue: true });
+  };
+
+  init({ luna: luna, config: { allowControl: false }, closeWaitMs: 0 });
+  apps.closeRunningApp({ id: 'com.webos.app.discovery' }, function (denied) {
+    assert.strictEqual(denied.ok, false);
+    init({ luna: luna, config: { allowControl: true }, closeWaitMs: 0 });
+    apps.closeRunningApp({ id: 'com.webos.app.home' }, function (internalDenied) {
+      assert.strictEqual(internalDenied.ok, false);
+      apps.closeRunningApp({ id: 'com.webos.app.discovery' }, function (r1) {
+        assert.strictEqual(r1.ok, true);
+        assert.deepEqual(r1.closed, ['com.webos.app.discovery']);
+        // Re-populate both a web app and a native app to verify closeAll skips internal apps
+        runningState.push({ id: 'spotify-beehive', appType: 'web', defaultWindowType: 'card', webprocessid: '814' });
+        apps.closeRunningApp({ all: true }, function (r2) {
+          assert.strictEqual(r2.ok, true);
+          assert.deepEqual(r2.closed.sort(), ['com.netflix.ninja', 'spotify-beehive']);
+          assert.deepEqual(calls, [
+            ['com.palm.webappmanager/killApp', 'com.webos.app.discovery'],
+            ['com.webos.applicationManager/closeByAppId', 'com.netflix.ninja'],
+            ['com.palm.webappmanager/killApp', 'spotify-beehive']
+          ]);
+          done();
+        });
+      });
+    });
+  });
+});
+
 var failures = 0;
 
 /*

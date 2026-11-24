@@ -180,6 +180,9 @@ function byId(list, id) { return list.filter(function (m) { return m.id === id; 
   assert.strictEqual(pigs.builtin, false);
   assert.strictEqual(pigs.label, 'Pigs - Three Different Ones');
   assert.strictEqual(pigs.author, 'Michael Nestrud');
+  var highway = byId(screensavers.screensaverList().modes, 'music-highway');
+  assert.ok(highway, 'music-highway listed');
+  assert.strictEqual(highway.author, 'vecluu');
   console.log('  ✓ the pigs Glasshouse installs as an example read as an added screen saver');
 })();
 
