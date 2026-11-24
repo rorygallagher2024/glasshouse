@@ -907,7 +907,7 @@ function apply(cb) {
     var inChain = list.some(ours);
     // Nothing set and nothing installed: configd is not written, as it can
     // never forget the value again, and a TV that never sets a key keeps none.
-    if (!Object.keys(map).length && !home && !starting && !inChain) return cb(true);
+    if (!Object.keys(map).length && !home && !starting && !inChain) return applyFilterTable(function () { cb(true); });
     var src = filterSource();
     var current = null;
     try { current = fs.readFileSync(filterFile(), 'utf8'); } catch (e) {}
@@ -924,12 +924,19 @@ function apply(cb) {
       if (!ok) return cb(false);
       var rest = withoutOurs(list);
       var full = [{ file: filterFile(), handler: HANDLER }].concat(rest);
+      // LG's list of streaming buttons follows; a failure there is logged, and does not undo the filter.
+      var withTable = function (ok2) {
+        applyFilterTable(function (okTable) {
+          if (!okTable) console.log('remotekeys: LG\'s list of streaming buttons could not be set');
+          cb(ok2);
+        });
+      };
       var done = function (ok2) {
         if (ok2) console.log('remotekeys: filter first in the chain');
-        cb(ok2);
+        withTable(ok2);
       };
       if (!inChain) return writeChain(full, done);
-      if (!changed) return cb(true);
+      if (!changed) return withTable(true);
       // configd tells the compositor nothing when the same list is written
       // again, so a changed file takes the entry out and back in (a CX kept
       // running the old file through two rewrites of it).
@@ -1108,6 +1115,32 @@ function mappingWanted(map, key, lgEntry) {
   return { launch_param: null, app_id: map[key], isActive: true };
 }
 
+/*
+ * Where the JavaScript filter runs, a streaming button set here is answered by
+ * the filter while the picture is on, and LG's own handler never sees it. With
+ * the screen off the press goes to LG's wake path instead: about 200 ms after
+ * it, as the screen wakes, sam logs a launch of the app LG's list names for the
+ * button, from com.webos.platformstarfish with mode hotKey, whatever the filter
+ * would have done (a C5, webOS 10.3.0, Nothing set for LG Channels). With that
+ * entry switched off the same press only woke the TV. So the list is set to
+ * match: an app or an input the key opens is launched from it, and any other
+ * choice (Nothing, an action, a media key, one of Glasshouse's bars) switches
+ * the entry off.
+ */
+function opensApp(id) {
+  if (!id) return false;
+  if (id.indexOf('action:') === 0 || id.indexOf(MEDIA_PREFIX) === 0) return false;
+  return id !== INPUT_BAR && id !== HOME_BAR && id !== INPUT_SWITCHER;
+}
+
+function filterMappingWanted(map, key, lgEntry) {
+  if (!Object.prototype.hasOwnProperty.call(map, key)) return undefined;
+  if (opensApp(map[key])) return { launch_param: null, app_id: map[key], isActive: true };
+  var off = copyValue(lgEntry);
+  off.isActive = false;
+  return off;
+}
+
 function actionWanted(map, key, lgValue) {
   if (!Object.prototype.hasOwnProperty.call(map, key)) return undefined;
   if (map[key] === HOME_GUIDE) {
@@ -1264,6 +1297,69 @@ function applyNativeMap(cb, map) {
       if (!ok) return cb(false, wrote);
       writeActions();
     });
+  });
+}
+
+/*
+ * Sets LG's streaming button list to the keys set here, where the JavaScript
+ * filter runs, and puts back what LG had for a key no longer set. LG's own
+ * entries are kept in remotekeys-lg.json, and the list is followed (watchLg), as
+ * on webOS 11. A TV with no such list has nothing to wake into an app, and is
+ * left alone. mapOverride {} puts LG's all back. One runs at a time, as each
+ * reads the list and writes it whole. cb(ok, wrote).
+ */
+var tableQueue = [];
+function applyFilterTable(cb, mapOverride) {
+  tableQueue.push({ cb: cb, map: mapOverride });
+  if (tableQueue.length === 1) applyFilterTableNext();
+}
+
+function applyFilterTableNext() {
+  var job = tableQueue[0];
+  if (!job) return;
+  applyFilterTableNow(function (ok, wrote) {
+    tableQueue.shift();
+    applyFilterTableNext();
+    job.cb(ok, !!wrote);
+  }, job.map);
+}
+
+function applyFilterTableNow(cb, mapOverride) {
+  var map = mapOverride || readMap();
+  var lg = readLg();
+  if (!Object.keys(map).length && !Object.keys(lg.mapping).length) {
+    watchLg(false);
+    return cb(true, false);
+  }
+  readMapping(function (list) {
+    if (!list) return cb(true, false);
+    var nextList = copyValue(list);
+    var changed = [];
+    nextList.forEach(function (entry) {
+      Object.keys(entry || {}).forEach(function (name) {
+        var def = keyByName(name);
+        if (!def || def.nativeOnly || def.blockCode || NATIVE_ACTIONS[name]) return;
+        var v = reconcile(name, entry[name], function (lgEntry) { return filterMappingWanted(map, name, lgEntry); },
+          lg.mapping, lg.mappingWritten);
+        if (v !== undefined) { entry[name] = v; changed.push(name); }
+      });
+    });
+    var finish = function (ok) {
+      if (!ok) return cb(false, changed.length > 0);
+      try {
+        writeLg(lg);
+      } catch (e) {
+        console.log('remotekeys: could not write ' + lgFile() + ': ' + e.message);
+        return cb(false, changed.length > 0);
+      }
+      watchLg(lgHolds(lg, ['mapping']));
+      if (changed.length) console.log('remotekeys: LG\'s list of streaming buttons changed for ' + changed.join(', ') + ', which it opens an app from while the screen is off');
+      cb(true, changed.length > 0);
+    };
+    if (!changed.length) return finish(true);
+    var settings = {};
+    settings[MAPPING_KEY] = nextList;
+    writeSettings(settings, finish);
   });
 }
 
@@ -1678,7 +1774,7 @@ function lgChanged() {
     var now = Date.now();
     reapplied = reapplied.filter(function (t) { return t <= now && now - t < REAPPLY_WINDOW_MS; });
     if (reapplied.length >= REAPPLY_LIMIT) return;
-    applyNative(function (ok, wrote) {
+    (keysOnTv() ? applyFilterTable : applyNative)(function (ok, wrote) {
       if (!wrote) return;
       reapplied.push(Date.now());
       console.log('remotekeys: LG put its keys back; set again' + (ok ? '' : ', and the TV did not take it'));
@@ -2129,15 +2225,15 @@ function powerChanged() {
 }
 
 /*
- * On webOS 11, every half hour: LG's server can send the streaming buttons'
- * list again, which puts back LG's apps. Reads only, unless a key set here has
- * been changed back. Nothing elsewhere, where the filter's values are
- * Glasshouse's own. cb(ok).
+ * Every half hour: LG's server can send the streaming buttons' list again,
+ * which puts back LG's apps. Reads only, unless a key set here has been changed
+ * back. cb(ok).
  */
 var RECHECK_MS = 30 * 60 * 1000;
 function recheckNative(cb) {
   cb = cb || function () {};
-  if (!lunaFn || keysOnTv()) return cb(false);
+  if (!lunaFn) return cb(false);
+  if (keysOnTv()) return applyFilterTable(cb);
   hasNativeFilters(function (yes) {
     if (!yes) return cb(false);
     applyNative(cb);
@@ -2175,7 +2271,7 @@ function restore(done) {
   }
   if (fs.existsSync(lgFile()) || guidePatch.holdsKeys()) {
     if (!lunaFn) return cb(false);
-    return applyNative(function (ok) {
+    return (keysOnTv() ? applyFilterTable : applyNative)(function (ok) {
       if (!ok) return cb(false);
       try { fs.unlinkSync(mapFile()); } catch (e) { if (e.code !== 'ENOENT') return cb(false); }
       if (!fs.existsSync(filterFile())) return cb(true);
