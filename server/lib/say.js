@@ -160,6 +160,13 @@ function walk(v, dict, field) {
   return v;
 }
 
+// A message in the language of a locale, for what goes to the TV without a
+// page to translate it, such as a toast. English without a file for it.
+function forLocale(text, locale) {
+  var lang = langOfLocale(locale);
+  return lang ? translateText(text, dicts[lang]) : text;
+}
+
 // A JSON body for a response, translated in place where a page asked for a
 // language. Anything that is not JSON goes out as it came.
 function translateBody(body, lang) {
@@ -176,6 +183,7 @@ module.exports = {
   init: init,
   langOf: langOf,
   langOfLocale: langOfLocale,
+  forLocale: forLocale,
   translateBody: translateBody,
   DISPLAY_FIELDS: DISPLAY_FIELDS
 };

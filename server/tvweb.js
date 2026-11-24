@@ -1114,8 +1114,9 @@ updateAsk.init({
   ask: askQuestion,
   writeSettings: routes.writeSettings,
   install: function (cb) { doControl('update', null, cb); },
+  // In the TV's language: a toast has no page to translate it.
   toast: function (text) {
-    doControl('toast', text, function (r) {
+    doControl('toast', say.forLocale(text, clockFormat.qtLocale()), function (r) {
       if (!r || !r.ok) console.error('update: toast failed: ' + ((r && r.error) || 'no answer'));
     });
   },

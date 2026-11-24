@@ -83,4 +83,12 @@ var translated = JSON.parse(say.translateBody(JSON.stringify({ detail: detail })
 assert.strictEqual(translated.detail, 'Aceptado en Términos, Privacidad y Anuncios.');
 console.log('  ✓ a sentence built from a list is translated, joining word and all');
 
+// 7. A toast, with no page to translate it, in the TV's language
+var failed = msg('srv.update.failed', 'The update failed: {error}', { error: 'disk full' });
+assert.strictEqual(say.forLocale(failed, 'es_ES'), 'La actualización falló: disk full');
+assert.strictEqual(say.forLocale(failed, 'pt-BR'), failed, 'a region with its own file and no entry stays in English');
+assert.strictEqual(say.forLocale(failed, 'en_GB'), failed);
+assert.strictEqual(say.forLocale(failed, ''), failed);
+console.log('  ✓ a message for the TV follows the TV\'s language');
+
 console.log('ALL test-say.js assertions passed!\n');
