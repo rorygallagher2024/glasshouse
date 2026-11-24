@@ -28,6 +28,7 @@ var updater = null;
 var askModule = null;
 var writeSettings = null;
 var installFn = null;
+/** @type {function(string): void} */
 var toastFn = function () {};
 var screenOnFn = function () { return false; };
 var asking = null;   // the version being asked about
