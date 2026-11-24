@@ -637,7 +637,7 @@ When enabled, resting on an input or a TV channel for a moment shows it live in 
 Each kind of motion has its own switch:
 
 * **Fade in and out (off by default):** Fades Glasshouse Home out before an app, input, channel, or recent app opens, and back in when returning. **Notifications** and **Search** open over Home without fading.
-* **Wallpaper drift (on by default):** Slow movement of the wallpaper to protect against image retention on OLED panels.
+* **Wallpaper drift (on by default):** The picture shifts a few pixels at a time without zooming, to reduce image retention on OLED panels.
 * **Wallpaper cross-fade (on by default):** Cross-fades smoothly from one part of the day's background to the next.
 * **Smooth scrolling (on by default):** Rows glide smoothly to the focused tile rather than jumping abruptly.
 * **Sliding panels (on by default):** Slides Recent apps, Search, and More apps smoothly in and out.

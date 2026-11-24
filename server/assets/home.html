@@ -32,7 +32,7 @@ body{font-family:'Manrope',sans-serif;color:#ece7df;-webkit-font-smoothing:antia
 #anim.on{display:block}
 #wall .layer{position:absolute;left:-3%;top:-3%;right:-3%;bottom:-3%;background-position:center;background-size:cover;
   background-repeat:no-repeat;opacity:0;-webkit-transition:opacity 2.4s ease;transition:opacity 2.4s ease;
-  -webkit-animation:drift 180s steps(360) infinite alternate;animation:drift 180s steps(360) infinite alternate}
+  -webkit-animation:drift 180s steps(24) infinite alternate;animation:drift 180s steps(24) infinite alternate}
 /* The video is never drawn at partial opacity: on webOS 4 it is a hardware
    plane under the page, seen through a hole the <video> punches, and a hole
    at 70% showed nothing at all (a B8, webOS 4.4.3). It is dimmed and faded
@@ -50,8 +50,9 @@ body{font-family:'Manrope',sans-serif;color:#ece7df;-webkit-font-smoothing:antia
    uncovered rather than coming in over a black screen a beat later; paused, it
    is not drawn again. */
 html.resting #wall .layer{-webkit-animation-play-state:paused;animation-play-state:paused}
-@-webkit-keyframes drift{from{-webkit-transform:scale(1) translate(0,0)}to{-webkit-transform:scale(1.04) translate(-1.2%,-.8%)}}
-@keyframes drift{from{transform:scale(1) translate(0,0)}to{transform:scale(1.04) translate(-1.2%,-.8%)}}
+/* Whole-pixel steps fit inside the 3% overscan without rescaling the picture. */
+@-webkit-keyframes drift{from{-webkit-transform:translate3d(0,0,0)}to{-webkit-transform:translate3d(-48px,-24px,0)}}
+@keyframes drift{from{transform:translate3d(0,0,0)}to{transform:translate3d(-48px,-24px,0)}}
 #scrim{position:absolute;left:0;top:0;right:0;bottom:0;
   background:radial-gradient(ellipse 34% 30% at 92% 14%,rgba(0,0,0,.55),rgba(0,0,0,0)),
     linear-gradient(90deg,rgba(0,0,0,.72) 0%,rgba(0,0,0,.35) 38%,rgba(0,0,0,0) 70%),
