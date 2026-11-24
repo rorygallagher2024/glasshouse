@@ -1958,6 +1958,28 @@ With `setPreloadPolicy` `isEnabled: false` for `com.webos.app.home` the preload
 manager launched only HDMI 4 in nine minutes of the same file, and set back to
 `true` it launched Home 8 s later.
 
+## Streaming buttons with the screen off open LG's apps (OLED48C56LB, webOS 10.3.0)
+
+With the screen off (`tvpowerd`: `Screen Off`, from `power/turnOffScreen`) a press of
+a streaming button never reaches the JavaScript key filter. About 200 to 260 ms
+after the press sam logs `NL_APP_LAUNCH_BEGIN` for the button's app, with
+`caller_id: com.webos.platformstarfish` and `mode: hotKey`, in the same millisecond
+as `tvpowerd` moves `Screen Off` to `Active`. A launch from the filter has
+`com.webos.surfacemanager` as its caller. Netflix (`netflix`), Prime Video
+(`amazon`), Disney+ (`com.disney.disneyplus-prod`), LG Channels
+(`com.webos.app.lgchannels`) and Rakuten TV (`ui30`) all did it, with Glasshouse
+holding the key as Nothing or as Screen off; with the screen on the same keys
+opened nothing. The Alexa button (`KEY_ALEXAVOICE`) only woke the screen.
+
+The apps are the ones in the settings service's `other.mapping_info`, LG's list of
+streaming buttons (35 entries on this TV, each `{ name: { app_id, launch_param,
+isActive } }`; the list webOS 11's key filters read). With the `lgchannels` entry
+set to `isActive: false` (the rest of the list as it was), the press of LG
+Channels with the screen off woke the TV and opened nothing, and no toast window
+opened; with the entry as LG has it, the same press opened LG Channels five times
+out of five. LG did not write the list back while the screen was off or when it
+woke.
+
 ## Native key filters (C5, webOS 11.2.0)
 
 - **No JavaScript filters.** `surface-manager` runs on Weston
