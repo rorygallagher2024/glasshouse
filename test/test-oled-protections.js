@@ -57,6 +57,7 @@ var EPL = 'com.webos.service.oledepl/';
   assert.strictEqual(r.stats.gsr_enabled, true);
   assert.strictEqual(r.stats.tpc_enabled, false);
   assert.strictEqual(r.stats.gsr_stress_count, 7);
+  assert.strictEqual(r.oled.hasGsrStressCount(), true);
   assert.strictEqual(r.stats.gsr_protection, 'Disabled', 'the marker is still reported as read');
   assert.strictEqual(r.oled.oledProtControllable(), true);
 
@@ -76,6 +77,7 @@ var EPL = 'com.webos.service.oledepl/';
   assert.strictEqual(r.stats.gsr_enabled, true);
   assert.strictEqual(r.stats.tpc_enabled, false);
   assert.strictEqual(r.stats.gsr_stress_count, null, 'a TV without the service has no stress count');
+  assert.strictEqual(r.oled.hasGsrStressCount(), false);
   assert.strictEqual(r.stats.asbl_protection, 'Disabled');
   console.log('  ✓ without the service, the marker files decide');
 })();
@@ -101,7 +103,15 @@ var EPL = 'com.webos.service.oledepl/';
   assert.strictEqual(r.stats.gsr_enabled, null);
   assert.strictEqual(r.stats.tpc_enabled, null);
   assert.strictEqual(r.stats.gsr_stress_count, null);
+  assert.strictEqual(r.oled.hasGsrStressCount(), false);
   console.log('  ✓ with neither the service nor a marker, the protections are not reported');
+
+  // If the EPL service answers without a numeric stressCount, it is treated as unsupported
+  var rNoCount = refresh({
+    'com.webos.service.oledepl/getGlobalStressReduction': { returnValue: true, enable: true }
+  }, {});
+  assert.strictEqual(rNoCount.stats.gsr_stress_count, null);
+  assert.strictEqual(rNoCount.oled.hasGsrStressCount(), false);
 })();
 
 (function testRefusedPanelHours() {

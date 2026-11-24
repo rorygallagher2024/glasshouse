@@ -1900,14 +1900,18 @@ function setupHomeAssistant() {
     // first connect it would otherwise still be undetermined.
     // The app select's options come from listApps, which on a first connect
     // has not been scanned yet - without this it publishes the fallback list.
-    oled.detectOled(function () {
-      telemetry.detectLogoLight(function () {
-        telemetry.refreshInstalledApps(function () {
-          // The Input Source select's options are the names the TV gives its
-          // HDMI inputs, so read them before publishing its discovery.
-          telemetry.refreshInputNames(function () { publishDiscovery(); });
+    oled.detectOled(function (isOled) {
+      var afterOled = function () {
+        telemetry.detectLogoLight(function () {
+          telemetry.refreshInstalledApps(function () {
+            // The Input Source select's options are the names the TV gives its
+            // HDMI inputs, so read them before publishing its discovery.
+            telemetry.refreshInputNames(function () { publishDiscovery(); });
+          });
         });
-      });
+      };
+      if (isOled && oled.hasGsrStressCount() === null) oled.readOledProtections(afterOled);
+      else afterOled();
     });
     mqttClient.subscribe(mqttTopics.commands + '#');
     publishTelemetry();

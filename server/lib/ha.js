@@ -2030,6 +2030,8 @@ function filterWithholds(entities, opts) {
     withhold(byId('oled_short_cycles', 'oled_refresher_cycles', 'oled_failure_alerts'));
   }
 
+  if (caps.hasGsrStressCount === false) withhold(byId('oled_gsr_stress_count'));
+
   if (!caps.hasCell) withhold(byId('oled_cell_type', 'tcon_firmware'));
 
   if (!caps.hasHdmiProc) {

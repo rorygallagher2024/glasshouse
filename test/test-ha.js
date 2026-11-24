@@ -194,6 +194,16 @@ console.log('Running test-ha.js ...');
   assert.strictEqual(timerIds.on_timer, true, 'hasOnTimer:true keeps on_timer');
   assert.strictEqual(!timerIds.off_timer, true, 'hasOffTimer:false withholds off_timer');
 
+  // An OLED without the GSR stress count service withholds the sensor once checked
+  var gsrOffIds = {};
+  ha.filterWithholds(getEntities(), { capabilities: { isOled: true, hasGsrStressCount: false } })
+    .forEach(function (e) { gsrOffIds[e.id] = true; });
+  assert.strictEqual(!gsrOffIds.oled_gsr_stress_count, true, 'hasGsrStressCount:false withholds oled_gsr_stress_count');
+  var gsrOnIds = {};
+  ha.filterWithholds(getEntities(), { capabilities: { isOled: true, hasGsrStressCount: true } })
+    .forEach(function (e) { gsrOnIds[e.id] = true; });
+  assert.strictEqual(gsrOnIds.oled_gsr_stress_count, true, 'hasGsrStressCount:true retains oled_gsr_stress_count');
+
   // User configuration withholding category or specific entity
   var userFiltered = ha.filterWithholds(getEntities(), {
     capabilities: {
