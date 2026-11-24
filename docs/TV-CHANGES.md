@@ -289,3 +289,32 @@ Control page also has quick toggles below Playback, using the same commands and
 write permissions. Both dashboards hide the Ambient Light tab when neither
 integration is available; saved links then open Control on the web or Metrics
 in the TV app.
+
+Screenshot assignments write PNGs only under `/tmp/capture_*.png`.
+Captures disappear when the TV restarts.
+
+While the server runs, cleanup targets `screenshots.maxMiB` in `config.json`
+(32 MiB by default), deleting the oldest matching regular files first.
+It keeps the newest capture and files modified within 15 seconds, and uses the
+same checked deletion as the API.
+Cleanup runs at startup and every 20 seconds; errors are logged
+and retried later. Remote captures can accumulate while the server is stopped.
+
+The screenshot API lists and reads these temporary images behind dashboard
+authentication. Deleting a selected image or clearing all images requires
+controls enabled and the existing JSON and Origin guards. Read access remains
+available with controls disabled. Image reads refuse symlinks and keep the
+opened file descriptor through serving, with private, uncached responses.
+The Tools gallery deletes a selected image or clears all listed screenshots
+after a second press within five seconds. Clearing uses the same file checks
+as individual deletion; other files, symlinks and directories are left alone.
+A failed deletion reports the error and refreshes the remaining images.
+
+A remote key assigned to screenshots stores its capture method and size in
+the existing remote-key mapping. Each press calls the capture service from the
+compositor filter only when LG identifies the source as `RCU` or `MRCU`, and
+shows a saved-path or error notice afterward; holding the key does not repeat.
+Network and unknown sources cannot capture; the dashboard/API only manages
+saved images. The assignment works without the server and is
+removed with **As LG has it** or `tvwebctl restore-keys`. Screenshot assignments
+are not offered through webOS 11's native mappings.

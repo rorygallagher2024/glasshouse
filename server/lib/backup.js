@@ -61,7 +61,8 @@ var GLASSHOUSE = {
   backup: { daily: isBool },
   screenTime: screentime.VALID,
   prometheus: { enabled: isBool },
-  update: { check: isBool }
+  update: { check: isBool },
+  screenshots: { maxMiB: function (v) { return typeof v === 'number' && v > 0 && isFinite(v * 1024 * 1024); } }
 };
 
 /** @type {typeof import('./lgsettings')} */

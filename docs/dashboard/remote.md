@@ -33,6 +33,7 @@ Core keys (**Home**, **Back**, volume, mute, and power) are reserved and cannot 
 * **Buttons:** Acts as **OK**, or sends **Play**, **Pause**, **Stop**, **Rewind**, **Fast forward**, **Volume up**, **Volume down**, or **Mute** to on-screen media. **OK** puts the Magic Remote's OK, the scroll wheel's press, on a flat button too. Volume commands repeat while held and control connected HDMI ARC soundbars.
 * **Home & Guide:** Opens Glasshouse Home (or LG's Home if disabled), or opens Glasshouse Home's [IPTV guide](home.md#internet-tv).
 * **Home Assistant:** Silences TV handling while keeping the key labelled for Home Assistant automations. When MQTT is enabled, Home Assistant receives [Remote Button](../HOME-ASSISTANT-REMOTE-BUTTONS.md) events for streaming buttons, color keys, Google Assistant, and the microphone regardless of what they are set to on the TV.
+* **Screenshots:** Choose the capture mode and resolution. Saves one PNG per physical remote press for viewing or downloading in [Tools](tools.md#screenshots). Network presses and unverified sources cannot capture. Requires device-type reporting; unavailable on webOS 11. **Video only** can return `REFUSED_PERMISSION_DENIED` when no video is playing.
 * **Nothing:** Disables the key completely on the TV.
 
 ## Remote models and regional buttons

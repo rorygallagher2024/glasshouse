@@ -64,5 +64,8 @@
     "check": false,
     "intervalHours": 24,
     "client": ""
+  },
+  "screenshots": {
+    "maxMiB": 32
   }
 }

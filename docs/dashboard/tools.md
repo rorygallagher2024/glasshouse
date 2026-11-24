@@ -1,6 +1,20 @@
 # System tools & logs
 
-The **Tools** tab, `/?tab=tools`, provides a live system log inspection terminal for power users and developers to inspect system activity, service telemetry, and hardware diagnostics directly from the browser without requiring SSH.
+The **Tools** tab, `/?tab=tools`, manages screenshots and provides live system logs for system activity, service telemetry and hardware diagnostics.
+
+## Screenshots
+
+Open **Screenshots** to view captures from an assigned physical remote key, newest first. Choose the capture mode and resolution in [Remote keys](remote.md#remote-keys). Captures show a saved-path or error notice on the TV.
+
+Each card shows the capture time and resolution; hover over the image for its filename. Select a loaded preview to enlarge it. Close with **×**, outside the image or Escape; keyboard focus returns to the preview. **Download** shows the file size and saves the original PNG and filename.
+
+While the server runs, old captures are removed oldest first to target 32 MiB of saved images. The total size and target appear beside **Clear all**. Set `"screenshots": { "maxMiB": 64 }` in `/var/lib/tvweb/config.json` and restart the server to change the target. The value must be positive; missing or invalid values use 32 MiB. The newest capture and recently modified files are kept. Images also disappear when the TV restarts.
+
+The gallery refreshes every three seconds while open and visible, pausing during deletion and viewing. **Refresh** clears the previous result, reloads the list and retries failed previews. Already loaded images are reused when refreshing or returning to the gallery. Deleting an image keeps the remaining previews in place. Viewing, downloading and refreshing work with controls disabled.
+
+**Delete** asks for a second press on the same image within five seconds. **Clear all** uses the same confirmation to delete every saved screenshot. Choosing another deletion, closing Screenshots, leaving Tools or hiding the browser cancels the confirmation. Manual deletion requires controls enabled. A failed deletion shows the error and refreshes the remaining images.
+
+## System logs
 
 Under its title, the tab says whether these logs are also sent to a log server on the network; [Log forwarding](../syslog.md) explains how to set that up.
 

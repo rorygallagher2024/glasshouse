@@ -763,15 +763,18 @@ step('LG\'s input switcher is a choice of its own, first, for any key', function
   });
 });
 
-step('media and power actions are not offered where LG\'s native filters only launch apps', function (next) {
+step('media, power off and screenshots are refused by LG\'s native mappings', function (next) {
   rk.getRemoteKeys(function (r) {
-    assert.ok(!r.choices.some(function (c) { return c.kind === 'media'; }));
+    assert.ok(!r.choices.some(function (c) { return c.kind === 'media' || c.kind === 'capture'; }));
     assert.ok(!r.choices.some(function (c) { return c.id === 'action:powerOff'; }));
     rk.setRemoteKey('netflix', 'open', 'media:play', function (s) {
       assert.strictEqual(s.ok, false);
       rk.setRemoteKey('netflix', 'open', 'action:powerOff', function (power) {
         assert.strictEqual(power.ok, false);
-        next();
+        rk.setRemoteKey('netflix', 'open', 'capture:DISPLAY:1920x1080', function (capture) {
+          assert.strictEqual(capture.ok, false);
+          next();
+        });
       });
     });
   });

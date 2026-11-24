@@ -1873,6 +1873,22 @@ button.tools-jump:active{background:var(--w80)}
 .tools-jump[hidden]{display:none}
 .tools-term-empty{padding:48px 20px;text-align:center;color:var(--w50);font-family:'Manrope';font-size:14px}
 
+#disc-screenshots>summary{border-top:0;border-bottom:1px solid var(--w25);padding:0 0 12px;margin-bottom:26px}
+.screenshot-storage{display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+#screenshots-storage{margin:0;white-space:nowrap}
+#screenshots-message{min-height:1.4em}
+.screenshot-delete.screenshot-pending:disabled{opacity:1;color:var(--red);border-color:var(--red)}
+.screenshot-gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,280px),1fr));gap:16px;margin:16px 0 28px}
+.screenshot-card{min-width:0;border:1px solid var(--w25);padding:12px}
+.screenshot-preview{display:block;width:100%;padding:0;border:0;background:none;margin-bottom:12px}
+.screenshot-card img{display:block;width:100%;aspect-ratio:16/9;object-fit:contain;background:#000}
+.screenshot-meta{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin:8px 0}
+.screenshot-meta>.sub{margin:0;white-space:nowrap}
+.screenshot-card>.pill{min-width:0}
+#screenshot-viewer .modal-card{position:relative;max-width:100%;width:auto;max-height:none;padding:48px 12px 12px;overflow:visible;background:none;border:0;box-shadow:none}
+#screenshot-viewer-close{position:absolute;top:6px;right:8px;font-size:24px;letter-spacing:0;min-width:36px;padding:0;color:#fff;border-color:currentColor;outline-color:currentColor}
+#screenshot-viewer-image{display:block;max-width:calc(100vw - 68px);max-height:calc(100vh - 124px);object-fit:contain}
+
 .log-row{display:flex;padding:6px 14px;border-bottom:1px solid rgba(var(--fg),.04);cursor:pointer;
   transition:background .1s ease}
 .log-row:hover{background:rgba(var(--fg),.06)}
@@ -2032,6 +2048,8 @@ button.tools-jump:active{background:var(--w80)}
 @media (max-width:560px){
   .rk-opts.rk-opts-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
+.rk-capture-groups{display:flex;flex-wrap:wrap;column-gap:24px}
+.rk-capture-groups>.rk-opts{flex:0 0 auto;max-width:100%}
 /* A catalog's address is one long word. */
 .catalog-url, #apps-others-list .prot-sub{overflow-wrap:anywhere}
 #apps-catalog-list .prot-main, #apps-others-list .prot-main{overflow-wrap:anywhere}
