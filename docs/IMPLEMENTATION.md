@@ -995,8 +995,8 @@ is gone, so there is no JavaScript to put first; the old configd key is still
 there, read by nothing. `remotekeys.js` takes this path where the KeyFilters
 directory names no keys and configd has `keyFiltersCpp`.
 
-LG's launch library reads what a key does from two values at every press, so a
-change applies at once with nothing reloaded:
+LG's launch library reads what a key does from two values, and takes up a
+change to either at once with nothing reloaded:
 
 - **Streaming buttons and Apps**: the settings service's `other.mapping_info`,
   a list of `{ name: { app_id, launch_param, isActive } }` that LG's server
@@ -1026,9 +1026,17 @@ values again a second after any change; more than twelve such writes in a
 minute are left to the next check, so it never takes turns with LG without
 end. Not every write is announced: around one switch off and on LG wrote nine
 times, five of them unannounced, the last a minute after the TV came on. So
-each change of power state is also followed by checks 3 s, 15 s, 1, 3 and 10
-minutes after it, and the server checks at its start and every 30 minutes,
-writing nothing while all is in place. The microcontroller's copy is not changed, so a streaming
+each change of power state is also followed by checks at once and 3 s, 15 s,
+1, 3 and 10 minutes after it, and the server checks at its start and every 30 minutes,
+writing nothing while all is in place. After a wake from standby, though, a
+list that reads as set is not always the one LG's launch library acts on: on a
+C6 (webOS 11, 43.11.77) a Netflix button set to **Nothing** opened Netflix
+after some hours off, with `mapping_info` still saying Nothing, until the
+button was changed and changed back ([#1671](https://github.com/rorygallagher2024/glasshouse/issues/1671)).
+So each check after a wake writes the list twice even where it reads as set:
+the buttons Glasshouse holds with `launch_param` changed, then as they should
+be. Both are changes, which the library takes up, and a button set to
+**Nothing** stays off in both. The microcontroller's copy is not changed, so a streaming
 button pressed to switch the TV on opens LG's app.
 `tvwebctl restore-keys` writes LG's values back and deletes both files. The
 other keys Glasshouse offers elsewhere (Input, the color keys, Search, Info) are
