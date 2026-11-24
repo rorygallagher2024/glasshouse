@@ -76,10 +76,10 @@ assets/inputbar-app/assets/icon80.png assets/inputbar-app/assets/icon130.png \
 assets/ask-app/appinfo.json assets/ask-app/index.html assets/ask-app/packageinfo.json assets/ask.html \
 assets/home-app/appinfo.json assets/home-app/index.html assets/home-app/packageinfo.json \
 assets/home-app/assets/icon80.png assets/home-app/assets/icon130.png \
-assets/fonts/Outfit.ttf assets/fonts/Manrope.ttf \
+assets/fonts/Outfit.ttf assets/fonts/Onest.ttf assets/fonts/Manrope.ttf \
 assets/fonts/Outfit-Light.ttf assets/fonts/Outfit-Regular.ttf \
 assets/fonts/Manrope-Regular.ttf assets/fonts/Manrope-SemiBold.ttf \
-assets/fonts/OFL-Outfit.txt assets/fonts/OFL-Manrope.txt \
+assets/fonts/OFL-Outfit.txt assets/fonts/OFL-Onest.txt assets/fonts/OFL-Manrope.txt \
 assets/sounds/click.wav assets/sounds/rollover.wav assets/sounds/LICENSE-Kenney.txt \
 assets/screensavers/ambient/main.qml assets/screensavers/ambient/saver.json \
 assets/screensavers/art/main.qml assets/screensavers/art/Frame.qml assets/screensavers/art/saver.json \
