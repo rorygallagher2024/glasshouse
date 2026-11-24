@@ -18,7 +18,7 @@
  * first sound track listed, and a G3 (webOS 10) refused an E-AC-3
  * SourceBuffer next to the video ("reached the limit of SourceBuffer objects")
  * on a channel that lists E-AC-3 before AAC.
- * Note: `server/assets/home.html` (`mseStopReading`) calls
+ * Note: `server/assets/home-iptv.js` (`mseStopReading`) calls
  * `_player_engine._onRequestPauseTransmuxer`, so verify that internal method
  * when upgrading mpegts.js.
  *

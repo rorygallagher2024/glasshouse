@@ -599,6 +599,8 @@ from the next connection, and the seconds that connection sends again are droppe
 Before a PMT, a stream passes as it is. Timestamps compare across the 33-bit wrap,
 and a step back of more than a minute counts as the stream starting again and is reported, so the relay can end the response.
 
+`test-home-iptv.js` checks Home's Internet TV player module (`assets/home-iptv.js`): buffer depth and next-gap calculations, provider prebuffer levels and persisted per-channel cushion/format settings, and wiring of play, native playback, stream events, leases and stop.
+
 `test-iptv-timeshift.js` runs the recording for pausing live TV: the real
 worker records a local provider's MPEG-TS packets through curl into a folder
 standing in for a USB stick, with 20-packet chunks and a 5-chunk buffer, and
