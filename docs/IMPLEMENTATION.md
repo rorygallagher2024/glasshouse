@@ -138,7 +138,8 @@ its own, `lib/iptv-worker.js` with its readers in `lib/iptv-parse.js`:
   same CDN. The message only mentions a limit on streams for a playlist with an
   account, which `/api/iptv/stream` reports as `account`.
 - **Home's own player for MPEG-TS**: a provider's MPEG-TS channel plays in
-  mpegts.js (`assets/vendor/mpegts.js`, loaded on the first such channel),
+  mpegts.js (`assets/vendor/mpegts.js`, loaded on the first such channel,
+  driven by `assets/home-iptv.js`),
   which reads it through `/api/iptv/relay` and feeds the TV's decoder through
   Media Source Extensions. On top of the rules above: under half a second
   buffered, the picture is paused until 3 s are buffered again, 3 s more each
