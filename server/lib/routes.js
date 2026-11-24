@@ -365,6 +365,7 @@ function validateHaSettings(haObj) {
     var haTok = trimmedString(haObj.token);
     if (haTok || haObj.clearToken) out.token = haTok;
   }
+  if (typeof haObj.tlsRejectUnauthorized === 'boolean') out.tlsRejectUnauthorized = haObj.tlsRejectUnauthorized;
   return { errors: errors, value: out };
 }
 
@@ -374,6 +375,7 @@ function applyHaConfig(haPatch) {
   if (haPatch.enabled !== undefined) config.homeAssistant.enabled = haPatch.enabled;
   if (haPatch.url !== undefined) config.homeAssistant.url = haPatch.url;
   if (haPatch.token !== undefined) config.homeAssistant.token = haPatch.token;
+  if (haPatch.tlsRejectUnauthorized !== undefined) config.homeAssistant.tlsRejectUnauthorized = haPatch.tlsRejectUnauthorized;
   if (haEntityModule) haEntityModule.update(config.homeAssistant);
 }
 
@@ -1194,6 +1196,7 @@ function getSettingsPayload() {
       enabled: haCfg.enabled !== false,
       url: haCfg.url || '',
       tokenSet: !!haCfg.token,
+      tlsRejectUnauthorized: haCfg.tlsRejectUnauthorized !== false,
       configured: !!(haEntityModule && haEntityModule.configured()),
       status: (haEntityModule && typeof haEntityModule.status === 'function') ? haEntityModule.status() : null
     },
@@ -2053,9 +2056,9 @@ function handleRequest(req, res) {
     }
     return readJsonBody(req, res, function (body) {
       if (!haEntityModule) return send(res, 503, JSON.stringify({ ok: false, error: 'Home Assistant module not loaded' }));
-      var testUrl = body && body.url;
-      var testToken = body && body.token;
-      haEntityModule.test({ url: testUrl, token: testToken }, function (r) {
+      var testOpts = { url: body && body.url, token: body && body.token };
+      if (body && typeof body.tlsRejectUnauthorized === 'boolean') testOpts.tlsRejectUnauthorized = body.tlsRejectUnauthorized;
+      haEntityModule.test(testOpts, function (r) {
         send(res, r.ok ? 200 : 400, JSON.stringify(r));
       });
     });
@@ -2084,6 +2087,7 @@ function handleRequest(req, res) {
           enabled: config.homeAssistant.enabled !== false,
           url: config.homeAssistant.url || '',
           tokenSet: !!(config.homeAssistant.token),
+          tlsRejectUnauthorized: config.homeAssistant.tlsRejectUnauthorized !== false,
           configured: haEntityModule.configured(),
           status: (typeof haEntityModule.status === 'function') ? haEntityModule.status() : null
         }));
