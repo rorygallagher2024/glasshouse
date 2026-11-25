@@ -7,6 +7,11 @@ something is wrong, and Home Assistant and the TV's own browser fail quietly.
 
 ## On every pull request
 
+`test-playlist-assets.js` replaces local `.m3u` and `.m3u8` files with
+same-length content and checks that the asset route returns the new bytes
+and a new ETag. It covers query strings, `Cache-Control: no-cache`, a stale
+conditional request returning 200 and an unchanged one returning 304.
+
 `test-apphosts.js` checks old jail copies, launch resets, new jails and
 recreated `etc` directories, missed watches, atomic writes, symlink refusal,
 write failures, file modes and restoring marked copies when blocking ends.
