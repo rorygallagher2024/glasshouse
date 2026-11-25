@@ -2619,7 +2619,7 @@
  "home.group.search": {"text": "Поиск", "from": "Search"},
  "home.group.motion": {"text": "Анимация", "from": "Animations"},
  "home.motion.drift": {"text": "Движение обоев", "from": "Wallpaper drift"},
- "home.motion.driftDesc": {"text": "Обои очень медленно движутся и приближаются, чтобы никогда не стоять на экране неподвижно.", "from": "The wallpaper moves and zooms very slowly, so it never sits still on the screen."},
+ "home.motion.driftDesc": {"text": "Обои очень медленно сдвигаются в сторону, чтобы никогда не стоять на экране неподвижно.", "from": "The wallpaper shifts sideways very slowly, so it never sits still on the screen."},
  "home.motion.crossfade": {"text": "Плавная смена обоев", "from": "Wallpaper cross-fade"},
  "home.motion.crossfadeDesc": {"text": "Изображение плавно переходит в следующее при смене времени суток, а не меняется сразу.", "from": "The picture fades into the next when the part of the day changes, rather than switching at once."},
  "home.motion.scroll": {"text": "Плавная прокрутка", "from": "Smooth scrolling"},

@@ -802,7 +802,7 @@
  "home.motion.crossfade": {"from": "Wallpaper cross-fade", "text": "Övertoning av bakgrundsbild"},
  "home.motion.crossfadeDesc": {"from": "The picture fades into the next when the part of the day changes, rather than switching at once.", "text": "Bilden tonar över i nästa när tiden på dygnet ändras, i stället för att byta direkt."},
  "home.motion.drift": {"from": "Wallpaper drift", "text": "Bakgrundsbildsdrift"},
- "home.motion.driftDesc": {"from": "The wallpaper moves and zooms very slowly, so it never sits still on the screen.", "text": "Bakgrundsbilden rör sig och zoomar mycket långsamt, så att den aldrig står still på skärmen."},
+ "home.motion.driftDesc": {"text": "Bakgrundsbilden förskjuts i sidled mycket långsamt, så att den aldrig står still på skärmen.", "from": "The wallpaper shifts sideways very slowly, so it never sits still on the screen."},
  "home.motion.scroll": {"from": "Smooth scrolling", "text": "Mjuk scrollning"},
  "home.motion.scrollDesc": {"from": "A row glides to the chosen tile, rather than jumping to it.", "text": "En rad glider till den valda rutan i stället för att hoppa dit."},
  "home.motion.slide": {"from": "Sliding panels", "text": "Glidande paneler"},

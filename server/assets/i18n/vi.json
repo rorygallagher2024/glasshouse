@@ -802,7 +802,7 @@
  "home.motion.crossfade": {"text": "Chuyển mờ hình nền", "from": "Wallpaper cross-fade"},
  "home.motion.crossfadeDesc": {"text": "Ảnh nền chuyển mờ dần sang ảnh tiếp theo khi thời điểm trong ngày thay đổi, thay vì chuyển đột ngột.", "from": "The picture fades into the next when the part of the day changes, rather than switching at once."},
  "home.motion.drift": {"text": "Hình nền trôi nhẹ", "from": "Wallpaper drift"},
- "home.motion.driftDesc": {"text": "Hình nền di chuyển và thu phóng rất chậm để không bao giờ đứng yên trên màn hình.", "from": "The wallpaper moves and zooms very slowly, so it never sits still on the screen."},
+ "home.motion.driftDesc": {"text": "Hình nền dịch chuyển sang ngang rất chậm để không bao giờ đứng yên trên màn hình.", "from": "The wallpaper shifts sideways very slowly, so it never sits still on the screen."},
  "home.motion.scroll": {"text": "Cuộn mượt", "from": "Smooth scrolling"},
  "home.motion.scrollDesc": {"text": "Hàng sẽ trượt mượt mà đến ô được chọn thay vì nhảy thẳng tới.", "from": "A row glides to the chosen tile, rather than jumping to it."},
  "home.motion.slide": {"text": "Bảng trượt", "from": "Sliding panels"},
