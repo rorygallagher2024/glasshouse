@@ -32,7 +32,7 @@ body{font-family:'Manrope',sans-serif;color:#ece7df;-webkit-font-smoothing:antia
 #anim.on{display:block}
 #wall .layer{position:absolute;left:-3%;top:-3%;right:-3%;bottom:-3%;background-position:center;background-size:cover;
   background-repeat:no-repeat;opacity:0;-webkit-transition:opacity 2.4s ease;transition:opacity 2.4s ease;
-  -webkit-animation:drift 180s steps(24) infinite alternate;animation:drift 180s steps(24) infinite alternate}
+  -webkit-animation:drift infinite alternate;animation:drift infinite alternate}
 /* The video is never drawn at partial opacity: on webOS 4 it is a hardware
    plane under the page, seen through a hole the <video> punches, and a hole
    at 70% showed nothing at all (a B8, webOS 4.4.3). It is dimmed and faded
@@ -50,9 +50,7 @@ body{font-family:'Manrope',sans-serif;color:#ece7df;-webkit-font-smoothing:antia
    uncovered rather than coming in over a black screen a beat later; paused, it
    is not drawn again. */
 html.resting #wall .layer{-webkit-animation-play-state:paused;animation-play-state:paused}
-/* Whole-pixel steps fit inside the 3% overscan without rescaling the picture. */
-@-webkit-keyframes drift{from{-webkit-transform:translate3d(0,0,0)}to{-webkit-transform:translate3d(-48px,-24px,0)}}
-@keyframes drift{from{transform:translate3d(0,0,0)}to{transform:translate3d(-48px,-24px,0)}}
+
 #scrim{position:absolute;left:0;top:0;right:0;bottom:0;
   background:radial-gradient(ellipse 34% 30% at 92% 14%,rgba(0,0,0,.55),rgba(0,0,0,0)),
     linear-gradient(90deg,rgba(0,0,0,.72) 0%,rgba(0,0,0,.35) 38%,rgba(0,0,0,0) 70%),
@@ -758,6 +756,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
 /* Outfit lacks Vietnamese horn and stacked-tone glyphs; use Manrope for text headings in Vietnamese. */
 html[lang="vi"] #srcTitle,html[lang="vi"] #plMode,html[lang="vi"] #pvMode,html[lang="vi"] #pvNameTitle,html[lang="vi"] .dev .nm,html[lang="vi"] #recents h2,html[lang="vi"] #recents .empty b,html[lang="vi"] #folder h2,html[lang="vi"] #fault h1,html[lang="vi"] #query,html[lang="vi"] .hit .ttl,html[lang="vi"] .tv .gname,html[lang="vi"] #bdName,html[lang="vi"] #pmsg b,html[lang="vi"] #clGroup,html[lang="vi"] #adder h2,html[lang="vi"] #adQuery{font-family:'Manrope',sans-serif}
 </style>
+<style id="wallDrift"></style>
 </head>
 <body>
 <div id="stage" class="no-search no-clock">
@@ -1040,6 +1039,18 @@ html[lang="vi"] #srcTitle,html[lang="vi"] #plMode,html[lang="vi"] #pvMode,html[l
     stageScale = s;
     var x = (window.innerWidth - 1920 * s) / 2, y = (window.innerHeight - 1080 * s) / 2;
     st.style.webkitTransform = st.style.transform = 'translate(' + x + 'px,' + y + 'px) scale(' + s + ')';
+    // A step is one device pixel after stage scaling and pixel density. Keep
+    // the travel inside the 3% overscan even in a small browser window.
+    var pixels = s * (window.devicePixelRatio || 1);
+    var steps = Math.min(48, Math.floor((1920 * .03 - 1) * pixels));
+    var shift = 'translate3d(' + (steps ? -steps / pixels : 0) + 'px,0,0)';
+    var duration = 'animation-duration:' + (steps || 1) * 3.75 + 's;';
+    var easing = 'animation-timing-function:steps(' + (steps || 1) + ');';
+    var sheet = $('wallDrift');
+    var css = '#wall .layer{-webkit-' + duration + duration + '-webkit-' + easing + easing + '}' +
+      '@-webkit-keyframes drift{from{-webkit-transform:translate3d(0,0,0)}to{-webkit-transform:' + shift + '}}' +
+      '@keyframes drift{from{transform:translate3d(0,0,0)}to{transform:' + shift + '}}';
+    if (sheet.textContent !== css) sheet.textContent = css;
   }
 
   // ---------------------------------------------------------------- items
