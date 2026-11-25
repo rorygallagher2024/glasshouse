@@ -21,8 +21,10 @@ const KEY_TABLE_TV = 'an OLED48C56LB (webOS 10.3.0)';
 
 function render() {
   const rk = require('../server/lib/remotekeys');
+  const remotes = require('../server/lib/remotes');
   const table = rk.readKeyTable(KEY_TABLE);
   const reported = rk.reportedButtons();
+  const catalogue = remotes.all();
   const lines = [];
   const w = s => lines.push(s);
   const none = '–';
@@ -55,16 +57,20 @@ function render() {
   w('  not made for webOS, that another firmware could give another button.');
   w('* **webOS 11:** where LG\'s native handling has the key, through what the webOS 11 column names.');
   w('');
+  w('The **Remotes** column lists the [remote catalogue](remotes.md) entries known to have the key, by their id; "' +
+    none + '" is none of them, which does not mean the key does not exist, only that the catalogue has not found it on a listed remote yet.');
+  w('');
   w('## The keys');
   w('');
   w('LG\'s codes and the Qt keys are as read on ' + KEY_TABLE_TV + '. "' + none + '" is not known, or does not apply.');
   w('');
-  w('| Remote tab key | LG button | LG code (Linux) | Qt key | webOS 10 filter | webOS 11 | Logged as | Home Assistant |');
-  w('| :------------- | :-------- | --------------: | :----- | :-------------- | :------- | :-------- | :------------- |');
+  w('| Remote tab key | LG button | LG code (Linux) | Qt key | webOS 10 filter | webOS 11 | Logged as | Home Assistant | Remotes |');
+  w('| :------------- | :-------- | --------------: | :----- | :-------------- | :------- | :-------- | :------------- | :------ |');
   rk.KEYS.forEach(k => {
     const entry = k.lg ? table[k.lg] : null;
     const filter = k.nativeOnly || k.nativeMapping ? none : k.keyTable ? 'yes, checked'
       : k.fromPlugin ? 'yes, or where the WebOS module defines it' : 'yes';
+    const haveIt = catalogue.filter(r => remotes.hasKey(r, k.key));
     w('| ' + [
       k.title + ' (`' + k.key + '`)',
       code(k.lg),
@@ -73,7 +79,8 @@ function render() {
       filter,
       rk.nativeKind(k) || none,
       code(k.log),
-      reported.indexOf(k.key) !== -1 ? 'yes' : none
+      reported.indexOf(k.key) !== -1 ? 'yes' : none,
+      haveIt.length ? haveIt.map(r => r.id).join(', ') : none
     ].join(' | ') + ' |');
   });
   w('');
