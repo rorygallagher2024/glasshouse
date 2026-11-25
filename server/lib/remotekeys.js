@@ -2121,10 +2121,12 @@ function describeKeys(keys, inChain, cb, native) {
       });
       withDetectedRemotes(function (found) {
         var choice = readRemoteSelection();
+        var keyNames = out.map(function (k) { return k.key; });
+        var autoOff = remotes.keysOffRemotes(found.auto, keyNames);
         // The remotes in use; all buttons is no remote, which folds nothing.
         var selected = choice.mode === 'all' ? [] : found.auto;
         // Keys on none of those, folded unless changed (the page decides); only where every one is known.
-        var off = remotes.keysOffRemotes(selected, out.map(function (k) { return k.key; }));
+        var off = choice.mode === 'all' ? [] : autoOff;
         out.forEach(function (k) { if (off.indexOf(k.key) !== -1) k.offRemote = true; });
         // A key under the name the remote prints on it (the MR25GA's AI button is the microphone key), unless
         // another key already has that name (webOS 11 offers AI as a key of its own).
@@ -2141,6 +2143,7 @@ function describeKeys(keys, inChain, cb, native) {
           inChain: inChain,
           remotes: {
             mode: choice.mode,
+            canFold: autoOff.length > 0,
             folding: off.length > 0,
             // Why nothing is folded where it is not (for the page to say): 'none' no remote is known to be in use,
             // 'unknown' one is not in the catalogue, 'unfinished' one's list of buttons is not finished.
@@ -2151,7 +2154,7 @@ function describeKeys(keys, inChain, cb, native) {
               return { id: r.id, title: r.title, image: remotes.imageFile(r), numberKeys: typeof r.numberKeys === 'boolean' ? r.numberKeys : null };
             }),
             unknown: selected.filter(function (r) { return !r; }).length,
-            // What is in use, for the page to show beside the checkbox.
+            // What is in use, for the page to show beside the switch.
             detected: found.detected.map(function (d) {
               return { name: d.name, id: d.id, title: d.title, image: d.image, current: !!d.current };
             })

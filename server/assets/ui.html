@@ -1406,21 +1406,6 @@
 <section class="priv panel" id="remotepane" role="tabpanel" hidden>
   <div class="lbl" data-t="tab.remote">Remote</div>
 
-  <details class="pv-d" id="disc-remote" hidden>
-    <summary><span data-t="apps.remote">Your remote</span> <span class="cur" id="apps-remote-summary"></span></summary>
-    <div class="prot-table">
-      <div class="prot-row">
-        <div class="prot-main">
-          <div class="prot-title" data-t="apps.remote.only">Display only buttons for your remote</div>
-          <div class="prot-desc" data-t="apps.remote.desc">Folds buttons your remote does not have into Buttons on other remotes. Keys you have changed always stay visible.</div>
-          <div class="prot-desc" id="apps-remote-detected"></div>
-        </div>
-        <div class="prot-status"><button type="button" class="pill idle" id="btn_remote_only" onclick="toggleRemoteOnly()">&mdash;</button></div>
-      </div>
-    </div>
-    <div class="pv-note" id="apps-remote-why" hidden></div>
-  </details>
-
   <details class="pv-d" id="disc-quickaccess" open hidden>
     <summary><span data-t="apps.quickAccess">Quick Access</span> <span class="cur" id="apps-qa-summary"></span></summary>
     <div class="pv-sub" data-t="apps.quickAccess.desc">Holding a number key on the remote opens the app or input set for it.</div>
@@ -1430,6 +1415,16 @@
   <details class="pv-d" id="disc-remotekeys" open hidden>
     <summary><span data-t="apps.remoteKeys">Remote keys</span> <span class="cur" id="apps-rk-summary"></span></summary>
     <div class="pv-sub" data-t="apps.remoteKeys.desc">What a key on the remote does: as LG has it, nothing, or opening an app or input instead.</div>
+    <div class="prot-table" id="apps-remote-filter" hidden>
+      <div class="prot-row">
+        <div class="prot-main">
+          <div class="prot-title" data-t="apps.remote.only">Display only buttons for your remote</div>
+          <div class="prot-desc" data-t="apps.remote.desc">Folds buttons your remote does not have into Buttons on other remotes. Keys you have changed always stay visible.</div>
+          <div class="prot-desc" id="apps-remote-detected"></div>
+        </div>
+        <div class="prot-status"><button type="button" class="pill idle" id="btn_remote_only" onclick="toggleRemoteOnly()">&mdash;</button></div>
+      </div>
+    </div>
     <div id="apps-rk-list"></div>
   </details>
 </section>

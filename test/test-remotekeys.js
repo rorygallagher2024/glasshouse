@@ -1350,6 +1350,7 @@ step(function (next) {
     var off = r.keys.filter(function (k) { return k.offRemote; }).map(function (k) { return k.key; });
     assert.ok(off.length > 0 && off.indexOf('netflix') === -1 && off.indexOf('amazon') === -1, 'keys the remote lacks are marked, its own are not');
     assert.ok(off.indexOf('red') !== -1);
+    assert.strictEqual(r.remotes.canFold, true);
     assert.strictEqual(r.remotes.folding, true);
     assert.deepEqual(r.remotes.selected, [{ id: 'A', title: 'Remote A', image: 'generic.png', numberKeys: null }], 'not known: null');
     assert.strictEqual(r.remotes.unknown, 0);
@@ -1363,16 +1364,19 @@ step(function (next) {
         selected = [known, null];
         rk.getRemoteKeys(guard(function (withUnknown) {
           assert.ok(!withUnknown.keys.some(function (k) { return k.offRemote; }), 'an unknown remote in use folds nothing');
+          assert.strictEqual(withUnknown.remotes.canFold, false);
           assert.strictEqual(withUnknown.remotes.folding, false);
           assert.strictEqual(withUnknown.remotes.unknown, 1);
           assert.strictEqual(withUnknown.remotes.why, 'unknown', 'says why: a remote not in the catalogue');
           selected = [{ id: 'U', title: 'Unfinished', complete: false, keys: { netflix: 'measured' } }];
           rk.getRemoteKeys(guard(function (unfinished) {
             assert.ok(!unfinished.keys.some(function (k) { return k.offRemote; }), 'nor does an unfinished list');
+            assert.strictEqual(unfinished.remotes.canFold, false);
             assert.strictEqual(unfinished.remotes.why, 'unfinished', 'says why: a list not finished');
             selected = [];
             rk.getRemoteKeys(guard(function (none) {
               assert.ok(!none.keys.some(function (k) { return k.offRemote; }), 'nor does no remote');
+              assert.strictEqual(none.remotes.canFold, false);
               assert.strictEqual(none.remotes.why, 'none', 'says why: no remote known');
               rk.init({ luna: luna, inputNames: {}, stateDir: stateDir, filtersDir: filtersDir, detectRemotes: function () { throw new Error('lookup failed'); } });
               rk.getRemoteKeys(guard(function (failed) {
@@ -1398,6 +1402,7 @@ step(function (next) {
   var file = path.join(stateDir, 'remotekeys.json');
   rk.getRemoteKeys(guard(function (r) {
     assert.strictEqual(r.remotes.mode, 'auto');
+    assert.strictEqual(r.remotes.canFold, true);
     assert.strictEqual(r.remotes.folding, true, 'automatic follows what is in use');
     assert.deepEqual(r.remotes.detected, detected, 'what was detected, for the page to say');
     rk.setRemoteSelection('all', guard(function (a) {
@@ -1405,6 +1410,7 @@ step(function (next) {
       assert.ok(fs.existsSync(file), 'kept with the keys');
       rk.getRemoteKeys(guard(function (all) {
         assert.strictEqual(all.remotes.mode, 'all');
+        assert.strictEqual(all.remotes.canFold, true, 'the switch stays offered while folding is turned off');
         assert.strictEqual(all.remotes.folding, false, 'all buttons folds nothing');
         assert.ok(!all.keys.some(function (k) { return k.offRemote; }));
         // Refused: no such mode

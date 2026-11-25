@@ -4415,6 +4415,7 @@ async function visitRemoteFolding(browser, base, problems) {
       brightnessBarStyle: 'lg',
       remotes: state.known ? {
         mode: state.mode,
+        canFold: true,
         folding: off,
         why: '',
         selected: state.mode === 'auto' ? [mr25] : [],
@@ -4422,6 +4423,7 @@ async function visitRemoteFolding(browser, base, problems) {
         detected: [{ name: 'LGE MR25GA', id: 'MR25GA', title: 'Magic Remote MR25GA', image: 'generic.png', current: true }]
       } : {
         mode: state.mode,
+        canFold: false,
         folding: false,
         why: state.mode === 'auto' ? 'unknown' : '',
         selected: [],
@@ -4450,12 +4452,14 @@ async function visitRemoteFolding(browser, base, problems) {
     });
 
     await page.goto(base + '/?tab=remote');
-    const disc = page.locator('#disc-remote');
+    const filter = page.locator('#apps-remote-filter');
     const toggle = page.locator('#btn_remote_only');
-    await disc.waitFor();
-    if (!await disc.evaluate(el => el.open)) fail('Your remote did not open when folding applies');
+    await filter.waitFor();
     if (!await toggle.evaluate(el => el.classList.contains('good')) || (await toggle.textContent()).trim() !== 'On') {
       fail('toggle did not render as active On pill');
+    }
+    if (!/Detected: Magic Remote MR25GA/.test(await page.locator('#apps-remote-detected').textContent())) {
+      fail('detected remote name was not shown under the switch');
     }
     const otherGroup = page.locator('#apps-rk-list .rk-more summary', { hasText: 'Buttons on other remotes (1)' });
     await otherGroup.waitFor();
@@ -4464,17 +4468,20 @@ async function visitRemoteFolding(browser, base, problems) {
     if (JSON.stringify(writes[writes.length - 1]) !== JSON.stringify({ remotes: { mode: 'all' } })) {
       fail('clicking toggle did not save mode all');
     }
+    if (!await filter.isVisible()) fail('folding switch disappeared when turned off');
+    if (!/Magic Remote MR25GA/.test(await page.locator('#apps-remote-detected').textContent())) {
+      fail('detected remote name disappeared when folding was turned off');
+    }
     if (await otherGroup.count()) fail('Buttons on other remotes stayed folded after switching off');
     if (!await page.locator('#apps-rk-list .rk-key[data-key="red"]').isVisible()) fail('Red key did not unfold without a reload');
 
     state.mode = 'auto';
     state.known = false;
     await page.goto(base + '/?tab=remote');
-    await disc.waitFor();
-    if (await disc.evaluate(el => el.open)) fail('Your remote opened when an unlisted remote cannot fold');
-    if (!/LGE MR22GN/.test(await page.locator('#apps-remote-summary').textContent())) {
-      fail('summary did not show the detected unlisted remote name');
-    }
+    await page.locator('#apps-rk-list .rk-key[data-key="netflix"]').waitFor();
+    if (await filter.isVisible()) fail('folding switch was shown for an unlisted remote');
+    if (await otherGroup.count()) fail('Buttons on other remotes was shown for an unlisted remote');
+    if (!await page.locator('#apps-rk-list .rk-key[data-key="red"]').isVisible()) fail('Red key was not shown for an unlisted remote');
   } catch (e) {
     fail(e.message);
   } finally {
