@@ -8,27 +8,29 @@
  *   node scripts/gen-remote-keys-doc.js           write the page
  *   node scripts/gen-remote-keys-doc.js --check   exit 1 where the page is out of date
  *
- * test/test-remote-keys-doc.js runs the check with the tests.
+ * test/test-remote-keys-doc.js requires this file directly and runs under
+ * node 0.10 and 0.12 in CI, so it is strict ES5 like the server, even though
+ * nothing here ever runs on a TV.
  */
 'use strict';
-const fs = require('fs');
-const path = require('path');
+var fs = require('fs');
+var path = require('path');
 
-const ROOT = path.join(__dirname, '..');
-const OUT = path.join(ROOT, 'docs', 'remote-keys.md');
-const KEY_TABLE = path.join(ROOT, 'test', 'fixtures', 'lg-keytable-oled48c56lb-webos10.txt');
-const KEY_TABLE_TV = 'an OLED48C56LB (webOS 10.3.0)';
+var ROOT = path.join(__dirname, '..');
+var OUT = path.join(ROOT, 'docs', 'remote-keys.md');
+var KEY_TABLE = path.join(ROOT, 'test', 'fixtures', 'lg-keytable-oled48c56lb-webos10.txt');
+var KEY_TABLE_TV = 'an OLED48C56LB (webOS 10.3.0)';
 
 function render() {
-  const rk = require('../server/lib/remotekeys');
-  const remotes = require('../server/lib/remotes');
-  const table = rk.readKeyTable(KEY_TABLE);
-  const reported = rk.reportedButtons();
-  const catalogue = remotes.all();
-  const lines = [];
-  const w = s => lines.push(s);
-  const none = '–';
-  const code = s => s ? '`' + s + '`' : none;
+  var rk = require('../server/lib/remotekeys');
+  var remotes = require('../server/lib/remotes');
+  var table = rk.readKeyTable(KEY_TABLE);
+  var reported = rk.reportedButtons();
+  var catalogue = remotes.all();
+  var lines = [];
+  var w = function (s) { lines.push(s); };
+  var none = '–';
+  var code = function (s) { return s ? '`' + s + '`' : none; };
 
   w('# Remote keys');
   w('');
@@ -66,11 +68,11 @@ function render() {
   w('');
   w('| Remote tab key | LG button | LG code (Linux) | Qt key | webOS 10 filter | webOS 11 | Logged as | Home Assistant | Remotes |');
   w('| :------------- | :-------- | --------------: | :----- | :-------------- | :------- | :-------- | :------------- | :------ |');
-  rk.KEYS.forEach(k => {
-    const entry = k.lg ? table[k.lg] : null;
-    const filter = k.nativeOnly || k.nativeMapping ? none : k.keyTable ? 'yes, checked'
+  rk.KEYS.forEach(function (k) {
+    var entry = k.lg ? table[k.lg] : null;
+    var filter = k.nativeOnly || k.nativeMapping ? none : k.keyTable ? 'yes, checked'
       : k.fromPlugin ? 'yes, or where the WebOS module defines it' : 'yes';
-    const haveIt = catalogue.filter(r => remotes.hasKey(r, k.key));
+    var haveIt = catalogue.filter(function (r) { return remotes.hasKey(r, k.key); });
     w('| ' + [
       k.title + ' (`' + k.key + '`)',
       code(k.lg),
@@ -80,7 +82,7 @@ function render() {
       rk.nativeKind(k) || none,
       code(k.log),
       reported.indexOf(k.key) !== -1 ? 'yes' : none,
-      haveIt.length ? haveIt.map(r => r.id).join(', ') : none
+      haveIt.length ? haveIt.map(function (r) { return r.id; }).join(', ') : none
     ].join(' | ') + ' |');
   });
   w('');
@@ -97,9 +99,9 @@ function render() {
 }
 
 if (require.main === module) {
-  const text = render();
-  if (process.argv.includes('--check')) {
-    const now = fs.existsSync(OUT) ? fs.readFileSync(OUT, 'utf8') : '';
+  var text = render();
+  if (process.argv.indexOf('--check') !== -1) {
+    var now = fs.existsSync(OUT) ? fs.readFileSync(OUT, 'utf8') : '';
     if (now !== text) {
       console.error('docs/remote-keys.md is out of date: run node scripts/gen-remote-keys-doc.js');
       process.exit(1);
@@ -111,4 +113,4 @@ if (require.main === module) {
   }
 }
 
-module.exports = { render, OUT, KEY_TABLE };
+module.exports = { render: render, OUT: OUT, KEY_TABLE: KEY_TABLE };
