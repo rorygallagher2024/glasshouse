@@ -1980,6 +1980,22 @@ opened; with the entry as LG has it, the same press opened LG Channels five time
 out of five. LG did not write the list back while the screen was off or when it
 woke.
 
+## Drawing in the compositor from a key filter (C5, webOS 10.3.0)
+
+A JavaScript key filter is loaded by `controllers/base/StarfishKeyFilterLoader.qml`
+into `StarfishKeyFilterShell.js` with `Qt.include`, and is handed only wrapper
+objects (`volume`, `overlayView` and the rest hold selected properties and bound
+functions, never a view). The compositor's views are still reachable by name:
+`views` is a property of the `StarfishKeyFilter.qml` item, the loader is made in
+that file's context, and QML name lookup walks up to it. `views.starfishVolume`
+is LG's volume view (`StarfishVolumeView.qml`), made once with
+`StarfishViewsRoot.qml` and only shown and hidden; its `parent` is the layer the
+system UI views share. `Qt.createQmlObject(qml, views.starfishVolume.parent)`
+from the filter puts an item there, drawn over apps and video like the volume
+bar, with no app window or launch (no `NL_APP_LAUNCH_BEGIN` or `NL_VSC` in
+`/var/log/messages`). The item outlives the filter: configd handing the
+compositor a new chain destroys the loader, not what it made.
+
 ## Native key filters (C5, webOS 11.2.0)
 
 - **No JavaScript filters.** `surface-manager` runs on Weston
