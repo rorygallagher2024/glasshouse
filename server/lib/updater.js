@@ -131,6 +131,7 @@ function updateSummary() {
     error: UPDATE.error,
     client: fetch.client(),
     autoCheck: !!(config.update && config.update.check),
+    askOnTv: !!(config.update && config.update.askOnTv),
     rollbackTo: viaHomebrewChannel() ? null : rollbackVersion(),
     writable: config.allowControl,
     viaHomebrewChannel: viaHomebrewChannel(),

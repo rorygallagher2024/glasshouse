@@ -3878,5 +3878,13 @@
  "apps.running.summaryMb": {"text": "{n} apps · {mb} Mo", "from": "{n} apps · {mb} MB"},
  "apps.running.summaryOneMb": {"text": "1 app · {mb} Mo", "from": "1 app · {mb} MB"},
  "apps.running.title": {"text": "Applications en mémoire", "from": "Apps in memory"},
- "ha.verify.desc": {"text": "Désactivez cette option pour un certificat autosigné ou une adresse HTTPS jointe par IP locale.", "from": "Turn off for a self-signed certificate or an HTTPS address reached by LAN IP."}
+ "server.askOnTv": {"from": "Ask on the TV", "text": "Demander sur la TV"},
+ "server.askOnTv.desc": {"from": "When the daily check finds a new release, asks on the TV whether to install it, with Update now and Later, after the TV is next switched on. Each release is asked about until it is answered.", "text": "Quand la vérification quotidienne trouve une nouvelle version, demande sur la TV s'il faut l'installer, avec Mettre à jour et Plus tard, au prochain allumage de la TV. Chaque version est proposée jusqu'à ce qu'on réponde."},
+ "srv.updateAsk.title": {"from": "Glasshouse {version} is out", "text": "Glasshouse {version} est disponible"},
+ "srv.updateAsk.install": {"from": "Update now", "text": "Mettre à jour"},
+ "srv.updateAsk.later": {"from": "Later", "text": "Plus tard"},
+ "ha.verify.desc": {"text": "Désactivez cette option pour un certificat autosigné ou une adresse HTTPS jointe par IP locale.", "from": "Turn off for a self-signed certificate or an HTTPS address reached by LAN IP."},
+ "srv.updateAsk.installing": {"from": "Updating Glasshouse to {version}. It restarts when done.", "text": "Mise à jour de Glasshouse vers {version}. Il redémarre une fois terminé."},
+ "srv.updateAsk.failed": {"from": "Glasshouse could not update: {error}", "text": "Glasshouse n'a pas pu être mis à jour : {error}"},
+ "srv.updateAsk.noReason": {"from": "no reason given", "text": "aucune raison donnée"}
 }

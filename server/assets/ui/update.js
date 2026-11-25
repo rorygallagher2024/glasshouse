@@ -67,6 +67,16 @@ function renderUpdate(d) {
     disabled: !d.writable
   });
 
+  if (typeof d.askOnTv === 'boolean') {
+    updateToggle('upd-asktv', {
+      cls: d.askOnTv ? 'good' : 'idle',
+      label: d.askOnTv ? t('common.on', 'On') : t('common.off', 'Off'),
+      on: d.askOnTv,
+      // It asks about what the daily check finds.
+      disabled: !d.writable || !d.autoCheck
+    });
+  }
+
   // Answers from actions that predate the setting leave it as it was.
   if (typeof d.tvUpdatesBlocked === 'boolean') {
     updateToggle('upd-tvblock', {
@@ -484,6 +494,13 @@ async function toggleAutoCheck() {
   const b = q('upd-auto');
   b.disabled = true;
   const r = await sendCommand('updateAutoCheck', !b.dataset.on);
+  if (r && r.ok) renderUpdate(r); else loadUpdate();
+}
+
+async function toggleAskOnTv() {
+  const b = q('upd-asktv');
+  b.disabled = true;
+  const r = await sendCommand('updateAskOnTv', !b.dataset.on);
   if (r && r.ok) renderUpdate(r); else loadUpdate();
 }
 

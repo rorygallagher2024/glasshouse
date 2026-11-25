@@ -3878,5 +3878,13 @@
  "apps.running.summaryMb": {"text": "{n} تطبيقات · {mb} ميغابايت", "from": "{n} apps · {mb} MB"},
  "apps.running.summaryOneMb": {"text": "تطبيق واحد · {mb} ميغابايت", "from": "1 app · {mb} MB"},
  "apps.running.title": {"text": "التطبيقات في الذاكرة", "from": "Apps in memory"},
- "ha.verify.desc": {"text": "أوقف هذا الخيار لشهادة موقعة ذاتياً أو عنوان HTTPS يُوصل إليه عبر عنوان IP محلي.", "from": "Turn off for a self-signed certificate or an HTTPS address reached by LAN IP."}
+ "server.askOnTv": {"from": "Ask on the TV", "text": "السؤال على التلفاز"},
+ "server.askOnTv.desc": {"from": "When the daily check finds a new release, asks on the TV whether to install it, with Update now and Later, after the TV is next switched on. Each release is asked about until it is answered.", "text": "عندما يجد الفحص اليومي إصدارًا جديدًا، يسأل على التلفاز عن تثبيته، مع «تحديث الآن» و«لاحقًا»، بعد تشغيل التلفاز في المرة التالية. يُسأل عن كل إصدار حتى تتم الإجابة."},
+ "srv.updateAsk.title": {"from": "Glasshouse {version} is out", "text": "صدر Glasshouse {version}"},
+ "srv.updateAsk.install": {"from": "Update now", "text": "تحديث الآن"},
+ "srv.updateAsk.later": {"from": "Later", "text": "لاحقًا"},
+ "ha.verify.desc": {"text": "أوقف هذا الخيار لشهادة موقعة ذاتياً أو عنوان HTTPS يُوصل إليه عبر عنوان IP محلي.", "from": "Turn off for a self-signed certificate or an HTTPS address reached by LAN IP."},
+ "srv.updateAsk.installing": {"from": "Updating Glasshouse to {version}. It restarts when done.", "text": "جارٍ تحديث Glasshouse إلى {version}. سيُعاد تشغيله عند الانتهاء."},
+ "srv.updateAsk.failed": {"from": "Glasshouse could not update: {error}", "text": "تعذّر تحديث Glasshouse: {error}"},
+ "srv.updateAsk.noReason": {"from": "no reason given", "text": "لم يُذكر سبب"}
 }

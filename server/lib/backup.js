@@ -61,7 +61,7 @@ var GLASSHOUSE = {
   backup: { daily: isBool },
   screenTime: screentime.VALID,
   prometheus: { enabled: isBool },
-  update: { check: isBool }
+  update: { check: isBool, askOnTv: isBool }
 };
 
 /** @type {typeof import('./lgsettings')} */

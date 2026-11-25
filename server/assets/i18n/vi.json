@@ -3894,5 +3894,13 @@
  "apps.running.summaryMb": {"text": "{n} ứng dụng · {mb} MB", "from": "{n} apps · {mb} MB"},
  "apps.running.summaryOneMb": {"text": "1 ứng dụng · {mb} MB", "from": "1 app · {mb} MB"},
  "apps.running.title": {"text": "Ứng dụng trong bộ nhớ", "from": "Apps in memory"},
- "ha.verify.desc": {"text": "Tắt tùy chọn này đối với chứng chỉ tự ký hoặc địa chỉ HTTPS truy cập bằng IP mạng nội bộ.", "from": "Turn off for a self-signed certificate or an HTTPS address reached by LAN IP."}
+ "server.askOnTv": {"from": "Ask on the TV", "text": "Hỏi trên TV"},
+ "server.askOnTv.desc": {"from": "When the daily check finds a new release, asks on the TV whether to install it, with Update now and Later, after the TV is next switched on. Each release is asked about until it is answered.", "text": "Khi lần kiểm tra hằng ngày tìm thấy phiên bản mới, TV sẽ hỏi có cài không, với Cập nhật ngay và Để sau, sau lần bật TV tiếp theo. Mỗi phiên bản được hỏi cho đến khi có câu trả lời."},
+ "srv.updateAsk.title": {"from": "Glasshouse {version} is out", "text": "Đã có Glasshouse {version}"},
+ "srv.updateAsk.install": {"from": "Update now", "text": "Cập nhật ngay"},
+ "srv.updateAsk.later": {"from": "Later", "text": "Để sau"},
+ "ha.verify.desc": {"text": "Tắt tùy chọn này đối với chứng chỉ tự ký hoặc địa chỉ HTTPS truy cập bằng IP mạng nội bộ.", "from": "Turn off for a self-signed certificate or an HTTPS address reached by LAN IP."},
+ "srv.updateAsk.installing": {"from": "Updating Glasshouse to {version}. It restarts when done.", "text": "Đang cập nhật Glasshouse lên {version}. Glasshouse sẽ khởi động lại khi xong."},
+ "srv.updateAsk.failed": {"from": "Glasshouse could not update: {error}", "text": "Không thể cập nhật Glasshouse: {error}"},
+ "srv.updateAsk.noReason": {"from": "no reason given", "text": "không có lý do"}
 }
