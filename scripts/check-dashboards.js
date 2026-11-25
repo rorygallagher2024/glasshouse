@@ -4401,13 +4401,16 @@ async function visitRemoteFolding(browser, base, problems) {
   const writes = [];
   const mr25 = { id: 'MR25GA', title: 'Magic Remote MR25GA', image: 'generic.png', numberKeys: false };
   const payload = () => {
-    const off = state.known && state.mode === 'auto';
+    // Dead on the remote in use whenever it is known, folding (auto) or not (all); only
+    // the toggle's own state (folding) decides whether the page hides it or sets it apart.
+    const markedOff = state.known;
+    const folding = state.known && state.mode === 'auto';
     return {
       ok: true,
       supported: true,
       keys: [
         { key: 'netflix', title: 'Netflix', action: 'lg' },
-        { key: 'red', title: 'Red', action: 'lg', offRemote: off }
+        { key: 'red', title: 'Red', action: 'lg', offRemote: markedOff }
       ],
       choices: [],
       brightnessStep: 10,
@@ -4416,7 +4419,7 @@ async function visitRemoteFolding(browser, base, problems) {
       remotes: state.known ? {
         mode: state.mode,
         canFold: true,
-        folding: off,
+        folding: folding,
         why: '',
         selected: state.mode === 'auto' ? [mr25] : [],
         unknown: 0,
@@ -4462,7 +4465,10 @@ async function visitRemoteFolding(browser, base, problems) {
       fail('detected remote name was not shown under the switch');
     }
     const otherGroup = page.locator('#apps-rk-list .rk-more summary', { hasText: 'Buttons on other remotes (1)' });
-    await otherGroup.waitFor();
+    const redKey = page.locator('#apps-rk-list .rk-key[data-key="red"]');
+    // Dead on the remote in use while folding: left off the page entirely, not shown folded.
+    if (await otherGroup.count()) fail('Buttons on other remotes was shown while folding');
+    if (await redKey.count()) fail('a key dead on the remote in use was shown while folding');
     await toggle.click();
     await page.waitForFunction(() => document.getElementById('btn_remote_only').classList.contains('idle'));
     if (JSON.stringify(writes[writes.length - 1]) !== JSON.stringify({ remotes: { mode: 'all' } })) {
@@ -4472,8 +4478,9 @@ async function visitRemoteFolding(browser, base, problems) {
     if (!/Magic Remote MR25GA/.test(await page.locator('#apps-remote-detected').textContent())) {
       fail('detected remote name disappeared when folding was turned off');
     }
-    if (await otherGroup.count()) fail('Buttons on other remotes stayed folded after switching off');
-    if (!await page.locator('#apps-rk-list .rk-key[data-key="red"]').isVisible()) fail('Red key did not unfold without a reload');
+    await otherGroup.waitFor();
+    await otherGroup.click();
+    if (!await redKey.isVisible()) fail('Red key did not show under Buttons on other remotes with folding off');
 
     state.mode = 'auto';
     state.known = false;

@@ -7,6 +7,7 @@ The LG remotes Glasshouse knows, with the Remote tab keys each is known to have.
 | Remote | Year | Reported by the TV as | Keys known | List complete |
 | :----- | :--- | :-------------------- | ---------: | :------------ |
 | [Magic Remote MR25GA](#mr25ga) | not known | `LGE MR25GA` | 14 | yes |
+| [Magic Remote MR23](#mr23) | not known | `LGE MR23` | 17 | yes |
 
 How sure each fact is:
 
@@ -46,6 +47,40 @@ Where this comes from:
 * OLED48C56LB, webOS 10.3.0, 22 November 2026: the TV reports the remote as LGE MR25GA in its Bluetooth device list, its pairing file and lginput2's press log; the remote's label says MR25GA
 * The AI key as its own key (ai) is from webOS 11's native mapping; on webOS 10 it arrives as the microphone key (voice), so the Remote tab names that key AI for this remote
 * No number keys, no red, green, yellow or blue keys, and no Info or Input key
+
+## Magic Remote MR23
+
+<a id="mr23"></a>
+
+Reported by the TV as `LGE MR23` (measured). Has number keys. The list of keys below is every button the remote has.
+
+| Remote tab key | Evidence |
+| :------------- | :------- |
+| Netflix (`netflix`) | measured |
+| Prime Video (`amazon`) | measured |
+| Disney+ (`disneyplus`) | measured |
+| LG Channels (`lgchannels`) | measured |
+| Rakuten TV (`rakutentv`) | measured |
+| Alexa (`alexa`) | measured |
+| Channel up (`channelup`) | measured |
+| Channel down (`channeldown`) | measured |
+| Guide (`guide`) | measured |
+| Microphone (`voice`) | measured |
+| AI (`ai`) | documented |
+| Input (`input`) | measured |
+| 123 button (`screenremote`), printed as … | measured |
+| Red (`red`) | measured |
+| Green (`green`) | assumed |
+| Yellow (`yellow`) | assumed |
+| Blue (`blue`) | assumed |
+
+Every Remote tab key the owner could identify was pressed and read from the log; green, yellow and blue were not pressed individually, assumed from Red and the owner's own account of the remote's layout.
+
+Where this comes from:
+
+* OLED48C31LA, webOS 11.2.0, 25 November 2026: the remote paired with the TV, reported by the TV as LGE MR23, read from lginput2's NL_BUTTON_CLICK and NL_NON_LIST_BUTTON_CLICK lines in /var/log/messages, pressed one at a time: Netflix (KEY_NETFLIX), Prime Video (KEY_AMAZON), Disney+ (KEY_DISNEY), LG Channels (KEY_LGCHANNELS), Rakuten TV (KEY_RAKUTEN), Alexa (KEY_ALEXAVOICE), channel up and down (KEY_CHANNELUP, KEY_CHANNELDOWN), Guide (KEY_GUIDE), the microphone (KEY_VOICE), Input (KEY_INPUT), the … button under which AD/SAP is printed (KEY_SCREEN_REMOTE), a number key (KEY_5) and Red (KEY_RED); also Home (KEY_HOME, not Home Hub), Back (KEY_PREVIOUS) and OK, which the Remote tab does not offer
+* The owner confirmed on 25 November 2026 that the remote has no Home Hub (house in a circle) button, no ? button, no Apps, Movies or Info key, and that green, yellow and blue are printed beside the measured Red key
+* As for the MR25GA: the microphone arrives as the AI key (ai) on webOS 11's native mapping, which does not depend on the remote's model, rather than the microphone key (voice) that lginput2 logs
 
 ## Adding a remote
 
