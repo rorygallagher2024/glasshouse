@@ -235,6 +235,7 @@ step('the QML draws the four looks and waits for every one of LG\'s pictures', f
   assert.ok(/property bool nativeLook: ready && volumeBar !== null/.test(qml), 'LG\'s pictures need LG\'s volume bar too');
   assert.ok(/style === "horizontal" \? "h" : style === "vertical" \? "v" : \(nativeLook \? "lg" : "lgdrawn"\)/.test(qml), 'the look is chosen by the style and by what loaded');
   assert.ok(/function show\(value, style\)/.test(qml));
+  assert.ok(/function giveWay\(done\)[\s\S]*?hold\.restart\(\)/.test(qml), 'giveWay keeps hold as a backstop if opened never arrives');
   assert.ok(!/\n\s*Image \{[^}]*visible: bar\.mode === "lgdrawn"/.test(qml), 'the drawn look uses no picture');
   done();
 });
