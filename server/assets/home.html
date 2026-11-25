@@ -3319,6 +3319,7 @@ html[lang="vi"] #srcTitle,html[lang="vi"] #plMode,html[lang="vi"] #pvMode,html[l
       (r.sections || []).forEach(function (sec) { bySection[sec.id] = sec; });
       tvLineup = { channels: r.channels || [], sections: r.sections || [], bySection: bySection, favourites: r.favourites || [] };
       tvLineupRev = r.revision;
+      openAskedGuide();
       if (data && data.iptvStatus && data.iptvStatus.lineupRevision !== tvLineupRev) loadLineup();
     });
   }
@@ -5501,13 +5502,14 @@ html[lang="vi"] #srcTitle,html[lang="vi"] #plMode,html[lang="vi"] #pvMode,html[l
     openPlayer(found);
   }
   function openAskedGuide() {
-    if (!guideAsked || !data || !layout) return;
+    // The guide is the whole lineup, as from its tile: with nothing starred the row is empty, and the lineup may still be on its way (loadLineup asks again).
+    if (!guideAsked || !data || !layout || !lineupItems().length) return;
     guideAsked = false;
     if (player.open) closePlayer();
     if (adder.open) closeAdder();
     // Asked for the guide: a search panel kept for a return from its app goes.
     if (finder.open) { closeSearch(); state.rail = false; }
-    if (!guide.open && data.iptv && data.iptv.length) {
+    if (!guide.open) {
       var ri = layout.rows.indexOf('iptv');
       if (ri !== -1) state.row = ri;
       openGuide(null);
