@@ -4278,6 +4278,13 @@ async function visitBrightnessKeySettings(browser, base, problems) {
     { key: 'red', title: 'Red', action: state.brightnessKey ? 'open' : 'lg', id: state.brightnessKey ? 'action:brightnessUp' : '', opens: state.brightnessKey ? 'Brightness up' : '' },
     { key: 'green', title: 'Green', action: 'lg' }
   ];
+  const choicesNow = () => [
+    { id: 'action:brightnessUp', title: 'Brightness up', kind: 'action' }
+  ];
+  const remoteKeysPayload = () => ({
+    ok: true, supported: true, keys: keysNow(), choices: choicesNow(),
+    brightnessStep: state.step, brightnessBar: state.bar, brightnessBarStyle: state.style
+  });
   try {
     await page.route('**/api/remote/available', route => route.fulfill({ json: { ok: true, available: true } }));
     await page.route('**/api/apps', async route => {
@@ -4286,15 +4293,15 @@ async function visitBrightnessKeySettings(browser, base, problems) {
         const apps = await (await route.fetch()).json();
         apps.writable = true;
         apps.quickAccess = null;
-        apps.remoteKeys = { ok: true, supported: true, keys: keysNow(), choices: [],
-          brightnessStep: state.step, brightnessBar: state.bar, brightnessBarStyle: state.style };
+        apps.remoteKeys = remoteKeysPayload();
         await route.fulfill({ json: apps });
       } catch (e) { /* closed */ }
     });
     await page.route('**/api/remotekeys', async route => {
-      if (route.request().method() !== 'POST') return route.continue();
+      if (route.request().method() !== 'POST') return route.fulfill({ json: remoteKeysPayload() });
       const set = route.request().postDataJSON();
       writes.push(set);
+      if (set.key === 'red') state.brightnessKey = set.action === 'open' && set.id === 'action:brightnessUp';
       if (set.brightnessBarStyle !== undefined) state.style = set.brightnessBarStyle;
       if (set.brightnessStep !== undefined) state.step = set.brightnessStep;
       await route.fulfill({ json: { ok: true } });
@@ -4311,13 +4318,33 @@ async function visitBrightnessKeySettings(browser, base, problems) {
     await open();
     if (await heading.count() || await stepSel.count() || await styleSel.count()) fail('the section shows with no key set to Brightness');
 
-    // A key set to it: the section, its heading first, then the step and the style.
-    state.brightnessKey = true;
+    // Setting a key updates the tile and reveals the section without a reload.
+    await page.locator('#apps-rk-list .rk-key[data-key="red"]').click();
+    await page.locator('#apps-rk-list .rk-pick [data-value="action:brightnessUp"]').click();
+    await heading.waitFor();
+    if (!await page.locator('#apps-rk-list .rk-key[data-key="red"] .rk-does', { hasText: 'Brightness up' }).isVisible()) {
+      fail('setting a key did not refresh its tile without a reload');
+    }
+
+    // A deferred redraw while another key's picker is open flushes when the picker closes.
+    await page.locator('#apps-rk-list .rk-key[data-key="green"]').click();
+    await page.locator('#apps-rk-list .rk-pick .rk-opt').first().focus();
+    await page.evaluate(() => {
+      const g = appsData.remoteKeys.keys.find(k => k.key === 'green');
+      g.action = 'nothing';
+      renderRemoteKeys(appsData);
+    });
+    await page.locator('#apps-rk-list .rk-pick .rk-close').click();
+    if (!await page.locator('#apps-rk-list .rk-key[data-key="green"] .rk-does', { hasText: 'Does nothing' }).isVisible()) {
+      fail('closing the picker did not flush a deferred tile redraw');
+    }
+
+    // A key set to it: on desktop width, step and style sit side by side under the heading.
     await open();
     await heading.waitFor();
     if (!await stepSel.isVisible() || !await styleSel.isVisible()) fail('the step or the style row is missing from the section');
     const [hy, sy, by] = await Promise.all([heading.boundingBox(), stepSel.boundingBox(), styleSel.boundingBox()]);
-    if (!(hy.y < sy.y && sy.y < by.y)) fail('the heading, the step and the style are not in that order');
+    if (!(hy.y < sy.y && Math.abs(sy.y - by.y) < 10 && sy.x < by.x)) fail('step and style are not side by side under the heading on desktop');
     if (await page.locator('#apps-rk-list .rk-key').last().boundingBox().then(b => b.y) > hy.y) fail('the section is above the keys');
     const options = await styleSel.locator('option').evaluateAll(o => o.map(x => x.value));
     if (JSON.stringify(options) !== JSON.stringify(['lg', 'horizontal', 'vertical', 'none'])) fail('the style offers ' + options + ', not lg, horizontal, vertical and none');
@@ -4344,12 +4371,14 @@ async function visitBrightnessKeySettings(browser, base, problems) {
     if (!await stepSel.isVisible()) fail('the step is missing where the bar cannot be shown');
     if (await styleSel.count()) fail('the style is offered where the bar cannot be shown');
 
-    // At phone width the section stays inside the page.
+    // At phone width the rows stack and stay inside the page.
     state.bar = true;
     await page.setViewportSize({ width: 390, height: 800 });
     await open();
     await heading.waitFor();
     if (!await styleSel.isVisible()) fail('the style row is not visible at phone width');
+    const [syMob, byMob] = await Promise.all([stepSel.boundingBox(), styleSel.boundingBox()]);
+    if (!(syMob.y < byMob.y)) fail('step and style did not stack vertically at phone width');
     if (await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth)) fail('the section makes the page scroll sideways at phone width');
     await page.setViewportSize({ width: 1280, height: 800 });
 

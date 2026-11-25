@@ -260,6 +260,7 @@ function rkChoiceIcon(id, kind, title) {
 // (1-9 plus 0 for the list), each showing its icon/input badge and label.
 let qaData = null;      // the last quickAccess answer, for the picker
 let qaOpen = null;      // the key whose picker is open
+let qaDirty = false;    // a redraw skipped while a choice was open
 let qaCols = 0;
 let qaWritable = false;
 // The picker's value for As LG has it: no app id has a colon.
@@ -277,7 +278,10 @@ function renderQuickAccess(d) {
   qaData = qa;
   qaWritable = !!d.writable;
   // Left alone while a choice is being made in it.
-  if (!list || (qaOpen && list.contains(document.activeElement))) return;
+  if (!list || (qaOpen && list.contains(document.activeElement))) {
+    if (list && qaOpen) qaDirty = true;
+    return;
+  }
   const keysHtml = qa.keys.map(k => {
     const kind = qaChoiceKind(k.id, qa.choices);
     const does = k.id
@@ -297,6 +301,7 @@ function renderQuickAccess(d) {
     <span class="qa-key-body">${rkChoiceIcon('switcher', 'switcher', '')}<span class="qa-title rk-lg">${esc(t('apps.quickAccess.zeroOpens', 'Quick Access list'))}</span></span>
   </div>`;
   list.innerHTML = `<div class="qa-pad-frame"><div class="rk-grid qa-grid">${keysHtml}${zeroTile}</div></div>`;
+  qaDirty = false;
   if (qaOpen) {
     const tile = list.querySelector(`.qa-key-tile[data-key="${qaOpen}"]`);
     qaOpen = null;
@@ -308,8 +313,11 @@ function renderQuickAccess(d) {
 // Remote keys, with None, the inputs and the apps.
 function toggleQuickAccessKey(tile) {
   const was = qaOpen;
+  const tileKey = tile && tile.dataset.key;
   closeQuickAccessPicker();
-  if (!qaData || String(was) === tile.dataset.key) return;
+  if (!qaData || !tileKey || String(was) === tileKey) return;
+  tile = q('apps-qa-list') && q('apps-qa-list').querySelector(`.qa-key-tile[data-key="${tileKey}"]`);
+  if (!tile) return;
   const k = qaData.keys.find(x => String(x.key) === tile.dataset.key);
   if (!k) return;
   qaOpen = k.key;
@@ -352,15 +360,24 @@ function toggleQuickAccessKey(tile) {
 
 function closeQuickAccessPicker(refocus) {
   const list = q('apps-qa-list');
+  const closedKey = qaOpen;
   const pick = list && list.querySelector('.rk-pick');
   if (pick) pick.remove();
-  const tile = list && qaOpen ? list.querySelector(`.qa-key-tile[data-key="${qaOpen}"]`) : null;
+  const tile = list && closedKey ? list.querySelector(`.qa-key-tile[data-key="${closedKey}"]`) : null;
   if (tile) {
     tile.classList.remove('rk-open');
     tile.setAttribute('aria-expanded', 'false');
-    if (refocus) tile.focus();
+    if (refocus && !(qaDirty && appsData)) tile.focus();
   }
   qaOpen = null;
+  if (qaDirty && appsData) {
+    qaDirty = false;
+    renderQuickAccess(appsData);
+    if (refocus && closedKey && list) {
+      const fresh = list.querySelector(`.qa-key-tile[data-key="${closedKey}"]`);
+      if (fresh) fresh.focus();
+    }
+  }
 }
 
 async function chooseQuickAccessKey(btn) {
@@ -418,6 +435,7 @@ const RK_GROUPS = [
 const RK_COLOURS = { red: 'var(--red)', green: 'var(--green)', yellow: '#f2c230', blue: 'var(--blue)' };
 let rkData = null;     // the last remoteKeys answer, for the picker
 let rkOpen = null;     // the key whose picker is open
+let rkDirty = false;   // a redraw skipped while a choice was open
 let rkCols = 0;        // the columns its grid had when it opened
 let rkWritable = false;
 let rkMoreOpen = false;  // the other countries' keys, folded until opened
@@ -474,7 +492,10 @@ function renderRemoteKeys(d) {
   rkWritable = !!d.writable;
   renderInputs();
   // Left alone while a choice is being made in it.
-  if (!list || (rkOpen && list.contains(document.activeElement))) return;
+  if (!list || (rkOpen && list.contains(document.activeElement))) {
+    if (list && rkOpen) rkDirty = true;
+    return;
+  }
   const kinds = {};
   rk.choices.forEach(c => { kinds[c.id] = c.kind; });
   const kindOf = id => kinds[id] || 'app';
@@ -532,8 +553,9 @@ function renderRemoteKeys(d) {
           .map(o => `<option value="${o[0]}"${o[0] === (rk.brightnessBarStyle || 'lg') ? ' selected' : ''}>${esc(o[1])}</option>`).join('')}
       </select></div></div>`;
   }
-  const brightness = stepRow ? `<div class="rk-grp">${esc(t('apps.remoteKeys.brightnessSection', 'Brightness key settings'))}</div>${stepRow}${barStyleRow}` : '';
+  const brightness = stepRow ? `<div class="rk-grp">${esc(t('apps.remoteKeys.brightnessSection', 'Brightness key settings'))}</div><div class="prot-table">${stepRow}${barStyleRow}</div>` : '';
   list.innerHTML = groups + more + brightness;
+  rkDirty = false;
   if (rkOpen) {
     const tile = list.querySelector(`.rk-key[data-key="${CSS.escape(rkOpen)}"]`);
     rkOpen = null;
@@ -546,8 +568,11 @@ function renderRemoteKeys(d) {
 function toggleRemoteKey(tile) {
   const list = q('apps-rk-list');
   const was = rkOpen;
+  const tileKey = tile && tile.dataset.key;
   closeRemoteKeyPicker();
-  if (!rkData || !list || was === tile.dataset.key) return;
+  if (!rkData || !list || !tileKey || was === tileKey) return;
+  tile = list.querySelector(`.rk-key[data-key="${CSS.escape(tileKey)}"]`);
+  if (!tile) return;
   const k = rkData.keys.find(x => x.key === tile.dataset.key);
   if (!k) return;
   rkOpen = k.key;
@@ -618,17 +643,47 @@ function rkAimArrow(tile, pick) {
   pick.style.setProperty('--rk-arrow', Math.round(r.left - g.left + r.width / 2) + 'px');
 }
 
-function closeRemoteKeyPicker(refocus) {
+function closeRemoteKeyPicker(refocus, flush) {
   const list = q('apps-rk-list');
+  const closedKey = rkOpen;
   const pick = list && list.querySelector('.rk-pick');
   if (pick) pick.remove();
-  const tile = list && rkOpen ? list.querySelector(`.rk-key[data-key="${CSS.escape(rkOpen)}"]`) : null;
+  const tile = list && closedKey ? list.querySelector(`.rk-key[data-key="${CSS.escape(closedKey)}"]`) : null;
+  const shouldFlush = flush !== false && rkDirty && appsData;
   if (tile) {
     tile.classList.remove('rk-open');
     tile.setAttribute('aria-expanded', 'false');
-    if (refocus) tile.focus();
+    if (refocus && !shouldFlush) tile.focus();
   }
   rkOpen = null;
+  if (shouldFlush) {
+    rkDirty = false;
+    renderRemoteKeys(appsData);
+    if (refocus && closedKey && list) {
+      const fresh = list.querySelector(`.rk-key[data-key="${CSS.escape(closedKey)}"]`);
+      if (fresh) fresh.focus();
+    }
+  }
+}
+
+async function fetchRemoteKeys() {
+  try {
+    const r = await fetch(api('/api/remotekeys'), { cache: 'no-store' });
+    if (!r.ok) return null;
+    const rk = await r.json();
+    return rk && rk.ok ? rk : null;
+  } catch (e) {
+    return null;
+  }
+}
+
+async function refreshRemoteKeys() {
+  if (!appsData) return loadApps();
+  const rk = await fetchRemoteKeys();
+  if (!rk) return loadApps();
+  appsData.remoteKeys = rk.supported ? rk : null;
+  renderRemoteKeys(appsData);
+  showRemoteTab();
 }
 
 async function chooseRemoteKey(btn) {
@@ -650,9 +705,25 @@ async function chooseRemoteKey(btn) {
   } catch (e) {
     error = e.message;
   }
-  closeRemoteKeyPicker(true);
+  const rk = appsData ? await fetchRemoteKeys() : null;
+  if (rkOpen === key) {
+    // Skip flushing the pre-change appsData when fresh keys are about to render.
+    if (rk && appsData) rkDirty = false;
+    closeRemoteKeyPicker(false, !(rk && appsData));
+  }
   if (error) alert(t('apps.remoteKeys.failed', 'Could not change it: {error}', { error }));
-  await loadApps();
+  if (rk && appsData) {
+    appsData.remoteKeys = rk.supported ? rk : null;
+    renderRemoteKeys(appsData);
+    showRemoteTab();
+    if (!rkOpen) {
+      const list = q('apps-rk-list');
+      const fresh = list && list.querySelector(`.rk-key[data-key="${CSS.escape(key)}"]`);
+      if (fresh) fresh.focus();
+    }
+  } else {
+    await loadApps();
+  }
 }
 
 async function rkSetBrightnessStep(value) {
@@ -669,7 +740,7 @@ async function rkSetBrightnessStep(value) {
     error = e.message;
   }
   if (error) alert(t('apps.remoteKeys.failed', 'Could not change it: {error}', { error }));
-  await loadApps();
+  await refreshRemoteKeys();
 }
 
 async function rkSetBrightnessBarStyle(value) {
@@ -686,7 +757,7 @@ async function rkSetBrightnessBarStyle(value) {
     error = e.message;
   }
   if (error) alert(t('apps.remoteKeys.failed', 'Could not change it: {error}', { error }));
-  await loadApps();
+  await refreshRemoteKeys();
 }
 
 document.addEventListener('keydown', e => {
