@@ -725,6 +725,19 @@
   <div class="pv-sec" id="audio-sound-head" data-t="adv.sound">Sound</div>
   <div class="prot-table" id="audio-settings" data-reload="loadAudio"></div>
 
+  <details id="audio-bar" ontoggle="if (this.open) soundbarRequest()">
+    <summary class="pv-sec" data-t="audio.bar.title">LG Wi-Fi soundbar</summary>
+    <form class="audio-bt-btns" onsubmit="event.preventDefault(); soundbarConnect()">
+      <label for="audio-bar-host" data-t="audio.bar.address">Soundbar IP address</label>
+      <input id="audio-bar-host" type="text" inputmode="decimal" autocomplete="off" required>
+      <button type="submit" class="pill good" id="audio-bar-connect" data-t="audio.bt.connect">Connect</button>
+      <button type="button" class="pill idle" id="audio-bar-refresh" onclick="soundbarRequest()" data-t="audio.refresh">Refresh</button>
+      <button type="button" class="pill bad" id="audio-bar-forget" onclick="soundbarForget()" data-t="audio.bt.remove" hidden>Remove</button>
+    </form>
+    <p class="sub" id="audio-bar-status" role="status"></p>
+    <div class="prot-table" id="audio-bar-rows"></div>
+  </details>
+
   <div id="audio-bt" hidden>
     <div class="pv-sec adv-sec" data-t="audio.bt.title">Bluetooth audio</div>
     <div class="audio-head">
@@ -3094,6 +3107,7 @@
 <script src="/assets/ui/iptv.js"></script>
 <script src="/assets/ui/tvchannels.js"></script>
 <script src="/assets/ui/audio.js"></script>
+<script src="/assets/ui/soundbar.js"></script>
 <script src="/assets/ui/bluetooth.js"></script>
 <script src="/assets/ui/picture.js"></script>
 <script src="/assets/ui/servicemenu.js"></script>

@@ -7,6 +7,8 @@ something is wrong, and Home Assistant and the TV's own browser fail quietly.
 
 ## On every pull request
 
+`test-soundbar.js` uses a simulated LG speaker to check fragmented replies, device identity, supported controls, level offsets and confirmation of writes.
+
 `test-apphosts.js` checks old jail copies, launch resets, new jails and
 recreated `etc` directories, missed watches, atomic writes, symlink refusal,
 write failures, file modes and restoring marked copies when blocking ends.

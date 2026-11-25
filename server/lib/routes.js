@@ -24,6 +24,8 @@ var fetchLib = require('./fetch');
 var devtools = require('./devtools');
 var names = require('./names');
 var nosignal = require('./nosignal');
+var soundbar = require('./soundbar');
+var soundbarChanging = false;
 
 var HA_CATEGORIES = ha.HA_CATEGORIES;
 var HA_ENTITIES = ha.HA_ENTITIES;
@@ -280,6 +282,44 @@ function readConfigFile() {
 
 function unreadableConfigError() {
   return new Error(msg('srv.configUnreadable', '{file} could not be read, so it was left as it is. Correct it, or remove it to start again, then restart Glasshouse.', { file: configFilePath }));
+}
+
+function handleSoundbar(req, res) {
+  function reply(status, error, current) {
+    var target = config.soundbar || {};
+    send(res, status, JSON.stringify({ ok: !error, reason: error, writable: !!config.allowControl,
+      host: target.host || '', id: target.id || '', device: current || null }));
+  }
+  if (req.method === 'GET') {
+    if (!config.soundbar || !config.soundbar.host) return reply(200);
+    return soundbar.request(config.soundbar, null, function (err, current) {
+      reply(err ? 502 : 200, err, current);
+    });
+  }
+  if (req.method !== 'POST') return reply(405, 'method');
+  if (!config.allowControl) return reply(403, 'disabled');
+  return readJsonBody(req, res, function (body) {
+    if (soundbarChanging) return reply(409, 'busy');
+    var target = config.soundbar || {};
+    if (body.id !== (target.id || '')) return reply(409, 'identity');
+    function save(selection, current) {
+      writeSettings({ soundbar: selection }, function (err) {
+        soundbarChanging = false;
+        if (err) return reply(500, 'save');
+        config.soundbar = selection;
+        reply(200, null, current);
+      });
+    }
+    if (body.action === 'forget') return save(null);
+    var pairing = body.action === 'connect';
+    if (!pairing && (body.action !== 'set' || !target.id)) return reply(400, 'invalid');
+    soundbarChanging = true;
+    soundbar.request(pairing ? { host: body.host } : target, pairing ? null : body, function (err, current) {
+      if (!err && pairing) return save({ host: current.host, id: current.id }, current);
+      soundbarChanging = false;
+      reply(err === 'address' || err === 'invalid' ? 400 : err ? 502 : 200, err, current);
+    });
+  });
 }
 
 function trimmedString(v) { return typeof v === 'string' ? v.trim() : ''; }
@@ -1850,6 +1890,8 @@ function handleRequest(req, res) {
       });
     });
   }
+
+  if (pathname === '/api/audio/soundbar') return handleSoundbar(req, res);
 
   if (pathname === '/api/audio' && audioModule) {
     if (req.method === 'GET') {

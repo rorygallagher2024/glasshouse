@@ -16,6 +16,10 @@ only. Pass Through and Bitstream request encoded audio; PCM requests decoded
 audio. As in LG's menu, only the input on screen can have its audio format
 changed.
 
+## LG Wi-Fi soundbar
+
+On the web dashboard, open **LG Wi-Fi soundbar**, enter the local IPv4 address of the LG DS90TR and choose **Connect**. The bar can keep playing over HDMI eARC. Its sound mode, Night mode, speaker levels, tone, volume, input and other settings appear as the bar reports them. **Refresh** reads changes made with ThinQ or the remote. **Remove** forgets the saved connection. Use ThinQ for AI Room Calibration.
+
 ## Bluetooth audio
 
 ![Bluetooth audio on a B8: a paired pair of headphones, with Find devices, Connect and Remove](../screenshots/audio-bluetooth.png)

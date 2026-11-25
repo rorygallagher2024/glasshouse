@@ -54,6 +54,10 @@ Nothing on the read-only root filesystem is written. Everything below other
 than the server's own files happens only when the owner switches it on, and the
 riskier controls ask for confirmation in the dashboard first.
 
+## LG Wi-Fi soundbar
+
+Connecting a DS90TR in the web Audio tab saves its local address and device identifier under `soundbar` in Glasshouse’s `config.json`. The TV connects to the bar on TCP port 9741 on demand. A change applies to the selected soundbar, and **Remove** clears the saved connection.
+
 ## Bluetooth audio
 
 The Audio tab lists the audio devices paired with the TV (LG's
