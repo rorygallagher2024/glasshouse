@@ -2443,16 +2443,28 @@ async function visitHomeOrder(browser, base, problems) {
   let pauseSave = false, pauseCatalogue = false, saveHeld, catalogueHeld;
   const saveReady = new Promise(resolve => { saveHeld = resolve; });
   const catalogueReady = new Promise(resolve => { catalogueHeld = resolve; });
+  let wallChoice = 'shuffle';
+  const wallSaves = [];
   await page.route('**/api/home**', async route => {
     const pathname = new URL(route.request().url()).pathname;
     // The server sends a Last opened row in that order: here, YouTube was opened last.
     const order = { app: layout.sort.app === 'recent' ? ['two', 'one', 'lg-home'] : ['one', 'two', 'lg-home'], dev: [], ch: [] };
     const catalogue = { ok: true, apps: [{ id: 'one', title: 'One' }, { id: 'two', title: 'Two' }], devices: [], channels: [],
       sources: { channels: 0 }, order, layout };
+    const wallpapers = { choice: wallChoice, choices: ['black', 'landscape', 'abstract', 'own', 'shuffle', 'video'], pictures: [], videoUrls: [] };
     let body = { ok: true };
     if (pathname === '/api/home') body = Object.assign({ ok: true, supported: { ok: true }, enabled: true, active: true,
-      writable: true, layout, history: true }, new URL(route.request().url()).searchParams.get('with') ? { catalogue, channels: [] } : {});
+      writable: true, layout, wallpapers, history: true }, new URL(route.request().url()).searchParams.get('with') ? { catalogue, channels: [] } : {});
     else if (pathname === '/api/home/catalogue') body = catalogue;
+    else if (pathname === '/api/home/wallpapers') {
+      const patch = route.request().postDataJSON();
+      wallSaves.push(patch);
+      if (patch && patch.choose === 'video') body = { ok: false, error: 'Add at least one video URL first.' };
+      else {
+        if (patch && patch.choose) wallChoice = patch.choose;
+        body = { ok: true, wallpapers: Object.assign({}, wallpapers, { choice: wallChoice }) };
+      }
+    }
     else if (pathname === '/api/home/layout') {
       const patch = route.request().postDataJSON();
       saves.push(patch);
@@ -2575,6 +2587,19 @@ async function visitHomeOrder(browser, base, problems) {
       await page.keyboard.press('ArrowLeft');
       await page.locator('#rows .row.sel').filter({ hasText: new RegExp('^' + name) }).waitFor();
     }
+    // Pictures on "Your own, shuffled" with no video URLs must wrap to Landscape rather than requesting "video" (#1711).
+    const picRow = page.locator('#rows .row').filter({ hasText: /^Pictures/ }).first();
+    await picRow.click();
+    if (!(await picRow.innerText()).includes('Your own, shuffled')) {
+      problems.push('Home order: Pictures row did not start on Your own, shuffled');
+    }
+    saved = page.waitForResponse(r => new URL(r.url()).pathname === '/api/home/wallpapers');
+    await page.keyboard.press('Enter');
+    await saved;
+    if (!wallSaves.length || wallSaves[wallSaves.length - 1].choose !== 'landscape') {
+      problems.push('Home order: Pictures cycling from Your own, shuffled did not skip video without URLs: ' + JSON.stringify(wallSaves));
+    }
+    await picRow.filter({ hasText: 'Landscape' }).waitFor();
   } finally { await page.close(); }
 }
 
@@ -4237,6 +4262,234 @@ async function visitInputsAndRemote(browser, base, problems) {
 }
 
 /*
+ * Brightness key settings: a section of its own on the Remote tab, there only
+ * while a key is set to Brightness up or down. Brightness step and Level bar
+ * style are its rows, the style offering LG's bar, a horizontal one, a vertical
+ * one or no
+ * bar, and left out where the bar cannot be shown (webOS 11).
+ */
+async function visitBrightnessKeySettings(browser, base, problems) {
+  const page = await browser.newPage();
+  const fail = message => problems.push('Brightness key settings: ' + message);
+  page.on('pageerror', error => fail(error.message));
+  const state = { brightnessKey: false, bar: true, style: 'lg', step: 10 };
+  const writes = [];
+  const keysNow = () => [
+    { key: 'red', title: 'Red', action: state.brightnessKey ? 'open' : 'lg', id: state.brightnessKey ? 'action:brightnessUp' : '', opens: state.brightnessKey ? 'Brightness up' : '' },
+    { key: 'green', title: 'Green', action: 'lg' }
+  ];
+  const choicesNow = () => [
+    { id: 'action:brightnessUp', title: 'Brightness up', kind: 'action' }
+  ];
+  const remoteKeysPayload = () => ({
+    ok: true, supported: true, keys: keysNow(), choices: choicesNow(),
+    brightnessStep: state.step, brightnessBar: state.bar, brightnessBarStyle: state.style
+  });
+  try {
+    await page.route('**/api/remote/available', route => route.fulfill({ json: { ok: true, available: true } }));
+    await page.route('**/api/apps', async route => {
+      // The page may close with this still on its way.
+      try {
+        const apps = await (await route.fetch()).json();
+        apps.writable = true;
+        apps.quickAccess = null;
+        apps.remoteKeys = remoteKeysPayload();
+        await route.fulfill({ json: apps });
+      } catch (e) { /* closed */ }
+    });
+    await page.route('**/api/remotekeys', async route => {
+      if (route.request().method() !== 'POST') return route.fulfill({ json: remoteKeysPayload() });
+      const set = route.request().postDataJSON();
+      writes.push(set);
+      if (set.key === 'red') state.brightnessKey = set.action === 'open' && set.id === 'action:brightnessUp';
+      if (set.brightnessBarStyle !== undefined) state.style = set.brightnessBarStyle;
+      if (set.brightnessStep !== undefined) state.step = set.brightnessStep;
+      await route.fulfill({ json: { ok: true } });
+    });
+    const open = async () => {
+      await page.goto(base + '/?tab=remote');
+      await page.locator('#apps-rk-list .rk-key').first().waitFor();
+    };
+    const heading = page.locator('#apps-rk-list .rk-grp', { hasText: 'Brightness key settings' });
+    const stepSel = page.locator('#apps-rk-step');
+    const styleSel = page.locator('#apps-rk-bar-style');
+
+    // No key set to Brightness: no section, and none of its rows.
+    await open();
+    if (await heading.count() || await stepSel.count() || await styleSel.count()) fail('the section shows with no key set to Brightness');
+
+    // Setting a key updates the tile and reveals the section without a reload.
+    await page.locator('#apps-rk-list .rk-key[data-key="red"]').click();
+    await page.locator('#apps-rk-list .rk-pick [data-value="action:brightnessUp"]').click();
+    await heading.waitFor();
+    if (!await page.locator('#apps-rk-list .rk-key[data-key="red"] .rk-does', { hasText: 'Brightness up' }).isVisible()) {
+      fail('setting a key did not refresh its tile without a reload');
+    }
+
+    // A deferred redraw while another key's picker is open flushes when the picker closes.
+    await page.locator('#apps-rk-list .rk-key[data-key="green"]').click();
+    await page.locator('#apps-rk-list .rk-pick .rk-opt').first().focus();
+    await page.evaluate(() => {
+      const g = appsData.remoteKeys.keys.find(k => k.key === 'green');
+      g.action = 'nothing';
+      renderRemoteKeys(appsData);
+    });
+    await page.locator('#apps-rk-list .rk-pick .rk-close').click();
+    if (!await page.locator('#apps-rk-list .rk-key[data-key="green"] .rk-does', { hasText: 'Does nothing' }).isVisible()) {
+      fail('closing the picker did not flush a deferred tile redraw');
+    }
+
+    // A key set to it: on desktop width, step and style sit side by side under the heading.
+    await open();
+    await heading.waitFor();
+    if (!await stepSel.isVisible() || !await styleSel.isVisible()) fail('the step or the style row is missing from the section');
+    const [hy, sy, by] = await Promise.all([heading.boundingBox(), stepSel.boundingBox(), styleSel.boundingBox()]);
+    if (!(hy.y < sy.y && Math.abs(sy.y - by.y) < 10 && sy.x < by.x)) fail('step and style are not side by side under the heading on desktop');
+    if (await page.locator('#apps-rk-list .rk-key').last().boundingBox().then(b => b.y) > hy.y) fail('the section is above the keys');
+    const options = await styleSel.locator('option').evaluateAll(o => o.map(x => x.value));
+    if (JSON.stringify(options) !== JSON.stringify(['lg', 'horizontal', 'vertical', 'none'])) fail('the style offers ' + options + ', not lg, horizontal, vertical and none');
+    if (await styleSel.inputValue() !== 'lg') fail('the style does not start on the LG-style bar');
+
+    // Each choice is saved and comes back as chosen.
+    await styleSel.selectOption('none');
+    await page.waitForFunction(() => document.querySelector('#apps-rk-bar-style') && document.querySelector('#apps-rk-bar-style').value === 'none');
+    if (JSON.stringify(writes[writes.length - 1]) !== JSON.stringify({ brightnessBarStyle: 'none' })) fail('choosing No bar did not save it');
+    await styleSel.selectOption('horizontal');
+    await page.waitForFunction(() => document.querySelector('#apps-rk-bar-style').value === 'horizontal');
+    if (JSON.stringify(writes[writes.length - 1]) !== JSON.stringify({ brightnessBarStyle: 'horizontal' })) fail('choosing the horizontal bar did not save it');
+    await styleSel.selectOption('vertical');
+    await page.waitForFunction(() => document.querySelector('#apps-rk-bar-style').value === 'vertical');
+    if (JSON.stringify(writes[writes.length - 1]) !== JSON.stringify({ brightnessBarStyle: 'vertical' })) fail('choosing the vertical bar did not save it');
+    await stepSel.selectOption('15');
+    await page.waitForFunction(() => document.querySelector('#apps-rk-step').value === '15');
+    if (JSON.stringify(writes[writes.length - 1]) !== JSON.stringify({ brightnessStep: 15 })) fail('choosing a step did not save it');
+
+    // Where the bar cannot be shown, the step is left in the section alone.
+    state.bar = false;
+    await open();
+    await heading.waitFor();
+    if (!await stepSel.isVisible()) fail('the step is missing where the bar cannot be shown');
+    if (await styleSel.count()) fail('the style is offered where the bar cannot be shown');
+
+    // At phone width the rows stack and stay inside the page.
+    state.bar = true;
+    await page.setViewportSize({ width: 390, height: 800 });
+    await open();
+    await heading.waitFor();
+    if (!await styleSel.isVisible()) fail('the style row is not visible at phone width');
+    const [syMob, byMob] = await Promise.all([stepSel.boundingBox(), styleSel.boundingBox()]);
+    if (!(syMob.y < byMob.y)) fail('step and style did not stack vertically at phone width');
+    if (await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth)) fail('the section makes the page scroll sideways at phone width');
+    await page.setViewportSize({ width: 1280, height: 800 });
+
+    // The key put back as LG has it: the section goes.
+    state.brightnessKey = false;
+    await open();
+    if (await heading.count() || await stepSel.count() || await styleSel.count()) fail('the section stays with no key set to Brightness');
+  } catch (e) {
+    fail(e.message);
+  } finally {
+    await page.close();
+  }
+}
+
+async function visitRemoteFolding(browser, base, problems) {
+  const page = await browser.newPage();
+  const fail = message => problems.push('Remote folding: ' + message);
+  page.on('pageerror', error => fail(error.message));
+  const state = { mode: 'auto', known: true };
+  const writes = [];
+  const mr25 = { id: 'MR25GA', title: 'Magic Remote MR25GA', image: 'generic.png', numberKeys: false };
+  const payload = () => {
+    const off = state.known && state.mode === 'auto';
+    return {
+      ok: true,
+      supported: true,
+      keys: [
+        { key: 'netflix', title: 'Netflix', action: 'lg' },
+        { key: 'red', title: 'Red', action: 'lg', offRemote: off }
+      ],
+      choices: [],
+      brightnessStep: 10,
+      brightnessBar: false,
+      brightnessBarStyle: 'lg',
+      remotes: state.known ? {
+        mode: state.mode,
+        canFold: true,
+        folding: off,
+        why: '',
+        selected: state.mode === 'auto' ? [mr25] : [],
+        unknown: 0,
+        detected: [{ name: 'LGE MR25GA', id: 'MR25GA', title: 'Magic Remote MR25GA', image: 'generic.png', current: true }]
+      } : {
+        mode: state.mode,
+        canFold: false,
+        folding: false,
+        why: state.mode === 'auto' ? 'unknown' : '',
+        selected: [],
+        unknown: state.mode === 'auto' ? 1 : 0,
+        detected: [{ name: 'LGE MR22GN', id: null, title: 'LGE MR22GN', image: 'generic.png', current: true }]
+      }
+    };
+  };
+  try {
+    await page.route('**/api/remote/available', route => route.fulfill({ json: { ok: true, available: true } }));
+    await page.route('**/api/apps', async route => {
+      try {
+        const apps = await (await route.fetch()).json();
+        apps.writable = true;
+        apps.quickAccess = { ok: true, supported: true, keys: [{ key: 1, title: 'Netflix', id: 'netflix' }] };
+        apps.remoteKeys = payload();
+        await route.fulfill({ json: apps });
+      } catch (e) { /* closed */ }
+    });
+    await page.route('**/api/remotekeys', async route => {
+      if (route.request().method() !== 'POST') return route.fulfill({ json: payload() });
+      const body = route.request().postDataJSON();
+      writes.push(body);
+      if (body && body.remotes && body.remotes.mode) state.mode = body.remotes.mode;
+      await route.fulfill({ json: { ok: true } });
+    });
+
+    await page.goto(base + '/?tab=remote');
+    const filter = page.locator('#apps-remote-filter');
+    const toggle = page.locator('#btn_remote_only');
+    await filter.waitFor();
+    if (!await toggle.evaluate(el => el.classList.contains('good')) || (await toggle.textContent()).trim() !== 'On') {
+      fail('toggle did not render as active On pill');
+    }
+    if (!/Detected: Magic Remote MR25GA/.test(await page.locator('#apps-remote-detected').textContent())) {
+      fail('detected remote name was not shown under the switch');
+    }
+    const otherGroup = page.locator('#apps-rk-list .rk-more summary', { hasText: 'Buttons on other remotes (1)' });
+    await otherGroup.waitFor();
+    await toggle.click();
+    await page.waitForFunction(() => document.getElementById('btn_remote_only').classList.contains('idle'));
+    if (JSON.stringify(writes[writes.length - 1]) !== JSON.stringify({ remotes: { mode: 'all' } })) {
+      fail('clicking toggle did not save mode all');
+    }
+    if (!await filter.isVisible()) fail('folding switch disappeared when turned off');
+    if (!/Magic Remote MR25GA/.test(await page.locator('#apps-remote-detected').textContent())) {
+      fail('detected remote name disappeared when folding was turned off');
+    }
+    if (await otherGroup.count()) fail('Buttons on other remotes stayed folded after switching off');
+    if (!await page.locator('#apps-rk-list .rk-key[data-key="red"]').isVisible()) fail('Red key did not unfold without a reload');
+
+    state.mode = 'auto';
+    state.known = false;
+    await page.goto(base + '/?tab=remote');
+    await page.locator('#apps-rk-list .rk-key[data-key="netflix"]').waitFor();
+    if (await filter.isVisible()) fail('folding switch was shown for an unlisted remote');
+    if (await otherGroup.count()) fail('Buttons on other remotes was shown for an unlisted remote');
+    if (!await page.locator('#apps-rk-list .rk-key[data-key="red"]').isVisible()) fail('Red key was not shown for an unlisted remote');
+  } catch (e) {
+    fail(e.message);
+  } finally {
+    await page.close();
+  }
+}
+
+/*
  * Home Assistant: Ambient's entity slots on the Screensaver tab: a slot given
  * its first entity shows its Label row at once, though the field picked from
  * still has focus (#1446), and a field tabbed to before a save keeps its focus
@@ -4265,7 +4518,11 @@ async function visitSaverEntitySlots(browser, base, problems) {
       } catch (e) { /* closed */ }
     });
     await page.route('**/api/ha/entities', route => route.fulfill({ json: { ok: true, configured: true,
-      entities: [{ id: 'sensor.living_room', name: 'Living room' }, { id: 'sensor.office', name: 'Office' }] } }));
+      entities: [
+        { id: 'sensor.living_room', name: 'Living room', unit: '°C' },
+        { id: 'sensor.office', name: 'Office', unit: '°C' },
+        { id: 'weather.home', name: 'Forecast Home', unit: '' }
+      ] } }));
     await page.route('**/api/control', async route => {
       const command = route.request().postDataJSON();
       if (command.action === 'screensaverEntities') {
@@ -4278,6 +4535,9 @@ async function visitSaverEntitySlots(browser, base, problems) {
       await route.fulfill({ json: { ok: true } });
     });
     await page.goto(base + '/?tab=screensaver');
+    // The slots are in the screen saver's dialog, opened from the tab.
+    await page.locator('#ss-ha-open').click();
+    await page.locator('#ha-modal:not([hidden])').waitFor();
     const first = page.locator('#ss-ent-sensor_1');
     await first.waitFor();
     // Typed and confirmed with Enter: the field keeps focus through the save.
@@ -4298,6 +4558,20 @@ async function visitSaverEntitySlots(browser, base, problems) {
     const typed = await page.evaluate(id => document.getElementById(id) && document.getElementById(id).value, focused);
     if (slots.sensor_1.label !== 'Lounge') fail('the label was not saved');
     if (focused && focused.indexOf('ss-ent-') === 0 && !/xyz$/.test(typed || '')) fail('what was typed in the next field was lost: ' + typed);
+
+    // Open the reusable entity picker, filter by type, and ensure Escape closes only the picker.
+    await page.locator('button[onclick*="ssHaToggle"][onclick*="sensor_1"]').click();
+    const list1 = page.locator('#ss-ha-list-sensor_1:not([hidden])');
+    await list1.waitFor({ timeout: 3000 });
+    await list1.locator('.ha-pk-chip', { hasText: 'Weather' }).click();
+    const weatherOpt = list1.locator('.ha-pk-opt[data-entity="weather.home"]');
+    await weatherOpt.waitFor({ timeout: 3000 });
+    if (await list1.locator('.ha-pk-opt[data-entity="sensor.living_room"]').count() !== 0) {
+      fail('domain filter chip did not filter out sensor entities');
+    }
+    await list1.locator('.ha-pk-search').press('Escape');
+    if (!(await page.locator('#ss-ha-list-sensor_1').isHidden())) fail('Escape did not close the open entity picker');
+    if (await page.locator('#ha-modal').isHidden()) fail('Escape closed the parent modal instead of only the entity picker');
   } catch (e) {
     fail(e.message);
   } finally {
@@ -4631,6 +4905,74 @@ async function visitAdblockCards(browser, base, problems) {
 }
 
 /*
+ * The remote's Motion mode, offered by the Android app's bridge alone: not
+ * in a browser, nor where the phone has no gyroscope. Holding the pad reads
+ * the turning each frame and moves the cursor against it (turned left, it
+ * goes left), letting go stops reading, and a tap clicks.
+ */
+async function visitRemoteMotion(browser, base, problems) {
+  const fail = what => problems.push('Remote motion: ' + what);
+  const open = async bridge => {
+    const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
+    page.on('pageerror', e => fail(e.message));
+    await page.addInitScript(bridge => {
+      if (!bridge) return;
+      window.__motion = { reads: [], started: 0, stopped: 0 };
+      window.GlasshouseApp = {
+        remoteState() {},
+        motionAvailable: () => bridge.available,
+        motionStart() { window.__motion.started++; },
+        motionStop() { window.__motion.stopped++; },
+        motionRead: () => window.__motion.reads.shift() || '0,0'
+      };
+    }, bridge);
+    await page.goto(base + '/?view=remote');
+    await page.waitForFunction(() => !document.getElementById('tab-control').hidden);
+    // The pointer as a TV with LG's network input has it.
+    await page.evaluate(() => applyPointerSettings({ enabled: true, transport: 'http' }));
+    await page.waitForFunction(() => !document.getElementById('rp-mode-touch').hidden);
+    return page;
+  };
+  const offered = page => page.evaluate(() => !document.getElementById('rp-mode-motion').hidden);
+  for (const [label, bridge] of [['in a browser', null], ['without a gyroscope', { available: false }]]) {
+    const page = await open(bridge);
+    try {
+      if (await offered(page)) fail('offered ' + label);
+    } finally { await page.close(); }
+  }
+  const page = await open({ available: true });
+  try {
+    if (!await offered(page)) { fail('not offered in the app'); return; }
+    await page.locator('#remote-modes [data-mode="motion"]').click();
+    if (!await page.locator('#motion-pad').isVisible() || await page.locator('#pointer-pad').isVisible()) fail('Motion does not show its own pad');
+    const held = await page.evaluate(async () => {
+      const sent = [], moves = [];
+      window.sendPointer = body => sent.push(body);
+      window.queuePointerMove = (dx, dy) => moves.push([dx, dy]);
+      const el = document.getElementById('motion-pad');
+      const fire = type => el.dispatchEvent(new PointerEvent(type, { pointerId: 1, pointerType: 'touch', isPrimary: true,
+        button: 0, buttons: type === 'pointerup' ? 0 : 1, bubbles: true, cancelable: true }));
+      const frames = n => new Promise(r => { const step = () => (--n ? requestAnimationFrame(step) : r()); requestAnimationFrame(step); });
+      fire('pointerdown'); fire('pointerup');
+      const clicks = sent.filter(b => b.click).length;
+      // 0.05 rad left a frame, for ten frames: about 3 rad/s, a flick.
+      window.__motion.reads = Array(10).fill('0.05,0');
+      fire('pointerdown');
+      await frames(14);
+      fire('pointerup');
+      const reads = window.__motion.reads.length;
+      return { clicks, reads, dx: moves.reduce((n, m) => n + m[0], 0), dy: moves.reduce((n, m) => n + m[1], 0),
+        clicked: sent.filter(b => b.click).length - clicks, started: window.__motion.started, stopped: window.__motion.stopped };
+    });
+    if (held.clicks !== 1) fail('a tap on the pad sent ' + held.clicks + ' clicks');
+    if (held.reads) fail(held.reads + ' readings were left unread while held');
+    if (held.dx > -300 || held.dy !== 0) fail('half a radian to the left moved the cursor ' + held.dx + ',' + held.dy);
+    if (held.clicked) fail('turning while held clicked');
+    if (held.started !== 2 || held.stopped !== 2) fail('the sensor started ' + held.started + ' and stopped ' + held.stopped + ' times for two holds');
+  } finally { await page.close(); }
+}
+
+/*
  * The remote on its own (?view=remote, #1586): on a phone and in a wide
  * window, only playback, volume, the D-pad, the pointer where its
  * switch is on (Server, Advanced), the keyboard and the way back, in one column,
@@ -4782,7 +5124,7 @@ async function visitRemoteView(browser, base, problems) {
 
 function groups(web, tv) {
   return [
-    { job: 'tabs', tabs: web.map(t => ({ path: '/?tab=' + t, label: 'web ' + t })), visits: [visitHomeAnimations, visitHuesyncSettings, visitInputsAndRemote, visitAdblockCards, visitSaverEntitySlots, visitRemoteView] },
+    { job: 'tabs', tabs: web.map(t => ({ path: '/?tab=' + t, label: 'web ' + t })), visits: [visitHomeAnimations, visitHuesyncSettings, visitInputsAndRemote, visitBrightnessKeySettings, visitRemoteFolding, visitAdblockCards, visitSaverEntitySlots, visitRemoteView, visitRemoteMotion] },
     { job: 'tabs', tabs: tv.map(t => ({ path: '/assets/dashboard.html?tab=' + t, label: 'TV ' + t })),
       visits: [visitTvDashboard, visitTvAudio, visitTvPictureWrites, visitPictureUnavailable, visitTvNonOled, visitTvHuesync] },
     { job: 'home', tabs: [], visits: [visitHomePicture, visitHomePreview, visitHomePreviewOptions, visitHomePreviewWebos4, visitHomePreviewSize, visitHomePreviewSizeDetails, visitInputBarBehindHome, visitInputBarSwitchOnOk, visitHomeBarPrewarm, visitHomeBarIconsReady, visitHomeBarTiles, visitHomeBarBesideHome, visitHomeBarScroll, visitHomeUpDown, visitHomeFolderKeys, visitHomePointerOff, visitHomeOrder, visitHomeAvailability, visitHomeSearch, visitHomeWeather, visitHomeWeatherSetting, visitHomeRemoteBattery, visitHomeRemoteBatterySetting] },

@@ -335,5 +335,6 @@ module.exports = {
   clean: clean,
   stop: stop,
   _session: function () { return session; },
-  FOLDER: FOLDER
+  FOLDER: FOLDER,
+  UA: UA
 };

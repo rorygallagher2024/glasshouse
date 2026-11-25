@@ -1,0 +1,100 @@
+{
+  "manifest": 1,
+  "version": "1.0.0",
+  "name": {
+    "en": "Music highway",
+    "es": "Autopista musical",
+    "hu": "Zenei autópálya",
+    "it": "Autostrada musicale",
+    "pl": "Muzyczna autostrada",
+    "pt": "Autoestrada musical",
+    "pt-br": "Rodovia musical",
+    "ru": "Музыкальная трасса",
+    "vi": "Xa lộ âm nhạc",
+    "ar": "طريق الموسيقى السريع",
+    "de": "Musik-Highway",
+    "fr": "Autoroute musicale",
+    "sv": "Musikmotorväg"
+  },
+  "description": {
+    "en": "A neon track that rises, banks and speeds up with what the TV plays, and a craft catching blocks on the beat.",
+    "es": "Una pista de neón que sube, se inclina y acelera con lo que suena en la TV, y una nave que atrapa bloques al ritmo.",
+    "hu": "Neonpálya, amely a TV-n szóló zenére emelkedik, dől és gyorsul, és egy jármű, amely ütemre kapja el a blokkokat.",
+    "it": "Una pista al neon che sale, si inclina e accelera con ciò che suona la TV, e un veicolo che prende i blocchi a tempo.",
+    "pl": "Neonowy tor, który wznosi się, przechyla i przyspiesza w rytm tego, co gra telewizor, i pojazd łapiący bloki do rytmu.",
+    "pt": "Uma pista néon que sobe, se inclina e acelera com o que a TV toca, e uma nave que apanha blocos ao ritmo.",
+    "pt-br": "Uma pista neon que sobe, se inclina e acelera com o que a TV toca, e uma nave que pega blocos no ritmo.",
+    "ru": "Неоновая трасса, которая поднимается, кренится и ускоряется под то, что играет телевизор, и корабль, ловящий блоки в такт.",
+    "vi": "Một đường đua neon nhô lên, nghiêng và tăng tốc theo những gì TV đang phát, cùng một phi thuyền đón các khối theo nhịp.",
+    "ar": "مسار نيون يرتفع ويميل ويتسارع مع ما يشغّله التلفزيون، ومركبة تلتقط المكعبات على الإيقاع.",
+    "de": "Eine Neonstrecke, die mit dem, was der Fernseher spielt, ansteigt, sich neigt und schneller wird, und ein Gleiter, der Blöcke im Takt fängt.",
+    "fr": "Une piste néon qui monte, s’incline et accélère avec ce que joue la TV, et un vaisseau qui attrape des blocs en rythme.",
+    "sv": "En neonbana som stiger, lutar och ökar farten med det TV:n spelar, och en farkost som fångar block i takt."
+  },
+  "author": "vecluu",
+  "license": "MIT",
+  "uses": [
+    "level",
+    "audio",
+    "choice"
+  ],
+  "choices": {
+    "label": {
+      "en": "Blocks",
+      "es": "Bloques",
+      "hu": "Blokkok",
+      "it": "Blocchi",
+      "pl": "Bloki",
+      "pt": "Blocos",
+      "pt-br": "Blocos",
+      "ru": "Блоки",
+      "vi": "Khối",
+      "ar": "المكعبات",
+      "de": "Blöcke",
+      "fr": "Blocs",
+      "sv": "Block"
+    },
+    "default": "beat",
+    "options": [
+      {
+        "id": "beat",
+        "name": {
+          "en": "On the beat",
+          "es": "Al ritmo",
+          "hu": "Ütemre",
+          "it": "A tempo",
+          "pl": "W rytm",
+          "pt": "No ritmo",
+          "pt-br": "No ritmo",
+          "ru": "В такт",
+          "vi": "Theo nhịp",
+          "ar": "على الإيقاع",
+          "de": "Im Takt",
+          "fr": "En rythme",
+          "sv": "I takt"
+        },
+        "value": "1"
+      },
+      {
+        "id": "react",
+        "name": {
+          "en": "React to each hit",
+          "es": "Reaccionar a cada golpe",
+          "hu": "Minden ütésre reagál",
+          "it": "Reagisci a ogni colpo",
+          "pl": "Reaguj na każde uderzenie",
+          "pt": "Reagir a cada batida",
+          "pt-br": "Reagir a cada batida",
+          "ru": "Реагировать на каждый удар",
+          "vi": "Phản ứng với từng tiếng gõ",
+          "ar": "التفاعل مع كل ضربة",
+          "de": "Auf jeden Schlag reagieren",
+          "fr": "Réagir à chaque frappe",
+          "sv": "Reagera på varje slag"
+        },
+        "value": "0"
+      }
+    ]
+  },
+  "order": 141
+}

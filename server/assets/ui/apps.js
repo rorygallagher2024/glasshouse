@@ -184,6 +184,7 @@ function renderAppsPanel() {
 
   renderSavedPages(d);
 
+  renderRunningApps(d);
   renderPreload(d);
   renderBackgroundServices(d);
   renderAppDns(d);
@@ -259,6 +260,7 @@ function rkChoiceIcon(id, kind, title) {
 // (1-9 plus 0 for the list), each showing its icon/input badge and label.
 let qaData = null;      // the last quickAccess answer, for the picker
 let qaOpen = null;      // the key whose picker is open
+let qaDirty = false;    // a redraw skipped while a choice was open
 let qaCols = 0;
 let qaWritable = false;
 // The picker's value for As LG has it: no app id has a colon.
@@ -276,7 +278,10 @@ function renderQuickAccess(d) {
   qaData = qa;
   qaWritable = !!d.writable;
   // Left alone while a choice is being made in it.
-  if (!list || (qaOpen && list.contains(document.activeElement))) return;
+  if (!list || (qaOpen && list.contains(document.activeElement))) {
+    if (list && qaOpen) qaDirty = true;
+    return;
+  }
   const keysHtml = qa.keys.map(k => {
     const kind = qaChoiceKind(k.id, qa.choices);
     const does = k.id
@@ -296,6 +301,7 @@ function renderQuickAccess(d) {
     <span class="qa-key-body">${rkChoiceIcon('switcher', 'switcher', '')}<span class="qa-title rk-lg">${esc(t('apps.quickAccess.zeroOpens', 'Quick Access list'))}</span></span>
   </div>`;
   list.innerHTML = `<div class="qa-pad-frame"><div class="rk-grid qa-grid">${keysHtml}${zeroTile}</div></div>`;
+  qaDirty = false;
   if (qaOpen) {
     const tile = list.querySelector(`.qa-key-tile[data-key="${qaOpen}"]`);
     qaOpen = null;
@@ -307,8 +313,11 @@ function renderQuickAccess(d) {
 // Remote keys, with None, the inputs and the apps.
 function toggleQuickAccessKey(tile) {
   const was = qaOpen;
+  const tileKey = tile && tile.dataset.key;
   closeQuickAccessPicker();
-  if (!qaData || String(was) === tile.dataset.key) return;
+  if (!qaData || !tileKey || String(was) === tileKey) return;
+  tile = q('apps-qa-list') && q('apps-qa-list').querySelector(`.qa-key-tile[data-key="${tileKey}"]`);
+  if (!tile) return;
   const k = qaData.keys.find(x => String(x.key) === tile.dataset.key);
   if (!k) return;
   qaOpen = k.key;
@@ -351,15 +360,24 @@ function toggleQuickAccessKey(tile) {
 
 function closeQuickAccessPicker(refocus) {
   const list = q('apps-qa-list');
+  const closedKey = qaOpen;
   const pick = list && list.querySelector('.rk-pick');
   if (pick) pick.remove();
-  const tile = list && qaOpen ? list.querySelector(`.qa-key-tile[data-key="${qaOpen}"]`) : null;
+  const tile = list && closedKey ? list.querySelector(`.qa-key-tile[data-key="${closedKey}"]`) : null;
   if (tile) {
     tile.classList.remove('rk-open');
     tile.setAttribute('aria-expanded', 'false');
-    if (refocus) tile.focus();
+    if (refocus && !(qaDirty && appsData)) tile.focus();
   }
   qaOpen = null;
+  if (qaDirty && appsData) {
+    qaDirty = false;
+    renderQuickAccess(appsData);
+    if (refocus && closedKey && list) {
+      const fresh = list.querySelector(`.qa-key-tile[data-key="${closedKey}"]`);
+      if (fresh) fresh.focus();
+    }
+  }
 }
 
 async function chooseQuickAccessKey(btn) {
@@ -408,6 +426,7 @@ const RK_GROUPS = [
   { id: 'streaming', title: () => t('apps.remoteKeys.streaming', 'Streaming buttons'),
     keys: ['netflix', 'amazon', 'disneyplus', 'rakutentv', 'lgchannels', 'ivi', 'okko', 'kinopoisk', 'shop', 'hulu', 'iplayer', 'freeviewplay', 'slingtv', 'globoplay', 'shahid'] },
   { id: 'assistant', title: () => t('apps.remoteKeys.assistant', 'Voice assistant buttons'), keys: ['voice', 'alexa', 'googleassistant'] },
+  { id: 'channel', title: () => t('apps.remoteKeys.channel', 'Channel keys'), keys: ['channelup', 'channeldown'] },
   { id: 'colour', title: () => t('apps.remoteKeys.colour', 'Color keys'), keys: ['red', 'green', 'yellow', 'blue'] },
   // Anything else, including keys a later server offers.
   { id: 'other', title: () => t('apps.remoteKeys.other', 'Other keys'), keys: null }
@@ -415,10 +434,13 @@ const RK_GROUPS = [
 // The colour keys' own colours, the one place colour is the key's name.
 const RK_COLOURS = { red: 'var(--red)', green: 'var(--green)', yellow: '#f2c230', blue: 'var(--blue)' };
 let rkData = null;     // the last remoteKeys answer, for the picker
+let qaClosedForRemote = null; // whether Quick Access was last closed or opened for the remote in use
 let rkOpen = null;     // the key whose picker is open
+let rkDirty = false;   // a redraw skipped while a choice was open
 let rkCols = 0;        // the columns its grid had when it opened
 let rkWritable = false;
 let rkMoreOpen = false;  // the other countries' keys, folded until opened
+let rkOtherOpen = false; // the keys of other remotes, folded until opened
 
 function rkIcon(id) {
   return `<img class="rk-ico" src="${esc(api('/api/apps/icon?id=' + encodeURIComponent(id)))}" alt="" onerror="this.style.visibility='hidden'">`;
@@ -455,13 +477,52 @@ function showRemoteTab() {
   if (has === false && activeTab === 'remote') showTab('control');
 }
 
+// One switch inside Remote keys, shown only when every remote in use has a finished
+// button list in the catalogue (canFold); off shows every button again.
+function renderRemoteChoice(rk) {
+  const row = q('apps-remote-filter');
+  if (!row) return;
+  const rs = rk && rk.remotes;
+  const show = !!(rs && rs.canFold);
+  row.hidden = !show;
+  if (!show) return;
+  const only = rs.mode !== 'all';
+  updateToggle('btn_remote_only', {
+    cls: only ? 'good' : 'idle',
+    label: only ? t('common.on', 'On') : t('common.off', 'Off'),
+    on: only,
+    disabled: !rkWritable
+  });
+  const names = ((rs.selected && rs.selected.length) ? rs.selected : (rs.detected || []).filter(x => x.id))
+    .map(r => r.title).join(', ');
+  const detEl = q('apps-remote-detected');
+  if (detEl) {
+    detEl.hidden = !names;
+    detEl.textContent = names ? t('apps.remote.detected', 'Detected: {name}', { name: names }) : '';
+  }
+}
+
+// Quick Access is for holding a number key, so it starts closed where every remote in use is known to
+// have none. Only a change of remote opens or closes it again: one opened by hand stays open.
+function foldQuickAccess(remotes) {
+  const disc = q('disc-quickaccess');
+  const selected = (remotes && remotes.selected) || [];
+  const noNumbers = !!(remotes && remotes.folding && selected.length && selected.every(r => r.numberKeys === false));
+  if (!disc || noNumbers === qaClosedForRemote) return;
+  qaClosedForRemote = noNumbers;
+  disc.open = !noNumbers;
+}
+
 function renderRemoteKeys(d) {
   const disc = q('disc-remotekeys');
   const list = q('apps-rk-list');
   const rk = d.remoteKeys;
   if (!disc) return;
   disc.hidden = !rk;
-  if (!rk) return;
+  if (!rk) {
+    if (q('apps-remote-filter')) q('apps-remote-filter').hidden = true;
+    return;
+  }
   const changed = rk.keys.filter(k => k.action !== 'lg').length;
   if (q('apps-rk-summary')) {
     q('apps-rk-summary').textContent = changed
@@ -470,9 +531,14 @@ function renderRemoteKeys(d) {
   }
   rkData = rk;
   rkWritable = !!d.writable;
+  foldQuickAccess(rk.remotes);
+  renderRemoteChoice(rk);
   renderInputs();
   // Left alone while a choice is being made in it.
-  if (!list || (rkOpen && list.contains(document.activeElement))) return;
+  if (!list || (rkOpen && list.contains(document.activeElement))) {
+    if (list && rkOpen) rkDirty = true;
+    return;
+  }
   const kinds = {};
   rk.choices.forEach(c => { kinds[c.id] = c.kind; });
   const kindOf = id => kinds[id] || 'app';
@@ -492,7 +558,10 @@ function renderRemoteKeys(d) {
   // A key only another country's remotes have waits at the end, folded away,
   // unless it has been changed.
   const away = rk.keys.filter(k => k.elsewhere && k.action === 'lg');
-  const placed = new Set(away.map(k => k.key));
+  // Keys none of the remotes in use has, where the server knows them all (the catalogue); one that is
+  // changed stays in sight whatever the remote.
+  const otherRemotes = rk.keys.filter(k => k.offRemote && !k.elsewhere && k.action === 'lg');
+  const placed = new Set(away.concat(otherRemotes).map(k => k.key));
   const groups = RK_GROUPS.map(g => {
     // In the group's own order, as the remote has them.
     const inGroup = g.keys ? g.keys.map(name => rk.keys.find(k => k.key === name)).filter(Boolean) : rk.keys;
@@ -505,7 +574,7 @@ function renderRemoteKeys(d) {
   const more = away.length ? `<details class="rk-more"${rkMoreOpen ? ' open' : ''} ontoggle="rkMoreOpen = this.open">
       <summary class="rk-grp">${esc(t('apps.remoteKeys.elsewhere', 'Buttons on remotes sold elsewhere ({n})', { n: away.length }))}</summary>
       <div class="rk-grid">${away.map(tile).join('')}</div></details>` : '';
-  // How far a Brightness key moves the picture, once a key is set to one.
+  // The settings of the Brightness keys, in a section of their own that shows once a key is set to one.
   let stepRow = '';
   if (rk.keys.some(k => k.id === 'action:brightnessUp' || k.id === 'action:brightnessDown')) {
     const sizes = [5, 10, 15, 20, 25];
@@ -518,7 +587,24 @@ function renderRemoteKeys(d) {
         ${sizes.map(n => `<option value="${n}"${n === rk.brightnessStep ? ' selected' : ''}>${n}</option>`).join('')}
       </select></div></div>`;
   }
-  list.innerHTML = groups + more + stepRow;
+  // How the level bar a Brightness key shows looks, where the filter and the bar's app can show it.
+  let barStyleRow = '';
+  if (stepRow && rk.brightnessBar) {
+    barStyleRow = `<div class="prot-row">
+      <div class="prot-main"><div class="prot-title"><label for="apps-rk-bar-style">${esc(t('apps.remoteKeys.barStyle', 'Level bar style'))}</label></div>
+        <div class="prot-desc">${esc(t('apps.remoteKeys.barStyleDesc', 'How the bar that a Brightness key shows looks: laid out like the TV\'s volume bar, a horizontal bar low on the screen, the same bar vertical at the right edge, or no bar.'))}</div></div>
+      <div class="prot-status"><select id="apps-rk-bar-style" class="pill-sel" ${rkWritable ? '' : 'disabled'} onchange="rkSetBrightnessBarStyle(this.value)">
+        ${[['lg', t('apps.remoteKeys.barStyleLg', 'LG style')], ['horizontal', t('apps.remoteKeys.barStyleHorizontal', 'Horizontal')],
+           ['vertical', t('apps.remoteKeys.barStyleVertical', 'Vertical')], ['none', t('apps.remoteKeys.barStyleNone', 'No bar')]]
+          .map(o => `<option value="${o[0]}"${o[0] === (rk.brightnessBarStyle || 'lg') ? ' selected' : ''}>${esc(o[1])}</option>`).join('')}
+      </select></div></div>`;
+  }
+  const brightness = stepRow ? `<div class="rk-grp">${esc(t('apps.remoteKeys.brightnessSection', 'Brightness key settings'))}</div><div class="prot-table">${stepRow}${barStyleRow}</div>` : '';
+  const other = otherRemotes.length ? `<details class="rk-more"${rkOtherOpen ? ' open' : ''} ontoggle="rkOtherOpen = this.open">
+      <summary class="rk-grp">${esc(t('apps.remoteKeys.otherRemotes', 'Buttons on other remotes ({n})', { n: otherRemotes.length }))}</summary>
+      <div class="rk-grid">${otherRemotes.map(tile).join('')}</div></details>` : '';
+  list.innerHTML = groups + more + other + brightness;
+  rkDirty = false;
   if (rkOpen) {
     const tile = list.querySelector(`.rk-key[data-key="${CSS.escape(rkOpen)}"]`);
     rkOpen = null;
@@ -531,8 +617,11 @@ function renderRemoteKeys(d) {
 function toggleRemoteKey(tile) {
   const list = q('apps-rk-list');
   const was = rkOpen;
+  const tileKey = tile && tile.dataset.key;
   closeRemoteKeyPicker();
-  if (!rkData || !list || was === tile.dataset.key) return;
+  if (!rkData || !list || !tileKey || was === tileKey) return;
+  tile = list.querySelector(`.rk-key[data-key="${CSS.escape(tileKey)}"]`);
+  if (!tile) return;
   const k = rkData.keys.find(x => x.key === tile.dataset.key);
   if (!k) return;
   rkOpen = k.key;
@@ -578,6 +667,7 @@ function toggleRemoteKey(tile) {
     ${k.replacesVoice ? `<div class="pv-note">${esc(t('apps.remoteKeys.replacesVoice', 'Set to anything else, this button no longer starts voice control. As LG has it brings it back.'))}</div>` : ''}
     ${k.homeGuide ? `<div class="pv-note">${esc(t('apps.remoteKeys.guideNative', 'On this TV the Guide key needs a change to LG’s key handler. Setting it restarts the TV’s screen once, and again each time the TV starts.'))}</div>` : ''}
     ${k.nativeInput ? `<div class="pv-note">${esc(t('apps.remoteKeys.inputNative', 'On this TV the Input key needs a change to LG’s key handler. Setting it, or setting it back to LG’s list, restarts the TV’s screen once, and the change is made again each time the TV starts.'))}</div>` : ''}
+    ${k.channelNative ? `<div class="pv-note">${esc(t('apps.remoteKeys.channelNative', 'On this TV the channel keys need a change to LG’s key handler. Setting one, or setting one back to As LG has it, restarts the TV’s screen once, and the change is made again each time the TV starts. While set, the key no longer changes the channel.'))}</div>` : ''}
     ${k.turnsOffVoice ? `<div class="pv-note">${esc(t('apps.remoteKeys.turnsOffVoice', 'Setting this key switches off LG\'s voice assistant, so voice search, the AI assistant and the microphone stop working until it is As LG has it again.'))}</div>` : ''}
     <div class="rk-opts">${opt('lg', esc(t('apps.remoteKeys.lg', 'As LG has it')))}${k.noNothing ? '' : opt('nothing', `<span aria-hidden="true">⦸</span> ${esc(t('apps.remoteKeys.nothing', 'Nothing'))}`)}${switchers}${barChoice}${gone}</div>
     ${media.length ? `<div class="rk-sub">${esc(t('apps.remoteKeys.buttons', 'Buttons'))}</div>
@@ -602,17 +692,47 @@ function rkAimArrow(tile, pick) {
   pick.style.setProperty('--rk-arrow', Math.round(r.left - g.left + r.width / 2) + 'px');
 }
 
-function closeRemoteKeyPicker(refocus) {
+function closeRemoteKeyPicker(refocus, flush) {
   const list = q('apps-rk-list');
+  const closedKey = rkOpen;
   const pick = list && list.querySelector('.rk-pick');
   if (pick) pick.remove();
-  const tile = list && rkOpen ? list.querySelector(`.rk-key[data-key="${CSS.escape(rkOpen)}"]`) : null;
+  const tile = list && closedKey ? list.querySelector(`.rk-key[data-key="${CSS.escape(closedKey)}"]`) : null;
+  const shouldFlush = flush !== false && rkDirty && appsData;
   if (tile) {
     tile.classList.remove('rk-open');
     tile.setAttribute('aria-expanded', 'false');
-    if (refocus) tile.focus();
+    if (refocus && !shouldFlush) tile.focus();
   }
   rkOpen = null;
+  if (shouldFlush) {
+    rkDirty = false;
+    renderRemoteKeys(appsData);
+    if (refocus && closedKey && list) {
+      const fresh = list.querySelector(`.rk-key[data-key="${CSS.escape(closedKey)}"]`);
+      if (fresh) fresh.focus();
+    }
+  }
+}
+
+async function fetchRemoteKeys() {
+  try {
+    const r = await fetch(api('/api/remotekeys'), { cache: 'no-store' });
+    if (!r.ok) return null;
+    const rk = await r.json();
+    return rk && rk.ok ? rk : null;
+  } catch (e) {
+    return null;
+  }
+}
+
+async function refreshRemoteKeys() {
+  if (!appsData) return loadApps();
+  const rk = await fetchRemoteKeys();
+  if (!rk) return loadApps();
+  appsData.remoteKeys = rk.supported ? rk : null;
+  renderRemoteKeys(appsData);
+  showRemoteTab();
 }
 
 async function chooseRemoteKey(btn) {
@@ -634,9 +754,25 @@ async function chooseRemoteKey(btn) {
   } catch (e) {
     error = e.message;
   }
-  closeRemoteKeyPicker(true);
+  const rk = appsData ? await fetchRemoteKeys() : null;
+  if (rkOpen === key) {
+    // Skip flushing the pre-change appsData when fresh keys are about to render.
+    if (rk && appsData) rkDirty = false;
+    closeRemoteKeyPicker(false, !(rk && appsData));
+  }
   if (error) alert(t('apps.remoteKeys.failed', 'Could not change it: {error}', { error }));
-  await loadApps();
+  if (rk && appsData) {
+    appsData.remoteKeys = rk.supported ? rk : null;
+    renderRemoteKeys(appsData);
+    showRemoteTab();
+    if (!rkOpen) {
+      const list = q('apps-rk-list');
+      const fresh = list && list.querySelector(`.rk-key[data-key="${CSS.escape(key)}"]`);
+      if (fresh) fresh.focus();
+    }
+  } else {
+    await loadApps();
+  }
 }
 
 async function rkSetBrightnessStep(value) {
@@ -653,7 +789,50 @@ async function rkSetBrightnessStep(value) {
     error = e.message;
   }
   if (error) alert(t('apps.remoteKeys.failed', 'Could not change it: {error}', { error }));
-  await loadApps();
+  await refreshRemoteKeys();
+}
+
+async function rkSetBrightnessBarStyle(value) {
+  let error = null;
+  try {
+    const res = await fetch(api('/api/remotekeys'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ brightnessBarStyle: value })
+    });
+    const r = await res.json();
+    if (!r || !r.ok) error = (r && r.error) || t('common.unknownError', 'unknown error');
+  } catch (e) {
+    error = e.message;
+  }
+  if (error) alert(t('apps.remoteKeys.failed', 'Could not change it: {error}', { error }));
+  await refreshRemoteKeys();
+}
+
+function toggleRemoteOnly() {
+  const rs = rkData && rkData.remotes;
+  if (!rs) return;
+  rkSetRemotes(rs.mode === 'all');
+}
+
+// checked: fold to the remote(s) detected ('auto'); unchecked: every button ('all').
+async function rkSetRemotes(checked) {
+  const btn = q('btn_remote_only');
+  if (btn) btn.disabled = true;
+  let error = null;
+  try {
+    const res = await fetch(api('/api/remotekeys'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ remotes: { mode: checked ? 'auto' : 'all' } })
+    });
+    const r = await res.json();
+    if (!r || !r.ok) error = (r && r.error) || t('common.unknownError', 'unknown error');
+  } catch (e) {
+    error = e.message;
+  }
+  if (error) alert(t('apps.remoteKeys.failed', 'Could not change it: {error}', { error }));
+  await refreshRemoteKeys();
 }
 
 document.addEventListener('keydown', e => {
@@ -1017,6 +1196,97 @@ function renderBackgroundServices(d) {
       </div>
     </div>`;
   }).join('');
+}
+
+function renderRunningApps(d) {
+  const list = q('apps-running-list');
+  const summary = q('apps-running-summary');
+  const actions = q('apps-running-actions');
+  const closeAllBtn = q('btn-close-all-running');
+  const running = d.running || [];
+  const totalMb = running.reduce((sum, a) => sum + (a.mb || 0), 0);
+
+  if (summary) {
+    if (!running.length) {
+      summary.textContent = t('apps.running.none', 'None running');
+    } else if (running.length === 1) {
+      summary.textContent = totalMb
+        ? t('apps.running.summaryOneMb', '1 app · {mb} MB', { mb: totalMb })
+        : t('apps.count.one', '1 app');
+    } else {
+      summary.textContent = totalMb
+        ? t('apps.running.summaryMb', '{n} apps · {mb} MB', { n: running.length, mb: totalMb })
+        : t('apps.count', '{n} apps', { n: running.length });
+    }
+  }
+
+  if (actions) actions.style.display = running.length > 1 ? '' : 'none';
+  if (closeAllBtn) {
+    closeAllBtn.disabled = !d.writable;
+    closeAllBtn.textContent = t('apps.running.closeAll', 'Close all');
+  }
+
+  if (!list) return;
+  if (!running.length) {
+    list.classList.remove('catalog-grid');
+    list.innerHTML = `<div class="sub" style="padding:16px 0">${esc(t('apps.running.noneDesc', 'No apps are currently running in memory.'))}</div>`;
+    return;
+  }
+
+  list.classList.add('catalog-grid');
+  list.innerHTML = running.map(a => {
+    const title = a.title || a.id;
+    const monogram = esc(String(title).trim().charAt(0).toUpperCase() || '?');
+    const iconUrl = api(a.iconUrl || ('/api/apps/icon?id=' + encodeURIComponent(a.id)));
+    const badges = [];
+    if (a.foreground) badges.push(`<span class="app-badge">${esc(t('apps.running.inFront', 'In front'))}</span>`);
+    if (a.mb) badges.push(`<span class="app-badge">${esc(t('apps.running.mb', '{mb} MB', { mb: a.mb }))}</span>`);
+    return `<div class="catalog-card" id="running-card-${esc(a.id)}">
+      <div class="catalog-card-head">
+        <span class="catalog-card-ico-wrap"><span class="catalog-card-monogram" aria-hidden="true">${monogram}</span><img class="catalog-card-ico" src="${iconUrl}" width="46" height="46" loading="lazy" alt="" onerror="this.style.display='none'"></span>
+        <div class="catalog-card-main">
+          <div class="catalog-card-title" title="${esc(title)}" translate="no">${esc(title)}</div>
+          <div class="catalog-card-meta" translate="no">${esc(a.id)}</div>
+        </div>
+      </div>
+      ${badges.length ? `<div class="catalog-card-badges">${badges.join('')}</div>` : ''}
+      <div class="prot-status">
+        <button type="button" class="pill bad" id="btn-close-app-${esc(a.id)}" onclick="closeRunningApp('${jsq(a.id)}')" ${d.writable ? '' : 'disabled'}>${esc(t('apps.running.close', 'Close'))}</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function sendCloseRunning(body, btn) {
+  if (btn) {
+    btn.disabled = true;
+    btn.classList.add('busy');
+    btn.textContent = t('apps.running.closing', 'Closing\u2026');
+  }
+  let error = null;
+  try {
+    const res = await fetch(api('/api/apps/close'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    const d = await res.json().catch(() => ({}));
+    if (!res.ok || !d || !d.ok) error = (d && d.error) || t('common.unknownError', 'unknown error');
+  } catch (e) {
+    error = e.message;
+  } finally {
+    if (btn) btn.classList.remove('busy');
+  }
+  await loadApps();
+  if (error) alert(t('apps.running.closeFailed', 'Could not close app: {error}', { error }));
+}
+
+function closeRunningApp(appId) {
+  return sendCloseRunning({ id: appId }, document.getElementById('btn-close-app-' + appId));
+}
+
+function closeAllRunningApps() {
+  return sendCloseRunning({ all: true }, q('btn-close-all-running'));
 }
 
 function renderPreload(d) {

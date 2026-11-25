@@ -109,6 +109,8 @@ var appsModule = null;
 var lgSettings = null;
 /** @type {typeof import('./updater')} */
 var updater = null;
+/** @type {typeof import('./updateask')} */
+var updateAsk = null;
 /** @type {typeof import('./devtools')} */
 var devtoolsModule = null;
 /** @type {typeof import('./ntp')} */
@@ -1332,6 +1334,13 @@ function doControl(action, value, cb) {
         cb(typeof updateSummaryFn === 'function' ? getUpdateSummary() : r);
       });
 
+    case 'updateAskOnTv':
+      if (!updateAsk) return cb({ ok: false, error: 'not available' });
+      return updateAsk.setEnabled(value === true || value === 'on' || value === 'true', function (r) {
+        if (r && !r.ok) return cb(r);
+        cb(typeof updateSummaryFn === 'function' ? getUpdateSummary() : updater.updateSummary());
+      });
+
     case 'updateRollback':
       return updater.rollbackUpdate(function (r) {
         if (r && r.ok) setTimeout(function () { doRestartSelf(); }, 600);
@@ -1352,7 +1361,7 @@ function doControl(action, value, cb) {
         cb(getUpdateSummary());
       });
 
-    // LG's No Signal screen: as LG made it, plain "No Signal", or disconnected cable icon.
+    // LG's No Signal screen: as LG made it, plain "No Signal", a disconnected cable icon, or Art's pictures.
     case 'plainNoSignal':
       return nosignal.set(value, cb);
 
@@ -1592,6 +1601,7 @@ function init(opts) {
   if (opts.apps) appsModule = opts.apps;
   if (opts.lgSettings) lgSettings = opts.lgSettings;
   if (opts.updater) updater = opts.updater;
+  if (opts.updateAsk) updateAsk = opts.updateAsk;
   if (opts.devtools) devtoolsModule = opts.devtools;
   if (opts.ntp) ntpModule = opts.ntp;
   if (opts.history) historyModule = opts.history;

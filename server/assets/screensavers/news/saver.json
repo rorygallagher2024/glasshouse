@@ -1,0 +1,137 @@
+{
+  "manifest": 1,
+  "version": "1.0.0",
+  "name": {
+    "en": "News",
+    "ar": "الأخبار",
+    "es": "Noticias",
+    "de": "Nachrichten",
+    "fr": "Actualités",
+    "hu": "Hírek",
+    "it": "Notizie",
+    "pl": "Wiadomości",
+    "pt": "Notícias",
+    "pt-br": "Notícias",
+    "ru": "Новости",
+    "sv": "Nyheter",
+    "vi": "Tin tức"
+  },
+  "description": {
+    "en": "The time and date, with the headlines of the news feeds you add running along the bottom.",
+    "ar": "الوقت والتاريخ، مع عناوين خلاصات الأخبار التي تضيفها تمر في أسفل الشاشة.",
+    "es": "La hora y la fecha, con los titulares de las fuentes de noticias que añadas pasando por abajo.",
+    "de": "Uhrzeit und Datum, unten laufen die Schlagzeilen der hinzugefügten Nachrichten-Feeds durch.",
+    "fr": "L'heure et la date, avec les titres des flux d'actualités ajoutés qui défilent en bas.",
+    "hu": "Az idő és a dátum, alul a hozzáadott hírcsatornák címeivel futószalagon.",
+    "it": "Ora e data, con i titoli dei feed di notizie aggiunti che scorrono in basso.",
+    "pl": "Czas i data, a na dole przewijają się nagłówki dodanych kanałów wiadomości.",
+    "pt": "A hora e a data, com os títulos dos feeds de notícias adicionados a passar em baixo.",
+    "pt-br": "A hora e a data, com as manchetes dos feeds de notícias adicionados passando embaixo.",
+    "ru": "Время и дата, а внизу бегут заголовки добавленных новостных лент.",
+    "sv": "Tid och datum, med rubrikerna från de nyhetsflöden du lägger till rullande längst ner.",
+    "vi": "Giờ và ngày, với tiêu đề từ các nguồn tin bạn thêm chạy ở phía dưới."
+  },
+  "license": "MIT",
+  "uses": [
+    "level",
+    "choice",
+    "news"
+  ],
+  "choices": {
+    "label": {
+      "en": "Headlines",
+      "ar": "العناوين",
+      "es": "Titulares",
+      "de": "Schlagzeilen",
+      "fr": "Titres",
+      "hu": "Hírek",
+      "it": "Titoli",
+      "pl": "Nagłówki",
+      "pt": "Títulos",
+      "pt-br": "Manchetes",
+      "ru": "Заголовки",
+      "sv": "Rubriker",
+      "vi": "Tiêu đề"
+    },
+    "default": "left",
+    "options": [
+      {
+        "id": "left",
+        "name": {
+          "en": "Bottom left",
+          "ar": "أسفل اليسار",
+          "es": "Abajo a la izquierda",
+          "de": "Unten links",
+          "fr": "En bas à gauche",
+          "hu": "Lent balra",
+          "it": "In basso a sinistra",
+          "pl": "Na dole po lewej",
+          "pt": "Em baixo à esquerda",
+          "pt-br": "Embaixo à esquerda",
+          "ru": "Внизу слева",
+          "sv": "Nere till vänster",
+          "vi": "Dưới bên trái"
+        },
+        "value": "left"
+      },
+      {
+        "id": "center",
+        "name": {
+          "en": "Bottom centre",
+          "ar": "أسفل الوسط",
+          "es": "Abajo en el centro",
+          "de": "Unten mittig",
+          "fr": "En bas au centre",
+          "hu": "Lent középen",
+          "it": "In basso al centro",
+          "pl": "Na dole na środku",
+          "pt": "Em baixo ao centro",
+          "pt-br": "Embaixo no centro",
+          "ru": "Внизу по центру",
+          "sv": "Nere i mitten",
+          "vi": "Dưới ở giữa"
+        },
+        "value": "center"
+      },
+      {
+        "id": "right",
+        "name": {
+          "en": "Bottom right",
+          "ar": "أسفل اليمين",
+          "es": "Abajo a la derecha",
+          "de": "Unten rechts",
+          "fr": "En bas à droite",
+          "hu": "Lent jobbra",
+          "it": "In basso a destra",
+          "pl": "Na dole po prawej",
+          "pt": "Em baixo à direita",
+          "pt-br": "Embaixo à direita",
+          "ru": "Внизу справа",
+          "sv": "Nere till höger",
+          "vi": "Dưới bên phải"
+        },
+        "value": "right"
+      },
+      {
+        "id": "clock",
+        "name": {
+          "en": "Under the clock, moving with it",
+          "ar": "تحت الساعة، تتحرك معها",
+          "es": "Bajo el reloj, moviéndose con él",
+          "de": "Unter der Uhr, mit ihr wandernd",
+          "fr": "Sous l'horloge, qui la suit",
+          "hu": "Az óra alatt, vele együtt mozogva",
+          "it": "Sotto l'orologio, che si sposta con esso",
+          "pl": "Pod zegarem, przesuwając się z nim",
+          "pt": "Por baixo do relógio, a acompanhá-lo",
+          "pt-br": "Embaixo do relógio, acompanhando-o",
+          "ru": "Под часами, вместе с ними",
+          "sv": "Under klockan, följer med den",
+          "vi": "Dưới đồng hồ, di chuyển cùng nó"
+        },
+        "value": "clock"
+      }
+    ]
+  },
+  "order": 13
+}

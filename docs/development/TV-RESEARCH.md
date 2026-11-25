@@ -784,6 +784,17 @@ On an OLED65B8SLC (webOS 4.4.3) and an OLED42C24LA (webOS 9.2.2) set to the UK
 `systemprefs.db`. The clocks Glasshouse draws follow it, and a TV that answers
 without `timeFormat` is taken as 24-hour.
 
+## The screen saver app's QML locale (C6, webOS 11.1)
+
+QML screen savers run inside LG's `com.webos.app.screensaver`, whose QML
+locale stays `en_US` whatever the TV's menu language: on an OLED77C64LA
+(webOS 11.1.0) set to Swedish, `Qt.formatDate(now, "dddd d MMMM")` gave
+"Sunday 22 November". The menu language is read from
+`com.webos.settingsservice/getSystemSettings` with `keys: ["localeInfo"]`, as
+`settings.localeInfo.locales.UI` (`sv-SE`): on that TV, adding
+`category: "option"` gave an answer without `localeInfo`, and the dates stayed
+English until the key was asked for without a category.
+
 ## Home input titles (G3, webOS 9.2.2)
 
 HDMI launch points added by Glasshouse are bookmarks with `systemApp: false`.
@@ -999,6 +1010,35 @@ Measured on 22 October 2026 on an LCD 65UQ801C0SB, firmware 04.60.90.
 - **LG's Home is slow to come back.** Given its place back and launched, it was
   in front about 6 s later, against 2 to 3 s on a G3; the screen is black
   meanwhile.
+
+## The screen saver's runner (OLED55A19LA, webOS 6.5.3)
+
+- `qml-runner` runs a QML screen saver with its standard output and error on
+  `/dev/null`: `console.log` from the saver is lost, and nothing of it
+  reaches `/var/log/messages`. A saver that ends shows there only as the
+  window going invisible, then tvpowerd going back to Active.
+- The GPU is a single-core Mali-G52 (`/sys/class/misc/mali0/device/gpuinfo`:
+  `Mali-G52 1 cores r1p0 0x7402`), with no utilisation figure under sysfs.
+- With Spotify playing behind the screen saver, WebAppMgr kept using about
+  42% of one core and the compositor 21%; the load average stayed near 38.
+
+## The sound output as a capture device (OLED55A19LA, webOS 6.5.3)
+
+Checked with Spotify playing, read-only, on 21 November 2026:
+
+- `/proc/asound/pcm` lists card 0 (`mlp_scard_audio`) with eight software
+  mixer playback devices, two game audio ones, and three capture devices:
+  `00-10: Pcm8 capture App`, `00-11: AAC encode capture` and
+  `00-12: Pcm9 capture App`.
+- `arecord -D hw:0,10 -f S16_LE -c 2 -r 48000` and the same on `hw:0,12`
+  record the mix the TV is playing, Spotify included: neighbouring samples
+  differ by a fifth of their size, as music does, not noise. Recording did not
+  interrupt playback.
+- PulseAudio runs system-wide (`/var/run/pulse/native`). Its `pcm_output` sink
+  was `RUNNING`, but `parec` from `pcm_output.monitor` gave only zeros:
+  Spotify does not play through it.
+- With Spotify in front, the TV still went into the screen saver when idle,
+  though a request to start one was refused as something playing.
 
 ## The screen saver and the Magic Remote's pointer (webOS 9.2, C2)
 
@@ -1660,6 +1700,40 @@ rebooted, through a night in standby. lginput2's luna methods include
 `enableLoggingMotion`, `getSensorData` and `enablePrintRfStatus`, none of which
 Glasshouse calls; `getConnectionStatus` and `getDeviceInfo` left it at 0%.
 
+## The ?, 123 and Home Hub buttons in the key filters (C5, webOS 10.3.0)
+
+On an OLED48C56LB (webOS 10.3.0) with an MR25GA, LG's `appLaunch.js` in
+`/usr/lib/qt5/qml/KeyFilters/` names the ? button as `WebOS.Key_webOS_Multikey`: a press calls
+`launchAccessibility`, and a 2 s hold, timed by `longPressTimer`, `launchAccessibilityOverlay`,
+unless `settingsService.disableAccessibilityLaunch`. The key reaches Linux as code 1124,
+`IR_KEY_MULTIKEY`. The Home Hub button (`IR_KEY_INPUT_HUB`, Linux code 1023) reaches the filters
+as `Qt.Key_Video` (`0x010000f3` in `/usr/share/X11/xkb/keycodes/lg`): `appLaunch.js` launches
+`inputHubAction.appId` with the last input (`applicationManager.checkLaunch`), passing the key on
+where that app is already full screen, or, where `inputHubAction.action` is `showInputPicker`,
+shows `com.webos.app.quickinputpicker`.
+
+The 123 button reaches the filters as `WebOS.Key_webOS_ScreenRemote` (Qt `0x01200032`; Linux
+code 994, `IR_KEY_SCREEN_REMOTE`). `appLaunch.js` sends it on to YouTube's window, leaves it to a
+foreground app whose info has `handleScreenRemoteKey` (the web browser shows its own menu) and to
+the screen saver, opens `com.webos.app.multiviewsettings` in multi-view, and otherwise asks
+`systemUIManager/launch` for `com.webos.app.screenremote`: LG's on-screen remote, here a list of
+the user manual, Sport, Quick Help and the four colour keys. That id is not an app
+(`getAppInfo` refuses it); `systemUi.js` closes it as `screenRemoteView`. Held, the button
+toggles audio description, `AD/SAP` printed under it.
+
+## Which Magic Remote model the TV knows (C5, webOS 10.3.0)
+
+On an OLED48C56LB (webOS 10.3.0, firmware 33.30.80) with an MR25GA, by its label, the remote's
+model is in every place that keeps its Bluetooth name: `bluetooth2/device/getStatus` lists it as
+`LGE MR25GA` (`typeOfDevice` `ble`), `mrcu1.info` has `Name = LGE MR25GA` with `fwVer`, the
+first line of `mrcu_info` beside it is `LGE MR25GA`, `pairing_history` there logs
+`MR25GA <firmware> PAIR_OK(KEY_OK)` among other Bluetooth devices' events, and lginput2's
+`NL_BUTTON_CLICK` lines in `/var/log/messages` carry `"remote_type":"LGE MR25GA"`. The input
+devices carry no model: `LGE M-RCU - Builtin [0]` to `[2]`, vendor and product 0.
+`mrcu/getDeviceInfo` with `MagicRemote_1` gives the slot, the address and, while the remote is
+awake, its firmware, but no name. The name is the remote's own; nothing checks it against the
+hardware.
+
 ## MR25GA battery (C5, webOS 11.2)
 
 OLED77C5PUA.DUSQLJR, firmware 43.21.31, read on 3 November 2026:
@@ -1897,6 +1971,44 @@ With `setPreloadPolicy` `isEnabled: false` for `com.webos.app.home` the preload
 manager launched only HDMI 4 in nine minutes of the same file, and set back to
 `true` it launched Home 8 s later.
 
+## Streaming buttons with the screen off open LG's apps (OLED48C56LB, webOS 10.3.0)
+
+With the screen off (`tvpowerd`: `Screen Off`, from `power/turnOffScreen`) a press of
+a streaming button never reaches the JavaScript key filter. About 200 to 260 ms
+after the press sam logs `NL_APP_LAUNCH_BEGIN` for the button's app, with
+`caller_id: com.webos.platformstarfish` and `mode: hotKey`, in the same millisecond
+as `tvpowerd` moves `Screen Off` to `Active`. A launch from the filter has
+`com.webos.surfacemanager` as its caller. Netflix (`netflix`), Prime Video
+(`amazon`), Disney+ (`com.disney.disneyplus-prod`), LG Channels
+(`com.webos.app.lgchannels`) and Rakuten TV (`ui30`) all did it, with Glasshouse
+holding the key as Nothing or as Screen off; with the screen on the same keys
+opened nothing. The Alexa button (`KEY_ALEXAVOICE`) only woke the screen.
+
+The apps are the ones in the settings service's `other.mapping_info`, LG's list of
+streaming buttons (35 entries on this TV, each `{ name: { app_id, launch_param,
+isActive } }`; the list webOS 11's key filters read). With the `lgchannels` entry
+set to `isActive: false` (the rest of the list as it was), the press of LG
+Channels with the screen off woke the TV and opened nothing, and no toast window
+opened; with the entry as LG has it, the same press opened LG Channels five times
+out of five. LG did not write the list back while the screen was off or when it
+woke.
+
+## Drawing in the compositor from a key filter (C5, webOS 10.3.0)
+
+A JavaScript key filter is loaded by `controllers/base/StarfishKeyFilterLoader.qml`
+into `StarfishKeyFilterShell.js` with `Qt.include`, and is handed only wrapper
+objects (`volume`, `overlayView` and the rest hold selected properties and bound
+functions, never a view). The compositor's views are still reachable by name:
+`views` is a property of the `StarfishKeyFilter.qml` item, the loader is made in
+that file's context, and QML name lookup walks up to it. `views.starfishVolume`
+is LG's volume view (`StarfishVolumeView.qml`), made once with
+`StarfishViewsRoot.qml` and only shown and hidden; its `parent` is the layer the
+system UI views share. `Qt.createQmlObject(qml, views.starfishVolume.parent)`
+from the filter puts an item there, drawn over apps and video like the volume
+bar, with no app window or launch (no `NL_APP_LAUNCH_BEGIN` or `NL_VSC` in
+`/var/log/messages`). The item outlives the filter: configd handing the
+compositor a new chain destroys the loader, not what it made.
+
 ## Native key filters (C5, webOS 11.2.0)
 
 - **No JavaScript filters.** `surface-manager` runs on Weston
@@ -2069,6 +2181,56 @@ manager launched only HDMI 4 in nine minutes of the same file, and set back to
   own check closes it unseen.
 - **The compositor's restart leaves no app.** With Glasshouse Home off nothing
   opens LG's Home after it, and the screen stays black until an app is launched.
+
+## The channel keys, native key filters (OLED48C54LA, webOS 11.2.0, firmware 43.21.77)
+
+- **Volume and channel reach the key filters.** `libsystemUI.so`'s
+  `handleSystemKeys` names `KEY_CHANNELUP`, `KEY_CHANNELDOWN` and calls
+  `master/volumeUp` itself. Nothing in `com.webos.keyaction.*` names the channel
+  keys; `com.webos.keyaction.volume` is `{ action: "ignore" }`.
+- **The first filter blocks what the profile lists.** `handleKeyBlockByApp`
+  (`libpreProcess.so`, first in `keyFiltersCpp`) asks
+  `systemprofile/getProfiles` for `blockedKeys` once, as it loads, and accepts
+  every event of a key whose code is in it, after `createToast(0x2b)`, LG's
+  "This button is not available" notice. The list is empty on this TV.
+- **`blockedKeys` cannot be set from outside.** `profile_generator` reads each
+  JSON file in `/var/webos-profile/override/` (`[override_directory] file:`)
+  and copies a value it does not know into
+  `/var/webos-profile/platform/profile.json` as it is, an array included, but
+  recomputes `blockedKeys`, `blockedOrgKeys` and `blockedApps` from the feature
+  files in `/etc/webos-profile/platform/configuration/` (`[process] ignore
+  feature : blockedKeys`), each a list of key names that `profile_keymap.json`
+  turns into codes (`IR_KEY_CH_UP` 402). No feature lists the channel keys, and
+  a feature named only in an override is ignored too. `debug/rescan` runs the
+  generator again; `getProfiles` returns the new value within a few seconds.
+- **Two 11-character names make the list Glasshouse's.** The filter's request
+  `{"names":["blockedKeys"]}` (at 0x1533f) and the name it reads in the answer
+  (0x152a8, only used there) both made `tvwebBlocks`, an override value, and
+  the filter took 402 and 403, nothing of LG's acting on them, Live TV
+  included. The toast call (`blx` at 0xb7b8) has no result anyone reads.
+- **Only whitelisted log lines reach `/var/log/messages`.** PmLogDaemon passes
+  the context and message id pairs in `/etc/PmLogDaemon/whitelist.txt`; even
+  `PmLogCtl logkv LSM info ...` with another id is dropped, as are the filters'
+  own `[KEY_HANDLER]` lines. `LSM NL_INPUT_KEYFILTER_USE` and `lginput2
+  NL_NON_LIST_BUTTON_CLICK` are on it.
+- **`lginput2` logs presses, not holds.** It logs each press of a channel key as
+  `NL_NON_LIST_BUTTON_CLICK`, quick presses 160 ms apart included, but a key
+  held for 3 s logged once and another twice. It holds the remote's
+  `/dev/input/event*` devices: reading them gave nothing.
+- **The filter sees every event.** Code written into the zeros after
+  `.eh_frame` (0x18854 to 0x18a20, mapped executable with the segment's last
+  page) and called in place of the toast logged, for a 3 s hold, a press (`ev`
+  0), 61 repeats (`ev` 2) 50 ms apart from 0.5 s after it, and the release (`ev`
+  1). The compositor ran on it without a restart.
+- **A word past `.bss` is free and writable.** The library's `.bss` ends at
+  0x1a2b4; the loader zeroes the rest of that page, which the library does not
+  use. A repeat counter at 0x1a2c0 let the code log the first repeat and every
+  fourth after it: a 2.5 s hold logged 11 repeats, 200 ms apart from 0.5 s.
+- **The panel follows OLED Light written every 0.2 s,** read before each write
+  or not, and with a key held: five steps of 10 in a second were each seen.
+- **After a restart of the compositor nothing is in front** until Home is
+  pressed or an app opened: the screen stayed black after one, LG's Home showed
+  after another.
 
 ## Promoted stub apps (G3, webOS 9.2.2)
 
@@ -3948,6 +4110,13 @@ The prefix is the mode name for SDR (`filmMaker`) and snake case for HDR
 
 ### getExternalPqData from the stored files
 
+Nothing in the dashboard, the TV app or this repo calls this route. It is for
+external calibration tools that read the 3D LUT back from the TV with
+`externalpq/getExternalPqData` to verify an upload (Colour Me Impressed's
+AutoCal does this and gets `no file path from tvservice` from a C1). Pointed at
+Glasshouse instead of the TV, such a tool gets the stored cube from the slot
+file. It has not been run against a real tool yet.
+
 `POST /api/externalpq/getExternalPqData` takes the payload a modern LG's
 `externalpq/getExternalPqData` takes (`command`) plus `picMode` and optional
 `profileNo` and `colorSpace` (`BT709` or `BT2020`) to pick the slot. A
@@ -3973,3 +4142,53 @@ false` with the C1's text, `no file path from tvservice`. Errors from the
 route itself (401, 400, 413, 415) use `{ok:false,error}`. The route needs the
 Glasshouse token, because the reply holds table data, and it is never logged.
 
+
+## The volume bar's layout (OLED48C56LB, webOS 10.3.0)
+
+LG's volume bar is QML in the compositor (`surface-manager`), not a web app:
+`/usr/lib/qml/WebOSCompositor/views/StarfishVolumeView.qml` decides when it
+shows and `views/volume/StarfishVolume.qml` draws it, with the sizes and
+timings in the `"volume"` block of `StarfishDefaultSettings.qml` and the images
+in `images/4k/` (also `qhd/` and the plain folder). Sizes are in units of a
+1920 x 1080 screen, scaled to the output; the 4k images are twice those.
+
+The bar is vertical at the right edge, centred on the screen. From the left it
+has the output's icon (72), the level as a number (font 85, `#E6E5E5`, with a
+drop shadow), and a track 36 wide and 570 high, 51 from the edge, with an up
+and a down arrow (about 30 square) above and below it. The fill is 18 wide, up
+to 534 long above a 10 margin. When muted it is replaced by a 96 circle
+(`#373A41`, opacity 0.5) holding a mute icon. It fades in and out in 150 ms and
+stays up 1500 ms after the last change.
+
+The configd value `com.webos.surfacemanager.volumeOSD` (`true` unless set)
+turns the bar and the mute icon off: with it `false` the view marks itself
+unavailable and closes. On this TV, setting it to `false` removed both at
+once, without restarting anything, and `true` brought them back.
+LG has no brightness bar to copy; the level bar of a Brightness key takes this
+layout.
+
+## Live audio decoder state under `/proc/lg/amst0` (B8, webOS 4.4.3)
+
+Measured on 22 November 2026 on an OLED65B8SLC (`05.50.70`) while Spotify (`spotify-beehive`) played in the foreground. The TV answers `Unknown method` for `com.webos.service.audio/tv/getAudioInputProperty` and has no `/proc/lgtv-driver/audio` files, while `/proc/lg/amst0/` exposes DSP decoder and renderer state:
+
+- `/proc/lg/amst0/status` reports `Main Decoder : 1`.
+- `/proc/lg/amst0/dec0/status` (idle HDMI 2) reports `bStarted: OFF`, `codec: AUD_CODEC_UNKNOWN`, `samplingFreq: 0`.
+- `/proc/lg/amst0/dec1/status` (active Spotify) reports `bStarted: ON`, `input: AUD_INPUT_SYSTEM`, `codec: AUD_CODEC_AAC`, `samplingFreq: 44100`, `avgBitRate: 128000`.
+- `/proc/lg/amst0/ren{0,1}/status` report `bStarted`, `input` (`AUD_INPUT_HDMI2`, `AUD_INPUT_SYSTEM`), `bSetMainRen`, and `samplingFreq`.
+
+## The channel keys reach the JavaScript key filter (OLED48C56LB, webOS 10.3.0)
+
+On an OLED48C56LB (webOS 10.3.0, firmware 33.30.80), `appLaunch.js` and
+`systemUi.js` name `WebOS.Key_webOS_ChannelUp` and `WebOS.Key_webOS_ChannelDown`,
+so Glasshouse offers the channel keys on webOS 10 and below: a key that is set is
+accepted by the filter, so LG's channel change no longer happens for it. On webOS
+11 the filters no longer carry them (see the OLED48C54LA section above); they are
+offered through `lib/guidepatch` instead.
+
+On a B8 (OLED65B8SLC, webOS 4.4.3), no filter names a channel key (only
+`Key_webOS_ChannelDash`), but the WebOS module
+`/usr/lib/qt5/qml/WebOS/Global/libwebosglobalplugin.so` defines
+`Key_webOS_ChannelUp` and `Key_webOS_ChannelDown`, so Glasshouse's own filter
+can name them. With CH+ set to open the browser, a CH+ press written to the
+remote's input device (`LGE RCU`, event1) brought the browser to the front over
+HDMI 2; set back to As LG has it, the same press left HDMI 2 in front.

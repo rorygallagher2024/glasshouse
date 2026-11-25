@@ -41,11 +41,68 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
 .tworow #bar{bottom:54px}
 .tworow .tile{margin-top:16px;margin-bottom:16px}
 .tworow .tile.now:after{bottom:-20px}
+/*
+ * The level bar (opened by a Brightness key), in one of three styles that the
+ * Remote tab chooses between (body.osdlg, body.osdh or body.osdvp): a vertical
+ * bar at the right edge, laid out like the TV's own volume bar (#osdv), or a
+ * dark pill with an icon, a track and the number (#osd), low on the screen
+ * (osdh) or upright at the right edge (osdvp).
+ */
+.osdlg #osd,.osdh #osdv,.osdvp #osdv{display:none}
+/*
+ * LG's volume bar (StarfishVolume.qml), as measured on a capture of it at
+ * 1920 x 1080: a tube 18 wide and 552 high from y 263, its right edge 60 from
+ * the screen's, a 1 px light outline round a dark inside (#262a2c over the
+ * picture) and a fill of the same width, a thin + above it and - below, the
+ * level in a light digit face with its right edge 54 from the tube, and the
+ * icon (a sun of the same 4 px stroke and 36 px height as its speaker) before the digits.
+ */
+#osdv{position:absolute;right:57px;top:calc(50% - 1px);-webkit-transform:translateY(-50%);transform:translateY(-50%);
+  display:-webkit-flex;display:flex;-webkit-align-items:center;align-items:center;opacity:0;
+  -webkit-transition:opacity .15s linear;transition:opacity .15s linear}
+/* It appears at once and fades out over 150 ms (LG's fadeAnimationDuration); a cut out reads as a pop. */
+.osdon #osdv{opacity:1;-webkit-transition:none;transition:none}
+#osdv .vico{position:relative;top:1px;-webkit-flex:0 0 auto;flex:0 0 auto;width:36px;height:36px;margin-right:16px;filter:drop-shadow(0 2px 8px rgba(0,0,0,.7))}
+#osdv .vico svg,#osdv .varrow svg{display:block;width:100%;height:100%}
+#osdv .vnum{position:relative;top:1px;-webkit-flex:0 0 auto;flex:0 0 auto;margin-right:38px;text-align:right;font-family:"LG Smart UI",sans-serif;font-size:85px;line-height:1;font-weight:400;
+  font-variant-numeric:tabular-nums;color:#e6e5e5;text-shadow:0 2.5px 8px rgba(0,0,0,.7)}
+#osdv .vcol{-webkit-flex:0 0 auto;flex:0 0 auto;display:-webkit-flex;display:flex;-webkit-flex-direction:column;flex-direction:column;-webkit-align-items:center;align-items:center}
+#osdv .varrow{width:24px;height:24px}
+#osdv .vcol>.varrow:first-child{margin:0 0 10px}
+#osdv .vcol>.varrow:last-child{margin:9px 0 0}
+#osdv .vtrack{position:relative;box-sizing:border-box;width:18px;height:552px;border-radius:9px;border:1px solid #e5e9eb;background:rgba(55,58,65,.66)}
+#osdv .vfill{position:absolute;left:-1px;bottom:2px;width:18px;height:0;border-radius:9px;background:#e4e7e6}
+/* Centred, and as wide as its parts, which do not change with the level. */
+#osd{position:absolute;left:50%;bottom:80px;height:80px;border-radius:40px;-webkit-transform:translateX(-50%);transform:translateX(-50%);
+  background:rgba(34,34,36,.94);opacity:0;display:-webkit-flex;display:flex;
+  -webkit-align-items:center;align-items:center;padding:0 32px;
+  -webkit-transition:opacity .16s ease-out;transition:opacity .16s ease-out}
+.osdon #osd{opacity:1}
+/* Opening is at once: only closing fades. */
+.osdon #osd{-webkit-transition:none;transition:none}
+#osd .oico{-webkit-flex:0 0 auto;flex:0 0 auto;width:38px;height:38px;margin-right:24px}
+#osd .oico svg{display:block;width:100%;height:100%}
+#osd .otrack{-webkit-flex:0 0 460px;flex:0 0 460px;width:460px;height:11px;border-radius:6px;background:rgba(255,255,255,.22);overflow:hidden}
+#osd .ofill{height:100%;width:0;border-radius:6px;background:#fff}
+/* Room for three digits whatever the level, so neither the pill nor the track changes size; the digits hug the right side. */
+#osd .onum{-webkit-flex:0 0 auto;flex:0 0 auto;width:3ch;margin-left:24px;text-align:right;font-size:36px;font-weight:500;font-variant-numeric:tabular-nums;color:#fff}
+/*
+ * The same pill upright at the right edge, level with the volume bar's: the icon
+ * on top, the track and the fill rising from its foot, and the number below.
+ */
+.osdvp #osd{left:auto;right:60px;bottom:auto;top:50%;width:80px;height:auto;-webkit-flex-direction:column;flex-direction:column;
+  padding:32px 0;-webkit-transform:translateY(-50%);transform:translateY(-50%)}
+.osdvp #osd .oico{margin:0 0 24px}
+.osdvp #osd .otrack{position:relative;-webkit-flex:0 0 460px;flex:0 0 460px;width:11px;height:460px}
+.osdvp #osd .ofill{position:absolute;left:0;bottom:0;width:100%;height:0}
+.osdvp #osd .onum{width:3ch;margin:24px 0 0;text-align:center}
 </style>
 </head>
 <body>
 <div id="shade"></div>
 <div id="bar"><div id="tiles"></div></div>
+<div id="osdv"><div class="vico"><svg viewBox="0 0 36 36" fill="none" stroke="#e6e5e5" stroke-width="4"><circle cx="18" cy="18" r="6.6"/><path d="M18 6.4V0.2M18 29.6v6.2M6.4 18H0.2M29.6 18h6.2M26.2 9.8l4.4-4.4M9.8 9.8L5.4 5.4M26.2 26.2l4.4 4.4M9.8 26.2l-4.4 4.4"/></svg></div><div class="vnum" id="vnum"></div><div class="vcol"><div class="varrow"><svg viewBox="0 0 24 24" fill="none" stroke="#e5e9eb" stroke-width="3.8" stroke-linecap="round"><path d="M12 3.5v17M3.5 12h17"/></svg></div><div class="vtrack"><div class="vfill" id="vfill"></div></div><div class="varrow"><svg viewBox="0 0 24 24" fill="none" stroke="#e5e9eb" stroke-width="3.8" stroke-linecap="round"><path d="M3.5 12h17"/></svg></div></div></div>
+<div id="osd"><div class="oico"><svg viewBox="0 0 48 48" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round"><circle cx="24" cy="24" r="8" fill="#fff" stroke="none"/><path d="M24 5v6M24 37v6M5 24h6M37 24h6M10.6 10.6l4.2 4.2M33.2 33.2l4.2 4.2M10.6 37.4l4.2-4.2M33.2 14.8l4.2-4.2"/></svg></div><div class="otrack"><div class="ofill" id="ofill"></div></div><div class="onum" id="onum"></div></div>
 <script>
 /*
  * The input bar: an overlay over the picture with the HDMI inputs Glasshouse
@@ -143,6 +200,98 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
     var params = !d.tuner && typeof d.uniqueId === 'number' && d.uniqueId > 0 && d.uniqueId < 15 ?
       { id: 'uniqueId', value: String(d.uniqueId) } : {};
     callService('luna://com.webos.applicationManager/launch', { id: id, params: params }, cb);
+  }
+
+  /*
+   * The level bar. Opened by a launch carrying { glasshouse: 'osd', kind:
+   * 'brightness', level } (the key filter, once for each press), it draws that
+   * level at once and then follows the server's while the key is held, up to
+   * OSD_IDLE_MS after the last change. A press while it is up only moves the
+   * time it closes. The page cannot ask the settings service itself: an app
+   * installed from developer mode holds only luna's public group, and a
+   * requiredPermissions in its appinfo.json does not add settings.read.
+   */
+  var OSD_IDLE_MS = 1600;
+  var OSD_POLL_MS = 120;
+  var OSD_FILL_MAX = 547;
+  var osdTimer = null, osdPoll = null, osdLevel = -1, osdOpen = false, osdCloseTimer = null, osdStyle = 'osdlg', osdPainted = '';
+  // The class the body carries while the bar is up: the LG-style bar, unless the launch or the server names another.
+  function osdClass(style) {
+    osdStyle = style === 'horizontal' ? 'osdh' : style === 'vertical' ? 'osdvp' : 'osdlg';
+  }
+  function osdBodyClass() {
+    document.body.className = 'osdon ' + osdStyle;
+  }
+  // Writes the level to the style on screen only; a change of style paints the other again.
+  function osdPaint() {
+    if (osdStyle === 'osdh' || osdStyle === 'osdvp') {
+      // The fill runs along the track: its width in the horizontal pill, its height in the upright one.
+      var fill = $('ofill').style;
+      fill.width = osdStyle === 'osdh' ? osdLevel + '%' : '';
+      fill.height = osdStyle === 'osdvp' ? osdLevel + '%' : '';
+      $('onum').textContent = String(osdLevel);
+    } else {
+      // A level above 0 is at least as tall as the fill is wide, so its ends stay round.
+      $('vfill').style.height = (osdLevel > 0 ? Math.max(18, Math.round(osdLevel * OSD_FILL_MAX / 100)) : 0) + 'px';
+      $('vnum').textContent = String(osdLevel);
+    }
+    osdPainted = osdStyle;
+  }
+  // True where the level is not the one drawn.
+  function osdDraw(level) {
+    var changed = level !== osdLevel;
+    if (!changed && osdPainted === osdStyle) return false;
+    osdLevel = level;
+    osdPaint();
+    return changed;
+  }
+  function osdStill() {
+    clearTimeout(osdTimer);
+    osdTimer = setTimeout(osdClose, OSD_IDLE_MS);
+  }
+  function osdClose() {
+    clearTimeout(osdTimer);
+    clearInterval(osdPoll);
+    osdPoll = null;
+    osdOpen = false;
+    document.body.className = '';
+    // Not closed for real if a press shows the bar again while it fades (osdShow).
+    clearTimeout(osdCloseTimer);
+    osdCloseTimer = setTimeout(function () { window.close(); }, 170);
+  }
+  function osdFollow() {
+    if (osdPoll) return;
+    osdPoll = setInterval(function () {
+      getJson(BASE + '/api/remotekeys/brightness', function (j) {
+        if (osdOpen && j && j.ok) {
+          // A style changed on the Remote tab while the bar is up takes effect at once.
+          if (j.style) { var before = osdStyle; osdClass(j.style); if (before !== osdStyle) osdBodyClass(); }
+          if (osdDraw(j.level)) osdStill();
+        }
+      });
+    }, OSD_POLL_MS);
+  }
+  function osdShow(p) {
+    var level = Math.max(0, Math.min(100, Math.round(Number(p.level))));
+    if (isNaN(level)) return osdClose();
+    clearTimeout(switchTimer);
+    clearTimeout(idle);
+    clearTimeout(osdCloseTimer);
+    closing = false;
+    osdOpen = true;
+    osdClass(p.style);
+    osdDraw(level);
+    osdBodyClass();
+    osdStill();
+    osdFollow();
+  }
+  // What a launch or relaunch carried: the event's detail, else the app's launch parameters.
+  function launchParamsNow(e) {
+    var p = e && e.detail;
+    if (!p || typeof p !== 'object') {
+      try { p = JSON.parse(window.PalmSystem.launchParams || '{}'); } catch (x) { p = {}; }
+    }
+    return p || {};
   }
 
   function close() {
@@ -335,12 +484,29 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
   }
   var idleUntilOpened = preloaded();
   // A relaunch while the bar is up is a further press that reached it that
-  // way rather than as a key: it moves on.
-  document.addEventListener('webOSRelaunch', function () {
+  // way rather than as a key: it moves on. One carrying a level is a Brightness
+  // key's, which draws the level bar instead.
+  document.addEventListener('webOSRelaunch', function (e) {
+    var p = launchParamsNow(e);
+    if (p.glasshouse === 'osd') { idleUntilOpened = false; return osdShow(p); }
+    // The Input key pressed while the level bar is up: the level bar goes, the input bar opens.
+    clearTimeout(osdCloseTimer);
+    if (osdOpen) {
+      osdOpen = false;
+      clearTimeout(osdTimer);
+      clearInterval(osdPoll);
+      osdPoll = null;
+      idleUntilOpened = false;
+      return start();
+    }
     if (idleUntilOpened || closing) { idleUntilOpened = false; start(); }
     else setFocus(focus + 1, true);
   });
-  if (idleUntilOpened) {
+  var firstParams = launchParamsNow(null);
+  if (firstParams.glasshouse === 'osd') {
+    idleUntilOpened = false;
+    osdShow(firstParams);
+  } else if (idleUntilOpened) {
     // Only the icons, so the first open draws at once.
     var icons = document.createElement('script');
     icons.src = BASE + '/assets/devicons.js';

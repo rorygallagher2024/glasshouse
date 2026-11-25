@@ -9,7 +9,9 @@
     "pl": "Prądy",
     "pt": "Correntes",
     "pt-br": "Correntes",
-    "ru": "Течения"
+    "ru": "Течения",
+    "sv": "Strömmar",
+    "vi": "Dòng chảy"
   },
   "description": {
     "en": "Streams of light flowing along a slowly changing wind on black.",
@@ -19,7 +21,9 @@
     "pl": "Strumienie światła płynące z wolno zmieniającym się wiatrem na czerni.",
     "pt": "Correntes de luz que fluem ao sabor de um vento que muda lentamente, sobre fundo preto.",
     "pt-br": "Fluxos de luz que seguem um vento em lenta mudança sobre o preto.",
-    "ru": "Потоки света текут по медленно меняющемуся ветру на чёрном фоне."
+    "ru": "Потоки света текут по медленно меняющемуся ветру на чёрном фоне.",
+    "sv": "Ljusströmmar som flyter med en långsamt skiftande vind på svart.",
+    "vi": "Những dải sáng trôi theo luồng gió đổi chiều chậm rãi trên nền đen."
   },
   "license": "MIT",
   "uses": [

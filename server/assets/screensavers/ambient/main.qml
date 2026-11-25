@@ -45,6 +45,16 @@ WebOSWindow {
     property color inkDim:    level > 0 ? "#c2c8d0" : "#5c6066"
     property color inkAccent: "__TVWEB_COLOR__"
     property bool hour12: __TVWEB_CLOCK12__
+    // The TV's menu language, such as sv_SE: LG's screen saver app keeps en_US.
+    property string tvLocale: "__TVWEB_LOCALE__"
+
+    // "dddd d MMMM" keeps one order everywhere, with the names in the TV's
+    // language, and a capital first, as the day starts a line of its own.
+    function dateText(d) {
+        var text = win.tvLocale ? d.toLocaleDateString(Qt.locale(win.tvLocale), "dddd d MMMM")
+                                : Qt.formatDate(d, "dddd d MMMM");
+        return text.charAt(0).toUpperCase() + text.slice(1);
+    }
     property bool showLabels: __TVWEB_CHOICE__
 
     property string val1: ""
@@ -346,7 +356,7 @@ WebOSWindow {
         var day = now.getFullYear() * 1000 + now.getMonth() * 40 + now.getDate();
         if (day !== win.shownDay) {
             win.shownDay = day;
-            dateLine.text = Qt.formatDate(now, "dddd d MMMM");
+            dateLine.text = win.dateText(now);
         }
     }
 

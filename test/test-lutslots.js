@@ -89,6 +89,27 @@ lutslots.readSlots(function (r) {
     }
   });
   function finish() {
+    // The hash is cached by size and mtime: same mtime keeps it, a new mtime re-reads.
+    var file = path.join(tmp, 'cinema_profile0_1D_DPG_DATA');
+    lutslots.init({ dir: tmp });
+    lutslots.readSlots(function (first) {
+      var before = first.slots[0].sha256;
+      var st = fs.statSync(file);
+      var other = new Buffer(6144);
+      other.fill(2);
+      fs.writeFileSync(file, other);
+      fs.utimesSync(file, st.atime, st.mtime);
+      lutslots.readSlots(function (cached) {
+        assert.strictEqual(cached.slots[0].sha256, before);
+        fs.utimesSync(file, st.atime, new Date(st.mtime.getTime() + 5000));
+        lutslots.readSlots(function (fresh) {
+          assert.notStrictEqual(fresh.slots[0].sha256, before);
+          absent();
+        });
+      });
+    });
+  }
+  function absent() {
     lutslots.init({ dir: path.join(tmp, 'absent') });
     lutslots.readSlots(function (none) {
       assert.strictEqual(none.available, false);

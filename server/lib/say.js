@@ -116,6 +116,17 @@ function langOf(req) {
   return LANG_CODE.test(want) && want !== 'en' && dicts[want] ? want : null;
 }
 
+// The language file for a locale as Qt or LG names it (sv_SE, pt-BR), or
+// null without one: for what the TV shows, which follows the TV's language.
+function langOfLocale(locale) {
+  var parts = String(locale || '').toLowerCase().replace(/_/g, '-').split('-');
+  var tries = parts.length > 1 ? [parts[0] + '-' + parts[1], parts[0]] : [parts[0]];
+  for (var i = 0; i < tries.length; i++) {
+    if (tries[i] !== 'en' && LANG_CODE.test(tries[i]) && dicts[tries[i]]) return tries[i];
+  }
+  return null;
+}
+
 function translateText(text, dict) {
   var has = Object.prototype.hasOwnProperty;
   var m = has.call(fixed, text) ? fixed[text] : has.call(filled, text) ? filled[text] : null;
@@ -149,6 +160,13 @@ function walk(v, dict, field) {
   return v;
 }
 
+// A message in the language of a locale, for what goes to the TV without a
+// page to translate it, such as a toast. English without a file for it.
+function forLocale(text, locale) {
+  var lang = langOfLocale(locale);
+  return lang ? translateText(text, dicts[lang]) : text;
+}
+
 // A JSON body for a response, translated in place where a page asked for a
 // language. Anything that is not JSON goes out as it came.
 function translateBody(body, lang) {
@@ -164,6 +182,8 @@ module.exports = {
   list: list,
   init: init,
   langOf: langOf,
+  langOfLocale: langOfLocale,
+  forLocale: forLocale,
   translateBody: translateBody,
   DISPLAY_FIELDS: DISPLAY_FIELDS
 };

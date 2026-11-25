@@ -9,7 +9,9 @@
     "pl": "Kadzidło",
     "pt": "Incenso",
     "pt-br": "Incenso",
-    "ru": "Благовония"
+    "ru": "Благовония",
+    "sv": "Rökelse",
+    "vi": "Làn khói"
   },
   "description": {
     "en": "Thin streams of colored smoke rising and curling on black.",
@@ -19,7 +21,9 @@
     "pl": "Cienkie strużki kolorowego dymu wznoszące się i skręcające na czerni.",
     "pt": "Finos fios de fumo colorido que sobem e se enrolam sobre fundo preto.",
     "pt-br": "Finos fios de fumaça colorida que sobem e se enrolam sobre o preto.",
-    "ru": "Тонкие струйки цветного дыма поднимаются и завиваются на чёрном фоне."
+    "ru": "Тонкие струйки цветного дыма поднимаются и завиваются на чёрном фоне.",
+    "sv": "Tunna strimmor av färgad rök som stiger och ringlar på svart.",
+    "vi": "Những làn khói màu mảnh mai bay lên và uốn lượn trên nền đen."
   },
   "license": "MIT",
   "uses": [

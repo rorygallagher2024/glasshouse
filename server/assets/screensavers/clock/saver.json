@@ -9,7 +9,9 @@
     "pl": "Zegar",
     "pt": "Relógio",
     "pt-br": "Relógio",
-    "ru": "Часы"
+    "ru": "Часы",
+    "sv": "Klocka",
+    "vi": "Đồng hồ"
   },
   "description": {
     "en": "A digital clock on black, moving to a new position every minute, with the seconds, weekday and date if picked.",
@@ -19,7 +21,9 @@
     "pl": "Cyfrowy zegar na czerni, co minutę przenoszony w nowe miejsce, z sekundami, dniem tygodnia i datą, jeśli wybrano.",
     "pt": "Um relógio digital sobre fundo preto, que muda de posição a cada minuto, com os segundos, o dia da semana e a data, se escolhidos.",
     "pt-br": "Um relógio digital sobre o preto, que muda de posição a cada minuto, com os segundos, o dia da semana e a data, se escolhidos.",
-    "ru": "Цифровые часы на чёрном фоне, которые каждую минуту перемещаются на новое место, по выбору с секундами, днём недели и датой."
+    "ru": "Цифровые часы на чёрном фоне, которые каждую минуту перемещаются на новое место, по выбору с секундами, днём недели и датой.",
+    "sv": "En digital klocka på svart, som flyttar till en ny plats varje minut, med sekunder, veckodag och datum om det valts.",
+    "vi": "Đồng hồ kỹ thuật số trên nền đen, đổi vị trí mỗi phút, có thể hiện thêm giây, thứ và ngày."
   },
   "license": "MIT",
   "uses": [
@@ -36,7 +40,9 @@
       "pl": "Pokaż",
       "pt": "Mostrar",
       "pt-br": "Mostrar",
-      "ru": "Показывать"
+      "ru": "Показывать",
+      "sv": "Visa",
+      "vi": "Hiển thị"
     },
     "default": "time",
     "options": [
@@ -50,7 +56,9 @@
           "pl": "Godzina",
           "pt": "Hora",
           "pt-br": "Hora",
-          "ru": "Время"
+          "ru": "Время",
+          "sv": "Tid",
+          "vi": "Thời gian"
         },
         "value": "false"
       },
@@ -64,7 +72,9 @@
           "pl": "Godzina, sekundy i data",
           "pt": "Hora, segundos e data",
           "pt-br": "Hora, segundos e data",
-          "ru": "Время, секунды и дата"
+          "ru": "Время, секунды и дата",
+          "sv": "Tid, sekunder och datum",
+          "vi": "Thời gian, giây và ngày"
         },
         "value": "true"
       }

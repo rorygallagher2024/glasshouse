@@ -9,7 +9,9 @@
     "pl": "Harmonograf",
     "pt": "Harmonógrafo",
     "pt-br": "Harmonógrafo",
-    "ru": "Гармонограф"
+    "ru": "Гармонограф",
+    "sv": "Harmonograf",
+    "vi": "Đồ thị dao động"
   },
   "description": {
     "en": "Pendulum ribbons of light weaving and fading on black.",
@@ -19,7 +21,9 @@
     "pl": "Wahadłowe wstęgi światła splatające się i gasnące na czerni.",
     "pt": "Fitas de luz pendulares que se entrelaçam e desvanecem sobre fundo preto.",
     "pt-br": "Fitas de luz de pêndulo que se entrelaçam e desaparecem sobre o preto.",
-    "ru": "Маятниковые ленты света сплетаются и гаснут на чёрном фоне."
+    "ru": "Маятниковые ленты света сплетаются и гаснут на чёрном фоне.",
+    "sv": "Pendelband av ljus som vävs och bleknar på svart.",
+    "vi": "Những dải sáng con lắc đan xen rồi tan biến trên nền đen."
   },
   "license": "MIT",
   "uses": [

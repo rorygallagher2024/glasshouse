@@ -701,7 +701,10 @@ async function tick() {
     if (!ambientAvailable && activeTab === 'ambient') showTab('control');
 
     const ssOnInput = /^hdmi[1-4]$/.test(d.app || '') || d.app === 'livetv';
-    refuseScreensaver(q('btn_ss'), ssOnInput ? SS_ONLY_IN_APPS : '');
+    // In standby, with the screen off or during pixel compensation the TV
+    // refuses ("Invalid State change Request"), so the buttons say why first.
+    const ssTvOff = isStandby || isScreenOff || isComp;
+    refuseScreensaver(q('btn_ss'), ssTvOff && !d.screenSaver ? SS_TV_OFF : ssOnInput ? SS_ONLY_IN_APPS : '');
     /* Same control on the Screensaver tab, where it says which way it will go:
        there is one command and the TV decides, so the label follows the TV. */
     if (q('ss-toggle')) {
@@ -716,6 +719,7 @@ async function tick() {
       refuseScreensaver(q('ss-toggle'),
         !ssWritable ? t('common.controlsOff', 'Controls are disabled in config.json.')
         : ssSwitching ? SS_SWITCHING
+        : (ssTvOff && !ssOn) ? SS_TV_OFF
         : ssBlocked ? ssBlocked
         : (ssOnInput && !ssOn) ? SS_ONLY_IN_APPS : '');
     }

@@ -7,11 +7,13 @@
  * the page shows and the screen is on, and not while the source says a game
  * is playing (ALLM), so a game's frames are left alone, nor while PicCap or
  * Hue Sync is capturing the screen itself. LG's Game picture mode alone does
- * not stop it: a computer is often shown in it for its low latency. Given up
- * for the visit after three failed reads.
+ * not stop it: a computer is often shown in it for its low latency. After
+ * three failed reads in a row, such as while the server restarts for an
+ * update, it fades and asks every 30 s instead, and comes back by itself.
  */
 const GLOW_KEY = 'glasshouse.glow';
 const GLOW_MS = 3000;
+const GLOW_RETRY_MS = 30000;
 let glowWanted = false;   // this browser's choice
 let glowAllowedHere = false;   // the Server tab's
 let glowTimer = null;
@@ -43,7 +45,7 @@ function glowSetup() {
   return true;
 }
 
-function glowActive() { return glowWanted && glowAllowedHere && glowFails < 3; }
+function glowActive() { return glowWanted && glowAllowedHere; }
 
 function glowRender() {
   const btn = q('glow-toggle');
@@ -102,7 +104,7 @@ function glowSchedule(now) {
   clearTimeout(glowTimer);
   glowTimer = null;
   if (!glowActive() || document.hidden) return;
-  glowTimer = setTimeout(glowTick, now ? 0 : GLOW_MS);
+  glowTimer = setTimeout(glowTick, now ? 0 : glowFails >= 3 ? GLOW_RETRY_MS : GLOW_MS);
 }
 
 /*
@@ -144,6 +146,6 @@ async function glowTick() {
       root.style.setProperty('--glow-r', glowRgb(d.right, a));
     }
   } catch (e) { glowFails++; }
-  if (!glowActive()) glowFade();
+  if (!glowActive() || glowFails >= 3) glowFade();
   glowSchedule();
 }

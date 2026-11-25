@@ -31,10 +31,11 @@ body{font-family:'Manrope',sans-serif;color:#fff;
 #clock{font-family:'Manrope',sans-serif;font-weight:400;font-size:4.4vh;letter-spacing:.01em;
   line-height:1;opacity:.65}
 
-#tabs{display:flex;display:-webkit-flex;align-items:baseline;-webkit-align-items:baseline;flex:0 0 auto;-webkit-flex:0 0 auto;margin:0 4vw 3.2vh 0;
-  /* the bar clips so it can scroll, and at line-height 1 that takes the tails
-     of g and y with it; the padding makes room and the margin gives it back */
-  padding-bottom:1.2vh;white-space:nowrap;overflow:hidden}
+#tabs{display:flex;display:-webkit-flex;align-items:baseline;-webkit-align-items:baseline;flex:0 0 auto;-webkit-flex:0 0 auto;margin:-1.2vh 4vw 3.2vh 0;
+  /* the bar clips so it can scroll, and at line-height 1 that takes tall
+     accents (such as Vietnamese) and the tails of g and y with it; the
+     padding makes room and the negative top margin keeps the baseline level */
+  padding:1.2vh 0;white-space:nowrap;overflow:hidden}
 #tabs.clip-r{-webkit-mask-image:linear-gradient(to right,#000 88%,transparent);mask-image:linear-gradient(to right,#000 88%,transparent)}
 #tabs.clip-l{-webkit-mask-image:linear-gradient(to left,#000 88%,transparent);mask-image:linear-gradient(to left,#000 88%,transparent)}
 #tabs.clip-l.clip-r{-webkit-mask-image:linear-gradient(to right,transparent,#000 12%,#000 88%,transparent);
@@ -907,12 +908,13 @@ function oledRows(d) {
              press: d.tpc ? t('tv.press.switchOff', 'Press OK to switch off') : t('tv.press.switchOn', 'Press OK to switch on'),
              hint: t('tv.oled.temporalPeakControl.hint', 'Limits how long the panel holds peak brightness, which protects it and keeps heat down. Switching it off makes burn-in more likely.') });
   if (d.screenShift)
-    r.push({ label: t('tv.oled.screenShift', 'Screen shift'), value: d.screenShift, cls: /on/i.test(d.screenShift) ? 'on' : 'off',
+    r.push({ label: t('tv.oled.screenShift', 'Screen shift'),
+             value: /on/i.test(d.screenShift) ? t('common.on', 'On') : t('common.off', 'Off'), cls: /on/i.test(d.screenShift) ? 'on' : 'off',
              act: d.writable ? 'shift' : null, on: /on/i.test(d.screenShift),
              press: /on/i.test(d.screenShift) ? t('tv.press.switchOff', 'Press OK to switch off') : t('tv.press.switchOn', 'Press OK to switch on'),
              hint: t('tv.oled.screenShift.hint', 'Nudges the whole image by a pixel now and then so a fixed edge never sits on the same pixels. Invisible in use.') });
   if (d.logoDimming)
-    r.push({ label: t('tv.oled.logoDimming', 'Logo dimming'), value: d.logoDimming, cls: /off/i.test(d.logoDimming) ? 'off' : 'on',
+    r.push({ label: t('tv.oled.logoDimming', 'Logo dimming'), value: logoDimmingText(d.logoDimming), cls: /off/i.test(d.logoDimming) ? 'off' : 'on',
              act: d.writable ? 'logo' : null, cur: String(d.logoDimming).toLowerCase(),
              press: t('tv.oled.logoDimming.press', 'Press OK for off, light or high'),
              hint: t('tv.oled.logoDimming.hint', 'Spots a station logo that has not moved and fades it slightly. Higher settings dim more of the picture around it.') });
@@ -927,6 +929,12 @@ function oledRows(d) {
       hint: t('tv.oled.cancelAScheduledRefresher.hint', 'Clears a queued calibration so the TV does not spend an hour on it after the next switch-off.') });
   }
   return r;
+}
+
+// LG's logo dimming levels as the Panel care tab names them.
+function logoDimmingText(v) {
+  v = String(v || 'off').toLowerCase();
+  return v === 'strong' ? t('oled.logo.high', 'High') : v === 'light' ? t('oled.logo.light', 'Light') : t('common.off', 'Off');
 }
 
 function saverItemTitle(modes, id) {
@@ -1045,6 +1053,14 @@ function saverRows(d) {
              act: 'plainNoSignal', target: 'icon', on: nsIcon,
              press: nsIcon ? t('tv.saver.allow.off', 'Press OK to switch off') : t('tv.noSignal.on', 'Press OK to switch on'),
              hint: t('inputs.noSignal.iconDesc', 'Shows a subtle disconnected cable icon instead of \u201cNo Signal\u201d.') });
+    if (d.noSignal.art || nsMode === 'art') {
+      var nsArt = nsMode === 'art';
+      r.push({ label: t('inputs.noSignal.art', 'Picture frame'),
+               value: nsArt ? t('common.on', 'On') : t('common.off', 'Off'), cls: nsArt ? 'on' : 'off',
+               act: 'plainNoSignal', target: 'art', on: nsArt,
+               press: nsArt ? t('tv.saver.allow.off', 'Press OK to switch off') : t('tv.noSignal.on', 'Press OK to switch on'),
+               hint: t('inputs.noSignal.artDescTv', 'The picture frame\u2019s pictures, with \u201cNo Signal\u201d on each picture\u2019s label. Pick them in Picture frame settings, on the Screensaver or Inputs tab of the dashboard in a browser.') });
+    }
   }
   r.push(head(t('tv.saver.head.aFirmwareUpdatePuts', 'A firmware update puts LG’s own back')));
   return r;
@@ -1404,9 +1420,19 @@ function glasshouseHomeRows(d) {
           hint: t('home.bg.intro', 'What is behind Glasshouse Home: nothing, pictures that change with the part of the day, or a moving background.') });
     if (bgKind === 'pictures') {
       // A picture set or the owner's own, which are uploaded from a browser.
-      var wallNames = { landscape: t('home.wall.setLandscape', 'Landscape'), abstract: t('home.wall.setAbstract', 'Abstract'), own: t('home.wall.setOwn', 'Your own'),
-        shuffle: t('home.wall.setShuffle', 'Your own, shuffled') };
-      var wallChoices = (walls.choices || ['black', 'landscape', 'abstract', 'own']).filter(function (n) { return n !== 'black'; });
+      var wallNames = {
+        landscape: t('home.wall.setLandscape', 'Landscape'),
+        abstract: t('home.wall.setAbstract', 'Abstract'),
+        own: t('home.wall.setOwn', 'Your own'),
+        shuffle: t('home.wall.setShuffle', 'Your own, shuffled'),
+        video: t('home.bg.video', 'Video')
+      };
+      var hasVideo = !!(walls.videoUrls && walls.videoUrls.length);
+      var wallChoices = (walls.choices || ['black', 'landscape', 'abstract', 'own']).filter(function (n) {
+        if (n === 'black') return false;
+        if (n === 'video' && !hasVideo) return false;
+        return Object.prototype.hasOwnProperty.call(wallNames, n);
+      });
       var wallNext = wallChoices[(wallChoices.indexOf(wallNow) + 1) % wallChoices.length];
       if (!walls.fetching) {
         r.push({ label: t('home.bg.pictures', 'Pictures'), value: wallNames[wallNow] || wallNow, cls: can ? 'act' : '',

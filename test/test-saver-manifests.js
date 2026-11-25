@@ -59,6 +59,7 @@ function byId(list, id) { return list.filter(function (m) { return m.id === id; 
   assert.strictEqual(mine.license, 'MIT');
   [['user-broken', /could not be read/],
    ['user-greedy', /readings/],
+   ['user-listener', /readings/],
    ['user-sneaky', /__TVWEB_LEVEL__ without "level"/],
    ['user-newer', /format 2/],
    ['user-Bad_Name', /folder name, "Bad_Name", can only have lowercase letters/]].forEach(function (c) {
@@ -107,6 +108,16 @@ function byId(list, id) { return list.filter(function (m) { return m.id === id; 
   assert.ok(main.indexOf('http://127.0.0.1:8123/api/stats?k=abc') !== -1, 'stats address filled in');
   assert.strictEqual(main.indexOf('__TVWEB_'), -1, 'no placeholder left');
   console.log('  ✓ a built-in that asks for stats gets the address with the token');
+})();
+
+// 6b. One that asks for audio gets the sound levels' address, with the token
+(function testAudio() {
+  env.files[path.join(APP, '.tvweb-screensaver')] = 'music-highway';
+  screensavers.restageScreensaver();
+  var main = env.files[path.join(STAGE, 'qml', 'main.qml')];
+  assert.ok(main.indexOf('"http://127.0.0.1:8123/api/audio/levels?k=abc"') !== -1, 'audio address filled in');
+  assert.strictEqual(main.indexOf('__TVWEB_'), -1, 'no placeholder left');
+  console.log('  ✓ a built-in that asks for audio gets the levels address with the token');
 })();
 
 // 7. A name's translation comes from its saver.json
@@ -169,6 +180,9 @@ function byId(list, id) { return list.filter(function (m) { return m.id === id; 
   assert.strictEqual(pigs.builtin, false);
   assert.strictEqual(pigs.label, 'Pigs - Three Different Ones');
   assert.strictEqual(pigs.author, 'Michael Nestrud');
+  var highway = byId(screensavers.screensaverList().modes, 'music-highway');
+  assert.ok(highway, 'music-highway listed');
+  assert.strictEqual(highway.author, 'vecluu');
   console.log('  ✓ the pigs Glasshouse installs as an example read as an added screen saver');
 })();
 

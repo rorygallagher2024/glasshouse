@@ -9,6 +9,7 @@ var msg = require('./say').msg;
 // Assistant without a second list to keep in step (Bokeh was missed once).
 var screensavers = require('./screensavers');
 var remotebuttons = require('./remotebuttons');
+var askQuestion = require('./ask');
 var topics = require('./topics');
 var names = require('./names');
 var hexColor = require('./util').hexColor;
@@ -94,6 +95,8 @@ var HA_ENTITIES = [
   // ({"condition":"partlycloudy","temp":14.2}) and Glasshouse Home shows it
   // as the weather badge next to the clock. See docs/dashboard/home.md.
   { id: 'weather', type: 'text', name: 'Weather Push', cat: 'controls' },
+  { id: 'home_info', type: 'text', name: 'Home Info Push', cat: 'controls' },
+  { id: 'home_board', type: 'text', name: 'Home Board Push', cat: 'controls' },
   { id: 'picture_mode', type: 'select', name: 'Picture Mode (Select)', cat: 'controls' },
   { id: 'energy_saving', type: 'select', name: 'Energy Saving Step', cat: 'controls' },
   { id: 'sound_output', type: 'select', name: 'Sound Output', cat: 'controls' },
@@ -114,6 +117,7 @@ var HA_ENTITIES = [
   { id: 'keyboard_enter', type: 'button', name: 'Keyboard Enter', cat: 'controls' },
   { id: 'keyboard_backspace', type: 'button', name: 'Keyboard Backspace', cat: 'controls' },
   { id: 'remote_button', type: 'event', name: 'Remote Button', cat: 'controls' },
+  { id: 'question_answer', type: 'event', name: 'Question Answer', cat: 'controls' },
   { id: 'play', type: 'button', name: 'Play', cat: 'controls' },
   { id: 'pause', type: 'button', name: 'Pause', cat: 'controls' },
   { id: 'play_pause', type: 'button', name: 'Play / Pause', cat: 'controls' },
@@ -140,6 +144,7 @@ var HA_ENTITIES = [
   { id: 'oled_logo_dimming', type: 'select', name: 'Logo Luminance Adjustment', cat: 'oled' },
   { id: 'oled_short_cycles', type: 'sensor', name: 'Compensation Cycles Completed', cat: 'oled' },
   { id: 'oled_refresher_cycles', type: 'sensor', name: 'Pixel Refresher Cycles Completed', cat: 'oled' },
+  { id: 'oled_gsr_stress_count', type: 'sensor', name: 'GSR Stress Events', cat: 'oled' },
   { id: 'oled_failure_alerts', type: 'sensor', name: 'Panel Maintenance Alerts', cat: 'oled' },
   { id: 'oled_asbl_dimmer', type: 'binary_sensor', name: 'ASBL Dimming Active', cat: 'oled' },
   { id: 'pixel_refresher_schedule', type: 'switch', name: 'Pixel Refresher on Next Standby', cat: 'oled' },
@@ -446,7 +451,7 @@ var HDMI_DIAG_ONLY = {
       oled_hours_until_compensation: 1, oled_compensation_status: 1,
       oled_hours_since_refresher: 1,
       oled_hours_until_refresher: 1, oled_refresher_status: 1,
-      oled_short_cycles: 1, oled_refresher_cycles: 1,
+      oled_short_cycles: 1, oled_refresher_cycles: 1, oled_gsr_stress_count: 1,
       oled_failure_alerts: 1, oled_asbl_dimmer: 1,
       oled_cell_type: 1, tcon_firmware: 1,
       oled_screen_shift: 1, oled_logo_dimming: 1,
@@ -1140,6 +1145,28 @@ function buildEntities(opts) {
         }
       },
       {
+        // Lines under Glasshouse Home's clock (lib/home.js, setHomeInfo).
+        type: 'text', id: 'home_info',
+        payload: {
+          name: 'Home Info Push',
+          command_topic: topic.command('homeInfo'),
+          icon: 'mdi:information-outline',
+          mode: 'text',
+          entity_category: 'config'
+        }
+      },
+      {
+        // A titled board of lines beside them, as the day's matches (setHomeBoard).
+        type: 'text', id: 'home_board',
+        payload: {
+          name: 'Home Board Push',
+          command_topic: topic.command('homeBoard'),
+          icon: 'mdi:scoreboard-outline',
+          mode: 'text',
+          entity_category: 'config'
+        }
+      },
+      {
         type: 'sensor', id: 'oled_panel_hours',
         payload: {
           name: 'OLED Panel Hours',
@@ -1260,6 +1287,17 @@ function buildEntities(opts) {
           name: 'OLED Refresher Cycles Completed',
           state_topic: topic.telemetry,
           value_template: '{{ value_json.oled.refresher_cycles if value_json.oled and value_json.oled.refresher_cycles is not none else none }}',
+          state_class: 'total_increasing',
+          entity_category: 'diagnostic',
+          icon: 'mdi:counter'
+        }
+      },
+      {
+        type: 'sensor', id: 'oled_gsr_stress_count',
+        payload: {
+          name: 'OLED GSR Stress Events',
+          state_topic: topic.telemetry,
+          value_template: '{{ value_json.oled.gsr_stress_count if value_json.oled and value_json.oled.gsr_stress_count is not none else none }}',
           state_class: 'total_increasing',
           entity_category: 'diagnostic',
           icon: 'mdi:counter'
@@ -1625,6 +1663,17 @@ function buildEntities(opts) {
         }
       },
       {
+        // The answer to a question sent to command/ask (lib/ask.js); the
+        // option chosen is the event's "choice" attribute.
+        type: 'event', id: 'question_answer',
+        payload: {
+          name: 'Question Answer',
+          state_topic: topic.eventsAsk,
+          event_types: askQuestion.EVENT_TYPES,
+          icon: 'mdi:help-box-outline'
+        }
+      },
+      {
         type: 'button', id: 'play',
         payload: {
           name: 'Play',
@@ -1980,6 +2029,8 @@ function filterWithholds(entities, opts) {
   if (!caps.hasPnwash) {
     withhold(byId('oled_short_cycles', 'oled_refresher_cycles', 'oled_failure_alerts'));
   }
+
+  if (caps.hasGsrStressCount === false) withhold(byId('oled_gsr_stress_count'));
 
   if (!caps.hasCell) withhold(byId('oled_cell_type', 'tcon_firmware'));
 

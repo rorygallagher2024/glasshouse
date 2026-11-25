@@ -26,6 +26,8 @@ fs.mkdirSync(stateDir);
 fs.writeFileSync(path.join(stateDir, 'country'), 'de\n');
 var MAP = path.join(stateDir, 'remotekeys.json');
 var LG_FILE = path.join(stateDir, 'remotekeys-lg.json');
+// /var/webos-profile/override, where the profile generator reads overrides.
+var PROFILE_DIR = path.join(dir, 'webos-profile-override');
 
 function copy(v) { return JSON.parse(JSON.stringify(v)); }
 
@@ -66,12 +68,17 @@ function freshTv() {
     customWrites: 0,
     blocked: {},
     blockCalls: 0,
-    configWrites: []
+    configWrites: [],
+    profile: {},
+    rescans: 0
   };
 }
 freshTv();
 
+// Sees each call first, where a test sets it.
+var lunaWatch = null;
 function luna(uri, params, cb) {
+  if (lunaWatch) lunaWatch(uri, params);
   var r = { returnValue: true };
   if (uri === 'com.webos.service.config/getConfigs') {
     r.configs = {};
@@ -119,6 +126,14 @@ function luna(uri, params, cb) {
     tv.blocked[params.id] = true;
   } else if (uri === 'com.webos.applicationManager/releaseBlockSystemApp') {
     delete tv.blocked[params.id];
+  } else if (uri === 'com.webos.service.systemprofile/debug/rescan') {
+    // The generator copies the override file's values into the profile.
+    tv.rescans++;
+    tv.profile = {};
+    try { tv.profile = JSON.parse(fs.readFileSync(path.join(PROFILE_DIR, 'glasshouse_keys.json'), 'utf8')); } catch (e) {}
+  } else if (uri === 'com.webos.service.systemprofile/getProfiles') {
+    r.profiles = {};
+    params.names.forEach(function (n) { if (tv.profile[n] !== undefined) r.profiles[n] = copy(tv.profile[n]); });
   } else if (uri === 'com.webos.service.tvpower/power/getPowerState') {
     r.state = power.state;
     if (power.processing) r.processing = power.processing;
@@ -347,7 +362,7 @@ function fakeLibrary(homeOn) {
   var util = require('../server/lib/util');
   var guidePatch = require('../server/lib/guidepatch');
   var sha = function (b) { return crypto.createHash('sha256').update(b).digest('hex'); };
-  var lib = path.join(dir, 'libappLaunch.so.1'), uiLib = path.join(dir, 'libsystemUI.so.1');
+  var lib = path.join(dir, 'libappLaunch.so.1'), uiLib = path.join(dir, 'libsystemUI.so.1'), preLib = path.join(dir, 'libpreProcess.so.1');
   var picker = '{"id": "com.webos.app.quickinputpicker"}\0';
   var make = function (guide, input) {
     var b = util.allocBuffer(80);
@@ -365,23 +380,45 @@ function fakeLibrary(homeOn) {
     if (bar) b.fill(0xcc, 40, 44);
     return b;
   };
+  // The first key filter's library: the profile value it reads, named at 4 and at 20.
+  var makePre = function (channel) {
+    var b = util.allocBuffer(40);
+    b.fill(5);
+    util.toBuffer(channel ? 'tvwebBlocks' : 'blockedKeys', 'binary').copy(b, 4);
+    util.toBuffer(channel ? 'tvwebBlocks' : 'blockedKeys', 'binary').copy(b, 20);
+    return b;
+  };
   fs.writeFileSync(lib, make(false, ''));
   fs.writeFileSync(uiLib, makeUi(false));
+  fs.writeFileSync(preLib, makePre(false));
   guidePatch.LIBRARIES.appLaunch.builds[sha(make(false, ''))] = { tv: 'test TV',
     sets: { guide: [{ at: 8, was: '07070707', now: 'aaaaaaaa' }] },
     picker: { at: 20, was: util.toBuffer(picker, 'binary').toString('hex') } };
   guidePatch.LIBRARIES.systemUI.builds[sha(makeUi(false))] = { tv: 'test TV',
     sets: { bar: [{ at: 40, was: '09090909', now: 'cccccccc' }] } };
+  var renamed = { at: 0, was: '626c6f636b65644b657973', now: '7476776562426c6f636b73' };
+  guidePatch.LIBRARIES.preProcess.builds[sha(makePre(false))] = { tv: 'test TV',
+    sets: { channel: [{ at: 4, was: renamed.was, now: renamed.now }, { at: 20, was: renamed.was, now: renamed.now }] } };
   // stack and uiStack: what is mounted on each library, the last on top and LG's at the bottom. failRestarts makes that many compositor restarts fail.
-  var lab = { execs: [], mounted: [], stack: [], uiStack: [], failRestarts: 0, restarts: 0, barApp: [], barKeys: 0, homeOn: homeOn !== false, launcher: false,
-    make: make, makeUi: makeUi, sameBytes: util.sameBytes, lib: lib, uiLib: uiLib };
-  var realLib = fs.realpathSync(lib);
-  var stackOf = function (file) { return fs.realpathSync(file) === realLib ? lab.stack : lab.uiStack; };
-  var plainOf = function (file) { return fs.realpathSync(file) === realLib ? make(false, '') : makeUi(false); };
+  var lab = { execs: [], mounted: [], stack: [], uiStack: [], preStack: [], failRestarts: 0, restarts: 0, barApp: [], barKeys: 0, homeOn: homeOn !== false, launcher: false,
+    make: make, makeUi: makeUi, makePre: makePre, sameBytes: util.sameBytes, lib: lib, uiLib: uiLib, preLib: preLib };
+  var realLib = fs.realpathSync(lib), realPre = fs.realpathSync(preLib);
+  var stackOf = function (file) {
+    var real = fs.realpathSync(file);
+    return real === realLib ? lab.stack : real === realPre ? lab.preStack : lab.uiStack;
+  };
+  var plainOf = function (file) {
+    var real = fs.realpathSync(file);
+    return real === realLib ? make(false, '') : real === realPre ? makePre(false) : makeUi(false);
+  };
   var opts = {};
   Object.keys(initOpts).forEach(function (k) { opts[k] = initOpts[k]; });
   opts.guideLibrary = lib;
   opts.systemUiLibrary = uiLib;
+  opts.preProcessLibrary = preLib;
+  opts.profileOverrideDir = PROFILE_DIR;
+  opts.profileWaitMs = 300;
+  opts.profilePollMs = 5;
   opts.guideMounts = function (file) { return stackOf(file).length; };
   opts.homeGuide = function () { return lab.homeOn; };
   // Glasshouse Bar chosen as the launcher (lib/homebar).
@@ -414,6 +451,7 @@ function fakeLibrary(homeOn) {
   lab.finish = function (next) {
     delete guidePatch.LIBRARIES.appLaunch.builds[sha(make(false, ''))];
     delete guidePatch.LIBRARIES.systemUI.builds[sha(makeUi(false))];
+    delete guidePatch.LIBRARIES.preProcess.builds[sha(makePre(false))];
     rk.init(initOpts);
     next();
   };
@@ -507,6 +545,75 @@ step('the Input key opens an app, an input or the input bar where LG\'s key hand
                     });
                   });
                 });
+              });
+            });
+          });
+        });
+      });
+    });
+  });
+});
+
+// What the changed filter logs for a channel key: ev 0 pressed, 1 released, 2 repeated.
+function channelLine(code, ev) {
+  return '2026-11-21T11:41:55.416Z [60] user.info surface-manager [] LSM NL_INPUT_KEYFILTER_USE {"glasshouse_key":' + code + ',"ev":' + ev + '} \n';
+}
+var LGINPUT_CHANNEL_LINE = '2026-11-21T11:41:55.415Z [60] user.info lginput2 [] lginput2 NL_NON_LIST_BUTTON_CLICK {"remote_type":"LGE MR25GA","button_type":"KEY_CHANNELUP"} \n';
+function overrideFile() { try { return JSON.parse(fs.readFileSync(path.join(PROFILE_DIR, 'glasshouse_keys.json'), 'utf8')); } catch (e) { return null; } }
+
+step('the channel keys are taken by LG\'s first key filter where its library can be changed, and step the brightness from the log', function (next) {
+  var lab = fakeLibrary();
+  rk.getRemoteKeys(function (r) {
+    var up = r.keys.filter(function (k) { return k.key === 'channelup'; })[0];
+    var down = r.keys.filter(function (k) { return k.key === 'channeldown'; })[0];
+    assert.ok(up && down, 'both channel keys offered');
+    assert.strictEqual(up.channelNative, true);
+    assert.strictEqual(up.noScreenOff, undefined, 'with the actions answered from the log');
+    set('channelup', 'open', 'action:brightnessUp', function () {
+      assert.deepEqual(lab.execs, ['mount', 'systemctl'], 'the filter\'s library mounted and the compositor restarted once');
+      assert.ok(lab.sameBytes(fs.readFileSync(lab.preLib), lab.makePre(true)), 'the filter reads Glasshouse\'s list');
+      assert.deepEqual(overrideFile(), { tvwebBlocks: [402] });
+      assert.deepEqual(tv.profile.tvwebBlocks, [402], 'and the profile holds it before the restart');
+      set('channeldown', 'open', 'action:brightnessDown', function () {
+        assert.deepEqual(lab.execs, ['mount', 'systemctl', 'systemctl'], 'a longer list: a restart, with the library as it was');
+        assert.deepEqual(tv.profile.tvwebBlocks, [402, 403]);
+        afterWatching(function () {
+          panel.backlight = 50;
+          logLine(channelLine(402, 0) + channelLine(402, 1));
+          until(function () { return panel.backlight === 60; }, 5000, function () {
+            assert.strictEqual(panel.backlight, 60, 'channel up a step up');
+            logLine(channelLine(403, 0) + channelLine(403, 1));
+            until(function () { return panel.backlight === 50; }, 5000, function () {
+              assert.strictEqual(panel.backlight, 50, 'channel down a step down');
+              // Held: the press and each repeat logged a step, none lost while one is written;
+              // the release nothing, and lginput2's own line is not read.
+              logLine(channelLine(403, 0) + channelLine(403, 2) + channelLine(403, 2) + channelLine(403, 1) + LGINPUT_CHANNEL_LINE);
+              until(function () { return panel.backlight === 20; }, 5000, function () {
+              assert.strictEqual(panel.backlight, 20, 'a held key steps at its repeats');
+              afterWatching(function () {
+              assert.strictEqual(panel.backlight, 20, 'and lginput2\'s line for the same key is not a step');
+              // The TV restarted: LG's library back, the override file still there.
+              var rescans = tv.rescans;
+              fs.writeFileSync(lab.preLib, lab.makePre(false));
+              lab.preStack.length = 0;
+              rk.init(lab.opts);
+              rk.ensure(function () {
+                assert.ok(lab.sameBytes(fs.readFileSync(lab.preLib), lab.makePre(true)), 'made again at the start');
+                assert.strictEqual(tv.rescans, rescans, 'with the list as it was, read at the TV\'s start');
+                set('channelup', 'lg', '', function () {
+                  assert.deepEqual(overrideFile(), { tvwebBlocks: [403] });
+                  rk.restore(function (ok) {
+                    assert.ok(ok);
+                    assert.strictEqual(overrideFile(), null, 'the override file removed');
+                    assert.strictEqual(tv.profile.tvwebBlocks, undefined);
+                    assert.ok(lab.sameBytes(fs.readFileSync(lab.preLib), lab.makePre(false)), 'LG\'s filter is back');
+                    assert.strictEqual(lab.preStack.length, 0, 'with nothing mounted on it');
+                    assert.strictEqual(copies().length, 0, 'and no copy kept');
+                    lab.finish(next);
+                  });
+                });
+              });
+              });
               });
             });
           });
@@ -742,6 +849,44 @@ step('LG\'s list written back at a power change with nothing announced is set ag
         set('netflix', 'lg', '', next);
       }, 120);
     }, 70);
+  });
+});
+
+step('after a wake, a button set to Nothing is written twice though it reads as set, and stays off both times (#1671)', function (next) {
+  rk.init(initOpts);
+  set('netflix', 'nothing', '', function () {
+    var want = copy(tv.mapping);
+    var seen = [];
+    // Each mapping_info written, in order.
+    var watching = function (uri, params) {
+      if (uri === 'com.webos.settingsservice/setSystemSettings' && params.settings.mapping_info) seen.push(copy(params.settings.mapping_info));
+    };
+    lunaWatch = watching;
+    // A change that is not a wake writes nothing when the list reads right.
+    rk.powerChanged('Active');
+    rk.powerChanged('Active Standby');
+    setTimeout(function () {
+      assert.strictEqual(seen.length, 0);
+      rk.powerChanged('Suspend');
+      rk.powerChanged('Active');
+      setTimeout(function () {
+        lunaWatch = null;
+        // Two checks after the wake, each writing the list twice.
+        assert.strictEqual(seen.length, 4);
+        var first = null;
+        seen[0].forEach(function (e) { if (e.netflix) first = e.netflix; });
+        assert.strictEqual(first.isActive, false);
+        assert.notStrictEqual(first.launch_param, entry('netflix').launch_param);
+        assert.deepEqual(seen[1], want);
+        assert.deepEqual(tv.mapping, want);
+        // LG's own entries, the ones not set, are written as they were.
+        seen[0].forEach(function (e, i) { if (!e.netflix) assert.deepEqual(e, want[i]); });
+        set('netflix', 'lg', '', function () {
+          assert.deepEqual(tv.mapping, MAPPING);
+          next();
+        });
+      }, 200);
+    }, 200);
   });
 });
 
@@ -991,9 +1136,12 @@ step('the AI button is not offered without the voice assistant\'s service', func
   });
 });
 
-step('the JavaScript filter leaves out the keys only webOS 11 offers', function (next) {
+step('the JavaScript filter leaves out the keys only webOS 11 offers, and has ?, 123 and Home Hub for older firmware', function (next) {
   var src = rk.filterSource();
-  ['homehub', 'ai', 'multikey', 'multikeyhold'].forEach(function (k) { assert.strictEqual(src.indexOf('"' + k + '"'), -1); });
+  ['ai', 'multikeyhold'].forEach(function (k) { assert.strictEqual(src.indexOf('"' + k + '"'), -1); });
+  assert.ok(src.indexOf('codes["multikey"] = WebOS.Key_webOS_Multikey') !== -1);
+  assert.ok(src.indexOf('codes["screenremote"] = WebOS.Key_webOS_ScreenRemote') !== -1);
+  assert.ok(src.indexOf('codes["homehub"] = Qt.Key_Video') !== -1);
   next();
 });
 
@@ -1025,6 +1173,9 @@ step('restore puts back every key LG had, and deletes Glasshouse\'s files', func
       voice.switches = [];
       set('ai', 'open', 'netflix', function () {
       set('alexa', 'nothing', '', function () {
+      // A Brightness key here shows no level bar, so the bar's app is not on the TV
+      // and restore leaves it alone: the fake luna refuses a dev/remove.
+      set('netflix', 'open', 'action:brightnessUp', function () {
       assert.ok(tv.blocked['amazon.alexa.view']);
       assert.ok(exists(MAP) && exists(LG_FILE));
       rk.restore(function (ok) {
@@ -1041,6 +1192,7 @@ step('restore puts back every key LG had, and deletes Glasshouse\'s files', func
         assert.ok(!exists(MAP) && !exists(LG_FILE));
         assert.strictEqual(tv.configs['glasshouse.remoteKeys'], undefined);
         next();
+      });
       });
       });
       });

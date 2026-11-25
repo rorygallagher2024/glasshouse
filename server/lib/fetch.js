@@ -12,6 +12,14 @@ var clientDirs = [
   '/var/lib/webosbrew/bin', '/home/root/bin', '/usr/bin', '/bin'
 ];
 var fetchClient = null;
+/*
+ * Root certificates for GitHub's hosts (ca-roots.pem), for a TV whose own list
+ * lacks them: GitHub's release files chain to Let's Encrypt's ISRG Root X1,
+ * which a 65SM8600 on webOS 4.9.5 did not have, so its update check worked and
+ * every download failed with curl's error 60 (#1595). A curl that fails its
+ * certificate check is tried once more with them, in place of the TV's.
+ */
+var caFile = path.join(__dirname, 'ca-roots.pem');
 var config = {};
 var currentVersion = '';
 
@@ -20,6 +28,8 @@ var MAX_URL = 2048;
 // one that never ends.
 var DOWNLOAD_CEILING_MS = 30 * 60 * 1000;
 var PROGRESS_MS = 500;
+// How often a download with a size limit is looked at as it is written.
+var SIZE_CHECK_MS = 100;
 
 function init(opts) {
   opts = opts || {};
@@ -27,6 +37,7 @@ function init(opts) {
   if (opts.version) currentVersion = opts.version;
   if (opts.clientDirs) { clientDirs = opts.clientDirs; fetchClient = null; }
   if (opts.client !== undefined) fetchClient = opts.client;
+  if (opts.caFile !== undefined) caFile = opts.caFile;
 }
 
 function client() { return fetchClient; }
@@ -145,11 +156,16 @@ function validateUrl(url) {
  * ipFlag: '-4' or '-6' to pin curl to one address family (busybox wget has no
  * such flag).
  */
-function fetchArgs(bin, url, outFile, mode, ipFlag) {
-  var ua = 'tvweb/' + currentVersion;
+function fetchArgs(bin, url, outFile, mode, ipFlag, withCa, maxBytes) {
+  // Named, with where to read about it, as Wikimedia's and others' API rules ask.
+  var ua = 'tvweb/' + currentVersion + ' (+https://github.com/rorygallagher2024/glasshouse)';
   mode = mode || (outFile ? 'file' : 'text');
   var wget = isWget(bin);
   var ip = !wget && ipFlag ? [ipFlag] : [];
+  if (!wget && withCa) ip = ip.concat(['--cacert', caFile]);
+  // curl refuses a file whose stated size is over it; run() stops one that
+  // grows past it, from a server that states none, and wget's.
+  if (!wget && maxBytes > 0) ip = ip.concat(['--max-filesize', String(maxBytes)]);
   if (mode === 'big') {
     // curl's speed limit measures the whole transfer; busybox wget's -T is per
     // read, which comes to the same thing for a stalled connection.
@@ -205,14 +221,42 @@ function run(url, outFile, mode, opts, cb) {
   var host = hostOf(url);
   var github = isGithub(url);
   var i = 0, last = '', seen = {}, child = null, cancelled = false, finished = false;
+  // Whether this request has gone on to Glasshouse's own root certificates.
+  var withCa = false;
   var timer = null;
 
   function finish(err, body, bin) {
     if (finished) return;
     finished = true;
     if (timer) { clearInterval(timer); timer = null; }
+    if (sizeWatch) { clearInterval(sizeWatch); sizeWatch = null; }
     if (err && big) unlinkQuiet(outFile);
     cb(err, body, bin);
+  }
+
+  /*
+   * opts.maxBytes: the file is not let grow past it. Checked as it is
+   * written, so a wrong address that serves something huge never fills the
+   * TV's /tmp, which is memory; the client is stopped, and the error says
+   * tooBig.
+   */
+  var sizeWatch = null;
+  function tooBig() {
+    /** @type {any} */
+    var e = new Error(msg('srv.fetch.tooBig', 'the file from {host} is over {size}', { host: host, size: Math.round(opts.maxBytes / 1048576 * 10) / 10 + ' MB' }));
+    e.tooBig = true;
+    return e;
+  }
+  if (opts.maxBytes > 0 && outFile) {
+    sizeWatch = setInterval(function () {
+      fs.stat(outFile, function (e, st) {
+        if (e || finished || st.size <= opts.maxBytes) return;
+        cancelled = true;
+        if (child) { try { child.kill('SIGKILL'); } catch (e2) {} }
+        unlinkQuiet(outFile);
+        finish(tooBig());
+      });
+    }, SIZE_CHECK_MS);
   }
 
   if (big && opts.onProgress) {
@@ -237,7 +281,7 @@ function run(url, outFile, mode, opts, cb) {
 
   function attempt(bin, tries, t) {
     if (big) unlinkQuiet(outFile);
-    child = execFile(bin, fetchArgs(bin, url, outFile, mode, tries[t]),
+    child = execFile(bin, fetchArgs(bin, url, outFile, mode, tries[t], withCa, opts.maxBytes),
                      { timeout: big ? DOWNLOAD_CEILING_MS : (mode === 'file' ? 180000 : 15000),
                        maxBuffer: opts.maxBuffer || 1024 * 1024 },
                      function (err, stdout, stderr) {
@@ -249,6 +293,11 @@ function run(url, outFile, mode, opts, cb) {
         if (t + 1 < tries.length && !err.killed && (err.code === 7 || err.code === 28) &&
             (!big || fileEmpty(outFile))) {
           return attempt(bin, tries, t + 1);
+        }
+        if (opts.maxBytes > 0 && !isWget(bin) && err.code === 63) {
+          if (outFile) unlinkQuiet(outFile);
+          fetchClient = bin;
+          return finish(tooBig());
         }
         var status = httpErrorStatus(err, stderr);
         if (status) {
@@ -267,6 +316,11 @@ function run(url, outFile, mode, opts, cb) {
                                   { host: github ? 'GitHub' : host }));
           off.offline = true;
           return finish(off);
+        }
+        if (certFailure(bin, err, stderr) && !withCa && !isWget(bin) && caFile && fs.existsSync(caFile)) {
+          console.log('fetch: ' + host + ' failed the TV\'s certificate check; trying Glasshouse\'s own root certificates');
+          withCa = true;
+          return attempt(bin, tries, t);
         }
         if (certFailure(bin, err, stderr)) {
           console.error('fetch: ' + path.basename(bin) + ': ' + execErr(err, stderr));
@@ -308,6 +362,12 @@ function probeFetch(url, outFile, cb) {
   return run(url, outFile, outFile ? 'file' : 'text', {}, cb);
 }
 
+// A file of at most maxBytes, as probeFetch fetches one: cb(err) with
+// err.tooBig where it was larger, and nothing left at outFile.
+function fetchLimited(url, outFile, maxBytes, cb) {
+  return run(url, outFile, 'file', { maxBytes: maxBytes }, cb);
+}
+
 /* A package to outFile. opts: onProgress(bytes, expectedSize), expectedSize. */
 function download(url, outFile, opts, cb) {
   opts = opts || {};
@@ -344,6 +404,7 @@ module.exports = {
   client: client,
   clientDirs: function () { return clientDirs; },
   probeFetch: probeFetch,
+  fetchLimited: fetchLimited,
   download: download,
   getJson: getJson,
   validateUrl: validateUrl,

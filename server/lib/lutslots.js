@@ -43,16 +43,40 @@ function classify(name) {
   return { mode: m[1], profile: m[2], record: record, kind: 'other', expectedBytes: null };
 }
 
+// Size and hash of each file, kept by name and valid while the file's size and
+// modification time are unchanged, so a request re-reads only files the TV has
+// rewritten (the folder is about 10 MB).
+var cache = {};
+
 function describeFile(name, cb) {
   var info = classify(name);
   if (!info) return cb(null);
-  fs.readFile(dir + '/' + name, function (err, data) {
-    if (err) return cb(null);
-    info.file = name;
-    info.bytes = data.length;
-    info.sizeMatches = info.expectedBytes === null ? null : data.length === info.expectedBytes;
-    info.sha256 = crypto.createHash('sha256').update(data).digest('hex');
-    cb(info);
+  var path = dir + '/' + name;
+  fs.stat(path, function (statErr, st) {
+    if (statErr) {
+      delete cache[path];
+      return cb(null);
+    }
+    var hit = cache[path];
+    if (hit && hit.size === st.size && hit.mtimeMs === st.mtime.getTime()) {
+      info.file = name;
+      info.bytes = hit.size;
+      info.sha256 = hit.sha256;
+      info.sizeMatches = info.expectedBytes === null ? null : hit.size === info.expectedBytes;
+      return cb(info);
+    }
+    fs.readFile(path, function (err, data) {
+      if (err) {
+        delete cache[path];
+        return cb(null);
+      }
+      info.file = name;
+      info.bytes = data.length;
+      info.sizeMatches = info.expectedBytes === null ? null : data.length === info.expectedBytes;
+      info.sha256 = crypto.createHash('sha256').update(data).digest('hex');
+      cache[path] = { size: data.length, mtimeMs: st.mtime.getTime(), sha256: info.sha256 };
+      cb(info);
+    });
   });
 }
 
@@ -64,6 +88,9 @@ function readSlots(cb) {
   fs.readdir(dir, function (err, names) {
     if (err || !names) return cb({ available: false });
     names.sort();
+    var live = {};
+    names.forEach(function (n) { live[dir + '/' + n] = true; });
+    Object.keys(cache).forEach(function (p) { if (!live[p]) delete cache[p]; });
     var slots = [];
     var pending = names.length;
     if (!pending) return cb({ available: true, dir: dir, slots: slots });

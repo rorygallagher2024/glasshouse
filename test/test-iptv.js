@@ -11,6 +11,7 @@ var fs = require('fs');
 var os = require('os');
 var path = require('path');
 var http = require('http');
+var urlLib = require('url');
 var zlib = require('zlib');
 var toBuffer = require('../server/lib/util').toBuffer;
 
@@ -31,6 +32,9 @@ fs.mkdirSync(stateDir);
 var PNG = toBuffer('iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAAEklEQVR4nGP8z8DwnwEPYMIjBwBTZgH/2EydfwAAAABJRU5ErkJggg==', 'base64');
 var mode = 'ok';
 var hits = {};
+// Two transport stream packets: sync byte, then filler.
+var TS_BYTES = Buffer.concat([0, 1].map(function () { var b = Buffer.alloc ? Buffer.alloc(188, 0xff) : new Buffer(188); b.fill(0xff); b[0] = 0x47; return b; }));
+var goQuiet = false, goQuietRest = false;
 var provider = http.createServer(function (req, res) {
   var u = req.url;
   hits[u.split('?')[0]] = (hits[u.split('?')[0]] || 0) + 1;
@@ -69,6 +73,17 @@ var provider = http.createServer(function (req, res) {
       '#EXTINF:-1 tvg-id="hs1.uk" tvg-logo="' + base + '/logo.png" group-title="Sport",Harbour Sport 1\nhttp://s.test/1.m3u8?token=SECRET-TOKEN-Q\n' +
       '#EXTINF:-1 tvg-id="wt.uk" group-title="News",World Today\nhttp://s.test/2.m3u8?token=SECRET-TOKEN-Q\n' +
       '#EXTINF:-1 group-title="News",### NEWS ###\nhttp://s.test/0.m3u8\n' + extra);
+  }
+  // An Xtream live link redirects to a token on another path, as a panel's does.
+  if (/^\/live\/[^\/]+\/[^\/]+\/[0-9]+\.ts$/.test(u)) {
+    res.writeHead(302, { Location: base + '/token/abc123.ts' });
+    return res.end();
+  }
+  if (u === '/token/abc123.ts') {
+    res.writeHead(200, { 'Content-Type': 'video/mp2t' });
+    // A provider going quiet without closing: the first packet, then nothing.
+    if (goQuiet) { goQuiet = false; return res.write(TS_BYTES.slice(0, 188)); }
+    return res.end(goQuietRest ? TS_BYTES.slice(188) : TS_BYTES);
   }
   if (/^\/xmltv\.php/.test(u) && u.indexOf('username=canary-user&password=canary-pass') === -1) { res.writeHead(401); return res.end('no'); }
   if (/^\/(guide\.xml\.gz|xmltv\.php)/.test(u)) {
@@ -476,13 +491,13 @@ step('channels added just before a restart get their play links at once after it
     pick.channels = pick.channels.filter(function (x) { return x.key !== c.key; }).concat([{ pl: xc, key: c.key, name: c.name, group: c.group }]);
     sel.generation++;
     fs.writeFileSync(path.join(stateDir, 'iptv', 'selection.json'), JSON.stringify(sel));
-    iptv.init({ stateDir: stateDir, clients: function () { return [CURL]; }, version: 'test', catchupMs: 600000,
+    iptv.init({ stateDir: stateDir, clients: function () { return [CURL]; }, version: 'test', relayRetryMs: [], catchupMs: 600000,
       onChange: function () { changes++; } });
     iptv.start();
     wait(function () { return iptv.streamUrl(xc, c.key); }, function () {
       assert.strictEqual(iptv.streamUrl(xc, c.key).account, true, 'a provider\'s login is an account');
       iptv.stop();
-      iptv.init({ stateDir: stateDir, clients: function () { return [CURL]; }, version: 'test', catchupMs: 0, onChange: function () { changes++; } });
+      iptv.init({ stateDir: stateDir, clients: function () { return [CURL]; }, version: 'test', relayRetryMs: [], catchupMs: 0, onChange: function () { changes++; } });
       iptv.start();
       wait(idle, done);
     }, 15000);
@@ -498,13 +513,97 @@ step('an Xtream channel plays as MPEG-TS once chosen, after a restart too, and a
     assert.equal(iptv.setOutput({ pl: xc, key: c.key, output: 'ts' }).ok, true);
     assert.equal(iptv.streamUrl(xc, c.key).url, hls.url.replace(/\.m3u8$/, '.ts'));
     iptv.stop();
-    iptv.init({ stateDir: stateDir, clients: function () { return [CURL]; }, version: 'test', catchupMs: 600000, onChange: function () { changes++; } });
+    iptv.init({ stateDir: stateDir, clients: function () { return [CURL]; }, version: 'test', relayRetryMs: [], catchupMs: 600000, onChange: function () { changes++; } });
     iptv.start();
     assert.equal(iptv.streamUrl(xc, c.key).format, 'ts', 'kept in the playlist\'s settings');
     assert.equal(iptv.setOutput({ pl: xc, key: c.key, output: 'hls' }).ok, true);
     assert.equal(iptv.streamUrl(xc, c.key).url, hls.url);
     assert.equal(iptv.setOutput({ pl: m3u, key: c.key, output: 'ts' }).ok, false, 'a plain list has one kind of link');
-    done();
+    // For one play: the other kind, leaving the channel's own as it was.
+    assert.equal(iptv.streamUrl(xc, c.key, 'ts').url, hls.url.replace(/\.m3u8$/, '.ts'));
+    assert.equal(iptv.streamUrl(xc, c.key).format, 'hls', 'a play as the other kind keeps nothing');
+    assert.equal(iptv.setOutput({ pl: xc, key: c.key, output: 'ts' }).ok, true);
+    assert.equal(iptv.streamUrl(xc, c.key, 'hls').url, hls.url);
+    assert.equal(iptv.setOutput({ pl: xc, key: c.key, output: 'hls' }).ok, true);
+    iptv.playUrl(xc, c.key, false, function (stream) {
+      assert.equal(stream.format, 'ts');
+      assert.equal(stream.relay, '/api/iptv/relay?pl=' + encodeURIComponent(xc) + '&key=' + encodeURIComponent(c.key) + '&as=ts', 'its relay reads the same kind');
+      done();
+    }, 'ts');
+  });
+});
+
+step('an MPEG-TS channel is relayed for Home\'s own player, following the panel\'s redirect; an HLS one is not', function (done) {
+  iptv.search(xc, 'harbour sport 1', '', function (s) {
+    var c = s.channels[0];
+    assert.equal(iptv.setOutput({ pl: xc, key: c.key, output: 'ts' }).ok, true);
+    iptv.playUrl(xc, c.key, false, function (stream) {
+      assert.equal(stream.relay, '/api/iptv/relay?pl=' + encodeURIComponent(xc) + '&key=' + encodeURIComponent(c.key));
+      assert.ok(/\.ts$/.test(stream.url), 'the TV\'s player keeps the provider\'s link');
+      var relayServer = http.createServer(function (req, res) {
+        var q = urlLib.parse(req.url, true).query;
+        iptv.relay(String(q.pl || ''), String(q.key || ''), req, res);
+      });
+      function get(p, cb) {
+        http.get({ host: '127.0.0.1', port: relayServer.address().port, path: p, agent: false }, function (res) {
+          var parts = [];
+          res.on('data', function (d) { parts.push(d); });
+          res.on('end', function () { cb(res.statusCode, Buffer.concat(parts)); });
+        });
+      }
+      relayServer.listen(0, '127.0.0.1', function () {
+        get(stream.relay, function (code, body) {
+          assert.equal(code, 200);
+          assert.strictEqual(body.toString('hex'), TS_BYTES.toString('hex'), 'the stream from behind the redirect, as sent');
+          assert.equal(hits['/token/abc123.ts'], 1);
+          assert.equal(iptv.setOutput({ pl: xc, key: c.key, output: 'hls' }).ok, true);
+          iptv.playUrl(xc, c.key, false, function (hls) {
+            assert.strictEqual(hls.relay, undefined, 'an HLS channel plays in the TV\'s player');
+            get(stream.relay, function (code2) {
+              assert.equal(code2, 404, 'and is not relayed');
+              relayServer.close();
+              done();
+            });
+          });
+        });
+      });
+    });
+  });
+});
+
+step('a provider\'s stream that goes quiet is asked for again in the same response', function (done) {
+  iptv.stop();
+  iptv.init({ stateDir: stateDir, clients: function () { return [CURL]; }, version: 'test', relayRetryMs: [0], relayStallMs: 30, catchupMs: 600000, onChange: function () { changes++; } });
+  iptv.start();
+  iptv.search(xc, 'harbour sport 1', '', function (s) {
+    var c = s.channels[0];
+    assert.equal(iptv.setOutput({ pl: xc, key: c.key, output: 'ts' }).ok, true);
+    iptv.playUrl(xc, c.key, false, function (stream) {
+      var relayServer = http.createServer(function (req, res) {
+        var q = urlLib.parse(req.url, true).query;
+        iptv.relay(String(q.pl || ''), String(q.key || ''), req, res);
+      });
+      relayServer.listen(0, '127.0.0.1', function () {
+        var before = hits['/token/abc123.ts'] || 0;
+        goQuiet = goQuietRest = true;
+        http.get({ host: '127.0.0.1', port: relayServer.address().port, path: stream.relay, agent: false }, function (res) {
+          var parts = [];
+          res.on('data', function (d) { parts.push(d); });
+          res.on('end', function () {
+            goQuietRest = false;
+            assert.equal(res.statusCode, 200);
+            assert.strictEqual(Buffer.concat(parts).toString('hex'), TS_BYTES.toString('hex'), 'what came before the silence, then the rest from the next connection');
+            assert.equal(hits['/token/abc123.ts'] - before, 2, 'asked for twice');
+            relayServer.close();
+            assert.equal(iptv.setOutput({ pl: xc, key: c.key, output: 'hls' }).ok, true);
+            iptv.stop();
+            iptv.init({ stateDir: stateDir, clients: function () { return [CURL]; }, version: 'test', relayRetryMs: [], catchupMs: 600000, onChange: function () { changes++; } });
+            iptv.start();
+            done();
+          });
+        });
+      });
+    });
   });
 });
 
@@ -518,7 +617,7 @@ step('live TV pause is off by default, kept, and records only an MPEG-TS channel
     assert.equal(iptv.setTimeshift({ on: 'yes' }).ok, false);
     assert.equal(iptv.setTimeshift({ on: true }).ok, true);
     iptv.stop();
-    iptv.init({ stateDir: stateDir, clients: function () { return [CURL]; }, version: 'test', catchupMs: 600000, onChange: function () { changes++; } });
+    iptv.init({ stateDir: stateDir, clients: function () { return [CURL]; }, version: 'test', relayRetryMs: [], catchupMs: 600000, onChange: function () { changes++; } });
     iptv.start();
     assert.strictEqual(iptv.status().timeshift.on, true, 'kept across a restart');
     assert.strictEqual(iptv.rowStatus().timeshift, true, 'Home knows');
@@ -638,6 +737,13 @@ step('a channel with DRM its playlist does not declare is found after it fails, 
 });
 
 step('a playlist with no reachable server is refused when added, before any download', function (done) {
+  assert.strictEqual(iptv._isLoopbackHost('localhost'), true);
+  assert.strictEqual(iptv._isLoopbackHost('127.0.0.1'), true);
+  assert.strictEqual(iptv._isLoopbackHost('[::1]'), true);
+  assert.strictEqual(iptv._isLoopbackHost('0.0.0.0'), true);
+  assert.strictEqual(iptv._isLoopbackHost('::ffff:127.0.0.1'), true);
+  assert.strictEqual(iptv._isLoopbackHost('stream.example'), false);
+  assert.strictEqual(iptv._isLoopbackHost('192.168.1.10'), false);
   iptv.playlistsAction({ action: 'add', kind: 'm3u', url: 'file:///etc/passwd' }, function (r) {
     assert.deepEqual([r.ok, r.error], [false, 'url']);
     iptv.playlistsAction({ action: 'add', kind: 'xtream', server: 'http://x.test', user: '', pass: 'p' }, function (r2) {
@@ -649,7 +755,7 @@ step('a playlist with no reachable server is refused when added, before any down
 
 provider.listen(0, '127.0.0.1', function () {
   base = 'http://127.0.0.1:' + provider.address().port;
-  iptv.init({ stateDir: stateDir, clients: function () { return [CURL]; }, version: 'test', catchupMs: 0,
+  iptv.init({ stateDir: stateDir, clients: function () { return [CURL]; }, version: 'test', relayRetryMs: [], catchupMs: 0,
     onChange: function () { changes++; } });
   iptv.start();
   run(0);

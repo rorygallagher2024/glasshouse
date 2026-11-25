@@ -13,8 +13,9 @@
     "server/**/*.js"
   ],
   // The dashboard's scripts, which the server joins into one before serving,
-  // so no one of them stands alone.
+  // so no one of them stands alone; and third-party code, kept as published.
   "exclude": [
-    "server/assets/ui"
+    "server/assets/ui",
+    "server/assets/vendor"
   ]
 }

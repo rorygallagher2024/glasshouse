@@ -378,6 +378,16 @@ function renderHome() {
     soundSel.disabled = !homeWritable();
     renderHomeNavSound(st);
   }
+  const pointerSel = q('home-pointer-sound-sel');
+  if (pointerSel) {
+    const pointerName = (st.layout && st.layout.pointerSound) || 'off';
+    pointerSel.value = pointerName;
+    // Not shown with no Magic Remote paired to point, and unavailable while the pointer is switched off.
+    const noPointer = st.layout && st.layout.showPointer === false;
+    q('home-pointer-sound-row').hidden = !st.supported.ok || st.remoteBatteryAvailable === false;
+    pointerSel.disabled = !homeWritable() || noPointer;
+    q('home-pointer-sound-play').disabled = noPointer || pointerName === 'off' || (pointerName === 'own' && !(st.layout && st.layout.ownSound));
+  }
   const fadeSel = q('home-card-fade-sel');
   if (fadeSel) {
     fadeSel.value = String(st.layout && typeof st.layout.cardFade === 'number' ? st.layout.cardFade : 20);
@@ -385,6 +395,9 @@ function renderHome() {
   }
   loadHomeCardIcons();
   renderHomeWeather(st);
+  renderHomeInfo(st);
+  renderHomeBoard(st);
+  renderHomeNews(st);
   const countAlt = q('home-show-count-alt');
   if (countAlt) countAlt.hidden = !altView;
   const searchRow = q('home-search-row');
@@ -763,18 +776,24 @@ function homeSetSort(kind, value) {
   homeSaveLayout({ sort: { [kind]: value } });
 }
 
+// homeSaving is cleared however the save ends: left set by a render or a
+// reload that threw (the server restarting mid-save, say), it made every later
+// change on the tab do nothing, with no error, until the page was reloaded.
 async function homeSaveLayout(patch) {
   if (!homeWritable()) return;
   homeSaving = true;
-  homeLoadRevision++;
-  renderHome();
   try {
-    const r = await homePost('/api/home/layout', patch);
-    homeLayout = r.layout;
-    homeStatus.layout = r.layout;
-  } catch (e) { showErr(e.message); }
-  await loadHome(true);
-  homeSaving = false;
+    homeLoadRevision++;
+    renderHome();
+    try {
+      const r = await homePost('/api/home/layout', patch);
+      homeLayout = r.layout;
+      homeStatus.layout = r.layout;
+    } catch (e) { showErr(e.message); }
+    await loadHome(true);
+  } finally {
+    homeSaving = false;
+  }
   renderHome();
 }
 
@@ -1140,11 +1159,12 @@ async function homeHideLg() {
   homeArmed = null;
   clearTimeout(homeArmTimer);
   homeSaving = true;
-  renderHome();
   try {
+    renderHome();
     await homePost('/api/home/start-layout', { hideLgHomeAtStart: want });
-  } catch (e) { showErr(e.message); }
-  homeSaving = false;
+  } catch (e) { showErr(e.message); } finally {
+    homeSaving = false;
+  }
   loadHome();
 }
 
@@ -1225,6 +1245,460 @@ function homeWeatherPick(i) {
   homeSaveLayout({ weather: 'internet', weatherPlace: place });
 }
 
+/*
+ * The lines beside the clock: off, entities chosen here, or lines Home
+ * Assistant sends. Each of the four takes an entity, optionally one of its
+ * attributes in place of its state, a label and a few words before the value.
+ * The entity list comes from Home Assistant's API, as the screen savers' does,
+ * and is read once.
+ */
+const HOME_INFO_SLOTS = 4;
+let homeHaList = null;       // { configured, entities, error } once read
+let homeHaListReading = false;
+onHaEntitiesReset(() => { homeHaList = null; homeHaListReading = false; });
+
+haPickerRegister('home:info', {
+  listId: 'home-info-picker',
+  inputId: 'home-info-add',
+  getUsedIds: () => (homeInfoList || []).map(l => l.entity),
+  onPick: id => {
+    const inp = q('home-info-add');
+    if (inp) inp.value = id;
+    homeInfoAdd();
+  }
+});
+
+function homeInfoFilter() {
+  const inp = q('home-info-add');
+  if (inp) haPickerFilter('home:info', inp.value);
+}
+
+function homeInfoTogglePicker() {
+  haPickerToggle('home:info');
+}
+
+async function homeReadHaList() {
+  if (homeHaList || homeHaListReading) return;
+  homeHaListReading = true;
+  await ensureHaEntities(st => {
+    homeHaList = { configured: st.configured, entities: st.entities, error: st.error };
+    homeHaListReading = false;
+    if (homeStatus) renderHomeInfo(homeStatus);
+  });
+}
+
+// The lines as last saved or edited here: edits change this copy and save it
+// whole, so two quick changes cannot undo each other.
+let homeInfoList = null;
+let homeInfoMsgTimer = null;
+
+function homeInfoSay(text, warn) {
+  const msg = q('home-info-msg');
+  if (!msg) return;
+  msg.textContent = text || '';
+  msg.className = 'home-info-msg' + (warn ? ' warn' : '');
+  clearTimeout(homeInfoMsgTimer);
+  if (text && !warn) homeInfoMsgTimer = setTimeout(() => { msg.textContent = ''; }, 4000);
+}
+
+function renderHomeInfo(st) {
+  const sel = q('home-info-sel');
+  if (!sel) return;
+  // Each source only where it can work: entities with the Home Assistant API
+  // set up on the HA & MQTT tab, sent lines with MQTT. With neither, no row.
+  const can = st.haLines || { api: false, mqtt: false };
+  const row = q('home-info-row');
+  if (row) row.hidden = !st.supported.ok || !(can.api || can.mqtt);
+  // Disabled too: Safari shows an option that is only hidden.
+  [['entities', can.api], ['ha', can.mqtt]].forEach(([v, ok]) => {
+    const o = sel.querySelector('option[value="' + v + '"]');
+    o.hidden = !ok;
+    o.disabled = !ok;
+  });
+  let source = (st.layout && st.layout.info) || 'entities';
+  // A source that can no longer work reads as off until it can again.
+  if ((source === 'entities' && !can.api) || (source === 'ha' && !can.mqtt)) source = 'off';
+  sel.value = source;
+  sel.disabled = !homeWritable();
+  const panel = q('home-info-panel');
+  panel.hidden = !st.supported.ok || source === 'off';
+  if (panel.hidden) return;
+  const note = q('home-info-note');
+  const entities = source === 'entities';
+  q('home-info-addbox').hidden = !entities;
+  if (!entities) {
+    note.textContent = t('home.info.haDesc', 'A Home Assistant automation sends the lines to the TV\'s Home Info Push entity, as a list of up to four, each with a label and a value. The Home Assistant guide has an example.');
+    note.className = 'sub';
+    q('home-info-lines').innerHTML = '';
+    return;
+  }
+  homeReadHaList();
+  if (homeHaList && homeHaList.error) {
+    note.textContent = homeHaList.error;
+    note.className = 'set-note warn';
+  } else {
+    note.textContent = t('home.info.entitiesDesc', 'Each line shows one Home Assistant entity, read every 30 seconds while Home is on screen. A date reads as today, tomorrow or a weekday, and a number has its unit.');
+    note.className = 'sub';
+  }
+  if (!homeInfoList || !homeSaving) homeInfoList = ((st.layout && st.layout.infoLines) || []).map(l => Object.assign({}, l));
+  homeInfoDraw();
+}
+
+// The list, drawn from homeInfoList. Not drawn again under a field being
+// typed in: its change saves, and the next draw shows it.
+function homeInfoDraw() {
+  const lines = homeInfoList || [];
+  const locked = !homeWritable();
+  const full = lines.length >= HOME_INFO_SLOTS;
+  q('home-info-count').textContent = lines.length + ' / ' + HOME_INFO_SLOTS;
+  // An entity id, the same in every language.
+  q('home-info-add').placeholder = 'sensor.bin_collection';
+  q('home-info-add').disabled = locked || full;
+  if (q('home-info-pick-btn')) q('home-info-pick-btn').disabled = locked || full;
+  q('home-info-add-btn').disabled = locked || full;
+  q('home-info-add-hint').textContent = full ? t('home.info.full', 'Four lines at most: remove one to add another.')
+    : t('home.info.addHint', 'Start typing to pick one of Home Assistant\'s entities.');
+  const box = q('home-info-lines');
+  const typing = box.contains(document.activeElement) && document.activeElement.tagName === 'INPUT';
+  if (typing) return;
+  const dis = locked ? 'disabled' : '';
+  const field = (i, key, label, value, max, hint) => `
+        <div class="home-info-field">
+          <label for="home-info-${key}-${i}">${esc(label)}</label>
+          <div class="home-info-input">
+            <input type="text" id="home-info-${key}-${i}" value="${esc(value || '')}" maxlength="${max}" ${dis}
+              autocomplete="off" spellcheck="false" onchange="homeInfoField(${i}, '${key}', this.value)">
+            <div class="home-info-hint">${esc(hint)}</div>
+          </div>
+        </div>`;
+  let html = '';
+  if (lines.length) html += '<div class="ss-li-scroll home-info-list">';
+  lines.forEach((l, i) => {
+    const hit = haEntityLookup(l.entity) || (homeHaList ? homeHaList.entities.find(e => e.id === l.entity) : null);
+    const own = (hit && hit.name) || l.entity;
+    // How the line reads beside the clock, with a made-up value.
+    const value = l.attribute ? t('home.info.tomorrow', 'tomorrow') : '…' + (hit && hit.unit ? ' ' + hit.unit : '');
+    const shown = (l.label || own) + ' · ' + (l.before ? l.before + ' ' : '') + value;
+    html += `
+      <div class="ss-li-item">
+        <div class="ss-li-top">
+          <span class="ss-li-num num">${i + 1}</span>
+          <div class="ss-li-info" title="${esc(l.entity)}">
+            <div class="ss-li-name">${esc(own)}</div>
+            ${hit && hit.name ? `<div class="ss-li-id">${esc(l.entity)}</div>` : ''}
+          </div>
+          <div class="ss-li-acts">
+            <button type="button" title="${esc(t('ss.entityList.moveUp', 'Move up'))}" aria-label="${esc(t('ss.entityList.moveUp', 'Move up'))}" ${(locked || i === 0) ? 'disabled' : ''} onclick="homeInfoMove(${i}, -1)">&#8593;</button>
+            <button type="button" title="${esc(t('ss.entityList.moveDown', 'Move down'))}" aria-label="${esc(t('ss.entityList.moveDown', 'Move down'))}" ${(locked || i === lines.length - 1) ? 'disabled' : ''} onclick="homeInfoMove(${i}, 1)">&#8595;</button>
+            <button type="button" title="${esc(t('ss.entityList.remove', 'Remove'))}" aria-label="${esc(t('ss.entityList.remove', 'Remove'))}" ${dis} onclick="homeInfoRemove(${i})">&times;</button>
+          </div>
+        </div>
+        <details class="home-info-more"${l.label || l.attribute || l.before ? ' open' : ''}>
+        <summary>${esc(t('home.info.customise', 'Customise'))}</summary>
+        ${field(i, 'label', t('home.info.name', 'Name'), l.label, 32, t('home.info.nameHint', 'Optional. Replaces the entity\'s own name.'))}
+        ${field(i, 'attribute', t('home.info.attributeLabel', 'Attribute'), l.attribute, 64, t('home.info.attributeHint', 'Optional. An attribute such as next_date, shown instead of the state.'))}
+        ${field(i, 'before', t('home.info.beforeLabel', 'Text before'), l.before, 24, t('home.info.beforeHint', 'Optional. Words in front of the value, such as collected.'))}
+        </details>
+        <div class="home-info-preview">${esc(t('home.info.preview', 'Shows as: {line}', { line: shown }))}</div>
+      </div>`;
+  });
+  if (lines.length) html += '</div>';
+  box.innerHTML = html;
+}
+
+function homeInfoCommit(lines) {
+  homeInfoList = lines;
+  homeInfoDraw();
+  homeSaveLayout({ infoLines: lines });
+}
+
+function homeInfoAdd() {
+  const input = q('home-info-add');
+  const entity = input.value.trim().toLowerCase();
+  const lines = (homeInfoList || []).map(l => Object.assign({}, l));
+  if (!entity) {
+    homeInfoSay(t('home.info.needEntity', 'Type or pick an entity first.'), true);
+    input.focus();
+    homeInfoTogglePicker();
+    return;
+  }
+  if (!/^[a-z0-9_]+\.[a-z0-9_]+$/.test(entity)) {
+    homeInfoSay(t('home.info.badEntity', 'An entity looks like sensor.bin_collection: a domain, a dot and a name.'), true);
+    return;
+  }
+  if (homeHaList && homeHaList.entities.length && !haEntityLookup(entity) && !homeHaList.entities.some(e => e.id === entity)) {
+    homeInfoSay(t('home.info.noSuchEntity', 'Home Assistant has no entity called {entity}.', { entity }), true);
+    return;
+  }
+  if (lines.length >= HOME_INFO_SLOTS) return;
+  haPickerCloseAll();
+  lines.push({ entity, attribute: '', label: '', before: '' });
+  input.value = '';
+  homeInfoCommit(lines);
+  const hit = haEntityLookup(entity) || (homeHaList ? homeHaList.entities.find(e => e.id === entity) : null);
+  homeInfoSay(t('home.info.added', 'Added {name} as line {n}.', { name: (hit && hit.name) || entity, n: lines.length }));
+}
+
+function homeInfoRemove(i) {
+  const lines = (homeInfoList || []).slice();
+  const gone = lines.splice(i, 1)[0];
+  homeInfoCommit(lines);
+  if (gone) homeInfoSay(t('home.info.removed', 'Removed line {n}.', { n: i + 1 }));
+}
+
+function homeInfoMove(i, by) {
+  const lines = (homeInfoList || []).slice();
+  const j = i + by;
+  if (j < 0 || j >= lines.length) return;
+  [lines[i], lines[j]] = [lines[j], lines[i]];
+  homeInfoCommit(lines);
+}
+
+function homeInfoField(i, key, value) {
+  const lines = (homeInfoList || []).map(l => Object.assign({}, l));
+  if (!lines[i]) return;
+  lines[i][key] = value.trim();
+  homeInfoList = lines;
+  homeSaveLayout({ infoLines: lines });
+}
+
+function homeInfoSource(value) {
+  homeSaveLayout({ info: value });
+}
+
+// The board: off, or a board Home Assistant sends.
+function renderHomeBoard(st) {
+  const sel = q('home-board-sel');
+  if (!sel) return;
+  // Sent over MQTT, so the row is shown only with MQTT set up, as the values
+  // at a glance' sources are, and reads as off while MQTT is not.
+  const mqtt = !!(st.haLines && st.haLines.mqtt);
+  const row = q('home-board-row');
+  if (row) row.hidden = !st.supported.ok || !mqtt;
+  sel.value = mqtt ? ((st.layout && st.layout.board) || 'off') : 'off';
+  sel.disabled = !homeWritable();
+  const panel = q('home-board-panel');
+  panel.hidden = !st.supported.ok || sel.value === 'off';
+  if (panel.hidden) return;
+  const place = q('home-board-place');
+  place.value = st.layout && st.layout.boardStrip ? 'strip' : 'beside';
+  place.disabled = !homeWritable();
+}
+
+/*
+ * News feeds, added one at a time, up to three, on the Home tab for the strip
+ * and on the Screensaver tab for the News saver, both saved as Home's
+ * newsFeeds. prefix names a place's ids. The add form is built once and kept
+ * out of the list, which is drawn again after each change, so a redraw never
+ * takes what is being typed.
+ */
+const NEWS_SLOTS = 3;
+const newsLists = {};
+const newsMsgTimers = {};
+
+function newsSay(prefix, text, warn) {
+  const msg = q(prefix + '-msg');
+  if (!msg) return;
+  msg.textContent = text || '';
+  msg.className = 'home-info-msg' + (warn ? ' warn' : '');
+  clearTimeout(newsMsgTimers[prefix]);
+  if (text && !warn) newsMsgTimers[prefix] = setTimeout(() => { msg.textContent = ''; }, 4000);
+}
+
+function newsForm(prefix, box) {
+  if (q(prefix + '-add')) return;
+  box.innerHTML = `
+    <div class="home-info-addbox">
+      <div class="ss-li-head">
+        <label for="${prefix}-add">${esc(t('home.news.add', 'Add a feed'))}</label>
+        <span class="ss-li-count num" id="${prefix}-count"></span>
+      </div>
+      <div class="ss-li-add">
+        <input type="url" id="${prefix}-add" maxlength="2048" autocomplete="off" spellcheck="false"
+          aria-describedby="${prefix}-hint ${prefix}-msg" onkeydown="if(event.key==='Enter'){event.preventDefault();newsAdd('${prefix}');}">
+        <button type="button" class="ss-li-add-btn" id="${prefix}-add-btn" onclick="newsAdd('${prefix}')">${esc(t('ss.entityList.addBtn', 'Add'))}</button>
+      </div>
+      <div class="home-info-hint" id="${prefix}-hint"></div>
+      <div class="home-info-msg" id="${prefix}-msg" role="status" aria-live="polite"></div>
+    </div>
+    <div id="${prefix}-list"></div>`;
+  // An address, the same in every language.
+  q(prefix + '-add').placeholder = 'https://';
+}
+
+function renderNewsFeeds(prefix, feeds, writable) {
+  const box = q(prefix + '-feeds');
+  if (!box) return;
+  newsForm(prefix, box);
+  newsLists[prefix] = (feeds || []).map(f => ({ url: f.url, name: f.name || '' }));
+  newsDraw(prefix, writable);
+}
+
+function newsDraw(prefix, writable) {
+  const lines = newsLists[prefix] || [];
+  const locked = writable === false;
+  const full = lines.length >= NEWS_SLOTS;
+  q(prefix + '-count').textContent = lines.length + ' / ' + NEWS_SLOTS;
+  q(prefix + '-add').disabled = locked || full;
+  q(prefix + '-add-btn').disabled = locked || full;
+  q(prefix + '-hint').textContent = full ? t('home.news.full', 'Three feeds at most: remove one to add another.')
+    : t('home.news.addHint', 'The address of an RSS or Atom feed, such as a news site\'s.');
+  const list = q(prefix + '-list');
+  if (list.contains(document.activeElement) && document.activeElement.tagName === 'INPUT') return;
+  const key = JSON.stringify(lines) + locked;
+  if (list.dataset.key === key) return;
+  list.dataset.key = key;
+  const dis = locked ? 'disabled' : '';
+  let html = lines.length ? '<div class="ss-li-scroll home-info-list">' : '';
+  lines.forEach((f, i) => {
+    html += `
+      <div class="ss-li-item">
+        <div class="ss-li-top">
+          <span class="ss-li-num num">${i + 1}</span>
+          <div class="ss-li-info" title="${esc(f.url)}">
+            <div class="ss-li-name" id="${prefix}-title-${i}">${esc(f.name || newsHost(f.url))}</div>
+            <div class="ss-li-id">${esc(f.url)}</div>
+          </div>
+          <div class="ss-li-acts">
+            <button type="button" title="${esc(t('ss.entityList.moveUp', 'Move up'))}" aria-label="${esc(t('ss.entityList.moveUp', 'Move up'))}" ${(locked || i === 0) ? 'disabled' : ''} onclick="newsMove('${prefix}', ${i}, -1)">&#8593;</button>
+            <button type="button" title="${esc(t('ss.entityList.moveDown', 'Move down'))}" aria-label="${esc(t('ss.entityList.moveDown', 'Move down'))}" ${(locked || i === lines.length - 1) ? 'disabled' : ''} onclick="newsMove('${prefix}', ${i}, 1)">&#8595;</button>
+            <button type="button" title="${esc(t('ss.entityList.remove', 'Remove'))}" aria-label="${esc(t('ss.entityList.remove', 'Remove'))}" ${dis} onclick="newsRemove('${prefix}', ${i})">&times;</button>
+          </div>
+        </div>
+        <div class="home-info-preview news-feed-status" id="${prefix}-status-${i}" role="status"></div>
+        <details class="home-info-more"${f.name ? ' open' : ''}>
+          <summary>${esc(t('home.info.customise', 'Customise'))}</summary>
+          <div class="home-info-field">
+            <label for="${prefix}-name-${i}">${esc(t('home.info.name', 'Name'))}</label>
+            <div class="home-info-input">
+              <input type="text" id="${prefix}-name-${i}" value="${esc(f.name)}" maxlength="40" ${dis}
+                autocomplete="off" spellcheck="false" onchange="newsName('${prefix}', ${i}, this.value)">
+              <div class="home-info-hint">${esc(t('home.news.nameHint', 'Optional. Shown before its headlines in place of the feed\'s own name.'))}</div>
+            </div>
+          </div>
+        </details>
+      </div>`;
+  });
+  if (lines.length) html += '</div>';
+  list.innerHTML = html;
+  newsCheck(prefix);
+}
+
+function newsHost(url) {
+  const m = /^https?:\/\/(?:www\.)?([^\/:?#]+)/i.exec(url || '');
+  return m ? m[1] : url;
+}
+
+/*
+ * Under each feed, what the server made of it: its name and how many
+ * headlines it has, or why it could not be read. The server reads a feed at
+ * once when it is new, so a wrong address shows straight after it is added.
+ */
+async function newsCheck(prefix) {
+  const lines = newsLists[prefix] || [];
+  lines.forEach((f, i) => {
+    const el = q(`${prefix}-status-${i}`);
+    if (el) { el.textContent = t('home.news.checking', 'Reading the feed…'); el.className = 'home-info-preview news-feed-status'; }
+  });
+  if (!lines.length) return;
+  let r = null;
+  try { r = await homeGet('/api/news/status'); } catch (e) { r = null; }
+  lines.forEach((f, i) => {
+    const el = q(`${prefix}-status-${i}`);
+    if (!el) return;
+    const st = r && r.feeds && r.feeds.find(x => x.url === f.url);
+    if (!st) { el.textContent = ''; return; }
+    if (st.ok) {
+      el.textContent = t('home.news.feedOk', '{source}: {n} headlines', { source: st.source, n: st.count });
+      el.className = 'home-info-preview news-feed-status good';
+      const title = q(`${prefix}-title-${i}`);
+      if (title && !f.name && st.source) title.textContent = st.source;
+    } else {
+      el.textContent = st.error === 'feed' ? t('home.news.notFeed', 'Read, but it is not an RSS or Atom feed. Check the address.')
+        : st.error === 'size' ? t('home.news.tooBig', 'Larger than 2 MB, so it is not read.')
+        : t('home.news.fetchFailed', 'Could not be read. Check the address, and that the TV is online.');
+      el.className = 'home-info-preview news-feed-status warn';
+    }
+  });
+}
+
+async function newsCommit(prefix, list) {
+  newsLists[prefix] = list;
+  newsDraw(prefix, true);
+  try { await homePost('/api/home/layout', { newsFeeds: list }); } catch (e) { showErr(e.message); }
+  newsCheck(prefix);
+  if (prefix === 'home-news') loadHome(true); else loadScreensavers();
+}
+
+function newsAdd(prefix) {
+  const input = q(prefix + '-add');
+  const url = input.value.trim();
+  const list = (newsLists[prefix] || []).slice();
+  if (!url) { newsSay(prefix, t('home.news.needUrl', 'Type a feed\'s address first.'), true); input.focus(); return; }
+  if (!/^https?:\/\/[^\s]+$/i.test(url) || url.length > 2048) {
+    newsSay(prefix, t('home.news.badUrl', 'A feed\'s address starts with http:// or https://.'), true);
+    return;
+  }
+  if (list.some(f => f.url === url)) { newsSay(prefix, t('home.news.dupe', 'That feed is already in the list.'), true); return; }
+  if (list.length >= NEWS_SLOTS) return;
+  list.push({ url, name: '' });
+  input.value = '';
+  newsSay(prefix, t('home.news.added', 'Added as feed {n}. Reading it now.', { n: list.length }));
+  newsCommit(prefix, list);
+}
+
+function newsRemove(prefix, i) {
+  const list = (newsLists[prefix] || []).slice();
+  list.splice(i, 1);
+  newsSay(prefix, t('home.news.removed', 'Removed feed {n}.', { n: i + 1 }));
+  newsCommit(prefix, list);
+}
+
+function newsMove(prefix, i, by) {
+  const list = (newsLists[prefix] || []).slice();
+  const j = i + by;
+  if (j < 0 || j >= list.length) return;
+  [list[i], list[j]] = [list[j], list[i]];
+  newsCommit(prefix, list);
+}
+
+function newsName(prefix, i, value) {
+  const list = (newsLists[prefix] || []).map(f => Object.assign({}, f));
+  if (!list[i]) return;
+  list[i].name = value.trim();
+  newsLists[prefix] = list;
+  homePost('/api/home/layout', { newsFeeds: list }).catch(e => showErr(e.message));
+}
+
+function renderHomeNews(st) {
+  const sel = q('home-news-sel');
+  if (!sel) return;
+  const on = !!(st.layout && st.layout.news);
+  sel.value = on ? 'on' : 'off';
+  sel.disabled = !homeWritable();
+  const panel = q('home-news-panel');
+  panel.hidden = !st.supported.ok || !on;
+  if (!panel.hidden) renderNewsFeeds('home-news', st.layout.newsFeeds, homeWritable());
+  const style = q('home-news-style');
+  style.value = st.layout.newsStyle || 'flip';
+  style.disabled = !homeWritable();
+  const speed = q('home-news-speed');
+  speed.value = st.layout.newsSpeed || 'slow';
+  speed.disabled = !homeWritable();
+}
+
+function homeBoardStrip(on) {
+  homeSaveLayout({ boardStrip: on });
+}
+
+function homeNewsOn(on) {
+  homeSaveLayout({ news: on });
+}
+
+function homeBoardSource(value) {
+  homeSaveLayout({ board: value });
+}
+
 function homeShow(key) {
   homeSaveLayout({ [key]: homeLayout[key] === false });
 }
@@ -1241,6 +1715,10 @@ function homeCardFade(v) {
 
 function homeNavSound(v) {
   homeSaveLayout({ navSound: v });
+}
+
+function homePointerSound(v) {
+  homeSaveLayout({ pointerSound: v });
 }
 
 /*
@@ -1447,8 +1925,8 @@ function renderHomeNavSound(st) {
 }
 
 let homeNavPreview = null;
-function homeNavSoundPlay() {
-  const name = q('home-nav-sound-sel').value;
+function homeNavSoundPlay(which) {
+  const name = q(which === 'pointer' ? 'home-pointer-sound-sel' : 'home-nav-sound-sel').value;
   if (name === 'off') return;
   if (homeNavPreview) homeNavPreview.pause();
   homeNavPreview = new Audio(api('/api/home/nav-sound?name=' + encodeURIComponent(name) + '&t=' + Date.now()));

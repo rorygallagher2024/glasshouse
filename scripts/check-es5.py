@@ -73,7 +73,7 @@ TV_CSS_RULES = [
 ]
 # Pages the TV's own browser runs, and the scripts they load.
 TV_PAGES = {'dashboard.html', 'setup.html', 'home.html', 'index.html', 'i18n.js', 'qr.js',
-            'home-kit.js', 'devicons.js', 'home-web.html', 'home-minimal.html', 'example-launcher.html'}
+            'home-iptv.js', 'home-kit.js', 'devicons.js', 'home-web.html', 'home-minimal.html', 'example-launcher.html'}
 
 
 def blank(src):
@@ -242,9 +242,9 @@ else:
     # browser.
     assets = root / 'server' / 'assets'
     targets += [assets / 'i18n.js', assets / 'qr.js', assets / 'dashboard.html', assets / 'setup.html',
-                assets / 'setup-phone.html', assets / 'home.html', assets / 'home-app' / 'index.html',
+                assets / 'setup-phone.html', assets / 'home.html', assets / 'home-iptv.js', assets / 'home-app' / 'index.html',
                 assets / 'home-kit.js', assets / 'home-web.html', assets / 'home-minimal.html',
-                assets / 'devicons.js', assets / 'inputbar-app' / 'index.html', assets / 'homebar-app' / 'index.html',
+                assets / 'devicons.js', assets / 'inputbar-app' / 'index.html', assets / 'homebar-app' / 'index.html', assets / 'ask-app' / 'index.html', assets / 'ask.html',
                 root / 'docs' / 'development' / 'example-launcher.html']
 
 sys.exit(1 if sum(check(t) for t in targets) else 0)

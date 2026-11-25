@@ -57,6 +57,8 @@ function luna(uri, params, cb) {
     if (params.configs[rk.MAP_KEY]) { tv.keys = JSON.parse(JSON.stringify(params.configs[rk.MAP_KEY])); tv.keysWrites++; }
   } else if (uri === 'com.webos.applicationManager/listApps') {
     r.apps = APPS;
+  } else if (uri === 'com.webos.service.settings/getSystemSettings') {
+    r.settings = { backlight: String(tv.backlight) };
   } else if (uri === 'com.webos.applicationManager/getAppInfo') {
     // A CX has no quick input picker, so no input switcher choice.
     r.returnValue = false;
@@ -83,8 +85,8 @@ function loadFilter(broken, extra) {
   var ctx = {
     genericTimer: { set: function (ms, fn) { timers.push({ ms: ms, fn: fn }); return timers.length; } },
     WebOS: { Key_webOS_Netflix: 1001, Key_webOS_Amazon: 1002, Key_webOS_TVGuide: 1003, Key_webOS_Red: 1004,
-             Key_webOS_USP: 1005 },
-    Qt: { Key_Super_L: 2001 },
+             Key_webOS_USP: 1005, Key_webOS_ChannelUp: 1006, Key_webOS_Multikey: 1010, Key_webOS_ScreenRemote: 1011 },
+    Qt: { Key_Super_L: 2001, Key_Video: 2002 },
     KeyPolicy: { NextPolicy: 'next', Accepted: 'accepted', NotAccepted: 'notAccepted' },
     lunaCall: {
       appId: 'com.webos.surfacemanager',
@@ -343,6 +345,7 @@ step(function (next) {
       assert.strictEqual(down.ok, true);
       var f = loadFilter();
       var writes = function () { return f.sent.filter(function (m) { return m.uri === 'com.webos.service.settings/setSystemSettings'; }).length; };
+      var reads = function () { return f.sent.filter(function (m) { return m.uri === 'com.webos.service.settings/getSystemSettings'; }).length; };
       // expire() runs every timer set so far; one tick runs those waiting and drops them.
       var tick = function () { var n = f.timers.length; f.expire(); f.timers.splice(0, n); };
       f.timers.length = 0;
@@ -356,6 +359,7 @@ step(function (next) {
       assert.strictEqual(tv.backlight, 70, 'a held key steps again on the timer');
       tick();
       assert.strictEqual(tv.backlight, 80, 'and again');
+      assert.strictEqual(reads(), 1, 'a held key reads the level once, on the press; its repeats go on from what it wrote');
       f.handle(1004, false, false);
       assert.strictEqual(tv.backlight, 80, 'the release itself steps nothing');
       tick();
@@ -363,6 +367,7 @@ step(function (next) {
       tv.backlight = 90;
       f.handle(1004, true, false);
       assert.strictEqual(tv.backlight, 100);
+      assert.strictEqual(reads(), 2, 'a new press reads the level again');
       tick();
       assert.strictEqual(tv.backlight, 100, 'stops at the end of the range');
       f.handle(1004, false, false);
@@ -738,6 +743,142 @@ step(function (next) {
 });
 
 step(function (next) {
+  // On webOS <=10 CH+ and CH- are offered where the filter names them, and a key set to open an app is consumed.
+  var channelKeys = function (r) {
+    return r.keys.filter(function (k) { return /^channel/.test(k.key); }).map(function (k) { return k.key; });
+  };
+  rk.getRemoteKeys(guard(function (without) {
+    assert.deepEqual(channelKeys(without), []);
+    fs.writeFileSync(path.join(filtersDir, 'channel.js'), 'case WebOS.Key_webOS_ChannelUp: case WebOS.Key_webOS_ChannelDown:');
+    rk.init({ luna: luna, stateDir: stateDir, filtersDir: filtersDir });
+    rk.getRemoteKeys(guard(function (withKeys) {
+      assert.deepEqual(channelKeys(withKeys), ['channelup', 'channeldown']);
+      rk.setRemoteKey('channelup', 'open', 'netflix', guard(function (s) {
+        assert.strictEqual(s.ok, true);
+        // The fake firmware has no ChannelDown symbol, as a remote without the key: left alone.
+        var f = loadFilter();
+        assert.strictEqual(f.handle(1006, true, false), 'accepted');
+        assert.strictEqual(f.handle(1006, false, false), 'accepted');
+        assert.deepEqual(f.launched, [{ id: 'netflix', params: '{}' }]);
+        assert.strictEqual(f.handle(1007, true, false), 'next');
+        rk.setRemoteKey('channelup', 'lg', '', guard(function () {
+          assert.strictEqual(loadFilter().handle(1006, true, false), 'next');
+          fs.unlinkSync(path.join(filtersDir, 'channel.js'));
+          // A B8 (webOS 4.4): no filter names them, but the WebOS module defines them.
+          var plugin = path.join(stateDir, 'libwebosglobalplugin.so');
+          fs.writeFileSync(plugin, 'x\u0000Key_webOS_ChannelUp\u0000Key_webOS_ChannelDown\u0000Key_webOS_ChannelDash\u0000');
+          rk.init({ luna: luna, stateDir: stateDir, filtersDir: filtersDir, webosPlugin: plugin });
+          rk.getRemoteKeys(guard(function (fromPlugin) {
+            assert.deepEqual(channelKeys(fromPlugin), ['channelup', 'channeldown'], 'offered from the WebOS module where no filter names them');
+            var others = function (r) { return r.keys.map(function (k) { return k.key; }).filter(function (k) { return !/^channel/.test(k); }); };
+            assert.deepEqual(others(fromPlugin), others(without), 'only the channel keys are taken from the module');
+            fs.writeFileSync(plugin, 'x\u0000Key_webOS_ChannelUpX\u0000');
+            rk.init({ luna: luna, stateDir: stateDir, filtersDir: filtersDir, webosPlugin: plugin });
+            rk.getRemoteKeys(guard(function (none) {
+              assert.deepEqual(channelKeys(none), [], 'a longer name is not taken for the key');
+              fs.unlinkSync(plugin);
+              rk.init({ luna: luna, stateDir: stateDir, filtersDir: filtersDir });
+              console.log('  ✓ the channel keys are offered where a filter names them, or else where the WebOS module defines them; one set to an app is consumed and opens it, and As LG has it passes it on');
+              next();
+            }));
+          }));
+        }));
+      }));
+    }));
+  }));
+});
+
+step(function (next) {
+  // The ? and 123 buttons are filter keys where LG's filters name them, and there they can do nothing.
+  var offered = function (r, name) { return r.keys.filter(function (k) { return k.key === name; })[0]; };
+  rk.getRemoteKeys(guard(function (without) {
+    assert.ok(!offered(without, 'multikey') && !offered(without, 'screenremote'), 'not where no filter names them');
+    fs.writeFileSync(path.join(filtersDir, 'more.js'), 'case WebOS.Key_webOS_Multikey: case WebOS.Key_webOS_ScreenRemote:');
+    rk.init({ luna: luna, stateDir: stateDir, filtersDir: filtersDir });
+    rk.getRemoteKeys(guard(function (withKeys) {
+      assert.ok(offered(withKeys, 'multikey'), 'the ? button where a filter names it');
+      assert.ok(!offered(withKeys, 'multikey').noNothing, 'the filter can leave it doing nothing');
+      assert.strictEqual(offered(withKeys, 'screenremote').title, '123 button');
+      rk.setRemoteKey('multikey', 'nothing', '', guard(function (s) {
+        assert.strictEqual(s.ok, true, s.error);
+        var f = loadFilter();
+        assert.strictEqual(f.handle(1010, true, false), 'accepted', 'a press is taken from LG');
+        assert.strictEqual(f.handle(1010, false, false), 'accepted', 'and its release, so no hold starts');
+        rk.setRemoteKey('screenremote', 'open', 'netflix', guard(function (s2) {
+          assert.strictEqual(s2.ok, true, s2.error);
+          var f2 = loadFilter();
+          assert.strictEqual(f2.handle(1011, true, false), 'accepted', 'a press is taken, so LG shows no on-screen remote');
+          assert.strictEqual(f2.handle(1011, false, false), 'accepted');
+          rk.setRemoteKey('multikey', 'lg', '', guard(function () {
+            rk.setRemoteKey('screenremote', 'lg', '', guard(function () {
+              var f3 = loadFilter();
+              assert.strictEqual(f3.handle(1010, true, false), 'next', 'As LG has it passes ? on');
+              assert.strictEqual(f3.handle(1011, true, false), 'next', 'and 123');
+              fs.unlinkSync(path.join(filtersDir, 'more.js'));
+              rk.init({ luna: luna, stateDir: stateDir, filtersDir: filtersDir });
+              console.log('  \u2713 the ? and 123 buttons are offered where the filters name them, can do nothing there, and As LG has it passes them on');
+              next();
+            }));
+          }));
+        }));
+      }));
+    }));
+  }));
+});
+
+step(function (next) {
+  // Home Hub is Qt.Key_Video in the filters: offered only where the TV's key table gives that plain Qt key to it.
+  fs.writeFileSync(path.join(filtersDir, 'homehub.js'), 'case Qt.Key_Video:');
+  var hubTable = path.join(__dirname, 'fixtures', 'lg-keytable-oled48c56lb-webos10.txt');
+  var otherTable = path.join(stateDir, 'keycodes-other');
+  var hasHub = function (r) { return r.keys.some(function (k) { return k.key === 'homehub'; }); };
+  fs.writeFileSync(otherTable, '    <IR_KEY_SOMETHING_ELSE> = 1031; // Qt::Key_Video=0x010000f3\n');
+  rk.init({ luna: luna, stateDir: stateDir, filtersDir: filtersDir, keyTablePath: otherTable });
+  rk.getRemoteKeys(guard(function (withOther) {
+    assert.ok(!hasHub(withOther), 'not where Key_Video is another button');
+    rk.init({ luna: luna, stateDir: stateDir, filtersDir: filtersDir, keyTablePath: path.join(stateDir, 'no-such-table') });
+    rk.getRemoteKeys(guard(function (withNone) {
+      assert.ok(!hasHub(withNone), 'nor where there is no key table');
+      fs.unlinkSync(otherTable);
+      rk.init({ luna: luna, stateDir: stateDir, filtersDir: filtersDir, keyTablePath: hubTable });
+      rk.getRemoteKeys(guard(function (withHub) {
+        assert.ok(withHub.keys.some(function (k) { return k.key === 'homehub' && k.title === 'Home Hub'; }), 'offered where the key table gives it Key_Video');
+        rk.setRemoteKey('homehub', 'open', 'netflix', guard(function (s) {
+          assert.strictEqual(s.ok, true, s.error);
+          assert.strictEqual(loadFilter().handle(2002, true, false), 'accepted', 'a press is taken from LG');
+          rk.setRemoteKey('homehub', 'lg', '', guard(function () {
+            assert.strictEqual(loadFilter().handle(2002, true, false), 'next');
+            fs.unlinkSync(path.join(filtersDir, 'homehub.js'));
+            rk.init({ luna: luna, stateDir: stateDir, filtersDir: filtersDir });
+            console.log('  \u2713 Home Hub is offered only where the key table gives Qt.Key_Video to it');
+            next();
+          }));
+        }));
+      }));
+    }));
+  }));
+});
+
+step(function (next) {
+  // With the MR25GA selected, the microphone key goes by the name printed on it: AI.
+  fs.writeFileSync(path.join(filtersDir, 'voice.js'), 'case WebOS.Key_webOS_Voice:');
+  var mr25 = require('../server/lib/remotes').find('MR25GA');
+  rk.init({ luna: luna, stateDir: stateDir, filtersDir: filtersDir,
+    detectRemotes: function (cb) { cb({ auto: [mr25], detected: [] }); } });
+  rk.getRemoteKeys(guard(function (r) {
+    var mic = r.keys.filter(function (k) { return k.key === 'voice'; })[0];
+    assert.strictEqual(mic.title, 'AI', 'the name on the remote');
+    rk.init({ luna: luna, stateDir: stateDir, filtersDir: filtersDir });
+    rk.getRemoteKeys(guard(function (plain) {
+      assert.strictEqual(plain.keys.filter(function (k) { return k.key === 'voice'; })[0].title, 'Microphone', 'no remote known: its own name');
+      fs.unlinkSync(path.join(filtersDir, 'voice.js'));
+      console.log('  \u2713 the microphone key is named AI while the MR25GA is the remote in use');
+      next();
+    }));
+  }));
+});
+
+step(function (next) {
   // The microphone button can be set, and says that voice control then no longer starts from it.
   fs.writeFileSync(path.join(filtersDir, 'voice.js'), 'case WebOS.Key_webOS_Voice:');
   rk.init({ luna: luna, stateDir: stateDir, filtersDir: filtersDir });
@@ -1026,6 +1167,263 @@ step(function (next) {
                 assert.ok(ok);
                 assert.deepEqual(tv.removed, ['com.tvweb.homebar'], 'restore() removes its app with the keys');
                 console.log('  ✓ Glasshouse Bar\'s app is removed when no key opens it, unless it is the launcher, and by restore()');
+                next();
+              }));
+            }));
+          }));
+        }));
+      }));
+    }));
+  }));
+});
+
+// A Brightness key shows its level in the bar's app, so that is put on the TV for it.
+step(function (next) {
+  rk.init({ luna: luna, inputNames: { hdmi1: 'HDMI 1', hdmi2: 'Apple TV' }, stateDir: stateDir, filtersDir: filtersDir,
+    inputBarAllowed: function () { return bar.allowed; },
+    inputBarApp: function (action, cb) {
+      bar.calls.push(action);
+      process.nextTick(function () { cb({ ok: action !== 'install' || bar.installs }); });
+    },
+    onInputBarKey: function () { bar.pokes++; } });
+  bar.calls.length = 0;
+  bar.allowed = false;
+  rk.setRemoteKey('red', 'open', 'action:brightnessUp', guard(function (s) {
+    assert.ok(s.ok, s.error);
+    assert.deepEqual(bar.calls, [], 'no app installed where the bar is not allowed');
+    assert.strictEqual(tv.keys.osd, undefined, 'and the filter is not told to open it');
+    bar.allowed = true;
+    bar.pokes = 0;
+    rk.setRemoteKey('red', 'open', 'action:brightnessUp', guard(function (s2) {
+      assert.ok(s2.ok, s2.error);
+      assert.deepEqual(bar.calls, ['install'], 'the bar\'s app is put on the TV first');
+      assert.strictEqual(bar.pokes, 1, 'the preloader is told');
+      assert.strictEqual(rk.opensInputBar(), true, 'it counts as a key that needs the app');
+      assert.strictEqual(tv.keys.osd, true, 'the filter is told to open it');
+      var f = loadFilter();
+      var tick = function () { var n = f.timers.length; f.expire(); f.timers.splice(0, n); };
+      f.timers.length = 0;
+      tv.backlight = 50;
+      f.handle(1004, true, false);
+      var opened = f.launched.filter(function (l) { return l.id === 'com.tvweb.inputbar'; });
+      assert.strictEqual(opened.length, 1, 'the bar opens on the press');
+      assert.deepEqual(JSON.parse(opened[0].params), { glasshouse: 'osd', kind: 'brightness', level: 60, style: 'lg' });
+      tick();
+      tick();
+      assert.strictEqual(f.launched.length, 1, 'a held key opens it once: its page follows the level');
+      f.handle(1004, false, false);
+      f.handle(1004, true, false);
+      assert.strictEqual(f.launched.length, 2, 'a new press opens it again');
+      f.handle(1004, false, false);
+      tv.backlight = 100;
+      f.handle(1004, true, false);
+      assert.deepEqual(JSON.parse(f.launched[f.launched.length - 1].params).level, 100, 'at the end of the range the level is still shown');
+      f.handle(1004, false, false);
+      rk.getBrightness(guard(function (b) {
+        assert.deepEqual(b, { ok: true, level: 100, style: 'lg' });
+        rk.setRemoteKey('red', 'lg', '', guard(function (s3) {
+          assert.ok(s3.ok, s3.error);
+          setImmediate(guard(function () {
+            assert.deepEqual(bar.calls.slice(-1), ['remove'], 'the last key leaving takes the app off again');
+            assert.strictEqual(rk.opensInputBar(), false);
+            console.log('  ✓ a Brightness key puts the bar\'s app on the TV, opens it once for each press, and gives it up with the last key');
+            next();
+          }));
+        }));
+      }));
+    }));
+  }));
+});
+
+// The level bar's style is chosen on the Remote tab: LG's bar unless another is set.
+step(function (next) {
+  bar.allowed = true;
+  rk.setRemoteKey('red', 'open', 'action:brightnessUp', guard(function (s) {
+    assert.ok(s.ok, s.error);
+    assert.strictEqual(tv.keys.osdStyle, undefined, 'the default style is not kept');
+    rk.getRemoteKeys(guard(function (r) {
+      assert.strictEqual(r.brightnessBarStyle, 'lg');
+      assert.strictEqual(r.brightnessBar, true, 'offered where the filter and the bar\'s app are');
+      rk.setBrightnessBarStyle('bogus', guard(function (bad) {
+        assert.strictEqual(bad.ok, false, 'an unknown style is refused');
+        rk.setBrightnessBarStyle('horizontal', guard(function (h) {
+          assert.ok(h.ok, h.error);
+          assert.strictEqual(tv.keys.osdStyle, 'horizontal', 'the filter is told');
+          rk.getBrightness(guard(function (b) {
+            assert.strictEqual(b.style, 'horizontal', 'and the bar\'s page, while it follows the level');
+            var f = loadFilter();
+            tv.backlight = 50;
+            f.handle(1004, true, false);
+            var opened = f.launched.filter(function (l) { return l.id === 'com.tvweb.inputbar'; });
+            assert.strictEqual(JSON.parse(opened[0].params).style, 'horizontal', 'each press opens the bar in that style');
+            f.handle(1004, false, false);
+            rk.setBrightnessBarStyle('vertical', guard(function (v) {
+              assert.ok(v.ok, v.error);
+              assert.strictEqual(tv.keys.osdStyle, 'vertical', 'the upright pill reaches the filter too');
+              var f2 = loadFilter();
+              tv.backlight = 50;
+              f2.handle(1004, true, false);
+              var opened2 = f2.launched.filter(function (l) { return l.id === 'com.tvweb.inputbar'; });
+              assert.strictEqual(JSON.parse(opened2[0].params).style, 'vertical', 'and each press opens the bar in it');
+              f2.handle(1004, false, false);
+              rk.setBrightnessBarStyle('lg', guard(function (back) {
+                assert.ok(back.ok, back.error);
+                assert.strictEqual(tv.keys.osdStyle, undefined, 'back to the default, nothing kept');
+                rk.setRemoteKey('red', 'lg', '', guard(function (off) {
+                  assert.ok(off.ok, off.error);
+                  console.log('  ✓ the level bar style is LG\'s by default, horizontal or vertical when chosen, refused when unknown, and reaches the filter and the page');
+                  next();
+                }));
+              }));
+            }));
+          }));
+        }));
+      }));
+    }));
+  }));
+});
+
+// 'No bar': the keys still change the brightness, and nothing opens or stays on the TV for them.
+step(function (next) {
+  var barOpened = function (f) { return f.launched.filter(function (l) { return l.id === 'com.tvweb.inputbar'; }); };
+  bar.calls.length = 0;
+  bar.pokes = 0;
+  bar.allowed = true;
+  bar.installs = true;
+  rk.setRemoteKey('red', 'open', 'action:brightnessUp', guard(function (s) {
+    assert.ok(s.ok, s.error);
+    assert.deepEqual(bar.calls, ['install']);
+    assert.strictEqual(tv.keys.osd, true);
+    rk.setBrightnessBarStyle('none', guard(function (n) {
+      assert.ok(n.ok, n.error);
+      assert.strictEqual(rk.opensInputBar(), false, 'no key needs the bar\'s app now');
+      assert.strictEqual(tv.keys.osd, undefined, 'the filter is not told to open it');
+      assert.strictEqual(tv.keys.osdStyle, undefined);
+      assert.deepEqual(bar.calls, ['install', 'remove'], 'its app is taken off the TV');
+      var f = loadFilter();
+      tv.backlight = 50;
+      f.handle(1004, true, false);
+      assert.strictEqual(tv.backlight, 60, 'the key still changes the brightness');
+      assert.deepEqual(barOpened(f), [], 'and opens no bar');
+      f.handle(1004, false, false);
+      bar.calls.length = 0;
+      rk.setRemoteKey('netflix', 'open', 'action:brightnessDown', guard(function (d) {
+        assert.ok(d.ok, d.error);
+        assert.deepEqual(bar.calls, [], 'a Brightness key set while there is no bar installs no app');
+        bar.installs = false;
+        rk.setBrightnessBarStyle('lg', guard(function (refused) {
+          assert.strictEqual(refused.ok, false, 'a bar is refused when its app cannot be put on the TV');
+          rk.getRemoteKeys(guard(function (r) {
+            assert.strictEqual(r.brightnessBarStyle, 'none', 'and the style is left as it was');
+            bar.installs = true;
+            bar.pokes = 0;
+            rk.setBrightnessBarStyle('horizontal', guard(function (back) {
+              assert.ok(back.ok, back.error);
+              assert.strictEqual(bar.calls[bar.calls.length - 1], 'install', 'a style that shows a bar puts its app back first');
+              assert.strictEqual(bar.pokes, 1, 'and tells the preloader');
+              assert.strictEqual(rk.opensInputBar(), true);
+              assert.strictEqual(tv.keys.osd, true);
+              assert.strictEqual(tv.keys.osdStyle, 'horizontal');
+              rk.setBrightnessBarStyle('lg', guard(function () {
+                rk.setRemoteKey('red', 'lg', '', guard(function () {
+                  rk.setRemoteKey('netflix', 'lg', '', guard(function () {
+                    console.log('  ✓ no bar: a Brightness key changes the brightness and opens nothing, its app is taken off the TV and put back with the next style');
+                    next();
+                  }));
+                }));
+              }));
+            }));
+          }));
+        }));
+      }));
+    }));
+  }));
+});
+
+// The keys of the remotes in use: those on none of them are marked, only where all are known
+step(function (next) {
+  var known = { id: 'A', title: 'Remote A', complete: true, image: 'generic.png', keys: { netflix: 'measured', amazon: 'measured' } };
+  var selected = [known];
+  rk.init({ luna: luna, inputNames: { hdmi1: 'HDMI 1', hdmi2: 'Apple TV' }, stateDir: stateDir, filtersDir: filtersDir,
+    detectRemotes: function (cb) { process.nextTick(function () { cb({ auto: selected, detected: [] }); }); } });
+  rk.getRemoteKeys(guard(function (r) {
+    var off = r.keys.filter(function (k) { return k.offRemote; }).map(function (k) { return k.key; });
+    assert.ok(off.length > 0 && off.indexOf('netflix') === -1 && off.indexOf('amazon') === -1, 'keys the remote lacks are marked, its own are not');
+    assert.ok(off.indexOf('red') !== -1);
+    assert.strictEqual(r.remotes.canFold, true);
+    assert.strictEqual(r.remotes.folding, true);
+    assert.deepEqual(r.remotes.selected, [{ id: 'A', title: 'Remote A', image: 'generic.png', numberKeys: null }], 'not known: null');
+    assert.strictEqual(r.remotes.unknown, 0);
+    assert.strictEqual(r.remotes.why, '', 'nothing to explain while it folds');
+    rk.setRemoteKey('red', 'open', 'netflix', guard(function (s) {
+      assert.ok(s.ok, s.error);
+      rk.getRemoteKeys(guard(function (changed) {
+        var red = changed.keys.filter(function (k) { return k.key === 'red'; })[0];
+        assert.strictEqual(red.action, 'open');
+        assert.strictEqual(red.offRemote, true, 'marked all the same: the page keeps a changed key in sight');
+        selected = [known, null];
+        rk.getRemoteKeys(guard(function (withUnknown) {
+          assert.ok(!withUnknown.keys.some(function (k) { return k.offRemote; }), 'an unknown remote in use folds nothing');
+          assert.strictEqual(withUnknown.remotes.canFold, false);
+          assert.strictEqual(withUnknown.remotes.folding, false);
+          assert.strictEqual(withUnknown.remotes.unknown, 1);
+          assert.strictEqual(withUnknown.remotes.why, 'unknown', 'says why: a remote not in the catalogue');
+          selected = [{ id: 'U', title: 'Unfinished', complete: false, keys: { netflix: 'measured' } }];
+          rk.getRemoteKeys(guard(function (unfinished) {
+            assert.ok(!unfinished.keys.some(function (k) { return k.offRemote; }), 'nor does an unfinished list');
+            assert.strictEqual(unfinished.remotes.canFold, false);
+            assert.strictEqual(unfinished.remotes.why, 'unfinished', 'says why: a list not finished');
+            selected = [];
+            rk.getRemoteKeys(guard(function (none) {
+              assert.ok(!none.keys.some(function (k) { return k.offRemote; }), 'nor does no remote');
+              assert.strictEqual(none.remotes.canFold, false);
+              assert.strictEqual(none.remotes.why, 'none', 'says why: no remote known');
+              rk.init({ luna: luna, inputNames: {}, stateDir: stateDir, filtersDir: filtersDir, detectRemotes: function () { throw new Error('lookup failed'); } });
+              rk.getRemoteKeys(guard(function (failed) {
+                assert.ok(failed.ok && !failed.keys.some(function (k) { return k.offRemote; }), 'a lookup that fails folds nothing');
+                rk.setRemoteKey('red', 'lg', '', guard(function () {
+                  console.log('  ✓ keys on none of the remotes in use are marked where every remote is known, and never otherwise');
+                  next();
+                }));
+              }));
+            }));
+          }));
+        }));
+      }));
+    }));
+  }));
+});
+
+// Which remotes the tab is for: automatic (folds to what is in use) or all buttons.
+step(function (next) {
+  var detected = [{ name: 'LGE MR25GA', id: 'MR25GA', title: 'Magic Remote MR25GA', image: 'generic.png', current: true }];
+  rk.init({ luna: luna, inputNames: {}, stateDir: stateDir, filtersDir: filtersDir,
+    detectRemotes: function (cb) { cb({ auto: [{ id: 'A', title: 'Remote A', complete: true, keys: { netflix: 'measured' } }], detected: detected }); } });
+  var file = path.join(stateDir, 'remotekeys.json');
+  rk.getRemoteKeys(guard(function (r) {
+    assert.strictEqual(r.remotes.mode, 'auto');
+    assert.strictEqual(r.remotes.canFold, true);
+    assert.strictEqual(r.remotes.folding, true, 'automatic follows what is in use');
+    assert.deepEqual(r.remotes.detected, detected, 'what was detected, for the page to say');
+    rk.setRemoteSelection('all', guard(function (a) {
+      assert.ok(a.ok, a.error);
+      assert.ok(fs.existsSync(file), 'kept with the keys');
+      rk.getRemoteKeys(guard(function (all) {
+        assert.strictEqual(all.remotes.mode, 'all');
+        assert.strictEqual(all.remotes.canFold, true, 'the switch stays offered while folding is turned off');
+        assert.strictEqual(all.remotes.folding, false, 'all buttons folds nothing');
+        assert.ok(!all.keys.some(function (k) { return k.offRemote; }));
+        // Refused: no such mode
+        rk.setRemoteSelection('some', guard(function (mode) {
+          assert.strictEqual(mode.ok, false);
+          // The choice survives changes to the keys
+          rk.setRemoteKey('red', 'open', 'netflix', guard(function () {
+            rk.setRemoteKey('red', 'lg', '', guard(function () {
+              assert.strictEqual(JSON.parse(fs.readFileSync(file, 'utf8')).remotes.mode, 'all', 'kept with every key as LG has it');
+              rk.setRemoteSelection('auto', guard(function (back) {
+                assert.ok(back.ok, back.error);
+                assert.ok(!fs.existsSync(file), 'automatic is nothing kept, so no file where no key is set');
+                console.log('  ✓ the remotes the tab is for are automatic or all buttons, kept with the keys and checked');
                 next();
               }));
             }));

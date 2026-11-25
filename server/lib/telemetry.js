@@ -20,6 +20,7 @@ var path = require('path');
 var execFile = require('child_process').execFile;
 var names = require('./names');
 var hdmiLink = require('./hdmilink');
+var audio = require('./audio');
 var power = require('./power');
 var timers = require('./timers');
 
@@ -2323,10 +2324,20 @@ function readSoundAndMediaStats(out, done) {
           // while nothing plays. The last answer goes out and the next is asked
           // for behind it: waiting on the answer only some collections got it,
           // and the dashboard's line came and went every few seconds.
+          var refreshAmstSoundInput = function () {
+            var amst = audio.amstAudioInput();
+            if (amst.readable) {
+              lastSoundInput = amst.input ? { codec: amst.input.codec, codec_raw: amst.codecRaw } : null;
+            }
+          };
+          if (soundFormatSupported === false) refreshAmstSoundInput();
           if (lastSoundInput) out.sound.input = lastSoundInput;
           lunaCachedFn('com.webos.service.audio/tv/getAudioInputProperty', {}, 3000, function (ap) {
             if (ap && ap.returnValue === false && /Unknown method/i.test(String(ap.errorText || ''))) soundFormatSupported = false;
-            if (!ap || ap.returnValue === false) return;
+            if (!ap || ap.returnValue === false) {
+              if (soundFormatSupported === false) refreshAmstSoundInput();
+              return;
+            }
             soundFormatSupported = true;
             var prop = Array.isArray(ap.audioInputProperty) ? ap.audioInputProperty[0] : null;
             if (!prop || !prop.codec) { lastSoundInput = null; return; }
@@ -2565,6 +2576,8 @@ function getCapabilities(extra) {
     hasRemoteButtons: !!extra.hasRemoteButtons,
     watchHistory: !!extra.watchHistory,
     hasSoundFormat: soundFormatSupported === true,
+    hasGsrStressCount: (oledModule && typeof oledModule.hasGsrStressCount === 'function')
+      ? oledModule.hasGsrStressCount() : null,
     userEntities: extra.userEntities || {}
   };
 }
@@ -2599,6 +2612,9 @@ function getCapabilitySignature() {
     if (powerTimersSeen.on) cap.push('on_timer');
     if (powerTimersSeen.off) cap.push('off_timer');
   }
+  var gsrStress = (oledModule && typeof oledModule.hasGsrStressCount === 'function')
+    ? oledModule.hasGsrStressCount() : null;
+  if (gsrStress !== null) cap.push(gsrStress ? 'gsr_stress' : 'no_gsr_stress');
   return cap.sort().join(',');
 }
 

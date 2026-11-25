@@ -15,6 +15,7 @@ var listenDualStack = require('./util').listenDualStack;
 var allocBuffer = require('./util').allocBuffer;
 var hostPort = require('./util').hostPort;
 var sendIconFile = require('./iconserver').sendIconFile;
+var artModule = require('./art');
 var writeJsonAtomic = require('./util').writeJsonAtomic;
 var unlinkQuiet = require('./util').unlinkQuiet;
 var existsQuiet = require('./util').existsQuiet;
@@ -85,10 +86,14 @@ var appDnsModule = null;
 var quickAccessModule = null;
 /** @type {typeof import('./remotekeys')} */
 var remoteKeysModule = null;
+/** @type {typeof import('./remotedetect')} */
+var remoteDetectModule = null;
 /** @type {typeof import('./homescreen')} */
 var homeScreenModule = null;
 /** @type {typeof import('./home')} */
 var homeModule = null;
+/** @type {typeof import('./news')} */
+var newsModule = null;
 /** @type {typeof import('./clock')} */
 var clockModule = null;
 /** @type {typeof import('./home-picture')} */
@@ -101,10 +106,14 @@ var homebarModule = null;
 var iptvModule = null;
 /** @type {typeof import('./screensavers')} */
 var screensaversModule = null;
+/** @type {typeof import('./audiolevels')} */
+var audioLevelsModule = null;
 /** @type {typeof import('./haentity')} */
 var haEntityModule = null;
 /** @type {typeof import('./inputbar')} */
 var inputBarModule = null;
+/** @type {typeof import('./ask')} */
+var askModule = null;
 /** @type {typeof import('./updater')} */
 var updaterModule = null;
 /** @type {typeof import('./logs')} */
@@ -250,15 +259,23 @@ function setupPending() {
  * prometheus.enabled are writable from the Server tab, and iconServer from the
  * MQTT tab: its port answers nothing but the icons the dashboard serves.
  */
+/*
+ * config.json as it is on disk, {} where there is none yet, or null where it
+ * is there but cannot be read. A writer given null refuses: writing a setting
+ * into {} would replace the whole file with that one setting.
+ */
 function readConfigFile() {
+  if (!configFilePath || !fs.existsSync(configFilePath)) return {};
   try {
-    if (configFilePath && fs.existsSync(configFilePath)) {
-      return JSON.parse(fs.readFileSync(configFilePath, 'utf8'));
-    }
+    return JSON.parse(fs.readFileSync(configFilePath, 'utf8'));
   } catch (e) {
-    console.warn('config: could not re-read ' + configFilePath + ': ' + e.message);
+    console.error('config: could not read ' + configFilePath + ': ' + e.message);
+    return null;
   }
-  return {};
+}
+
+function unreadableConfigError() {
+  return new Error(msg('srv.configUnreadable', '{file} could not be read, so it was left as it is. Correct it, or remove it to start again, then restart Glasshouse.', { file: configFilePath }));
 }
 
 function trimmedString(v) { return typeof v === 'string' ? v.trim() : ''; }
@@ -359,6 +376,7 @@ function validateHaSettings(haObj) {
     var haTok = trimmedString(haObj.token);
     if (haTok || haObj.clearToken) out.token = haTok;
   }
+  if (typeof haObj.tlsRejectUnauthorized === 'boolean') out.tlsRejectUnauthorized = haObj.tlsRejectUnauthorized;
   return { errors: errors, value: out };
 }
 
@@ -368,11 +386,13 @@ function applyHaConfig(haPatch) {
   if (haPatch.enabled !== undefined) config.homeAssistant.enabled = haPatch.enabled;
   if (haPatch.url !== undefined) config.homeAssistant.url = haPatch.url;
   if (haPatch.token !== undefined) config.homeAssistant.token = haPatch.token;
+  if (haPatch.tlsRejectUnauthorized !== undefined) config.homeAssistant.tlsRejectUnauthorized = haPatch.tlsRejectUnauthorized;
   if (haEntityModule) haEntityModule.update(config.homeAssistant);
 }
 
 function writeSettings(patch, cb) {
   var file = readConfigFile();
+  if (!file) return cb(unreadableConfigError());
   for (var section in patch) {
     if (patch[section] !== null && typeof patch[section] === 'object' && !Array.isArray(patch[section])) {
       file[section] = file[section] || {};
@@ -396,6 +416,7 @@ function writeSettings(patch, cb) {
  */
 function setNetworkAccess(open, cb) {
   var file = readConfigFile();
+  if (!file) return cb(unreadableConfigError());
   // Unset, host defaults to dual-stack '::'.
   if (open) delete file.host;
   else file.host = '127.0.0.1';
@@ -460,6 +481,8 @@ function handoffUrl() {
  */
 function ownIdentity() {
   var file = readConfigFile();
+  // Unreadable, it may well hold an identity: none is made up over it.
+  if (!file) return null;
   var fm = file.mqtt || {};
   // One already set up keeps what it has, defaults included: its entities in
   // Home Assistant are named from it.
@@ -679,6 +702,11 @@ function preloadWithIcons(cb) {
  * the order listed, so they behave as one script: a function declared in any
  * of them can be called from the others. Returns the page, or null with
  * UI_MISSING set to the part that could not be read.
+ *
+ * A line may end in CR LF: Git for Windows checks ui.html out that way, and
+ * deploy.sh copies it as it is. Matched on LF alone, the page went out with
+ * its scripts left as files, which a browser keeps from before an update, so
+ * the dashboard showed new controls driven by old script.
  */
 function inlineUI(html) {
   var missing = null;
@@ -690,10 +718,10 @@ function inlineUI(html) {
     if (!missing) missing = rel;
     return '';
   }
-  html = html.replace(/<link rel="stylesheet" href="\/assets\/(ui\/[\w-]+\.css)">\n/g, function (m, rel) {
+  html = html.replace(/<link rel="stylesheet" href="\/assets\/(ui\/[\w-]+\.css)">\r?\n/g, function (m, rel) {
     return '<style>\n' + part(rel) + '</style>\n';
   });
-  html = html.replace(/(?:<script src="\/assets\/ui\/[\w-]+\.js"><\/script>\n)+/g, function (run) {
+  html = html.replace(/(?:<script src="\/assets\/ui\/[\w-]+\.js"><\/script>\r?\n)+/g, function (run) {
     var scripts = run.match(/ui\/[\w-]+\.js/g);
     return '<script>\n' + scripts.map(part).join('') + '</script>\n';
   });
@@ -835,6 +863,16 @@ function authed(q, req) {
   // token (there is no login prompt on a TV remote).  A process on the TV
   // already has root, so the token adds nothing for local requests.
   return !!(req && fromTV(req));
+}
+
+// The TV's menu language as a language file names it (sv, pt-br), or null
+// with no file for it or before the TV has said.
+function tvLang() {
+  var locale = clockModule && clockModule.qtLocale ? String(clockModule.qtLocale() || '') : '';
+  if (!locale) return null;
+  var parts = locale.toLowerCase().split(/[_-]/);
+  var ask = function (code) { return say.langOf({ headers: { 'x-glasshouse-lang': code } }); };
+  return (parts[1] && ask(parts[0] + '-' + parts[1])) || ask(parts[0]);
 }
 
 // A request made on the TV itself - the on-TV app, or anything else running
@@ -1173,6 +1211,7 @@ function getSettingsPayload() {
       enabled: haCfg.enabled !== false,
       url: haCfg.url || '',
       tokenSet: !!haCfg.token,
+      tlsRejectUnauthorized: haCfg.tlsRejectUnauthorized !== false,
       configured: !!(haEntityModule && haEntityModule.configured()),
       status: (haEntityModule && typeof haEntityModule.status === 'function') ? haEntityModule.status() : null
     },
@@ -1328,6 +1367,7 @@ function handleHomeRoute(req, res, u, pathname) {
     // Glasshouse Bar's page, as it opens: whether LG's Home is drawn under it, to be covered.
     if (pathname === '/api/home/bar-open') return reply({ ok: true, lgHomeUnder: homeModule.barOpened() });
     if (pathname === '/api/home/weather') return homeModule.weather(reply);
+    if (pathname === '/api/home/info') return homeModule.info(reply);
     if (pathname === '/api/home/weather/places') {
       return homeModule.weatherPlaces(String(u.query && u.query.q || ''), String(u.query && u.query.lang || ''), reply);
     }
@@ -1540,18 +1580,19 @@ function handleIptvRoute(req, res, u, pathname) {
     if (pathname === '/api/iptv/stream') {
       // The play URL carries the login on Xtream: for the TV's own Home only.
       if (!fromTV(req)) return send(res, 403, JSON.stringify({ ok: false, error: 'forbidden' }));
-      // full=1: the full-screen player, which may play a recording it can pause (lib/iptv-timeshift).
+      // full=1: the full-screen player, which may play a recording it can pause (lib/iptv-timeshift);
+      // as=hls or ts: the channel's other kind of stream, for this play only.
       return iptvModule.playUrl(String(qs.pl || ''), String(qs.key || ''), qs.full === '1', function (stream) {
         if (!stream) return send(res, 404, JSON.stringify({ ok: false, error: 'no-stream' }));
         res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
         res.end(JSON.stringify({ ok: true, url: stream.url, format: stream.format, account: stream.account, maxConnections: stream.maxConnections,
-          switchable: stream.switchable, timeshift: stream.timeshift === true }));
-      });
+          switchable: stream.switchable, timeshift: stream.timeshift === true, relay: stream.relay || null }));
+      }, qs.as === 'hls' || qs.as === 'ts' ? qs.as : '');
     }
     if (pathname === '/api/iptv/relay') {
-      // A tuner's stream with the owner's login: for the TV's own Home only, like the play link.
+      // A channel's stream, with a tuner's login or for Home's own player: for the TV's own Home only, like the play link.
       if (!fromTV(req)) return send(res, 403, JSON.stringify({ ok: false, error: 'forbidden' }));
-      return iptvModule.relay(String(qs.pl || ''), String(qs.key || ''), req, res);
+      return iptvModule.relay(String(qs.pl || ''), String(qs.key || ''), req, res, qs.as === 'hls' || qs.as === 'ts' ? qs.as : '');
     }
     if (pathname === '/api/iptv/timeshift') {
       if (qs.pl === undefined) return iptvModule.timeshiftStatus(reply);
@@ -1838,10 +1879,98 @@ function handleRequest(req, res) {
     }));
   }
 
+  /* The News screen saver's headlines, from the feeds on the Home tab, with
+     its note worded in the TV's menu language. */
+  if (pathname === '/api/news' && req.method === 'GET') {
+    if (!authed(u.query, req)) return send(res, 401, JSON.stringify({ ok: false, error: 'unauthorised' }));
+    if (!newsModule || !homeModule) return send(res, 503, JSON.stringify({ ok: false, error: 'news is not available' }));
+    var newsLocale = clockModule && clockModule.qtLocale ? clockModule.qtLocale() : '';
+    var newsLang = newsLocale ? say.langOfLocale(newsLocale) : res.glasshouseLang;
+    var newsFeedList = homeModule.newsFeeds();
+    return newsModule.headlines(newsFeedList, function (r) {
+      /** @type {any} */ (r).speed = homeModule.newsSpeed();
+      /** @type {any} */ (r).flipMs = homeModule.newsFlipMs();
+      /** @type {any} */ (r).note = r.items.length ? ''
+        : !newsFeedList.length ? msg('home.news.noFeeds', 'Add news feeds on the Screensaver tab')
+        : msg('home.news.none', 'No headlines yet');
+      /** @type {any} */ (res).glasshouseLang = newsLang;
+      send(res, 200, JSON.stringify(r));
+    });
+  }
+
+  // Each news feed's state for the dashboard: read now if it is due.
+  if (pathname === '/api/news/status' && req.method === 'GET') {
+    if (!authed(u.query, req)) return send(res, 401, JSON.stringify({ ok: false, error: 'unauthorised' }));
+    if (!newsModule || !homeModule) return send(res, 503, JSON.stringify({ ok: false, error: 'news is not available' }));
+    return newsModule.status(homeModule.newsFeeds(), function (list) {
+      send(res, 200, JSON.stringify({ ok: true, feeds: list }));
+    });
+  }
+
   // For a screen saver that plays video: whether an app holds the decoder (#1599).
   if (pathname === '/api/screensaver/video-busy' && req.method === 'GET') {
     if (!authed(u.query, req)) return send(res, 401, JSON.stringify({ ok: false, error: 'unauthorised' }));
     return screensaversModule.videoBusy(function (r) { send(res, 200, JSON.stringify(r)); });
+  }
+
+  /* The Art screen saver's pictures (lib/art). next is what the screen saver
+     asks for each picture; image serves one, the owner's or one fetched. */
+  // Whether Next or Previous was asked for, polled by the views on screen.
+  if (pathname === '/api/art/command' && req.method === 'GET') {
+    return send(res, 200, JSON.stringify(artModule.poll(String(u.query && u.query.view || ''))));
+  }
+  if (pathname === '/api/art/next' && req.method === 'GET') {
+    var artDir = String(u.query && u.query.dir || '');
+    return artModule.next(function (r) {
+      if (r.ok) {
+        r.image = '/api/art/image?id=' + encodeURIComponent(r.id) + (config.token ? '&k=' + encodeURIComponent(config.token) : '');
+      }
+      send(res, 200, JSON.stringify(r));
+    }, artDir === 'prev' ? 'prev' : 'next');
+  }
+  if (pathname === '/api/art/image' && req.method === 'GET') {
+    var artFile = artModule.image(String(u.query && u.query.id || ''));
+    if (!artFile) return send(res, 404, JSON.stringify({ ok: false, error: 'no such picture' }));
+    return sendIconFile(req, res, artFile, function (status, error) {
+      send(res, status, JSON.stringify({ ok: false, error: error }));
+    }, 'image/jpeg');
+  }
+  // Media servers on the network, and one's folders, to add one to Art.
+  if (pathname === '/api/art/servers' && req.method === 'GET') {
+    return artModule.findServers(function (r) { send(res, 200, JSON.stringify(r)); });
+  }
+  if (pathname === '/api/art/browse' && req.method === 'GET') {
+    return artModule.browseFolder(String(u.query && u.query.udn || ''), String(u.query && u.query.id || '0'), function (r) {
+      send(res, r.ok ? 200 : 400, JSON.stringify(r));
+    });
+  }
+  if (pathname === '/api/art' && req.method === 'GET') {
+    var artStatus = artModule.status();
+    artStatus.writable = !!config.allowControl || fromTV(req);
+    return send(res, 200, JSON.stringify(artStatus));
+  }
+  if ((pathname === '/api/art' || pathname === '/api/art/upload') && req.method === 'POST') {
+    if (!config.allowControl && !fromTV(req)) {
+      return send(res, 403, JSON.stringify({ ok: false, error: msg('srv.controlsOff', 'controls disabled in config') }));
+    }
+    if (pathname === '/api/art/upload') {
+      if (!postGuard(req, res, 'image/jpeg', true)) return;
+      return artModule.upload(req, function (r) {
+        if (!r.ok) return refuseUpload(req, res, r.error, r.status || 400);
+        send(res, 200, JSON.stringify(r));
+      });
+    }
+    return readJsonBody(req, res, function (body) {
+      function done(r) { send(res, r && r.ok === false ? 400 : 200, JSON.stringify(r)); }
+      if (body && body.removeAll === true) return artModule.remove(undefined, done);
+      if (body && body.addFolder && typeof body.addFolder === 'object') {
+        return artModule.addFolder(String(body.addFolder.udn || ''), String(body.addFolder.id || ''), String(body.addFolder.title || ''), done);
+      }
+      if (body && typeof body.removeFolder === 'string') return artModule.removeFolder(body.removeFolder, done);
+      if (body && typeof body.go === 'string') return artModule.go(body.go, done);
+      if (body && typeof body.remove === 'string') return artModule.remove(body.remove, done);
+      artModule.save(body && body.settings, done);
+    }, 4096);
   }
 
   if (pathname === '/api/screensaver') {
@@ -1943,9 +2072,9 @@ function handleRequest(req, res) {
     }
     return readJsonBody(req, res, function (body) {
       if (!haEntityModule) return send(res, 503, JSON.stringify({ ok: false, error: 'Home Assistant module not loaded' }));
-      var testUrl = body && body.url;
-      var testToken = body && body.token;
-      haEntityModule.test({ url: testUrl, token: testToken }, function (r) {
+      var testOpts = { url: body && body.url, token: body && body.token };
+      if (body && typeof body.tlsRejectUnauthorized === 'boolean') testOpts.tlsRejectUnauthorized = body.tlsRejectUnauthorized;
+      haEntityModule.test(testOpts, function (r) {
         send(res, r.ok ? 200 : 400, JSON.stringify(r));
       });
     });
@@ -1974,6 +2103,7 @@ function handleRequest(req, res) {
           enabled: config.homeAssistant.enabled !== false,
           url: config.homeAssistant.url || '',
           tokenSet: !!(config.homeAssistant.token),
+          tlsRejectUnauthorized: config.homeAssistant.tlsRejectUnauthorized !== false,
           configured: haEntityModule.configured(),
           status: (typeof haEntityModule.status === 'function') ? haEntityModule.status() : null
         }));
@@ -2466,6 +2596,14 @@ function handleRequest(req, res) {
     });
   }
 
+  if (pathname === '/api/apps/close' && req.method === 'POST') {
+    return readJsonBody(req, res, function (body) {
+      appsModule.closeRunningApp(body || {}, function (r) {
+        send(res, r && r.ok ? 200 : 400, JSON.stringify(r));
+      });
+    });
+  }
+
   if ((pathname === '/api/apps/hide' || pathname === '/api/apps/unhide') && fromHomebrewChannel()) {
     return send(res, 400, JSON.stringify({ ok: false, error: tileHidingOffMsg }));
   }
@@ -2552,6 +2690,23 @@ function handleRequest(req, res) {
     });
   }
 
+  // The question app (lib/ask.js), only from the TV and only with the
+  // question's token. The card is worded in the TV's language: it shows over
+  // the picture, not on a dashboard that says which it wants.
+  if ((pathname === '/api/ask/current' || pathname === '/api/ask/answer') && askModule) {
+    if (!fromTV(req)) return send(res, 403, JSON.stringify({ ok: false, error: 'only from the TV' }));
+    if (pathname === '/api/ask/current') {
+      var askLang = tvLang();
+      if (askLang) /** @type {any} */ (res).glasshouseLang = askLang;
+      return send(res, 200, JSON.stringify({ ok: true, question: askModule.current(String((u.query || {}).token || '')) }));
+    }
+    if (req.method !== 'POST') return send(res, 405, JSON.stringify({ ok: false, error: 'POST only' }));
+    return readJsonBody(req, res, function (body) {
+      var taken = askModule.answer(String(body.token || ''), String(body.choice || ''), String(body.how || ''));
+      send(res, 200, JSON.stringify({ ok: true, taken: taken }));
+    });
+  }
+
   if (pathname.indexOf('/api/home/') === 0 || pathname === '/api/home') {
     if (homeModule) return handleHomeRoute(req, res, u, pathname);
   }
@@ -2587,9 +2742,21 @@ function handleRequest(req, res) {
   }
 
   // What the remote's keys do, on its own for the Home tab's Guide button choice.
+  // The LG remotes in use with this TV, for the Remote tab.
+  if (pathname === '/api/remotes' && req.method === 'GET') {
+    if (!remoteDetectModule) return send(res, 200, JSON.stringify({ ok: true, remotes: [], devices: [] }));
+    return remoteDetectModule.detect(function (r) {
+      send(res, 200, JSON.stringify({ ok: true, remotes: r.remotes, devices: r.devices }));
+    }, req.url.indexOf('fresh=1') !== -1);
+  }
   if (pathname === '/api/remotekeys' && req.method === 'GET') {
     if (!remoteKeysModule) return send(res, 200, JSON.stringify({ ok: true, supported: false }));
     return remoteKeysModule.getRemoteKeys(function (rk) { send(res, 200, JSON.stringify(rk || { ok: true, supported: false })); });
+  }
+  // The bar's page asks for it while a Brightness key is held.
+  if (pathname === '/api/remotekeys/brightness' && req.method === 'GET') {
+    if (!remoteKeysModule) return send(res, 200, JSON.stringify({ ok: false }));
+    return remoteKeysModule.getBrightness(function (r) { send(res, 200, JSON.stringify(r)); });
   }
   if (pathname === '/api/remotekeys' && req.method === 'POST') {
     if (!config.allowControl) {
@@ -2599,6 +2766,16 @@ function handleRequest(req, res) {
       if (!remoteKeysModule) return send(res, 503, JSON.stringify({ ok: false, error: 'remote keys module unavailable' }));
       if (body && body.brightnessStep !== undefined) {
         return remoteKeysModule.setBrightnessStep(body.brightnessStep, function (r) {
+          send(res, r && r.ok ? 200 : 400, JSON.stringify(r));
+        });
+      }
+      if (body && body.brightnessBarStyle !== undefined) {
+        return remoteKeysModule.setBrightnessBarStyle(body.brightnessBarStyle, function (r) {
+          send(res, r && r.ok ? 200 : 400, JSON.stringify(r));
+        });
+      }
+      if (body && body.remotes !== undefined) {
+        return remoteKeysModule.setRemoteSelection(body.remotes && body.remotes.mode, function (r) {
           send(res, r && r.ok ? 200 : 400, JSON.stringify(r));
         });
       }
@@ -2640,6 +2817,14 @@ function handleRequest(req, res) {
       var watched = historyModule && historyModule.status().running ? historyModule.totals() : null;
       send(res, 200, prometheusModule.render(s, versionStr, forwarded, clock, watched), 'text/plain; version=0.0.4; charset=utf-8');
     });
+  }
+
+  // The sound output's levels, for the Music Highway screen saver, which
+  // asks several times a second while it shows.
+  if (pathname === '/api/audio/levels' && req.method === 'GET') {
+    if (!authed(u.query, req)) return send(res, 401, JSON.stringify({ ok: false, error: 'unauthorised' }));
+    if (!audioLevelsModule) return send(res, 503, JSON.stringify({ ok: false, error: 'audio levels not available' }));
+    return send(res, 200, JSON.stringify(audioLevelsModule.read()));
   }
 
   if (pathname === '/api/stats') {
@@ -2838,16 +3023,20 @@ function init(opts) {
   if (opts.appDns) appDnsModule = opts.appDns;
   if (opts.quickAccess) quickAccessModule = opts.quickAccess;
   if (opts.remoteKeys) remoteKeysModule = opts.remoteKeys;
+  if (opts.remoteDetect) remoteDetectModule = opts.remoteDetect;
   if (opts.homeScreen) homeScreenModule = opts.homeScreen;
   if (opts.home) homeModule = opts.home;
+  if (opts.news) newsModule = opts.news;
   if (opts.clock) clockModule = opts.clock;
   if (opts.homePicture) homePictureModule = opts.homePicture;
   if (opts.homeLauncher) homeLauncherModule = opts.homeLauncher;
   if (opts.homebar) homebarModule = opts.homebar;
   if (opts.iptv) iptvModule = opts.iptv;
   if (opts.screensavers) screensaversModule = opts.screensavers;
+  if (opts.audioLevels) audioLevelsModule = opts.audioLevels;
   if (opts.haEntity) haEntityModule = opts.haEntity;
   if (opts.inputBar) inputBarModule = opts.inputBar;
+  if (opts.ask) askModule = opts.ask;
   if (opts.updater) updaterModule = opts.updater;
   if (opts.logs) logsModule = opts.logs;
   if (opts.tvApp) tvAppFn = opts.tvApp;

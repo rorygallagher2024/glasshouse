@@ -84,6 +84,14 @@ hours.
   context, but ES 2 is what every TV can be assumed to take.
 * `highp` in a fragment shader is optional in ES 2. Mali GPUs (Midgard on the
   B8, Bifrost on the CX) support it.
+* Music highway bends its track with a vertex shader on a `GridMesh` (10 × 160:
+  with one column, each row's two triangles bent the lane lines into a
+  sawtooth), far end first so nearer rows paint over a crest, and its laser
+  walls the same way into a 960×540 layer. On an OLED55A19LA (webOS 6.5.3,
+  a single-core Mali-G52) it ran at 55-60 fps and 28.6% of one core, most of
+  that the JavaScript moving blocks and sparks. Half-rings cut by `clip`
+  inside an item rotating with the road ended the screen saver 18 s in there,
+  and a 512×512 layer per ring made it lag; shapes are drawn by shaders.
 * Shader screen savers have run on a CX and nothing older. On a B8 (4×
   Cortex-A53 at up to 1 GHz, 32-bit; Mali-T820 MP2) they are expected to load,
   as nothing they use is newer than Qt 5.6, but how fast they run there has not
@@ -191,7 +199,7 @@ files and 5 MB.
 | `entities` | no | `{"daylight": "sensor.outdoor_daylight"}`: fixed Home Assistant entity slots (`sensor_1`, etc.) whose defaults can be overridden (with optional custom `label`) on the **Screensaver** tab. A blank id (`""`) leaves the slot for the owner to fill in; until then its placeholder is put in as an empty string. Each filled one is put in for `__TVWEB_HA_<name>__` as this server's local entity URL, carrying the dashboard's token. Up to 24. Needs `ha` or `ha-all` in `uses`. |
 | `entityList` | no | `{"min": 2, "max": 100}`: an ordered, user-managed list of Home Assistant entities (1 to 100 items, with optional per-item `label`) configured on the **Screensaver** tab and injected into `__TVWEB_HA_LIST__` as a JSON array of `{ entity, label, url }`. Needs `ha-list` in `uses`. Starting the saver is refused when fewer than `min` entities are configured. |
 | `author`, `license`, `homepage` | no | Shown under an added one. Glasshouse's own are MIT. |
-| `uses` | no | What Glasshouse fills in: `level` puts `1` above 65% brightness and `0` at or below it for `__TVWEB_LEVEL__`, with a black layer over the screen saver for the steps between and below; `choice` puts the picked option's value for `__TVWEB_CHOICE__`; `stats` puts the TV's stats address, with the dashboard's token, for `__TVWEB_URL__`. Only what is listed is filled in. Only Glasshouse's own are given `stats`. `ha` fills in one address per slot in `entities`; `ha-list` fills in the configured array for `entityList`; `ha-all` puts one address for `/api/homeassistant`, which answers with every entity in `entities` in one request, for a saver with more readings than requests it wants to make; `color` replaces `__TVWEB_COLOR__` with a brightness-adjusted hex for the owner's selected colour preset (`White` by default). |
+| `uses` | no | What Glasshouse fills in: `level` puts `1` above 65% brightness and `0` at or below it for `__TVWEB_LEVEL__`, with a black layer over the screen saver for the steps between and below; `choice` puts the picked option's value for `__TVWEB_CHOICE__`; `stats` puts the TV's stats address, with the dashboard's token, for `__TVWEB_URL__`. Only what is listed is filled in. Only Glasshouse's own are given `stats`. `ha` fills in one address per slot in `entities`; `ha-list` fills in the configured array for `entityList`; `ha-all` puts one address for `/api/homeassistant`, which answers with every entity in `entities` in one request, for a saver with more readings than requests it wants to make; `color` replaces `__TVWEB_COLOR__` with a brightness-adjusted hex for the owner's selected colour preset (`White` by default); `news` puts the address of `/api/news` for `__TVWEB_NEWS__`, answering `{ ok, note, items: [{ source, title }] }` from the feeds on the Home tab, and like `stats` is given only to Glasshouse's own. Every saver has `__TVWEB_CLOCK12__` (`true` for 12-hour time) and `__TVWEB_LOCALE__`, the TV's menu language as Qt names a locale (`sv_SE`, empty before the TV has said), filled in whatever `uses` lists: LG's screen saver app keeps the QML locale at `en_US`, so a date is written with `d.toLocaleDateString(Qt.locale("__TVWEB_LOCALE__"), format)` rather than `Qt.formatDate`. |
 | `requires` | no | `{"webos": 5}`: the oldest webOS it runs on. |
 | `panels` | no | `["oled"]` or `["lcd"]`, for one made for one kind of panel. |
 | `order` | no | Its place among Glasshouse's own. Added ones follow, by name. |

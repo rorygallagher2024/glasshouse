@@ -81,10 +81,23 @@ function retries(done) {
             fetch.getJson('https://example.org/a.json', function (errCert) {
               assert.ok(errCert && !errCert.offline);
               assert.ok(/certificate/i.test(errCert.message));
-              assert.strictEqual(calls().length, 1, 'certificate error is not retried across address families');
               var lines = fs.existsSync(log) ? fs.readFileSync(log, 'utf8').trim().split('\n') : [];
-              assert.strictEqual(lines.length, 1, 'wget is not called when curl fails certificate verification');
-              console.log('  ✓ a certificate failure (60) fails immediately and does not try other clients');
+              assert.strictEqual(lines.length, 2, 'tried once with the TV\'s roots and once with Glasshouse\'s, and wget never');
+              assert.strictEqual(lines[0].indexOf('--cacert'), -1);
+              assert.ok(/--cacert \S*ca-roots\.pem/.test(lines[1]), 'the retry names Glasshouse\'s roots: ' + lines[1]);
+              assert.deepEqual(calls(), ['', ''], 'not retried across address families');
+              console.log('  ✓ a certificate failure (60) is tried once more with Glasshouse\'s roots, then fails without other clients');
+
+              reset();
+              // Verifies only with the bundled roots, as GitHub's release files on a 65SM8600 (#1595).
+              install('curl', 'for a in "$@"; do [ "$a" = "--cacert" ] && { echo \'{"ok":3}\'; exit 0; }; done\n' +
+                              'echo "curl: (60) SSL certificate problem: unable to get local issuer certificate" >&2\nexit 60\n');
+              fetch.getJson('https://github.com/a.json', function (errCa, docCa) {
+                assert.ifError(errCa);
+                assert.strictEqual(docCa.ok, 3);
+                assert.strictEqual(calls().length, 2);
+                console.log('  ✓ a host the TV\'s roots cannot verify is reached with Glasshouse\'s');
+                try { fs.unlinkSync(dir + '/wget'); } catch (e) {}
 
               reset();
               cfg.fetch = { ip: '6' };
@@ -102,6 +115,7 @@ function retries(done) {
                 downloads();
               });
             });
+              });
           });
         });
         });
@@ -153,8 +167,37 @@ function retries(done) {
       assert.ok(err && err.offline);
       assert.strictEqual(calls().length, 1);
       console.log('  ✓ wget is not retried');
-      require('child_process').execFile('rm', ['-rf', dir], function () {});
-      done();
+      limits();
+    });
+  }
+
+  // fetchLimited: a file that grows past the limit is stopped and removed,
+  // curl's own refusal (exit 63) reads the same, and a small one comes back.
+  function limits() {
+    var out = path.join(dir, 'feed.xml');
+    reset();
+    // Grows 1000 bytes every 50 ms, to 20000, with no size stated.
+    install('wget', 'o=""; while [ $# -gt 0 ]; do [ "$1" = "-O" ] && o="$2"; shift; done\n' +
+                    'i=0; while [ $i -lt 20 ]; do head -c 1000 /dev/zero >> "$o"; sleep 0.05; i=$((i+1)); done\nexit 0\n');
+    var started = Date.now();
+    fetch.fetchLimited('https://example.org/feed.xml', out, 5000, function (err) {
+      assert.ok(err && err.tooBig, 'stopped as it grew past the limit: ' + (err && err.message));
+      assert.ok(Date.now() - started < 900, 'stopped before the client finished');
+      assert.ok(!fs.existsSync(out), 'and nothing is left of it');
+      fs.unlinkSync(path.join(dir, 'wget'));
+      reset();
+      install('curl', 'case "$*" in *"--max-filesize 5000"*) echo "curl: (63) Maximum file size exceeded" >&2; exit 63;; esac\nexit 1\n');
+      fetch.fetchLimited('https://example.org/feed.xml', out, 5000, function (err2) {
+        assert.ok(err2 && err2.tooBig, "curl's own refusal reads as too big");
+        install('curl', 'o=""; while [ $# -gt 0 ]; do [ "$1" = "-o" ] && o="$2"; shift; done\nprintf "<rss></rss>" > "$o"\nexit 0\n');
+        fetch.fetchLimited('https://example.org/feed.xml', out, 5000, function (err3) {
+          assert.ifError(err3);
+          assert.strictEqual(fs.readFileSync(out, 'utf8'), '<rss></rss>');
+          console.log('  ✓ fetchLimited stops a file at its limit, and lets a small one through');
+          require('child_process').execFile('rm', ['-rf', dir], function () {});
+          done();
+        });
+      });
     });
   }
 }
@@ -194,7 +237,8 @@ function retries(done) {
   assert.ok(big.join(' ').indexOf('--proto =http,https --proto-redir =http,https') > 0);
   assert.strictEqual(big.indexOf('--max-time'), -1);
   var wget = fetch._fetchArgs('/bin/wget', 'https://h/x.ipk', '/tmp/x', 'big');
-  assert.strictEqual(wget.join(' '), '-q -T 30 -U tvweb/1.2.3 -O /tmp/x -- https://h/x.ipk');
+  assert.deepEqual(wget, ['-q', '-T', '30', '-U', 'tvweb/1.2.3 (+https://github.com/rorygallagher2024/glasshouse)', '-O', '/tmp/x', '--', 'https://h/x.ipk'],
+    'named, with the project page, as Wikimedia\'s API rules ask');
   var text = fetch._fetchArgs('/usr/bin/curl', 'https://h/a.json', null);
   assert.strictEqual(text[text.indexOf('--max-time') + 1], '10');
   assert.strictEqual(text[text.indexOf('--connect-timeout') + 1], '5');
