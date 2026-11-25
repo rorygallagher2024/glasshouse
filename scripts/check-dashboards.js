@@ -2443,16 +2443,28 @@ async function visitHomeOrder(browser, base, problems) {
   let pauseSave = false, pauseCatalogue = false, saveHeld, catalogueHeld;
   const saveReady = new Promise(resolve => { saveHeld = resolve; });
   const catalogueReady = new Promise(resolve => { catalogueHeld = resolve; });
+  let wallChoice = 'shuffle';
+  const wallSaves = [];
   await page.route('**/api/home**', async route => {
     const pathname = new URL(route.request().url()).pathname;
     // The server sends a Last opened row in that order: here, YouTube was opened last.
     const order = { app: layout.sort.app === 'recent' ? ['two', 'one', 'lg-home'] : ['one', 'two', 'lg-home'], dev: [], ch: [] };
     const catalogue = { ok: true, apps: [{ id: 'one', title: 'One' }, { id: 'two', title: 'Two' }], devices: [], channels: [],
       sources: { channels: 0 }, order, layout };
+    const wallpapers = { choice: wallChoice, choices: ['black', 'landscape', 'abstract', 'own', 'shuffle', 'video'], pictures: [], videoUrls: [] };
     let body = { ok: true };
     if (pathname === '/api/home') body = Object.assign({ ok: true, supported: { ok: true }, enabled: true, active: true,
-      writable: true, layout, history: true }, new URL(route.request().url()).searchParams.get('with') ? { catalogue, channels: [] } : {});
+      writable: true, layout, wallpapers, history: true }, new URL(route.request().url()).searchParams.get('with') ? { catalogue, channels: [] } : {});
     else if (pathname === '/api/home/catalogue') body = catalogue;
+    else if (pathname === '/api/home/wallpapers') {
+      const patch = route.request().postDataJSON();
+      wallSaves.push(patch);
+      if (patch && patch.choose === 'video') body = { ok: false, error: 'Add at least one video URL first.' };
+      else {
+        if (patch && patch.choose) wallChoice = patch.choose;
+        body = { ok: true, wallpapers: Object.assign({}, wallpapers, { choice: wallChoice }) };
+      }
+    }
     else if (pathname === '/api/home/layout') {
       const patch = route.request().postDataJSON();
       saves.push(patch);
@@ -2575,6 +2587,19 @@ async function visitHomeOrder(browser, base, problems) {
       await page.keyboard.press('ArrowLeft');
       await page.locator('#rows .row.sel').filter({ hasText: new RegExp('^' + name) }).waitFor();
     }
+    // Pictures on "Your own, shuffled" with no video URLs must wrap to Landscape rather than requesting "video" (#1711).
+    const picRow = page.locator('#rows .row').filter({ hasText: /^Pictures/ }).first();
+    await picRow.click();
+    if (!(await picRow.innerText()).includes('Your own, shuffled')) {
+      problems.push('Home order: Pictures row did not start on Your own, shuffled');
+    }
+    saved = page.waitForResponse(r => new URL(r.url()).pathname === '/api/home/wallpapers');
+    await page.keyboard.press('Enter');
+    await saved;
+    if (!wallSaves.length || wallSaves[wallSaves.length - 1].choose !== 'landscape') {
+      problems.push('Home order: Pictures cycling from Your own, shuffled did not skip video without URLs: ' + JSON.stringify(wallSaves));
+    }
+    await picRow.filter({ hasText: 'Landscape' }).waitFor();
   } finally { await page.close(); }
 }
 
