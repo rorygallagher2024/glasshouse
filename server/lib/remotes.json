@@ -76,6 +76,42 @@
         "As for the MR25GA: the microphone arrives as the AI key (ai) on webOS 11's native mapping, which does not depend on the remote's model, rather than the microphone key (voice) that lginput2 logs"
       ],
       "notes": "Every Remote tab key the owner could identify was pressed and read from the log; green, yellow and blue were not pressed individually, assumed from Red and the owner's own account of the remote's layout."
+    },
+    {
+      "id": "MR20",
+      "title": "Magic Remote MR20",
+      "names": [
+        "LGE MR20"
+      ],
+      "nameEvidence": "measured",
+      "year": null,
+      "numberKeys": true,
+      "complete": true,
+      "keys": {
+        "netflix": "measured",
+        "amazon": "measured",
+        "movies": "measured",
+        "voice": "measured",
+        "guide": "measured",
+        "input": "measured",
+        "screenremote": "measured",
+        "channelup": "documented",
+        "channeldown": "documented",
+        "red": "assumed",
+        "green": "assumed",
+        "yellow": "assumed",
+        "blue": "assumed"
+      },
+      "labels": {
+        "screenremote": "…"
+      },
+      "sources": [
+        "OLED48CX8LC, webOS 5.6.2, 25 November 2026: the remote already paired with the TV, reported by the TV as LGE MR20, read from lginput2's NL_BUTTON_CLICK lines in /var/log/messages, pressed one at a time: Netflix (KEY_NETFLIX), Prime Video (KEY_AMAZON), Movies (KEY_MOVIES), the microphone (KEY_VOICE), Guide (KEY_GUIDE), Input (KEY_INPUT), a number key (KEY_1); also Home and the dash-marked key that opens LG's own Live Menu (KEY_DASH, which the Remote tab does not offer), which the Remote tab does not offer",
+        "The … button opened com.webos.app.screenremote, the Remote tab's 123 button key, though its own NL_BUTTON_CLICK line was not caught",
+        "Channel up and down were not read from the log on this webOS version, but the owner confirmed they move the Guide's screens",
+        "The owner confirmed the remote has no Disney+, LG Channels, Rakuten TV, Alexa, Home Hub (house in a circle), ? button, Apps or Info key, has colour keys (not pressed individually, assumed from LG's usual four), and has Play, Pause and a List key, which the Remote tab does not offer"
+      ],
+      "notes": "Every Remote tab key the owner could identify was pressed and read from the log, except channel up and down (confirmed by what they do instead) and the colour keys (assumed, universal on LG remotes)."
     }
   ]
 }
