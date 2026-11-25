@@ -4393,6 +4393,102 @@ async function visitBrightnessKeySettings(browser, base, problems) {
   }
 }
 
+async function visitRemoteFolding(browser, base, problems) {
+  const page = await browser.newPage();
+  const fail = message => problems.push('Remote folding: ' + message);
+  page.on('pageerror', error => fail(error.message));
+  const state = { mode: 'auto', known: true };
+  const writes = [];
+  const mr25 = { id: 'MR25GA', title: 'Magic Remote MR25GA', image: 'generic.png', numberKeys: false };
+  const payload = () => {
+    const off = state.known && state.mode === 'auto';
+    return {
+      ok: true,
+      supported: true,
+      keys: [
+        { key: 'netflix', title: 'Netflix', action: 'lg' },
+        { key: 'red', title: 'Red', action: 'lg', offRemote: off }
+      ],
+      choices: [],
+      brightnessStep: 10,
+      brightnessBar: false,
+      brightnessBarStyle: 'lg',
+      remotes: state.known ? {
+        mode: state.mode,
+        canFold: true,
+        folding: off,
+        why: '',
+        selected: state.mode === 'auto' ? [mr25] : [],
+        unknown: 0,
+        detected: [{ name: 'LGE MR25GA', id: 'MR25GA', title: 'Magic Remote MR25GA', image: 'generic.png', current: true }]
+      } : {
+        mode: state.mode,
+        canFold: false,
+        folding: false,
+        why: state.mode === 'auto' ? 'unknown' : '',
+        selected: [],
+        unknown: state.mode === 'auto' ? 1 : 0,
+        detected: [{ name: 'LGE MR22GN', id: null, title: 'LGE MR22GN', image: 'generic.png', current: true }]
+      }
+    };
+  };
+  try {
+    await page.route('**/api/remote/available', route => route.fulfill({ json: { ok: true, available: true } }));
+    await page.route('**/api/apps', async route => {
+      try {
+        const apps = await (await route.fetch()).json();
+        apps.writable = true;
+        apps.quickAccess = { ok: true, supported: true, keys: [{ key: 1, title: 'Netflix', id: 'netflix' }] };
+        apps.remoteKeys = payload();
+        await route.fulfill({ json: apps });
+      } catch (e) { /* closed */ }
+    });
+    await page.route('**/api/remotekeys', async route => {
+      if (route.request().method() !== 'POST') return route.fulfill({ json: payload() });
+      const body = route.request().postDataJSON();
+      writes.push(body);
+      if (body && body.remotes && body.remotes.mode) state.mode = body.remotes.mode;
+      await route.fulfill({ json: { ok: true } });
+    });
+
+    await page.goto(base + '/?tab=remote');
+    const filter = page.locator('#apps-remote-filter');
+    const toggle = page.locator('#btn_remote_only');
+    await filter.waitFor();
+    if (!await toggle.evaluate(el => el.classList.contains('good')) || (await toggle.textContent()).trim() !== 'On') {
+      fail('toggle did not render as active On pill');
+    }
+    if (!/Detected: Magic Remote MR25GA/.test(await page.locator('#apps-remote-detected').textContent())) {
+      fail('detected remote name was not shown under the switch');
+    }
+    const otherGroup = page.locator('#apps-rk-list .rk-more summary', { hasText: 'Buttons on other remotes (1)' });
+    await otherGroup.waitFor();
+    await toggle.click();
+    await page.waitForFunction(() => document.getElementById('btn_remote_only').classList.contains('idle'));
+    if (JSON.stringify(writes[writes.length - 1]) !== JSON.stringify({ remotes: { mode: 'all' } })) {
+      fail('clicking toggle did not save mode all');
+    }
+    if (!await filter.isVisible()) fail('folding switch disappeared when turned off');
+    if (!/Magic Remote MR25GA/.test(await page.locator('#apps-remote-detected').textContent())) {
+      fail('detected remote name disappeared when folding was turned off');
+    }
+    if (await otherGroup.count()) fail('Buttons on other remotes stayed folded after switching off');
+    if (!await page.locator('#apps-rk-list .rk-key[data-key="red"]').isVisible()) fail('Red key did not unfold without a reload');
+
+    state.mode = 'auto';
+    state.known = false;
+    await page.goto(base + '/?tab=remote');
+    await page.locator('#apps-rk-list .rk-key[data-key="netflix"]').waitFor();
+    if (await filter.isVisible()) fail('folding switch was shown for an unlisted remote');
+    if (await otherGroup.count()) fail('Buttons on other remotes was shown for an unlisted remote');
+    if (!await page.locator('#apps-rk-list .rk-key[data-key="red"]').isVisible()) fail('Red key was not shown for an unlisted remote');
+  } catch (e) {
+    fail(e.message);
+  } finally {
+    await page.close();
+  }
+}
+
 /*
  * Home Assistant: Ambient's entity slots on the Screensaver tab: a slot given
  * its first entity shows its Label row at once, though the field picked from
@@ -5028,7 +5124,7 @@ async function visitRemoteView(browser, base, problems) {
 
 function groups(web, tv) {
   return [
-    { job: 'tabs', tabs: web.map(t => ({ path: '/?tab=' + t, label: 'web ' + t })), visits: [visitHomeAnimations, visitHuesyncSettings, visitInputsAndRemote, visitBrightnessKeySettings, visitAdblockCards, visitSaverEntitySlots, visitRemoteView, visitRemoteMotion] },
+    { job: 'tabs', tabs: web.map(t => ({ path: '/?tab=' + t, label: 'web ' + t })), visits: [visitHomeAnimations, visitHuesyncSettings, visitInputsAndRemote, visitBrightnessKeySettings, visitRemoteFolding, visitAdblockCards, visitSaverEntitySlots, visitRemoteView, visitRemoteMotion] },
     { job: 'tabs', tabs: tv.map(t => ({ path: '/assets/dashboard.html?tab=' + t, label: 'TV ' + t })),
       visits: [visitTvDashboard, visitTvAudio, visitTvPictureWrites, visitPictureUnavailable, visitTvNonOled, visitTvHuesync] },
     { job: 'home', tabs: [], visits: [visitHomePicture, visitHomePreview, visitHomePreviewOptions, visitHomePreviewWebos4, visitHomePreviewSize, visitHomePreviewSizeDetails, visitInputBarBehindHome, visitInputBarSwitchOnOk, visitHomeBarPrewarm, visitHomeBarIconsReady, visitHomeBarTiles, visitHomeBarBesideHome, visitHomeBarScroll, visitHomeUpDown, visitHomeFolderKeys, visitHomePointerOff, visitHomeOrder, visitHomeAvailability, visitHomeSearch, visitHomeWeather, visitHomeWeatherSetting, visitHomeRemoteBattery, visitHomeRemoteBatterySetting] },

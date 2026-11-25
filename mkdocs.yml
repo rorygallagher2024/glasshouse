@@ -45,6 +45,7 @@ nav:
       - Home: dashboard/home.md
       - Inputs: dashboard/inputs.md
       - Remote: dashboard/remote.md
+      - Remotes: remotes.md
       - Apps: dashboard/apps.md
       - Ambient Light: dashboard/ambient-light.md
       - Privacy: dashboard/privacy.md

@@ -215,6 +215,8 @@
  "apps.quickAccess.lgDefault": {"text": "LG által beállítva", "from": "Set by LG"},
  "apps.quickAccess.none": {"text": "Nincs beállítva", "from": "Nothing set"},
  "apps.quickAccess.reset": {"text": "Nincs", "from": "None"},
+ "apps.remote.desc": {"from": "Folds buttons your remote does not have into Buttons on other remotes. Keys you have changed always stay visible.", "text": "A távirányítón nem szereplő gombokat a «Más távirányítók gombjai» részbe csukja össze. A módosított gombok mindig láthatók maradnak."},
+ "apps.remote.detected": {"from": "Detected: {name}", "text": "Észlelve: {name}"},
  "apps.remoteKeys": {"text": "Távirányító gombjai", "from": "Remote keys"},
  "apps.remoteKeys.apps": {"text": "Alkalmazások", "from": "Apps"},
  "apps.remoteKeys.asLg": {"text": "Ahogy az LG beállította", "from": "As LG has it"},
@@ -243,6 +245,7 @@
  "apps.remoteKeys.barStyleVertical": {"text": "Függőleges", "from": "Vertical"},
  "apps.remoteKeys.barStyleNone": {"text": "Nincs sáv", "from": "No bar"},
  "apps.remoteKeys.brightnessSection": {"text": "A fényerőgombok beállításai", "from": "Brightness key settings"},
+ "apps.remoteKeys.otherRemotes": {"from": "Buttons on other remotes ({n})", "text": "Más távirányítók gombjai ({n})"},
  "apps.remoteKeys.streaming": {"text": "Streaminggombok", "from": "Streaming buttons"},
  "apps.remoteKeys.turnsOffVoice": {"text": "Ennek a gombnak a beállítása kikapcsolja az LG hangsegédét, így a hangalapú keresés, az AI-asszisztens és a mikrofon nem működik, amíg vissza nem állítják az LG szerinti működésre.", "from": "Setting this key switches off LG's voice assistant, so voice search, the AI assistant and the microphone stop working until it is As LG has it again."},
  "apps.restore.dismiss": {"text": "Bezárás", "from": "Dismiss"},
@@ -1436,6 +1439,7 @@
  "srv.remoteKeys.badBarStyle": {"text": "A szintsáv stílusa lg, horizontal, vertical vagy none lehet", "from": "The level bar style must be lg, horizontal, vertical or none"},
  "srv.remoteKeys.brightnessDown": {"text": "Fényerő le", "from": "Brightness down"},
  "srv.remoteKeys.brightnessUp": {"text": "Fényerő fel", "from": "Brightness up"},
+ "srv.remoteKeys.badRemotes": {"from": "Choose whether to show every button", "text": "Válassza ki, hogy minden gomb megjelenjen-e"},
  "srv.remoteKeys.chainFailed": {"text": "A TV nem fogadta el a módosítást", "from": "The TV did not take the change"},
  "srv.remoteKeys.fastForward": {"text": "Előretekerés", "from": "Fast forward"},
  "srv.remoteKeys.inputSwitcher": {"text": "Bemenetváltó", "from": "Input switcher"},
@@ -3901,5 +3905,6 @@
  "srv.updateAsk.installing": {"from": "Updating Glasshouse to {version}. It restarts when done.", "text": "A Glasshouse frissítése erre: {version}. Utána újraindul."},
  "srv.updateAsk.failed": {"from": "Glasshouse could not update: {error}", "text": "A Glasshouse frissítése nem sikerült: {error}"},
  "srv.updateAsk.noReason": {"from": "no reason given", "text": "nincs megadva ok"},
- "srv.configUnreadable": {"from": "{file} could not be read, so it was left as it is. Correct it, or remove it to start again, then restart Glasshouse.", "text": "A(z) {file} nem olvasható, ezért változatlan maradt. Javítsd ki, vagy töröld az újrakezdéshez, majd indítsd újra a Glasshouse-t."}
+ "srv.configUnreadable": {"from": "{file} could not be read, so it was left as it is. Correct it, or remove it to start again, then restart Glasshouse.", "text": "A(z) {file} nem olvasható, ezért változatlan maradt. Javítsd ki, vagy töröld az újrakezdéshez, majd indítsd újra a Glasshouse-t."},
+ "apps.remote.only": {"from": "Display only buttons for your remote", "text": "Csak a távirányító gombjainak megjelenítése"}
 }

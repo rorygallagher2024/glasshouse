@@ -232,6 +232,8 @@
  "apps.quickAccess.lgDefault": {"text": "Definido pela LG", "from": "Set by LG"},
  "apps.quickAccess.none": {"text": "Nada definido", "from": "Nothing set"},
  "apps.quickAccess.reset": {"text": "Nenhum", "from": "None"},
+ "apps.remote.desc": {"from": "Folds buttons your remote does not have into Buttons on other remotes. Keys you have changed always stay visible.", "text": "Recolhe os botões que o seu controle não tem em «Botões de outros controles». Os botões alterados continuam sempre visíveis."},
+ "apps.remote.detected": {"from": "Detected: {name}", "text": "Detectado: {name}"},
  "apps.remoteKeys": {"text": "Botões do controle remoto", "from": "Remote keys"},
  "apps.remoteKeys.apps": {"text": "Apps", "from": "Apps"},
  "apps.remoteKeys.asLg": {"text": "Como a LG deixou", "from": "As LG has it"},
@@ -251,6 +253,7 @@
  "apps.remoteKeys.nothing": {"text": "Nada", "from": "Nothing"},
  "apps.remoteKeys.opens": {"text": "Abre {app}", "from": "Opens {app}"},
  "apps.remoteKeys.other": {"text": "Outros botões", "from": "Other keys"},
+ "apps.remoteKeys.otherRemotes": {"from": "Buttons on other remotes ({n})", "text": "Botões de outros controles ({n})"},
  "apps.remoteKeys.replacesVoice": {"text": "Definido com qualquer outra coisa, este botão deixa de iniciar o controle por voz. Como a LG deixou traz isso de volta.", "from": "Set to anything else, this button no longer starts voice control. As LG has it brings it back."},
  "apps.remoteKeys.step": {"text": "Passo do brilho", "from": "Brightness step"},
  "apps.remoteKeys.stepDesc": {"text": "Quantos pontos, de 100, a imagem muda a cada pressão de uma tecla Aumentar brilho ou Diminuir brilho.", "from": "How many points one press of a Brightness up or Brightness down key moves the picture, out of 100."},
@@ -1955,6 +1958,7 @@
  "srv.remoteKeys.badBarStyle": {"text": "O estilo da barra de nível deve ser lg, horizontal, vertical ou none", "from": "The level bar style must be lg, horizontal, vertical or none"},
  "srv.remoteKeys.brightnessDown": {"text": "Diminuir brilho", "from": "Brightness down"},
  "srv.remoteKeys.brightnessUp": {"text": "Aumentar brilho", "from": "Brightness up"},
+ "srv.remoteKeys.badRemotes": {"from": "Choose whether to show every button", "text": "Escolha se deseja mostrar todos os botões"},
  "srv.remoteKeys.chainFailed": {"text": "A TV não aceitou a alteração", "from": "The TV did not take the change"},
  "srv.remoteKeys.fastForward": {"text": "Avançar", "from": "Fast forward"},
  "srv.remoteKeys.home": {"text": "Home", "from": "Home"},
@@ -3887,5 +3891,6 @@
  "srv.updateAsk.installing": {"from": "Updating Glasshouse to {version}. It restarts when done.", "text": "Atualizando o Glasshouse para {version}. Ele reinicia ao terminar."},
  "srv.updateAsk.failed": {"from": "Glasshouse could not update: {error}", "text": "Não foi possível atualizar o Glasshouse: {error}"},
  "srv.updateAsk.noReason": {"from": "no reason given", "text": "nenhum motivo informado"},
- "srv.configUnreadable": {"from": "{file} could not be read, so it was left as it is. Correct it, or remove it to start again, then restart Glasshouse.", "text": "Não foi possível ler {file}, então ele foi mantido como estava. Corrija-o, ou remova-o para começar de novo, e reinicie o Glasshouse."}
+ "srv.configUnreadable": {"from": "{file} could not be read, so it was left as it is. Correct it, or remove it to start again, then restart Glasshouse.", "text": "Não foi possível ler {file}, então ele foi mantido como estava. Corrija-o, ou remova-o para começar de novo, e reinicie o Glasshouse."},
+ "apps.remote.only": {"from": "Display only buttons for your remote", "text": "Exibir apenas os botões do seu controle"}
 }

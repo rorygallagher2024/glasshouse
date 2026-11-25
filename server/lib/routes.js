@@ -85,6 +85,8 @@ var appDnsModule = null;
 var quickAccessModule = null;
 /** @type {typeof import('./remotekeys')} */
 var remoteKeysModule = null;
+/** @type {typeof import('./remotedetect')} */
+var remoteDetectModule = null;
 /** @type {typeof import('./homescreen')} */
 var homeScreenModule = null;
 /** @type {typeof import('./home')} */
@@ -2721,6 +2723,13 @@ function handleRequest(req, res) {
   }
 
   // What the remote's keys do, on its own for the Home tab's Guide button choice.
+  // The LG remotes in use with this TV, for the Remote tab.
+  if (pathname === '/api/remotes' && req.method === 'GET') {
+    if (!remoteDetectModule) return send(res, 200, JSON.stringify({ ok: true, remotes: [], devices: [] }));
+    return remoteDetectModule.detect(function (r) {
+      send(res, 200, JSON.stringify({ ok: true, remotes: r.remotes, devices: r.devices }));
+    }, req.url.indexOf('fresh=1') !== -1);
+  }
   if (pathname === '/api/remotekeys' && req.method === 'GET') {
     if (!remoteKeysModule) return send(res, 200, JSON.stringify({ ok: true, supported: false }));
     return remoteKeysModule.getRemoteKeys(function (rk) { send(res, 200, JSON.stringify(rk || { ok: true, supported: false })); });
@@ -2743,6 +2752,11 @@ function handleRequest(req, res) {
       }
       if (body && body.brightnessBarStyle !== undefined) {
         return remoteKeysModule.setBrightnessBarStyle(body.brightnessBarStyle, function (r) {
+          send(res, r && r.ok ? 200 : 400, JSON.stringify(r));
+        });
+      }
+      if (body && body.remotes !== undefined) {
+        return remoteKeysModule.setRemoteSelection(body.remotes && body.remotes.mode, function (r) {
           send(res, r && r.ok ? 200 : 400, JSON.stringify(r));
         });
       }
@@ -2990,6 +3004,7 @@ function init(opts) {
   if (opts.appDns) appDnsModule = opts.appDns;
   if (opts.quickAccess) quickAccessModule = opts.quickAccess;
   if (opts.remoteKeys) remoteKeysModule = opts.remoteKeys;
+  if (opts.remoteDetect) remoteDetectModule = opts.remoteDetect;
   if (opts.homeScreen) homeScreenModule = opts.homeScreen;
   if (opts.home) homeModule = opts.home;
   if (opts.news) newsModule = opts.news;

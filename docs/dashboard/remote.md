@@ -37,7 +37,13 @@ Core keys (**Home**, **Back**, volume, mute, and power) are reserved and cannot 
 
 ## Remote models and regional buttons
 
+The [Remotes](../remotes.md) page lists the LG remotes Glasshouse knows and the keys each is known to have.
+
 The available keys reflect what the TV's software supports, not necessarily what is present on a specific physical remote. A Magic Remote lacks color, Guide, and Info keys, while a standard IR remote lacks dedicated streaming buttons, but the TV can receive both.
+
+Where every remote paired with the TV or seen in use in the last 30 days has a finished button list on [Remotes](../remotes.md), **Remote keys** shows a **Display only buttons for your remote** switch (on by default), folding keys none of those remotes has into **Buttons on other remotes**, closed until opened. A key that has been changed is never folded away, and switching the setting off shows every button again. The choice is kept with the key settings, nothing on the TV changes with it, and a [settings backup](server.md) carries it. Where no remote is detected, or any detected remote is missing from [Remotes](../remotes.md) or has an unfinished button list, the switch stays hidden and every key stays in view.
+
+Where folding applies and none of the remotes in use has number keys, the **Quick Access** section, which is set by holding a number key, also starts closed; it can still be opened. A key whose button is printed differently on the remote in use goes by that name: with the MR25GA, the microphone key is listed as **AI**, the button that sends it.
 
 The list names buttons supported by the TV's model generation (e.g. a C5 lists its Disney+ button while a CX does not; 2020 remotes add a Movies button, and recent Magic Remotes add Alexa and Google Assistant buttons).
 

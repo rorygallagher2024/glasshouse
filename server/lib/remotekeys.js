@@ -81,6 +81,7 @@ var msg = require('./say').msg;
 var allocBuffer = require('./util').allocBuffer;
 var guidePatch = require('./guidepatch');
 var levelBar = require('./levelbar');
+var remotes = require('./remotes');
 
 var CONFIG_KEY = 'com.webos.surfacemanager.keyFilters';
 // What each key does, read by the filter; see the header.
@@ -354,6 +355,8 @@ var homeGuideOn = function () { return false; };
 var compositorRestartedFn = function () {};
 var messagesPath = MESSAGES_LOG;
 var reapplyDelayMs = 1000;
+// The LG remotes in use, as cb({ auto: catalogue entries (null for one not catalogued), detected: what lib/remotedetect found }).
+var detectRemotesFn = null;
 
 function init(opts) {
   opts = opts || {};
@@ -388,6 +391,7 @@ function init(opts) {
   homeGuideOn = opts.homeGuide || function () { return false; };
   compositorRestartedFn = opts.compositorRestarted || function () {};
   messagesPath = opts.messagesPath || MESSAGES_LOG;
+  detectRemotesFn = typeof opts.detectRemotes === 'function' ? opts.detectRemotes : null;
   if (typeof opts.reapplyDelayMs === 'number') reapplyDelayMs = opts.reapplyDelayMs;
   muteToastsMs = opts.muteToastsMs || 0;
   powerTimers.forEach(function (t) { clearTimeout(t); });
@@ -405,6 +409,13 @@ function country() {
 function mapFile() { return path.join(stateDir, 'remotekeys.json'); }
 function filterFile() { return path.join(stateDir, 'remotekeys-filter.js'); }
 function lgFile() { return path.join(stateDir, 'remotekeys-lg.json'); }
+
+// Every key that can be set, by name, with the title it has on the Remote tab: what the remote catalogue's key ids refer to.
+function keyTitles() {
+  var out = {};
+  KEYS.forEach(function (k) { out[k.key] = k.title; });
+  return out;
+}
 
 function keyByName(name) {
   for (var i = 0; i < KEYS.length; i++) if (KEYS[i].key === name) return KEYS[i];
@@ -553,12 +564,28 @@ function needsBarApp(id) {
   return id === INPUT_BAR || (isBrightnessAction(id) && levelBarShown() && barAvailable());
 }
 
-// step and style are kept as they were in the file unless one is given ('' for the default).
-function writeMap(map, home, starting, step, style) {
+/*
+ * Which remotes the Remote tab is for: { mode: 'auto' } (the remote paired or
+ * seen in use lately, folding what it does not have) or { mode: 'all' }
+ * (every key shown). Kept in the map's file, as `remotes`, only when it is
+ * not automatic.
+ */
+function readRemoteSelection() {
+  try {
+    var j = JSON.parse(fs.readFileSync(mapFile(), 'utf8'));
+    var r = j && j.remotes;
+    if (r && r.mode === 'all') return { mode: 'all' };
+  } catch (e) { /* none kept */ }
+  return { mode: 'auto' };
+}
+
+// step, style and selection are kept as they were in the file unless one is given ('' for the default step or style).
+function writeMap(map, home, starting, step, style, selection) {
   levelBar.forgetStyle();
   if (step === undefined) step = readStoredBrightnessStep();
   if (style === undefined) style = readStoredBarStyle();
-  if (!Object.keys(map).length && !home && !starting && !step && !style) {
+  if (selection === undefined) selection = readRemoteSelection();
+  if (!Object.keys(map).length && !home && !starting && !step && !style && selection.mode === 'auto') {
     try { fs.unlinkSync(mapFile()); } catch (e) { if (e.code !== 'ENOENT') throw e; }
     return;
   }
@@ -567,6 +594,7 @@ function writeMap(map, home, starting, step, style) {
   if (starting) j.starting = starting;
   if (step) j.brightnessStep = step;
   if (style) j.brightnessBarStyle = style;
+  if (selection.mode !== 'auto') j.remotes = selection;
   fs.writeFileSync(mapFile(), JSON.stringify(j, null, 2) + '\n', 'utf8');
 }
 
@@ -643,7 +671,7 @@ function filterSource() {
     '',
     // One step of the panel brightness, as lib/remotekeys.js's stepBrightness does it.
     // The streaming buttons send no auto-repeat (a press and a release only, read
-    // from the remote's input device on an MR26GA), so a held key repeats here:
+    // from the remote's input device on an MR25GA), so a held key repeats here:
     // the next step follows 0.4 s after the first and then every 0.1 s, each only
     // once the last is written, until the release or the end of the range.
     'var glasshouseBrightnessBusy = false;',
@@ -2038,6 +2066,22 @@ function nativeChoices(def, native) {
   return [];
 }
 
+// cb({ auto, detected }); empty where nothing says which remotes are in use, or the lookup fails.
+function withDetectedRemotes(cb) {
+  var none = { auto: [], detected: [] };
+  if (!detectRemotesFn) return cb(none);
+  var answered = false;
+  try {
+    detectRemotesFn(function (found) {
+      if (answered) return;
+      answered = true;
+      cb(found && Array.isArray(found.auto) ? { auto: found.auto, detected: found.detected || [] } : none);
+    });
+  } catch (e) {
+    if (!answered) { answered = true; cb(none); }
+  }
+}
+
 function describeKeys(keys, inChain, cb, native) {
   switcherChoices(function (switchers) {
     listApps(function (apps) {
@@ -2075,12 +2119,47 @@ function describeKeys(keys, inChain, cb, native) {
         if (!native && homeAssistantOn() && reported(k.key)) key.homeAssistant = true;
         return key;
       });
-      cb({
-        ok: true, supported: true, keys: out, brightnessStep: brightnessStep(), brightnessBarStyle: brightnessBarStyle(),
-        // Where the JavaScript filter runs and the bar's app can be put on the TV, which the level bar needs.
-        brightnessBar: !native && barAvailable(),
-        choices: switchers.concat(media, guide, inputs, homeChoices(native), barChoices(native), appChoices(apps)),
-        inChain: inChain
+      withDetectedRemotes(function (found) {
+        var choice = readRemoteSelection();
+        var keyNames = out.map(function (k) { return k.key; });
+        var autoOff = remotes.keysOffRemotes(found.auto, keyNames);
+        // The remotes in use; all buttons is no remote, which folds nothing.
+        var selected = choice.mode === 'all' ? [] : found.auto;
+        // Keys on none of those, folded unless changed (the page decides); only where every one is known.
+        var off = choice.mode === 'all' ? [] : autoOff;
+        out.forEach(function (k) { if (off.indexOf(k.key) !== -1) k.offRemote = true; });
+        // A key under the name the remote prints on it (the MR25GA's AI button is the microphone key), unless
+        // another key already has that name (webOS 11 offers AI as a key of its own).
+        var taken = out.map(function (k) { return k.title; });
+        out.forEach(function (k) {
+          var label = remotes.labelFor(selected, k.key);
+          if (label && label !== k.title && taken.indexOf(label) === -1) k.title = label;
+        });
+        cb({
+          ok: true, supported: true, keys: out, brightnessStep: brightnessStep(), brightnessBarStyle: brightnessBarStyle(),
+          // Where the JavaScript filter runs and the bar's app can be put on the TV, which the level bar needs.
+          brightnessBar: !native && barAvailable(),
+          choices: switchers.concat(media, guide, inputs, homeChoices(native), barChoices(native), appChoices(apps)),
+          inChain: inChain,
+          remotes: {
+            mode: choice.mode,
+            canFold: autoOff.length > 0,
+            folding: off.length > 0,
+            // Why nothing is folded where it is not (for the page to say): 'none' no remote is known to be in use,
+            // 'unknown' one is not in the catalogue, 'unfinished' one's list of buttons is not finished.
+            why: off.length > 0 || choice.mode === 'all' ? '' : !selected.length ? 'none'
+              : selected.some(function (r) { return !r; }) ? 'unknown'
+              : selected.some(function (r) { return r.complete !== true; }) ? 'unfinished' : '',
+            selected: selected.filter(Boolean).map(function (r) {
+              return { id: r.id, title: r.title, image: remotes.imageFile(r), numberKeys: typeof r.numberKeys === 'boolean' ? r.numberKeys : null };
+            }),
+            unknown: selected.filter(function (r) { return !r; }).length,
+            // What is in use, for the page to show beside the switch.
+            detected: found.detected.map(function (d) {
+              return { name: d.name, id: d.id, title: d.title, image: d.image, current: !!d.current };
+            })
+          }
+        });
       });
     });
   });
@@ -2254,6 +2333,27 @@ function setBrightnessBarStyle(value, cb) {
  * The app the Home key opens, for Glasshouse Home, or '' to give Home back to
  * LG's filters. cb({ ok, error }).
  */
+/*
+ * Which remotes the tab is for: mode 'auto' or 'all'. Only the tab's own
+ * choice changes: nothing is written to the TV. cb({ ok, error }).
+ */
+function setRemoteSelection(mode, cb) {
+  var selection;
+  if (mode === 'all') {
+    selection = { mode: 'all' };
+  } else if (mode === 'auto') {
+    selection = { mode: 'auto' };
+  } else {
+    return cb({ ok: false, error: msg('srv.remoteKeys.badRemotes', 'Choose whether to show every button') });
+  }
+  try {
+    writeMap(readMap(), readHome(), readStarting(), undefined, undefined, selection);
+  } catch (e) {
+    return cb({ ok: false, error: msg('srv.remoteKeys.saveFailed', 'Could not save the change: {error}', { error: e.message }) });
+  }
+  cb({ ok: true });
+}
+
 function setHome(id, cb) {
   if (!lunaFn) return cb({ ok: false, error: 'no luna wrapper' });
   save(readMap(), cb, String(id || ''));
@@ -2452,12 +2552,14 @@ module.exports = {
   dropInputBar: dropInputBar,
   availabilityChanged: availabilityChanged,
   getRemoteKeys: getRemoteKeys,
+  keyTitles: keyTitles,
   isSupported: isSupported,
   setRemoteKey: setRemoteKey,
   setHome: setHome,
   setBrightnessStep: setBrightnessStep,
   setBrightnessBarStyle: setBrightnessBarStyle,
   getBrightness: levelBar.getBrightness,
+  setRemoteSelection: setRemoteSelection,
   setStarting: setStarting,
   homeApp: readHome,
   ensure: ensure,

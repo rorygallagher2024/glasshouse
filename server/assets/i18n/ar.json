@@ -221,6 +221,8 @@
  "apps.quickAccess.lgDefault": {"text": "مضبوط من LG", "from": "Set by LG"},
  "apps.quickAccess.none": {"text": "غير مخصص", "from": "Nothing set"},
  "apps.quickAccess.reset": {"text": "بلا", "from": "None"},
+ "apps.remote.desc": {"from": "Folds buttons your remote does not have into Buttons on other remotes. Keys you have changed always stay visible.", "text": "يطوي الأزرار غير الموجودة في ريموتك داخل «أزرار في ريموتات أخرى». الأزرار التي غيّرتها تبقى ظاهرة دائماً."},
+ "apps.remote.detected": {"from": "Detected: {name}", "text": "المكتشف: {name}"},
  "apps.remoteKeys": {"text": "أزرار الريموت", "from": "Remote keys"},
  "apps.remoteKeys.apps": {"text": "التطبيقات", "from": "Apps"},
  "apps.remoteKeys.asLg": {"text": "على وضع LG الافتراضي", "from": "As LG has it"},
@@ -249,6 +251,7 @@
  "apps.remoteKeys.barStyleVertical": {"text": "عمودي", "from": "Vertical"},
  "apps.remoteKeys.barStyleNone": {"text": "بلا شريط", "from": "No bar"},
  "apps.remoteKeys.brightnessSection": {"text": "إعدادات مفاتيح السطوع", "from": "Brightness key settings"},
+ "apps.remoteKeys.otherRemotes": {"from": "Buttons on other remotes ({n})", "text": "أزرار في ريموتات أخرى ({n})"},
  "apps.remoteKeys.streaming": {"text": "أزرار خدمات البث", "from": "Streaming buttons"},
  "apps.remoteKeys.turnsOffVoice": {"text": "تخصيص هذا الزر يوقف المساعد الصوتي لـ LG، لذا سيتوقف البحث الصوتي والذكاء الاصطناعي والميكروفون حتى تعيده لوضع LG الافتراضي.", "from": "Setting this key switches off LG's voice assistant, so voice search, the AI assistant and the microphone stop working until it is As LG has it again."},
  "apps.restore.dismiss": {"text": "تجاهل", "from": "Dismiss"},
@@ -1551,6 +1554,7 @@
  "srv.remoteKeys.badBarStyle": {"text": "يجب أن يكون نمط شريط المستوى lg أو horizontal أو vertical أو none", "from": "The level bar style must be lg, horizontal, vertical or none"},
  "srv.remoteKeys.brightnessDown": {"text": "خفض السطوع", "from": "Brightness down"},
  "srv.remoteKeys.brightnessUp": {"text": "رفع السطوع", "from": "Brightness up"},
+ "srv.remoteKeys.badRemotes": {"from": "Choose whether to show every button", "text": "اختر ما إذا كان يجب عرض كل الأزرار"},
  "srv.remoteKeys.chainFailed": {"text": "لم يقبل التلفاز التغيير", "from": "The TV did not take the change"},
  "srv.remoteKeys.fastForward": {"text": "تقديم سريع", "from": "Fast forward"},
  "srv.remoteKeys.home": {"text": "الرئيسية", "from": "Home"},
@@ -3887,5 +3891,6 @@
  "srv.updateAsk.installing": {"from": "Updating Glasshouse to {version}. It restarts when done.", "text": "جارٍ تحديث Glasshouse إلى {version}. سيُعاد تشغيله عند الانتهاء."},
  "srv.updateAsk.failed": {"from": "Glasshouse could not update: {error}", "text": "تعذّر تحديث Glasshouse: {error}"},
  "srv.updateAsk.noReason": {"from": "no reason given", "text": "لم يُذكر سبب"},
- "srv.configUnreadable": {"from": "{file} could not be read, so it was left as it is. Correct it, or remove it to start again, then restart Glasshouse.", "text": "تعذّرت قراءة {file}، لذلك تُرك كما هو. صحّحه، أو احذفه للبدء من جديد، ثم أعد تشغيل Glasshouse."}
+ "srv.configUnreadable": {"from": "{file} could not be read, so it was left as it is. Correct it, or remove it to start again, then restart Glasshouse.", "text": "تعذّرت قراءة {file}، لذلك تُرك كما هو. صحّحه، أو احذفه للبدء من جديد، ثم أعد تشغيل Glasshouse."},
+ "apps.remote.only": {"from": "Display only buttons for your remote", "text": "عرض أزرار الريموت الخاص بك فقط"}
 }

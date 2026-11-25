@@ -1292,5 +1292,10 @@
  "srv.updateAsk.installing": {"from": "Updating Glasshouse to {version}. It restarts when done.", "text": "Glasshouse wird auf {version} aktualisiert. Danach startet es neu."},
  "srv.updateAsk.failed": {"from": "Glasshouse could not update: {error}", "text": "Glasshouse konnte nicht aktualisiert werden: {error}"},
  "srv.updateAsk.noReason": {"from": "no reason given", "text": "kein Grund angegeben"},
- "srv.configUnreadable": {"from": "{file} could not be read, so it was left as it is. Correct it, or remove it to start again, then restart Glasshouse.", "text": "{file} konnte nicht gelesen werden und wurde daher nicht verändert. Korrigiere die Datei oder entferne sie, um neu zu beginnen, und starte Glasshouse dann neu."}
+ "srv.configUnreadable": {"from": "{file} could not be read, so it was left as it is. Correct it, or remove it to start again, then restart Glasshouse.", "text": "{file} konnte nicht gelesen werden und wurde daher nicht verändert. Korrigiere die Datei oder entferne sie, um neu zu beginnen, und starte Glasshouse dann neu."},
+ "apps.remote.only": {"from": "Display only buttons for your remote", "text": "Nur Tasten deiner Fernbedienung anzeigen"},
+ "apps.remote.desc": {"from": "Folds buttons your remote does not have into Buttons on other remotes. Keys you have changed always stay visible.", "text": "Klappt Tasten, die deine Fernbedienung nicht hat, unter „Tasten auf anderen Fernbedienungen“ ein. Geänderte Tasten bleiben immer sichtbar."},
+ "apps.remote.detected": {"from": "Detected: {name}", "text": "Erkannt: {name}"},
+ "apps.remoteKeys.otherRemotes": {"from": "Buttons on other remotes ({n})", "text": "Tasten auf anderen Fernbedienungen ({n})"},
+ "srv.remoteKeys.badRemotes": {"from": "Choose whether to show every button", "text": "Wähle aus, ob alle Tasten angezeigt werden sollen"}
 }

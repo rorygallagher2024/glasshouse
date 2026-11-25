@@ -8,6 +8,9 @@
  "apps.remoteKeys.barStyleVertical": {"text": "Vertical", "from": "Vertical"},
  "apps.remoteKeys.barStyleNone": {"text": "Ninguna barra", "from": "No bar"},
  "apps.remoteKeys.brightnessSection": {"text": "Ajustes de las teclas de brillo", "from": "Brightness key settings"},
+ "apps.remote.desc": {"from": "Folds buttons your remote does not have into Buttons on other remotes. Keys you have changed always stay visible.", "text": "Pliega los botones que tu mando no tiene en «Botones de otros mandos». Las teclas que hayas cambiado siguen siempre visibles."},
+ "apps.remote.detected": {"from": "Detected: {name}", "text": "Detectado: {name}"},
+ "apps.remoteKeys.otherRemotes": {"from": "Buttons on other remotes ({n})", "text": "Botones de otros mandos ({n})"},
  "pic.export": {"text": "Exportar JSON", "from": "Export JSON"},
  "pic.exportDesc": {"text": "Descarga los ajustes de imagen actuales como JSON sin cambiarlos. Este archivo no se puede restaurar.", "from": "Downloads the current picture settings as JSON without changing them. This file cannot be restored."},
  "pic.exportTitle": {"text": "Exportar los ajustes actuales", "from": "Export current settings"},
@@ -1207,6 +1210,7 @@
  "srv.remoteKeys.badBarStyle": {"text": "El estilo de la barra de nivel debe ser lg, horizontal, vertical o none", "from": "The level bar style must be lg, horizontal, vertical or none"},
  "srv.remoteKeys.brightnessDown": {"text": "Bajar brillo", "from": "Brightness down"},
  "srv.remoteKeys.brightnessUp": {"text": "Subir brillo", "from": "Brightness up"},
+ "srv.remoteKeys.badRemotes": {"from": "Choose whether to show every button", "text": "Elige si quieres mostrar todos los botones"},
  "srv.remoteKeys.chainFailed": {"text": "La TV no aceptó el cambio", "from": "The TV did not take the change"},
  "srv.remoteKeys.fastForward": {"text": "Avance rápido", "from": "Fast forward"},
  "srv.remoteKeys.inputSwitcher": {"text": "Selector de entradas", "from": "Input switcher"},
@@ -3887,5 +3891,6 @@
  "srv.updateAsk.installing": {"from": "Updating Glasshouse to {version}. It restarts when done.", "text": "Actualizando Glasshouse a {version}. Se reiniciará al terminar."},
  "srv.updateAsk.failed": {"from": "Glasshouse could not update: {error}", "text": "No se pudo actualizar Glasshouse: {error}"},
  "srv.updateAsk.noReason": {"from": "no reason given", "text": "sin motivo indicado"},
- "srv.configUnreadable": {"from": "{file} could not be read, so it was left as it is. Correct it, or remove it to start again, then restart Glasshouse.", "text": "No se pudo leer {file}, así que se dejó como estaba. Corrígelo, o elimínalo para empezar de nuevo, y reinicia Glasshouse."}
+ "srv.configUnreadable": {"from": "{file} could not be read, so it was left as it is. Correct it, or remove it to start again, then restart Glasshouse.", "text": "No se pudo leer {file}, así que se dejó como estaba. Corrígelo, o elimínalo para empezar de nuevo, y reinicia Glasshouse."},
+ "apps.remote.only": {"from": "Display only buttons for your remote", "text": "Mostrar solo los botones de tu mando"}
 }

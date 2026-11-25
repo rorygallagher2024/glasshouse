@@ -28,6 +28,7 @@ function fakeTv(opts) {
     services: copy(opts.services || {}),
     pages: copy(opts.pages || []),
     keys: copy(opts.keys || {}),
+    selection: copy(opts.selection || { mode: 'auto' }),
     quick: copy(opts.quick || {}),
     savers: opts.savers || ['stock'],
     saver: { mode: 'stock', level: 'dim' },
@@ -99,7 +100,12 @@ function fakeTv(opts) {
         cb({ ok: true, supported: true, brightnessStep: tv.step, brightnessBarStyle: tv.barStyle, keys: Object.keys(tv.keys).map(function (k) {
           var v = tv.keys[k];
           return { key: k, action: v === null ? 'lg' : v === '' ? 'nothing' : 'open', id: v || '' };
-        }) });
+        }), remotes: { mode: tv.selection.mode } });
+      },
+      setRemoteSelection: function (mode, cb) {
+        tv.controls.push(['remoteSelection', mode]);
+        tv.selection = { mode: mode };
+        cb({ ok: true });
       },
       setBrightnessStep: function (n, cb) { tv.controls.push(['brightnessStep', n]); tv.step = n; cb({ ok: true }); },
       setBrightnessBarStyle: function (v, cb) { tv.controls.push(['brightnessBarStyle', v]); tv.barStyle = v; cb({ ok: true }); },
@@ -176,6 +182,7 @@ step('a backup holds LG\'s own switches, privacy, apps, keys and the screen save
       remoteKeys: { netflix: 'youtube.leanback.v4', amazon: null, red: '' },
       brightnessStep: 15,
       brightnessBarStyle: 'horizontal',
+      remoteSelection: { mode: 'auto' },
       quickAccess: { 1: 'netflix', 2: '' },
       screensaver: { mode: 'aquarium', level: 'bright' },
       screensaverPowerOff: 120
@@ -207,6 +214,7 @@ step('a restore sets each through its control, only where this TV has it', funct
   });
   var wanted = copy(saved.settings);
   wanted.remoteKeys.amazon = 'missing.app';
+  wanted.remoteSelection = { mode: 'all' };
   wanted.savedPages.push({ title: 'Weather', address: 'https://example.com/weather' });
   tv.use();
   backup.restore({ format: 'glasshouse-backup', version: 1, settings: wanted }, function (r) {
@@ -224,6 +232,7 @@ step('a restore sets each through its control, only where this TV has it', funct
       ['http://192.168.1.125:8123', 'https://example.com/weather'], 'a page already saved is not added again');
     assert.deepEqual(tv.keys, { netflix: 'youtube.leanback.v4', amazon: null }, 'a key this TV lacks is left out');
     assert.deepEqual(r.lg.failed, [{ id: 'remoteKeys', error: 'amazon' }], 'an app this TV lacks is named');
+    assert.deepEqual(tv.selection, { mode: 'all' }, 'which remotes the Remote tab is for');
     assert.deepEqual(tv.quick, { 1: 'netflix', 2: '' });
     assert.strictEqual(tv.config.screensaverPowerOffMinutes, 120);
     assert.strictEqual(tv.step, 15, 'the Brightness step comes back');

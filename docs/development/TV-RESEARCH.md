@@ -1721,6 +1721,19 @@ the user manual, Sport, Quick Help and the four colour keys. That id is not an a
 (`getAppInfo` refuses it); `systemUi.js` closes it as `screenRemoteView`. Held, the button
 toggles audio description, `AD/SAP` printed under it.
 
+## Which Magic Remote model the TV knows (C5, webOS 10.3.0)
+
+On an OLED48C56LB (webOS 10.3.0, firmware 33.30.80) with an MR25GA, by its label, the remote's
+model is in every place that keeps its Bluetooth name: `bluetooth2/device/getStatus` lists it as
+`LGE MR25GA` (`typeOfDevice` `ble`), `mrcu1.info` has `Name = LGE MR25GA` with `fwVer`, the
+first line of `mrcu_info` beside it is `LGE MR25GA`, `pairing_history` there logs
+`MR25GA <firmware> PAIR_OK(KEY_OK)` among other Bluetooth devices' events, and lginput2's
+`NL_BUTTON_CLICK` lines in `/var/log/messages` carry `"remote_type":"LGE MR25GA"`. The input
+devices carry no model: `LGE M-RCU - Builtin [0]` to `[2]`, vendor and product 0.
+`mrcu/getDeviceInfo` with `MagicRemote_1` gives the slot, the address and, while the remote is
+awake, its firmware, but no name. The name is the remote's own; nothing checks it against the
+hardware.
+
 ## MR25GA battery (C5, webOS 11.2)
 
 OLED77C5PUA.DUSQLJR, firmware 43.21.31, read on 3 November 2026:

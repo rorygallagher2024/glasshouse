@@ -327,6 +327,21 @@ var PARTS = [
     write: function (v, cb) { remoteKeys.setBrightnessBarStyle(v, cb); }
   },
   {
+    // Whether the Remote tab is folded to the remote(s) detected: { mode: 'auto' | 'all' }.
+    id: 'remoteSelection',
+    action: 'remoteSelection',
+    valid: function (v) {
+      return isObject(v) && (v.mode === 'auto' || v.mode === 'all');
+    },
+    read: function (cb) {
+      remoteKeys.getRemoteKeys(function (r) {
+        if (!r || !r.supported || !r.remotes) return cb(undefined);
+        cb({ mode: r.remotes.mode });
+      });
+    },
+    write: function (v, cb) { remoteKeys.setRemoteSelection(v.mode, cb); }
+  },
+  {
     // { '1'..'9': what the key opens, '' for nothing }.
     id: 'quickAccess',
     action: 'quickAccess',

@@ -221,6 +221,8 @@
  "apps.quickAccess.lgDefault": {"text": "Ustawione przez LG", "from": "Set by LG"},
  "apps.quickAccess.none": {"text": "Nic nie ustawiono", "from": "Nothing set"},
  "apps.quickAccess.reset": {"text": "Brak", "from": "None"},
+ "apps.remote.desc": {"from": "Folds buttons your remote does not have into Buttons on other remotes. Keys you have changed always stay visible.", "text": "Zwija przyciski, których Twój pilot nie ma, do sekcji «Przyciski innych pilotów». Zmienione przyciski zawsze pozostają widoczne."},
+ "apps.remote.detected": {"from": "Detected: {name}", "text": "Wykryto: {name}"},
  "apps.remoteKeys": {"text": "Przyciski pilota", "from": "Remote keys"},
  "apps.remoteKeys.apps": {"text": "Aplikacje", "from": "Apps"},
  "apps.remoteKeys.asLg": {"text": "Tak jak u LG", "from": "As LG has it"},
@@ -249,6 +251,7 @@
  "apps.remoteKeys.barStyleVertical": {"text": "Pionowy", "from": "Vertical"},
  "apps.remoteKeys.barStyleNone": {"text": "Brak paska", "from": "No bar"},
  "apps.remoteKeys.brightnessSection": {"text": "Ustawienia przycisków jasności", "from": "Brightness key settings"},
+ "apps.remoteKeys.otherRemotes": {"from": "Buttons on other remotes ({n})", "text": "Przyciski innych pilotów ({n})"},
  "apps.remoteKeys.streaming": {"text": "Przyciski serwisów streamingowych", "from": "Streaming buttons"},
  "apps.remoteKeys.toHomeAssistant": {"text": "Do Home Assistant", "from": "To Home Assistant"},
  "apps.remoteKeys.turnsOffVoice": {"text": "Ustawienie tego przycisku wyłącza asystenta głosowego LG, więc wyszukiwanie głosowe, asystent AI i mikrofon przestają działać, dopóki znów nie będzie ustawiony Tak jak u LG.", "from": "Setting this key switches off LG's voice assistant, so voice search, the AI assistant and the microphone stop working until it is As LG has it again."},
@@ -1570,6 +1573,7 @@
  "srv.remoteKeys.badBarStyle": {"text": "Styl paska poziomu musi mieć wartość lg, horizontal, vertical lub none", "from": "The level bar style must be lg, horizontal, vertical or none"},
  "srv.remoteKeys.brightnessDown": {"text": "Jasność w dół", "from": "Brightness down"},
  "srv.remoteKeys.brightnessUp": {"text": "Jasność w górę", "from": "Brightness up"},
+ "srv.remoteKeys.badRemotes": {"from": "Choose whether to show every button", "text": "Wybierz, czy pokazywać wszystkie przyciski"},
  "srv.remoteKeys.chainFailed": {"text": "Telewizor nie przyjął zmiany", "from": "The TV did not take the change"},
  "srv.remoteKeys.fastForward": {"text": "Przewiń do przodu", "from": "Fast forward"},
  "srv.remoteKeys.home": {"text": "Home", "from": "Home"},
@@ -3905,5 +3909,6 @@
  "srv.updateAsk.installing": {"from": "Updating Glasshouse to {version}. It restarts when done.", "text": "Aktualizowanie Glasshouse do {version}. Po zakończeniu uruchomi się ponownie."},
  "srv.updateAsk.failed": {"from": "Glasshouse could not update: {error}", "text": "Nie udało się zaktualizować Glasshouse: {error}"},
  "srv.updateAsk.noReason": {"from": "no reason given", "text": "nie podano powodu"},
- "srv.configUnreadable": {"from": "{file} could not be read, so it was left as it is. Correct it, or remove it to start again, then restart Glasshouse.", "text": "Nie udało się odczytać {file}, więc pozostawiono go bez zmian. Popraw go lub usuń, aby zacząć od nowa, a potem uruchom ponownie Glasshouse."}
+ "srv.configUnreadable": {"from": "{file} could not be read, so it was left as it is. Correct it, or remove it to start again, then restart Glasshouse.", "text": "Nie udało się odczytać {file}, więc pozostawiono go bez zmian. Popraw go lub usuń, aby zacząć od nowa, a potem uruchom ponownie Glasshouse."},
+ "apps.remote.only": {"from": "Display only buttons for your remote", "text": "Wyświetlaj tylko przyciski Twojego pilota"}
 }
