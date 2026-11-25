@@ -23,6 +23,11 @@ var lastOledCheck = 0;
 var SYSPROP_PANEL_SKIP_MS = 10 * 60 * 1000;
 var syspropPanelSkipUntil = 0;
 var oledProtVia = null;
+var gsrStressCountSupported = null;
+
+function hasGsrStressCount() {
+  return gsrStressCountSupported;
+}
 
 function clearCache() {
   cachedOled = null;
@@ -151,6 +156,7 @@ function oledProtControllable() {
 function readViaSysprop(cb) {
   if (!luna) return cb(null);
   luna(OLED_SYSPROP + '/getProperties', { keys: ['OledTPC', 'OledGSR'] }, function (r) {
+    gsrStressCountSupported = false;
     if (!r || r.returnValue !== true || typeof r.OledTPC === 'undefined') {
       oledProtVia = false;
       return cb(null);
@@ -169,11 +175,13 @@ function readOledProtections(cb) {
   if (!luna) return cb(null);
   luna(OLED_EPL + '/getGlobalStressReduction', {}, function (gsr) {
     if (!gsr || gsr.returnValue !== true) return readViaSysprop(cb);
+    var stressCount = (typeof gsr.stressCount === 'number') ? gsr.stressCount : null;
+    gsrStressCountSupported = stressCount !== null;
     luna(OLED_EPL + '/getTemporalPeakControl', {}, function (tpc) {
       oledProtVia = 'epl';
       cb({
         gsr: gsr.enable === true,
-        gsrStressCount: (typeof gsr.stressCount === 'number') ? gsr.stressCount : null,
+        gsrStressCount: stressCount,
         tpc: (tpc && tpc.returnValue === true) ? tpc.enable === true : null
       });
     });
@@ -420,7 +428,11 @@ function readPanelControllerInfo(cb) {
 
 function init(opts) {
   opts = opts || {};
-  if (opts.luna) luna = opts.luna;
+  if (opts.luna) {
+    luna = opts.luna;
+    oledProtVia = null;
+    gsrStressCountSupported = null;
+  }
   if (opts.config) config = opts.config;
 }
 
@@ -428,6 +440,7 @@ module.exports = {
   init: init,
   detectOled: detectOled,
   getIsOled: getIsOled,
+  hasGsrStressCount: hasGsrStressCount,
   serviceMenuState: serviceMenuState,
   setServiceMenuLock: setServiceMenuLock,
   openServiceMenu: openServiceMenu,
