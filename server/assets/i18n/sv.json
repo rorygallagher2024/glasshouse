@@ -3902,5 +3902,6 @@
  "ha.verify.desc": {"text": "Stäng av för ett självsignerat certifikat eller en HTTPS-adress som nås via lokal IP.", "from": "Turn off for a self-signed certificate or an HTTPS address reached by LAN IP."},
  "srv.updateAsk.installing": {"from": "Updating Glasshouse to {version}. It restarts when done.", "text": "Glasshouse uppdateras till {version}. Den startar om när den är klar."},
  "srv.updateAsk.failed": {"from": "Glasshouse could not update: {error}", "text": "Glasshouse kunde inte uppdateras: {error}"},
- "srv.updateAsk.noReason": {"from": "no reason given", "text": "inget skäl angavs"}
+ "srv.updateAsk.noReason": {"from": "no reason given", "text": "inget skäl angavs"},
+ "srv.configUnreadable": {"from": "{file} could not be read, so it was left as it is. Correct it, or remove it to start again, then restart Glasshouse.", "text": "{file} gick inte att läsa och lämnades därför orörd. Rätta den, eller ta bort den för att börja om, och starta sedan om Glasshouse."}
 }

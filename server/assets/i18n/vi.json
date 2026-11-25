@@ -3902,5 +3902,6 @@
  "ha.verify.desc": {"text": "Tắt tùy chọn này đối với chứng chỉ tự ký hoặc địa chỉ HTTPS truy cập bằng IP mạng nội bộ.", "from": "Turn off for a self-signed certificate or an HTTPS address reached by LAN IP."},
  "srv.updateAsk.installing": {"from": "Updating Glasshouse to {version}. It restarts when done.", "text": "Đang cập nhật Glasshouse lên {version}. Glasshouse sẽ khởi động lại khi xong."},
  "srv.updateAsk.failed": {"from": "Glasshouse could not update: {error}", "text": "Không thể cập nhật Glasshouse: {error}"},
- "srv.updateAsk.noReason": {"from": "no reason given", "text": "không có lý do"}
+ "srv.updateAsk.noReason": {"from": "no reason given", "text": "không có lý do"},
+ "srv.configUnreadable": {"from": "{file} could not be read, so it was left as it is. Correct it, or remove it to start again, then restart Glasshouse.", "text": "Không đọc được {file} nên tệp được giữ nguyên. Hãy sửa tệp, hoặc xoá tệp để bắt đầu lại, rồi khởi động lại Glasshouse."}
 }

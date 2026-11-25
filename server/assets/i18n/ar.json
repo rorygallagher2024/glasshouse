@@ -3886,5 +3886,6 @@
  "ha.verify.desc": {"text": "أوقف هذا الخيار لشهادة موقعة ذاتياً أو عنوان HTTPS يُوصل إليه عبر عنوان IP محلي.", "from": "Turn off for a self-signed certificate or an HTTPS address reached by LAN IP."},
  "srv.updateAsk.installing": {"from": "Updating Glasshouse to {version}. It restarts when done.", "text": "جارٍ تحديث Glasshouse إلى {version}. سيُعاد تشغيله عند الانتهاء."},
  "srv.updateAsk.failed": {"from": "Glasshouse could not update: {error}", "text": "تعذّر تحديث Glasshouse: {error}"},
- "srv.updateAsk.noReason": {"from": "no reason given", "text": "لم يُذكر سبب"}
+ "srv.updateAsk.noReason": {"from": "no reason given", "text": "لم يُذكر سبب"},
+ "srv.configUnreadable": {"from": "{file} could not be read, so it was left as it is. Correct it, or remove it to start again, then restart Glasshouse.", "text": "تعذّرت قراءة {file}، لذلك تُرك كما هو. صحّحه، أو احذفه للبدء من جديد، ثم أعد تشغيل Glasshouse."}
 }

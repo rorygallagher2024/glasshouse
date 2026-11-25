@@ -3886,5 +3886,6 @@
  "ha.verify.desc": {"text": "Desactívalo para un certificado autofirmado o una dirección HTTPS a la que se accede por IP local.", "from": "Turn off for a self-signed certificate or an HTTPS address reached by LAN IP."},
  "srv.updateAsk.installing": {"from": "Updating Glasshouse to {version}. It restarts when done.", "text": "Actualizando Glasshouse a {version}. Se reiniciará al terminar."},
  "srv.updateAsk.failed": {"from": "Glasshouse could not update: {error}", "text": "No se pudo actualizar Glasshouse: {error}"},
- "srv.updateAsk.noReason": {"from": "no reason given", "text": "sin motivo indicado"}
+ "srv.updateAsk.noReason": {"from": "no reason given", "text": "sin motivo indicado"},
+ "srv.configUnreadable": {"from": "{file} could not be read, so it was left as it is. Correct it, or remove it to start again, then restart Glasshouse.", "text": "No se pudo leer {file}, así que se dejó como estaba. Corrígelo, o elimínalo para empezar de nuevo, y reinicia Glasshouse."}
 }
