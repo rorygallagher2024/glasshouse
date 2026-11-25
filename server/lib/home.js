@@ -230,6 +230,7 @@ var lifeSub = null;
  * started. A preload sends "preload" and "background", never "launch".
  */
 var lifeFront = '';
+var overlays = {};          // apps sam put in front as overlay windows
 var startingApps = {};
 var STARTING_MS = 5000;
 var SAVER_APP = 'com.webos.app.screensaver';
@@ -4162,6 +4163,7 @@ function init(opts) {
   if (lifeSub) lifeSub.stop();
   lifeSub = null;
   lifeFront = '';
+  overlays = {};
   startingApps = {};
   switchingOffAt = 0;
   if (opts.Subscription && isStandalone() && lgHomeOpensOnClose()) {
@@ -4186,8 +4188,11 @@ function appLifeEvent(r) {
   var ev = r.event;
   if (ev === 'launch' || ev === 'splash') startingApps[id] = nowMs();
   else if (ev === 'foreground' || ev === 'background' || ev === 'close' || ev === 'stop') delete startingApps[id];
-  if (ev === 'foreground') lifeFront = id;
-  if (ev !== 'close' || id !== (lifeFront || foreground)) return;
+  // An overlay (a volume popup, say) is drawn over the app in front and
+  // closes back to it, so it never becomes the app in front.
+  if (ev === 'foreground' && r.windowType === '_WEBOS_WINDOW_TYPE_OVERLAY') overlays[id] = true;
+  else if (ev === 'foreground') { lifeFront = id; delete overlays[id]; }
+  if (ev !== 'close' || overlays[id] || id !== (lifeFront || foreground)) return;
   if (id === HOME_APP || isLgHome(id) || id === SAVER_APP) return;
   if (r.reason === 'powerOff' || switchingOff() || powerState === 'Screen Saver') return;
   if (escaped || !powerActive || otherStarting() || !readConfig().enabled) return;
