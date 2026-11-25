@@ -1292,5 +1292,18 @@
  "srv.updateAsk.installing": {"from": "Updating Glasshouse to {version}. It restarts when done.", "text": "Glasshouse wird auf {version} aktualisiert. Danach startet es neu."},
  "srv.updateAsk.failed": {"from": "Glasshouse could not update: {error}", "text": "Glasshouse konnte nicht aktualisiert werden: {error}"},
  "srv.updateAsk.noReason": {"from": "no reason given", "text": "kein Grund angegeben"},
- "srv.configUnreadable": {"from": "{file} could not be read, so it was left as it is. Correct it, or remove it to start again, then restart Glasshouse.", "text": "{file} konnte nicht gelesen werden und wurde daher nicht verändert. Korrigiere die Datei oder entferne sie, um neu zu beginnen, und starte Glasshouse dann neu."}
+ "srv.configUnreadable": {"from": "{file} could not be read, so it was left as it is. Correct it, or remove it to start again, then restart Glasshouse.", "text": "{file} konnte nicht gelesen werden und wurde daher nicht verändert. Korrigiere die Datei oder entferne sie, um neu zu beginnen, und starte Glasshouse dann neu."},
+ "apps.remote": {"from": "Your remote", "text": "Deine Fernbedienung"},
+ "apps.remote.all": {"from": "All buttons", "text": "Alle Tasten"},
+ "apps.remote.auto": {"from": "Automatic", "text": "Automatisch"},
+ "apps.remote.only": {"from": "Display only buttons for your remote", "text": "Nur Tasten deiner Fernbedienung anzeigen"},
+ "apps.remote.desc": {"from": "Folds buttons your remote does not have into Buttons on other remotes. Keys you have changed always stay visible.", "text": "Klappt Tasten, die deine Fernbedienung nicht hat, unter „Tasten auf anderen Fernbedienungen“ ein. Geänderte Tasten bleiben immer sichtbar."},
+ "apps.remote.detected": {"from": "Detected: {name}", "text": "Erkannt: {name}"},
+ "apps.remote.detectedUnknown": {"from": "{name} (not in the list of remotes)", "text": "{name} (nicht in der Liste der Fernbedienungen)"},
+ "apps.remote.noneDetected": {"from": "No remote detected", "text": "Keine Fernbedienung erkannt"},
+ "apps.remote.whyNone": {"from": "No remote is detected, so every button is shown.", "text": "Es wurde keine Fernbedienung erkannt, daher werden alle Tasten angezeigt."},
+ "apps.remote.whyUnfinished": {"from": "This remote’s button list is not finished, so every button is shown.", "text": "Die Tastenliste dieser Fernbedienung ist noch nicht vollständig, daher werden alle Tasten angezeigt."},
+ "apps.remote.whyUnknown": {"from": "A remote that is not in the list of remotes is in use, so every button is shown.", "text": "Es wird eine Fernbedienung verwendet, die nicht in der Liste steht, daher werden alle Tasten angezeigt."},
+ "apps.remoteKeys.otherRemotes": {"from": "Buttons on other remotes ({n})", "text": "Tasten auf anderen Fernbedienungen ({n})"},
+ "srv.remoteKeys.badRemotes": {"from": "Choose whether to show every button", "text": "Wähle aus, ob alle Tasten angezeigt werden sollen"}
 }

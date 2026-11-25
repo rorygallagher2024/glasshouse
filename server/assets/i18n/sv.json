@@ -2,15 +2,15 @@
  "apps.remote": {"from": "Your remote", "text": "Din fjärrkontroll"},
  "apps.remote.all": {"from": "All buttons", "text": "Alla knappar"},
  "apps.remote.auto": {"from": "Automatic", "text": "Automatiskt"},
- "apps.remote.desc": {"from": "Choose the remote you use. The Remote keys below then show only the buttons it has, and the rest are folded away until you open them.", "text": "Välj fjärrkontrollen du använder. Fjärrkontrollens knappar nedan visar då bara de knappar den har, och resten fälls ihop tills du öppnar dem."},
- "apps.remote.detected": {"from": "Detected now: {name}", "text": "Hittad nu: {name}"},
+ "apps.remote.desc": {"from": "Folds buttons your remote does not have into Buttons on other remotes. Keys you have changed always stay visible.", "text": "Fäller ihop knappar som din fjärrkontroll inte har under «Knappar på andra fjärrkontroller». Knappar du har ändrat visas alltid."},
+ "apps.remote.detected": {"from": "Detected: {name}", "text": "Hittad: {name}"},
  "apps.remote.detectedUnknown": {"from": "{name} (not in the list of remotes)", "text": "{name} (finns inte i listan över fjärrkontroller)"},
  "apps.remote.noneDetected": {"from": "No remote detected", "text": "Ingen fjärrkontroll hittades"},
  "apps.remote.whyNone": {"from": "No remote is detected, so every button is shown.", "text": "Ingen fjärrkontroll hittas, så alla knappar visas."},
  "apps.remote.whyUnfinished": {"from": "This remote’s button list is not finished, so every button is shown.", "text": "Knapplistan för den här fjärrkontrollen är inte klar, så alla knappar visas."},
  "apps.remote.whyUnknown": {"from": "A remote that is not in the list of remotes is in use, so every button is shown.", "text": "En fjärrkontroll som inte finns i listan används, så alla knappar visas."},
  "apps.remoteKeys.otherRemotes": {"from": "Buttons on other remotes ({n})", "text": "Knappar på andra fjärrkontroller ({n})"},
- "srv.remoteKeys.badRemotes": {"from": "Choose Automatic, All buttons, or at least one remote from the list", "text": "Välj Automatiskt, Alla knappar eller minst en fjärrkontroll från listan"},
+ "srv.remoteKeys.badRemotes": {"from": "Choose whether to show every button", "text": "Välj om alla knappar ska visas"},
  "adv.alwaysReady": {"from": "Always Ready", "text": "Always Ready"},
  "adv.alwaysReady.desc": {"from": "Switched off with the remote, the TV shows LG's Always Ready screen, such as a clock or artwork, instead of going dark, from the next time it is switched off. Uses about 30 W on an LG C2, close to what it uses when on. The first time, the TV asks for OK on the remote. Home turns the TV back on from the clock; the power button switches it fully off.", "text": "Stängs TV:n av med fjärrkontrollen visar den LG:s Always Ready-skärm, till exempel en klocka eller ett konstverk, i stället för att bli svart, från nästa gång den stängs av. Drar ungefär 30 W på en LG C2, nästan lika mycket som när den är på. Första gången ber TV:n om OK på fjärrkontrollen. Hem startar TV:n igen från klockan; strömknappen stänger av den helt."},
  "adv.ambient": {"from": "Ambient Light", "text": "Omgivningsljus"},
@@ -3915,5 +3915,6 @@
  "srv.updateAsk.installing": {"from": "Updating Glasshouse to {version}. It restarts when done.", "text": "Glasshouse uppdateras till {version}. Den startar om när den är klar."},
  "srv.updateAsk.failed": {"from": "Glasshouse could not update: {error}", "text": "Glasshouse kunde inte uppdateras: {error}"},
  "srv.updateAsk.noReason": {"from": "no reason given", "text": "inget skäl angavs"},
- "srv.configUnreadable": {"from": "{file} could not be read, so it was left as it is. Correct it, or remove it to start again, then restart Glasshouse.", "text": "{file} gick inte att läsa och lämnades därför orörd. Rätta den, eller ta bort den för att börja om, och starta sedan om Glasshouse."}
+ "srv.configUnreadable": {"from": "{file} could not be read, so it was left as it is. Correct it, or remove it to start again, then restart Glasshouse.", "text": "{file} gick inte att läsa och lämnades därför orörd. Rätta den, eller ta bort den för att börja om, och starta sedan om Glasshouse."},
+ "apps.remote.only": {"from": "Display only buttons for your remote", "text": "Visa bara knappar för din fjärrkontroll"}
 }

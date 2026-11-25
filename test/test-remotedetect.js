@@ -179,6 +179,15 @@ steps([
       next();
     }, true);
   },
+  // Classic syslog timestamps keep their actual time instead of falling back to now
+  function (next) {
+    var ref = Date.parse('2026-01-10T12:00:00.000Z');
+    var parsed = detect.pressesIn('Nov  5 10:15:30 tv user.info lginput2 NL_BUTTON_CLICK {"remote_type":"LGE MR20GA","button_type":"KEY_HOME"}\n', ref);
+    var expected = new Date(2025, 10, 5, 10, 15, 30).getTime();
+    assert.strictEqual(parsed['LGE MR20GA'], expected);
+    console.log('  ✓ classic syslog timestamps keep their date rather than falling back to now');
+    next();
+  },
   // Automatic selection: paired now or seen in the last 30 days
   function (next) {
     var day = 24 * 3600 * 1000;

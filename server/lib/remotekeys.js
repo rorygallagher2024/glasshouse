@@ -574,9 +574,9 @@ function readRemoteSelection() {
   try {
     var j = JSON.parse(fs.readFileSync(mapFile(), 'utf8'));
     var r = j && j.remotes;
-    if (r && r.mode === 'all') return { mode: 'all', ids: [] };
+    if (r && r.mode === 'all') return { mode: 'all' };
   } catch (e) { /* none kept */ }
-  return { mode: 'auto', ids: [] };
+  return { mode: 'auto' };
 }
 
 // step, style and selection are kept as they were in the file unless one is given ('' for the default step or style).
@@ -2337,9 +2337,9 @@ function setBrightnessBarStyle(value, cb) {
 function setRemoteSelection(mode, cb) {
   var selection;
   if (mode === 'all') {
-    selection = { mode: 'all', ids: [] };
+    selection = { mode: 'all' };
   } else if (mode === 'auto') {
-    selection = { mode: 'auto', ids: [] };
+    selection = { mode: 'auto' };
   } else {
     return cb({ ok: false, error: msg('srv.remoteKeys.badRemotes', 'Choose whether to show every button') });
   }

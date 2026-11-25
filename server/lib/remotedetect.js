@@ -26,7 +26,8 @@
 var fs = require('fs');
 var path = require('path');
 var remotes = require('./remotes');
-var allocBuffer = require('./util').allocBuffer;
+var util = require('./util');
+var allocBuffer = util.allocBuffer;
 
 var MESSAGES_LOG = '/var/log/messages';
 var INPUT_DEVICES = '/proc/bus/input/devices';
@@ -85,10 +86,8 @@ function writeSeen(seen) {
   var names = Object.keys(seen).sort(function (a, b) { return seen[b] - seen[a]; }).slice(0, SEEN_MAX);
   var out = {};
   names.forEach(function (n) { out[n] = seen[n]; });
-  var tmp = seenFile() + '.tmp';
   try {
-    fs.writeFileSync(tmp, JSON.stringify({ remotes: out }, null, 2) + '\n', 'utf8');
-    fs.renameSync(tmp, seenFile());
+    util.writeJsonAtomic(seenFile(), { remotes: out });
   } catch (e) {
     console.error('remotedetect: could not keep the remotes seen: ' + e.message);
   }
@@ -118,14 +117,33 @@ function tailFile(file, bytes, cb) {
   });
 }
 
+var SYSLOG_DATE = /^(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+(\d{1,2})\s+(\d{2}):(\d{2}):(\d{2})\b/;
+var SYSLOG_MONTHS = { Jan: 0, Feb: 1, Mar: 2, Apr: 3, May: 4, Jun: 5, Jul: 6, Aug: 7, Sep: 8, Oct: 9, Nov: 10, Dec: 11 };
+
+function parseLogTime(line, now) {
+  var when = Date.parse(line.split(/\s+/)[0]);
+  if (!isNaN(when)) return when;
+  var sm = SYSLOG_DATE.exec(line);
+  if (sm) {
+    var d = new Date(now);
+    var year = d.getFullYear();
+    var mon = SYSLOG_MONTHS[sm[1]];
+    var t = new Date(year, mon, parseInt(sm[2], 10), parseInt(sm[3], 10), parseInt(sm[4], 10), parseInt(sm[5], 10)).getTime();
+    if (t - now > 24 * 3600 * 1000) {
+      t = new Date(year - 1, mon, parseInt(sm[2], 10), parseInt(sm[3], 10), parseInt(sm[4], 10), parseInt(sm[5], 10)).getTime();
+    }
+    return t;
+  }
+  return now;
+}
+
 // { remote_type: time of its last press } from log text.
 function pressesIn(text, now) {
   var out = {};
   text.split('\n').forEach(function (line) {
     var m = BUTTON_CLICK.exec(line);
     if (!m) return;
-    var when = Date.parse(line.split(/\s+/)[0]);
-    if (isNaN(when)) when = now;
+    var when = parseLogTime(line, now);
     if (!(m[1] in out) || when > out[m[1]]) out[m[1]] = when;
   });
   return out;

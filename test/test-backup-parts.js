@@ -182,7 +182,7 @@ step('a backup holds LG\'s own switches, privacy, apps, keys and the screen save
       remoteKeys: { netflix: 'youtube.leanback.v4', amazon: null, red: '' },
       brightnessStep: 15,
       brightnessBarStyle: 'horizontal',
-      remoteSelection: { mode: 'auto', ids: [] },
+      remoteSelection: { mode: 'auto' },
       quickAccess: { 1: 'netflix', 2: '' },
       screensaver: { mode: 'aquarium', level: 'bright' },
       screensaverPowerOff: 120

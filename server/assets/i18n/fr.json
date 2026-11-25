@@ -253,8 +253,8 @@
  "apps.remote": {"from": "Your remote", "text": "Votre télécommande"},
  "apps.remote.all": {"from": "All buttons", "text": "Toutes les touches"},
  "apps.remote.auto": {"from": "Automatic", "text": "Automatique"},
- "apps.remote.desc": {"from": "Choose the remote you use. The Remote keys below then show only the buttons it has, and the rest are folded away until you open them.", "text": "Choisissez la télécommande que vous utilisez. Les touches ci-dessous n’affichent alors que les siennes ; les autres sont repliées jusqu’à ce que vous les ouvriez."},
- "apps.remote.detected": {"from": "Detected now: {name}", "text": "Détectée maintenant : {name}"},
+ "apps.remote.desc": {"from": "Folds buttons your remote does not have into Buttons on other remotes. Keys you have changed always stay visible.", "text": "Replie les touches absentes de votre télécommande dans « Boutons d’autres télécommandes ». Les touches modifiées restent toujours visibles."},
+ "apps.remote.detected": {"from": "Detected: {name}", "text": "Détectée : {name}"},
  "apps.remote.detectedUnknown": {"from": "{name} (not in the list of remotes)", "text": "{name} (absente de la liste des télécommandes)"},
  "apps.remote.noneDetected": {"from": "No remote detected", "text": "Aucune télécommande détectée"},
  "apps.remote.whyNone": {"from": "No remote is detected, so every button is shown.", "text": "Aucune télécommande n’est détectée, donc toutes les touches sont affichées."},
@@ -2377,7 +2377,7 @@
  "srv.remoteKeys.badBarStyle": {"text": "Le style de la barre de niveau doit être lg, horizontal, vertical ou none", "from": "The level bar style must be lg, horizontal, vertical or none"},
  "srv.remoteKeys.brightnessDown": {"text": "Diminuer la luminosité", "from": "Brightness down"},
  "srv.remoteKeys.brightnessUp": {"text": "Augmenter la luminosité", "from": "Brightness up"},
- "srv.remoteKeys.badRemotes": {"from": "Choose Automatic, All buttons, or at least one remote from the list", "text": "Choisissez Automatique, Toutes les touches ou au moins une télécommande de la liste"},
+ "srv.remoteKeys.badRemotes": {"from": "Choose whether to show every button", "text": "Choisissez d’afficher ou non toutes les touches"},
  "srv.remoteKeys.chainFailed": {"from": "The TV did not take the change", "text": "La TV n'a pas accepté le changement"},
  "srv.remoteKeys.fastForward": {"from": "Fast forward", "text": "Avance rapide"},
  "srv.remoteKeys.home": {"from": "Home", "text": "Accueil"},
@@ -3899,5 +3899,6 @@
  "srv.updateAsk.installing": {"from": "Updating Glasshouse to {version}. It restarts when done.", "text": "Mise à jour de Glasshouse vers {version}. Il redémarre une fois terminé."},
  "srv.updateAsk.failed": {"from": "Glasshouse could not update: {error}", "text": "Glasshouse n'a pas pu être mis à jour : {error}"},
  "srv.updateAsk.noReason": {"from": "no reason given", "text": "aucune raison donnée"},
- "srv.configUnreadable": {"from": "{file} could not be read, so it was left as it is. Correct it, or remove it to start again, then restart Glasshouse.", "text": "{file} n'a pas pu être lu, il a donc été laissé tel quel. Corrigez-le, ou supprimez-le pour repartir de zéro, puis redémarrez Glasshouse."}
+ "srv.configUnreadable": {"from": "{file} could not be read, so it was left as it is. Correct it, or remove it to start again, then restart Glasshouse.", "text": "{file} n'a pas pu être lu, il a donc été laissé tel quel. Corrigez-le, ou supprimez-le pour repartir de zéro, puis redémarrez Glasshouse."},
+ "apps.remote.only": {"from": "Display only buttons for your remote", "text": "Afficher uniquement les touches de votre télécommande"}
 }

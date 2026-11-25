@@ -1406,10 +1406,19 @@
 <section class="priv panel" id="remotepane" role="tabpanel" hidden>
   <div class="lbl" data-t="tab.remote">Remote</div>
 
-  <details class="pv-d" id="disc-remote" open hidden>
+  <details class="pv-d" id="disc-remote" hidden>
     <summary><span data-t="apps.remote">Your remote</span> <span class="cur" id="apps-remote-summary"></span></summary>
-    <div class="pv-sub" data-t="apps.remote.desc">Choose the remote you use. The Remote keys below then show only the buttons it has, and the rest are folded away until you open them.</div>
-    <div id="apps-remote-body"></div>
+    <div class="prot-table">
+      <div class="prot-row">
+        <div class="prot-main">
+          <div class="prot-title" data-t="apps.remote.only">Display only buttons for your remote</div>
+          <div class="prot-desc" data-t="apps.remote.desc">Folds buttons your remote does not have into Buttons on other remotes. Keys you have changed always stay visible.</div>
+          <div class="prot-desc" id="apps-remote-detected"></div>
+        </div>
+        <div class="prot-status"><button type="button" class="pill idle" id="btn_remote_only" onclick="toggleRemoteOnly()">&mdash;</button></div>
+      </div>
+    </div>
+    <div class="pv-note" id="apps-remote-why" hidden></div>
   </details>
 
   <details class="pv-d" id="disc-quickaccess" open hidden>
