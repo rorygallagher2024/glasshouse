@@ -56,4 +56,3 @@ The catalogue is [`server/lib/remotes.json`](https://github.com/rorygallagher202
 * `labels` (optional): the name printed on the remote for a key, where it differs from the Remote tab's, such as `{"voice": "AI"}`. The Remote tab then shows the key under that name while the remote is selected.
 * `complete`: `true` only when the list is every button the remote has. Only a complete list lets the Remote tab treat a key as not on that remote.
 * `sources`: which TV and webOS version each fact came from.
-* `image`: the file name of a small picture under `server/assets/remotes/`, about 160 px wide, a PNG with a transparent background, under 20 KB, original artwork or a picture you may share. A remote without one shows the generic outline. The file also goes in `FILES` in `server/deploy.sh`.
