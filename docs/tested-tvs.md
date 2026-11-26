@@ -1,12 +1,12 @@
 # Tested TVs
 
-Confirmed on **94 TVs across 60 series** running **webOS 2.2 through 11** (LG's webOS 26). Any other rooted webOS model should work as well.
+Confirmed on **95 TVs across 61 series** running **webOS 2.2 through 11** (LG's webOS 26). Any other rooted webOS model should work as well.
 
 * **Series & sizes:** Screen sizes and regional variants of a series run the same software, so the summary table groups them into one row per series. Years are LG's model years; many TVs have since been updated to a later webOS.
 * **Version numbers:** Versions here are what the TV reports itself, as the dashboard shows them; see [webOS version numbers](#webos-version-numbers) below for LG's marketing names (webOS 22–26).
 * **Older firmware:** webOS 2 and 3 have fewer of LG's services, so readings and controls that rely on them are automatically omitted there.
 
-=== "By series (60)"
+=== "By series (61)"
 
     | Series        | Year | Panel | webOS seen        | Reports |
     | :------------ | :--- | :---- | :---------------- | :------ |
@@ -67,11 +67,12 @@ Confirmed on **94 TVs across 60 series** running **webOS 2.2 through 11** (LG's 
     | UA73          | 2025 | LCD   | 10.3.1            | 1       |
     | UA75          | 2025 | LCD   | 10.3              | 2       |
     | C6            | 2026 | OLED  | 11.2              | 1       |
+    | G6            | 2026 | OLED  | 11.1              | 1       |
     | MRGB87        | 2026 | LCD   | 11.2              | 1       |
     | NU80          | 2026 | LCD   | 11                | 1       |
     | QNED84        | 2026 | LCD   | 11.0              | 1       |
 
-=== "All reports (94)"
+=== "All reports (95)"
 
     | Model       | webOS        | Firmware | Panel | Notes                                                          |
     | :---------- | :----------- | :------- | :---- | :------------------------------------------------------------- |
@@ -163,6 +164,7 @@ Confirmed on **94 TVs across 60 series** running **webOS 2.2 through 11** (LG's 
     | 43UT73006LA | —            | —        | LCD   | Reported working                                               |
     | 43NU800BPSC | 11.0.0       | 43.02.50 | LCD   | Rooted with slopbro; privacy controls confirmed                |
     | 85QNED84BUA | 11.0.1       | 43.11.76 | LCD   | Dashboard, telemetry disabling and privacy controls confirmed |
+    | OLED65G6WUA | 11.1.0       | 43.10.69 | OLED  | Rooted with slopbro; dashboard, telemetry, privacy, ad blocker, background services, Glasshouse Home, Clock screen saver, No Signal screen, remote keys, Picture/Audio, NTP, in-app update and MQTT bridge confirmed ([#1752](https://github.com/rorygallagher2024/glasshouse/issues/1752)) |
     | OLED77C5PUA | 11.2.0       | 43.21.31 | OLED  | Installed over SSH; dashboard, telemetry, privacy and log upload switches, ad blocker, preload (from the preload manager) and custom screen savers confirmed |
     | OLED65G36LA | 11.2.0       | 43.21.71 | OLED  | Rooted with DualBro; privacy, app installs and custom screen savers confirmed |
     | OLED83G5WUA | 11.2.0       | 43.21.71 | OLED  | Rooted with DualBro; runs with internet access blocked         |
