@@ -67,7 +67,7 @@ var LG_PHOTO = [
 fs.writeFileSync(file, LG);
 fs.writeFileSync(mountinfo, '');
 
-var execs = [], launched = [], foreground = 'com.webos.app.hdmi1', sending = true;
+var execs = [], launched = [], foreground = 'com.webos.app.hdmi1', sending = true, behind = [];
 function exec(cmd, args, opts, cb) {
   execs.push([cmd].concat(args).join(' '));
   if (cmd === '/bin/mount') fs.writeFileSync(mountinfo, '1 2 179:59 ' + state + '/nosignal/Screensaver.qml ' + args[2] + ' rw - ext4 x rw\n');
@@ -78,11 +78,14 @@ function luna(uri, params, cb) {
   if (uri === 'com.webos.applicationManager/launch') launched.push(params.id);
   var reply = uri === 'com.webos.service.eim/getAllInputStatus'
     ? { returnValue: true, devices: [{ appId: 'com.webos.app.hdmi1', activate: sending }, { appId: 'com.webos.app.hdmi2', activate: true }] }
-    : { returnValue: true, appId: foreground };
+    : uri === 'com.webos.applicationManager/running'
+      // SAM's list: the app in front, the input app, and any left open behind it.
+      ? { returnValue: true, running: [{ id: foreground }, { id: 'com.webos.app.inputcommon' }, { id: 'airplay' }].concat(behind.map(function (id) { return { id: id }; })) }
+      : { returnValue: true, appId: foreground };
   setTimeout(function () { cb(reply); }, 0);
 }
 nosignal.init({ luna: luna, exec: exec, stateDir: state, appQml: qml, mountinfo: mountinfo, pendingFile: path.join(root, 'pending'), retryMs: 20,
-  config: { port: 8080, token: 'a b' } });
+  config: { port: 8080, token: 'a b' }, inputNames: { hdmi2: 'Apple TV' } });
 
 // The patch.
 var plain = nosignal.patch(LG, 'plain');
@@ -115,7 +118,7 @@ assert.ok(nosignal.patch(LG.replace('    RandomMoveItem {\n', '    Item {\n'), '
 });
 var patchedOpened = nosignal.patch(LG_PHOTO.replace('!noSignalPhotoModel.opend', '!noSignalPhotoModel.opened'), 'plain');
 assert.ok(patchedOpened.indexOf('currentKey === "noSignal" || (noSignalPhotoModel && !noSignalPhotoModel.enabled && !noSignalPhotoModel.opened)') !== -1, 'also matches opened spelling');
-assert.deepEqual(nosignal.status(), { ok: true, available: true, art: true, custom: true, customScreens: [], on: false, mode: 'lg', applied: false, restartPending: false });
+assert.deepEqual(nosignal.status(), { ok: true, available: true, art: true, custom: true, customScreens: [], on: false, mode: 'lg', applied: false, restartPending: false, heldBy: '' });
 console.log('  ✓ LG\'s file is patched only where the expected lines are there once');
 
 var steps = [
@@ -138,6 +141,30 @@ var steps = [
           next();
         }, 'the restart once Home is in front', 2000);
       }, 80);
+    });
+  },
+  function (next) {
+    // An input open behind an app: on a C9 (webOS 4.10) it never came back
+    // after the input app restarted (#1755), so the restart waits for it.
+    execs = []; foreground = 'com.webos.app.browser'; behind = ['com.webos.app.hdmi2'];
+    nosignal.set('art', function () {
+      setTimeout(function () {
+        assert.strictEqual(execs.length, 0, 'no restart while an input is open behind the browser');
+        assert.strictEqual(nosignal.status().restartPending, true);
+        assert.strictEqual(nosignal.status().heldBy, 'Apple TV', 'the Inputs tab names it');
+        behind = [];
+        waitFor(function () { return execs.length === 1; }, function () {
+          assert.deepEqual(execs, ['/usr/bin/killall com.webos.app.inputcommon']);
+          assert.strictEqual(nosignal.status().heldBy, '');
+          foreground = 'com.webos.app.home';
+          nosignal.set('plain', function () {
+            waitFor(function () { return execs.length === 2; }, function () {
+              console.log('  ✓ an input open behind an app holds the restart back until it is closed');
+              next();
+            }, 'the restart back to plain', 2000);
+          });
+        }, 'the restart once the input is closed', 2000);
+      }, 100);
     });
   },
   function (next) {
