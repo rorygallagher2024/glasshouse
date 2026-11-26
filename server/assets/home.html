@@ -2738,6 +2738,7 @@ html[lang="vi"] #srcTitle,html[lang="vi"] #plMode,html[lang="vi"] #pvMode,html[l
           if (preview && tilePreview.opened === preview.key) tilePreview.opened = null;
           followPreview();
           toast(t('home.openFailed', 'That did not open'), r && r.error);
+          tileGoneMaybe();
         }
       });
     });
@@ -4772,11 +4773,20 @@ html[lang="vi"] #srcTitle,html[lang="vi"] #plMode,html[lang="vi"] #pvMode,html[l
     grid.style.webkitTransform = grid.style.transform = 'translateY(' + (-y) + 'px)';
   }
 
+  /*
+   * A tile that would not open may be for an app removed while Home was
+   * away: a return draws the lists it knew, and the server's fresh read of
+   * them reaches the view only at the next heartbeat, up to 5 s on. Ask now.
+   */
+  function tileGoneMaybe() {
+    if (!state.arranging) load(null, false, null, cataloguesSent);
+  }
+
   function openFromFolder(app) {
     fadeThenOpen(app.overlay === true, function (done) {
       postJson('/api/home/open', { kind: 'app', id: app.id }, function (r) {
         done(!!(r && r.ok));
-        if (!r || !r.ok) return toast(t('home.openFailed', 'That did not open'), r && r.error);
+        if (!r || !r.ok) { tileGoneMaybe(); return toast(t('home.openFailed', 'That did not open'), r && r.error); }
         closeFolder();
       });
     });
