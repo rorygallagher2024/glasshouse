@@ -1000,6 +1000,11 @@ html[lang="vi"] #srcTitle,html[lang="vi"] #plMode,html[lang="vi"] #pvMode,html[l
   // Opened by the boot hook, the page can be up before the server, which then
   // takes about a minute (a B8, webOS 4.4.3): the logo stays until then.
   var pageOpenedAt = Date.now(), STARTING_MS = 60000;
+  // Cold-launch marks, kept whether or not the trace is on, and sent once
+  // with a beat after the first rows are drawn (docs/development/testing.md).
+  var bootMarks = { opened: pageOpenedAt, navStart: (window.performance && performance.timing && performance.timing.navigationStart) || 0 };
+  var bootSent = false;
+  function bootMark(name, value) { if (!bootMarks.hasOwnProperty(name)) bootMarks[name] = value === undefined ? Date.now() : value; }
   var wallSlots = null, wallRevision = '', wallChoice = '', wallPictures = [];
   var wallVideoSources = [], wallVideoItems = [], wallVideoShuffle = false, wallVideoStyle = null, wallVideoRevision = '', wallVideoKey = '', wallVideoIndex = -1;
   var wallVideoNeedsRestart = false;
@@ -1061,7 +1066,9 @@ html[lang="vi"] #srcTitle,html[lang="vi"] #plMode,html[lang="vi"] #pvMode,html[l
     // detail reads before opening the app, and a DRM check two playlist reads.
     x.timeout = url === '/api/home/search' ? 12000 : url === '/api/home/search/open' || url === '/api/iptv/check' ? 20000 : 8000;
     if (body !== null) x.setRequestHeader('Content-Type', 'application/json');
+    var sentAt = trace ? performance.now() : 0, traced = trace;
     x.onload = function () {
+      if (traced && traced === trace) noteRequest(url, performance.now() - sentAt);
       var j = null;
       try { j = JSON.parse(x.responseText); } catch (e) {}
       // A refusal's body too, for the reason (search: { blocked }).
@@ -1301,6 +1308,7 @@ html[lang="vi"] #srcTitle,html[lang="vi"] #plMode,html[lang="vi"] #pvMode,html[l
     // what was last on leaves the rows, and where they are scrolled, alone.
     var changed = html !== renderedRows;
     if (changed) {
+      if (trace) trace.rebuilds++;
       parkPreview();
       $('rows').innerHTML = html;
       renderedRows = html;
@@ -6873,7 +6881,9 @@ html[lang="vi"] #srcTitle,html[lang="vi"] #plMode,html[lang="vi"] #pvMode,html[l
   function load(cb, whileArranging, onNow) {
     if ((layoutBusy || state.arranging) && !whileArranging) return;
     var revision = layoutRevision;
+    bootMark('catalogueSent');
     getJson('/api/home/catalogue', function (r) {
+      bootMark('catalogueReply');
       if (!r || !r.ok) {
         if (!data) {
           if (Date.now() - pageOpenedAt > STARTING_MS) $('fault').className = 'show';
@@ -6913,7 +6923,15 @@ html[lang="vi"] #srcTitle,html[lang="vi"] #plMode,html[lang="vi"] #pvMode,html[l
       readWallpapers(r.wallpapers);
       renderPicture();
       updateWall();
-      if (!state.arranging) render();
+      if (!state.arranging) {
+        var renderAt = Date.now();
+        render();
+        if (firstLoad) {
+          bootMark('firstRender', renderAt);
+          bootMark('firstRenderMs', Date.now() - renderAt);
+          (window.requestAnimationFrame || window.webkitRequestAnimationFrame)(function () { bootMark('firstFrame'); });
+        }
+      }
       syncHaPolling(true);
       if (firstLoad) { beat(); fadeIn(); }
       if (!layout.hintSeen) {
@@ -6988,24 +7006,49 @@ html[lang="vi"] #srcTitle,html[lang="vi"] #plMode,html[lang="vi"] #pvMode,html[l
     };
   }
 
+  // Upper bounds, in ms, of the frame-gap histogram's buckets; the last is open.
+  var TRACE_BUCKETS = [17, 34, 50, 67, 100, 150, 250, 500];
+  function freshTrace(last) {
+    var hist = [];
+    for (var i = 0; i <= TRACE_BUCKETS.length; i++) hist.push(0);
+    return { frames: 0, over33: 0, over100: 0, worst: 0, last: last || 0, long: [], fn: {}, req: {}, rebuilds: 0, hist: hist };
+  }
+  function noteRequest(url, ms) {
+    var key = url.split('?')[0], s = trace.req[key] || (trace.req[key] = { n: 0, ms: 0, max: 0 });
+    s.n++; s.ms += ms;
+    if (ms > s.max) s.max = ms;
+  }
+
   function startTrace() {
-    trace = { frames: 0, over33: 0, over100: 0, worst: 0, last: 0, long: [], fn: {} };
+    trace = freshTrace();
     if (!traceWrapped) {
       traceWrapped = true;
+      // Times are inclusive: render contains applyFocus. Wrapped load and
+      // openRecents time only sending the request; req has the replies.
       render = timed('render', render); applyFocus = timed('applyFocus', applyFocus); move = timed('move', move);
       renderNow = timed('renderNow', renderNow); openRecents = timed('openRecents', openRecents);
       showRecents = timed('showRecents', showRecents); load = timed('load', load);
+      returned = timed('returned', returned); stageClass = timed('stageClass', stageClass);
+      closeRecents = timed('closeRecents', closeRecents); focusRecents = timed('focusRecents', focusRecents);
+      scrollTrack = timed('scrollTrack', scrollTrack); keepRowInView = timed('keepRowInView', keepRowInView);
+      followPreview = timed('followPreview', followPreview); inView = timed('inView', inView);
+      tileSpans = timed('tileSpans', tileSpans); columnUnder = timed('columnUnder', columnUnder);
+      renderRec = timed('renderRec', renderRec); placeRows = timed('placeRows', placeRows);
+      isDarkIcon = timed('isDarkIcon', isDarkIcon); judgeLogo = timed('judgeLogo', judgeLogo);
+      updateWall = timed('updateWall', updateWall);
     }
     var raf = window.requestAnimationFrame || window.webkitRequestAnimationFrame;
     var mine = trace;
     raf(function frameGap(now) {
       if (trace !== mine) return;
       if (mine.last) {
-        var gap = now - mine.last;
+        var gap = now - mine.last, b = 0;
         mine.frames++;
         if (gap > 33.4) mine.over33++;
         if (gap > 100) mine.over100++;
         if (gap > mine.worst) mine.worst = gap;
+        while (b < TRACE_BUCKETS.length && gap > TRACE_BUCKETS[b]) b++;
+        mine.hist[b]++;
       }
       mine.last = now;
       raf(frameGap);
@@ -7032,10 +7075,17 @@ html[lang="vi"] #srcTitle,html[lang="vi"] #plMode,html[lang="vi"] #pvMode,html[l
       var s = trace.fn[k];
       fn[k] = { n: s.n, avg: Math.round(s.ms / s.n * 10) / 10, max: Math.round(s.max) };
     });
-    var out = { frames: trace.frames, over33: trace.over33, over100: trace.over100, worst: Math.round(trace.worst), long: trace.long, fn: fn };
-    trace.frames = trace.over33 = trace.over100 = trace.worst = 0;
-    trace.long = [];
-    trace.fn = {};
+    var req = {};
+    Object.keys(trace.req).forEach(function (k) {
+      var s = trace.req[k];
+      req[k] = { n: s.n, avg: Math.round(s.ms / s.n), max: Math.round(s.max) };
+    });
+    var out = { frames: trace.frames, over33: trace.over33, over100: trace.over100, worst: Math.round(trace.worst), long: trace.long, fn: fn,
+      req: req, rebuilds: trace.rebuilds, hist: trace.hist };
+    var fresh = freshTrace(trace.last);
+    fresh.observer = trace.observer;
+    // The frame loop and the observer hold the trace object itself.
+    for (var key in fresh) if (fresh.hasOwnProperty(key)) trace[key] = fresh[key];
     return out;
   }
 
@@ -7051,7 +7101,9 @@ html[lang="vi"] #srcTitle,html[lang="vi"] #plMode,html[lang="vi"] #pvMode,html[l
     if (!data || !layout) return;
     // Whether the page has the keyboard: after a wake on webOS 11 it can be
     // in front and get no keys (#1122).
-    postJson('/api/home/beat', { focused: document.hasFocus(), visible: document.visibilityState || '', iptv: !!(player.open || guide.open), perf: takeTrace() }, function (r) {
+    var boot;
+    if (!bootSent && bootMarks.firstFrame) { boot = bootMarks; bootSent = true; }
+    postJson('/api/home/beat', { focused: document.hasFocus(), visible: document.visibilityState || '', iptv: !!(player.open || guide.open), perf: takeTrace(), boot: boot }, function (r) {
       if (r && r.ok) {
         beatFails = 0;
         // A custom launcher chosen in Glasshouse Home's place (lib/home-launcher).
@@ -7194,8 +7246,10 @@ html[lang="vi"] #srcTitle,html[lang="vi"] #plMode,html[lang="vi"] #pvMode,html[l
   document.addEventListener('webOSRelaunch', function () { guideLaunch(); returned(); });
   document.addEventListener('visibilitychange', function () {
     // Hidden behind an app, which may need the decoder the wallpaper holds.
-    if (document.hidden) { animStop(); darken(); unloadWallVideo(); syncHaPolling(); }
-    else { returned(); animRun(); syncHaPolling(true); }
+    // A frame gap across the time hidden is not a stall.
+    if (document.hidden) { if (trace) trace.last = 0; animStop(); darken(); unloadWallVideo(); syncHaPolling(); }
+    // Shown again: the first gap counts from here, so the work of the return is in it.
+    else { if (trace) trace.last = performance.now(); returned(); animRun(); syncHaPolling(true); }
   });
   window.addEventListener('pagehide', function () { if (player.open) closePlayer(); stopPreview(); });
 
@@ -7211,6 +7265,7 @@ html[lang="vi"] #srcTitle,html[lang="vi"] #plMode,html[lang="vi"] #pvMode,html[l
   load();
   refreshWeather();
   refreshInfo();
+  bootMark('scriptEnd');
   $('newsRun').addEventListener('webkitAnimationIteration', newsRunEnded);
   $('newsRun').addEventListener('animationiteration', newsRunEnded);
   setInterval(function () {

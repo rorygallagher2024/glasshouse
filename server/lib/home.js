@@ -285,6 +285,9 @@ var LIST_TTL_MS = 30000;
 var CHANNELS_TTL_MS = 600000;
 
 var lunaFn = null;
+/** @type {null | function(): {calls: Object<string, number>, subscriptions: Object<string, number>}} */
+var lunaStatsFn = null;
+var lunaStatsAtBeat = null;
 var liveState = null;
 /** @type {typeof import('./iptv')} */
 var iptvModule = null;
@@ -453,7 +456,7 @@ var channelReading = null;
 
 function configFile() { return path.join(stateDir, 'home.json'); }
 // While this file exists, the view measures its frames and sends them with
-// each beat, and they are logged (docs/development/testing.md, scripts/home-trace.sh).
+// each beat, and they are logged (docs/development/testing.md, scripts/tv.sh frames).
 function traceFile() { return path.join(stateDir, 'home-trace'); }
 
 function luna(uri, payload, cb) {
@@ -3490,9 +3493,29 @@ function checkWallVideoOutput() {
   });
 }
 
+// The luna-send children started since the last traced beat, by URI.
+function logLunaSinceBeat() {
+  if (!lunaStatsFn) return;
+  var now = lunaStatsFn(), before = lunaStatsAtBeat;
+  lunaStatsAtBeat = now;
+  if (!before) return;
+  var out = {};
+  ['calls', 'subscriptions'].forEach(function (kind) {
+    Object.keys(now[kind]).forEach(function (uri) {
+      var n = now[kind][uri] - (before[kind][uri] || 0);
+      if (n) out[(kind === 'subscriptions' ? 'sub ' : '') + uri] = n;
+    });
+  });
+  console.log('home: luna ' + JSON.stringify(out));
+}
+
 function beat(body) {
   lastBeatAt = nowMs();
-  if (body && body.perf && typeof body.perf === 'object') console.log('home: frames ' + JSON.stringify(body.perf));
+  if (body && body.perf && typeof body.perf === 'object') {
+    console.log('home: frames ' + JSON.stringify(body.perf));
+    logLunaSinceBeat();
+  } else lunaStatsAtBeat = null;
+  if (body && body.boot && typeof body.boot === 'object') console.log('home: boot ' + JSON.stringify(body.boot));
   if (body && typeof body.focused === 'boolean') {
     viewFocus = { focused: body.focused, visible: String(body.visible || ''), at: lastBeatAt };
   }
@@ -4063,6 +4086,8 @@ function init(opts) {
   opts = opts || {};
   screensaversModule = opts.screensavers || null;
   lunaFn = opts.luna || null;
+  lunaStatsFn = opts.lunaStats || null;
+  lunaStatsAtBeat = null;
   liveState = opts.liveState || null;
   historyModule = opts.history || null;
   iptvModule = opts.iptv || null;

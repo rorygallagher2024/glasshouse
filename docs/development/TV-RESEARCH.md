@@ -1141,6 +1141,22 @@ Measured with `scripts/tv.sh <tv> frames` (testing.md), in Alternative View:
   (`decoding="async"`) too, the longest frame then being 67 to 100 ms.
 - A contributor's G3 (webOS 9.2.2) missed 25 of about 480 frames in 8 s of
   continuous scrolling (#955), which the C2 did not reproduce.
+- **The office G3 (OLED55G36LA, webOS 9.2.2), standard view with a picture
+  wallpaper, 26 November 2026,** five runs of each `frames` scenario on
+  0.160.0: no frame over 33 ms scrolling 36 keys along the Apps row, its
+  `applyFocus` 5.6 ms on average. Recent apps opened with one or two long
+  tasks of 53 to 81 ms, the longest frame 100 to 133 ms; the cards' script
+  took under 10 ms. The rest is likely the browser restyling and compositing
+  the page as the rows fade behind the panel (not yet tested). After a reload
+  of the page every row was replaced once or twice more as what was on and
+  the guide came in, 125 to 160 ms each time.
+- **The TV's storage manager lists media servers in a new order at each
+  read** (`attachedstoragemanager/listDevices`, eight Sonos speakers on the
+  office network, G3, webOS 9.2.2).
+- **Closing Home does not reload it.** `applicationManager/closeByAppId` for
+  `com.webos.app.home` on the G3, then a launch, reached the page as a
+  `webOSRelaunch`: the page was not loaded again. `tv.sh frames cold` reloads
+  the page from its heartbeat instead.
 
 ## Home pressed with Home in front (C2, webOS 9.2.2)
 

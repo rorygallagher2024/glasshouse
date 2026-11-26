@@ -2408,6 +2408,7 @@ function startGlasshouseHome() {
     },
     iptv: iptv,
     luna: luna,
+    lunaStats: lunaTransport.stats,
     Subscription: lunaTransport.Subscription,
     blockedBy: privacy.blockedBy,
     tvInfo: compatTv,
