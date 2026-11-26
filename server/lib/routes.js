@@ -293,17 +293,40 @@ function soundbarEvents(req, res) {
   if (req.method !== 'GET') return send(res, 405, JSON.stringify({ ok: false }));
   res.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-store',
     'X-Accel-Buffering': 'no', 'X-Content-Type-Options': 'nosniff' });
-  res.write('retry: 1500\n\n');
-  res.write('event: selection\ndata: ' + JSON.stringify(soundbarSelection()) + '\n\n');
-  if (!config.soundbar || !config.soundbar.id) return res.end();
-  var heartbeat = setInterval(function () { res.write(': keepalive\n\n'); }, 20000);
-  var unsubscribe = soundbar.watch(config.soundbar, function (reason, device) {
-    if (reason) return res.end('event: fault\ndata: ' + JSON.stringify(reason) + '\n\n');
-    res.write('data: ' + JSON.stringify(device) + '\n\n');
+  var closed = false, heartbeat, unsubscribe;
+  function cleanup() {
+    if (closed) return;
+    closed = true;
+    clearInterval(heartbeat);
+    if (unsubscribe) unsubscribe();
+  }
+  function writable() {
+    if (!res.writable || res.finished) cleanup();
+    return !closed;
+  }
+  // Since Node 16, request close can mean that the GET finished reading
+  // while its response stream is still open. Older TV runtimes signal a disconnect.
+  req.on('close', function () {
+    if (parseInt(process.versions.node, 10) < 16 || !req.socket || req.socket.destroyed) cleanup();
   });
   res.on('close', cleanup);
   res.on('finish', cleanup);
-  function cleanup() { clearInterval(heartbeat); unsubscribe(); }
+  if (!writable()) return;
+  res.write('retry: 1500\n\nevent: selection\ndata: ' + JSON.stringify(soundbarSelection()) + '\n\n');
+  if (!writable()) return;
+  if (!config.soundbar || !config.soundbar.id) return res.end();
+  heartbeat = setInterval(function () { if (writable()) res.write(': keepalive\n\n'); }, 20000);
+  if (heartbeat.unref) heartbeat.unref();
+  unsubscribe = soundbar.watch(config.soundbar, function (reason, device) {
+    if (!writable()) return;
+    if (reason) {
+      cleanup();
+      return res.end('event: fault\ndata: ' + JSON.stringify(reason) + '\n\n');
+    }
+    res.write('data: ' + JSON.stringify(device) + '\n\n');
+  });
+  // watch can report a failed address before returning its unsubscribe function.
+  if (closed) unsubscribe();
 }
 
 function handleSoundbar(req, res) {
@@ -333,10 +356,11 @@ function handleSoundbar(req, res) {
         reply(200, null, current);
       });
     }
-    if (body.action === 'forget') return save(null);
+    var forgetting = body.action === 'forget';
     var pairing = body.action === 'connect';
-    if (!pairing && (body.action !== 'set' || !target.id)) return reply(400, 'invalid');
+    if (!forgetting && !pairing && (body.action !== 'set' || !target.id)) return reply(400, 'invalid');
     soundbarChanging = true;
+    if (forgetting) return save(null);
     soundbar.request(pairing ? { host: body.host } : target, pairing ? null : body, function (err, current) {
       if (!err && pairing) return save({ host: current.host, id: current.id }, current);
       soundbarChanging = false;

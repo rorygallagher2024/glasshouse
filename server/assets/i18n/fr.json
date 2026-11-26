@@ -4007,7 +4007,7 @@
  "audio.bar.dim": {"from": "Auto dim", "text": "Atténuation automatique"},
  "audio.bar.autoOff": {"from": "Auto off", "text": "Extinction automatique"},
  "audio.bar.badAddress": {"from": "Enter the local IPv4 address of the soundbar.", "text": "Saisissez l’adresse IPv4 locale de la barre de son."},
- "audio.bar.wrong": {"from": "Check the address and reconnect the DS90TR.", "text": "Vérifiez l’adresse et reconnectez la DS90TR."},
+ "audio.bar.wrong": {"from": "Check the address and reconnect the soundbar.", "text": "Vérifiez l’adresse et reconnectez la barre de son."},
  "audio.bar.check": {"from": "The soundbar could not confirm this setting.", "text": "La barre de son n’a pas confirmé ce réglage."},
  "audio.bar.saveError": {"from": "Could not save the soundbar connection.", "text": "Impossible d’enregistrer la connexion à la barre de son."},
  "audio.bar.offline": {"from": "Could not read the soundbar. Check its power and IP address.", "text": "Impossible de lire les réglages de la barre de son. Vérifiez son alimentation et son adresse IP."},

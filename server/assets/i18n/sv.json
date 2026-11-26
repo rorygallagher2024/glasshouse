@@ -4023,7 +4023,7 @@
  "audio.bar.dim": {"from": "Auto dim", "text": "Automatisk nedtoning"},
  "audio.bar.autoOff": {"from": "Auto off", "text": "Automatisk avstängning"},
  "audio.bar.badAddress": {"from": "Enter the local IPv4 address of the soundbar.", "text": "Ange soundbarens lokala IPv4-adress."},
- "audio.bar.wrong": {"from": "Check the address and reconnect the DS90TR.", "text": "Kontrollera adressen och anslut DS90TR igen."},
+ "audio.bar.wrong": {"from": "Check the address and reconnect the soundbar.", "text": "Kontrollera adressen och anslut soundbaren igen."},
  "audio.bar.check": {"from": "The soundbar could not confirm this setting.", "text": "Soundbaren kunde inte bekräfta inställningen."},
  "audio.bar.saveError": {"from": "Could not save the soundbar connection.", "text": "Det gick inte att spara anslutningen till soundbaren."},
  "audio.bar.offline": {"from": "Could not read the soundbar. Check its power and IP address.", "text": "Det gick inte att läsa soundbaren. Kontrollera strömförsörjningen och IP-adressen."},

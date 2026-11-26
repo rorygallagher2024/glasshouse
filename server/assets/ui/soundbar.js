@@ -133,7 +133,7 @@ function soundbarRows(rows) {
 function soundbarReason(reason) {
   switch (reason) {
     case 'address': return t('audio.bar.badAddress', 'Enter the local IPv4 address of the soundbar.');
-    case 'identity': case 'model': return t('audio.bar.wrong', 'Check the address and reconnect the DS90TR.');
+    case 'identity': case 'model': return t('audio.bar.wrong', 'Check the address and reconnect the soundbar.');
     case 'busy': return t('srv.audio.override.busy', 'An audio change is still in progress.');
     case 'unconfirmed': case 'invalid': return t('audio.bar.check', 'The soundbar could not confirm this setting.');
     case 'disabled': return t('tv.audio.readOnly', 'TV controls are disabled in the server configuration.');

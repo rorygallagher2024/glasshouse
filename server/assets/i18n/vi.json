@@ -4023,7 +4023,7 @@
  "audio.bar.dim": {"from": "Auto dim", "text": "Tự động giảm sáng"},
  "audio.bar.autoOff": {"from": "Auto off", "text": "Tự động tắt"},
  "audio.bar.badAddress": {"from": "Enter the local IPv4 address of the soundbar.", "text": "Nhập địa chỉ IPv4 nội bộ của loa thanh."},
- "audio.bar.wrong": {"from": "Check the address and reconnect the DS90TR.", "text": "Kiểm tra địa chỉ rồi kết nối lại DS90TR."},
+ "audio.bar.wrong": {"from": "Check the address and reconnect the soundbar.", "text": "Kiểm tra địa chỉ rồi kết nối lại loa thanh."},
  "audio.bar.check": {"from": "The soundbar could not confirm this setting.", "text": "Loa thanh chưa xác nhận cài đặt này."},
  "audio.bar.saveError": {"from": "Could not save the soundbar connection.", "text": "Không thể lưu kết nối với loa thanh."},
  "audio.bar.offline": {"from": "Could not read the soundbar. Check its power and IP address.", "text": "Không thể đọc dữ liệu từ loa thanh. Hãy kiểm tra nguồn điện và địa chỉ IP."},

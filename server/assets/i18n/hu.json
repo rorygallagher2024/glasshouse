@@ -4021,7 +4021,7 @@
  "audio.bar.dim": {"from": "Auto dim", "text": "Automatikus halványítás"},
  "audio.bar.autoOff": {"from": "Auto off", "text": "Automatikus kikapcsolás"},
  "audio.bar.badAddress": {"from": "Enter the local IPv4 address of the soundbar.", "text": "Add meg a hangprojektor helyi IPv4-címét."},
- "audio.bar.wrong": {"from": "Check the address and reconnect the DS90TR.", "text": "Ellenőrizd a címet, és csatlakoztasd újra a DS90TR-t."},
+ "audio.bar.wrong": {"from": "Check the address and reconnect the soundbar.", "text": "Ellenőrizd a címet, és csatlakoztasd újra a hangprojektort."},
  "audio.bar.check": {"from": "The soundbar could not confirm this setting.", "text": "A hangprojektor nem erősítette meg a beállítást."},
  "audio.bar.saveError": {"from": "Could not save the soundbar connection.", "text": "Nem sikerült menteni a hangprojektor kapcsolatát."},
  "audio.bar.offline": {"from": "Could not read the soundbar. Check its power and IP address.", "text": "Nem sikerült olvasni a hangprojektor adatait. Ellenőrizd a tápellátást és az IP-címet."},

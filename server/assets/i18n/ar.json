@@ -4007,7 +4007,7 @@
  "audio.bar.dim": {"from": "Auto dim", "text": "تعتيم تلقائي"},
  "audio.bar.autoOff": {"from": "Auto off", "text": "إيقاف تلقائي"},
  "audio.bar.badAddress": {"from": "Enter the local IPv4 address of the soundbar.", "text": "أدخل عنوان IPv4 المحلي لمكبر الصوت."},
- "audio.bar.wrong": {"from": "Check the address and reconnect the DS90TR.", "text": "تحقق من العنوان وأعد توصيل DS90TR."},
+ "audio.bar.wrong": {"from": "Check the address and reconnect the soundbar.", "text": "تحقق من العنوان وأعد توصيل مكبر الصوت."},
  "audio.bar.check": {"from": "The soundbar could not confirm this setting.", "text": "تعذر على مكبر الصوت تأكيد هذا الإعداد."},
  "audio.bar.saveError": {"from": "Could not save the soundbar connection.", "text": "تعذر حفظ الاتصال بمكبر الصوت."},
  "audio.bar.offline": {"from": "Could not read the soundbar. Check its power and IP address.", "text": "تعذرت قراءة بيانات مكبر الصوت. تحقق من مصدر الطاقة وعنوان IP."},

@@ -138,3 +138,48 @@ var stopWatching = bar.watch(target, function (err, device) {
   });
 });
 process.on('exit', function () { assert(complete, 'live soundbar exercise completed'); });
+
+['Synthetic LG model', '  ', 42].forEach(function (model) {
+  var mock = simulatedBar(false);
+  mock.views.PRODUCT_INFO.s_model_name = model;
+  bar.request({ host: target.host }, null, function (err, device) {
+    process.nextTick(function () {
+      if (model === 'Synthetic LG model') {
+        assert.ifError(err);
+        assert.strictEqual(device.model, model);
+      } else assert.strictEqual(err, 'model');
+    });
+  }, mock.connect);
+});
+
+// A dropped SSE viewer may emit close on both sides, with a queued update still pending.
+var routes = require('../server/lib/routes');
+routes.init({ config: { soundbar: target } });
+var originalWatch = bar.watch, updates, unsubscribed = 0, sent = [];
+bar.watch = function (selection, cb) {
+  updates = cb;
+  return function () { unsubscribed++; };
+};
+var req = new EventEmitter(), res = new EventEmitter();
+req.url = '/api/audio/soundbar/events';
+req.method = 'GET';
+req.headers = {};
+req.socket = { destroyed: false };
+res.writable = true;
+res.writeHead = function () {};
+res.write = function (data) { sent.push(data); };
+routes.handleRequest(req, res);
+if (parseInt(process.versions.node, 10) >= 16) {
+  req.emit('close');
+  assert.strictEqual(unsubscribed, 0);
+}
+updates(null, { rows: [] });
+var beforeClose = sent.length;
+req.socket.destroyed = true;
+req.emit('close');
+res.emit('close');
+res.emit('finish');
+updates(null, { rows: [] });
+assert.strictEqual(unsubscribed, 1);
+assert.strictEqual(sent.length, beforeClose);
+bar.watch = originalWatch;

@@ -56,7 +56,7 @@ riskier controls ask for confirmation in the dashboard first.
 
 ## LG Wi-Fi soundbar
 
-Connecting a DS90TR in the web Audio tab saves its local address and device identifier under `soundbar` in Glasshouse’s `config.json`. Open soundbar panels share one connection from the TV to the bar on TCP port 9741. It carries live updates and checks the volume every 1.5 seconds. Once the last panel closes and any pending command finishes, the TV releases the connection. A change applies to the selected soundbar, and **Remove** clears the saved connection.
+Connecting an LG Wi-Fi soundbar in the web Audio tab saves its local address and device identifier under `soundbar` in Glasshouse’s `config.json`. Open soundbar panels share one connection from the TV to the bar on TCP port 9741. It carries live updates and checks the volume every 1.5 seconds. Once the last panel closes and any pending command finishes, the TV releases the connection. A change applies to the selected soundbar, and **Remove** clears the saved connection.
 
 ## Bluetooth audio
 

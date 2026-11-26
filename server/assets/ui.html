@@ -725,6 +725,24 @@
   <div class="pv-sec" id="audio-sound-head" data-t="adv.sound">Sound</div>
   <div class="prot-table" id="audio-settings" data-reload="loadAudio"></div>
 
+  <div id="audio-bt" hidden>
+    <div class="pv-sec adv-sec" data-t="audio.bt.title">Bluetooth audio</div>
+    <div class="audio-head">
+      <div class="pv-sub" data-t="audio.bt.desc">Headphones and speakers paired with the TV. Find devices adds a new one: put it in pairing mode first.</div>
+      <div class="audio-bt-btns">
+        <button type="button" class="pill idle" id="audio-bt-scan-btn" onclick="audioBtScan()" data-t="audio.bt.find">Find devices</button>
+        <button type="button" class="pill idle" id="audio-bt-refresh" onclick="audioBtRefresh()" data-t="audio.refresh">Refresh</button>
+      </div>
+    </div>
+    <div class="prot-table" id="audio-bt-list" aria-busy="true"></div>
+    <div class="sub" id="audio-bt-note" role="status"></div>
+    <div id="audio-bt-scan" hidden>
+      <div class="sub" id="audio-bt-scan-note" role="status"></div>
+      <div class="prot-table" id="audio-bt-found"></div>
+    </div>
+    <div class="err-note audio-error" id="audio-bt-error" role="alert" hidden></div>
+  </div>
+
   <details class="pv-d audio-more" id="audio-bar" ontoggle="soundbarViewChanged()">
     <summary><span data-t="audio.bar.title">LG Wi-Fi soundbar</span></summary>
     <div class="soundbar-head">
@@ -746,24 +764,6 @@
       </section>
     </div>
   </details>
-
-  <div id="audio-bt" hidden>
-    <div class="pv-sec adv-sec" data-t="audio.bt.title">Bluetooth audio</div>
-    <div class="audio-head">
-      <div class="pv-sub" data-t="audio.bt.desc">Headphones and speakers paired with the TV. Find devices adds a new one: put it in pairing mode first.</div>
-      <div class="audio-bt-btns">
-        <button type="button" class="pill idle" id="audio-bt-scan-btn" onclick="audioBtScan()" data-t="audio.bt.find">Find devices</button>
-        <button type="button" class="pill idle" id="audio-bt-refresh" onclick="audioBtRefresh()" data-t="audio.refresh">Refresh</button>
-      </div>
-    </div>
-    <div class="prot-table" id="audio-bt-list" aria-busy="true"></div>
-    <div class="sub" id="audio-bt-note" role="status"></div>
-    <div id="audio-bt-scan" hidden>
-      <div class="sub" id="audio-bt-scan-note" role="status"></div>
-      <div class="prot-table" id="audio-bt-found"></div>
-    </div>
-    <div class="err-note audio-error" id="audio-bt-error" role="alert" hidden></div>
-  </div>
 
   <details class="pv-d audio-more" id="audio-more">
   <summary><span class="audio-fold"><span data-t="audio.pathTitle">Soundbar and receiver</span><span class="pv-sub" data-t="audio.pathDesc">Whether a soundbar or receiver is connected over HDMI ARC or eARC, and which audio formats the TV and the receiver say they support. Useful when Dolby Atmos or DTS doesn’t come through.</span></span></summary>

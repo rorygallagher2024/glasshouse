@@ -4021,7 +4021,7 @@
  "audio.bar.dim": {"from": "Auto dim", "text": "Автозатемнение"},
  "audio.bar.autoOff": {"from": "Auto off", "text": "Автовыключение"},
  "audio.bar.badAddress": {"from": "Enter the local IPv4 address of the soundbar.", "text": "Введите локальный IPv4-адрес саундбара."},
- "audio.bar.wrong": {"from": "Check the address and reconnect the DS90TR.", "text": "Проверьте адрес и снова подключите DS90TR."},
+ "audio.bar.wrong": {"from": "Check the address and reconnect the soundbar.", "text": "Проверьте адрес и снова подключите саундбар."},
  "audio.bar.check": {"from": "The soundbar could not confirm this setting.", "text": "Саундбар не подтвердил настройку."},
  "audio.bar.saveError": {"from": "Could not save the soundbar connection.", "text": "Не удалось сохранить подключение к саундбару."},
  "audio.bar.offline": {"from": "Could not read the soundbar. Check its power and IP address.", "text": "Не удалось получить данные саундбара. Проверьте питание и IP-адрес."},

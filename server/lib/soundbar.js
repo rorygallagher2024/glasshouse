@@ -177,7 +177,6 @@ function sessionFor(target, connect) {
       return;
     }
     if (!data || typeof data !== 'object') return;
-    if (view === product && data.s_model_name && !/^D?S90TR$/i.test(data.s_model_name)) return stop('model');
     if (view === product && data.s_uuid && target.id && data.s_uuid !== target.id) return stop('identity');
     if (!state[view]) state[view] = {};
     Object.keys(data).forEach(function (field) {
@@ -189,7 +188,8 @@ function sessionFor(target, connect) {
     if (ready && writing && view === writing.row.view && data[writing.row.key] === writing.value) finishWrite(null);
     if (!missing.length && (!ready || readers.length)) {
       var identity = state[product];
-      if (!/^D?S90TR$/i.test(identity.s_model_name) || !identity.s_uuid) return stop('model');
+      if (typeof identity.s_model_name !== 'string' || !identity.s_model_name.trim() ||
+          typeof identity.s_uuid !== 'string' || !identity.s_uuid.trim()) return stop('model');
       if (target.id && target.id !== identity.s_uuid) return stop('identity');
       ready = true;
       clearTimeout(deadline);
