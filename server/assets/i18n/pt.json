@@ -241,6 +241,7 @@
  "apps.remoteKeys.lg": {"text": "Como a LG a tem", "from": "As LG has it"},
  "apps.remoteKeys.nothing": {"text": "Nada", "from": "Nothing"},
  "apps.remoteKeys.observedColor": {"text": "O Glasshouse tem de estar em execução para este atalho. A tecla pode continuar a executar a ação original na aplicação atual.", "from": "Glasshouse must be running for this shortcut. The key may still perform its original action in the current app."},
+ "apps.remoteKeys.observedChannel": {"text": "O Glasshouse tem de estar em execução para este atalho. A tecla pode continuar a mudar de canal.", "from": "Glasshouse must be running for this shortcut. The key may still change the channel."},
  "apps.remoteKeys.opens": {"text": "Abre {app}", "from": "Opens {app}"},
  "apps.remoteKeys.other": {"text": "Outras teclas", "from": "Other keys"},
  "apps.remoteKeys.step": {"text": "Passo do brilho", "from": "Brightness step"},

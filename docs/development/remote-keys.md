@@ -37,8 +37,8 @@ The **Remotes** column lists entries in the [remote catalogue](../remotes.md) kn
 | ? button | yes | yes | – | MR25GA |
 | ? button, held | – | yes | – | MR25GA |
 | 123 button | yes | – | – | MR25GA, MR23, MR20 |
-| Channel up | yes (incl. webOS 4) | yes (key handler patch) | – | MR25GA, MR23, MR20, MR18 |
-| Channel down | yes (incl. webOS 4) | yes (key handler patch) | – | MR25GA, MR23, MR20, MR18 |
+| Channel up | yes (incl. webOS 4) | yes (key handler patch, or observes presses) | yes | MR25GA, MR23, MR20, MR18 |
+| Channel down | yes (incl. webOS 4) | yes (key handler patch, or observes presses) | yes | MR25GA, MR23, MR20, MR18 |
 | Guide | yes | yes | – | MR25GA, MR23, MR20, MR18 |
 | Input | yes | yes (key handler patch) | – | MR23, MR20, MR18 |
 | TV | yes | yes (where listed) | – | – |
@@ -96,8 +96,8 @@ LG's codes and Qt keys below are as read on an OLED48C56LB (webOS 10.3.0). "–"
 | `multikey` | `IR_KEY_MULTIKEY` | 1132 (1124) | `Key_webOS_Multikey` | `KEY_MULTIKEY` | setting `customShortPress` |
 | `multikeyhold` | – | – | – | – | setting `customLongPress` |
 | `screenremote` | `IR_KEY_SCREEN_REMOTE` | 1002 (994) | `Key_webOS_ScreenRemote` | `KEY_SCREEN_REMOTE` | – |
-| `channelup` | `IR_KEY_CH_UP` | 410 (402) | `Key_webOS_ChannelUp` | `KEY_CHANNELUP` | key handler (`lib/guidepatch`) |
-| `channeldown` | `IR_KEY_CH_DOWN` | 411 (403) | `Key_webOS_ChannelDown` | `KEY_CHANNELDOWN` | key handler (`lib/guidepatch`) |
+| `channelup` | `IR_KEY_CH_UP` | 410 (402) | `Key_webOS_ChannelUp` | `KEY_CHANNELUP` | key handler (`lib/guidepatch`), or observed evdev press |
+| `channeldown` | `IR_KEY_CH_DOWN` | 411 (403) | `Key_webOS_ChannelDown` | `KEY_CHANNELDOWN` | key handler (`lib/guidepatch`), or observed evdev press |
 | `guide` | `IR_KEY_GUIDE` | 370 (362) | `Key_webOS_TVGuide` | `KEY_GUIDE` | key action `tvGuide` |
 | `input` | `IR_KEY_TV_VIDEO` | 249 (241) | `Key_webOS_InputSource` | – | key handler (`lib/guidepatch`) |
 | `livetv` | `IR_KEY_TV` | 385 (377) | `Key_webOS_InputTV` | – | `mapping_info` |

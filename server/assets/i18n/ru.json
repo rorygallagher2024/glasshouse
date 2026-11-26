@@ -235,6 +235,7 @@
  "apps.remoteKeys.lg": {"text": "Как задано в LG", "from": "As LG has it"},
  "apps.remoteKeys.nothing": {"text": "Ничего", "from": "Nothing"},
  "apps.remoteKeys.observedColor": {"text": "Для работы этого сочетания Glasshouse должен быть запущен. Кнопка может по-прежнему выполнять исходное действие в текущем приложении.", "from": "Glasshouse must be running for this shortcut. The key may still perform its original action in the current app."},
+ "apps.remoteKeys.observedChannel": {"text": "Для работы этого сочетания Glasshouse должен быть запущен. Кнопка может по-прежнему переключать канал.", "from": "Glasshouse must be running for this shortcut. The key may still change the channel."},
  "apps.remoteKeys.opens": {"text": "Открывает: {app}", "from": "Opens {app}"},
  "apps.remoteKeys.other": {"text": "Прочие кнопки", "from": "Other keys"},
  "apps.remoteKeys.step": {"text": "Шаг яркости", "from": "Brightness step"},

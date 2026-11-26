@@ -241,6 +241,7 @@
  "apps.remoteKeys.lg": {"text": "Come da LG", "from": "As LG has it"},
  "apps.remoteKeys.nothing": {"text": "Niente", "from": "Nothing"},
  "apps.remoteKeys.observedColor": {"text": "Glasshouse deve essere in esecuzione per questa scorciatoia. Il tasto potrebbe continuare a eseguire la sua azione originale nell’app attuale.", "from": "Glasshouse must be running for this shortcut. The key may still perform its original action in the current app."},
+ "apps.remoteKeys.observedChannel": {"text": "Glasshouse deve essere in esecuzione per questa scorciatoia. Il tasto potrebbe ancora cambiare canale.", "from": "Glasshouse must be running for this shortcut. The key may still change the channel."},
  "apps.remoteKeys.opens": {"text": "Apre {app}", "from": "Opens {app}"},
  "apps.remoteKeys.other": {"text": "Altri tasti", "from": "Other keys"},
  "apps.remoteKeys.step": {"text": "Passo della luminosità", "from": "Brightness step"},

@@ -198,6 +198,16 @@ var colorButtonsSupported = function () { return false; };
 /** @type {function(boolean): void} */
 var watchColorButtons = function () {};
 var colorLaunch = null;
+// Where lib/guidepatch has no build for this library, the channel keys as
+// lib/remotebuttons reports them (its own evdev codes, KEY_CHANNELUP and
+// KEY_CHANNELDOWN), observed the same way as the color keys above: without
+// taking the key from LG or the foreground app.
+var CHANNEL_EVDEV_CODES = { channelup: 402, channeldown: 403 };
+var channelTargets = {};
+var channelButtonsSupported = function () { return false; };
+/** @type {function(boolean): void} */
+var watchChannelButtons = function () {};
+var channelLaunch = null;
 /*
  * Keys LG's own service answers, by that service's id in lib/services.js. The
  * MR25's AI button goes from lginput2 straight to voiceconductor, which reads
@@ -380,6 +390,11 @@ function init(opts) {
   colorButtonsSupported = opts.colorButtonsSupported || function () { return false; };
   watchColorButtons = opts.watchColorButtons || function () {};
   colorLaunch = opts.lunaUrgent || opts.luna || null;
+  watchChannelButtons(false);
+  channelTargets = {};
+  channelButtonsSupported = opts.channelButtonsSupported || function () { return false; };
+  watchChannelButtons = opts.watchChannelButtons || function () {};
+  channelLaunch = opts.lunaUrgent || opts.luna || null;
   lunaFn = opts.luna || null;
   refusedBlocks = {};
   keySetFn = typeof opts.onInputBarKey === 'function' ? opts.onInputBarKey : null;
@@ -1187,7 +1202,7 @@ function nativeKeys(tv, lg) {
   var colorsAvailable = colorButtonsSupported();
   return KEYS.filter(function (k) {
     if (k.key === 'input') return guidePatch.status().supported;
-    if (k.blockCode) return guidePatch.status().channel;
+    if (k.blockCode) return guidePatch.status().channel || (!!CHANNEL_EVDEV_CODES[k.key] && channelButtonsSupported());
     if (NATIVE_ACTIONS[k.key]) return !!(tv.actions && tv.actions[NATIVE_ACTIONS[k.key]]);
     if (NATIVE_SETTINGS[k.key]) return !!(tv.settings && tv.settings[NATIVE_SETTINGS[k.key]]);
     if (NATIVE_SERVICE_KEYS[k.key]) return !!(servicesModule && servicesModule.available(NATIVE_SERVICE_KEYS[k.key]));
@@ -1297,7 +1312,10 @@ function applyNext() {
   var job = applyQueue[0];
   if (!job) return;
   applyNativeNow(function (ok, wrote) {
-    if (ok) followColorButtons(job.map || readMap());
+    if (ok) {
+      followColorButtons(job.map || readMap());
+      followChannelButtons(job.map || readMap());
+    }
     applyQueue.shift();
     applyNext();
     job.cb(ok, !!wrote);
@@ -2106,6 +2124,36 @@ function handleColorButton(key, code) {
   });
 }
 
+// Where lib/guidepatch has no build for this library, the channel keys are
+// observed rather than taken from LG, the same way as the color keys above:
+// lib/remotebuttons' own evdev reader, no native library, LG assignment or
+// filter chain touched.
+function followChannelButtons(map) {
+  channelTargets = {};
+  if (nativeFilters === true && !guidePatch.status().channel && channelButtonsSupported()) {
+    Object.keys(CHANNEL_EVDEV_CODES).forEach(function (key) {
+      if (typeof map[key] === 'string' && map[key] && map[key].indexOf(':') === -1) channelTargets[key] = map[key];
+    });
+  }
+  watchChannelButtons(Object.keys(channelTargets).length > 0);
+}
+
+function startChannelButtons() {
+  if (!lunaFn || keysOnTv()) return;
+  hasNativeFilters(function (yes) { if (yes) followChannelButtons(readMap()); });
+}
+
+function handleChannelButton(key, code) {
+  var id = channelTargets[key];
+  // inputcommon repeats the same press later with a Qt code, where one is
+  // known. Launch only for evdev's physical code, so a delayed copy cannot
+  // select a previous input.
+  if (!id || !CHANNEL_EVDEV_CODES[key] || code !== CHANNEL_EVDEV_CODES[key] || !channelLaunch) return;
+  channelLaunch('com.webos.applicationManager/launch', { id: id }, function (r) {
+    if (!r || !r.returnValue) console.log('remotekeys: ' + key + ' could not open ' + id);
+  });
+}
+
 // webOS 11's Guide key opens Glasshouse Home's guide, and its Input key the input bar, where lib/guidepatch knows the key handler.
 function nativeChoices(def, native) {
   if (!native || !guidePatch.status().supported) return [];
@@ -2162,8 +2210,12 @@ function describeKeys(keys, inChain, cb, native) {
         if (k.replacesVoice) key.replacesVoice = true;
         if (native && COLOR_CODES[k.key]) { key.observedColor = true; key.noNothing = true; }
         if (native && NATIVE_BLOCK_KEYS[k.key]) key.blocksApp = true;
-        if (native && !SCREEN_OFF_BUTTONS[k.key] && !k.blockCode) key.noScreenOff = true;
-        if (native && k.blockCode) key.channelNative = true;
+        var channelNative = k.blockCode && guidePatch.status().channel;
+        if (native && !SCREEN_OFF_BUTTONS[k.key] && (!k.blockCode || !channelNative)) key.noScreenOff = true;
+        if (native && k.blockCode) {
+          if (channelNative) key.channelNative = true;
+          else if (CHANNEL_EVDEV_CODES[k.key]) { key.observedChannel = true; key.noNothing = true; }
+        }
         if (nativeChoices(k, native).length) key[k.key === 'guide' ? 'homeGuide' : 'nativeInput'] = true;
         // The Input key's launch holds an id of so many characters, and cannot do nothing or send a media key.
         if (key.nativeInput) { key.noNothing = true; key.maxIdLength = guidePatch.MAX_ID; }
@@ -2248,8 +2300,13 @@ function setOfferedKey(def, action, id, kind, cb) {
     return save(map, saved);
   }
   var nativeInput = kind !== 'filter' && def.key === 'input';
+  // Observed rather than native-blocked (CHANNEL_EVDEV_CODES, kind 'native'): only open an app or input,
+  // the same way as the color keys (#1718).
+  var channelObservedOnly = kind === 'native' && def.blockCode && !!CHANNEL_EVDEV_CODES[def.key] && !guidePatch.status().channel;
   if (action === 'nothing') {
-    if ((def.noNothing && kind !== 'filter') || nativeInput || (kind === 'native' && COLOR_CODES[def.key])) return cb({ ok: false, error: msg('srv.remoteKeys.noNothing', 'This key cannot be set to do nothing') });
+    if ((def.noNothing && kind !== 'filter') || nativeInput || (kind === 'native' && COLOR_CODES[def.key]) || channelObservedOnly) {
+      return cb({ ok: false, error: msg('srv.remoteKeys.noNothing', 'This key cannot be set to do nothing') });
+    }
     map[def.key] = '';
     return save(map, saved);
   }
@@ -2257,7 +2314,7 @@ function setOfferedKey(def, action, id, kind, cb) {
   switcherChoices(function (switchers) {
     listApps(function (apps) {
       if (!apps) return cb({ ok: false, error: msg('srv.remoteKeys.noApps', 'Could not read the TV\'s apps. Try again in a moment.') });
-      var media = kind === 'filter' ? actionChoices().concat(mediaChoices()) : (SCREEN_OFF_BUTTONS[def.key] || def.blockCode) ? loggedActionChoices() : [];
+      var media = kind === 'filter' ? actionChoices().concat(mediaChoices()) : (SCREEN_OFF_BUTTONS[def.key] || (def.blockCode && !channelObservedOnly)) ? loggedActionChoices() : [];
       // On webOS 11 the Input key opens an app, an input or the input bar, by an id its launch can hold.
       var nativeInputOk = nativeInput && guidePatch.validId(id) &&
         inputChoices().concat(appChoices(apps), nativeChoices(def, true)).some(function (c) { return c.id === id; });
@@ -2529,7 +2586,10 @@ function restoreKeys(done, native) {
   // Glasshouse Bar's app stays while it is the launcher: lib/homebar removes it then.
   var homeBarGoes = opensHomeBar() && !homeBarLauncherFn();
   function cb(ok) {
-    if (ok) followColorButtons({});
+    if (ok) {
+      followColorButtons({});
+      followChannelButtons({});
+    }
     if (!lunaFn || (!barThere && !homeBarGoes)) return done(ok);
     var left = (barThere ? 1 : 0) + (homeBarGoes ? 1 : 0);
     var one = function () { if (--left === 0) done(ok); };
@@ -2615,6 +2675,8 @@ module.exports = {
   keyTitles: keyTitles,
   startColorButtons: startColorButtons,
   handleColorButton: handleColorButton,
+  startChannelButtons: startChannelButtons,
+  handleChannelButton: handleChannelButton,
   isSupported: isSupported,
   setRemoteKey: setRemoteKey,
   setHome: setHome,
@@ -2640,6 +2702,7 @@ module.exports = {
   NATIVE_SERVICE_KEYS: NATIVE_SERVICE_KEYS,
   NATIVE_BLOCK_KEYS: NATIVE_BLOCK_KEYS,
   COLOR_CODES: COLOR_CODES,
+  CHANNEL_EVDEV_CODES: CHANNEL_EVDEV_CODES,
   CONFIG_KEY: CONFIG_KEY,
   MAP_KEY: MAP_KEY,
   HANDLER: HANDLER

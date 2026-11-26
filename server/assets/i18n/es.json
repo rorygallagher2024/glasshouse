@@ -1,5 +1,6 @@
 {
  "apps.remoteKeys.observedColor": {"text": "Glasshouse debe estar en ejecución para usar este acceso directo. La tecla puede seguir realizando su acción original en la aplicación actual.", "from": "Glasshouse must be running for this shortcut. The key may still perform its original action in the current app."},
+ "apps.remoteKeys.observedChannel": {"text": "Glasshouse debe estar en ejecución para usar este acceso directo. La tecla puede seguir cambiando el canal.", "from": "Glasshouse must be running for this shortcut. The key may still change the channel."},
  "apps.remoteKeys.step": {"text": "Paso del brillo", "from": "Brightness step"},
  "apps.remoteKeys.stepDesc": {"text": "Cuántos puntos cambia la imagen cada vez que se pulsa una tecla de Subir brillo o Bajar brillo, sobre 100.", "from": "How many points one press of a Brightness up or Brightness down key moves the picture, out of 100."},
  "apps.remoteKeys.barStyle": {"text": "Estilo de la barra de nivel", "from": "Level bar style"},

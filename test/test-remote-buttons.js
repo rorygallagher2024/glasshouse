@@ -161,8 +161,9 @@ test('Home Assistant discovery builds remote_button entity with every reported b
   assert.strictEqual(remoteBtn.type, 'event');
   assert.strictEqual(remoteBtn.payload.name, 'Remote Button');
   assert.strictEqual(remoteBtn.payload.state_topic, 'lgtv/events/button');
-  assert.deepEqual(remoteBtn.payload.event_types.slice().sort(), ['alexa', 'amazon', 'blue', 'disneyplus',
-    'googleassistant', 'green', 'lgchannels', 'movies', 'netflix', 'rakutentv', 'red', 'voice', 'yellow']);
+  assert.deepEqual(remoteBtn.payload.event_types.slice().sort(), ['alexa', 'amazon', 'blue', 'channeldown',
+    'channelup', 'disneyplus', 'googleassistant', 'green', 'lgchannels', 'movies', 'netflix', 'rakutentv', 'red',
+    'voice', 'yellow']);
   // Each button the reader reports, and only those: Home Assistant drops an undeclared one.
   assert.deepEqual(remoteBtn.payload.event_types, remotebuttons.buttonNames());
   assert.strictEqual(remoteBtn.payload.icon, 'mdi:remote');

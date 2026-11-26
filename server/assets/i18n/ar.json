@@ -241,6 +241,7 @@
  "apps.remoteKeys.lg": {"text": "وضع LG الافتراضي", "from": "As LG has it"},
  "apps.remoteKeys.nothing": {"text": "لا شيء", "from": "Nothing"},
  "apps.remoteKeys.observedColor": {"text": "يجب أن يكون Glasshouse قيد التشغيل لاستخدام هذا الاختصار. قد يظل الزر ينفّذ وظيفته الأصلية في التطبيق الحالي.", "from": "Glasshouse must be running for this shortcut. The key may still perform its original action in the current app."},
+ "apps.remoteKeys.observedChannel": {"text": "يجب أن يكون Glasshouse قيد التشغيل لاستخدام هذا الاختصار. قد يظل الزر يغيّر القناة أيضًا.", "from": "Glasshouse must be running for this shortcut. The key may still change the channel."},
  "apps.remoteKeys.opens": {"text": "يفتح {app}", "from": "Opens {app}"},
  "apps.remoteKeys.other": {"text": "أزرار أخرى", "from": "Other keys"},
  "apps.remoteKeys.step": {"text": "خطوة السطوع", "from": "Brightness step"},
