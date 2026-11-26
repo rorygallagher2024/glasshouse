@@ -3896,7 +3896,7 @@
  "srv.updateAsk.noReason": {"from": "no reason given", "text": "لم يُذكر سبب"},
  "srv.configUnreadable": {"from": "{file} could not be read, so it was left as it is. Correct it, or remove it to start again, then restart Glasshouse.", "text": "تعذّرت قراءة {file}، لذلك تُرك كما هو. صحّحه، أو احذفه للبدء من جديد، ثم أعد تشغيل Glasshouse."},
  "apps.remote.only": {"from": "Display only buttons for your remote", "text": "عرض أزرار الريموت الخاص بك فقط"},
- "community.disclaimer": {"from": "Community add-ons are created and maintained by their authors, not by Glasshouse. Review the author and source repository before installing.", "text": "يتم إنشاء إضافات المجتمع وصيانتها بواسطة مؤلفيها وليس بواسطة Glasshouse. راجع المؤلف والمستودع المصدري قبل التثبيت."},
+ "community.disclaimer": {"from": "Community add-ons are created and maintained by their authors, not by Glasshouse.", "text": "يتم إنشاء إضافات المجتمع وصيانتها بواسطة مؤلفيها وليس بواسطة Glasshouse."},
  "community.empty": {"from": "No community items are available right now.", "text": "لا توجد عناصر مجتمع متاحة حالياً."},
  "community.install": {"from": "Install", "text": "تثبيت"},
  "community.installFailed": {"from": "Installation failed.", "text": "فشل التثبيت."},

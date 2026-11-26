@@ -3896,7 +3896,7 @@
  "srv.updateAsk.noReason": {"from": "no reason given", "text": "sin motivo indicado"},
  "srv.configUnreadable": {"from": "{file} could not be read, so it was left as it is. Correct it, or remove it to start again, then restart Glasshouse.", "text": "No se pudo leer {file}, así que se dejó como estaba. Corrígelo, o elimínalo para empezar de nuevo, y reinicia Glasshouse."},
  "apps.remote.only": {"from": "Display only buttons for your remote", "text": "Mostrar solo los botones de tu mando"},
- "community.disclaimer": {"from": "Community add-ons are created and maintained by their authors, not by Glasshouse. Review the author and source repository before installing.", "text": "Los complementos de la comunidad son creados y mantenidos por sus autores, no por Glasshouse. Revisa el autor y el repositorio antes de instalar."},
+ "community.disclaimer": {"from": "Community add-ons are created and maintained by their authors, not by Glasshouse.", "text": "Los complementos de la comunidad son creados y mantenidos por sus autores, no por Glasshouse."},
  "community.empty": {"from": "No community items are available right now.", "text": "No hay elementos de la comunidad disponibles en este momento."},
  "community.install": {"from": "Install", "text": "Instalar"},
  "community.installFailed": {"from": "Installation failed.", "text": "Error en la instalación."},

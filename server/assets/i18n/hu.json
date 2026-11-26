@@ -3910,7 +3910,7 @@
  "srv.updateAsk.noReason": {"from": "no reason given", "text": "nincs megadva ok"},
  "srv.configUnreadable": {"from": "{file} could not be read, so it was left as it is. Correct it, or remove it to start again, then restart Glasshouse.", "text": "A(z) {file} nem olvasható, ezért változatlan maradt. Javítsd ki, vagy töröld az újrakezdéshez, majd indítsd újra a Glasshouse-t."},
  "apps.remote.only": {"from": "Display only buttons for your remote", "text": "Csak a távirányító gombjainak megjelenítése"},
- "community.disclaimer": {"from": "Community add-ons are created and maintained by their authors, not by Glasshouse. Review the author and source repository before installing.", "text": "A közösségi bővítményeket a szerzőik készítik és tartják karban, nem a Glasshouse. Telepítés előtt ellenőrizze a szerzőt és a forrást."},
+ "community.disclaimer": {"from": "Community add-ons are created and maintained by their authors, not by Glasshouse.", "text": "A közösségi bővítményeket a szerzőik készítik és tartják karban, nem a Glasshouse."},
  "community.empty": {"from": "No community items are available right now.", "text": "Jelenleg nincs elérhető közösségi elem."},
  "community.install": {"from": "Install", "text": "Telepítés"},
  "community.installFailed": {"from": "Installation failed.", "text": "A telepítés nem sikerült."},

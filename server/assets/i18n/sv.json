@@ -3912,7 +3912,7 @@
  "srv.updateAsk.noReason": {"from": "no reason given", "text": "inget skäl angavs"},
  "srv.configUnreadable": {"from": "{file} could not be read, so it was left as it is. Correct it, or remove it to start again, then restart Glasshouse.", "text": "{file} gick inte att läsa och lämnades därför orörd. Rätta den, eller ta bort den för att börja om, och starta sedan om Glasshouse."},
  "apps.remote.only": {"from": "Display only buttons for your remote", "text": "Visa bara knappar för din fjärrkontroll"},
- "community.disclaimer": {"from": "Community add-ons are created and maintained by their authors, not by Glasshouse. Review the author and source repository before installing.", "text": "Gemenskapens tillägg skapas och underhålls av sina författare, inte av Glasshouse. Granska författaren och källkodsarkivet före installation."},
+ "community.disclaimer": {"from": "Community add-ons are created and maintained by their authors, not by Glasshouse.", "text": "Gemenskapens tillägg skapas och underhålls av sina författare, inte av Glasshouse."},
  "community.empty": {"from": "No community items are available right now.", "text": "Inga gemenskapstillägg är tillgängliga just nu."},
  "community.install": {"from": "Install", "text": "Installera"},
  "community.installFailed": {"from": "Installation failed.", "text": "Installationen misslyckades."},
