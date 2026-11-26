@@ -157,6 +157,10 @@ Custom QML screen savers added on the TV can read Home Assistant entities too. E
 4. Once enabled and configured with at least one entity, an optional **Home Assistant** row toggle also appears on the [**Home** tab](dashboard/home.md#home-assistant-row) to control the same entities inline from Glasshouse Home.
 5. On the TV, use **Left** / **Right** (or the Magic Remote pointer and wheel) to focus a tile, **OK** (or click) to toggle a switch/light/climate/cover/lock or trigger a scene/script, **Up** / **Down** on the control bar (or **Ch +** / **Ch -** on the Glasshouse Home row, or the on-screen step buttons) to step light brightness, climate target temperature, fan percentage or cover state, and **Back** (or pressing the mapped remote button again) to close the bar. Only entities explicitly listed on the bar can be controlled by its TV overlay, and the Home Assistant token never leaves the TV's server process.
 
+![Home Assistant control bar along the bottom of the TV screen showing lights, thermostat, switches, fan, blinds, lock and scene tiles with remote hints and clock](screenshots/ha-bar.png)
+
+![Home Assistant control bar settings on the HA & MQTT tab showing added entities, Show in Glasshouse Bar, Button hints, and Open on TV controls](screenshots/ha-bar-settings.png)
+
 ---
 
 ## Entities

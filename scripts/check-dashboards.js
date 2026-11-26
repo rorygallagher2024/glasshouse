@@ -879,6 +879,14 @@ async function visitHaBar(browser, base, problems) {
     await page.waitForFunction(() => document.querySelectorAll('#row .tile').length === 3 && document.body.className === 'on');
     const hintOn = await page.textContent('#hint');
     if (hintOn.indexOf('OK toggle') === -1) fail('expected hint text when showHints=true, got ' + hintOn);
+    const focusStyle = await page.evaluate(() => {
+      const el = document.querySelector('.tile.focus.active.dom-light');
+      const cs = el ? getComputedStyle(el) : null;
+      return cs ? { bg: cs.backgroundColor, color: cs.color } : null;
+    });
+    if (!focusStyle || focusStyle.bg !== 'rgb(255, 255, 255)' || focusStyle.color !== 'rgb(17, 17, 17)') {
+      fail('focused active light tile contrast mismatch: ' + JSON.stringify(focusStyle));
+    }
     await page.keyboard.press('ArrowUp');
     await page.waitForFunction(() => document.querySelector('.tile.focus .val').textContent === '60%');
     await page.keyboard.press('ArrowRight');

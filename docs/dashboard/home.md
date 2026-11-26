@@ -158,6 +158,8 @@ When the **Home Assistant API** is enabled and at least one entity is configured
 * **Shared entity list:** Displays and controls the same entities configured for the control bar (`habar.json`), without maintaining a separate list.
 * **Inline control:** **OK** or clicking a tile toggles a switch, light, climate device, cover, or lock, or runs a scene, script, or button; clickable step buttons on focused adjustable tiles or **Ch +** / **Ch -** on the remote adjust brightness, fan percentage, cover state, or target temperature while leaving **Up** and **Down** for row navigation.
 
+![Home Assistant row on Glasshouse Home showing interactive light, thermostat, switch, fan, blinds, lock and scene tiles](../screenshots/home-ha-row.png)
+
 ## Search
 
 > [!WARNING]
@@ -445,6 +447,8 @@ Its app, `com.tvweb.homebar`, has no tile of its own. It is kept loaded in the b
 The Home button on the web dashboard's remote opens it too. A phone remote app that opens LG's Home directly, rather than pressing Home, opens LG's Home, as Glasshouse Bar leaves it in place. With the Magic Remote, a notch of the scroll wheel moves the row a tile, and resting the pointer near either end of the row steps it along, as on Glasshouse Home. **Smooth scrolling**, under Animations on the Home tab, applies to the Bar too: off, the row jumps rather than glides.
 
 When the **Home Assistant API** has at least one control bar entity configured, an opt-in **Show in Glasshouse Bar** toggle (also listed under **Glasshouse Bar** → **Home Assistant bar tile** on the Home tab and TV app) appends a **Home Assistant** tile at the end of Glasshouse Bar to open the Home Assistant control bar directly.
+
+![Glasshouse Bar along the bottom of the TV screen with the focused Home Assistant shortcut tile at the end and the matching clock above](../screenshots/home-bar-ha.png)
 
 ## Custom launcher
 
