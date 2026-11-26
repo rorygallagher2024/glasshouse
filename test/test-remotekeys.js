@@ -1497,6 +1497,51 @@ step(function (next) {
   }));
 });
 
+// Glasshouse Home with a Home Assistant tile that steps in focus: Channel up
+// and down set to Brightness go to Home while it is in front, and set the
+// brightness anywhere else.
+step(function (next) {
+  fs.writeFileSync(FILTER, rk.filterSource(), 'utf8');
+  var front = true;
+  var f = loadFilter(null, { global: { isForegroundApp: function (id) { return front && id === 'com.webos.app.home'; } } });
+  var UP = 1006;
+  f.tell({ keys: { channelup: 'action:brightnessUp' } });
+  assert.strictEqual(f.handle(UP, true, false), 'accepted', 'brightness without the flag');
+  f.tell({ keys: { channelup: 'action:brightnessUp' }, homeAdjust: true });
+  assert.strictEqual(f.handle(UP, true, false), 'next', 'to Home while its tile is in focus');
+  assert.strictEqual(f.handle(UP, false, false), 'next', 'the release too');
+  front = false;
+  assert.strictEqual(f.handle(UP, true, false), 'accepted', 'brightness once Home is not in front');
+  front = true;
+  f.tell({ keys: { red: 'action:brightnessUp' }, homeAdjust: true });
+  assert.strictEqual(f.handle(1004, true, false), 'accepted', 'only the channel keys are handed to Home');
+
+  // The server's side: written only with a channel key set to Brightness, and only on a change.
+  fs.writeFileSync(MAP, JSON.stringify({ keys: { red: 'action:brightnessUp' } }), 'utf8');
+  var before = tv.keysWrites;
+  rk.setHomeAdjust(true, guard(function (r) {
+    assert.strictEqual(r.changed, false, 'no channel key set to Brightness');
+    assert.strictEqual(tv.keysWrites, before);
+    fs.writeFileSync(MAP, JSON.stringify({ keys: { channelup: 'action:brightnessUp', channeldown: 'action:brightnessDown' } }), 'utf8');
+    rk.setHomeAdjust(true, guard(function (r2) {
+      assert.ok(r2.ok && r2.changed);
+      assert.strictEqual(tv.keys.homeAdjust, true);
+      assert.strictEqual(tv.keys.keys.channelup, 'action:brightnessUp', 'the keys written with it');
+      var writes = tv.keysWrites;
+      rk.setHomeAdjust(true, guard(function (r3) {
+        assert.strictEqual(r3.changed, false);
+        assert.strictEqual(tv.keysWrites, writes, 'not written again');
+        rk.setHomeAdjust(false, guard(function (r4) {
+          assert.ok(r4.ok && r4.changed);
+          assert.strictEqual(tv.keys.homeAdjust, undefined);
+          console.log('  ✓ Channel up and down set to Brightness step a Home Assistant tile in focus on Glasshouse Home');
+          next();
+        }));
+      }));
+    }));
+  }));
+});
+
 function done() {
   fs.readdirSync(filtersDir).forEach(function (f) { fs.unlinkSync(path.join(filtersDir, f)); });
   fs.rmdirSync(filtersDir);

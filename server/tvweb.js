@@ -673,7 +673,11 @@ remoteKeys.init({ detectRemotes: detectRemotes, luna: luna, subscription: lunaTr
   onHomeBarKey: function () { homebar.keySet(); },
   haBarAllowed: function () { return haBar.available(); },
   haBarApp: function (action, cb) { tvApp(action, cb, 'habar-app'); },
-  onHaBarKey: function () { haBar.keySet(); } });
+  onHaBarKey: function () { haBar.keySet(); },
+  // A channel key set to Brightness, on webOS 11, while Glasshouse Home has a Home Assistant tile that steps in focus.
+  homeAdjustStep: function (id, dir, cb) {
+    haBar.act(id, 'step', dir, function (r) { cb(r && r.ok ? r.tile : null); });
+  } });
 // A question on the screen from Home Assistant; the answer goes back to MQTT
 // once the bridge is up (onAskAnswer is set in setupHomeAssistant).
 var onAskAnswer = null;
