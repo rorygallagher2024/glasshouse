@@ -2725,7 +2725,7 @@ function isStandalone() {
  * KeyFilters folders nor the configd key, #1222), so every Home press opens
  * LG's ribbon. The press is read from the remote instead (lib/remotebuttons),
  * and a short one opens the view over the ribbon; a held one leaves it.
- * webOS 2, untried, is taken to be the same.
+ * webOS 2 works the same way (#1725).
  */
 function homeKeyRead() {
   return /^[23]\./.test(String(webosVersion || ''));
