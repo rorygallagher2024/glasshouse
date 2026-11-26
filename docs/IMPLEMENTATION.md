@@ -1197,7 +1197,13 @@ lines over each time it is written, other blockers' sinkholes included: Life's
 Good Without Spying and LG App Update Blocker write nothing else, and the table
 the Homebrew Channel's update block mounts would otherwise switch them off
 (#1370). They sit under a `# Kept from /etc/hosts` header, which tells them
-apart from the table's own sinkholes when it is written again. Switched off,
+apart from the table's own sinkholes when it is written again. Their comment
+lines go with them, in their order, since a tool may read its own: Life's Good
+Without Spying looks for its marker to know its block is up (#1716). A comment
+over lines that are not carried, such as the Homebrew Channel's over its update
+lines, is left out, as are the table's own. A comment another tool appends to
+the table, as LG App Update Blocker's boot hook does, starts that tool's lines.
+Switched off,
 the table comes down, and any of them the file underneath lacks are written
 into it. Where that file cannot be written, as on a C4 on webOS 10.3.1 where it
 is on the read-only squashfs rootfs, the table goes back up blocking nothing,

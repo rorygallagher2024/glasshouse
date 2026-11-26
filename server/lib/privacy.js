@@ -870,38 +870,65 @@ function sinkhole(lines, host) {
 // Heads the lines this table carries over from other tools; 50-tvweb.sh writes it too.
 var KEPT_HEADER = '# Kept from /etc/hosts, where other tools put them';
 
+// The table's own comment lines, never carried over as another tool's.
+var UPDATES_HEADER = '# TV software updates, blocked by the flag the Homebrew Channel also uses';
+function ownComment(line) {
+  return line === ADBLOCK_MARKER || line === ADBLOCK_LEGACY_MARKER || line === KEPT_HEADER || line === UPDATES_HEADER;
+}
+
 /*
  * Lines other tools put in /etc/hosts, such as AmazOff's redirect of Amazon's
  * player to a local nginx, and other blockers' sinkholes (Life's Good Without
- * Spying and LG App Update Blocker write nothing else, #1370). Rewriting the
- * table, or mounting it, would otherwise drop them. In this table's own file,
- * its sinkholes are its own until KEPT_HEADER and another tool's after it; in
- * another tool's file every sinkhole is that tool's. A line is never kept if
- * it is a comment, a localhost line, or a non-sinkhole naming a host the
- * table decides on: the Homebrew Channel points the update servers at
- * 127.0.0.1 and ::1 (a C4 on webOS 10.3.1), and those must not outlive update
- * blocking being switched off. 50-tvweb.sh carries them over at boot the same
- * way.
+ * Spying and LG App Update Blocker, #1370). Rewriting the table, or mounting
+ * it, would otherwise drop them. In this table's own file, its sinkholes are
+ * its own until KEPT_HEADER, or until another tool's comment, as a boot hook
+ * appending its section leaves one; in another tool's file every sinkhole is
+ * that tool's. A line is never kept if it is a localhost line, or a
+ * non-sinkhole naming a host the table decides on: the Homebrew Channel points
+ * the update servers at 127.0.0.1 and ::1 (a C4 on webOS 10.3.1), and those
+ * must not outlive update blocking being switched off.
+ *
+ * Another tool's comments go with the lines after them, in their order: Life's
+ * Good Without Spying looks for its marker in /etc/hosts to know its block is
+ * up (#1716). A comment followed by nothing kept, such as the Homebrew
+ * Channel's over its update lines, is left out, and the table's own never
+ * kept. 50-tvweb.sh carries them over at boot the same way.
  */
 function foreignHostsLines(text) {
   var managed = adBlockAds().concat(adBlockPlatformBase(), adBlockSdp(), HBC_UPDATE_HOSTS);
   var kept = [];
+  var comments = [];
   text = String(text || '');
   var ours = text.indexOf(ADBLOCK_MARKER) !== -1 || text.indexOf(ADBLOCK_LEGACY_MARKER) !== -1;
   var othersSinkholes = !ours;
+  var keep = function (line) {
+    comments.forEach(function (c) { if (kept.indexOf(c) === -1) kept.push(c); });
+    comments = [];
+    if (kept.indexOf(line) === -1) kept.push(line);
+  };
   var lines = text.split('\n');
   for (var i = 0; i < lines.length; i++) {
     var line = lines[i].trim();
-    if (line === KEPT_HEADER) othersSinkholes = true;
-    if (!line || line.charAt(0) === '#') continue;
-    if (/^(0\.0\.0\.0|::)\s/.test(line)) {
-      if (othersSinkholes && kept.indexOf(line) === -1) kept.push(line);
+    if (!line) continue;
+    if (line.charAt(0) === '#') {
+      if (line === KEPT_HEADER) othersSinkholes = true;
+      if (ownComment(line)) { comments = []; continue; }
+      othersSinkholes = true;
+      comments.push(line);
       continue;
     }
-    if (/localhost|ip6-/.test(line) || isLocalLookupLine(line)) continue;
+    if (/^(0\.0\.0\.0|::)\s/.test(line)) {
+      if (othersSinkholes) keep(line);
+      else comments = [];
+      continue;
+    }
     var names = line.split(/\s+/).slice(1);
-    if (names.some(function (n) { return managed.indexOf(n.toLowerCase()) !== -1; })) continue;
-    if (kept.indexOf(line) === -1) kept.push(line);
+    if (/localhost|ip6-/.test(line) || isLocalLookupLine(line) ||
+        names.some(function (n) { return managed.indexOf(n.toLowerCase()) !== -1; })) {
+      comments = [];
+      continue;
+    }
+    keep(line);
   }
   return kept;
 }
@@ -928,7 +955,7 @@ function adBlockHostsTable(mode, foreign) {
   ];
   for (var i = 0; i < list.length; i++) sinkhole(lines, list[i]);
   if (tvUpdatesBlocked()) {
-    lines.push('', '# TV software updates, blocked by the flag the Homebrew Channel also uses');
+    lines.push('', UPDATES_HEADER);
     for (var u = 0; u < HBC_UPDATE_HOSTS.length; u++) sinkhole(lines, HBC_UPDATE_HOSTS[u]);
   }
   // Kept even where the tier blocks the same name: the tool's line must
