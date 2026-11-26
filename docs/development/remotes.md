@@ -158,4 +158,4 @@ The catalogue is [`server/lib/remotes.json`](https://github.com/rorygallagher202
 * `sources`: which TV and webOS version each fact came from.
 * `image`: the file name of a small picture under `server/assets/remotes/`, about 160 px wide, a PNG with a transparent background, under 20 KB, original artwork or a picture you may share. A remote without one shows the generic outline. The file also goes in `FILES` in `server/deploy.sh`.
 
-To read a remote's reported name and button presses over SSH on a rooted TV, see [Remote keys](development/remote-keys.md#reading-keys-on-a-rooted-tv).
+To read a remote's reported name and button presses over SSH on a rooted TV, see [Remote keys](remote-keys.md#reading-keys-on-a-rooted-tv).

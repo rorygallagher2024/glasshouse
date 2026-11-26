@@ -1,6 +1,6 @@
 # Telemetry and diagnostics
 
-The **Metrics** tab (`/?tab=metrics`) exposes live hardware and software telemetry from the TV, most of which is absent from LG's own settings menus. Its views are split into **Overview** (live telemetry), **[Performance](#performance)** (the processor, memory, network and temperature over time, with the process lists), **[Storage](#storage)** (what fills the TV's storage, and which apps take the most), **[HDMI](#hdmi)** (each input's link in detail), **Watch time** (when enabled), and **[System info](#system-info)** (what the TV is, what it runs, how it has been switched on, and its network addresses).
+The **Metrics** tab (`/?tab=metrics`) exposes live hardware and software telemetry from the TV, most of which is absent from LG's own settings menus. Its views are split into **Overview** (live telemetry), **[Performance](#performance)** (the processor, memory, network and temperature over time, with the process lists), **[Storage](#storage)** (what fills the TV's storage, and which apps take the most), **[HDMI](#hdmi)** (each input's link in detail), **[Watch time](#watch-time)** (when enabled), and **[System info](#system-info)** (what the TV is, what it runs, how it has been switched on, and its network addresses).
 
 ![Metrics tab: processor, memory, swap and network readouts](../screenshots/metrics-system.png)
 
@@ -104,7 +104,9 @@ The **System info** view (`/?tab=metrics&open=info`) shows the TV's details in s
 
 ## Watch time
 
-![Watch time: today, 7 days and 30 days, a bar for each of the last 14 days, and the time per app and input](../screenshots/metrics-watch-time.png)
+The **Watch time** view (`/?tab=metrics&open=watch`) shows how long the TV is watched, and on what.
+
+![The Watch time view: today, 7 days and 30 days, a bar for each of the last 14 days coloured by input and app, and the time on each over 30 days, with Screen off and Screen saver apart](../screenshots/metrics-watch-time.png)
 
 > [!NOTE]
 > **Opt-in by default:** Watch time is off until enabled under **Watch time** in the [Server tab](server.md#glasshouse), as it records which apps and inputs are used.
@@ -112,6 +114,6 @@ The **System info** view (`/?tab=metrics&open=info`) shows the TV's details in s
 When enabled, the server tracks how long the screen is on with each app or input in the foreground:
 
 * **What is counted:** Active viewing time per app and input. Time spent with the TV on but the panel blanked (such as listening to music) is recorded separately as **Screen off**, and time spent on LG's screen saver is recorded as **Screen saver** — neither is added to the viewing totals or daily bars.
-* **What the card shows:** Totals for today, the last 7 days, and the last 30 days; a daily bar chart for the last 14 days; and the top five apps and inputs over the last 30 days. Totals use the viewing browser's local timezone and refresh every 30 seconds while the tab is open.
+* **What the view shows:** totals for today, the last 7 days and the last 30 days; a bar for each of the last 14 days, coloured by app and input; and the time on each app and input over the last 30 days, the smallest together as **Other**, with **Screen off** and **Screen saver** below them. Totals use the viewing browser's local timezone and refresh every 30 seconds while the tab is open.
 * **Storage & retention:** History is stored locally on the TV in `/var/lib/tvweb/history` for 13 months. Turning Watch time off keeps existing history without recording new activity; **Clear history** in the Server tab deletes it. Because time is counted while the server runs, an unpowered TV is not counted and a sudden power cut can lose up to the last 10 minutes.
 * **Smart home & metrics:** While enabled, Home Assistant receives [three watch-time sensors](../HOME-ASSISTANT-ENTITIES.md#hardware-remote-system-diagnostics) and Prometheus exposes `glasshouse_watch_seconds_total`.

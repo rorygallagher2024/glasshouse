@@ -70,7 +70,7 @@ function render() {
   w('');
   w('## Key availability');
   w('');
-  w('The **Remotes** column lists entries in the [remote catalogue](../remotes.md) known to have each key; "' +
+  w('The **Remotes** column lists entries in the [remote catalogue](remotes.md) known to have each key; "' +
     none + '" means it has not been recorded on a listed remote yet, not that it does not exist.');
   w('');
   w('| Remote tab key | webOS 4–10 | webOS 11 | Home Assistant | Remotes |');

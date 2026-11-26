@@ -180,7 +180,7 @@ The deploy script (`server/deploy.sh`) maintains an explicit list of files copie
 
 ### Documenting a remote
 
-The LG remotes Glasshouse knows are in `server/lib/remotes.json`, and [Remotes](remotes.md) is made from it with `scripts/gen-remotes-doc.py`. A remote that is missing, or a button a list lacks, is added there: see [Adding a remote](remotes.md#adding-a-remote).
+The LG remotes Glasshouse knows are in `server/lib/remotes.json`, and [Remotes](development/remotes.md) is made from it with `scripts/gen-remotes-doc.py`. A remote that is missing, or a button a list lacks, is added there: see [Adding a remote](development/remotes.md#adding-a-remote).
 
 ### Localized strings
 

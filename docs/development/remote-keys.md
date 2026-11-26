@@ -6,7 +6,7 @@ Developer reference for the keys on the Remote tab: where each key is available,
 
 ## Key availability
 
-The **Remotes** column lists entries in the [remote catalogue](../remotes.md) known to have each key; "–" means it has not been recorded on a listed remote yet, not that it does not exist.
+The **Remotes** column lists entries in the [remote catalogue](remotes.md) known to have each key; "–" means it has not been recorded on a listed remote yet, not that it does not exist.
 
 | Remote tab key | webOS 4–10 | webOS 11 | Home Assistant | Remotes |
 | :------------- | :--------- | :------- | :------------- | :------ |

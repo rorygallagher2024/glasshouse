@@ -3,7 +3,7 @@
 Check the two lists that are maintained by hand against what the code does.
 
 Both fail silently, which is why they are checked rather than remembered
-(and a third, docs/remotes.md, which scripts/gen-remotes-doc.py makes from
+(and a third, docs/development/remotes.md, which scripts/gen-remotes-doc.py makes from
 server/lib/remotes.json):
 
   * docs/HOME-ASSISTANT-ENTITIES.md is the entity reference, so an entity added to
@@ -114,12 +114,12 @@ in_doc = documented()
 check_entities(in_code, in_doc)
 assets = check_deploy()
 
-# docs/remotes.md is made from server/lib/remotes.json by scripts/gen-remotes-doc.py.
+# docs/development/remotes.md is made from server/lib/remotes.json by scripts/gen-remotes-doc.py.
 import subprocess
 gen = subprocess.run([sys.executable, str(root / 'scripts' / 'gen-remotes-doc.py'), '--check'],
                      capture_output=True, text=True)
 if gen.returncode != 0:
-    problems.append((gen.stdout or gen.stderr).strip() or 'docs/remotes.md: scripts/gen-remotes-doc.py --check failed')
+    problems.append((gen.stdout or gen.stderr).strip() or 'docs/development/remotes.md: scripts/gen-remotes-doc.py --check failed')
 
 for p in problems:
     print(p)
