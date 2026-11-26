@@ -126,7 +126,33 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
     x.onerror = x.ontimeout = function () { cb(null); };
     x.send(body ? JSON.stringify(body) : null);
   }
-  function iconSvg(domain) {
+  // A reading's icon by what it measures, or a gauge.
+  var SENSOR_ICONS = {
+    temperature: '<path d="M14 14.76V3.5a2 2 0 0 0-4 0v11.26a4 4 0 1 0 4 0z"/>',
+    humidity: '<path d="M12 3c3 4 6 7.5 6 11a6 6 0 0 1-12 0c0-3.5 3-7 6-11z"/>',
+    moisture: '<path d="M12 3c3 4 6 7.5 6 11a6 6 0 0 1-12 0c0-3.5 3-7 6-11z"/>',
+    battery: '<rect x="3" y="7" width="16" height="10" rx="2"/><path d="M22 11v2M7 10v4M11 10v4"/>',
+    power: '<path d="M13 2L4 14h7l-1 8 9-12h-7z"/>',
+    energy: '<path d="M13 2L4 14h7l-1 8 9-12h-7z"/>',
+    current: '<path d="M13 2L4 14h7l-1 8 9-12h-7z"/>',
+    voltage: '<path d="M13 2L4 14h7l-1 8 9-12h-7z"/>',
+    illuminance: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
+    pm25: '<path d="M3 8h11a3 3 0 1 0-3-3M3 12h15a3 3 0 1 1-3 3M3 16h7"/>',
+    pm10: '<path d="M3 8h11a3 3 0 1 0-3-3M3 12h15a3 3 0 1 1-3 3M3 16h7"/>',
+    carbon_dioxide: '<path d="M3 8h11a3 3 0 1 0-3-3M3 12h15a3 3 0 1 1-3 3M3 16h7"/>',
+    aqi: '<path d="M3 8h11a3 3 0 1 0-3-3M3 12h15a3 3 0 1 1-3 3M3 16h7"/>',
+    volatile_organic_compounds: '<path d="M3 8h11a3 3 0 1 0-3-3M3 12h15a3 3 0 1 1-3 3M3 16h7"/>',
+    door: '<path d="M5 21V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v17M3 21h18M14 12h.01"/>',
+    window: '<rect x="4" y="3" width="16" height="18" rx="1"/><path d="M12 3v18M4 12h16"/>',
+    opening: '<path d="M5 21V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v17M3 21h18M14 12h.01"/>',
+    motion: '<circle cx="13" cy="4" r="2"/><path d="M9 21l3-6 3 3v3M7 12l3-4 4 1 3 3M10 8l-1 5"/>',
+    occupancy: '<circle cx="12" cy="7" r="3"/><path d="M5 21a7 7 0 0 1 14 0"/>'
+  };
+  var GAUGE_ICON = '<path d="M4 18a8 8 0 1 1 16 0"/><path d="M12 14l4-4"/>';
+  function iconSvg(domain, deviceClass) {
+    if (domain === 'sensor' || domain === 'binary_sensor') {
+      return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + (SENSOR_ICONS[deviceClass] || GAUGE_ICON) + '</svg>';
+    }
     if (domain === 'light') {
       return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-4 10.5c.6.6 1 1.5 1 2.5h6c0-1 .4-1.9 1-2.5A6 6 0 0 0 12 3z"/></svg>';
     }
@@ -171,7 +197,7 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
       return;
     }
     var cur = tiles[focus];
-    var parts = [isOneShot(cur && cur.domain) ? 'OK run' : 'OK toggle'];
+    var parts = cur && cur.readOnly ? [] : [isOneShot(cur && cur.domain) ? 'OK run' : 'OK toggle'];
     if (cur && cur.adjustable) {
       parts.push(cur.domain === 'climate' ? 'Up/Down temp' : 'Up/Down adjust');
     }
@@ -201,7 +227,7 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
       : '';
     var subHtml = t.subText ? '<div class="sub">' + esc(t.subText) + '</div>' : '';
     return '<div class="' + tileClass(t, i) + '" data-i="' + i + '">' +
-      '<div class="top"><div class="ico">' + iconSvg(t.domain) + '</div>' +
+      '<div class="top"><div class="ico">' + iconSvg(t.domain, t.deviceClass) + '</div>' +
       '<div class="arrows">' +
         '<button type="button" class="step-btn" data-step="1" aria-label="Increase">&#9650;</button>' +
         '<button type="button" class="step-btn" data-step="-1" aria-label="Decrease">&#9660;</button>' +
@@ -322,6 +348,8 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
     var cur = tiles[focus];
     if (!cur || cur.empty) return close();
     if (action === 'step' && !cur.adjustable) return;
+    // A reading: nothing to do.
+    if (cur.readOnly) return;
     if (busyId === cur.id) return;
     var targetId = cur.id;
     var targetDomain = cur.domain;

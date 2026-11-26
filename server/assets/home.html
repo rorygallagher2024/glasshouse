@@ -1538,7 +1538,33 @@ html[lang="vi"] #srcTitle,html[lang="vi"] #plMode,html[lang="vi"] #pvMode,html[l
   function haIsOneShot(domain) {
     return domain === 'scene' || domain === 'script' || domain === 'button' || domain === 'input_button';
   }
-  function haIconSvg(domain) {
+  // A reading's icon by what it measures, or a gauge.
+  var HA_SENSOR_ICONS = {
+    temperature: '<path d="M14 14.76V3.5a2 2 0 0 0-4 0v11.26a4 4 0 1 0 4 0z"/>',
+    humidity: '<path d="M12 3c3 4 6 7.5 6 11a6 6 0 0 1-12 0c0-3.5 3-7 6-11z"/>',
+    moisture: '<path d="M12 3c3 4 6 7.5 6 11a6 6 0 0 1-12 0c0-3.5 3-7 6-11z"/>',
+    battery: '<rect x="3" y="7" width="16" height="10" rx="2"/><path d="M22 11v2M7 10v4M11 10v4"/>',
+    power: '<path d="M13 2L4 14h7l-1 8 9-12h-7z"/>',
+    energy: '<path d="M13 2L4 14h7l-1 8 9-12h-7z"/>',
+    current: '<path d="M13 2L4 14h7l-1 8 9-12h-7z"/>',
+    voltage: '<path d="M13 2L4 14h7l-1 8 9-12h-7z"/>',
+    illuminance: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
+    pm25: '<path d="M3 8h11a3 3 0 1 0-3-3M3 12h15a3 3 0 1 1-3 3M3 16h7"/>',
+    pm10: '<path d="M3 8h11a3 3 0 1 0-3-3M3 12h15a3 3 0 1 1-3 3M3 16h7"/>',
+    carbon_dioxide: '<path d="M3 8h11a3 3 0 1 0-3-3M3 12h15a3 3 0 1 1-3 3M3 16h7"/>',
+    aqi: '<path d="M3 8h11a3 3 0 1 0-3-3M3 12h15a3 3 0 1 1-3 3M3 16h7"/>',
+    volatile_organic_compounds: '<path d="M3 8h11a3 3 0 1 0-3-3M3 12h15a3 3 0 1 1-3 3M3 16h7"/>',
+    door: '<path d="M5 21V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v17M3 21h18M14 12h.01"/>',
+    window: '<rect x="4" y="3" width="16" height="18" rx="1"/><path d="M12 3v18M4 12h16"/>',
+    opening: '<path d="M5 21V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v17M3 21h18M14 12h.01"/>',
+    motion: '<circle cx="13" cy="4" r="2"/><path d="M9 21l3-6 3 3v3M7 12l3-4 4 1 3 3M10 8l-1 5"/>',
+    occupancy: '<circle cx="12" cy="7" r="3"/><path d="M5 21a7 7 0 0 1 14 0"/>'
+  };
+  var HA_GAUGE_ICON = '<path d="M4 18a8 8 0 1 1 16 0"/><path d="M12 14l4-4"/>';
+  function haIconSvg(domain, deviceClass) {
+    if (domain === 'sensor' || domain === 'binary_sensor') {
+      return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + (HA_SENSOR_ICONS[deviceClass] || HA_GAUGE_ICON) + '</svg>';
+    }
     if (domain === 'light') {
       return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-4 10.5c.6.6 1 1.5 1 2.5h6c0-1 .4-1.9 1-2.5A6 6 0 0 0 12 3z"/></svg>';
     }
@@ -1583,7 +1609,7 @@ html[lang="vi"] #srcTitle,html[lang="vi"] #plMode,html[lang="vi"] #pvMode,html[l
       ? '<div class="ha-meter"><i style="width:' + Math.max(0, Math.min(100, h.pct)) + '%"></i></div>'
       : '';
     var subHtml = h.subText ? '<div class="ha-sub">' + esc(h.subText) + '</div>' : '';
-    return '<div class="ha-top"><div class="ha-ico">' + haIconSvg(h.domain) + '</div>' + steps + '</div>' +
+    return '<div class="ha-top"><div class="ha-ico">' + haIconSvg(h.domain, h.deviceClass) + '</div>' + steps + '</div>' +
       '<div class="ha-nm">' + esc(h.label || h.id) + '</div>' +
       '<div class="ha-bot"><div class="ha-val">' + esc(valText) + '</div>' + subHtml + meter + '</div>';
   }
@@ -2810,7 +2836,7 @@ html[lang="vi"] #srcTitle,html[lang="vi"] #plMode,html[lang="vi"] #pvMode,html[l
       return openPlayer(it);
     }
     if (kind === 'ha') {
-      if (it.domain === 'sensor' || it.domain === 'binary_sensor') return;
+      if (it.readOnly || it.domain === 'sensor' || it.domain === 'binary_sensor') return;
       return actHa(it, 'toggle');
     }
     // The input goes back to its own app, which opens it full screen.
