@@ -1335,12 +1335,12 @@ button.pill.flash.idle[disabled]:hover{color:var(--w60);border-color:var(--edge)
 .ha-bar-ent{min-width:0}
 .ha-bar-ent .nm{font-size:14px;font-weight:600;color:var(--w90);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .ha-bar-ent .id{font-size:12px;color:var(--w60);font-family:ui-monospace,SFMono-Regular,Menlo,monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.ha-bar-label{width:100%;min-width:0;box-sizing:border-box;font-family:'Manrope';font-size:13px;color:var(--w100);background:transparent;border:1px solid var(--edge);padding:7px 10px;border-radius:var(--r-sm);outline:none}
+.ha-bar-label{width:100%;min-width:0;box-sizing:border-box;height:34px;font-family:'Manrope';font-size:13px;color:var(--w100);background:transparent;border:1px solid var(--edge);padding:0 10px;border-radius:var(--r-sm);outline:none}
 .ha-bar-label:focus{border-color:var(--w100)}
-.ha-bar-btns{display:flex;gap:4px}
 .ha-bar-remote-hint{margin-top:12px;margin-bottom:0}
-.ha-bar-actions{margin-top:14px;align-items:center}
-.ha-bar-preview{text-decoration:none;display:inline-flex;align-items:center}
+.ha-bar-actions{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:16px}
+.ha-bar-actions[hidden]{display:none}
+.ha-bar-preview{text-decoration:none}
 @media (max-width:560px){.ha-bar-row{grid-template-columns:1fr}}
 .mqtt-net.off .mqtt-net-node{opacity:.6}
 .mqtt-net.off .mqtt-net-link{opacity:.4}

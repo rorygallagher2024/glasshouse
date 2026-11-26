@@ -90,10 +90,10 @@ function renderHaBar() {
     return '<div class="ha-bar-row">' +
       '<div class="ha-bar-ent"><div class="nm">' + esc(title) + '</div><div class="id">' + esc(meta) + '</div></div>' +
       '<input type="text" class="ha-bar-label" value="' + esc(item.label || '') + '" placeholder="' + placeholder + '" onchange="haBarLabel(' + i + ', this.value)"' + dis + '>' +
-      '<div class="ha-bar-btns">' +
-        '<button type="button" class="ss-li-btn" aria-label="' + upLbl + '" title="' + upLbl + '" onclick="haBarMove(' + i + ', -1)"' + (i === 0 || !cfgHaWritable ? ' disabled' : '') + '>&uarr;</button>' +
-        '<button type="button" class="ss-li-btn" aria-label="' + dnLbl + '" title="' + dnLbl + '" onclick="haBarMove(' + i + ', 1)"' + (i === haBarEntities.length - 1 || !cfgHaWritable ? ' disabled' : '') + '>&darr;</button>' +
-        '<button type="button" class="ss-li-btn" aria-label="' + rmLbl + '" title="' + rmLbl + '" onclick="haBarRemove(' + i + ')"' + dis + '>&times;</button>' +
+      '<div class="ss-li-acts">' +
+        '<button type="button" aria-label="' + upLbl + '" title="' + upLbl + '" onclick="haBarMove(' + i + ', -1)"' + (i === 0 || !cfgHaWritable ? ' disabled' : '') + '>&uarr;</button>' +
+        '<button type="button" aria-label="' + dnLbl + '" title="' + dnLbl + '" onclick="haBarMove(' + i + ', 1)"' + (i === haBarEntities.length - 1 || !cfgHaWritable ? ' disabled' : '') + '>&darr;</button>' +
+        '<button type="button" aria-label="' + rmLbl + '" title="' + rmLbl + '" onclick="haBarRemove(' + i + ')"' + dis + '>&times;</button>' +
       '</div></div>';
   }).join('');
 }

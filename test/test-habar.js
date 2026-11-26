@@ -19,7 +19,10 @@ var dir = path.join(os.tmpdir(), 'habar-' + process.pid);
 fs.mkdirSync(dir);
 
 function cleanup() {
-  try { fs.rmSync(dir, { recursive: true, force: true }); } catch (e) {}
+  try {
+    fs.readdirSync(dir).forEach(function (f) { fs.unlinkSync(path.join(dir, f)); });
+    fs.rmdirSync(dir);
+  } catch (e) {}
 }
 
 var states = {
@@ -230,7 +233,7 @@ server.listen(0, '127.0.0.1', function () {
                           assert.strictEqual(readEnts.length, 7);
                           part.write([{ id: 'switch.kettle', label: 'Tea' }], function (wr) {
                             assert.strictEqual(wr.ok, true);
-                            assert.deepStrictEqual(haBar.listConfig().entities, [{ id: 'switch.kettle', label: 'Tea' }]);
+                            assert.deepEqual(haBar.listConfig().entities, [{ id: 'switch.kettle', label: 'Tea' }]);
                             console.log('  \u2713 backup part reads and restores haBar entities');
 
                             // 9. Quick Access integration
