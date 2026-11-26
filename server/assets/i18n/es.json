@@ -3928,5 +3928,7 @@
  "srv.community.invalidSaver": {"from": "This package is not a valid screen saver.", "text": "Este paquete no es un salvapantallas válido."},
  "srv.community.launcherUnavailable": {"from": "Launcher installation is not available.", "text": "La instalación de lanzadores no está disponible."},
  "srv.community.saverUnavailable": {"from": "Screen saver installation is not available.", "text": "La instalación de salvapantallas no está disponible."},
- "srv.community.unknown": {"from": "Unknown community item.", "text": "Elemento de la comunidad desconocido."}
+ "srv.community.unknown": {"from": "Unknown community item.", "text": "Elemento de la comunidad desconocido."},
+ "community.ss.docs": {"from": "Writing a screen saver", "text": "Escribir un salvapantallas"},
+ "community.submit": {"from": "Submit to the catalog", "text": "Enviar al catálogo"}
 }

@@ -3928,5 +3928,7 @@
  "srv.community.invalidSaver": {"from": "This package is not a valid screen saver.", "text": "هذه الحزمة ليست شاشة توقف صالحة."},
  "srv.community.launcherUnavailable": {"from": "Launcher installation is not available.", "text": "تثبيت المشغّلات غير متاح."},
  "srv.community.saverUnavailable": {"from": "Screen saver installation is not available.", "text": "تثبيت شاشات التوقف غير متاح."},
- "srv.community.unknown": {"from": "Unknown community item.", "text": "عنصر مجتمع غير معروف."}
+ "srv.community.unknown": {"from": "Unknown community item.", "text": "عنصر مجتمع غير معروف."},
+ "community.ss.docs": {"from": "Writing a screen saver", "text": "كتابة شاشة توقف"},
+ "community.submit": {"from": "Submit to the catalog", "text": "إرسال إلى الكتالوج"}
 }

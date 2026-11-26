@@ -3946,5 +3946,7 @@
  "srv.community.invalidSaver": {"from": "This package is not a valid screen saver.", "text": "Ten pakiet nie jest prawidłowym wygaszaczem ekranu."},
  "srv.community.launcherUnavailable": {"from": "Launcher installation is not available.", "text": "Instalacja launcherów jest niedostępna."},
  "srv.community.saverUnavailable": {"from": "Screen saver installation is not available.", "text": "Instalacja wygaszaczy jest niedostępna."},
- "srv.community.unknown": {"from": "Unknown community item.", "text": "Nieznany element społeczności."}
+ "srv.community.unknown": {"from": "Unknown community item.", "text": "Nieznany element społeczności."},
+ "community.ss.docs": {"from": "Writing a screen saver", "text": "Pisanie wygaszacza ekranu"},
+ "community.submit": {"from": "Submit to the catalog", "text": "Zgłoś do katalogu"}
 }

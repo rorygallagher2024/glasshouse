@@ -203,6 +203,14 @@ try it in a computer's browser first: open
 too, and opening an app opens it on the TV. Where the dashboard has a token,
 the launcher and Glasshouse's calls answer only the TV itself.
 
+## Sharing it
+
+To publish a custom launcher in **Community launchers**:
+
+1. Keep your web launcher in a GitHub repository (`index.html` at the root or inside one wrapper folder, pure HTML/JS/CSS without native services or binaries) and test it on a TV via **Home → Custom → Community launchers → Install from a GitHub link or .zip URL**.
+2. Tag a GitHub release attaching a `.zip` archive or web-app `.ipk` package and compute its SHA-256 checksum (`shasum -a 256 my-launcher.zip` or `sha256sum my-launcher.zip`).
+3. Open a pull request against [rorygallagher2024/glasshouse-catalog](https://github.com/rorygallagher2024/glasshouse-catalog) adding your entry to `registry.json`.
+
 ## Troubleshooting
 
 **LG's Home appears instead of the launcher.** The launcher stopped answering:

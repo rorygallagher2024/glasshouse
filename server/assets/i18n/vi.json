@@ -3944,5 +3944,7 @@
  "srv.community.invalidSaver": {"from": "This package is not a valid screen saver.", "text": "Gói này không phải là trình bảo vệ màn hình hợp lệ."},
  "srv.community.launcherUnavailable": {"from": "Launcher installation is not available.", "text": "Không thể cài đặt trình khởi chạy."},
  "srv.community.saverUnavailable": {"from": "Screen saver installation is not available.", "text": "Không thể cài đặt trình bảo vệ màn hình."},
- "srv.community.unknown": {"from": "Unknown community item.", "text": "Mục cộng đồng không xác định."}
+ "srv.community.unknown": {"from": "Unknown community item.", "text": "Mục cộng đồng không xác định."},
+ "community.ss.docs": {"from": "Writing a screen saver", "text": "Viết trình bảo vệ màn hình"},
+ "community.submit": {"from": "Submit to the catalog", "text": "Gửi lên danh mục"}
 }

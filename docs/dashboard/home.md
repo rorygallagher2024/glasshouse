@@ -443,7 +443,7 @@ A home screen of your own can take Glasshouse Home's place: a launcher you have 
 
 Under **Choose your launcher** on the web dashboard's **Home** tab, choose **Custom**. Its settings open below it, to set one up, either:
 
-* **Community launchers:** Install third-party launchers from [rorygallagher2024/glasshouse-catalog](https://github.com/rorygallagher2024/glasshouse-catalog) (or test one from an `https://` GitHub repository or `.zip` link when **Install app from a URL or file** is enabled). Each listing names its author, licence, version, and source repository.
+* **Community launchers:** Install third-party launchers from [rorygallagher2024/glasshouse-catalog](https://github.com/rorygallagher2024/glasshouse-catalog) (or test one from an `https://` GitHub repository or `.zip` link when **Install app from a URL or file** is enabled). Each listing names its author, licence, version, and source repository. See [Writing a launcher](../development/WRITING-LAUNCHERS.md) to build and submit one.
 * **Upload a launcher:** a web app as an `.ipk` package, a `.zip` of its folder, or a single `.html` file, up to 50 MB. Native apps can't be used. As with installing an app from a file, this needs **Install app from a URL or file** switched on on the [Apps tab](apps.md#install-app-from-a-url-or-file), or a token.
 * **Or open a web page:** an address starting with `http://` or `https://`, shown full screen. Some sites refuse to be shown inside another page; Home Assistant does unless it is told to allow it ([Writing a launcher](../development/WRITING-LAUNCHERS.md#a-web-page) has the setting).
 

@@ -3928,5 +3928,7 @@
  "srv.community.invalidSaver": {"from": "This package is not a valid screen saver.", "text": "Ce paquet n’est pas un économiseur d’écran valide."},
  "srv.community.launcherUnavailable": {"from": "Launcher installation is not available.", "text": "L’installation de lanceurs n’est pas disponible."},
  "srv.community.saverUnavailable": {"from": "Screen saver installation is not available.", "text": "L’installation d’économiseurs d’écran n’est pas disponible."},
- "srv.community.unknown": {"from": "Unknown community item.", "text": "Élément communautaire inconnu."}
+ "srv.community.unknown": {"from": "Unknown community item.", "text": "Élément communautaire inconnu."},
+ "community.ss.docs": {"from": "Writing a screen saver", "text": "Écrire un économiseur d’écran"},
+ "community.submit": {"from": "Submit to the catalog", "text": "Proposer au catalogue"}
 }

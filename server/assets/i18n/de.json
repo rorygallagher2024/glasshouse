@@ -1334,5 +1334,7 @@
  "srv.community.invalidSaver": {"from": "This package is not a valid screen saver.", "text": "Dieses Paket ist kein gültiger Bildschirmschoner."},
  "srv.community.launcherUnavailable": {"from": "Launcher installation is not available.", "text": "Launcher-Installation ist nicht verfügbar."},
  "srv.community.saverUnavailable": {"from": "Screen saver installation is not available.", "text": "Bildschirmschoner-Installation ist nicht verfügbar."},
- "srv.community.unknown": {"from": "Unknown community item.", "text": "Unbekannter Community-Eintrag."}
+ "srv.community.unknown": {"from": "Unknown community item.", "text": "Unbekannter Community-Eintrag."},
+ "community.ss.docs": {"from": "Writing a screen saver", "text": "Bildschirmschoner schreiben"},
+ "community.submit": {"from": "Submit to the catalog", "text": "Zum Katalog hinzufügen"}
 }

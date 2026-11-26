@@ -3944,5 +3944,7 @@
  "srv.community.invalidSaver": {"from": "This package is not a valid screen saver.", "text": "Det här paketet är ingen giltig skärmsläckare."},
  "srv.community.launcherUnavailable": {"from": "Launcher installation is not available.", "text": "Installation av startskärmar är inte tillgänglig."},
  "srv.community.saverUnavailable": {"from": "Screen saver installation is not available.", "text": "Installation av skärmsläckare är inte tillgänglig."},
- "srv.community.unknown": {"from": "Unknown community item.", "text": "Okänt gemenskapsobjekt."}
+ "srv.community.unknown": {"from": "Unknown community item.", "text": "Okänt gemenskapsobjekt."},
+ "community.ss.docs": {"from": "Writing a screen saver", "text": "Skriva en skärmsläckare"},
+ "community.submit": {"from": "Submit to the catalog", "text": "Skicka till katalogen"}
 }

@@ -3942,5 +3942,7 @@
  "srv.community.invalidSaver": {"from": "This package is not a valid screen saver.", "text": "Этот пакет не является корректной заставкой."},
  "srv.community.launcherUnavailable": {"from": "Launcher installation is not available.", "text": "Установка лаунчеров недоступна."},
  "srv.community.saverUnavailable": {"from": "Screen saver installation is not available.", "text": "Установка заставок недоступна."},
- "srv.community.unknown": {"from": "Unknown community item.", "text": "Неизвестный элемент сообщества."}
+ "srv.community.unknown": {"from": "Unknown community item.", "text": "Неизвестный элемент сообщества."},
+ "community.ss.docs": {"from": "Writing a screen saver", "text": "Как написать заставку"},
+ "community.submit": {"from": "Submit to the catalog", "text": "Добавить в каталог"}
 }

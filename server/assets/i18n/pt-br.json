@@ -3928,5 +3928,7 @@
  "srv.community.invalidSaver": {"from": "This package is not a valid screen saver.", "text": "Este pacote não é um protetor de tela válido."},
  "srv.community.launcherUnavailable": {"from": "Launcher installation is not available.", "text": "A instalação de launchers não está disponível."},
  "srv.community.saverUnavailable": {"from": "Screen saver installation is not available.", "text": "A instalação de protetores de tela não está disponível."},
- "srv.community.unknown": {"from": "Unknown community item.", "text": "Item da comunidade desconhecido."}
+ "srv.community.unknown": {"from": "Unknown community item.", "text": "Item da comunidade desconhecido."},
+ "community.ss.docs": {"from": "Writing a screen saver", "text": "Escrever um protetor de tela"},
+ "community.submit": {"from": "Submit to the catalog", "text": "Enviar para o catálogo"}
 }

@@ -3942,5 +3942,7 @@
  "srv.community.invalidSaver": {"from": "This package is not a valid screen saver.", "text": "Ez a csomag nem érvényes képernyővédő."},
  "srv.community.launcherUnavailable": {"from": "Launcher installation is not available.", "text": "Az indító telepítése nem érhető el."},
  "srv.community.saverUnavailable": {"from": "Screen saver installation is not available.", "text": "A képernyővédő telepítése nem érhető el."},
- "srv.community.unknown": {"from": "Unknown community item.", "text": "Ismeretlen közösségi elem."}
+ "srv.community.unknown": {"from": "Unknown community item.", "text": "Ismeretlen közösségi elem."},
+ "community.ss.docs": {"from": "Writing a screen saver", "text": "Képernyővédő írása"},
+ "community.submit": {"from": "Submit to the catalog", "text": "Beküldés a katalógusba"}
 }
