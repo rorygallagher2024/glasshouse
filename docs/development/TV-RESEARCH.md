@@ -3998,6 +3998,13 @@ bind-mounted over the file takes effect once the input app is restarted
 launch. With an input in front, the B8 keeps the input and draws it again after
 a moment; the C2 closes the input and opens Home.
 
+On webOS 9.2.2 (and 10.3.1), when LG's **No Signal Image** setting
+(`general.noSignalScreenSaver`, `"on"` by default) is enabled,
+`noSignalPhotoModel.enabled` is true: `PhotoSlide` (`photoModel:
+noSignalPhotoModel`) displays LG's gallery photos together with
+`textBoxOverPhoto`, while `RandomMoveItem` is hidden by
+`visible: visibleScreensaver && noSignalPhotoModel && !noSignalPhotoModel.enabled && !noSignalPhotoModel.opend`.
+
 A TV boots onto its last input, and the input app is started early in the boot
 (5 s in on the C2, 7 s on the B8), before the Homebrew Channel's start-up runs.
 `com.webos.service.eim/getAllInputStatus` lists each input with `activate`:
