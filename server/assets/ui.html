@@ -2575,49 +2575,57 @@
 
     <div class="ha-bar-section" id="ha-bar-section" hidden>
       <div class="pv-h" data-t="ha.bar.title">Home Assistant control bar</div>
-      <div class="pv-sub" data-t="ha.bar.desc">An overlay row of Home Assistant controls along the bottom of the TV screen. Add lights, switches, climate entities, fans, covers, locks, scenes or scripts, then assign Home Assistant bar to a button on the Remote tab.</div>
-      <div class="home-info-addbox" id="ha-bar-addbox">
-        <div class="ss-li-head">
-          <label for="ha-bar-add" data-t="ha.bar.addLabel">Add entity to bar</label>
-          <span class="ss-li-count num" id="ha-bar-count"></span>
-        </div>
-        <div class="ss-li-add">
-          <div class="ss-ent-wrap">
-            <input type="text" id="ha-bar-add" placeholder="light.living_room" translate="no" autocomplete="off" spellcheck="false"
-              aria-describedby="ha-bar-msg" aria-expanded="false"
-              oninput="haBarFilter()"
-              onkeydown="if(!haPickerKeydown(event,'ha:bar')&&event.key==='Enter'){event.preventDefault();haBarAdd();}">
-            <button type="button" class="ss-ent-btn" id="ha-bar-pick-btn" title="Choose entity" data-t-title="ss.chooseEntity" aria-label="Choose entity" data-t-aria-label="ss.chooseEntity" onclick="haBarTogglePicker()">&#9662;</button>
-            <div class="ss-pick-list ss-ha-list ha-picker" id="ha-bar-picker" hidden></div>
+      <div class="pv-sub" data-t="ha.bar.intro">A row of Home Assistant controls over the picture, opened with a remote key: lights, switches, climate, fans, covers, locks, scenes and scripts.</div>
+      <div class="ha-bar-cols">
+        <div class="ha-bar-side">
+          <div class="home-info-addbox" id="ha-bar-addbox">
+            <div class="ss-li-head">
+              <label for="ha-bar-add" data-t="ha.bar.addOne">Add an entity</label>
+            </div>
+            <div class="ss-li-add">
+              <div class="ss-ent-wrap">
+                <input type="text" id="ha-bar-add" placeholder="light.living_room" translate="no" autocomplete="off" spellcheck="false"
+                  aria-describedby="ha-bar-msg" aria-expanded="false"
+                  oninput="haBarFilter()"
+                  onkeydown="if(!haPickerKeydown(event,'ha:bar')&&event.key==='Enter'){event.preventDefault();haBarAdd();}">
+                <button type="button" class="ss-ent-btn" id="ha-bar-pick-btn" title="Choose entity" data-t-title="ss.chooseEntity" aria-label="Choose entity" data-t-aria-label="ss.chooseEntity" onclick="haBarTogglePicker()">&#9662;</button>
+                <div class="ss-pick-list ss-ha-list ha-picker" id="ha-bar-picker" hidden></div>
+              </div>
+              <button type="button" class="ss-li-add-btn" id="ha-bar-add-btn" onclick="haBarAdd()" data-t="ss.entityList.addBtn">Add</button>
+            </div>
+            <span class="cfg-msg" id="ha-bar-msg" role="status" aria-live="polite"></span>
           </div>
-          <button type="button" class="ss-li-add-btn" id="ha-bar-add-btn" onclick="haBarAdd()" data-t="ss.entityList.addBtn">Add</button>
-        </div>
-      </div>
-      <div class="ha-bar-list" id="ha-bar-list"></div>
-      <div class="pv-sub ha-bar-remote-hint" id="ha-bar-remote-hint" hidden>
-        <span data-t="ha.bar.remoteHint">Map Home Assistant bar to a remote or Quick Access key on the</span>
-        <a href="?tab=remote" onclick="event.preventDefault(); showTab('remote');" data-t="ha.bar.remoteLink">Remote tab</a>.
-      </div>
-      <div class="pv-table" id="ha-bar-opts-wrap" style="max-width:560px;margin-top:14px" hidden>
-        <div class="pv-row" id="ha-bar-homebar-row" hidden>
-          <div>
-            <div class="n" data-t="ha.bar.inHomeBar">Show in Glasshouse Bar</div>
-            <div class="d" data-t="ha.bar.inHomeBarDesc">Adds a Home Assistant tile at the end of Glasshouse Bar to open this control bar.</div>
+          <div class="ha-bar-open" id="ha-bar-actions" hidden>
+            <div class="pv-sub ha-bar-remote-hint" id="ha-bar-remote-hint">
+              <span data-t="ha.bar.keyHint">To open it, set a key to Home Assistant bar on the</span>
+              <a href="?tab=remote" onclick="event.preventDefault(); showTab('remote');" data-t="ha.bar.remoteLink">Remote tab</a>.
+            </div>
+            <div class="ha-bar-actions">
+              <button type="button" class="pill idle" id="ha-bar-open-btn" onclick="openHaBarOnTv()" data-t="ha.bar.openOnTv">Open on TV</button>
+              <a class="pill idle ha-bar-preview" id="ha-bar-preview-link" href="/assets/habar.html" target="_blank" rel="noopener" data-t="ha.bar.preview">Preview</a>
+            </div>
           </div>
-          <button type="button" class="pill idle" id="ha-bar-homebar-btn" onclick="haBarToggleInHomeBar()">&mdash;</button>
-        </div>
-        <div class="pv-row" id="ha-bar-hints-row">
-          <div>
-            <div class="n" data-t="ha.bar.showHints">Button hints</div>
-            <div class="d" data-t="ha.bar.showHintsDesc">Show remote control hints (OK toggle, Up/Down adjust, Back close) above the Home Assistant bar and on the Glasshouse Home row.</div>
+          <div class="pv-table ha-bar-opts" id="ha-bar-opts-wrap" hidden>
+            <div class="pv-row" id="ha-bar-hints-row">
+              <div>
+                <div class="n" data-t="ha.bar.showHints">Button hints</div>
+                <div class="d" data-t="ha.bar.hintsWhere">Which remote buttons do what, above the control bar and on Glasshouse Home's Home Assistant row.</div>
+              </div>
+              <button type="button" class="pill idle" id="ha-bar-hints-btn" onclick="haBarToggleHints()" data-t="common.on">On</button>
+            </div>
           </div>
-          <button type="button" class="pill idle" id="ha-bar-hints-btn" onclick="haBarToggleHints()" data-t="common.on">On</button>
+          <div class="pv-sub ha-bar-home-note" id="ha-bar-home-note" hidden>
+            <span data-t="ha.bar.homeNote">Glasshouse Home can show these entities as a row, and Glasshouse Bar as a tile, both set on the</span>
+            <a href="?tab=home" onclick="event.preventDefault(); showTab('home');" data-t="ha.bar.homeLink">Home tab</a>.
+          </div>
         </div>
-      </div>
-      <div class="ha-bar-actions" id="ha-bar-actions" hidden>
-        <button type="button" class="pill idle" id="ha-bar-open-btn" onclick="openHaBarOnTv()" data-t="ha.bar.openOnTv">Open on TV</button>
-        <a class="pill idle ha-bar-preview" id="ha-bar-preview-link" href="/assets/habar.html" target="_blank" rel="noopener" data-t="ha.bar.preview">Preview</a>
-        <span class="cfg-msg" id="ha-bar-msg" role="status" aria-live="polite"></span>
+        <div class="ha-bar-main">
+          <div class="ha-bar-main-head">
+            <span data-t="ha.bar.onBar">On the bar</span>
+            <span class="ss-li-count num" id="ha-bar-count"></span>
+          </div>
+          <div class="ha-bar-list" id="ha-bar-list"></div>
+        </div>
       </div>
     </div>
   </div>

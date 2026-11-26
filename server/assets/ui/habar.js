@@ -3,8 +3,6 @@
 const HA_BAR_MAX = 16;
 let haBarEntities = [];
 let haBarConfigured = false;
-let haBarInHomeBar = false;
-let haBarHomeBarOffered = false;
 let haBarShowHints = true;
 let haBarMsgTimer = null;
 
@@ -56,7 +54,7 @@ function renderHaBar() {
   if (!haBarConfigured) return;
 
   const count = q('ha-bar-count');
-  if (count) count.textContent = haBarEntities.length + ' / ' + HA_BAR_MAX;
+  if (count) count.textContent = t('ha.bar.countOf', '{n} of {max}', { n: haBarEntities.length, max: HA_BAR_MAX });
   const full = haBarEntities.length >= HA_BAR_MAX;
   const addInp = q('ha-bar-add');
   const addBtn = q('ha-bar-add-btn');
@@ -67,17 +65,10 @@ function renderHaBar() {
 
   const actions = q('ha-bar-actions');
   if (actions) actions.hidden = !haBarEntities.length;
-  const hint = q('ha-bar-remote-hint');
-  if (hint) hint.hidden = !haBarEntities.length;
   const optsWrap = q('ha-bar-opts-wrap');
   if (optsWrap) optsWrap.hidden = !haBarEntities.length;
-  const hbRow = q('ha-bar-homebar-row');
-  const hbBtn = q('ha-bar-homebar-btn');
-  if (hbRow) hbRow.hidden = !haBarEntities.length || !haBarHomeBarOffered;
-  if (hbBtn) {
-    updateToggle(hbBtn, { cls: haBarInHomeBar ? 'good' : 'idle', label: haBarInHomeBar ? t('common.on', 'On') : t('common.off', 'Off'), on: haBarInHomeBar });
-    hbBtn.disabled = !cfgHaWritable || !haBarEntities.length;
-  }
+  const homeNote = q('ha-bar-home-note');
+  if (homeNote) homeNote.hidden = !haBarEntities.length;
   const hintsBtn = q('ha-bar-hints-btn');
   if (hintsBtn) {
     updateToggle(hintsBtn, { cls: haBarShowHints ? 'good' : 'idle', label: haBarShowHints ? t('common.on', 'On') : t('common.off', 'Off'), on: haBarShowHints });
@@ -91,7 +82,7 @@ function renderHaBar() {
   const listEl = q('ha-bar-list');
   if (!listEl) return;
   if (!haBarEntities.length) {
-    listEl.innerHTML = '<div class="sub">' + esc(t('ha.bar.empty', 'No entities added yet.')) + '</div>';
+    listEl.innerHTML = '<div class="ha-bar-empty">' + esc(t('ha.bar.emptyAdd', 'Nothing on the bar yet. Add a light, a switch or a scene to start.')) + '</div>';
     return;
   }
   const placeholder = esc(t('ha.bar.labelPlaceholder', 'Optional label'));
@@ -121,8 +112,6 @@ async function loadHaBar() {
     const j = await r.json();
     if (!j || !j.ok) return;
     haBarConfigured = !!j.configured;
-    haBarInHomeBar = !!j.inHomeBar;
-    haBarHomeBarOffered = !!j.homeBarOffered;
     haBarShowHints = j.showHints !== false;
     haBarEntities = Array.isArray(j.entities) ? j.entities : [];
     renderHaBar();
@@ -202,31 +191,6 @@ async function haBarLabel(idx, val) {
   haBarEntities[idx].label = String(val || '').trim();
   if (!(await saveHaBar())) {
     haBarEntities[idx].label = prev;
-    renderHaBar();
-  }
-}
-
-async function haBarToggleInHomeBar() {
-  const btn = q('ha-bar-homebar-btn');
-  if (btn) btn.disabled = true;
-  try {
-    const r = await fetch(api('/api/home/layout'), {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ haBarInHomeBar: !haBarInHomeBar })
-    });
-    const j = await r.json();
-    if (!j || !j.ok || !j.layout) {
-      setHaBarMsg((j && j.error) || t('mqtt.saveFailed', 'Save failed'), 'bad');
-      return;
-    }
-    haBarInHomeBar = j.layout.haBarInHomeBar === true;
-    renderHaBar();
-    if (typeof loadHome === 'function' && typeof homeStatus !== 'undefined' && homeStatus) loadHome(true);
-    setHaBarMsg(t('ha.bar.saved', 'Saved.'), 'good');
-  } catch (e) {
-    setHaBarMsg(e.message, 'bad');
-  } finally {
     renderHaBar();
   }
 }
