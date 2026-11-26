@@ -1416,6 +1416,16 @@
   <details class="pv-d" id="disc-remotekeys" open hidden>
     <summary><span data-t="apps.remoteKeys">Remote keys</span> <span class="cur" id="apps-rk-summary"></span></summary>
     <div class="pv-sub" data-t="apps.remoteKeys.desc">What a key on the remote does: as LG has it, nothing, or opening an app or input instead.</div>
+    <div class="prot-table" id="apps-remote-filter" hidden>
+      <div class="prot-row">
+        <div class="prot-main">
+          <div class="prot-title" data-t="apps.remote.only">Display only buttons for your remote</div>
+          <div class="prot-desc" data-t="apps.remote.desc">Hides buttons your remote does not have. Off, the Buttons on other remotes section comes back. Keys you have changed always stay visible.</div>
+          <div class="prot-desc" id="apps-remote-detected"></div>
+        </div>
+        <div class="prot-status"><button type="button" class="pill idle" id="btn_remote_only" onclick="toggleRemoteOnly()">&mdash;</button></div>
+      </div>
+    </div>
     <div id="apps-rk-list"></div>
   </details>
 </section>
@@ -1871,7 +1881,7 @@
     <div class="prot-row home-gh-row home-motion-row" hidden>
       <div class="prot-main">
         <div class="prot-title" data-t="home.motion.drift">Wallpaper drift</div>
-        <div class="prot-desc" data-t="home.motion.driftDesc">The wallpaper moves and zooms very slowly, so it never sits still on the screen.</div>
+        <div class="prot-desc" data-t="home.motion.driftDesc">The wallpaper shifts sideways very slowly, so it never sits still on the screen.</div>
       </div>
       <div class="prot-status"><button type="button" class="pill idle" id="home-motion-wallDrift" onclick="homeMotion('wallDrift')">&mdash;</button></div>
     </div>
@@ -2441,11 +2451,21 @@
             <div class="hint" id="cfg-ha-token-hint" data-t="ha.token.hint">From your Home Assistant profile &rarr; Long-Lived Access Tokens.</div>
           </div>
         </div>
+        <div class="pv-table" id="cfg-ha-verify-row" style="margin-top:8px" hidden>
+          <div class="pv-row">
+            <div>
+              <div class="n" data-t="mqtt.verify">Verify certificate</div>
+              <div class="d" data-t="ha.verify.desc">Turn off for a self-signed certificate or an HTTPS address reached by LAN IP.</div>
+            </div>
+            <button type="button" class="pill idle" id="cfg-ha-verify" onclick="toggleHaVerify()">&mdash;</button>
+          </div>
+        </div>
         <div class="cfg-save" style="margin-top:14px">
           <button type="button" id="cfg-ha-save-btn" onclick="saveHaSettings()" data-t="ha.save">Save</button>
           <button type="button" id="cfg-ha-test-btn" onclick="testHaConnection()" data-t="ha.test">Test connection</button>
           <span class="cfg-msg" id="cfg-ha-msg" role="status" aria-live="polite"></span>
         </div>
+        <div class="err-note" id="cfg-ha-error" role="alert" hidden></div>
       </div>
     </div>
   </div>
@@ -2500,6 +2520,13 @@
           <div class="prot-desc" data-t="server.checkDaily.desc">Looks for a new release once a day.</div>
         </div>
         <div class="prot-status"><button type="button" class="pill idle" id="upd-auto" onclick="toggleAutoCheck()">&mdash;</button></div>
+      </div>
+      <div class="prot-row">
+        <div class="prot-main">
+          <div class="prot-title" data-t="server.askOnTv">Ask on the TV</div>
+          <div class="prot-desc" data-t="server.askOnTv.desc">When the daily check finds a new release, asks on the TV whether to install it, with Update now and Later, after the TV is next switched on. Each release is asked about until it is answered.</div>
+        </div>
+        <div class="prot-status"><button type="button" class="pill idle" id="upd-asktv" onclick="toggleAskOnTv()">&mdash;</button></div>
       </div>
       <div class="prot-row">
         <div class="prot-main">

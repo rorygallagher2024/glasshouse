@@ -130,12 +130,42 @@ its own, `lib/iptv-worker.js` with its readers in `lib/iptv-parse.js`:
   a row, about a minute, as a provider's CDN was seen sending nothing for 30
   to 50 s at a time, and has them all back after 30 s of playing. One that
   never played gets two, as a one-stream account can refuse a channel change
-  for a moment, and none for no picture at all. Each reconnect adds
+  for a moment, and none for no picture at all on a first open; no picture
+  after a refused try gets the two as well. Each reconnect adds
   `gh=<time>` to the URL, as a provider's CDN may be holding a copy of the
   playlist the TV cannot read, such as one gzipped for a client with no
   `Accept-Encoding`. Home sends no Referer, as `localhost` gets a 204 from the
   same CDN. The message only mentions a limit on streams for a playlist with an
   account, which `/api/iptv/stream` reports as `account`.
+- **Home's own player for MPEG-TS**: a provider's MPEG-TS channel plays in
+  mpegts.js (`assets/vendor/mpegts.js`, loaded on the first such channel,
+  driven by `assets/home-iptv.js`),
+  which reads it through `/api/iptv/relay` and feeds the TV's decoder through
+  Media Source Extensions. On top of the rules above: under half a second
+  buffered, the picture is paused until 3 s are buffered again, 3 s more each
+  time on the same stream up to 12 s, and reopened if that does not come; a
+  hole ahead is jumped as the picture reaches it; a picture frozen with over a
+  second buffered is stepped on (`currentTime + 0.1`, at most once in 30 s)
+  after 1.5 s and reopened after 4 s. It keeps 12 to 24 s behind the picture:
+  a browser removes video up to the next keyframe after the end it is given.
+  A channel with no H.264 or HEVC video, with MPEG sound (MP2, read as mp3:
+  a G3 on webOS 10.3 showed no picture with it), with two decoding errors
+  in a visit without 30 s of playing between them, or with no picture in
+  12 s on its first open, goes to the TV's player for the rest of the visit.
+  mpegts.js reads the stream on the page rather than in a worker, which held
+  a G3's page about 34 MB lower on a 720p channel. HLS, paused
+  live TV, satellite tuners, and an https link on node before 12 (no usable CA
+  bundle) use the TV's player.
+- **The relay rejoins**: for Home's player, `relayStream` follows up to 4
+  redirects and tries all of a host's IPv4 addresses at once, keeping the
+  first to connect for 10 minutes. A stream that closes, errors, or sends
+  nothing for 15 s while being read is asked for again in the same response
+  (after 0.3, 1, 2, 3, 4, 5 and 5 s; all back after a minute of stream).
+  `lib/iptv-splice` joins the connections: per elementary stream it drops a
+  PES whose timestamp is not after the last one sent, and holds the latest
+  until the next starts, so one cut short comes whole from the next
+  connection. Timestamps more than a minute back mean the channel started
+  again: the response ends and Home reopens it.
 - **Stream events go to the log**: Home posts each start, stall, error,
   skipped hole, reconnect, recovery and give-up to `/api/iptv/event`, which
   writes one `iptv: stream` line each (at most 120 an hour) with the
@@ -995,8 +1025,8 @@ is gone, so there is no JavaScript to put first; the old configd key is still
 there, read by nothing. `remotekeys.js` takes this path where the KeyFilters
 directory names no keys and configd has `keyFiltersCpp`.
 
-LG's launch library reads what a key does from two values at every press, so a
-change applies at once with nothing reloaded:
+LG's launch library reads what a key does from two values, and takes up a
+change to either at once with nothing reloaded:
 
 - **Streaming buttons and Apps**: the settings service's `other.mapping_info`,
   a list of `{ name: { app_id, launch_param, isActive } }` that LG's server
@@ -1026,13 +1056,21 @@ values again a second after any change; more than twelve such writes in a
 minute are left to the next check, so it never takes turns with LG without
 end. Not every write is announced: around one switch off and on LG wrote nine
 times, five of them unannounced, the last a minute after the TV came on. So
-each change of power state is also followed by checks 3 s, 15 s, 1, 3 and 10
-minutes after it, and the server checks at its start and every 30 minutes,
-writing nothing while all is in place. The microcontroller's copy is not changed, so a streaming
+each change of power state is also followed by checks at once and 3 s, 15 s,
+1, 3 and 10 minutes after it, and the server checks at its start and every 30 minutes,
+writing nothing while all is in place. After a wake from standby, though, a
+list that reads as set is not always the one LG's launch library acts on: on a
+C6 (webOS 11, 43.11.77) a Netflix button set to **Nothing** opened Netflix
+after some hours off, with `mapping_info` still saying Nothing, until the
+button was changed and changed back ([#1671](https://github.com/rorygallagher2024/glasshouse/issues/1671)).
+So each check after a wake writes the list twice even where it reads as set:
+the buttons Glasshouse holds with `launch_param` changed, then as they should
+be. Both are changes, which the library takes up, and a button set to
+**Nothing** stays off in both. The microcontroller's copy is not changed, so a streaming
 button pressed to switch the TV on opens LG's app.
 `tvwebctl restore-keys` writes LG's values back and deletes both files. The
-other keys Glasshouse offers elsewhere (Input, the color keys, Search, Info) are
-not offered: their handling on webOS 11 ignores these values, as does that of
+other keys Glasshouse intercepts elsewhere (Input, Search, Info) are
+not offered through these settings: their handling on webOS 11 ignores these values, as does that of
 Home and **123**. Home Hub, the AI button and the ? button are offered only
 there, and left out of the JavaScript filter, whose file is
 unchanged.
@@ -1171,9 +1209,12 @@ Spying binds its own file there. A mount on it then reaches its peers, so the
 table also covered `/tmp/hosts` or that tool's file, and the tool, which
 copies `/etc/hosts` into its file, failed
 ([#1571](https://github.com/rorygallagher2024/glasshouse/issues/1571)). So
-before the table is bound, both by the server and by `50-tvweb`, the mount at
-`/etc/hosts` is made a slave (`mount --make-slave`): it still takes what
-reaches it from its peers, and no longer passes the table on. A line is the
+before and after the table is bound (and on server start if an already-mounted
+table is shared), both by the server and by `50-tvweb`, the mount at
+`/etc/hosts` is made a slave (`mount --make-slave`): before binding it stops the
+table from reaching peers underneath, and after binding it stops the new mount
+from inheriting `/var/lib`'s shared group and passing later mounts onto
+`adblock_hosts` ([#1712](https://github.com/rorygallagher2024/glasshouse/issues/1712)). A line is the
 blocker's own if it is a comment, a localhost line, one of its sinkholes above
 that header, or a non-sinkhole line naming a host the table decides on, and
 anyone else's otherwise. The last rule is for the Homebrew Channel's update
@@ -2366,3 +2407,7 @@ directly. The web Control page has the same toggles below Playback; they share
 state and write permissions with Ambient Light. Status callbacks check the apps’
 install paths before calling Luna, and unavailable integrations are hidden as
 complete categories and shortcuts.
+
+### Color-key shortcuts on webOS 11
+
+`remotekeys.js` offers the four colors when the native key-filter path and the existing remote-button input reader are available. Assignments use the same `remotekeys.json` map, picker and backup part as other keys. `tvweb.js` passes physical button events to `handleColorButton`; `startColorButtons` restores the worker owner before the periodic native-key check. Only Linux codes 398–401 launch a target: the delayed Qt copies from `inputcommon` are ignored. The worker is wanted independently of MQTT while any color is set and released after the last shortcut is cleared or all keys restored. Nothing is offered because observing a press cannot consume its original action. No native library or LG key assignment is changed.

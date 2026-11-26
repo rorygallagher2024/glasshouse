@@ -230,6 +230,7 @@ var lifeSub = null;
  * started. A preload sends "preload" and "background", never "launch".
  */
 var lifeFront = '';
+var overlays = {};          // apps sam put in front as overlay windows
 var startingApps = {};
 var STARTING_MS = 5000;
 var SAVER_APP = 'com.webos.app.screensaver';
@@ -2724,7 +2725,7 @@ function isStandalone() {
  * KeyFilters folders nor the configd key, #1222), so every Home press opens
  * LG's ribbon. The press is read from the remote instead (lib/remotebuttons),
  * and a short one opens the view over the ribbon; a held one leaves it.
- * webOS 2, untried, is taken to be the same.
+ * webOS 2 works the same way (#1725).
  */
 function homeKeyRead() {
   return /^[23]\./.test(String(webosVersion || ''));
@@ -4162,6 +4163,7 @@ function init(opts) {
   if (lifeSub) lifeSub.stop();
   lifeSub = null;
   lifeFront = '';
+  overlays = {};
   startingApps = {};
   switchingOffAt = 0;
   if (opts.Subscription && isStandalone() && lgHomeOpensOnClose()) {
@@ -4186,8 +4188,11 @@ function appLifeEvent(r) {
   var ev = r.event;
   if (ev === 'launch' || ev === 'splash') startingApps[id] = nowMs();
   else if (ev === 'foreground' || ev === 'background' || ev === 'close' || ev === 'stop') delete startingApps[id];
-  if (ev === 'foreground') lifeFront = id;
-  if (ev !== 'close' || id !== (lifeFront || foreground)) return;
+  // An overlay (a volume popup, say) is drawn over the app in front and
+  // closes back to it, so it never becomes the app in front.
+  if (ev === 'foreground' && r.windowType === '_WEBOS_WINDOW_TYPE_OVERLAY') overlays[id] = true;
+  else if (ev === 'foreground') { lifeFront = id; delete overlays[id]; }
+  if (ev !== 'close' || overlays[id] || id !== (lifeFront || foreground)) return;
   if (id === HOME_APP || isLgHome(id) || id === SAVER_APP) return;
   if (r.reason === 'powerOff' || switchingOff() || powerState === 'Screen Saver') return;
   if (escaped || !powerActive || otherStarting() || !readConfig().enabled) return;

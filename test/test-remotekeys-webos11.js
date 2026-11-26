@@ -75,7 +75,10 @@ function freshTv() {
 }
 freshTv();
 
+// Sees each call first, where a test sets it.
+var lunaWatch = null;
 function luna(uri, params, cb) {
+  if (lunaWatch) lunaWatch(uri, params);
   var r = { returnValue: true };
   if (uri === 'com.webos.service.config/getConfigs') {
     r.configs = {};
@@ -255,7 +258,7 @@ step('offers Guide and the streaming buttons LG has switched on, with no filter 
 });
 
 step('regional streaming buttons are offered when active and restore LG assignments', function (next) {
-  var regional = ['ivi', 'okko', 'kinopoisk', 'shop'];
+  var regional = ['ivi', 'okko', 'kinopoisk', 'shop', 'stan', 'youtube'];
   var writesBefore = tv.mappingWrites;
   var originals = {};
   tv.mapping[3].ivi.isActive = true;
@@ -849,6 +852,44 @@ step('LG\'s list written back at a power change with nothing announced is set ag
   });
 });
 
+step('after a wake, a button set to Nothing is written twice though it reads as set, and stays off both times (#1671)', function (next) {
+  rk.init(initOpts);
+  set('netflix', 'nothing', '', function () {
+    var want = copy(tv.mapping);
+    var seen = [];
+    // Each mapping_info written, in order.
+    var watching = function (uri, params) {
+      if (uri === 'com.webos.settingsservice/setSystemSettings' && params.settings.mapping_info) seen.push(copy(params.settings.mapping_info));
+    };
+    lunaWatch = watching;
+    // A change that is not a wake writes nothing when the list reads right.
+    rk.powerChanged('Active');
+    rk.powerChanged('Active Standby');
+    setTimeout(function () {
+      assert.strictEqual(seen.length, 0);
+      rk.powerChanged('Suspend');
+      rk.powerChanged('Active');
+      setTimeout(function () {
+        lunaWatch = null;
+        // Two checks after the wake, each writing the list twice.
+        assert.strictEqual(seen.length, 4);
+        var first = null;
+        seen[0].forEach(function (e) { if (e.netflix) first = e.netflix; });
+        assert.strictEqual(first.isActive, false);
+        assert.notStrictEqual(first.launch_param, entry('netflix').launch_param);
+        assert.deepEqual(seen[1], want);
+        assert.deepEqual(tv.mapping, want);
+        // LG's own entries, the ones not set, are written as they were.
+        seen[0].forEach(function (e, i) { if (!e.netflix) assert.deepEqual(e, want[i]); });
+        set('netflix', 'lg', '', function () {
+          assert.deepEqual(tv.mapping, MAPPING);
+          next();
+        });
+      }, 200);
+    }, 200);
+  });
+});
+
 step('LG writing its list back again and again is answered twelve times a minute at most', function (next) {
   rk.init(initOpts);
   set('amazon', 'open', 'netflix', function () {
@@ -1032,6 +1073,40 @@ step('the set brightness step applies to the log\'s presses', function (next) {
   }); });
 });
 
+step('Ambient light toggles PicCap from the log on a streaming button when installed, and hides when absent', function (next) {
+  var piccapHere = true;
+  var piccapCalls = 0;
+  var optsWithPiccap = Object.keys(initOpts).reduce(function (o, k) { o[k] = initOpts[k]; return o; }, {});
+  optsWithPiccap.piccap = function () { return piccapHere; };
+  optsWithPiccap.togglePiccap = function (cb) {
+    piccapCalls++;
+    cb({ ok: true, isRunning: piccapCalls % 2 === 1 });
+  };
+  rk.init(optsWithPiccap);
+  rk.getRemoteKeys(function (r) {
+    assert.ok(r.choices.some(function (c) { return c.id === 'action:piccap' && c.kind === 'action'; }), 'offered when PicCap is installed');
+    rk.setRemoteKey('guide', 'open', 'action:piccap', function (g) {
+      assert.strictEqual(g.ok, false, 'refused on Guide');
+      set('netflix', 'open', 'action:piccap', function () { afterWatching(function () {
+        assert.strictEqual(entry('netflix').isActive, false, 'LG\'s app switched off, as for Nothing');
+        assert.ok(rk.isFollowingLog());
+        logLine(NETFLIX_LINE);
+        until(function () { return piccapCalls >= 1; }, 5000, function () {
+          assert.strictEqual(piccapCalls, 1, 'logged press toggled PicCap');
+          piccapHere = false;
+          rk.getRemoteKeys(function (gone) {
+            assert.ok(!gone.choices.some(function (c) { return c.id === 'action:piccap'; }), 'hidden when PicCap is absent');
+            set('netflix', 'lg', '', function () {
+              rk.init(initOpts);
+              next();
+            });
+          });
+        });
+      }); });
+    });
+  });
+});
+
 step('the Alexa button set blocks Amazon\'s view and opens its app from the log, apart from the AI button; As LG has it releases it', function (next) {
   voice.switches = [];
   set('alexa', 'open', 'com.webos.app.hdmi2', function () {
@@ -1095,9 +1170,12 @@ step('the AI button is not offered without the voice assistant\'s service', func
   });
 });
 
-step('the JavaScript filter leaves out the keys only webOS 11 offers', function (next) {
+step('the JavaScript filter leaves out the keys only webOS 11 offers, and has ?, 123 and Home Hub for older firmware', function (next) {
   var src = rk.filterSource();
-  ['homehub', 'ai', 'multikey', 'multikeyhold'].forEach(function (k) { assert.strictEqual(src.indexOf('"' + k + '"'), -1); });
+  ['ai', 'multikeyhold'].forEach(function (k) { assert.strictEqual(src.indexOf('"' + k + '"'), -1); });
+  assert.ok(src.indexOf('codes["multikey"] = WebOS.Key_webOS_Multikey') !== -1);
+  assert.ok(src.indexOf('codes["screenremote"] = WebOS.Key_webOS_ScreenRemote') !== -1);
+  assert.ok(src.indexOf('codes["homehub"] = Qt.Key_Video') !== -1);
   next();
 });
 

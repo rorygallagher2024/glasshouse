@@ -14,6 +14,8 @@ Shows the installed version and whether a newer release is out. **Check now** lo
 
 **Check for updates daily** looks once a day on its own, and lets Home Assistant offer the update.
 
+**Ask on the TV**, with the daily check on, puts a release it finds to whoever switches the TV on, with the [question dialog](../HOME-ASSISTANT.md#8-ask-a-question-on-the-tv): the release's summary, **Update now**, which installs it as **Install** does, and **Later**, which has the focus, so an OK pressed for something else installs nothing. It asks about 20 seconds after the TV wakes from standby, never while something is being watched, over a screen saver or over a question from Home Assistant, which it waits for. Unanswered, the question goes after a minute and comes back after the next wake; answered, that release is not asked about again, and the next release is asked about anew. Update now shows a notice on the TV while the update installs, and another if it fails. It needs controls on, and is off by default.
+
 **Update pop-up** shows a pop-up in the browser it is switched on in when a newer release is out, over whichever tab is open, with the release's one-line summary. **Update** installs it the way **Install** does, with its progress in the pop-up, and **Dismiss** leaves it until the next release. It is off by default and kept per browser. Where controls are off, the pop-up only says it is out.
 
 **TV name** is the name under Glasshouse in the sidebar, and the TV's name in Home Assistant. Left empty, it is LG and the model, such as LG OLED42C24LA. A new name shows at once, with no restart.
@@ -31,11 +33,11 @@ Shows the installed version and whether a newer release is out. **Check now** lo
 | LG's sound, device, HDMI and promotion settings, and its diagnostics and fault log uploads | Picture and game settings: LG keeps them per input, picture mode and game genre, tuned to the panel |
 | LG Logo Display, Quick Start+, Always-on and its nightly hours, Always Ready, Wake on LAN, Auto device detection, opening Home at power on, the standby light, the 12-hour clock | OLED care, the service menu lock and the logo light, which suit one panel or model |
 | Ad blocking and your own hosts list, Limit ad tracking, and live content recognition when it is off | Live content recognition when it is on, and LG's other agreements: switching them on agrees to LG's terms, so that is done on the TV |
-| Background services switched off, Network device scans (which a set-top box controlled by the Magic Remote needs on), saved web pages (a restore adds those missing), remote keys with their Brightness step and Level bar style, and Quick Access | Hidden system apps, which restart LG's app manager to apply, and blocking LG's TV updates, to choose on each TV |
+| Background services switched off, Network device scans (which a set-top box controlled by the Magic Remote needs on), saved web pages (a restore adds those missing), remote keys (with which remotes the Remote tab is for) with their Brightness step and Level bar style, and Quick Access | Hidden system apps, which restart LG's app manager to apply, and blocking LG's TV updates, to choose on each TV |
 | The screen saver and how long before the TV switches off | LG's On and Off Timers |
 | — | Hue Sync app settings, which belong to Hue Sync, and Hue Sync/PicCap streaming actions |
 | Glasshouse Home's layout | Whether Glasshouse Home is on, a custom launcher, wallpaper pictures and Internet TV playlists, which can hold logins |
-| Logging, the log server, the time server, watch time and daily backups being on, screen glow being allowed, Prometheus, the daily update check | Who can reach the dashboard (port, host, token, controls), MQTT, Home Assistant API, per-screen-saver entity, colour and random pool choices, the TV's name, the experimental switches, and watch time itself |
+| Logging, the log server, the time server, watch time and daily backups being on, screen glow being allowed, Prometheus, the daily update check and Ask on the TV | Who can reach the dashboard (port, host, token, controls), MQTT, Home Assistant API, per-screen-saver entity, colour and random pool choices, the TV's name, the experimental switches, and watch time itself |
 
 A remote key or Quick Access key set to an app the TV doesn't have is named as not set. A key, input or service only one TV has is left as it is.
 

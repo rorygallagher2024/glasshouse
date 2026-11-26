@@ -19,7 +19,7 @@
  * first 4096 bytes of a downloaded tvweb.js for this line (up to 0.82.2), and
  * refuses a release where it is further down (#586).
  */
-var TVWEB_VERSION = '0.159.0';
+var TVWEB_VERSION = '0.160.0';
 
 var http = require('http');
 var fs = require('fs');
@@ -66,6 +66,7 @@ var quickAccess = require('./lib/quickaccess');
 var remoteKeys = require('./lib/remotekeys');
 var inputBar = require('./lib/inputbar');
 var askQuestion = require('./lib/ask');
+var updateAsk = require('./lib/updateask');
 var compat = require('./lib/compat');
 
 /*
@@ -131,6 +132,7 @@ var audioCapabilities = require('./lib/audio');
 var btAudio = require('./lib/btaudio');
 var huesyncTransport = require('./lib/huesync');
 var remotebuttons = require('./lib/remotebuttons');
+var remoteDetect = require('./lib/remotedetect');
 var logsModule = require('./lib/logs');
 var syslogForwarder = require('./lib/syslog');
 var ntpClient = require('./lib/ntp');
@@ -631,9 +633,24 @@ preload.init({ luna: luna, stateDir: __dirname });
 doh.init({});
 appDns.init({ luna: luna, stateDir: __dirname, doh: doh });
 quickAccess.init({ luna: luna, inputNames: telemetry.inputNameMap });
-remoteKeys.init({ luna: luna, subscription: lunaTransport.Subscription, services: servicesModule, inputNames: telemetry.inputNameMap, stateDir: __dirname,
+remoteDetect.init({ pairing: telemetry.remoteInfo, stateDir: __dirname });
+// The remotes in use (paired, or seen lately, as Automatic reads them) and what was found, for the Remote tab.
+function detectRemotes(cb) {
+  remoteDetect.detect(function (found) {
+    cb({ auto: remoteDetect.autoSelected(found, Date.now()), detected: found.remotes });
+  });
+}
+remoteKeys.init({ detectRemotes: detectRemotes, luna: luna, subscription: lunaTransport.Subscription, services: servicesModule, inputNames: telemetry.inputNameMap, stateDir: __dirname,
+  lunaUrgent: lunaTransport.callUrgent,
+  colorButtonsSupported: function () { return remotebuttons.findRcuDevices().length > 0; },
+  watchColorButtons: function (on) { remotebuttons.want('remoteKeys', on); },
+  channelButtonsSupported: function () { return remotebuttons.findRcuDevices().length > 0; },
+  watchChannelButtons: function (on) { remotebuttons.want('remoteKeysChannel', on); },
   // The Guide key can open Glasshouse Home's Internet TV guide.
   homeGuide: function () { return !!(glasshouseHome && iptv && glasshouseHome.enabled() && iptv.hasPlaylists()); },
+  // PicCap capture on or off, offered where PicCap is installed on webOS 3+.
+  piccap: function () { return !!(piccap && piccap.isInstalled()); },
+  togglePiccap: function (cb) { if (piccap) piccap.toggle(cb); },
   // The compositor restarts for a change to LG's key handler: Glasshouse Home's view is opened afresh.
   compositorRestarted: function () { if (glasshouseHome) glasshouseHome.reopenAfterCompositor(); },
   homeAssistant: function () { return !!(CONFIG.mqtt && CONFIG.mqtt.enabled && CONFIG.mqtt.host); },
@@ -656,6 +673,8 @@ askQuestion.init({
   tvApp: function (action, cb) { tvApp(action, cb, 'ask-app'); },
   publish: function (ev) {
     console.log('ask: ' + ev.id + ' ' + ev.event_type + (ev.choice ? ' ' + ev.choice : ''));
+    // Glasshouse's own question about a release is not Home Assistant's.
+    if (updateAsk.onAskEvent(ev)) return;
     if (onAskAnswer) onAskAnswer(ev);
   }
 });
@@ -752,7 +771,10 @@ var liveState = stateModule.init({
   onTvChange: function (ev) {
     // Leaving an input drops game.js's bind, without waiting for someone to ask.
     if (ev.group === 'application' && ev.key === 'app_id') game.appChanged(ev.value);
-    if (ev.group === 'power' && ev.key === 'state') screensavers.onPowerChange(ev.value);
+    if (ev.group === 'power' && ev.key === 'state') {
+      screensavers.onPowerChange(ev.value);
+      pictureOnChanged(ev.value);
+    }
     tvChanged(ev);
   }
 });
@@ -815,6 +837,8 @@ var onRemoteButton = function (button, code) {
 
 remotebuttons.init({
   onButton: function (button, code) {
+    remoteKeys.handleColorButton(button, code);
+    remoteKeys.handleChannelButton(button, code);
     onRemoteButton(button, code);
   },
   onHomeKey: function (down) {
@@ -828,6 +852,9 @@ remotebuttons.init({
     screensavers.pointerUsed();
   }
 });
+
+if (!CLI_MODE) remoteKeys.startColorButtons();
+if (!CLI_MODE) remoteKeys.startChannelButtons();
 
 controls.init({
   luna: luna,
@@ -847,6 +874,7 @@ controls.init({
   apps: appsModule,
   lgSettings: lgSettings,
   updater: updater,
+  updateAsk: updateAsk,
   devtools: devtools,
   ntp: ntpClient,
   history: history,
@@ -1084,6 +1112,38 @@ updater.init({
   afterPackage: function (ver) { hbcTried = ver; runHomebrewChannelInstaller(); }
 });
 
+// Whether the picture is on, not a screen saver, as tvpower last said.
+var pictureOn = false;
+// Off since the picture was last on: a screen saver ending is not a wake.
+var pictureOffSince = true;
+function pictureOnChanged(raw) {
+  var state = (raw && typeof raw === 'object') ? (raw.raw || raw.state || raw) : raw;
+  var mapped = power.mapState(state);
+  var saver = power.isScreenSaver(mapped);
+  var on = !!mapped.screenOn && !saver;
+  if (!mapped.screenOn && !saver) pictureOffSince = true;
+  if (on && !pictureOn && pictureOffSince) {
+    pictureOffSince = false;
+    updateAsk.onWake();
+  }
+  pictureOn = on;
+}
+// A new release asked about on the TV after a wake, where switched on on the Server tab.
+updateAsk.init({
+  config: CONFIG,
+  updater: updater,
+  ask: askQuestion,
+  writeSettings: routes.writeSettings,
+  install: function (cb) { doControl('update', null, cb); },
+  // In the TV's language: a toast has no page to translate it.
+  toast: function (text) {
+    doControl('toast', say.forLocale(text, clockFormat.qtLocale()), function (r) {
+      if (!r || !r.ok) console.error('update: toast failed: ' + ((r && r.error) || 'no answer'));
+    });
+  },
+  screenOn: function () { return pictureOn; }
+});
+
 // Bare in the user agent: a catalog has no use for the commit.
 fetchLib.init({ config: CONFIG, version: TVWEB_VERSION });
 repo.init({ config: CONFIG, luna: luna, fetch: fetchLib });
@@ -1158,6 +1218,7 @@ routes.init({
   appDns: appDns,
   quickAccess: quickAccess,
   remoteKeys: remoteKeys,
+  remoteDetect: remoteDetect,
   homeScreen: homeScreen,
   home: glasshouseHome,
   homePicture: homePicture,
@@ -1900,14 +1961,18 @@ function setupHomeAssistant() {
     // first connect it would otherwise still be undetermined.
     // The app select's options come from listApps, which on a first connect
     // has not been scanned yet - without this it publishes the fallback list.
-    oled.detectOled(function () {
-      telemetry.detectLogoLight(function () {
-        telemetry.refreshInstalledApps(function () {
-          // The Input Source select's options are the names the TV gives its
-          // HDMI inputs, so read them before publishing its discovery.
-          telemetry.refreshInputNames(function () { publishDiscovery(); });
+    oled.detectOled(function (isOled) {
+      var afterOled = function () {
+        telemetry.detectLogoLight(function () {
+          telemetry.refreshInstalledApps(function () {
+            // The Input Source select's options are the names the TV gives its
+            // HDMI inputs, so read them before publishing its discovery.
+            telemetry.refreshInputNames(function () { publishDiscovery(); });
+          });
         });
-      });
+      };
+      if (isOled && oled.hasGsrStressCount() === null) oled.readOledProtections(afterOled);
+      else afterOled();
     });
     mqttClient.subscribe(mqttTopics.commands + '#');
     publishTelemetry();
@@ -2396,7 +2461,7 @@ if (!CLI_MODE) {
     if (ev.group === 'power' && ev.key === 'systemOn' && ev.value === true) setTimeout(refreshHomeTitles, 20000);
     if (homePicture && ev.group === 'power' && ev.key === 'systemOn') homePicture.want('tv', ev.value !== false);
     // LG puts its own streaming buttons back around each change, not always announced.
-    if (ev.group === 'power' && ev.key === 'state') remoteKeys.powerChanged();
+    if (ev.group === 'power' && ev.key === 'state') remoteKeys.powerChanged(ev.value);
     if (ev.group === 'surface' && ev.key === 'control_app_id' && ev.value === 'com.webos.app.home') refreshHomeTitles();
   });
 

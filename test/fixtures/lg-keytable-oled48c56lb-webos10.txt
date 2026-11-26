@@ -1,0 +1,34 @@
+# The lines of LG's key table (/usr/share/X11/xkb/keycodes/lg) for the buttons the Remote tab
+# knows, read on an OLED48C56LB (webOS 10.3.0, firmware 33.30.80) on 22 November 2026.
+    <IR_KEY_EMANUAL>           =  942; // Qt::Key_Help=0x01000058
+    <IR_KEY_SEARCH>            =  225; // Qt::Key_Search=0x01000092
+    <IR_KEY_INPUT_HUB>         = 1031; // Qt::Key_Video=0x010000f3
+    <IR_KEY_ALEXA>             = 1094; // Qt::Key_webOS_ALEXA=0x01200030
+    <IR_KEY_AMAZON>            = 1046; // Qt::Key_webOS_Amazon=0x01200029
+    <IR_KEY_APPS>              = 1106; // Qt::Key_webOS_Apps=0x01200175
+    <IR_KEY_BLUE>              =  409; // Qt::Key_webOS_Blue=0x01200014
+    <IR_KEY_CH_DOWN>           =  411; // Qt::Key_webOS_ChannelDown=0x01200022
+    <IR_KEY_CH_UP>             =  410; // Qt::Key_webOS_ChannelUp=0x01200021
+    <IR_KEY_DISNEYPLUS>        = 1050; // Qt::Key_webOS_Disneyplus=0x0120001c
+    <IR_KEY_FREEVIEWPLAY>      = 1107; // Qt::Key_webOS_FreeviewPlay=0x01200176
+    <IR_KEY_GLOBOPLAY>         = 1053; // Qt::Key_webOS_Globoplay=0x0120003b
+    <IR_KEY_GOOGLEVOICE>       = 1125; // Qt::Key_webOS_GoogleVoice=0x0120001e
+    <IR_KEY_GREEN>             =  407; // Qt::Key_webOS_Green=0x01200012
+    <IR_KEY_HULU>              = 1103; // Qt::Key_webOS_Hulu=0x01200172
+    <IR_KEY_IPLAYER>           = 1138; // Qt::Key_webOS_IPlayer=0x01200185
+    <IR_KEY_INFO>              =  366; // Qt::Key_webOS_Info=0x01200002
+    <IR_KEY_TV_VIDEO>          =  249; // Qt::Key_webOS_InputSource=0x01200035
+    <IR_FRONTKEY_INPUT_SELECT> =  925; // Qt::Key_webOS_InputSource=0x01200035
+    <IR_KEY_TV>                =  385; // Qt::Key_webOS_InputTV=0x01200036
+    <IR_KEY_LGCHANNELS>        = 1051; // Qt::Key_webOS_LGChannels=0x0120001d
+    <IR_KEY_MULTIKEY>          = 1132; // Qt::Key_webOS_Multikey=0x0120017f
+    <IR_KEY_NETFLIX>           = 1045; // Qt::Key_webOS_Netflix=0x01200028
+    <IR_KEY_RAKUTENTV>         = 1052; // Qt::Key_webOS_RakutenTV=0x0120003a
+    <IR_KEY_RED>               =  406; // Qt::Key_webOS_Red=0x01200011
+    <IR_KEY_SCREEN_REMOTE>     = 1002; // Qt::Key_webOS_ScreenRemote=0x01200032
+    <IR_KEY_SHAHID>            = 1100; // Qt::Key_webOS_Shahid=0x0120005e
+    <IR_KEY_SLINGTV>           = 1115; // Qt::Key_webOS_SlingTV=0x0120004f
+    <IR_KEY_GUIDE>             =  370; // Qt::Key_webOS_TVGuide=0x01200039
+    <IR_KEY_USP>               = 1091; // Qt::Key_webOS_USP=0x0120002d
+    <RF_KEY_VOICE>             =  436; // Qt::Key_webOS_Voice=0x01200034
+    <IR_KEY_YELLOW>            =  408; // Qt::Key_webOS_Yellow=0x01200013

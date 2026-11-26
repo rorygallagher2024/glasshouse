@@ -32,7 +32,7 @@ body{font-family:'Manrope',sans-serif;color:#ece7df;-webkit-font-smoothing:antia
 #anim.on{display:block}
 #wall .layer{position:absolute;left:-3%;top:-3%;right:-3%;bottom:-3%;background-position:center;background-size:cover;
   background-repeat:no-repeat;opacity:0;-webkit-transition:opacity 2.4s ease;transition:opacity 2.4s ease;
-  -webkit-animation:drift 180s steps(360) infinite alternate;animation:drift 180s steps(360) infinite alternate}
+  -webkit-animation:drift infinite alternate;animation:drift infinite alternate}
 /* The video is never drawn at partial opacity: on webOS 4 it is a hardware
    plane under the page, seen through a hole the <video> punches, and a hole
    at 70% showed nothing at all (a B8, webOS 4.4.3). It is dimmed and faded
@@ -50,8 +50,7 @@ body{font-family:'Manrope',sans-serif;color:#ece7df;-webkit-font-smoothing:antia
    uncovered rather than coming in over a black screen a beat later; paused, it
    is not drawn again. */
 html.resting #wall .layer{-webkit-animation-play-state:paused;animation-play-state:paused}
-@-webkit-keyframes drift{from{-webkit-transform:scale(1) translate(0,0)}to{-webkit-transform:scale(1.04) translate(-1.2%,-.8%)}}
-@keyframes drift{from{transform:scale(1) translate(0,0)}to{transform:scale(1.04) translate(-1.2%,-.8%)}}
+
 #scrim{position:absolute;left:0;top:0;right:0;bottom:0;
   background:radial-gradient(ellipse 34% 30% at 92% 14%,rgba(0,0,0,.55),rgba(0,0,0,0)),
     linear-gradient(90deg,rgba(0,0,0,.72) 0%,rgba(0,0,0,.35) 38%,rgba(0,0,0,0) 70%),
@@ -111,6 +110,9 @@ html.resting #wall .layer{-webkit-animation-play-state:paused;animation-play-sta
 #preview.on{display:block}
 #preview:after{content:"";position:absolute;left:0;top:0;right:0;bottom:0;border:1px solid rgba(244,241,234,.16);pointer-events:none}
 #preview video{display:block;width:100%;height:100%}
+#pvHold{position:absolute;left:0;top:0;width:100%;height:100%;object-fit:contain;display:none}
+#pvHold.on{display:block}
+#preview.intile #pvHold{object-fit:cover}
 #pvNote{position:absolute;left:0;top:0;right:0;bottom:0;display:none;background:#14120f;text-align:center;
   font-size:23px;line-height:200px;color:#6b665e}
 #preview.blank #pvNote{display:block}
@@ -754,6 +756,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
 /* Outfit lacks Vietnamese horn and stacked-tone glyphs; use Manrope for text headings in Vietnamese. */
 html[lang="vi"] #srcTitle,html[lang="vi"] #plMode,html[lang="vi"] #pvMode,html[lang="vi"] #pvNameTitle,html[lang="vi"] .dev .nm,html[lang="vi"] #recents h2,html[lang="vi"] #recents .empty b,html[lang="vi"] #folder h2,html[lang="vi"] #fault h1,html[lang="vi"] #query,html[lang="vi"] .hit .ttl,html[lang="vi"] .tv .gname,html[lang="vi"] #bdName,html[lang="vi"] #pmsg b,html[lang="vi"] #clGroup,html[lang="vi"] #adder h2,html[lang="vi"] #adQuery{font-family:'Manrope',sans-serif}
 </style>
+<style id="wallDrift"></style>
 </head>
 <body>
 <div id="stage" class="no-search no-clock">
@@ -777,7 +780,7 @@ html[lang="vi"] #srcTitle,html[lang="vi"] #plMode,html[lang="vi"] #pvMode,html[l
       <div id="plMode"></div>
       <div id="plStrip"></div>
     </div>
-    <div id="preview"><video id="pvVideo" muted></video>
+    <div id="preview"><video id="pvVideo" muted></video><canvas id="pvHold"></canvas>
       <div id="pvName"><div id="pvNameTitle"></div><div id="pvNameVia"></div></div>
       <div id="pvInfo"><div id="pvTop"><div id="pvMode"></div><div id="pvLight"></div></div><div id="pvSig"></div></div>
       <div id="pvNote" data-t="home.preview.noPicture">No picture</div></div>
@@ -867,6 +870,7 @@ html[lang="vi"] #srcTitle,html[lang="vi"] #plMode,html[lang="vi"] #pvMode,html[l
 <script src="/assets/i18n.js"></script>
 <script src="/assets/devicons.js"></script>
 <script src="/assets/video-order.js"></script>
+<script src="/assets/home-iptv.js"></script>
 <script>
 /*
  * Glasshouse Home's view. Everything comes from /api/home/*: the layout shared
@@ -1035,6 +1039,18 @@ html[lang="vi"] #srcTitle,html[lang="vi"] #plMode,html[lang="vi"] #pvMode,html[l
     stageScale = s;
     var x = (window.innerWidth - 1920 * s) / 2, y = (window.innerHeight - 1080 * s) / 2;
     st.style.webkitTransform = st.style.transform = 'translate(' + x + 'px,' + y + 'px) scale(' + s + ')';
+    // A step is one device pixel after stage scaling and pixel density. Keep
+    // the travel inside the 3% overscan even in a small browser window.
+    var pixels = s * (window.devicePixelRatio || 1);
+    var steps = Math.min(48, Math.floor((1920 * .03 - 1) * pixels));
+    var shift = 'translate3d(' + (steps ? -steps / pixels : 0) + 'px,0,0)';
+    var duration = 'animation-duration:' + (steps || 1) * 3.75 + 's;';
+    var easing = 'animation-timing-function:steps(' + (steps || 1) + ');';
+    var sheet = $('wallDrift');
+    var css = '#wall .layer{-webkit-' + duration + duration + '-webkit-' + easing + easing + '}' +
+      '@-webkit-keyframes drift{from{-webkit-transform:translate3d(0,0,0)}to{-webkit-transform:' + shift + '}}' +
+      '@keyframes drift{from{transform:translate3d(0,0,0)}to{transform:' + shift + '}}';
+    if (sheet.textContent !== css) sheet.textContent = css;
   }
 
   // ---------------------------------------------------------------- items
@@ -2846,6 +2862,7 @@ html[lang="vi"] #srcTitle,html[lang="vi"] #plMode,html[lang="vi"] #pvMode,html[l
   // keepWall: a reconnect lets the stream go only to open it again.
   function releaseVideo(keepWall) {
     var v = $('pvVideo');
+    releaseMse();
     v.onplaying = v.onerror = v.onwaiting = v.onstalled = v.ontimeupdate = v.onloadedmetadata = v.onended = null;
     try { v.pause(); } catch (e) {}
     while (v.firstChild) v.removeChild(v.firstChild);
@@ -3250,267 +3267,24 @@ html[lang="vi"] #srcTitle,html[lang="vi"] #plMode,html[lang="vi"] #pvMode,html[l
     return null;
   }
 
-  /*
-   * One stream at a time, through the preview's <video>. Each start bumps the
-   * generation, which strands any reply, timer or retry from the last; the
-   * last is torn down completely before the next opens.
-   */
-  // muted: the stream's own, kept here so a recovery reopens it as it is shown now.
-  // timeshift: played from the server's recording, which can pause (lib/iptv-timeshift);
-  // behindMs: time spent paused since the live point; left: seconds the recording can still hold the pause.
-  var tvStream = { gen: 0, item: null, format: '', playing: false, watch: null, onState: null, leaseTimer: null,
-    muted: true, retryTimer: null, tries: 0, everPlayed: false, lostAt: 0, openedAt: 0, full: false,
-    timeshift: false, paused: false, pausedAt: 0, behindMs: 0, capacity: null, tsTimer: null, tsUrl: '', noPauseAt: 0,
-    // seekTo: seconds behind live the next open starts at; seekTarget: where left and right are heading; kept: seconds the stick holds.
-    seekTo: null, seekTarget: null, seekTimer: null, kept: null };
-  var STREAM_START_MS = 12000;
-  // The picture not moving this long is a stall, whatever events the <video> sent;
-  // sooner with nothing buffered past it: every stall logged on a provider's
-  // stream had under a second buffered, so waiting longer only kept it frozen.
-  var STALL_MS = 8000;
-  var STALL_EMPTY_MS = 3000;
-  // A hole in what is buffered is stepped over after this long, before reconnecting.
-  var NUDGE_MS = 2500;
-  /*
-   * Reconnects in a row before giving up. A live channel reopens at the live
-   * point. A provider's CDN was seen sending nothing for 30 to 50 s at a time,
-   * so one that has played gets about a minute; one that never has gets two,
-   * as a one-stream account can refuse a channel change for a moment.
-   */
-  var RETRIES_FIRST = 2;
-  var RETRIES_PLAYING = 8;
-  var RETRY_WAIT_MS = [400, 1500, 3000, 5000, 8000, 10000];
-  // Playing this long since the last reconnect, a stream has all its reconnects back.
-  var STEADY_MS = 30000;
-
-  function stopTvStream() {
-    tvStream.gen++;
-    clearTimeout(tvStream.retryTimer);
-    tvStream.retryTimer = null;
-    clearInterval(tvStream.watch);
-    tvStream.watch = null;
-    tvStream.item = null;
-    tvStream.playing = false;
-    tvStream.onState = null;
-    tvStream.lostAt = 0;
-    tsReset();
-    releaseVideo();
-    lease(false);
-  }
-
-  function tsReset() {
-    clearTimeout(tvStream.tsTimer);
-    tvStream.tsTimer = null;
-    tvStream.timeshift = false;
-    tvStream.paused = false;
-    tvStream.behindMs = 0;
-    tvStream.capacity = null;
-    tvStream.tsUrl = '';
-    clearTimeout(tvStream.seekTimer);
-    tvStream.seekTimer = null;
-    tvStream.seekTo = tvStream.seekTarget = tvStream.kept = null;
-  }
-
-  /*
-   * Background refreshes wait while this lasts (lib/iptv), and while it says
-   * full screen, LG's idle screen saver stays held off (lib/idlesaver): the
-   * TV's media state does not see a stream in this page's <video>. Paused,
-   * it is not: a still picture is what the screen saver is for.
-   */
-  function lease(on) {
-    clearInterval(tvStream.leaseTimer);
-    tvStream.leaseTimer = null;
-    var send = function () { postJson('/api/iptv/lease', { on: on, full: on && player.open && !tvStream.paused, open: on && player.open }); };
-    send();
-    if (on) tvStream.leaseTimer = setInterval(send, 60000);
-  }
-
-  // Into the server's log: what a drop was and whether it came back.
-  function streamEvent(event, detail) {
-    var it = tvStream.item;
-    if (!it) return;
-    var v = $('pvVideo'), q = null;
-    try { q = v.getVideoPlaybackQuality ? v.getVideoPlaybackQuality() : null; } catch (e) {}
-    var body = { event: event, pl: it.pl, key: it.key, format: tvStream.format, full: !!player.open, tries: tvStream.tries };
-    if (v.videoWidth) body.size = v.videoWidth + 'x' + v.videoHeight;
-    if (q) body.dropped = q.droppedVideoFrames;
-    for (var k in detail) if (detail.hasOwnProperty(k)) body[k] = detail[k];
-    postJson('/api/iptv/event', body);
-  }
-
-  // Seconds buffered past the picture, and the start of the next buffered range after a hole.
-  function bufferedAhead(v) {
-    var b = v.buffered, ct = v.currentTime, out = { ahead: 0, next: -1 };
-    try {
-      for (var i = 0; i < b.length; i++) {
-        if (b.start(i) <= ct + 0.05 && b.end(i) > ct) out.ahead = b.end(i) - ct;
-        else if (b.start(i) > ct && out.next < 0) out.next = b.start(i);
-      }
-    } catch (e) {}
-    return out;
-  }
-
-  /*
-   * Plays it in the <video>; onState(state, detail) hears 'playing',
-   * 'reconnecting', 'nopicture' (no frame in time), 'stopped' (reconnecting
-   * gave up) and 'failed'.
-   * The URL is asked for fresh each time: an Xtream live link redirects to a
-   * token that expires.
-   */
-  function playTvStream(it, muted, onState) {
-    stopTvStream();
-    var gen = tvStream.gen;
-    tvStream.item = it;
-    tvStream.tries = 0;
-    tvStream.everPlayed = false;
-    tvStream.pastCache = false;
-    tvStream.account = false;
-    tvStream.switchable = false;
-    tvStream.onState = onState;
-    tvStream.muted = !!muted;
-    // The full-screen player, which the server may give a recording it can pause.
-    tvStream.full = !muted;
-    lease(true);
-    openTvStream(gen);
-  }
-
-  function openTvStream(gen) {
-    var it = tvStream.item;
-    var say = function (s, d) { if (gen === tvStream.gen && tvStream.onState) tvStream.onState(s, d); };
-    getJson('/api/iptv/stream?pl=' + encodeURIComponent(it.pl) + '&key=' + encodeURIComponent(it.key) + (tvStream.full ? '&full=1' : ''), function (r) {
-      if (gen !== tvStream.gen) return;
-      if (!r || !r.ok || !r.url) return say('failed', r && r.error);
-      tvStream.account = !!r.account;
-      tvStream.switchable = !!r.switchable;
-      tvStream.timeshift = r.timeshift === true;
-      // A new recording starts at the live point.
-      if (!tvStream.timeshift || r.url !== tvStream.tsUrl) tvStream.behindMs = 0;
-      tvStream.tsUrl = tvStream.timeshift ? r.url : '';
-      var v = $('pvVideo');
-      tvStream.format = r.format === 'hls' ? 'HLS' : r.format === 'ts' ? 'MPEG-TS' : '';
-      // As shown now: the preview may have become the player while this was asked for.
-      v.muted = tvStream.muted;
-      v.defaultMuted = tvStream.muted;
-      var startedAt = Date.now(), lastTime = -1, lastMove = 0, steadyFrom = 0, nudged = false;
-      v.onplaying = function () {
-        if (gen !== tvStream.gen || tvStream.playing) return;
-        tvStream.playing = true;
-        steadyFrom = lastMove = Date.now();
-        if (tvStream.lostAt) {
-          streamEvent('recovered', { after: Date.now() - tvStream.lostAt });
-          tvStream.lostAt = 0;
-        } else if (!tvStream.everPlayed && player.open) streamEvent('started', { after: Date.now() - startedAt });
-        tvStream.everPlayed = true;
-        say('playing');
-      };
-      v.onloadedmetadata = function () { if (gen === tvStream.gen) say('format'); };
-      // A live stream has no end: one that ends was closed by the provider.
-      v.onended = function () { if (gen === tvStream.gen) lost(gen, 'ended', {}); };
-      // An error rather than a stall: some providers' CDNs keep a bad copy of a
-      // playlist (one seen gzipped, for a player that cannot read it), so a
-      // reconnect asks past it.
-      v.onerror = function () {
-        if (gen !== tvStream.gen) return;
-        tvStream.pastCache = true;
-        lost(gen, 'error', { code: v.error ? v.error.code : 0 });
-      };
-      // A recording goes on from where it was, which a reconnect keeps;
-      // live=1 starts it at the live point, behind= that many seconds before it.
-      var extra = [];
-      if (tvStream.pastCache) extra.push('gh=' + Date.now());
-      if (tvStream.timeshift && tvStream.seekTo !== null) extra.push(tvStream.seekTo > 0 ? 'behind=' + tvStream.seekTo : 'live=1');
-      tvStream.seekTo = null;
-      wallVideoYield();
-      v.src = extra.length ? r.url + (r.url.indexOf('?') === -1 ? '?' : '&') + extra.join('&') : r.url;
-      v.load();
-      var played = v.play();
-      if (played && played.then) played.then(null, function () {});
-      clearInterval(tvStream.watch);
-      tvStream.watch = setInterval(function () {
-        if (gen !== tvStream.gen) return;
-        var now = Date.now();
-        if (!tvStream.playing) {
-          if (now - startedAt > STREAM_START_MS) lost(gen, 'nopicture', {});
-          return;
-        }
-        // Paused on purpose: a picture that does not move is no stall.
-        if (tvStream.paused) { lastMove = now; return; }
-        var ct = v.currentTime;
-        if (ct !== lastTime) {
-          lastTime = ct;
-          lastMove = now;
-          nudged = false;
-          if (tvStream.tries && now - steadyFrom > STEADY_MS) tvStream.tries = 0;
-          return;
-        }
-        var still = now - lastMove, buf = bufferedAhead(v);
-        // Stuck at a hole with more buffered after it: step over it rather than reconnect.
-        if (still > NUDGE_MS && !nudged && buf.next > ct) {
-          nudged = true;
-          streamEvent('skipped', { gap: Math.round((buf.next - ct) * 10) / 10 });
-          try { v.currentTime = buf.next + 0.1; } catch (e) {}
-          return;
-        }
-        if (still > STALL_MS || (still > STALL_EMPTY_MS && buf.ahead < 0.5)) lost(gen, 'stall', { still: still, ahead: Math.round(buf.ahead * 10) / 10, state: v.readyState, net: v.networkState });
-      }, 1000);
-    });
-  }
-
-  /*
-   * Torn down and opened again with a fresh URL, at the live point, waiting a
-   * little longer each time; left stopped once the reconnects run out.
-   */
-  function lost(gen, why, detail) {
-    if (gen !== tvStream.gen) return;
-    clearInterval(tvStream.watch);
-    tvStream.watch = null;
-    detail.why = why;
-    var it = tvStream.item, cb = tvStream.onState;
-    var limit = tvStream.everPlayed ? RETRIES_PLAYING : why === 'nopicture' ? 0 : RETRIES_FIRST;
-    if (tvStream.tries >= limit) {
-      if (tvStream.lostAt) detail.lostFor = Date.now() - tvStream.lostAt;
-      streamEvent('gave-up', detail);
-      tvStream.gen++;
-      tvStream.lostAt = 0;
-      releaseVideo();
-      tvStream.item = it;
-      if (cb) cb(why === 'nopicture' && !tvStream.everPlayed ? 'nopicture' : 'stopped');
-      checkProtected(it);
-      return;
-    }
-    if (!tvStream.lostAt) tvStream.lostAt = Date.now();
-    var wait = RETRY_WAIT_MS[Math.min(tvStream.tries, RETRY_WAIT_MS.length - 1)];
-    tvStream.tries++;
-    detail.wait = wait;
-    streamEvent('reconnecting', detail);
-    tvStream.playing = false;
-    // A reconnect plays on: a pause ends with it.
-    if (tvStream.paused) {
-      tvStream.behindMs += Date.now() - tvStream.pausedAt;
-      tvStream.paused = false;
-      clearTimeout(tvStream.tsTimer);
-      tvStream.tsTimer = null;
-    }
-    // Every reconnect asks past a copy of the playlist a CDN may be holding.
-    tvStream.pastCache = true;
-    // Recovering, a preview is not playing: OK opens the player afresh rather than adopting it.
-    if (tilePreview.target && tilePreview.target.tv) tilePreview.playing = false;
-    // Its own generation: a stop or another play meanwhile strands it.
-    var retryGen = ++tvStream.gen;
-    /*
-     * The video background stays away until the retry: brought back in the wait,
-     * it took the decoder again and every retry failed with code 4 (a G3, webOS 10),
-     * leaving a preview over a video background at "No picture".
-     */
-    releaseVideo(true);
-    tvStream.item = it;
-    tvStream.onState = cb;
-    if (cb) cb('reconnecting');
-    tvStream.retryTimer = setTimeout(function () {
-      tvStream.retryTimer = null;
-      if (tvStream.gen === retryGen && tvStream.item === it) openTvStream(retryGen);
-    }, wait);
-  }
+  var iptvPlayer = window.TVWebHomeIptv.create({
+    videoEl: function () { return $('pvVideo'); },
+    holdEl: function () { return $('pvHold'); },
+    getJson: getJson,
+    postJson: postJson,
+    isFullOpen: function () { return !!player.open; },
+    releaseVideo: releaseVideo,
+    wallVideoYield: wallVideoYield,
+    checkProtected: checkProtected,
+    onReconnect: function () { if (tilePreview.target && tilePreview.target.tv) tilePreview.playing = false; }
+  });
+  var tvStream = iptvPlayer.state;
+  var playTvStream = iptvPlayer.play;
+  var openTvStream = iptvPlayer.open;
+  var stopTvStream = iptvPlayer.stop;
+  var releaseMse = iptvPlayer.releaseMse;
+  var lease = iptvPlayer.lease;
+  var streamEvent = iptvPlayer.streamEvent;
 
   function formatText() {
     var v = $('pvVideo'), out = [];
@@ -3557,6 +3331,7 @@ html[lang="vi"] #srcTitle,html[lang="vi"] #plMode,html[lang="vi"] #pvMode,html[l
       (r.sections || []).forEach(function (sec) { bySection[sec.id] = sec; });
       tvLineup = { channels: r.channels || [], sections: r.sections || [], bySection: bySection, favourites: r.favourites || [] };
       tvLineupRev = r.revision;
+      openAskedGuide();
       if (data && data.iptvStatus && data.iptvStatus.lineupRevision !== tvLineupRev) loadLineup();
     });
   }
@@ -4106,6 +3881,8 @@ html[lang="vi"] #srcTitle,html[lang="vi"] #plMode,html[lang="vi"] #pvMode,html[l
    */
   function switchFormat() {
     var it = playerChannel(), to = otherFormat();
+    // The viewer's choice: what playback switched to before is forgotten.
+    iptvPlayer.clearFormatMemo(it.pl + ':' + it.key);
     stopTvStream();
     var gen = tvStream.gen;
     renderPmsg(t('home.tv.connecting', 'Connecting to {name}', { name: it.name }), to);
@@ -5737,13 +5514,14 @@ html[lang="vi"] #srcTitle,html[lang="vi"] #plMode,html[lang="vi"] #pvMode,html[l
     openPlayer(found);
   }
   function openAskedGuide() {
-    if (!guideAsked || !data || !layout) return;
+    // The guide is the whole lineup, as from its tile: with nothing starred the row is empty, and the lineup may still be on its way (loadLineup asks again).
+    if (!guideAsked || !data || !layout || !lineupItems().length) return;
     guideAsked = false;
     if (player.open) closePlayer();
     if (adder.open) closeAdder();
     // Asked for the guide: a search panel kept for a return from its app goes.
     if (finder.open) { closeSearch(); state.rail = false; }
-    if (!guide.open && data.iptv && data.iptv.length) {
+    if (!guide.open) {
       var ri = layout.rows.indexOf('iptv');
       if (ri !== -1) state.row = ri;
       openGuide(null);
@@ -5946,6 +5724,13 @@ html[lang="vi"] #srcTitle,html[lang="vi"] #plMode,html[lang="vi"] #pvMode,html[l
   function previewHoldsVideo() {
     var v = $('pvVideo');
     if (tilePreview.opening !== null && tilePreview.opening === tilePreview.gen) return true;
+    /*
+     * A channel opening in Home's player: mpegts.js is still loading on the first one
+     * after Home loads, and the <video> has no source yet. A heartbeat then loaded the
+     * background again, and on a G3 (webOS 10.3.0) Home's player got the picture's size
+     * and never a frame, until the TV's player took the channel (6 first opens in 6).
+     */
+    if (tvStream.item && tvStream.claim === tvStream.gen) return true;
     return !!v && (v.getAttribute('src') !== null || !!v.firstChild);
   }
 
@@ -6089,6 +5874,12 @@ html[lang="vi"] #srcTitle,html[lang="vi"] #plMode,html[lang="vi"] #pvMode,html[l
 
   function playWallVideo(index, strength, startAt) {
     if (!wallVideoEl || !wallVideoSources.length) return;
+    // The next clip, or one tried after an error, waits too while the preview has the decoder.
+    if (previewHoldsVideo()) {
+      unloadWallVideo();
+      wallVideoNeedsRestart = true;
+      return;
+    }
     wallVideoNeedsRestart = false;
     wallVideoIndex = ((index % wallVideoSources.length) + wallVideoSources.length) % wallVideoSources.length;
     var video = wallVideoEl, item = wallVideoItems[wallVideoIndex] || { url: wallVideoSources[wallVideoIndex] }, source = item.url;

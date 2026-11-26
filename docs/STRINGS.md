@@ -78,6 +78,9 @@ changed - `error`, `label`, `detail` and the rest of `DISPLAY_FIELDS` in
 `say.js` - and only strings `msg()` made, so a raw value that reads the same as
 a message is left alone.
 
+What reaches the TV without a page, such as a toast, is put in the TV's menu
+language with `say.forLocale(text, clock.qtLocale())` before it is sent.
+
 Errors a page cannot cause, such as a malformed request, stay in English
 without `msg()`. Names that come from the TV itself, such as its picture modes
 and inputs, are shown as the TV gives them.

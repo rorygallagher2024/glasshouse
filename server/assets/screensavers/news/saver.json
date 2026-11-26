@@ -34,7 +34,104 @@
   "license": "MIT",
   "uses": [
     "level",
+    "choice",
     "news"
   ],
+  "choices": {
+    "label": {
+      "en": "Headlines",
+      "ar": "العناوين",
+      "es": "Titulares",
+      "de": "Schlagzeilen",
+      "fr": "Titres",
+      "hu": "Hírek",
+      "it": "Titoli",
+      "pl": "Nagłówki",
+      "pt": "Títulos",
+      "pt-br": "Manchetes",
+      "ru": "Заголовки",
+      "sv": "Rubriker",
+      "vi": "Tiêu đề"
+    },
+    "default": "left",
+    "options": [
+      {
+        "id": "left",
+        "name": {
+          "en": "Bottom left",
+          "ar": "أسفل اليسار",
+          "es": "Abajo a la izquierda",
+          "de": "Unten links",
+          "fr": "En bas à gauche",
+          "hu": "Lent balra",
+          "it": "In basso a sinistra",
+          "pl": "Na dole po lewej",
+          "pt": "Em baixo à esquerda",
+          "pt-br": "Embaixo à esquerda",
+          "ru": "Внизу слева",
+          "sv": "Nere till vänster",
+          "vi": "Dưới bên trái"
+        },
+        "value": "left"
+      },
+      {
+        "id": "center",
+        "name": {
+          "en": "Bottom centre",
+          "ar": "أسفل الوسط",
+          "es": "Abajo en el centro",
+          "de": "Unten mittig",
+          "fr": "En bas au centre",
+          "hu": "Lent középen",
+          "it": "In basso al centro",
+          "pl": "Na dole na środku",
+          "pt": "Em baixo ao centro",
+          "pt-br": "Embaixo no centro",
+          "ru": "Внизу по центру",
+          "sv": "Nere i mitten",
+          "vi": "Dưới ở giữa"
+        },
+        "value": "center"
+      },
+      {
+        "id": "right",
+        "name": {
+          "en": "Bottom right",
+          "ar": "أسفل اليمين",
+          "es": "Abajo a la derecha",
+          "de": "Unten rechts",
+          "fr": "En bas à droite",
+          "hu": "Lent jobbra",
+          "it": "In basso a destra",
+          "pl": "Na dole po prawej",
+          "pt": "Em baixo à direita",
+          "pt-br": "Embaixo à direita",
+          "ru": "Внизу справа",
+          "sv": "Nere till höger",
+          "vi": "Dưới bên phải"
+        },
+        "value": "right"
+      },
+      {
+        "id": "clock",
+        "name": {
+          "en": "Under the clock, moving with it",
+          "ar": "تحت الساعة، تتحرك معها",
+          "es": "Bajo el reloj, moviéndose con él",
+          "de": "Unter der Uhr, mit ihr wandernd",
+          "fr": "Sous l'horloge, qui la suit",
+          "hu": "Az óra alatt, vele együtt mozogva",
+          "it": "Sotto l'orologio, che si sposta con esso",
+          "pl": "Pod zegarem, przesuwając się z nim",
+          "pt": "Por baixo do relógio, a acompanhá-lo",
+          "pt-br": "Embaixo do relógio, acompanhando-o",
+          "ru": "Под часами, вместе с ними",
+          "sv": "Under klockan, följer med den",
+          "vi": "Dưới đồng hồ, di chuyển cùng nó"
+        },
+        "value": "clock"
+      }
+    ]
+  },
   "order": 13
 }

@@ -908,12 +908,13 @@ function oledRows(d) {
              press: d.tpc ? t('tv.press.switchOff', 'Press OK to switch off') : t('tv.press.switchOn', 'Press OK to switch on'),
              hint: t('tv.oled.temporalPeakControl.hint', 'Limits how long the panel holds peak brightness, which protects it and keeps heat down. Switching it off makes burn-in more likely.') });
   if (d.screenShift)
-    r.push({ label: t('tv.oled.screenShift', 'Screen shift'), value: d.screenShift, cls: /on/i.test(d.screenShift) ? 'on' : 'off',
+    r.push({ label: t('tv.oled.screenShift', 'Screen shift'),
+             value: /on/i.test(d.screenShift) ? t('common.on', 'On') : t('common.off', 'Off'), cls: /on/i.test(d.screenShift) ? 'on' : 'off',
              act: d.writable ? 'shift' : null, on: /on/i.test(d.screenShift),
              press: /on/i.test(d.screenShift) ? t('tv.press.switchOff', 'Press OK to switch off') : t('tv.press.switchOn', 'Press OK to switch on'),
              hint: t('tv.oled.screenShift.hint', 'Nudges the whole image by a pixel now and then so a fixed edge never sits on the same pixels. Invisible in use.') });
   if (d.logoDimming)
-    r.push({ label: t('tv.oled.logoDimming', 'Logo dimming'), value: d.logoDimming, cls: /off/i.test(d.logoDimming) ? 'off' : 'on',
+    r.push({ label: t('tv.oled.logoDimming', 'Logo dimming'), value: logoDimmingText(d.logoDimming), cls: /off/i.test(d.logoDimming) ? 'off' : 'on',
              act: d.writable ? 'logo' : null, cur: String(d.logoDimming).toLowerCase(),
              press: t('tv.oled.logoDimming.press', 'Press OK for off, light or high'),
              hint: t('tv.oled.logoDimming.hint', 'Spots a station logo that has not moved and fades it slightly. Higher settings dim more of the picture around it.') });
@@ -928,6 +929,12 @@ function oledRows(d) {
       hint: t('tv.oled.cancelAScheduledRefresher.hint', 'Clears a queued calibration so the TV does not spend an hour on it after the next switch-off.') });
   }
   return r;
+}
+
+// LG's logo dimming levels as the Panel care tab names them.
+function logoDimmingText(v) {
+  v = String(v || 'off').toLowerCase();
+  return v === 'strong' ? t('oled.logo.high', 'High') : v === 'light' ? t('oled.logo.light', 'Light') : t('common.off', 'Off');
 }
 
 function saverItemTitle(modes, id) {
@@ -1421,9 +1428,19 @@ function glasshouseHomeRows(d) {
           hint: t('home.bg.intro', 'What is behind Glasshouse Home: nothing, pictures that change with the part of the day, or a moving background.') });
     if (bgKind === 'pictures') {
       // A picture set or the owner's own, which are uploaded from a browser.
-      var wallNames = { landscape: t('home.wall.setLandscape', 'Landscape'), abstract: t('home.wall.setAbstract', 'Abstract'), own: t('home.wall.setOwn', 'Your own'),
-        shuffle: t('home.wall.setShuffle', 'Your own, shuffled') };
-      var wallChoices = (walls.choices || ['black', 'landscape', 'abstract', 'own']).filter(function (n) { return n !== 'black'; });
+      var wallNames = {
+        landscape: t('home.wall.setLandscape', 'Landscape'),
+        abstract: t('home.wall.setAbstract', 'Abstract'),
+        own: t('home.wall.setOwn', 'Your own'),
+        shuffle: t('home.wall.setShuffle', 'Your own, shuffled'),
+        video: t('home.bg.video', 'Video')
+      };
+      var hasVideo = !!(walls.videoUrls && walls.videoUrls.length);
+      var wallChoices = (walls.choices || ['black', 'landscape', 'abstract', 'own']).filter(function (n) {
+        if (n === 'black') return false;
+        if (n === 'video' && !hasVideo) return false;
+        return Object.prototype.hasOwnProperty.call(wallNames, n);
+      });
       var wallNext = wallChoices[(wallChoices.indexOf(wallNow) + 1) % wallChoices.length];
       if (!walls.fetching) {
         r.push({ label: t('home.bg.pictures', 'Pictures'), value: wallNames[wallNow] || wallNow, cls: can ? 'act' : '',
@@ -1648,7 +1665,7 @@ function homeChRows(d) { return homeRowRows('ch', d); }
 function homeMotionRows(d) {
   var lay = d.layout;
   return [homeSwitchRow(d, 'fade', t('home.fade', 'Fade in and out'), t('home.fadeDesc', 'Glasshouse Home fades in as it comes on screen, and out as an app, input or channel opens.'), 'homeFade', lay.fade === true),
-    homeSwitchRow(d, 'wallDrift', t('home.motion.drift', 'Wallpaper drift'), t('home.motion.driftDesc', 'The wallpaper moves and zooms very slowly, so it never sits still on the screen.'), 'homeFlag', lay.wallDrift !== false),
+    homeSwitchRow(d, 'wallDrift', t('home.motion.drift', 'Wallpaper drift'), t('home.motion.driftDesc', 'The wallpaper shifts sideways very slowly, so it never sits still on the screen.'), 'homeFlag', lay.wallDrift !== false),
     homeSwitchRow(d, 'wallCrossfade', t('home.motion.crossfade', 'Wallpaper cross-fade'), t('home.motion.crossfadeDesc', 'The picture fades into the next when the part of the day changes, rather than switching at once.'), 'homeFlag', lay.wallCrossfade !== false),
     homeSwitchRow(d, 'smoothScroll', t('home.motion.scroll', 'Smooth scrolling'), t('home.motion.scrollDesc', 'A row glides to the chosen tile, rather than jumping to it.'), 'homeFlag', lay.smoothScroll !== false),
     homeSwitchRow(d, 'slidePanels', t('home.motion.slide', 'Sliding panels'), t('home.motion.slideDesc', 'Recent apps, Search and More apps slide in and out, rather than appearing at once.'), 'homeFlag', lay.slidePanels !== false)];

@@ -50,7 +50,7 @@ var run = sandbox({
   wallChoice: 'video', wallVideoNeedsRestart: false, walls: 0,
   setTimeout: function (fn) { timers.push(fn); }
 },
-  'var wallVideoEl = wall, tilePreview = { gen: 0, opening: null };' +
+  'var wallVideoEl = wall, tilePreview = { gen: 0, opening: null }, tvStream = { gen: 0, claim: -1, item: null };' +
   'function $(id) { return id === "pvVideo" ? preview : id === "wall-caption" ? caption : null; }' +
   'function updateWall() { walls++; }' +
   src.slice(start, end));
@@ -83,6 +83,18 @@ flush();
 assert.strictEqual(run('walls'), 1, 'the wallpaper is drawn again');
 console.log('  ✓ the wallpaper comes back once the preview lets go');
 
+// A channel opening in Home's player before its <video> has a source (mpegts.js still
+// loading), and while it reconnects: the visit holds the decoder until it ends.
+run('tvStream.item = { pl: "p1", key: "x1" }; tvStream.gen = 4; tvStream.claim = 4');
+assert.strictEqual(run('previewHoldsVideo()'), true, 'held with no source');
+run('wallVideoResume()');
+flush();
+assert.strictEqual(run('walls'), 1, 'the wallpaper stays away');
+run('tvStream.gen = 5');
+assert.strictEqual(run('previewHoldsVideo()'), false, 'a stopped visit lets go');
+run('tvStream.item = null');
+console.log('  ✓ a channel opening holds the decoder before it has a source');
+
 // An input preview holds the decoder through a <source> child.
 preview.firstChild = {};
 assert.strictEqual(run('previewHoldsVideo()'), true);
@@ -104,7 +116,7 @@ assert.ok(noteStart !== -1, 'noteWallVideoOutput is in home.html');
 var outPreview = fakeVideo();
 var runOut = sandbox({ preview: outPreview, wallVideoPlaying: true, wallVideoOffScreen: 0, wallVideoNeedsRestart: false,
   document: { documentElement: { classList: { contains: function () { return false; } } } } },
-  'var tilePreview = { gen: 0, opening: null };' +
+  'var tilePreview = { gen: 0, opening: null }, tvStream = { gen: 0, claim: -1, item: null };' +
   'function $() { return preview; }' + src.slice(start, src.indexOf('  function unloadWallVideo')) +
   src.slice(noteStart, noteEnd + '\n  }\n'.length));
 runOut('noteWallVideoOutput(false)');

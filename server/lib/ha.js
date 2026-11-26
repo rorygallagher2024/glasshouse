@@ -144,6 +144,7 @@ var HA_ENTITIES = [
   { id: 'oled_logo_dimming', type: 'select', name: 'Logo Luminance Adjustment', cat: 'oled' },
   { id: 'oled_short_cycles', type: 'sensor', name: 'Compensation Cycles Completed', cat: 'oled' },
   { id: 'oled_refresher_cycles', type: 'sensor', name: 'Pixel Refresher Cycles Completed', cat: 'oled' },
+  { id: 'oled_gsr_stress_count', type: 'sensor', name: 'GSR Stress Events', cat: 'oled' },
   { id: 'oled_failure_alerts', type: 'sensor', name: 'Panel Maintenance Alerts', cat: 'oled' },
   { id: 'oled_asbl_dimmer', type: 'binary_sensor', name: 'ASBL Dimming Active', cat: 'oled' },
   { id: 'pixel_refresher_schedule', type: 'switch', name: 'Pixel Refresher on Next Standby', cat: 'oled' },
@@ -450,7 +451,7 @@ var HDMI_DIAG_ONLY = {
       oled_hours_until_compensation: 1, oled_compensation_status: 1,
       oled_hours_since_refresher: 1,
       oled_hours_until_refresher: 1, oled_refresher_status: 1,
-      oled_short_cycles: 1, oled_refresher_cycles: 1,
+      oled_short_cycles: 1, oled_refresher_cycles: 1, oled_gsr_stress_count: 1,
       oled_failure_alerts: 1, oled_asbl_dimmer: 1,
       oled_cell_type: 1, tcon_firmware: 1,
       oled_screen_shift: 1, oled_logo_dimming: 1,
@@ -1292,6 +1293,17 @@ function buildEntities(opts) {
         }
       },
       {
+        type: 'sensor', id: 'oled_gsr_stress_count',
+        payload: {
+          name: 'OLED GSR Stress Events',
+          state_topic: topic.telemetry,
+          value_template: '{{ value_json.oled.gsr_stress_count if value_json.oled and value_json.oled.gsr_stress_count is not none else none }}',
+          state_class: 'total_increasing',
+          entity_category: 'diagnostic',
+          icon: 'mdi:counter'
+        }
+      },
+      {
         type: 'sensor', id: 'oled_failure_alerts',
         payload: {
           name: 'OLED Compensation Failures',
@@ -2017,6 +2029,8 @@ function filterWithholds(entities, opts) {
   if (!caps.hasPnwash) {
     withhold(byId('oled_short_cycles', 'oled_refresher_cycles', 'oled_failure_alerts'));
   }
+
+  if (caps.hasGsrStressCount === false) withhold(byId('oled_gsr_stress_count'));
 
   if (!caps.hasCell) withhold(byId('oled_cell_type', 'tcon_firmware'));
 

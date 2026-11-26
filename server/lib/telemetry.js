@@ -2576,6 +2576,8 @@ function getCapabilities(extra) {
     hasRemoteButtons: !!extra.hasRemoteButtons,
     watchHistory: !!extra.watchHistory,
     hasSoundFormat: soundFormatSupported === true,
+    hasGsrStressCount: (oledModule && typeof oledModule.hasGsrStressCount === 'function')
+      ? oledModule.hasGsrStressCount() : null,
     userEntities: extra.userEntities || {}
   };
 }
@@ -2610,6 +2612,9 @@ function getCapabilitySignature() {
     if (powerTimersSeen.on) cap.push('on_timer');
     if (powerTimersSeen.off) cap.push('off_timer');
   }
+  var gsrStress = (oledModule && typeof oledModule.hasGsrStressCount === 'function')
+    ? oledModule.hasGsrStressCount() : null;
+  if (gsrStress !== null) cap.push(gsrStress ? 'gsr_stress' : 'no_gsr_stress');
   return cap.sort().join(',');
 }
 

@@ -219,8 +219,8 @@ test("switching updates off lifts the Homebrew Channel's layer, and leaves anoth
     // goes over it with that tool's lines and without the update block.
     switchOff(COPY + LGWSS.join('\n') + '\n', HBC_LAYER +
       '1329 1113 179:59 /var/lib/webosbrew/lifesgoodwithoutspying.hosts /etc/hosts rw,nosuid,relatime shared:39 - ext4 /dev/mmcblk0p59 rw,data=ordered\n');
-    assert.deepEqual(ran, ['/bin/mount --make-slave /etc/hosts', '/bin/mount --bind ' + TABLE + ' /etc/hosts'],
-      "the other tool's layer is not unmounted, and the table is kept off its file (#1571)");
+    assert.deepEqual(ran, ['/bin/mount --make-slave /etc/hosts', '/bin/mount --bind ' + TABLE + ' /etc/hosts', '/bin/mount --make-slave /etc/hosts'],
+      "the other tool's layer is not unmounted, and the table is kept off its file (#1571, #1712)");
     LGWSS.forEach(function (line) { assert.ok(mockEnv.files[TABLE].indexOf(line) !== -1, line + ' was dropped'); });
     UPDATE_HOSTS.forEach(function (host) {
       assert.ok(!sinkholed(mockEnv.files[TABLE], host) && mockEnv.files[TABLE].indexOf(host) === -1, host + ' is still blocked');
@@ -262,14 +262,14 @@ test("the table's mount is kept to /etc/hosts, and other tools' lines go back un
   } });
   var below = BELOW;
   try {
-    // Switched on over a shared layer: made a slave, then bound.
+    // Switched on over a shared layer: made a slave before and after binding.
     mockEnv.files[MOUNTS] = LGWS_LAYER;
     mockEnv.files['/etc/hosts'] = BELOW;
     privacy.clearCache();
     var r1;
     privacy.setAdBlock('ads', function (r) { r1 = r; });
     assert.ok(r1 && r1.ok, JSON.stringify(r1));
-    assert.deepEqual(ran, ['/bin/mount --make-slave /etc/hosts', '/bin/mount --bind ' + TABLE + ' /etc/hosts']);
+    assert.deepEqual(ran, ['/bin/mount --make-slave /etc/hosts', '/bin/mount --bind ' + TABLE + ' /etc/hosts', '/bin/mount --make-slave /etc/hosts']);
 
     // Over a layer that shares nothing: bound as before.
     ran = [];
@@ -310,6 +310,68 @@ test("the table's mount is kept to /etc/hosts, and other tools' lines go back un
       fs.writeFileSync = write;
     }
     assert.deepEqual(ran, ['/bin/umount /etc/hosts', '/bin/mount --bind ' + TABLE + ' /etc/hosts']);
+  } finally {
+    privacy.init({ exec: require('child_process').execFile });
+    delete mockEnv.files[TABLE];
+    delete mockEnv.files[MOUNTS];
+    delete mockEnv.files[ENABLED];
+    if (saved === undefined) delete mockEnv.files['/etc/hosts'];
+    else mockEnv.files['/etc/hosts'] = saved;
+    privacy.clearCache();
+  }
+});
+
+// #1712: the table's own bind mount inherits shared: from /var/lib, so binding
+// over /etc/hosts makes /etc/hosts a slave again afterwards and boot heals an
+// already-mounted shared table in place.
+test('a new table mount inheriting shared propagation is made a slave after binding (#1712)', function () {
+  var TABLE = '/var/lib/tvweb/adblock_hosts', MOUNTS = '/proc/self/mountinfo', ENABLED = '/var/lib/tvweb/adblock_enabled';
+  var saved = mockEnv.files['/etc/hosts'];
+  var PRIVATE_LAYER = '2008 50 179:59 /var/lib/webosbrew/lifesgoodwithoutspying.hosts /etc/hosts rw,nosuid,relatime - ext4 /dev/mmcblk0p59 rw\n';
+  var SHARED_LAYER = '2008 50 179:59 /var/lib/webosbrew/lifesgoodwithoutspying.hosts /etc/hosts rw,nosuid,relatime shared:39 - ext4 /dev/mmcblk0p59 rw\n';
+  var OWN_SHARED = '3001 2008 179:55 /var/lib/tvweb/adblock_hosts /etc/hosts rw,nosuid,relatime shared:39 - ext4 /dev/mmcblk0p55 rw\n';
+  var OWN_SLAVE = '3001 2008 179:55 /var/lib/tvweb/adblock_hosts /etc/hosts rw,nosuid,relatime master:39 - ext4 /dev/mmcblk0p55 rw\n';
+  var ran = [];
+  privacy.init({ exec: function (file, args, opts, cb) {
+    ran.push([file].concat(args).join(' '));
+    if (file === '/bin/mount' && args[0] === '--bind') {
+      mockEnv.files[MOUNTS] += OWN_SHARED;
+    } else if (file === '/bin/mount' && args[0] === '--make-slave') {
+      mockEnv.files[MOUNTS] = mockEnv.files[MOUNTS].replace(/shared:39/g, 'master:39');
+    }
+    cb(null, '', '');
+  } });
+  try {
+    // Even when the layer below is private, binding from a shared /var/lib makes the new layer shared.
+    mockEnv.files[MOUNTS] = PRIVATE_LAYER;
+    mockEnv.files['/etc/hosts'] = '127.0.0.1 localhost\n';
+    privacy.clearCache();
+    privacy.setAdBlock('ads', function (r) { assert.ok(r && r.ok); });
+    assert.deepEqual(ran, ['/bin/mount --bind ' + TABLE + ' /etc/hosts', '/bin/mount --make-slave /etc/hosts']);
+
+    // When the layer below is shared, --make-slave runs both before and after --bind.
+    ran = [];
+    mockEnv.files[MOUNTS] = SHARED_LAYER;
+    mockEnv.files[TABLE] = '';
+    privacy.clearCache();
+    privacy.setAdBlock('ads', function (r) { assert.ok(r && r.ok); });
+    assert.deepEqual(ran, ['/bin/mount --make-slave /etc/hosts', '/bin/mount --bind ' + TABLE + ' /etc/hosts', '/bin/mount --make-slave /etc/hosts']);
+
+    // Already-mounted shared table (e.g. upgraded from v0.159.0): checkBootAdBlock heals it in place.
+    ran = [];
+    mockEnv.files[ENABLED] = 'ads';
+    mockEnv.files[MOUNTS] = SHARED_LAYER.replace('shared:39', 'master:39') + OWN_SHARED;
+    mockEnv.files['/etc/hosts'] = mockEnv.files[TABLE];
+    privacy.clearCache();
+    privacy.checkBootAdBlock(false);
+    assert.deepEqual(ran, ['/bin/mount --make-slave /etc/hosts']);
+
+    // Already a slave: nothing further run on boot.
+    ran = [];
+    mockEnv.files[MOUNTS] = SHARED_LAYER.replace('shared:39', 'master:39') + OWN_SLAVE;
+    privacy.clearCache();
+    privacy.checkBootAdBlock(false);
+    assert.deepEqual(ran, []);
   } finally {
     privacy.init({ exec: require('child_process').execFile });
     delete mockEnv.files[TABLE];

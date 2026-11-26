@@ -8,6 +8,8 @@ let cfgHaEnabled = true;
 let cfgHaUrl = '';
 let cfgHaTokenSet = false;
 let cfgHaWritable = true;
+let cfgHaVerify = true;
+let cfgHaSavedVerify = true;
 
 function toggleMqtt() { showTab(activeTab === 'mqtt' ? 'control' : 'mqtt'); }
 
@@ -367,11 +369,17 @@ async function loadSettings(keepMsg) {
     cfgHaUrl = ha.url || '';
     cfgHaTokenSet = !!ha.tokenSet;
     cfgHaWritable = !!j.writable;
+    cfgHaVerify = ha.tlsRejectUnauthorized !== false;
+    cfgHaSavedVerify = cfgHaVerify;
     const haUrlInput = q('cfg-ha-url');
     if (haUrlInput) {
       haUrlInput.value = cfgHaUrl;
       if (!cfgHaUrl && m.host) {
         haUrlInput.placeholder = 'http://' + m.host + ':8123';
+      }
+      if (!haUrlInput._haBound) {
+        haUrlInput._haBound = true;
+        haUrlInput.addEventListener('input', renderHaVerifyToggle);
       }
     }
     const haTokenInput = q('cfg-ha-token');
@@ -387,14 +395,11 @@ async function loadSettings(keepMsg) {
     const haToggleBtn = q('cfg-ha-enabled');
     if (haToggleBtn) haToggleBtn.disabled = !j.writable;
     renderHaEnabledToggle();
-    const haMsgEl = q('cfg-ha-msg');
-    if (haMsgEl && !keepMsg) {
-      haMsgEl.textContent = '';
-      haMsgEl.className = 'cfg-msg';
-    }
+    renderHaVerifyToggle();
+    if (!keepMsg) setHaFeedback('');
     renderHaStatus(ha.status || null);
     if (cfgHaEnabled && cfgHaUrl && cfgHaTokenSet && cfgHaWritable) {
-      checkHaStatus();
+      checkHaStatus(false);
     }
 
     if (m.entities) cfgEntities = m.entities;
@@ -459,8 +464,8 @@ async function saveSettings() {
   const haTokenEl = q('cfg-ha-token');
   const haUrl = haUrlEl ? haUrlEl.value.trim() : '';
   const haToken = haTokenEl ? haTokenEl.value.trim() : '';
-  if (haUrl !== '' || haToken !== '' || cfgHaUrl !== '' || cfgHaTokenSet) {
-    body.homeAssistant = { enabled: cfgHaEnabled, url: haUrl };
+  if (haUrl !== '' || haToken !== '' || cfgHaUrl !== '' || cfgHaTokenSet || cfgHaVerify !== cfgHaSavedVerify) {
+    body.homeAssistant = { enabled: cfgHaEnabled, url: haUrl, tlsRejectUnauthorized: cfgHaVerify };
     if (haToken !== '') body.homeAssistant.token = haToken;
   }
 
@@ -505,6 +510,46 @@ function renderHaEnabledToggle() {
   }
 }
 
+function renderHaVerifyToggle() {
+  const row = q('cfg-ha-verify-row');
+  const urlVal = q('cfg-ha-url') ? q('cfg-ha-url').value.trim() : cfgHaUrl;
+  if (row) row.hidden = !/^https:/i.test(urlVal);
+  updateToggle('cfg-ha-verify', {
+    cls: cfgHaVerify ? 'good' : 'idle',
+    label: cfgHaVerify ? t('mqtt.cat.enabled', 'Enabled') : t('mqtt.cat.disabled', 'Disabled'),
+    on: cfgHaVerify,
+    disabled: !cfgHaWritable
+  });
+}
+
+function toggleHaVerify() {
+  if (!cfgHaWritable) return;
+  cfgHaVerify = !cfgHaVerify;
+  renderHaVerifyToggle();
+}
+
+function setHaFeedback(text, kind, title) {
+  const msgEl = q('cfg-ha-msg');
+  const errEl = q('cfg-ha-error');
+  if (kind === 'bad') {
+    if (msgEl) { msgEl.textContent = ''; msgEl.className = 'cfg-msg'; }
+    if (errEl) {
+      errEl.hidden = false;
+      if (title && title !== text && typeof esc === 'function') {
+        errEl.innerHTML = '<b>' + esc(title) + '</b>' + esc(text || '');
+      } else {
+        errEl.textContent = text || '';
+      }
+    }
+    return;
+  }
+  if (errEl) { errEl.textContent = ''; errEl.hidden = true; }
+  if (msgEl) {
+    msgEl.textContent = text || '';
+    msgEl.className = kind ? 'cfg-msg ' + kind : 'cfg-msg';
+  }
+}
+
 async function toggleHaEnabled() {
   if (!cfgHaWritable) return;
   const next = !cfgHaEnabled;
@@ -512,14 +557,13 @@ async function toggleHaEnabled() {
   renderHaEnabledToggle();
 
   const btn = q('cfg-ha-enabled');
-  const msgEl = q('cfg-ha-msg');
   if (!(cfgHaUrl && cfgHaTokenSet)) {
     renderHaStatus(null);
     return;
   }
 
   if (btn) btn.disabled = true;
-  if (msgEl) { msgEl.textContent = t('mqtt.saving', 'Saving...'); msgEl.className = 'cfg-msg'; }
+  setHaFeedback(t('mqtt.saving', 'Saving...'));
   try {
     const r = await fetch(api('/api/ha/save'), {
       method: 'POST',
@@ -530,7 +574,8 @@ async function toggleHaEnabled() {
     if (!j.ok) {
       cfgHaEnabled = !next;
       renderHaEnabledToggle();
-      if (msgEl) { msgEl.textContent = j.error || t('mqtt.saveFailed', 'Save failed'); msgEl.className = 'cfg-msg bad'; }
+      const saveErrTitle = t('mqtt.saveFailed', 'Save failed');
+      setHaFeedback(j.error || saveErrTitle, 'bad', j.error ? saveErrTitle : '');
       return;
     }
     cfgHaEnabled = j.enabled !== false;
@@ -539,14 +584,14 @@ async function toggleHaEnabled() {
     if (typeof loadScreensavers === 'function') loadScreensavers();
     if (!cfgHaEnabled) {
       renderHaStatus(j.status || { state: 'disabled' });
-      if (msgEl) { msgEl.textContent = ''; msgEl.className = 'cfg-msg'; }
+      setHaFeedback('');
       return;
     }
-    await checkHaStatus(msgEl);
+    await checkHaStatus(true);
   } catch (e) {
     cfgHaEnabled = !next;
     renderHaEnabledToggle();
-    if (msgEl) { msgEl.textContent = e.message; msgEl.className = 'cfg-msg bad'; }
+    setHaFeedback(e.message, 'bad', t('mqtt.saveFailed', 'Save failed'));
   } finally {
     if (btn) btn.disabled = !cfgHaWritable;
   }
@@ -626,12 +671,13 @@ function renderHaStatus(statusObj) {
   }
 }
 
-async function checkHaStatus(msgEl) {
+async function checkHaStatus(showFeedback) {
   if (!(cfgHaEnabled && cfgHaUrl && cfgHaTokenSet)) {
     renderHaStatus(null);
     return;
   }
   renderHaStatus({ state: 'checking' });
+  const errTitle = t('ha.testFailed', 'Connection failed');
   try {
     const r = await fetch(api('/api/ha/test'), {
       method: 'POST',
@@ -641,30 +687,29 @@ async function checkHaStatus(msgEl) {
     const j = await r.json();
     if (j.ok) {
       renderHaStatus({ state: 'connected', message: j.message });
-      if (msgEl) { msgEl.textContent = t('ha.connected', 'Connected: {msg}', { msg: j.message || 'OK' }); msgEl.className = 'cfg-msg good'; }
+      if (showFeedback) setHaFeedback(t('ha.connected', 'Connected: {msg}', { msg: j.message || 'OK' }), 'good');
     } else {
-      renderHaStatus({ state: 'error', error: j.error || t('ha.testFailed', 'Connection failed') });
-      if (msgEl) { msgEl.textContent = j.error || t('ha.testFailed', 'Connection failed'); msgEl.className = 'cfg-msg bad'; }
+      renderHaStatus({ state: 'error', error: j.error || errTitle });
+      if (showFeedback) setHaFeedback(j.error || errTitle, 'bad', j.error ? errTitle : '');
     }
   } catch (e) {
     renderHaStatus({ state: 'error', error: e.message });
-    if (msgEl) { msgEl.textContent = e.message; msgEl.className = 'cfg-msg bad'; }
+    if (showFeedback) setHaFeedback(e.message, 'bad', errTitle);
   }
 }
 
 async function saveHaSettings() {
   const btn = q('cfg-ha-save-btn');
-  const msgEl = q('cfg-ha-msg');
-  if (!btn || !msgEl) return;
+  if (!btn) return;
   const url = q('cfg-ha-url') ? q('cfg-ha-url').value.trim() : '';
   const token = q('cfg-ha-token') ? q('cfg-ha-token').value.trim() : '';
-  const payload = { enabled: cfgHaEnabled, url: url };
+  const payload = { enabled: cfgHaEnabled, url: url, tlsRejectUnauthorized: cfgHaVerify };
   if (token !== '') payload.token = token;
   else if (url === '') payload.clearToken = true;
 
+  const saveErrTitle = t('mqtt.saveFailed', 'Save failed');
   btn.disabled = true;
-  msgEl.textContent = t('mqtt.saving', 'Saving...');
-  msgEl.className = 'cfg-msg';
+  setHaFeedback(t('mqtt.saving', 'Saving...'));
 
   try {
     const r = await fetch(api('/api/ha/save'), {
@@ -674,14 +719,16 @@ async function saveHaSettings() {
     });
     const j = await r.json();
     if (!j.ok) {
-      msgEl.textContent = j.error || t('mqtt.saveFailed', 'Save failed');
-      msgEl.className = 'cfg-msg bad';
+      setHaFeedback(j.error || saveErrTitle, 'bad', j.error ? saveErrTitle : '');
       return;
     }
     cfgHaEnabled = j.enabled !== false;
     cfgHaUrl = j.url || '';
     cfgHaTokenSet = !!j.tokenSet;
+    cfgHaVerify = j.tlsRejectUnauthorized !== false;
+    cfgHaSavedVerify = cfgHaVerify;
     renderHaEnabledToggle();
+    renderHaVerifyToggle();
     const tokenInput = q('cfg-ha-token');
     if (tokenInput) tokenInput.value = '';
     const tokenHint = q('cfg-ha-token-hint');
@@ -695,14 +742,12 @@ async function saveHaSettings() {
 
     if (!j.url && !j.tokenSet) {
       renderHaStatus(null);
-      msgEl.textContent = t('ha.cleared', 'Cleared.');
-      msgEl.className = 'cfg-msg';
+      setHaFeedback(t('ha.cleared', 'Cleared.'));
       return;
     }
     if (!cfgHaEnabled) {
       renderHaStatus(j.status || { state: 'disabled' });
-      msgEl.textContent = t('ha.savedOff', 'Saved (Home Assistant API is turned off).');
-      msgEl.className = 'cfg-msg';
+      setHaFeedback(t('ha.savedOff', 'Saved (Home Assistant API is turned off).'));
       return;
     }
     renderHaStatus({ state: 'checking' });
@@ -714,16 +759,13 @@ async function saveHaSettings() {
     const tj = await tr.json();
     if (tj.ok) {
       renderHaStatus({ state: 'connected', message: tj.message });
-      msgEl.textContent = t('ha.savedConnected', 'Saved — Connected: {msg}', { msg: tj.message || 'OK' });
-      msgEl.className = 'cfg-msg good';
+      setHaFeedback(t('ha.savedConnected', 'Saved — Connected: {msg}', { msg: tj.message || 'OK' }), 'good');
     } else {
       renderHaStatus({ state: 'error', error: tj.error || '' });
-      msgEl.textContent = t('ha.savedWarn', 'Saved (test failed: {err})', { err: tj.error || '' });
-      msgEl.className = 'cfg-msg bad';
+      setHaFeedback(t('ha.savedWarn', 'Saved (test failed: {err})', { err: tj.error || '' }), 'bad');
     }
   } catch (e) {
-    msgEl.textContent = e.message;
-    msgEl.className = 'cfg-msg bad';
+    setHaFeedback(e.message, 'bad', saveErrTitle);
   } finally {
     btn.disabled = false;
   }
@@ -731,37 +773,33 @@ async function saveHaSettings() {
 
 async function testHaConnection() {
   const btn = q('cfg-ha-test-btn');
-  const msgEl = q('cfg-ha-msg');
-  if (!btn || !msgEl) return;
+  if (!btn) return;
   const url = q('cfg-ha-url') ? q('cfg-ha-url').value.trim() : '';
   const token = q('cfg-ha-token') ? q('cfg-ha-token').value.trim() : '';
 
+  const errTitle = t('ha.testFailed', 'Connection failed');
   btn.disabled = true;
-  msgEl.textContent = t('ha.testing', 'Testing connection...');
-  msgEl.className = 'cfg-msg';
+  setHaFeedback(t('ha.testing', 'Testing connection...'));
 
   try {
     const r = await fetch(api('/api/ha/test'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ url: url, token: token || undefined })
+      body: JSON.stringify({ url: url, token: token || undefined, tlsRejectUnauthorized: cfgHaVerify })
     });
     const j = await r.json();
-    const unsaved = (url !== cfgHaUrl) || (token !== '');
+    const unsaved = (url !== cfgHaUrl) || (token !== '') || (cfgHaVerify !== cfgHaSavedVerify);
     if (j.ok) {
       if (!unsaved && cfgHaEnabled) renderHaStatus({ state: 'connected', message: j.message });
-      msgEl.textContent = unsaved
+      setHaFeedback(unsaved
         ? t('ha.connectedUnsaved', 'Connected: {msg} (click Save to apply)', { msg: j.message || 'OK' })
-        : t('ha.connected', 'Connected: {msg}', { msg: j.message || 'OK' });
-      msgEl.className = 'cfg-msg good';
+        : t('ha.connected', 'Connected: {msg}', { msg: j.message || 'OK' }), 'good');
     } else {
       if (!unsaved && cfgHaEnabled) renderHaStatus({ state: 'error', error: j.error || '' });
-      msgEl.textContent = j.error || t('ha.testFailed', 'Connection failed');
-      msgEl.className = 'cfg-msg bad';
+      setHaFeedback(j.error || errTitle, 'bad', j.error ? errTitle : '');
     }
   } catch (e) {
-    msgEl.textContent = e.message;
-    msgEl.className = 'cfg-msg bad';
+    setHaFeedback(e.message, 'bad', errTitle);
   } finally {
     btn.disabled = false;
   }

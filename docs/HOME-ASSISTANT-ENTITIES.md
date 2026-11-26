@@ -72,6 +72,7 @@ Playback reaches an HDMI source over CEC, where the TV has only one key for both
 | `sensor` | `sensor.lg_tv_oled_refresher_status` | Pixel Refresher Status | `Idle`, `Scheduled`, or `Running` (2,000h deep cycle) |
 | `sensor` | `sensor.lg_tv_oled_short_cycles` | OLED Short Cycles Completed | Lifetime completed Off-RS short compensation cycles |
 | `sensor` | `sensor.lg_tv_oled_refresher_cycles` | OLED Refresher Cycles Completed | Lifetime completed JB 2,000-hour deep refresher cycles |
+| `sensor` | `sensor.lg_tv_oled_gsr_stress_count` | OLED GSR Stress Events | Lifetime static-image stress events counted by Global Stress Reduction; withheld on TVs that do not report it |
 | `sensor` | `sensor.lg_tv_oled_failure_alerts` | OLED Compensation Failures | Total compensation failure alerts recorded on TV |
 | `binary_sensor` | `binary_sensor.lg_tv_oled_asbl_dimmer` | OLED ASBL Protection | State of Auto Static Brightness Limiter / GSR dimmer |
 | `binary_sensor` | `binary_sensor.lg_tv_screen_saver_active` | Screen Saver | Whether a screen saver is on screen now; withheld on TVs that do not report it |

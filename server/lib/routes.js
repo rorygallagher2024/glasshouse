@@ -85,6 +85,8 @@ var appDnsModule = null;
 var quickAccessModule = null;
 /** @type {typeof import('./remotekeys')} */
 var remoteKeysModule = null;
+/** @type {typeof import('./remotedetect')} */
+var remoteDetectModule = null;
 /** @type {typeof import('./homescreen')} */
 var homeScreenModule = null;
 /** @type {typeof import('./home')} */
@@ -256,15 +258,23 @@ function setupPending() {
  * prometheus.enabled are writable from the Server tab, and iconServer from the
  * MQTT tab: its port answers nothing but the icons the dashboard serves.
  */
+/*
+ * config.json as it is on disk, {} where there is none yet, or null where it
+ * is there but cannot be read. A writer given null refuses: writing a setting
+ * into {} would replace the whole file with that one setting.
+ */
 function readConfigFile() {
+  if (!configFilePath || !fs.existsSync(configFilePath)) return {};
   try {
-    if (configFilePath && fs.existsSync(configFilePath)) {
-      return JSON.parse(fs.readFileSync(configFilePath, 'utf8'));
-    }
+    return JSON.parse(fs.readFileSync(configFilePath, 'utf8'));
   } catch (e) {
-    console.warn('config: could not re-read ' + configFilePath + ': ' + e.message);
+    console.error('config: could not read ' + configFilePath + ': ' + e.message);
+    return null;
   }
-  return {};
+}
+
+function unreadableConfigError() {
+  return new Error(msg('srv.configUnreadable', '{file} could not be read, so it was left as it is. Correct it, or remove it to start again, then restart Glasshouse.', { file: configFilePath }));
 }
 
 function trimmedString(v) { return typeof v === 'string' ? v.trim() : ''; }
@@ -365,6 +375,7 @@ function validateHaSettings(haObj) {
     var haTok = trimmedString(haObj.token);
     if (haTok || haObj.clearToken) out.token = haTok;
   }
+  if (typeof haObj.tlsRejectUnauthorized === 'boolean') out.tlsRejectUnauthorized = haObj.tlsRejectUnauthorized;
   return { errors: errors, value: out };
 }
 
@@ -374,11 +385,13 @@ function applyHaConfig(haPatch) {
   if (haPatch.enabled !== undefined) config.homeAssistant.enabled = haPatch.enabled;
   if (haPatch.url !== undefined) config.homeAssistant.url = haPatch.url;
   if (haPatch.token !== undefined) config.homeAssistant.token = haPatch.token;
+  if (haPatch.tlsRejectUnauthorized !== undefined) config.homeAssistant.tlsRejectUnauthorized = haPatch.tlsRejectUnauthorized;
   if (haEntityModule) haEntityModule.update(config.homeAssistant);
 }
 
 function writeSettings(patch, cb) {
   var file = readConfigFile();
+  if (!file) return cb(unreadableConfigError());
   for (var section in patch) {
     if (patch[section] !== null && typeof patch[section] === 'object' && !Array.isArray(patch[section])) {
       file[section] = file[section] || {};
@@ -402,6 +415,7 @@ function writeSettings(patch, cb) {
  */
 function setNetworkAccess(open, cb) {
   var file = readConfigFile();
+  if (!file) return cb(unreadableConfigError());
   // Unset, host defaults to dual-stack '::'.
   if (open) delete file.host;
   else file.host = '127.0.0.1';
@@ -466,6 +480,8 @@ function handoffUrl() {
  */
 function ownIdentity() {
   var file = readConfigFile();
+  // Unreadable, it may well hold an identity: none is made up over it.
+  if (!file) return null;
   var fm = file.mqtt || {};
   // One already set up keeps what it has, defaults included: its entities in
   // Home Assistant are named from it.
@@ -1194,6 +1210,7 @@ function getSettingsPayload() {
       enabled: haCfg.enabled !== false,
       url: haCfg.url || '',
       tokenSet: !!haCfg.token,
+      tlsRejectUnauthorized: haCfg.tlsRejectUnauthorized !== false,
       configured: !!(haEntityModule && haEntityModule.configured()),
       status: (haEntityModule && typeof haEntityModule.status === 'function') ? haEntityModule.status() : null
     },
@@ -1562,18 +1579,19 @@ function handleIptvRoute(req, res, u, pathname) {
     if (pathname === '/api/iptv/stream') {
       // The play URL carries the login on Xtream: for the TV's own Home only.
       if (!fromTV(req)) return send(res, 403, JSON.stringify({ ok: false, error: 'forbidden' }));
-      // full=1: the full-screen player, which may play a recording it can pause (lib/iptv-timeshift).
+      // full=1: the full-screen player, which may play a recording it can pause (lib/iptv-timeshift);
+      // as=hls or ts: the channel's other kind of stream, for this play only.
       return iptvModule.playUrl(String(qs.pl || ''), String(qs.key || ''), qs.full === '1', function (stream) {
         if (!stream) return send(res, 404, JSON.stringify({ ok: false, error: 'no-stream' }));
         res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
         res.end(JSON.stringify({ ok: true, url: stream.url, format: stream.format, account: stream.account, maxConnections: stream.maxConnections,
-          switchable: stream.switchable, timeshift: stream.timeshift === true }));
-      });
+          switchable: stream.switchable, timeshift: stream.timeshift === true, relay: stream.relay || null }));
+      }, qs.as === 'hls' || qs.as === 'ts' ? qs.as : '');
     }
     if (pathname === '/api/iptv/relay') {
-      // A tuner's stream with the owner's login: for the TV's own Home only, like the play link.
+      // A channel's stream, with a tuner's login or for Home's own player: for the TV's own Home only, like the play link.
       if (!fromTV(req)) return send(res, 403, JSON.stringify({ ok: false, error: 'forbidden' }));
-      return iptvModule.relay(String(qs.pl || ''), String(qs.key || ''), req, res);
+      return iptvModule.relay(String(qs.pl || ''), String(qs.key || ''), req, res, qs.as === 'hls' || qs.as === 'ts' ? qs.as : '');
     }
     if (pathname === '/api/iptv/timeshift') {
       if (qs.pl === undefined) return iptvModule.timeshiftStatus(reply);
@@ -2053,9 +2071,9 @@ function handleRequest(req, res) {
     }
     return readJsonBody(req, res, function (body) {
       if (!haEntityModule) return send(res, 503, JSON.stringify({ ok: false, error: 'Home Assistant module not loaded' }));
-      var testUrl = body && body.url;
-      var testToken = body && body.token;
-      haEntityModule.test({ url: testUrl, token: testToken }, function (r) {
+      var testOpts = { url: body && body.url, token: body && body.token };
+      if (body && typeof body.tlsRejectUnauthorized === 'boolean') testOpts.tlsRejectUnauthorized = body.tlsRejectUnauthorized;
+      haEntityModule.test(testOpts, function (r) {
         send(res, r.ok ? 200 : 400, JSON.stringify(r));
       });
     });
@@ -2084,6 +2102,7 @@ function handleRequest(req, res) {
           enabled: config.homeAssistant.enabled !== false,
           url: config.homeAssistant.url || '',
           tokenSet: !!(config.homeAssistant.token),
+          tlsRejectUnauthorized: config.homeAssistant.tlsRejectUnauthorized !== false,
           configured: haEntityModule.configured(),
           status: (typeof haEntityModule.status === 'function') ? haEntityModule.status() : null
         }));
@@ -2704,6 +2723,13 @@ function handleRequest(req, res) {
   }
 
   // What the remote's keys do, on its own for the Home tab's Guide button choice.
+  // The LG remotes in use with this TV, for the Remote tab.
+  if (pathname === '/api/remotes' && req.method === 'GET') {
+    if (!remoteDetectModule) return send(res, 200, JSON.stringify({ ok: true, remotes: [], devices: [] }));
+    return remoteDetectModule.detect(function (r) {
+      send(res, 200, JSON.stringify({ ok: true, remotes: r.remotes, devices: r.devices }));
+    }, req.url.indexOf('fresh=1') !== -1);
+  }
   if (pathname === '/api/remotekeys' && req.method === 'GET') {
     if (!remoteKeysModule) return send(res, 200, JSON.stringify({ ok: true, supported: false }));
     return remoteKeysModule.getRemoteKeys(function (rk) { send(res, 200, JSON.stringify(rk || { ok: true, supported: false })); });
@@ -2726,6 +2752,11 @@ function handleRequest(req, res) {
       }
       if (body && body.brightnessBarStyle !== undefined) {
         return remoteKeysModule.setBrightnessBarStyle(body.brightnessBarStyle, function (r) {
+          send(res, r && r.ok ? 200 : 400, JSON.stringify(r));
+        });
+      }
+      if (body && body.remotes !== undefined) {
+        return remoteKeysModule.setRemoteSelection(body.remotes && body.remotes.mode, function (r) {
           send(res, r && r.ok ? 200 : 400, JSON.stringify(r));
         });
       }
@@ -2973,6 +3004,7 @@ function init(opts) {
   if (opts.appDns) appDnsModule = opts.appDns;
   if (opts.quickAccess) quickAccessModule = opts.quickAccess;
   if (opts.remoteKeys) remoteKeysModule = opts.remoteKeys;
+  if (opts.remoteDetect) remoteDetectModule = opts.remoteDetect;
   if (opts.homeScreen) homeScreenModule = opts.homeScreen;
   if (opts.home) homeModule = opts.home;
   if (opts.news) newsModule = opts.news;

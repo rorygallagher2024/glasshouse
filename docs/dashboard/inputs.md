@@ -31,7 +31,7 @@ Each tile shows its name, subtitle (such as HDMI port or source type), and an au
 
 ### Supported TVs & background preloading
 
-* **Supported versions:** Offered without any experimental switch on **webOS 4 to 10**, where the compositor filter can hand further **Input** presses to the bar. Not offered before webOS 4. On webOS 11, whose remote keys are compiled inside LG's compositor, it is offered only on a TV whose key handler Glasshouse knows how to change (an OLED48C31LA on firmware 44.00.92 so far): choosing the bar changes a few bytes of LG's `libappLaunch.so.1` in a copy mounted over it and restarts the TV's screen once, which takes about 35 s, and again each time the TV starts, and choosing **LG's list** puts it back with another restart.
+* **Supported versions:** Offered without any experimental switch on **webOS 4 to 10**, where the compositor filter can hand further **Input** presses to the bar. Not offered before webOS 4. On webOS 11, whose remote keys are compiled inside LG's compositor, it is offered only on a TV whose key handler Glasshouse knows how to change (an OLED48C31LA on firmware 44.00.92 and an OLED65C35LA on 43.21.71 so far): choosing the bar changes a few bytes of LG's `libappLaunch.so.1` in a copy mounted over it and restarts the TV's screen once, which takes about 35 s, and again each time the TV starts, and choosing **LG's list** puts it back with another restart.
 * **Fast opening:** Choosing the bar installs a hidden companion app (`com.tvweb.inputbar`) with no Home tile and keeps it preloaded in the background while the TV is on so it appears in roughly 0.4 s. Setting the last key that used it back to LG's (or uninstalling Glasshouse) removes the app.
 
 ## Your inputs

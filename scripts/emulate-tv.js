@@ -156,6 +156,8 @@ async function main() {
     '/etc/issue.net': `webOS ${webosVer}\n`,
     '/etc/starfish-release': `Starfish release ${webosVer} (broadway)\n`,
     '/proc/lg/pm/temperature': '42\n',
+    // The paired remote, as LG writes it when it pairs (the address here is made up).
+    '/mnt/lg/cmn_data/mrcu/mrcu1.info': 'Name = LGE MR25GA\nBDAddr = 00:00:5e:00:53:99\n',
     '/var/luna/preferences/environmentCondition': JSON.stringify({ boardTypeStr: profile.boardType, socChip: profile.boardType })
   });
 
@@ -188,6 +190,13 @@ async function main() {
     case WebOS.Key_webOS_Amazon:
     case WebOS.Key_webOS_Disneyplus:
     case WebOS.Key_webOS_Rakuten:
+    case WebOS.Key_webOS_RakutenTV:
+    case WebOS.Key_webOS_LGChannels:
+    case WebOS.Key_webOS_ALEXA:
+    case WebOS.Key_webOS_ChannelUp:
+    case WebOS.Key_webOS_ChannelDown:
+    case WebOS.Key_webOS_Apps:
+    case WebOS.Key_webOS_Info:
     case WebOS.Key_webOS_TVGuide:
     case WebOS.Key_webOS_InputSource:
     case WebOS.Key_webOS_Red:

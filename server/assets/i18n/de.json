@@ -1,4 +1,6 @@
 {
+ "apps.remoteKeys.observedColor": {"text": "Glasshouse muss für diese Verknüpfung laufen. Die Taste kann in der aktuellen App weiterhin ihre ursprüngliche Aktion ausführen.", "from": "Glasshouse must be running for this shortcut. The key may still perform its original action in the current app."},
+ "apps.remoteKeys.observedChannel": {"text": "Glasshouse muss für diese Verknüpfung laufen. Die Taste kann weiterhin den Kanal wechseln.", "from": "Glasshouse must be running for this shortcut. The key may still change the channel."},
   "home.arrange.done": {
     "text": "Fertig",
     "from": "Done"
@@ -955,6 +957,7 @@
  "inputs.kind.av": {"text": "AV", "from": "AV"},
  "inputs.kind.component": {"text": "Component", "from": "Component"},
  "srv.remoteKeys.ok": {"text": "OK", "from": "OK"},
+ "srv.remoteKeys.piccap": {"from": "Ambient light", "text": "Ambient Light"},
  "apps.remoteKeys.buttons": {"text": "Tasten", "from": "Buttons"},
  "home.bg.video": {"text": "Video", "from": "Video"},
  "home.video.help": {"text": "Links zu Videodateien, einer pro Zeile, etwa https://example.com/beach.mp4, oder zu einer Playlist davon. Der Fernseher streamt sie selbst, aus dem Internet oder deinem eigenen Netzwerk.", "from": "Links to video files, one per line, such as https://example.com/beach.mp4, or to a playlist of them. The TV streams them itself, from the internet or your own network."},
@@ -1283,6 +1286,22 @@
  "apps.running.summaryMb": {"text": "{n} Apps · {mb} MB", "from": "{n} apps · {mb} MB"},
  "apps.running.summaryOneMb": {"text": "1 App · {mb} MB", "from": "1 app · {mb} MB"},
  "apps.running.title": {"text": "Apps im Speicher", "from": "Apps in memory"},
+ "srv.updateAsk.title": {"from": "Glasshouse {version} is out", "text": "Glasshouse {version} ist da"},
+ "srv.updateAsk.install": {"from": "Update now", "text": "Jetzt aktualisieren"},
+ "srv.updateAsk.later": {"from": "Later", "text": "Später"},
+ "ha.verify.desc": {"text": "Für ein selbstsigniertes Zertifikat oder eine per LAN-IP aufgerufene HTTPS-Adresse ausschalten.", "from": "Turn off for a self-signed certificate or an HTTPS address reached by LAN IP."},
+ "server.askOnTv": {"from": "Ask on the TV", "text": "Auf dem Fernseher fragen"},
+ "server.askOnTv.desc": {"from": "When the daily check finds a new release, asks on the TV whether to install it, with Update now and Later, after the TV is next switched on. Each release is asked about until it is answered.", "text": "Findet die tägliche Prüfung eine neue Version, fragt der Fernseher nach dem nächsten Einschalten, ob sie installiert werden soll, mit Jetzt aktualisieren und Später. Zu jeder Version wird gefragt, bis eine Antwort kommt."},
+ "srv.updateAsk.installing": {"from": "Updating Glasshouse to {version}. It restarts when done.", "text": "Glasshouse wird auf {version} aktualisiert. Danach startet es neu."},
+ "srv.updateAsk.failed": {"from": "Glasshouse could not update: {error}", "text": "Glasshouse konnte nicht aktualisiert werden: {error}"},
+ "srv.updateAsk.noReason": {"from": "no reason given", "text": "kein Grund angegeben"},
+ "srv.configUnreadable": {"from": "{file} could not be read, so it was left as it is. Correct it, or remove it to start again, then restart Glasshouse.", "text": "{file} konnte nicht gelesen werden und wurde daher nicht verändert. Korrigiere die Datei oder entferne sie, um neu zu beginnen, und starte Glasshouse dann neu."},
+ "apps.remote.only": {"from": "Display only buttons for your remote", "text": "Nur Tasten deiner Fernbedienung anzeigen"},
+ "apps.remote.desc": {"from": "Folds buttons your remote does not have into Buttons on other remotes. Keys you have changed always stay visible.", "text": "Klappt Tasten, die deine Fernbedienung nicht hat, unter „Tasten auf anderen Fernbedienungen“ ein. Geänderte Tasten bleiben immer sichtbar."},
+ "apps.remote.detected": {"from": "Detected: {name}", "text": "Erkannt: {name}"},
+ "apps.remoteKeys.otherRemotes": {"from": "Buttons on other remotes ({n})", "text": "Tasten auf anderen Fernbedienungen ({n})"},
+ "srv.remoteKeys.badRemotes": {"from": "Choose whether to show every button", "text": "Wähle aus, ob alle Tasten angezeigt werden sollen"},
+ "home.motion.driftDesc": {"from": "The wallpaper shifts sideways very slowly, so it never sits still on the screen.", "text": "Das Hintergrundbild verschiebt sich sehr langsam seitwärts, sodass es nie still auf dem Bildschirm steht."},
  "inputs.noSignal.dvd": {"text": "DVD-Stil", "from": "DVD style"},
  "inputs.noSignal.dvdDesc": {"text": "Ein „Kein Signal“-Logo prallt von den Bildschirmrändern ab und wechselt bei jedem Aufprall die Farbe.", "from": "A “No Signal” logo bounces off the edges of the screen, changing colour at each bounce."}
 }

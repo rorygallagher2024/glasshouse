@@ -13,7 +13,10 @@
  * The file is under qml/UserInterfaceLayer/Containers/BgViewLayer on webOS 9
  * (a C2, 9.2.2) and qml/TvComponent/ScreenSaver on webOS 4 (a B8, 4.4.3), with
  * the same two lines. Each must be there exactly once, as on those two, or
- * nothing is mounted: a firmware that changed them keeps LG's screen.
+ * nothing is mounted: a firmware that changed them keeps LG's screen. On webOS
+ * 9 and later, LG's "No Signal Image" gallery photo hides RandomMoveItem via
+ * noSignalPhotoModel and paints PhotoSlide instead, so those two lines are
+ * also adjusted when present.
  *
  * The input app holds the file it loaded until it starts again, so it is
  * restarted, and only while no input with a picture is on screen, as
@@ -54,6 +57,9 @@ var PATCHES = [
 ];
 var HEADER_START = /\n([ \t]*)ScreensaverMainText \{\s*\n[ \t]*id: headerText(?=\n)/g;
 var HEADER_ID = /(\n([ \t]*)id: headerText)(?=\n)/g;
+// webOS 9+ "No Signal Image" photo slide and RandomMoveItem guard (absent on webOS 4).
+var PHOTO_MODEL = /(\n[ \t]*photoModel:\s*)noSignalPhotoModel(?=\n)/g;
+var MOVER_PHOTO_VISIBLE = /(\n[ \t]*visible:\s*visibleScreensaver)\s*&&\s*(noSignalPhotoModel\s*&&\s*!noSignalPhotoModel\.enabled(?:\s*&&\s*!noSignalPhotoModel\.opene?d)?)(?=\n)/g;
 // Art: drawn under LG's drifting box, which fades once a picture is in.
 var MOVER_START = /\n([ \t]*)RandomMoveItem \{(?=\n)/g;
 var MOVER_ID = /(\n([ \t]*)id: element)(?=\n)/g;
@@ -491,6 +497,12 @@ function mounted(file) {
   });
 }
 
+function replaceIfUnique(text, find, replacement) {
+  var found = text.match(find);
+  if (!found || found.length !== 1) return text;
+  return text.replace(find, replacement);
+}
+
 /*
  * The TV's own file patched for the requested mode ('plain', 'icon', 'art' or 'dvd'),
  * or null where a line this looks for is not there exactly once. artApi: the
@@ -503,6 +515,8 @@ function patch(text, mode, artApi) {
     if (!found || found.length !== 1) return null;
     out = out.replace(PATCHES[i].find, '$1' + PATCHES[i].add);
   }
+  out = replaceIfUnique(out, PHOTO_MODEL, '$1({ enabled: false, currentIdx: 0, imgArray: [] })');
+  out = replaceIfUnique(out, MOVER_PHOTO_VISIBLE, '$1 && (currentKey === "noSignal" || ($2))');
   if (mode === 'icon') {
     var heads = out.match(HEADER_START);
     if (!heads || heads.length !== 1) return null;

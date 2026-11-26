@@ -5,6 +5,8 @@
  */
 var assert = require('assert');
 var http = require('http');
+var https = require('https');
+var EventEmitter = require('events').EventEmitter;
 
 var haEntity = require('../server/lib/haentity');
 
@@ -211,8 +213,110 @@ server.listen(0, '127.0.0.1', function () {
                                     assert.ok(/not configured/.test(off.errors['sensor.outdoor_temperature']));
                                     assert.strictEqual(hits, beforeOff, 'switched off, Home Assistant is not asked');
                                     console.log('  \u2713 readMany reads every id together and reports each failure under its id');
-                                    server.close();
-                                    console.log('ALL test-haentity.js assertions passed!');
+
+                                    // HTTPS rejectUnauthorized and error hints.
+                                    var realHttpsRequest = https.request;
+                                    var httpsOpts = [];
+                                    var nextHttpsErr = null;
+                                    https.request = function (opts, cb) {
+                                      httpsOpts.push(opts);
+                                      var req = new EventEmitter();
+                                      req.setTimeout = function () {};
+                                      req.abort = function () {};
+                                      req.end = function () {
+                                        var errToEmit = nextHttpsErr;
+                                        nextHttpsErr = null;
+                                        process.nextTick(function () {
+                                          if (errToEmit) return req.emit('error', errToEmit);
+                                          var res = new EventEmitter();
+                                          res.statusCode = 200;
+                                          cb(res);
+                                          res.emit('data', new Buffer(JSON.stringify({ message: 'API running.', state: '20', attributes: {} }), 'utf8'));
+                                          res.emit('end');
+                                        });
+                                      };
+                                      return req;
+                                    };
+
+                                    haEntity.init({ config: { homeAssistant: { url: 'https://ha.local:8123', token: 'tok' } } });
+                                    haEntity.read('sensor.outdoor_temperature', function (h1) {
+                                      assert.strictEqual(h1.ok, true);
+                                      assert.strictEqual(httpsOpts[0].rejectUnauthorized, true, 'verify certificate defaults to true');
+
+                                      haEntity.update({ tlsRejectUnauthorized: false });
+                                      haEntity.read('sensor.outdoor_temperature', function (h2) {
+                                        assert.strictEqual(h2.ok, true);
+                                        assert.strictEqual(httpsOpts[1].rejectUnauthorized, false, 'update disables verify certificate');
+
+                                        haEntity.test({ tlsRejectUnauthorized: true }, function (h3) {
+                                          assert.strictEqual(h3.ok, true);
+                                          assert.strictEqual(httpsOpts[2].rejectUnauthorized, true, 'test overrides verify certificate on');
+
+                                          var protoErr = new Error('write EPROTO A06DDEF7:error:0A00010B:SSL routines:ssl3_get_record:wrong version number:../openssl-3.0.9/ssl/record/ssl3_record.c:354:\n');
+                                          protoErr.code = 'EPROTO';
+                                          nextHttpsErr = protoErr;
+                                          haEntity.test({ url: 'https://ha.local:8123', token: 'tok' }, function (hProto) {
+                                            assert.strictEqual(hProto.ok, false);
+                                            assert.strictEqual(hProto.error, 'Home Assistant is not using HTTPS on this address. Try http:// instead.');
+                                            assert.strictEqual(hProto.error.indexOf('openssl'), -1);
+                                            assert.strictEqual(hProto.error.indexOf('EPROTO'), -1);
+
+                                            var sniErr = new Error('write EPROTO 4145365552:error:14077458:SSL routines:SSL23_GET_SERVER_HELLO:tlsv1 unrecognized name:s23_clnt.c:802:\n');
+                                            sniErr.code = 'EPROTO';
+                                            nextHttpsErr = sniErr;
+                                            haEntity.test({ url: 'https://192.168.178.37:8123', token: 'tok' }, function (hSni) {
+                                              assert.strictEqual(hSni.ok, false);
+                                              assert.strictEqual(hSni.error, 'The HTTPS server rejected the hostname 192.168.178.37. Use the domain name on its certificate, or http:// on the local network.');
+                                              assert.strictEqual(hSni.error.indexOf('s23_clnt'), -1);
+                                              assert.strictEqual(hSni.error.indexOf('EPROTO'), -1);
+
+                                              var tlsVerErr = new Error('write EPROTO B1234567:error:1407742E:SSL routines:SSL23_GET_SERVER_HELLO:tlsv1 alert protocol version:s23_clnt.c:802:\n');
+                                              tlsVerErr.code = 'EPROTO';
+                                              nextHttpsErr = tlsVerErr;
+                                              haEntity.test({ url: 'https://ha.local:8123', token: 'tok' }, function (hTlsVer) {
+                                                assert.strictEqual(hTlsVer.ok, false);
+                                                assert.strictEqual(hTlsVer.error, 'Could not agree on an HTTPS protocol or cipher with ha.local. Try http:// on the local network, or allow TLS 1.2 on the proxy.');
+
+                                                nextHttpsErr = new Error('socket hang up');
+                                                haEntity.test({ url: 'https://ha.local:8123', token: 'tok' }, function (hHang) {
+                                                  assert.strictEqual(hHang.ok, false);
+                                                  assert.strictEqual(hHang.error, 'Home Assistant closed the HTTPS connection. If it is not using HTTPS, try http:// instead.');
+
+                                                  var certErr = new Error('self signed certificate');
+                                                  certErr.code = 'DEPTH_ZERO_SELF_SIGNED_CERT';
+                                                  nextHttpsErr = certErr;
+                                                  haEntity.test({ url: 'https://ha.local:8123', token: 'tok', tlsRejectUnauthorized: true }, function (hCertOn) {
+                                                    assert.strictEqual(hCertOn.ok, false);
+                                                    assert.strictEqual(hCertOn.error, 'Home Assistant\'s HTTPS certificate could not be verified. For a self-signed or LAN IP certificate, turn off Verify certificate.');
+
+                                                    var certErrOff = new Error('self signed certificate');
+                                                    certErrOff.code = 'DEPTH_ZERO_SELF_SIGNED_CERT';
+                                                    nextHttpsErr = certErrOff;
+                                                    haEntity.test({ url: 'https://ha.local:8123', token: 'tok', tlsRejectUnauthorized: false }, function (hCertOff) {
+                                                      assert.strictEqual(hCertOff.ok, false);
+                                                      assert.strictEqual(hCertOff.error, 'Home Assistant\'s HTTPS certificate was rejected.');
+
+                                                      var dnsErr = new Error('getaddrinfo ENOTFOUND ha.local');
+                                                      dnsErr.code = 'ENOTFOUND';
+                                                      nextHttpsErr = dnsErr;
+                                                      haEntity.test({ url: 'https://ha.local:8123', token: 'tok' }, function (hDns) {
+                                                        assert.strictEqual(hDns.ok, false);
+                                                        assert.strictEqual(hDns.error, 'Could not find ha.local on the network. Check the address.');
+
+                                                        https.request = realHttpsRequest;
+                                                        console.log('  \u2713 HTTPS passes rejectUnauthorized and turns socket/TLS errors into readable messages');
+                                                        server.close();
+                                                        console.log('ALL test-haentity.js assertions passed!');
+                                                      });
+                                                    });
+                                                  });
+                                                });
+                                              });
+                                            });
+                                          });
+                                        });
+                                      });
+                                    });
                                   });
                                 });
                               });
