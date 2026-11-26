@@ -153,13 +153,13 @@ Custom QML screen savers added on the TV can read Home Assistant entities too. E
 
 1. Configure and save the **Home Assistant API** connection above so the **Home Assistant control bar** section appears underneath.
 2. Add up to 16 entities with optional custom display labels and reorder them as they should appear from left to right. The list is included in [settings backups](dashboard/server.md).
-3. Assign **Home Assistant bar** to a button on the [**Remote** tab](dashboard/remote.md) (works on both webOS 4–10 filter keys and webOS 11 streaming keys, as well as Quick Access slots 1–9), switch on **Show in Glasshouse Bar** to add a shortcut tile at the end of Glasshouse Bar, or click **Open on TV** to test it straight away. You can also toggle **Button hints** off to hide the remote-control hint text above the control bar and on the Glasshouse Home row.
-4. Once enabled and configured with at least one entity, an optional **Home Assistant** row toggle also appears on the [**Home** tab](dashboard/home.md#home-assistant-row) to control the same entities inline from Glasshouse Home.
-5. On the TV, use **Left** / **Right** (or the Magic Remote pointer and wheel) to focus a tile, **OK** (or click) to toggle a switch/light/climate/cover/lock or trigger a scene/script, **Up** / **Down** on the control bar (or **Ch +** / **Ch -** on the Glasshouse Home row, or the on-screen step buttons) to step light brightness, climate target temperature, fan percentage or cover state, and **Back** (or pressing the mapped remote button again) to close the bar. Only entities explicitly listed on the bar can be controlled by its TV overlay, and the Home Assistant token never leaves the TV's server process.
+3. Assign **Home Assistant bar** to a button on the [**Remote** tab](dashboard/remote.md) (webOS 4 to 10 keys, webOS 11 streaming keys, and Quick Access keys 1 to 9), or click **Open on TV** to try it straight away. **Button hints** shows which remote buttons do what, above the bar and on Glasshouse Home's row.
+4. On the [**Home** tab](dashboard/home.md#home-assistant-row), Glasshouse Home can show the same entities as a **Home Assistant** row, and Glasshouse Bar can add a tile that opens the control bar.
+5. On the TV, **Left** and **Right** (or the Magic Remote pointer) move between tiles. **OK** toggles a light, switch, climate device, cover or lock, or runs a scene or script; sensors are shown, not toggled. **Up** and **Down** on the bar (on Glasshouse Home's row, **Ch +** and **Ch -**, or the on-screen step buttons) step a light's brightness, a thermostat's target, a fan's speed or a cover. **Back**, or the bar's button again, closes it. Only the entities on the bar can be controlled from it, and the Home Assistant token never leaves the TV's server.
 
 ![Home Assistant control bar along the bottom of the TV screen showing lights, thermostat, switches, fan, blinds, lock and scene tiles with remote hints and clock](screenshots/ha-bar.png)
 
-![Home Assistant control bar settings on the HA & MQTT tab showing added entities, Show in Glasshouse Bar, Button hints, and Open on TV controls](screenshots/ha-bar-settings.png)
+![Home Assistant control bar settings on the HA & MQTT tab: adding an entity, Open on TV and Preview, and Button hints on the left, and the five entities on the bar, with their labels and order, on the right](screenshots/ha-bar-settings.png)
 
 ---
 

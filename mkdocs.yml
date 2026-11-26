@@ -45,7 +45,6 @@ nav:
       - Home: dashboard/home.md
       - Inputs: dashboard/inputs.md
       - Remote: dashboard/remote.md
-      - Remotes: remotes.md
       - Apps: dashboard/apps.md
       - Ambient Light: dashboard/ambient-light.md
       - Privacy: dashboard/privacy.md
@@ -82,6 +81,7 @@ nav:
       - Contributing: CONTRIBUTING.md
       - Internals: IMPLEMENTATION.md
       - Remote keys: development/remote-keys.md
+      - Remotes: development/remotes.md
       - TV hardware specifications:
           - development/tv-specs/index.md
           - LG B8 (OLED65B8SLC): development/tv-specs/b8.md

@@ -23,7 +23,7 @@ Preview cards at the top of the **Home** tab switch between five launcher option
 
 ## What is on screen
 
-**Glasshouse Home** displays a clock and date (following the TV's 12-hour or 24-hour time setting), the last active source or app, and up to five rows (any row with no visible items is automatically hidden). When there are more rows than fit, they scroll to keep the focused row in view:
+**Glasshouse Home** displays a clock and date (following the TV's 12-hour or 24-hour time setting), the last active source or app, and its rows (any row with no visible items is automatically hidden). When there are more rows than fit, they scroll to keep the focused row in view:
 
 <div class="grid cards" markdown>
 
@@ -62,6 +62,12 @@ Preview cards at the top of the **Home** tab switch between five launcher option
     ---
 
     Shows continuing titles and recommendations from installed streaming apps (such as Netflix, Prime Video, Disney+, and YouTube) as a row of cards below Apps. Off by default. See [Recommended row](#recommended-row).
+
+-   **Home Assistant**
+
+    ---
+
+    Control your home from Home: a row of your Home Assistant lights, switches, thermostats, fans, blinds, locks and scenes, with sensors shown as readings. **OK** toggles, and the step buttons, or **Ch +** and **Ch -**, dim or adjust. Off by default. See [Home Assistant row](#home-assistant-row).
 
 -   **Recent apps (`Back` button)**
 
@@ -156,6 +162,7 @@ The **Recommended** row surfaces content cards provided by installed streaming a
 When the **Home Assistant API** is enabled and at least one entity is configured in the [Home Assistant control bar](../HOME-ASSISTANT.md#home-assistant-control-bar) on the **HA & MQTT** tab, a **Home Assistant** row toggle appears under **Rows and tiles** on the web dashboard and under **Rows** on the TV app (off by default).
 
 * **Shared entity list:** Displays and controls the same entities configured for the control bar (`habar.json`), without maintaining a separate list.
+* **Sensors:** a temperature, humidity, power or other sensor shows its reading, with an icon for what it measures, and is not toggled.
 * **Inline control:** **OK** or clicking a tile toggles a switch, light, climate device, cover, or lock, or runs a scene, script, or button; clickable step buttons on focused adjustable tiles or **Ch +** / **Ch -** on the remote adjust brightness, fan percentage, cover state, or target temperature while leaving **Up** and **Down** for row navigation. Where **Ch +** and **Ch -** are set to **Brightness up** and **Brightness down** on the [Remote](remote.md) tab, they step the tile in focus instead while one that steps has focus, and set the TV's brightness everywhere else.
 
 ![Home Assistant row on Glasshouse Home showing interactive light, thermostat, switch, fan, blinds, lock and scene tiles](../screenshots/home-ha-row.png)
@@ -446,7 +453,7 @@ Its app, `com.tvweb.homebar`, has no tile of its own. It is kept loaded in the b
 
 The Home button on the web dashboard's remote opens it too. A phone remote app that opens LG's Home directly, rather than pressing Home, opens LG's Home, as Glasshouse Bar leaves it in place. With the Magic Remote, a notch of the scroll wheel moves the row a tile, and resting the pointer near either end of the row steps it along, as on Glasshouse Home. **Smooth scrolling**, under Animations on the Home tab, applies to the Bar too: off, the row jumps rather than glides.
 
-When the **Home Assistant API** has at least one control bar entity configured, an opt-in **Show in Glasshouse Bar** toggle (also listed under **Glasshouse Bar** → **Home Assistant bar tile** on the Home tab and TV app) appends a **Home Assistant** tile at the end of Glasshouse Bar to open the Home Assistant control bar directly.
+When the **Home Assistant API** has at least one control bar entity, **Home Assistant bar tile**, under **Glasshouse Bar** on the Home tab and in the TV app, adds a **Home Assistant** tile at the end of Glasshouse Bar that opens the [Home Assistant control bar](../HOME-ASSISTANT.md#home-assistant-control-bar).
 
 ![Glasshouse Bar along the bottom of the TV screen with the focused Home Assistant shortcut tile at the end and the matching clock above](../screenshots/home-bar-ha.png)
 

@@ -6,6 +6,8 @@ The **Inputs** tab (`/?tab=inputs`) controls how the remote's **Input** key beha
 
 **Glasshouse Input bar** replaces LG's stock input list with a sleek overlay bar over whatever is playing, opened by the **Input** key (or any key set to **Input bar** under [Remote keys](remote.md#remote-keys)).
 
+![Glasshouse Input bar along the bottom of the picture: Live TV, Apple TV on HDMI 1 in focus with a green dot under it as the input on screen, PlayStation 5, Laptop and AirPlay](../screenshots/inputs-bar.jpg)
+
 ### Choosing the input bar
 
 * **When you press Input on the remote:** Preview cards choose between **LG's list** and **Glasshouse Input bar**. This is the same setting as the **Input** key under [Remote keys](remote.md#remote-keys), where you can also assign the bar to any other remote key.
@@ -18,6 +20,8 @@ The **Inputs** tab (`/?tab=inputs`) controls how the remote's **Input** key beha
 * **Navigation:** **Left** and **Right** step horizontally (**Up** and **Down** move between rows in the two-row layout), **OK** switches at once, and **Back** closes it. With the Magic Remote pointer, hovering focuses a tile and clicking switches immediately.
 * **Auto-close:** Left alone, the bar closes after 3 seconds on the input already on screen, or after 6 seconds on another input highlighted by the pointer.
 * **Two-row layout:** When **6 or more** inputs are shown, the bar automatically stacks them into two rows so every source fits on screen without horizontal scrolling.
+
+![The Input bar with eight inputs in two rows of four: Live TV, Apple TV, PlayStation 5 and Laptop above, Nintendo Switch, a USB drive, a media server and AirPlay below](../screenshots/inputs-bar-two-rows.jpg)
 
 ### What the bar shows
 

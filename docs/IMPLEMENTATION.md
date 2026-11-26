@@ -1137,6 +1137,21 @@ and answers a press at once and each repeat logged with a step. `lginput2` also 
 not read. The filter asks for the profile once, as it loads, so a change of the
 keys set restarts the compositor, as the other changes to LG's libraries do.
 
+### webOS 11 remote keys in detail
+
+What the [Remote](dashboard/remote.md#webos-11) page sums up, button by button:
+
+* **Guide:** **Glasshouse Home's guide** is offered on the Guide key alone, on TVs whose key handler Glasshouse knows how to change (an OLED48C31LA on firmware 44.00.92 and an OLED65C35LA on 43.21.71 so far). Setting it changes a few bytes of LG's `libappLaunch.so.1` in a copy mounted over it and restarts the TV's screen once, about 35 s, and again each time the TV starts. Where the TV's build is not known, it is not offered. Without it (or on a build that does not skip the input branch), LG hands the Guide key to the input before Glasshouse's setting is read, so on Live TV and the HDMI inputs it opens the input's own guide whatever the key is set to, while the setting applies on Home and in apps ([#1615](https://github.com/rorygallagher2024/glasshouse/issues/1615)). On the OLED65C35LA with Glasshouse Home's guide set, Guide on an HDMI input opens Glasshouse Home's guide too.
+* **Input:** offered on the same TVs, with the same change to LG's library and the same restart of the screen. It can open an app, an HDMI input, Live TV or the input bar, or stay as LG has it; it cannot do nothing, take a media key or an action, or open an app whose id is longer than 30 characters.
+* **Screen off:** on Netflix, Prime Video and Home Hub. The button shows LG's "This function is not supported" notice, and Glasshouse turns the screen off about 0.5 s after the press. LG restores its streaming button assignments when the screen goes off, and Glasshouse applies them again moments later.
+* **Brightness up and down, Ambient light:** on the same buttons as Screen off, and the patched channel keys, answered from the system log in the same way. A press is one step; holding a streaming button does not repeat, and two presses less than half a second apart count as one.
+* **Channel up and down:** where the key handler can be changed (an OLED48C54LA on firmware 43.21.77 so far), each can do Nothing, Screen off, Brightness up or down, or open an app or an input, and no longer changes the channel anywhere; setting one, or setting it back, restarts the screen once, about 35 s, and the change is made again at each start. A Brightness key then steps while held, about five a second after the first half second. Without a known key handler, on a TV with a readable remote input device, each can only open an app or an input: the press is read from the remote's own input events rather than taken from LG, so Glasshouse must be running, the key may still change the channel too, and nothing on the TV is changed to offer it. On webOS 4 to 10 they were tried on a B8 (webOS 4.4) and an OLED48C56LB (webOS 10.3.0).
+* **Color keys:** where Glasshouse can read the remote's input devices, Red, Green, Yellow and Blue can open an app, an HDMI input, Live TV or the input switcher. They need the Glasshouse server running, without MQTT or Home Assistant, and are kept with the other keys and in settings backups. The key still reaches the app on screen, so its own action may run too, and Nothing is not offered.
+* **AI:** changing it switches off LG's voice assistant entirely (voice search, the AI assistant and the microphone) until it is As LG has it again. Glasshouse opens the chosen target about 1 s after the press.
+* **Alexa:** changing it stops Alexa from opening, and hides every on-screen notice for 4 s to cover Amazon's "Alexa is loading". Some TVs will not let Alexa be stopped (a C3 with webOS 11.2); there, once the TV has refused, the button is no longer offered and stays as LG has it. See [webOS 11: LG's own values](#webos-11-lgs-own-values).
+* **?:** press and hold are set separately, and it cannot be set to Nothing. A streaming button set to Nothing shows LG's "This function is not supported" notice.
+* **Ivi, Okko, Kinopoisk and LG Shop** are offered under Streaming buttons when LG enables their assignments; they can open an app or input, do nothing, or be As LG has it.
+
 ## The input bar
 
 The [input bar](dashboard/inputs.md#glasshouse-input-bar) is a web app of its own,
