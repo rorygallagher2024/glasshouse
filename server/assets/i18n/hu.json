@@ -3935,7 +3935,7 @@
  "community.use": {"from": "Use", "text": "Használat"},
  "srv.community.badCatalog": {"from": "Catalog format could not be read.", "text": "A katalógus formátuma nem olvasható."},
  "srv.community.badHash": {"from": "The downloaded package does not match the catalog checksum.", "text": "A letöltött csomag nem egyezik a katalógus ellenőrző összegével."},
- "srv.community.badKind": {"from": "Choose screensaver or launcher.", "text": "Válasszon képernyővédőt vagy indítót."},
+ "srv.community.badKind": {"from": "Choose screensaver, launcher or nosignal.", "text": "Válasszon képernyővédőt, indítót vagy Nincs jel képernyőt."},
  "srv.community.badUrl": {"from": "Give an https:// link to a GitHub repository or archive.", "text": "Adjon meg egy https:// linket egy GitHub tárolóhoz vagy archívumhoz."},
  "srv.community.busy": {"from": "Wait for the current installation to finish.", "text": "Várja meg a jelenlegi telepítés végét."},
  "srv.community.fetchMissing": {"from": "Download helper is not available", "text": "A letöltési segéd nem érhető el"},
@@ -3944,5 +3944,14 @@
  "srv.community.saverUnavailable": {"from": "Screen saver installation is not available.", "text": "A képernyővédő telepítése nem érhető el."},
  "srv.community.unknown": {"from": "Unknown community item.", "text": "Ismeretlen közösségi elem."},
  "community.ss.docs": {"from": "Writing a screen saver", "text": "Képernyővédő írása"},
- "community.submit": {"from": "Submit to the catalog", "text": "Beküldés a katalógusba"}
+ "community.submit": {"from": "Submit to the catalog", "text": "Beküldés a katalógusba"},
+ "srv.nosignal.badMain": {"from": "{file}: main must name a .qml file.", "text": "{file}: a main mezőnek egy .qml fájlra kell mutatnia."},
+ "srv.community.nosignalUnavailable": {"from": "No Signal screen installation is not available.", "text": "A Nincs jel képernyők telepítése nem érhető el."},
+ "srv.community.invalidNoSignal": {"from": "This package is not a valid No Signal screen.", "text": "Ez a csomag nem érvényes Nincs jel képernyő."},
+ "srv.community.revoked": {"from": "This community add-on has been removed for safety reasons.", "text": "Ezt a közösségi bővítményt biztonsági okokból eltávolították."},
+ "community.ns.heading": {"from": "Community No Signal screens", "text": "Közösségi Nincs jel képernyők"},
+ "community.ns.urlDesc": {"from": "For testing unlisted No Signal screens from an https:// GitHub repository or direct archive link.", "text": "Nem listázott Nincs jel képernyők kipróbálásához https:// GitHub-tárolóból vagy közvetlen archívum-hivatkozásról."},
+ "community.ns.docs": {"from": "Writing a No Signal screen", "text": "Nincs jel képernyő írása"},
+ "community.summaryUpdates": {"from": "{total} available · {installed} installed · {updates} to update", "text": "{total} elérhető · {installed} telepítve · {updates} frissítendő"},
+ "community.revokedDefault": {"from": "Removed from the catalog for safety reasons. Uninstall it now.", "text": "Biztonsági okokból eltávolítva a katalógusból. Távolítsa el most."}
 }

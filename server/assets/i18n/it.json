@@ -3935,7 +3935,7 @@
  "community.use": {"from": "Use", "text": "Usa"},
  "srv.community.badCatalog": {"from": "Catalog format could not be read.", "text": "Impossibile leggere il formato del catalogo."},
  "srv.community.badHash": {"from": "The downloaded package does not match the catalog checksum.", "text": "Il pacchetto scaricato non corrisponde al checksum del catalogo."},
- "srv.community.badKind": {"from": "Choose screensaver or launcher.", "text": "Scegli salvaschermo o launcher."},
+ "srv.community.badKind": {"from": "Choose screensaver, launcher or nosignal.", "text": "Scegli salvaschermo, launcher o schermo Nessun segnale."},
  "srv.community.badUrl": {"from": "Give an https:// link to a GitHub repository or archive.", "text": "Inserisci un link https:// a un repository GitHub o archivio."},
  "srv.community.busy": {"from": "Wait for the current installation to finish.", "text": "Attendi il completamento dell’installazione corrente."},
  "srv.community.fetchMissing": {"from": "Download helper is not available", "text": "Helper di download non disponibile"},
@@ -3944,5 +3944,14 @@
  "srv.community.saverUnavailable": {"from": "Screen saver installation is not available.", "text": "Installazione salvaschermo non disponibile."},
  "srv.community.unknown": {"from": "Unknown community item.", "text": "Elemento della community sconosciuto."},
  "community.ss.docs": {"from": "Writing a screen saver", "text": "Scrivere un salvaschermo"},
- "community.submit": {"from": "Submit to the catalog", "text": "Invia al catalogo"}
+ "community.submit": {"from": "Submit to the catalog", "text": "Invia al catalogo"},
+ "srv.nosignal.badMain": {"from": "{file}: main must name a .qml file.", "text": "{file}: main deve indicare un file .qml."},
+ "srv.community.nosignalUnavailable": {"from": "No Signal screen installation is not available.", "text": "L’installazione degli schermi Nessun segnale non è disponibile."},
+ "srv.community.invalidNoSignal": {"from": "This package is not a valid No Signal screen.", "text": "Questo pacchetto non è uno schermo Nessun segnale valido."},
+ "srv.community.revoked": {"from": "This community add-on has been removed for safety reasons.", "text": "Questo componente della community è stato rimosso per motivi di sicurezza."},
+ "community.ns.heading": {"from": "Community No Signal screens", "text": "Schermi Nessun segnale della community"},
+ "community.ns.urlDesc": {"from": "For testing unlisted No Signal screens from an https:// GitHub repository or direct archive link.", "text": "Per provare schermi Nessun segnale non in elenco da un repository GitHub https:// o un link diretto."},
+ "community.ns.docs": {"from": "Writing a No Signal screen", "text": "Scrivere uno schermo Nessun segnale"},
+ "community.summaryUpdates": {"from": "{total} available · {installed} installed · {updates} to update", "text": "{total} disponibili · {installed} installati · {updates} da aggiornare"},
+ "community.revokedDefault": {"from": "Removed from the catalog for safety reasons. Uninstall it now.", "text": "Rimosso dal catalogo per motivi di sicurezza. Disinstallalo ora."}
 }

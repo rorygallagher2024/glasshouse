@@ -2,17 +2,24 @@
 
 const commState = {
   screensaver: { loaded: false, busy: false, data: null },
-  launcher: { loaded: false, busy: false, data: null }
+  launcher: { loaded: false, busy: false, data: null },
+  nosignal: { loaded: false, busy: false, data: null }
 };
 
 function commIds(kind) {
-  return kind === 'screensaver'
-    ? { disc: 'disc-ss-community', summary: 'ss-community-summary', list: 'ss-community-list',
-        note: 'ss-community-note', url: 'ss-community-url', btn: 'ss-community-url-btn',
-        off: 'ss-community-url-off', refresh: 'ss-community-refresh' }
-    : { disc: 'disc-home-community', summary: 'home-community-summary', list: 'home-community-list',
-        note: 'home-community-note', url: 'home-community-url', btn: 'home-community-url-btn',
-        off: 'home-community-url-off', refresh: 'home-community-refresh' };
+  if (kind === 'screensaver') {
+    return { disc: 'disc-ss-community', summary: 'ss-community-summary', list: 'ss-community-list',
+      note: 'ss-community-note', url: 'ss-community-url', btn: 'ss-community-url-btn',
+      off: 'ss-community-url-off', refresh: 'ss-community-refresh' };
+  }
+  if (kind === 'nosignal') {
+    return { disc: 'disc-ns-community', summary: 'ns-community-summary', list: 'ns-community-list',
+      note: 'ns-community-note', url: 'ns-community-url', btn: 'ns-community-url-btn',
+      off: 'ns-community-url-off', refresh: 'ns-community-refresh' };
+  }
+  return { disc: 'disc-home-community', summary: 'home-community-summary', list: 'home-community-list',
+    note: 'home-community-note', url: 'home-community-url', btn: 'home-community-url-btn',
+    off: 'home-community-url-off', refresh: 'home-community-refresh' };
 }
 
 function commOnToggle(kind) {
@@ -49,11 +56,14 @@ function renderCommunity(kind) {
 
   const items = Array.isArray(d.items) ? d.items : [];
   const installedCount = items.filter(x => x.installed).length;
+  const updateCount = items.filter(x => x.updateAvailable && !x.revoked).length;
   const sum = q(ids.summary);
   if (sum) {
     sum.textContent = items.length
       ? (installedCount
-        ? t('community.summaryInstalled', '{total} available · {installed} installed', { total: items.length, installed: installedCount })
+        ? (updateCount
+          ? t('community.summaryUpdates', '{total} available · {installed} installed · {updates} to update', { total: items.length, installed: installedCount, updates: updateCount })
+          : t('community.summaryInstalled', '{total} available · {installed} installed', { total: items.length, installed: installedCount }))
         : t('community.summaryCount', '{total} available', { total: items.length }))
       : '';
   }
@@ -93,7 +103,11 @@ function renderCommunity(kind) {
         : '';
 
     const actions = [];
-    if (!item.installed) {
+    if (item.revoked) {
+      if (item.installed) {
+        actions.push(`<button type="button" class="pill bad" ${locked ? 'disabled' : ''} onclick="communityRemove('${esc(kind)}','${esc(item.id)}')">${esc(t('home.launcher.remove', 'Remove'))}</button>`);
+      }
+    } else if (!item.installed) {
       const lbl = item.size ? t('community.installSize', 'Install ({size})', { size: fmtSize(item.size) }) : t('community.install', 'Install');
       actions.push(`<button type="button" class="pill idle" ${locked ? 'disabled' : ''} onclick="communityInstall('${esc(kind)}','${esc(item.id)}')">${esc(lbl)}</button>`);
     } else {
@@ -102,11 +116,17 @@ function renderCommunity(kind) {
       }
       if (kind === 'launcher' && !item.active) {
         actions.push(`<button type="button" class="pill idle" ${locked ? 'disabled' : ''} onclick="homeLauncherUse('${esc(item.localId)}')">${esc(t('community.use', 'Use'))}</button>`);
+      } else if (kind === 'nosignal' && !item.active) {
+        actions.push(`<button type="button" class="pill idle" ${locked ? 'disabled' : ''} onclick="setNoSignal('${esc(item.localId)}')">${esc(t('community.use', 'Use'))}</button>`);
       }
       actions.push(`<button type="button" class="pill idle" ${locked ? 'disabled' : ''} onclick="communityRemove('${esc(kind)}','${esc(item.id)}')">${esc(t('home.launcher.remove', 'Remove'))}</button>`);
     }
 
-    return `<div class="comm-card${item.installed ? ' installed' : ''}">
+    const revNote = item.revoked
+      ? `<div class="pv-note warn">${esc(item.revokedReason || t('community.revokedDefault', 'Removed from the catalog for safety reasons. Uninstall it now.'))}</div>`
+      : '';
+
+    return `<div class="comm-card${item.installed ? ' installed' : ''}${item.revoked ? ' revoked' : ''}">
       ${preview}
       <div class="comm-body">
         <div class="comm-head">
@@ -114,11 +134,18 @@ function renderCommunity(kind) {
           ${statusTag}
         </div>
         ${item.description ? `<div class="comm-desc">${esc(item.description)}</div>` : ''}
+        ${revNote}
         <div class="comm-meta">${esc(meta.join(' · '))}${meta.length && srcLink ? ' · ' : ''}${srcLink}</div>
         <div class="comm-actions">${actions.join('')}</div>
       </div>
     </div>`;
   }).join('');
+}
+
+async function communityRefreshTab(kind) {
+  if (kind === 'screensaver') await loadScreensavers();
+  else if (kind === 'nosignal') await loadInputs();
+  else await loadHome();
 }
 
 async function communityInstall(kind, id) {
@@ -138,8 +165,7 @@ async function communityInstall(kind, id) {
     const d = await r.json();
     if (!r.ok || !d || !d.ok) throw new Error((d && d.error) || t('community.installFailed', 'Installation failed.'));
     if (note) note.textContent = '';
-    if (kind === 'screensaver') await loadScreensavers();
-    else await loadHome();
+    await communityRefreshTab(kind);
     await loadCommunity(kind, false);
   } catch (e) {
     if (note) note.textContent = e.message;
@@ -169,8 +195,7 @@ async function communityInstallUrl(kind) {
     if (!r.ok || !d || !d.ok) throw new Error((d && d.error) || t('community.installFailed', 'Installation failed.'));
     if (input) input.value = '';
     if (note) note.textContent = '';
-    if (kind === 'screensaver') await loadScreensavers();
-    else await loadHome();
+    await communityRefreshTab(kind);
     await loadCommunity(kind, false);
   } catch (e) {
     if (note) note.textContent = e.message;
@@ -196,8 +221,7 @@ async function communityRemove(kind, id) {
     });
     const d = await r.json();
     if (!r.ok || !d || !d.ok) throw new Error((d && d.error) || t('community.removeFailed', 'Could not remove item.'));
-    if (kind === 'screensaver') await loadScreensavers();
-    else await loadHome();
+    await communityRefreshTab(kind);
     await loadCommunity(kind, false);
   } catch (e) {
     if (note) note.textContent = e.message;

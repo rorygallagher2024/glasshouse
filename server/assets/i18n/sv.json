@@ -3937,7 +3937,7 @@
  "community.use": {"from": "Use", "text": "Använd"},
  "srv.community.badCatalog": {"from": "Catalog format could not be read.", "text": "Katalogformatet kunde inte läsas."},
  "srv.community.badHash": {"from": "The downloaded package does not match the catalog checksum.", "text": "Det hämtade paketet stämmer inte överens med katalogens kontrollsumma."},
- "srv.community.badKind": {"from": "Choose screensaver or launcher.", "text": "Välj skärmsläckare eller startskärm."},
+ "srv.community.badKind": {"from": "Choose screensaver, launcher or nosignal.", "text": "Välj skärmsläckare, startskärm eller Ingen signal-skärm."},
  "srv.community.badUrl": {"from": "Give an https:// link to a GitHub repository or archive.", "text": "Ange en https://-länk till ett GitHub-arkiv eller arkiv."},
  "srv.community.busy": {"from": "Wait for the current installation to finish.", "text": "Vänta tills den aktuella installationen är klar."},
  "srv.community.fetchMissing": {"from": "Download helper is not available", "text": "Hämtningshjälparen är inte tillgänglig"},
@@ -3946,5 +3946,14 @@
  "srv.community.saverUnavailable": {"from": "Screen saver installation is not available.", "text": "Installation av skärmsläckare är inte tillgänglig."},
  "srv.community.unknown": {"from": "Unknown community item.", "text": "Okänt gemenskapsobjekt."},
  "community.ss.docs": {"from": "Writing a screen saver", "text": "Skriva en skärmsläckare"},
- "community.submit": {"from": "Submit to the catalog", "text": "Skicka till katalogen"}
+ "community.submit": {"from": "Submit to the catalog", "text": "Skicka till katalogen"},
+ "srv.nosignal.badMain": {"from": "{file}: main must name a .qml file.", "text": "{file}: main måste ange en .qml-fil."},
+ "srv.community.nosignalUnavailable": {"from": "No Signal screen installation is not available.", "text": "Installation av Ingen signal-skärmar är inte tillgänglig."},
+ "srv.community.invalidNoSignal": {"from": "This package is not a valid No Signal screen.", "text": "Paketet är inte en giltig Ingen signal-skärm."},
+ "srv.community.revoked": {"from": "This community add-on has been removed for safety reasons.", "text": "Detta gemenskapstillägg har tagits bort av säkerhetsskäl."},
+ "community.ns.heading": {"from": "Community No Signal screens", "text": "Gemenskapens Ingen signal-skärmar"},
+ "community.ns.urlDesc": {"from": "For testing unlisted No Signal screens from an https:// GitHub repository or direct archive link.", "text": "För att testa olistade Ingen signal-skärmar från ett https://-GitHub-arkiv eller en direkt arkivlänk."},
+ "community.ns.docs": {"from": "Writing a No Signal screen", "text": "Skriva en Ingen signal-skärm"},
+ "community.summaryUpdates": {"from": "{total} available · {installed} installed · {updates} to update", "text": "{total} tillgängliga · {installed} installerade · {updates} att uppdatera"},
+ "community.revokedDefault": {"from": "Removed from the catalog for safety reasons. Uninstall it now.", "text": "Borttaget från katalogen av säkerhetsskäl. Avinstallera nu."}
 }

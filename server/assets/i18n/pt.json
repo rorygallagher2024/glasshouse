@@ -3921,7 +3921,7 @@
  "community.use": {"from": "Use", "text": "Usar"},
  "srv.community.badCatalog": {"from": "Catalog format could not be read.", "text": "Não foi possível ler o formato do catálogo."},
  "srv.community.badHash": {"from": "The downloaded package does not match the catalog checksum.", "text": "O pacote transferido não corresponde à soma de verificação do catálogo."},
- "srv.community.badKind": {"from": "Choose screensaver or launcher.", "text": "Escolha proteção de ecrã ou launcher."},
+ "srv.community.badKind": {"from": "Choose screensaver, launcher or nosignal.", "text": "Escolha proteção de ecrã, launcher ou ecrã Sem sinal."},
  "srv.community.badUrl": {"from": "Give an https:// link to a GitHub repository or archive.", "text": "Indique uma ligação https:// para um repositório GitHub ou arquivo."},
  "srv.community.busy": {"from": "Wait for the current installation to finish.", "text": "Aguarde pela conclusão da instalação atual."},
  "srv.community.fetchMissing": {"from": "Download helper is not available", "text": "Assistente de transferência indisponível"},
@@ -3930,5 +3930,14 @@
  "srv.community.saverUnavailable": {"from": "Screen saver installation is not available.", "text": "A instalação de proteções de ecrã não está disponível."},
  "srv.community.unknown": {"from": "Unknown community item.", "text": "Item da comunidade desconhecido."},
  "community.ss.docs": {"from": "Writing a screen saver", "text": "Escrever uma proteção de ecrã"},
- "community.submit": {"from": "Submit to the catalog", "text": "Submeter para o catálogo"}
+ "community.submit": {"from": "Submit to the catalog", "text": "Submeter para o catálogo"},
+ "srv.nosignal.badMain": {"from": "{file}: main must name a .qml file.", "text": "{file}: main tem de indicar um ficheiro .qml."},
+ "srv.community.nosignalUnavailable": {"from": "No Signal screen installation is not available.", "text": "A instalação de ecrãs Sem sinal não está disponível."},
+ "srv.community.invalidNoSignal": {"from": "This package is not a valid No Signal screen.", "text": "Este pacote não é um ecrã Sem sinal válido."},
+ "srv.community.revoked": {"from": "This community add-on has been removed for safety reasons.", "text": "Este extra da comunidade foi removido por razões de segurança."},
+ "community.ns.heading": {"from": "Community No Signal screens", "text": "Ecrãs Sem sinal da comunidade"},
+ "community.ns.urlDesc": {"from": "For testing unlisted No Signal screens from an https:// GitHub repository or direct archive link.", "text": "Para testar ecrãs Sem sinal não listados a partir de um repositório GitHub https:// ou ligação direta."},
+ "community.ns.docs": {"from": "Writing a No Signal screen", "text": "Escrever um ecrã Sem sinal"},
+ "community.summaryUpdates": {"from": "{total} available · {installed} installed · {updates} to update", "text": "{total} disponíveis · {installed} instalados · {updates} por atualizar"},
+ "community.revokedDefault": {"from": "Removed from the catalog for safety reasons. Uninstall it now.", "text": "Removido do catálogo por razões de segurança. Desinstale agora."}
 }

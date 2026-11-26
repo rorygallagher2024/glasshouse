@@ -1327,7 +1327,7 @@
  "community.use": {"from": "Use", "text": "Verwenden"},
  "srv.community.badCatalog": {"from": "Catalog format could not be read.", "text": "Katalogformat konnte nicht gelesen werden."},
  "srv.community.badHash": {"from": "The downloaded package does not match the catalog checksum.", "text": "Das heruntergeladene Paket stimmt nicht mit der Prüfsumme des Katalogs überein."},
- "srv.community.badKind": {"from": "Choose screensaver or launcher.", "text": "Wähle Bildschirmschoner oder Launcher."},
+ "srv.community.badKind": {"from": "Choose screensaver, launcher or nosignal.", "text": "Wähle Bildschirmschoner, Launcher oder Kein-Signal-Bildschirm."},
  "srv.community.badUrl": {"from": "Give an https:// link to a GitHub repository or archive.", "text": "Gib einen https://-Link zu einem GitHub-Repository oder Archiv an."},
  "srv.community.busy": {"from": "Wait for the current installation to finish.", "text": "Warte, bis die aktuelle Installation abgeschlossen ist."},
  "srv.community.fetchMissing": {"from": "Download helper is not available", "text": "Download-Hilfsprogramm ist nicht verfügbar"},
@@ -1336,5 +1336,14 @@
  "srv.community.saverUnavailable": {"from": "Screen saver installation is not available.", "text": "Bildschirmschoner-Installation ist nicht verfügbar."},
  "srv.community.unknown": {"from": "Unknown community item.", "text": "Unbekannter Community-Eintrag."},
  "community.ss.docs": {"from": "Writing a screen saver", "text": "Bildschirmschoner schreiben"},
- "community.submit": {"from": "Submit to the catalog", "text": "Zum Katalog hinzufügen"}
+ "community.submit": {"from": "Submit to the catalog", "text": "Zum Katalog hinzufügen"},
+ "srv.nosignal.badMain": {"from": "{file}: main must name a .qml file.", "text": "{file}: main muss eine .qml-Datei angeben."},
+ "srv.community.nosignalUnavailable": {"from": "No Signal screen installation is not available.", "text": "Installation von Kein-Signal-Bildschirmen ist nicht verfügbar."},
+ "srv.community.invalidNoSignal": {"from": "This package is not a valid No Signal screen.", "text": "Dieses Paket ist kein gültiger Kein-Signal-Bildschirm."},
+ "srv.community.revoked": {"from": "This community add-on has been removed for safety reasons.", "text": "Diese Community-Erweiterung wurde aus Sicherheitsgründen entfernt."},
+ "community.ns.heading": {"from": "Community No Signal screens", "text": "Community-Kein-Signal-Bildschirme"},
+ "community.ns.urlDesc": {"from": "For testing unlisted No Signal screens from an https:// GitHub repository or direct archive link.", "text": "Zum Testen nicht gelisteter Kein-Signal-Bildschirme über ein https://-GitHub-Repository oder einen direkten Archivlink."},
+ "community.ns.docs": {"from": "Writing a No Signal screen", "text": "Kein-Signal-Bildschirm schreiben"},
+ "community.summaryUpdates": {"from": "{total} available · {installed} installed · {updates} to update", "text": "{total} verfügbar · {installed} installiert · {updates} Aktualisierung(en)"},
+ "community.revokedDefault": {"from": "Removed from the catalog for safety reasons. Uninstall it now.", "text": "Aus Sicherheitsgründen aus dem Katalog entfernt. Jetzt deinstallieren."}
 }
