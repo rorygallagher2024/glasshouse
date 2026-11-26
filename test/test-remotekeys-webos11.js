@@ -258,7 +258,7 @@ step('offers Guide and the streaming buttons LG has switched on, with no filter 
 });
 
 step('regional streaming buttons are offered when active and restore LG assignments', function (next) {
-  var regional = ['ivi', 'okko', 'kinopoisk', 'shop'];
+  var regional = ['ivi', 'okko', 'kinopoisk', 'shop', 'stan', 'youtube'];
   var writesBefore = tv.mappingWrites;
   var originals = {};
   tv.mapping[3].ivi.isActive = true;

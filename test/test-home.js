@@ -2498,11 +2498,11 @@ step('the default port stages the page at 8080', function (done) {
   });
 });
 
-step('webOS 2, untried, runs it standalone with the Home press read from the remote, as webOS 3', function (done) {
+step('webOS 2 runs it standalone with the Home press read from the remote, as webOS 3', function (done) {
   start(null, { webosVersion: '2.2.3' });
   home.status(function (st) {
     assert.strictEqual(st.supported.ok, true);
-    assert.strictEqual(st.supported.untried, true);
+    assert.strictEqual(st.supported.untried, undefined);
     assert.strictEqual(st.supported.standalone, true);
     assert.strictEqual(st.supported.previewOptions, false);
     done();

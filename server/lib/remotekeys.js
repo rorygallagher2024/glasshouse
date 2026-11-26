@@ -276,6 +276,9 @@ var KEYS = [
   { key: 'okko', title: 'Okko', nativeMapping: true },
   { key: 'kinopoisk', title: 'Kinopoisk', nativeMapping: true },
   { key: 'shop', title: 'LG Shop', nativeMapping: true },
+  // Verified in an OLED48C6PSA's webOS 11 mapping_info (#1738); older Qt key symbols are unverified.
+  { key: 'stan', title: 'Stan', nativeMapping: true },
+  { key: 'youtube', title: 'YouTube', nativeMapping: true },
   // The voice assistants' own buttons on recent Magic Remotes: LG's filters
   // launch Alexa or the Google Assistant on a press, as for a streaming
   // button. The microphone button (Key_webOS_Voice) drives voice control; set
@@ -2298,7 +2301,7 @@ function setOfferedKey(def, action, id, kind, cb) {
   }
   var nativeInput = kind !== 'filter' && def.key === 'input';
   // Observed rather than native-blocked (CHANNEL_EVDEV_CODES, kind 'native'): only open an app or input,
-  // the same as the color keys an open PR observes the same way (#1718).
+  // the same way as the color keys (#1718).
   var channelObservedOnly = kind === 'native' && def.blockCode && !!CHANNEL_EVDEV_CODES[def.key] && !guidePatch.status().channel;
   if (action === 'nothing') {
     if ((def.noNothing && kind !== 'filter') || nativeInput || (kind === 'native' && COLOR_CODES[def.key]) || channelObservedOnly) {
