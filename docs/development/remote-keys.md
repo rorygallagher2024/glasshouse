@@ -26,6 +26,8 @@ The **Remotes** column lists entries in the [remote catalogue](../remotes.md) kn
 | Okko | – | yes (where listed) | – | – |
 | Kinopoisk | – | yes (where listed) | – | – |
 | LG Shop | – | yes (where listed) | – | – |
+| Stan | – | yes (where listed) | – | – |
+| YouTube | – | yes (where listed) | – | – |
 | Alexa | yes | yes (blocks Alexa) | yes | MR25GA, MR23 |
 | Google Assistant | yes | yes (where listed) | yes | – |
 | Microphone | yes | yes (where listed) | yes | MR25GA, MR23, MR20, MR18 |
@@ -83,6 +85,8 @@ LG's codes and Qt keys below are as read on an OLED48C56LB (webOS 10.3.0). "–"
 | `okko` | – | – | – | – | `mapping_info` |
 | `kinopoisk` | – | – | – | – | `mapping_info` |
 | `shop` | – | – | – | – | `mapping_info` |
+| `stan` | – | – | – | – | `mapping_info` |
+| `youtube` | – | – | – | – | `mapping_info` |
 | `alexa` | `IR_KEY_ALEXA` | 1094 (1086) | `Key_webOS_ALEXA` | `KEY_ALEXAVOICE` | blocking `amazon.alexa.view` |
 | `googleassistant` | `IR_KEY_GOOGLEVOICE` | 1125 (1117) | `Key_webOS_GoogleVoice` | – | `mapping_info` |
 | `voice` | `RF_KEY_VOICE` | 436 (428) | `Key_webOS_Voice` | `KEY_VOICE` | `mapping_info` |
