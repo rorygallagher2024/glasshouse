@@ -1313,6 +1313,12 @@ G3 in the UK.
   TV's zone, once a channel has been tuned since the TV started; before that it
   has no programme. `tv/getChannelProgramInfo` and `iepg/getEventList` returned
   empty programme lists throughout.
+- With the tuner's channels in use, the call can still answer with no
+  programme for one of them for minutes: BBC One gave none from about 19:24 to
+  19:33 on 26 November 2026 (office G3), on two builds of Glasshouse alike,
+  then its programme again; the cause was not found. At a programme change it
+  moved on at once: polled every 20 s across 20:00, BBC One and Channel 4 gave
+  the next programme in the first poll after it began.
 - `com.webos.service.utp.boot/getLastChannelId` names the channel Live TV is
   on, including one reached with the remote's Channel Up within Live TV, which
   changes nothing in sam's foreground. Measured on 18 October 2026.
@@ -2423,6 +2429,14 @@ prints nothing, for any service; with `ssh -tt` it prints the reply, with
 `\r\n` line ends. `getForegroundAppInfo` answers an empty `appId` while LG's
 Home or Glasshouse Home is in front and in standby, and the input's app
 (`com.webos.app.hdmi2`) while an input is.
+
+On the office G3 (webOS 9.2.2, 26 November 2026) the call itself was not
+always made either: `applicationManager/launch` for the web browser, Live TV,
+Glasshouse Home with launch parameters, and `tvpower/turnOnScreenSaver`, sent
+without a terminal, each left the TV as it was on some tries and worked on
+others, with no error. The same calls with `ssh -tt` worked every time, with
+the app named in front within a few seconds. A script that launches over SSH
+uses a terminal and checks the app in front afterwards.
 
 ## Services a TV does not have (webOS 3.9.3, 43UJ750V; webOS 9.2.2, C2)
 

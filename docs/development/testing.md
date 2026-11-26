@@ -483,10 +483,37 @@ scripts/tv.sh 192.168.1.131 frames home wait wait right right right right right 
 ```
 
 `over33` counts frames that took longer than two vsyncs at 60 Hz, and
-`worst` is the longest, in ms. `long` lists long tasks, which webOS 4's
+`worst` is the longest, in ms. `hist` counts frame gaps up to 17, 34, 50, 67,
+100, 150, 250 and 500 ms and over. `long` lists long tasks, which webOS 4's
 browser does not report. `fn` gives each timed function's calls, average and
-longest ms. A gap with nothing in `fn` to explain it is the browser's own
-work: style, layout, painting or decoding images.
+longest ms; the times are inclusive, so `render` contains `applyFocus`.
+`req` gives each request's count, average and longest ms from send to reply,
+`rebuilds` the times the rows were redrawn and `rowsReplaced` the rows that
+redraw replaced, and `errors` the page's script errors (up to ten). A gap with nothing in `fn` to explain it is the browser's
+own work: style, layout, painting or decoding images. The time the page was
+hidden is not counted as a gap; the first gap after it is shown again starts
+at that moment, so a return's own work is in it. Beside each `home: frames`
+line, a `home: luna` line counts the luna-send children the server started
+since the last one, by URI (one `sendKeyCode` per key is the harness's own).
+
+The keys are sent on the TV over loopback, so a TV whose dashboard needs a
+token from the network needs nothing more. A named scenario replaces the
+keys: `scroll` (36 keys along the Apps row and back), `steps` (single steps
+a second apart), `rows` (down and up between rows), `recents` (Recent apps
+opened, scrolled and closed), `return` (the web browser opened, then Home
+10 s after it is in front; the run fails if the browser does not come in front
+in 20 s), `cold` (the view reloaded, printing its start marks as `boot`:
+`navStart`, `opened` at the script's start, `scriptEnd`, `catalogueSent` and
+`catalogueReply`, `firstRender` and `firstRenderMs`, and `firstFrame`, all
+epoch ms) and `scenarios` (the first four in turn). Each run first prints a
+`bench:` line with the TV's webOS, the build it runs (`build.json`: version,
+commit and whether the tree was dirty) and its load average, then the forks
+the whole system made while the keys were pressed (`/proc/stat`, threads
+included). It fails if Home sends no trace within 15 s.
+
+```bash
+scripts/tv.sh 192.168.1.131 frames return
+```
 
 ## Local TV emulation
 
