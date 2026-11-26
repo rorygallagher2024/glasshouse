@@ -2131,13 +2131,14 @@ restore-glasshouse-home` over SSH is seen by a running server.
 The apps, inputs, channels and cards the rows are built from are kept as last
 read in `home-lists.json`. Just after the server starts, every luna call waits
 its turn 150 ms apart (`lib/children.js`), and a view opened then waited 7.9 s
-for its first catalogue on a B8 (webOS 4.4.3). Once a list is known, in memory
-or saved, it is answered at once and read again behind the reply when older
-than its time to live (30 s; 10 minutes for channels), one read at a time; a
-failed read keeps it. Waiting on those reads made a catalogue 0.5 s on a G3
-(webOS 9.2.2), ten luna-send children in turn. A change found by a read behind
-a reply bumps `layoutVersion`, so the view reloads on its next heartbeat with
-what a reply that waited would have had. The catalogue takes
+for its first catalogue on a B8 (webOS 4.4.3). The catalogue and Last watched
+answer from known lists and refresh them after the reply if expired (30 s;
+10 minutes for channels). The channel picker and tile actions wait for an
+expired in-memory list to refresh. One read runs per list, and a failed read
+keeps it. Waiting for those reads made a catalogue take 0.5 s on a G3
+(webOS 9.2.2), ten luna-send children in turn. A changed list bumps
+`layoutVersion`. A catalogue reports the version from before it started, so
+the next heartbeat still picks up any change made during the read. The catalogue takes
 the layout and wallpapers from `viewStatus()`, which makes no luna calls, and
 carries `rev`, a hash of everything in it but `layoutVersion`: a view that
 already has that rev applies nothing again. Inputs with no signal are marked

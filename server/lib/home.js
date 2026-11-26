@@ -1419,13 +1419,16 @@ function saveList(key, value) {
   return true;
 }
 
-function cached(key, ttl, load, cb) {
+function cached(key, ttl, load, cb, allowStale) {
   var hit = listCache[key];
   if (hit && nowMs() - hit.at < ttl) return cb(hit.value);
   var known = hit ? hit.value : savedList(key);
-  if (!known) return readList(key, load, cb);
+  if (!known || (hit && !allowStale)) return readList(key, load, cb);
   cb(known);
-  behindReply(key, function () { readList(key, load, null); });
+  behindReply(key, function () {
+    var current = listCache[key];
+    if (!current || nowMs() - current.at >= ttl) readList(key, load, null);
+  });
 }
 
 // One read of a list at a time; a failed read keeps the list as it was.
@@ -1456,7 +1459,7 @@ var isInputApp = names.isInputAppId;
  * hides has visible false in its appinfo and no launch point; one reporting
  * visible false is skipped all the same.
  */
-function launchPoints(cb) {
+function launchPoints(cb, allowStale) {
   cached('lp', LIST_TTL_MS, function (done) {
     luna('com.webos.applicationManager/listLaunchPoints', {}, function (r) {
       if (!r || !isArray(r.launchPoints)) return done(null);
@@ -1475,7 +1478,7 @@ function launchPoints(cb) {
       });
       sidebarApps(LG_SIDEBAR_APPS.slice(), out, done);
     });
-  }, cb);
+  }, cb, allowStale);
 }
 
 // Each of LG_SIDEBAR_APPS that this TV has and has no tile for, on the end of the list.
@@ -1665,7 +1668,7 @@ function homeHubGuide(hub, cb) {
   });
 }
 
-function devices(cb) {
+function devices(cb, allowStale) {
   cached('dev', LIST_TTL_MS, function (done) {
     luna('com.webos.service.eim/getAllInputStatus', {}, function (r) {
       if (!r || !isArray(r.devices)) return done(null);
@@ -1679,7 +1682,7 @@ function devices(cb) {
     var c = readConfig();
     if (!c.showMediaServers) list = list.filter(function (d) { return d.kind !== 'dms'; });
     cb(namedDevices(c, list));
-  });
+  }, allowStale);
 }
 
 /*
@@ -1745,7 +1748,7 @@ function listDevices(devs, portsPlugged) {
  * null where it gave none. On a G3 (webOS 9.2) the full list is the API
  * adapter's tv/getChannelList, the method behind SSAP's ssap://tv/getChannelList.
  */
-function channelList(cb) {
+function channelList(cb, allowStale) {
   cached('ch', CHANNELS_TTL_MS, function (done) {
     luna('com.webos.service.apiadapter/tv/getChannelList', {}, function (r) {
       if (!r || r.returnValue === false || !isArray(r.channelList)) return done(null);
@@ -1761,7 +1764,7 @@ function channelList(cb) {
       });
       done(out);
     });
-  }, cb);
+  }, cb, allowStale);
 }
 
 function catalogue(cb) {
@@ -1776,6 +1779,9 @@ function catalogue(cb) {
  * programmes: a view that has this rev already has nothing to draw again.
  */
 function catalogueReply(cb) {
+  // A list can change while the reply is being built. Its newer version must
+  // still reach the view at the next beat if this reply used the old list.
+  var version = layoutVersion();
   catalogue(function (c) {
     markNoSignal(c, function () {
       var st = viewStatus();
@@ -1785,7 +1791,7 @@ function catalogueReply(cb) {
       c.supported = st.supported;
       c.wallpapers = st.wallpapers;
       c.rev = crypto.createHash('sha1').update(JSON.stringify(c)).digest('hex').slice(0, 16);
-      c.layoutVersion = layoutVersion();
+      c.layoutVersion = version;
       cb(c);
     });
   });
@@ -1819,13 +1825,13 @@ function rows(cb) {
   launchPoints(function (apps) {
     devices(function (hdmi) {
       channelList(function (chans) {
-       tunerTile(chans, function (tuner) {
-        var devs = hdmi || tuner ? (tuner ? [tuner] : []).concat(hdmi || []) : null;
-        recommendedCards(c, function (recs) { cb(build(c, apps, devs, chans, recs, iptvModule ? iptvModule.rowItems() : null)); });
-       });
-      });
-    });
-  });
+        tunerTile(chans, function (tuner) {
+          var devs = hdmi || tuner ? (tuner ? [tuner] : []).concat(hdmi || []) : null;
+          recommendedCards(c, function (recs) { cb(build(c, apps, devs, chans, recs, iptvModule ? iptvModule.rowItems() : null)); });
+        });
+      }, true);
+    }, true);
+  }, true);
 }
 
 function build(c, apps, devs, chans, recs, tv) {
@@ -1886,7 +1892,7 @@ function build(c, apps, devs, chans, recs, tv) {
 // The apps' cards while the row is switched on; null when the TV gave none.
 function recommendedCards(c, cb) {
   if (!c.recommended) return cb([]);
-  cached('rec', LIST_TTL_MS, function (done) { recommended.cards(done); }, cb);
+  cached('rec', LIST_TTL_MS, function (done) { recommended.cards(done); }, cb, true);
 }
 
 /*
@@ -2033,14 +2039,14 @@ function iconPath(id, cb) {
 var guideReads = null;
 function guide(cb) {
   var ids = readConfig().channels.slice(0, MAX_CHANNELS);
-  var key = ids.join(',');
+  var key = JSON.stringify(ids);
   var same = guideCache.at && guideCache.key === key;
   if (same && nowMs() - guideCache.at < GUIDE_TTL_MS) return cb(guideCache.data);
   if (same && guideComplete(guideCache.data, ids)) {
     cb(guideCache.data);
     behindReply('guide', function () {
       var cur = readConfig().channels.slice(0, MAX_CHANNELS);
-      var curKey = cur.join(',');
+      var curKey = JSON.stringify(cur);
       if (guideCache.at && guideCache.key === curKey && nowMs() - guideCache.at < GUIDE_TTL_MS) return;
       readGuide(cur, null);
     });
@@ -2057,7 +2063,7 @@ function guideComplete(data, ids) {
 }
 
 function readGuide(ids, cb) {
-  var key = ids.join(',');
+  var key = JSON.stringify(ids);
   if (guideReads && guideReads.key === key) { if (cb) guideReads.waiting.push(cb); return; }
   var mine = { key: key, waiting: cb ? [cb] : [] };
   guideReads = mine;
@@ -2066,10 +2072,12 @@ function readGuide(ids, cb) {
   (function next() {
     if (i >= ids.length) {
       // Do not overwrite the cache if the picked channels changed during this read.
-      if (readConfig().channels.slice(0, MAX_CHANNELS).join(',') === key) {
-        guideCache = { at: nowMs(), data: out, key: key };
+      if (guideReads === mine) {
+        if (JSON.stringify(readConfig().channels.slice(0, MAX_CHANNELS)) === key) {
+          guideCache = { at: nowMs(), data: out, key: key };
+        }
+        guideReads = null;
       }
-      if (guideReads === mine) guideReads = null;
       return mine.waiting.forEach(function (fn) { fn(out); });
     }
     var id = ids[i++];
@@ -2467,10 +2475,10 @@ function weather(cb) {
  */
 function now(cb) {
   if (!lastSource) return cb({ kind: null });
-  var id = lastSource.appId;
+  var id = lastSource.appId, since = lastSource.at;
   var m = /^com\.webos\.app\.hdmi(\d)$/.exec(id);
   if (m) {
-    var port = +m[1], since = lastSource.at;
+    var port = +m[1];
     return devices(function (devs) {
       selectedOnPort(port, function (picked) {
         var on = (devs || []).filter(function (d) { return d.port === port; });
@@ -2486,7 +2494,7 @@ function now(cb) {
           devices: on.map(function (d) { return d.id; })
         });
       });
-    });
+    }, true);
   }
   if (id === LIVE_TV) {
     var behind = foreground === HOME_APP || foreground === LG_HOME;
@@ -2495,18 +2503,18 @@ function now(cb) {
         /** @type {any} */
         var hit = null;
         (chans || []).forEach(function (c) { if (c.id === chId) hit = c; });
-        if (!hit) return cb({ kind: 'channel', appId: id, since: lastSource.at, behindHome: behind, channel: null });
+        if (!hit) return cb({ kind: 'channel', appId: id, since: since, behindHome: behind, channel: null });
         luna('com.webos.service.apiadapter/tv/getChannelCurrentProgramInfo', { channelId: hit.id }, function (p) {
-          cb({ kind: 'channel', appId: id, since: lastSource.at, behindHome: behind, channel: hit, programme: programme(p) });
+          cb({ kind: 'channel', appId: id, since: since, behindHome: behind, channel: hit, programme: programme(p) });
         });
-      });
+      }, true);
     });
   }
   launchPoints(function (apps) {
     var title = null, namesMap = readConfig().appNames || {};
     (apps || []).forEach(function (a) { if (a.id === id) title = namesMap[id] || a.title; });
-    cb({ kind: 'app', appId: id, since: lastSource.at, title: title });
-  });
+    cb({ kind: 'app', appId: id, since: since, title: title });
+  }, true);
 }
 
 // ---------------------------------------------------------------- opening things

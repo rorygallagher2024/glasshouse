@@ -6931,6 +6931,10 @@ html[lang="vi"] #srcTitle,html[lang="vi"] #plMode,html[lang="vi"] #pvMode,html[l
    * waited for and then asked again.
    */
   var loading = null, cataloguesSent = 0;
+  function answerLoad(waiting, method, value) {
+    waiting.forEach(function (w) { if (w[method]) w[method](value); });
+  }
+
   function load(cb, whileArranging, onNow, after) {
     if ((layoutBusy || state.arranging) && !whileArranging) {
       if (cb) cb(false);
@@ -6938,17 +6942,25 @@ html[lang="vi"] #srcTitle,html[lang="vi"] #plMode,html[lang="vi"] #pvMode,html[l
       return;
     }
     var revision = layoutRevision;
+    var waiter = { cb: cb, onNow: onNow };
     if (loading && !whileArranging && loading.revision === revision) {
-      if (after !== undefined && loading.sent <= after) loading.again = true;
-      loading.waiting.push({ cb: cb, onNow: loading.nowBack ? null : onNow });
+      if (after !== undefined && loading.sent <= after) {
+        loading.queued.push(waiter);
+        return;
+      }
+      if (loading.nowBack) waiter.onNow = null;
+      loading.waiting.push(waiter);
       if (loading.nowBack && onNow) onNow();
       return;
     }
-    var mine = { revision: revision, waiting: [{ cb: cb, onNow: onNow }], nowBack: false, sent: ++cataloguesSent, again: false };
+    var mine = { revision: revision, waiting: [waiter], nowBack: false, sent: ++cataloguesSent, queued: [] };
     if (!whileArranging) loading = mine;
     var answer = function (ok) {
-      mine.waiting.forEach(function (w) { if (w.cb) w.cb(ok); });
-      if (mine.again) load();
+      answerLoad(mine.waiting, 'cb', ok);
+      if (mine.queued.length) {
+        load(function (applied) { answerLoad(mine.queued, 'cb', applied); }, false,
+          function () { answerLoad(mine.queued, 'onNow'); }, mine.sent);
+      }
     };
     bootMark('catalogueSent');
     getJson('/api/home/catalogue', function (r) {
@@ -7027,7 +7039,7 @@ html[lang="vi"] #srcTitle,html[lang="vi"] #plMode,html[lang="vi"] #pvMode,html[l
     });
     refreshNow(function () {
       mine.nowBack = true;
-      mine.waiting.forEach(function (w) { var f = w.onNow; w.onNow = null; if (f) f(); });
+      answerLoad(mine.waiting, 'onNow');
     });
   }
 
@@ -7050,9 +7062,12 @@ html[lang="vi"] #srcTitle,html[lang="vi"] #plMode,html[lang="vi"] #pvMode,html[l
     answer(true);
   }
 
+  var nowSent = 0, nowApplied = 0;
   function refreshNow(cb) {
+    var request = ++nowSent;
     getJson('/api/home/now', function (r) {
-      if (r) {
+      if (r && request > nowApplied) {
+        nowApplied = request;
         var same = JSON.stringify(r) === JSON.stringify(lastOn);
         lastOn = r;
         renderNow();
@@ -7063,9 +7078,13 @@ html[lang="vi"] #srcTitle,html[lang="vi"] #plMode,html[lang="vi"] #pvMode,html[l
     });
   }
 
+  var guideRequest = 0;
   function refreshGuide() {
+    var request = ++guideRequest;
     if (!layout || !layout.channels.length) return;
+    var channels = JSON.stringify(layout.channels);
     getJson('/api/home/guide', function (r) {
+      if (request !== guideRequest || channels !== JSON.stringify(layout.channels)) return;
       if (!r || !r.guide || JSON.stringify(r.guide) === JSON.stringify(guideData)) return;
       guideData = r.guide;
       if (!state.arranging && data) renderWhenStill();
@@ -7283,6 +7302,7 @@ html[lang="vi"] #srcTitle,html[lang="vi"] #plMode,html[lang="vi"] #pvMode,html[l
   }
 
   function returned(by) {
+    var sentBefore = cataloguesSent;
     returnedGen = hiddenGen;
     returnedBy = by || '';
     returnedAt = Date.now();
@@ -7329,13 +7349,13 @@ html[lang="vi"] #srcTitle,html[lang="vi"] #plMode,html[lang="vi"] #pvMode,html[l
     }
     if (state.arranging) setArranging(false);
     beat();
-    if (!dark) return load();
+    if (!dark) return load(null, false, null, sentBefore);
     // In once both the rows and what was last on have come back, or before long.
     var waiting = 2, shown = false;
     var show = function () { if (!shown) { shown = true; fadeIn(); } };
     var ready = function () { if (--waiting <= 0) show(); };
     setTimeout(show, FADE_WAIT_MS);
-    load(ready, false, ready);
+    load(ready, false, ready, sentBefore);
   }
 
   window.addEventListener('resize', fit);

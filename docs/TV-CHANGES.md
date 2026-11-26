@@ -176,6 +176,8 @@ Home wallpapers uploaded through the browser go into `/var/lib/tvweb/home-wallpa
 
 Home's heartbeat recovery waits while another app's card or a focused overlay such as LG's broadcast Guide covers it. The overlay must be present and focused; checks continue so a view that stays silent after the overlay closes can still recover. A heartbeat received during the window check cancels that recovery attempt.
 
+Glasshouse Home records its first render and frame times in `tvweb.log` when the page loads. While `/var/lib/tvweb/home-trace` exists, it also logs frame and request timings and the server's `luna-send` counts. The [frame trace tool](development/testing.md) removes the trace file when it finishes.
+
 Glasshouse Home leaves empty rows out and centres the remaining rows below the clock. Empty rows reappear as movable strips while arranging.
 
 Glasshouse Home's text, accent and tile highlight colours are saved in `/var/lib/tvweb/home.json` and applied to its view within a few seconds. **Use the default colours** clears the choice.
