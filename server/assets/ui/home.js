@@ -453,6 +453,14 @@ function renderHome() {
     updateToggle(alt, { cls: on ? 'good' : 'idle', label: on ? t('common.on', 'On') : t('common.off', 'Off') });
     alt.disabled = !homeWritable();
   }
+  const barHaRow = q('home-bar-habar-row');
+  if (barHaRow) barHaRow.hidden = !homeBarOn() || !st.haBarAvailable;
+  const barHaBtn = q('home-bar-habar');
+  if (barHaBtn) {
+    const on = !!st.layout && st.layout.haBarInHomeBar === true;
+    updateToggle(barHaBtn, { cls: on ? 'good' : 'idle', label: on ? t('common.on', 'On') : t('common.off', 'Off'), on });
+    barHaBtn.disabled = !homeWritable();
+  }
   const hide = q('home-hide-lg');
   if (hide) {
     const armed = homeArmed === 'hide';
@@ -733,16 +741,10 @@ function renderHomeRows() {
         <div class="prot-desc">${esc(t('home.showAppLabelsDesc', 'Under each app icon on Glasshouse Home and Glasshouse Bar. Off leaves the icons on their own.'))}</div></div>
       <div class="prot-status">${renderToggle({ id: 'home-bar-app-labels', cls: labelsOn ? 'good' : 'idle', label: labelsOn ? t('common.on', 'On') : t('common.off', 'Off'),
         on: labelsOn, disabled: !usable, onclick: "homeShow('showAppLabels')" })}</div></div>` : '';
-    const barHaOn = !!homeLayout && homeLayout.haBarInHomeBar === true;
-    const barHaRow = kind === 'app' && haAvail ? `<div class="prot-row home-bar-only">
-      <div class="prot-main"><div class="prot-title">${esc(t('home.bar.haTile', 'Home Assistant bar tile'))}</div>
-        <div class="prot-desc">${esc(t('home.bar.haTileDesc', 'Adds a Home Assistant tile at the end of Glasshouse Bar to open the Home Assistant control bar.'))}</div></div>
-      <div class="prot-status">${renderToggle({ id: 'home-bar-habar', cls: barHaOn ? 'good' : 'idle', label: barHaOn ? t('common.on', 'On') : t('common.off', 'Off'),
-        on: barHaOn, disabled: !usable, onclick: 'homeToggleHaBarTile()' })}</div></div>` : '';
     return `<details class="home-row" data-kind="${kind}"${open.includes(kind) ? ' open' : ''}>
       <summary><span class="prot-title">${esc(HOME_ROWS[kind]())}</span>
         ${rowMove}</summary>
-      <div class="prot-table">${homeSortRow(kind, usable)}${barLabelsRow}${barHaRow}${tiles || `<div class="sub">${esc(kind === 'ch' ? t('home.ch.empty', 'No channels yet. Add them below.') : kind === 'iptv' ? t('home.tv.rowEmpty', 'No channels yet. Add them in Internet TV below, or from the row on the TV.') : t('home.rowEmpty', 'Nothing to show in this row yet.'))}</div>`}</div>
+      <div class="prot-table">${homeSortRow(kind, usable)}${barLabelsRow}${tiles || `<div class="sub">${esc(kind === 'ch' ? t('home.ch.empty', 'No channels yet. Add them below.') : kind === 'iptv' ? t('home.tv.rowEmpty', 'No channels yet. Add them in Internet TV below, or from the row on the TV.') : t('home.rowEmpty', 'Nothing to show in this row yet.'))}</div>`}</div>
       ${kind === 'ch' ? homeChannelPicker() : ''}
     </details>`;
   }).join('');

@@ -712,6 +712,7 @@ homebar.init({
   compat: function () { return compat.info('inputBar', compatTv(), 'Glasshouse Bar'); },
   on: function () { return !liveState || (liveState.state.snapshot().power || {}).systemOn !== false; },
   byKey: remoteKeys.opensHomeBar,
+  homeInFront: function () { return !!(glasshouseHome && glasshouseHome.viewInFront()); },
   // Glasshouse Home, or a launcher in its place, off first: LG's Home keeps its place.
   homeOff: function (cb) {
     if (!glasshouseHome || !glasshouseHome.enabled()) return cb({ ok: true });

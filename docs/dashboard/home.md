@@ -444,7 +444,7 @@ Its app, `com.tvweb.homebar`, has no tile of its own. It is kept loaded in the b
 
 The Home button on the web dashboard's remote opens it too. A phone remote app that opens LG's Home directly, rather than pressing Home, opens LG's Home, as Glasshouse Bar leaves it in place. With the Magic Remote, a notch of the scroll wheel moves the row a tile, and resting the pointer near either end of the row steps it along, as on Glasshouse Home. **Smooth scrolling**, under Animations on the Home tab, applies to the Bar too: off, the row jumps rather than glides.
 
-When the **Home Assistant API** has at least one control bar entity configured, an opt-in **Show in Glasshouse Bar** toggle (also listed under **Apps** → **Home Assistant bar tile** on the Home tab) appends a **Home Assistant** tile at the end of Glasshouse Bar to open the Home Assistant control bar directly.
+When the **Home Assistant API** has at least one control bar entity configured, an opt-in **Show in Glasshouse Bar** toggle (also listed under **Glasshouse Bar** → **Home Assistant bar tile** on the Home tab and TV app) appends a **Home Assistant** tile at the end of Glasshouse Bar to open the Home Assistant control bar directly.
 
 ## Custom launcher
 

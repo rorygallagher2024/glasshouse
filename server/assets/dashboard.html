@@ -1285,6 +1285,11 @@ function glasshouseHomeRows(d) {
              press: barOn ? t('tv.home.switch.off', 'Press OK to use LG Home again') : t('tv.home.bar.on', 'Press OK to use Glasshouse Bar'),
              hint: t('home.bar.isOnDesc', 'The Home button opens a row of your apps and inputs over the picture; Back or Home closes it. LG’s Home stays in its place, and its tile is at the end of the apps.'),
              warn: d.bar.report ? tvCompatWarn(d.bar.webos) : undefined });
+    if (barOn && d.haBarAvailable && d.layout) {
+      r.push(homeSwitchRow(d, 'haBarInHomeBar', t('home.bar.haTile', 'Home Assistant bar tile'),
+        t('home.bar.haTileDesc', 'Adds a Home Assistant tile at the end of Glasshouse Bar to open the Home Assistant control bar.'),
+        'homeBarHaTile', d.layout.haBarInHomeBar === true));
+    }
   }
   if (!d.enabled || launcherOn) return r;
   var c = d.catalogue, lay = d.layout;
@@ -3665,6 +3670,8 @@ function activate() {
       return homeLayout({ recommended: !r.on });
     case 'homeHaRow':
       return homeLayout({ haRow: !r.on });
+    case 'homeBarHaTile':
+      return homeLayout({ haBarInHomeBar: !r.on });
     case 'homeHideUnused':
       return homeLayout({ hideUnused: !r.on });
     case 'homeDarkening':
