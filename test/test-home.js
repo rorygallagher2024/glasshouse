@@ -824,6 +824,65 @@ step('a refused read of the last channel is not kept as no channel', function (d
   });
 });
 
+step('a guide read started before channels changed does not answer or overwrite the new channel list', function (done) {
+  var now = Date.UTC(2026, 10, 26, 13, 10), held = null;
+  start({ channels: ['1_1'] }, { now: function () { return now; }, luna: function (uri, p, cb) {
+    if (uri === 'com.webos.service.apiadapter/tv/getChannelCurrentProgramInfo' && p.channelId === '1_1' && held === 'hold') {
+      held = function () { luna(uri, p, cb); };
+      return;
+    }
+    luna(uri, p, cb);
+  } });
+  tv.programmes = {
+    '1_1': { title: 'News', start: '2026,11,26,13,00,00', end: '2026,11,26,13,30,00' },
+    '1_2': { title: 'Film', start: '2026,11,26,13,00,00', end: '2026,11,26,15,00,00' }
+  };
+  held = 'hold';
+  home.guide(function () {});
+  home.setLayout({ channels: ['1_1', '1_2'] }, function (r) {
+    assert.ok(r.ok, r.error);
+    home.guide(function (g) {
+      assert.ok(g['1_1'] && g['1_2'] && g['1_2'][0].title === 'Film', 'new channel is included, not coalesced onto the old read');
+      var finish = held;
+      held = null;
+      finish();
+      setImmediate(function () {
+        home.guide(function (after) {
+          assert.ok(after['1_2'] && after['1_2'][0].title === 'Film', 'finishing the old read did not overwrite the new cache');
+          done();
+        });
+      });
+    });
+  });
+});
+
+step('a last-channel read started before Live TV left does not stand for the channel left on', function (done) {
+  var held = null;
+  start(null, { luna: function (uri, p, cb) {
+    if (uri === 'com.webos.service.utp.boot/getLastChannelId' && held === 'hold') {
+      held = function () { cb({ returnValue: true, channelId: '1_1' }); };
+      return;
+    }
+    luna(uri, p, cb);
+  } });
+  tv.channels = ['1_1', '1_2'];
+  tv.lastChannel = '1_1';
+  foreground('com.webos.app.livetv');
+  held = 'hold';
+  home.catalogue(function () {});
+  until(function () { return typeof held === 'function'; }, 1000, function () {
+    tv.lastChannel = '1_2';
+    foreground('com.webos.app.home');
+    var finishStale = held;
+    held = null;
+    finishStale();
+    home.catalogue(function (after) {
+      assert.strictEqual(after.devices.filter(function (d) { return d.tuner; })[0].channel.id, '1_2', 'stale read did not poison the cache');
+      done();
+    });
+  });
+});
+
 step('the channel Live TV was on is read once, and afresh while Live TV is in front', function (done) {
   var reads = 0;
   start(null, { luna: function (uri, p, cb) {

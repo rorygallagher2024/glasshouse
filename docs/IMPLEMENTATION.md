@@ -2137,9 +2137,7 @@ than its time to live (30 s; 10 minutes for channels), one read at a time; a
 failed read keeps it. Waiting on those reads made a catalogue 0.5 s on a G3
 (webOS 9.2.2), ten luna-send children in turn. A change found by a read behind
 a reply bumps `layoutVersion`, so the view reloads on its next heartbeat with
-what a reply that waited would have had; a read the view did not prompt bumps
-it only for the apps and inputs, so as not to reload Home under someone
-browsing it. The catalogue takes
+what a reply that waited would have had. The catalogue takes
 the layout and wallpapers from `viewStatus()`, which makes no luna calls, and
 carries `rev`, a hash of everything in it but `layoutVersion`: a view that
 already has that rev applies nothing again. Inputs with no signal are marked

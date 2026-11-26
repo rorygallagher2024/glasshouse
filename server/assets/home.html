@@ -4970,6 +4970,7 @@ html[lang="vi"] #srcTitle,html[lang="vi"] #plMode,html[lang="vi"] #pvMode,html[l
   // The server found the ad blocker blocking LG's search after the rail was drawn.
   function searchBlocked(b) {
     layout.searchBlocked = b;
+    if (data) data.rev = null;
     closeSearch();
     state.rail = false;
     render();
@@ -5441,6 +5442,7 @@ html[lang="vi"] #srcTitle,html[lang="vi"] #plMode,html[lang="vi"] #pvMode,html[l
     if (layoutBusy) return;
     layoutRevision++;
     layoutBusy = true;
+    if (data) data.rev = null;
     postJson('/api/home/layout', { reset: true }, function (r) {
       layoutBusy = false;
       layoutRevision++;
@@ -6967,10 +6969,11 @@ html[lang="vi"] #srcTitle,html[lang="vi"] #plMode,html[lang="vi"] #pvMode,html[l
       }
       // A reply sent before arranging or saving must not replace local edits.
       if (revision !== layoutRevision || ((layoutBusy || state.arranging) && !whileArranging)) return answer(false);
-      if (data && r.rev && data.rev === r.rev) return sameCatalogue(r, answer);
+      if (data && r.rev && data.rev === r.rev && !state.arranging && !whileArranging) return sameCatalogue(r, answer);
       var firstLoad = !data;
       (r.iptv || []).forEach(tidyItem);
       data = r;
+      if (state.arranging) data.rev = null;
       loadLineup();
       layout = r.layout;
       // The board and the headlines may have come before the layout that says

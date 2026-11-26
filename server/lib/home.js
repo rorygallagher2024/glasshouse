@@ -1377,9 +1377,6 @@ function ownSoundInfo() {
  */
 var savedLists = null;
 var listsRevision = 0;
-// Bumped by any list changing, redrawn or not.
-var listsGeneration = 0;
-var REDRAWN_LISTS = { dev: true, lp: true };
 // The callers waiting on each list's read, while one is out.
 var listLoading = {};
 /*
@@ -1428,33 +1425,22 @@ function cached(key, ttl, load, cb) {
   var known = hit ? hit.value : savedList(key);
   if (!known) return readList(key, load, cb);
   cb(known);
-  behindReply(key, function () { readList(key, load, null, true); });
+  behindReply(key, function () { readList(key, load, null); });
 }
 
-/*
- * One read of a list at a time; a failed read keeps the list as it was.
- * behind: read after a reply that answered from memory, which a view waiting
- * on the read would have had, so any change to it reloads the view.
- */
-function readList(key, load, cb, behind) {
+// One read of a list at a time; a failed read keeps the list as it was.
+function readList(key, load, cb) {
   if (listLoading[key]) { if (cb) listLoading[key].push(cb); return; }
   listLoading[key] = cb ? [cb] : [];
-  var firstRead = !listCache[key];
   load(function (value) {
     var waiting = listLoading[key];
     delete listLoading[key];
     if (value) {
       var known = savedList(key) !== null;
       listCache[key] = { at: nowMs(), value: value };
-      if (saveList(key, value)) {
-        listsGeneration++;
-        // The first read of a run corrects whatever was saved, and a read
-        // behind a reply what that reply left out. Otherwise the inputs or
-        // apps changing, as a port's tile when a CEC device appears on it,
-        // has the view draw its tiles again (#1462); not the content cards or
-        // channels, whose changes would reload Home under someone browsing it.
-        if (known && (firstRead || behind || REDRAWN_LISTS[key])) listsRevision++;
-      }
+      // A read of a list already known ran behind a reply that answered from
+      // memory, so a change reloads the view on its next heartbeat.
+      if (saveList(key, value) && known) listsRevision++;
     }
     var answer = value || (listCache[key] ? listCache[key].value : savedList(key));
     waiting.forEach(function (fn) { fn(answer || null); });
@@ -1982,18 +1968,20 @@ function noteForeground(was, id) {
  * from the last read. One read at a time, shared by every caller.
  */
 var lastChannel = null;
+var lastChannelGen = 0;
 var lastChannelReads = null;
 function lastChannelId(cb) {
   if (lastChannel && foreground !== LIVE_TV) return cb(lastChannel.id);
-  if (lastChannelReads) return lastChannelReads.push(cb);
-  lastChannelReads = [cb];
+  var gen = lastChannelGen;
+  if (lastChannelReads && lastChannelReads.gen === gen) return lastChannelReads.waiting.push(cb);
+  var mine = { gen: gen, waiting: [cb] };
+  lastChannelReads = mine;
   luna('com.webos.service.utp.boot/getLastChannelId', {}, function (r) {
     var id = r && typeof r.channelId === 'string' ? r.channelId : null;
-    // A refused read is not "no channel": it is read again next time.
-    if (r && r.returnValue !== false) lastChannel = { id: id };
-    var waiting = lastChannelReads;
-    lastChannelReads = null;
-    waiting.forEach(function (fn) { fn(id); });
+    // A refused read is not "no channel", and one started before Live TV left must not stand for after.
+    if (r && r.returnValue !== false && gen === lastChannelGen) lastChannel = { id: id };
+    if (lastChannelReads === mine) lastChannelReads = null;
+    mine.waiting.forEach(function (fn) { fn(id); });
   });
 }
 
@@ -2045,11 +2033,17 @@ function iconPath(id, cb) {
 var guideReads = null;
 function guide(cb) {
   var ids = readConfig().channels.slice(0, MAX_CHANNELS);
-  var same = guideCache.at && guideCache.key === ids.join(',');
+  var key = ids.join(',');
+  var same = guideCache.at && guideCache.key === key;
   if (same && nowMs() - guideCache.at < GUIDE_TTL_MS) return cb(guideCache.data);
   if (same && guideComplete(guideCache.data, ids)) {
     cb(guideCache.data);
-    behindReply('guide', function () { readGuide(ids, null); });
+    behindReply('guide', function () {
+      var cur = readConfig().channels.slice(0, MAX_CHANNELS);
+      var curKey = cur.join(',');
+      if (guideCache.at && guideCache.key === curKey && nowMs() - guideCache.at < GUIDE_TTL_MS) return;
+      readGuide(cur, null);
+    });
     return;
   }
   readGuide(ids, cb);
@@ -2063,16 +2057,20 @@ function guideComplete(data, ids) {
 }
 
 function readGuide(ids, cb) {
-  if (guideReads) { if (cb) guideReads.push(cb); return; }
-  guideReads = cb ? [cb] : [];
+  var key = ids.join(',');
+  if (guideReads && guideReads.key === key) { if (cb) guideReads.waiting.push(cb); return; }
+  var mine = { key: key, waiting: cb ? [cb] : [] };
+  guideReads = mine;
   var out = {};
   var i = 0;
   (function next() {
     if (i >= ids.length) {
-      guideCache = { at: nowMs(), data: out, key: ids.join(',') };
-      var waiting = guideReads;
-      guideReads = null;
-      return waiting.forEach(function (fn) { fn(out); });
+      // Do not overwrite the cache if the picked channels changed during this read.
+      if (readConfig().channels.slice(0, MAX_CHANNELS).join(',') === key) {
+        guideCache = { at: nowMs(), data: out, key: key };
+      }
+      if (guideReads === mine) guideReads = null;
+      return mine.waiting.forEach(function (fn) { fn(out); });
     }
     var id = ids[i++];
     luna('com.webos.service.apiadapter/tv/getChannelCurrentProgramInfo', { channelId: id }, function (r) {
@@ -3740,7 +3738,7 @@ function foregroundChanged(id) {
   if (appRefreshPending && id !== HOME_APP) tryRefreshApp();
   if (id !== HOME_APP && id !== LG_HOME && id) lastSource = { appId: id, at: nowMs() };
   // Live TV left, even with Glasshouse Home off: its channel may have changed.
-  if (was === LIVE_TV && id !== LIVE_TV) lastChannel = null;
+  if (was === LIVE_TV && id !== LIVE_TV) { lastChannel = null; lastChannelGen++; }
   if (!readConfig().enabled) return;
   noteForeground(was, id);
   if (id === homeId) {
@@ -4335,6 +4333,7 @@ function init(opts) {
   guideCache = { at: 0, data: {}, key: '' };
   guideReads = null;
   lastChannel = null;
+  lastChannelGen = 0;
   lastChannelReads = null;
   listCache = {};
   savedLists = null;
