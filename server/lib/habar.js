@@ -211,7 +211,11 @@ function formatTile(item, ent, err) {
     minTemp: typeof attrs.min_temp === 'number' ? attrs.min_temp : 15,
     maxTemp: typeof attrs.max_temp === 'number' ? attrs.max_temp : 30,
     step: typeof attrs.target_temp_step === 'number' && attrs.target_temp_step > 0 ? attrs.target_temp_step : 0.5,
-    hvacModes: Array.isArray(attrs.hvac_modes) ? attrs.hvac_modes : []
+    hvacModes: Array.isArray(attrs.hvac_modes) ? attrs.hvac_modes : [],
+    // What a sensor measures, for its icon (temperature, humidity, battery...).
+    deviceClass: typeof attrs.device_class === 'string' ? attrs.device_class : '',
+    // Shown, not acted on: OK does nothing and no hint offers it.
+    readOnly: false
   };
 
   if (err || !ent) return tile;
@@ -281,6 +285,8 @@ function formatTile(item, ent, err) {
     return tile;
   }
 
+  // Sensors and anything else without an action here: a reading.
+  tile.readOnly = true;
   if (domain === 'binary_sensor') {
     tile.active = rawState === 'on';
   }
@@ -472,6 +478,7 @@ function sync() {
 }
 
 module.exports = {
+  formatTile: formatTile,
   init: init,
   start: start,
   poke: poke,

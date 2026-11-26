@@ -202,6 +202,16 @@ server.listen(0, '127.0.0.1', function () {
         assert.strictEqual(st.tiles[5].valueText, 'Locked');
         assert.strictEqual(st.tiles[6].valueText, 'Activate');
         console.log('  \u2713 state formats all supported entity domains and hour12');
+        // A reading is shown, not acted on, with what it measures for its icon.
+        var temp = haBar.formatTile({ id: 'sensor.lounge_temperature', label: '' },
+          { state: '21.4', attributes: { device_class: 'temperature', unit_of_measurement: '°C', friendly_name: 'Lounge' } }, '');
+        assert.strictEqual(temp.readOnly, true);
+        assert.strictEqual(temp.deviceClass, 'temperature');
+        assert.strictEqual(temp.valueText, '21.4 °C');
+        assert.strictEqual(temp.adjustable, false);
+        assert.strictEqual(haBar.formatTile({ id: 'binary_sensor.door', label: '' }, { state: 'on', attributes: { device_class: 'door' } }, '').readOnly, true);
+        assert.strictEqual(st.tiles[1].readOnly, false, 'a switch can be toggled');
+        console.log('  \u2713 sensors are readings: read-only, with their device class');
 
         // 4. Reject action for entity not on the bar
         haBar.act('switch.not_listed', 'toggle', null, function (rReject) {
