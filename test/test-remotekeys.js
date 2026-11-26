@@ -108,6 +108,14 @@ function loadFilter(broken, extra) {
           };
           if (tv.deferred) tv.deferred.push(answer); else answer();
         }
+        else if (service === 'org.webosbrew.piccap.service') {
+          var piccapAnswer = function () {
+            if (method === '/status') return cb && cb(JSON.stringify({ returnValue: true, isRunning: !!tv.piccapRunning }));
+            if (method === '/start' || method === '/stop') tv.piccapRunning = method === '/start';
+            if (cb) cb(JSON.stringify({ returnValue: true }));
+          };
+          if (tv.piccapHold && method === '/status') tv.piccapHold.push(piccapAnswer); else piccapAnswer();
+        }
         else if (cb) cb(JSON.stringify({ returnValue: true }));
       }
     },
@@ -1431,6 +1439,60 @@ step(function (next) {
           }));
         }));
       }));
+    }));
+  }));
+});
+
+// Ambient light toggle: offered where PicCap is installed, flips /start or
+// /stop in the filter without repeats, and drops out cleanly if PicCap goes.
+step(function (next) {
+  var piccapHere = true;
+  tv.piccapRunning = false;
+  tv.piccapHold = null;
+  rk.init({
+    luna: luna, inputNames: { hdmi1: 'HDMI 1', hdmi2: 'Apple TV' }, stateDir: stateDir, filtersDir: filtersDir,
+    piccap: function () { return piccapHere; }
+  });
+  rk.availabilityChanged();
+  rk.getRemoteKeys(guard(function (r) {
+    assert.ok(r.choices.some(function (c) { return c.id === 'action:piccap' && c.kind === 'action' && c.title === 'Ambient light'; }),
+      'Ambient light offered when PicCap is installed');
+    rk.setRemoteKey('red', 'open', 'action:piccap', guard(function (s) {
+      assert.ok(s.ok, s.error);
+      assert.strictEqual(tv.keys.keys.red, 'action:piccap');
+      var f = loadFilter();
+      // Release and repeat do nothing; a press starts PicCap when stopped.
+      assert.strictEqual(f.handle(1004, false, false), 'accepted');
+      assert.strictEqual(f.handle(1004, true, true), 'accepted');
+      assert.strictEqual(f.sent.length, 0, 'release and repeat ignored');
+      assert.strictEqual(f.handle(1004, true, false), 'accepted');
+      assert.strictEqual(tv.piccapRunning, true, 'started PicCap');
+      // Next press stops PicCap when running.
+      assert.strictEqual(f.handle(1004, true, false), 'accepted');
+      assert.strictEqual(tv.piccapRunning, false, 'stopped PicCap');
+      // Overlapping press while /status is in flight is ignored until it settles.
+      tv.piccapHold = [];
+      assert.strictEqual(f.handle(1004, true, false), 'accepted');
+      assert.strictEqual(f.handle(1004, true, false), 'accepted');
+      assert.strictEqual(tv.piccapHold.length, 1, 'busy guard drops overlapping press');
+      tv.piccapHold.shift()();
+      tv.piccapHold = null;
+      assert.strictEqual(tv.piccapRunning, true, 'completed held toggle');
+      // Removing PicCap stops putting the key in configd while keeping the saved label.
+      piccapHere = false;
+      rk.availabilityChanged();
+      setTimeout(guard(function () {
+        assert.strictEqual(tv.keys.keys.red, undefined, 'omitted from active filter while PicCap is absent');
+        rk.getRemoteKeys(guard(function (gone) {
+          assert.ok(!gone.choices.some(function (c) { return c.id === 'action:piccap'; }), 'not offered when PicCap is absent');
+          var red = gone.keys.filter(function (k) { return k.key === 'red'; })[0];
+          assert.strictEqual(red.opens, 'Ambient light', 'keeps friendly title while missing');
+          rk.setRemoteKey('red', 'lg', '', guard(function () {
+            console.log('  ✓ Ambient light toggle toggles PicCap in the filter without repeats and hides when absent');
+            next();
+          }));
+        }));
+      }), 20);
     }));
   }));
 });

@@ -3402,6 +3402,7 @@
  "inputs.kind.av": {"text": "AV", "from": "AV"},
  "inputs.kind.component": {"text": "Komponens", "from": "Component"},
  "srv.remoteKeys.ok": {"text": "OK", "from": "OK"},
+ "srv.remoteKeys.piccap": {"from": "Ambient light", "text": "Környezeti világítás"},
  "apps.remoteKeys.buttons": {"text": "Gombok", "from": "Buttons"},
  "home.bg.video": {"text": "Videó", "from": "Video"},
  "home.video.help": {"text": "Videófájlokra mutató linkek, soronként egy, például https://example.com/beach.mp4, vagy egy lejátszási listára. A tévé maga streameli őket az internetről vagy a saját hálózatodról.", "from": "Links to video files, one per line, such as https://example.com/beach.mp4, or to a playlist of them. The TV streams them itself, from the internet or your own network."},

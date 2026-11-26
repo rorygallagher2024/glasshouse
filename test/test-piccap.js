@@ -180,6 +180,39 @@ function testControlsDisabled(result) {
   });
 }
 
+function testToggle() {
+  var toggleAvailability = true;
+  var p = piccapModule.init({ luna: luna, installed: function () { return toggleAvailability; } });
+  p.attachMqtt({ client: client, prefix: 'room/tv', allowControl: true });
+  assert.strictEqual(p.isInstalled(), true, 'isInstalled reflects installed callback');
+  // Even with a fresh cached status, toggle() forces a fresh /status read first.
+  replies.push(status(false));
+  replies.push({ returnValue: true });
+  replies.push(status(true));
+  p.toggle(function (r1) {
+    assert.strictEqual(r1.ok, true);
+    assert.strictEqual(r1.isRunning, true, 'toggle starts PicCap when stopped');
+    assert.strictEqual(lastState().payload, 'ON', 'toggle publishes ON state');
+    // Immediately toggle again within STATUS_CACHE_MS: still reads /status fresh and stops.
+    replies.push(status(true));
+    replies.push({ returnValue: true });
+    replies.push(status(false));
+    p.toggle(function (r2) {
+      assert.strictEqual(r2.ok, true);
+      assert.strictEqual(r2.isRunning, false, 'toggle stops PicCap when running');
+      assert.strictEqual(lastState().payload, 'OFF', 'toggle publishes OFF state');
+      toggleAvailability = false;
+      assert.strictEqual(p.isInstalled(), false);
+      p.toggle(function (r3) {
+        assert.strictEqual(r3.ok, false, 'toggle fails cleanly when PicCap is not installed');
+        console.log('  ✓ PicCap toggle flips power from fresh status and publishes state');
+        console.log('ALL test-piccap.js assertions passed!\n');
+        process.exit(0);
+      });
+    });
+  });
+}
+
 function testPollingTimer() {
   var callsBeforeTimer = calls.length;
   replies.push(status(true));
@@ -191,8 +224,7 @@ function testPollingTimer() {
     assert.deepEqual(availability, [true, false, true], 'and again each time it goes and comes back, not while it keeps answering');
     assert.strictEqual(piccapModule.installed(), require('fs').existsSync(piccapModule.APP_DIR), 'installed is the app folder');
     console.log('  ✓ PicCap detection, MQTT commands, telemetry, and retained state');
-    console.log('ALL test-piccap.js assertions passed!\n');
-    process.exit(0);
+    testToggle();
   }, 1200);
 }
 

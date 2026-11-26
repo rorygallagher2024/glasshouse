@@ -1073,6 +1073,40 @@ step('the set brightness step applies to the log\'s presses', function (next) {
   }); });
 });
 
+step('Ambient light toggles PicCap from the log on a streaming button when installed, and hides when absent', function (next) {
+  var piccapHere = true;
+  var piccapCalls = 0;
+  var optsWithPiccap = Object.keys(initOpts).reduce(function (o, k) { o[k] = initOpts[k]; return o; }, {});
+  optsWithPiccap.piccap = function () { return piccapHere; };
+  optsWithPiccap.togglePiccap = function (cb) {
+    piccapCalls++;
+    cb({ ok: true, isRunning: piccapCalls % 2 === 1 });
+  };
+  rk.init(optsWithPiccap);
+  rk.getRemoteKeys(function (r) {
+    assert.ok(r.choices.some(function (c) { return c.id === 'action:piccap' && c.kind === 'action'; }), 'offered when PicCap is installed');
+    rk.setRemoteKey('guide', 'open', 'action:piccap', function (g) {
+      assert.strictEqual(g.ok, false, 'refused on Guide');
+      set('netflix', 'open', 'action:piccap', function () { afterWatching(function () {
+        assert.strictEqual(entry('netflix').isActive, false, 'LG\'s app switched off, as for Nothing');
+        assert.ok(rk.isFollowingLog());
+        logLine(NETFLIX_LINE);
+        until(function () { return piccapCalls >= 1; }, 5000, function () {
+          assert.strictEqual(piccapCalls, 1, 'logged press toggled PicCap');
+          piccapHere = false;
+          rk.getRemoteKeys(function (gone) {
+            assert.ok(!gone.choices.some(function (c) { return c.id === 'action:piccap'; }), 'hidden when PicCap is absent');
+            set('netflix', 'lg', '', function () {
+              rk.init(initOpts);
+              next();
+            });
+          });
+        });
+      }); });
+    });
+  });
+});
+
 step('the Alexa button set blocks Amazon\'s view and opens its app from the log, apart from the AI button; As LG has it releases it', function (next) {
   voice.switches = [];
   set('alexa', 'open', 'com.webos.app.hdmi2', function () {

@@ -648,6 +648,9 @@ remoteKeys.init({ detectRemotes: detectRemotes, luna: luna, subscription: lunaTr
   watchChannelButtons: function (on) { remotebuttons.want('remoteKeysChannel', on); },
   // The Guide key can open Glasshouse Home's Internet TV guide.
   homeGuide: function () { return !!(glasshouseHome && iptv && glasshouseHome.enabled() && iptv.hasPlaylists()); },
+  // PicCap capture on or off, offered where PicCap is installed on webOS 3+.
+  piccap: function () { return !!(piccap && piccap.isInstalled()); },
+  togglePiccap: function (cb) { if (piccap) piccap.toggle(cb); },
   // The compositor restarts for a change to LG's key handler: Glasshouse Home's view is opened afresh.
   compositorRestarted: function () { if (glasshouseHome) glasshouseHome.reopenAfterCompositor(); },
   homeAssistant: function () { return !!(CONFIG.mqtt && CONFIG.mqtt.enabled && CONFIG.mqtt.host); },

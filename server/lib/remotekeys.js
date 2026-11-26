@@ -162,9 +162,14 @@ BRIGHTNESS_DELTAS[BRIGHTNESS_DOWN] = -1;
 function isBrightnessAction(id) {
   return Object.prototype.hasOwnProperty.call(BRIGHTNESS_DELTAS, id);
 }
+/*
+ * PicCap capture on or off: toggles org.webosbrew.piccap.service between
+ * start and stop. Offered where PicCap is installed on webOS 3 and later.
+ */
+var PICCAP_TOGGLE = 'action:piccap';
 // The actions webOS 11 answers from the log: LG's own action for the key is off.
 function isLoggedAction(id) {
-  return id === SCREEN_OFF || Object.prototype.hasOwnProperty.call(BRIGHTNESS_DELTAS, id);
+  return id === SCREEN_OFF || id === PICCAP_TOGGLE || Object.prototype.hasOwnProperty.call(BRIGHTNESS_DELTAS, id);
 }
 // Wait for release to avoid sending more key events as standby starts.
 var POWER_OFF = 'action:powerOff';
@@ -376,6 +381,11 @@ var homeAssistantOn = function () { return false; };
 // Glasshouse Home on, with an IPTV playlist: its guide is a key's choice.
 /** @type {function(): boolean} */
 var homeGuideOn = function () { return false; };
+// PicCap installed on webOS 3+: Ambient light toggle is a key's choice.
+/** @type {function(): boolean} */
+var piccapOn = function () { return false; };
+var piccapToggleFn = null;
+var piccapToggleBusy = false;
 // Told when the compositor was restarted for a change to LG's key handler, so Glasshouse Home's view can be opened again.
 var compositorRestartedFn = function () {};
 var messagesPath = MESSAGES_LOG;
@@ -424,6 +434,9 @@ function init(opts) {
   servicesModule = opts.services || null;
   homeAssistantOn = opts.homeAssistant || function () { return false; };
   homeGuideOn = opts.homeGuide || function () { return false; };
+  piccapOn = typeof opts.piccap === 'function' ? opts.piccap : function () { return false; };
+  piccapToggleFn = typeof opts.togglePiccap === 'function' ? opts.togglePiccap : null;
+  piccapToggleBusy = false;
   compositorRestartedFn = opts.compositorRestarted || function () {};
   messagesPath = opts.messagesPath || MESSAGES_LOG;
   detectRemotesFn = typeof opts.detectRemotes === 'function' ? opts.detectRemotes : null;
@@ -658,6 +671,8 @@ function filterSource() {
     'var glasshousePowerOffArmed = {};',
     'var glasshouseBarPress = 0;',
     'var glasshouseBrightnessStep = ' + BRIGHTNESS_DEFAULT_STEP + ';',
+    'var glasshousePiccapBusy = false;',
+    'var glasshousePiccapRun = 0;',
     '',
     '// Key code by name; a name this firmware lacks is left out.',
     'function glasshouseKeyCodes() {',
@@ -808,6 +823,28 @@ function filterSource() {
     '    lunaCall.send("com.webos.service.tvpower", "/power/turnOffScreen", "{}", function () {});',
     '}',
     '',
+    'function glasshouseTogglePiccap() {',
+    '    if (glasshousePiccapBusy) return;',
+    '    glasshousePiccapBusy = true;',
+    '    var run = ++glasshousePiccapRun;',
+    '    try { genericTimer.set(2000, function () { if (run === glasshousePiccapRun) glasshousePiccapBusy = false; }); } catch (e) {}',
+    '    lunaCall.send("org.webosbrew.piccap.service", "/status", "{}", function (payload) {',
+    '        try {',
+    '            var r = typeof payload === "string" ? JSON.parse(payload) : payload;',
+    '            if (!r || r.returnValue === false || typeof r.isRunning !== "boolean") {',
+    '                glasshousePiccapBusy = false;',
+    '                return;',
+    '            }',
+    '            lunaCall.send("org.webosbrew.piccap.service", r.isRunning ? "/stop" : "/start", "{}", function () {',
+    '                glasshousePiccapBusy = false;',
+    '            });',
+    '        } catch (e) {',
+    '            glasshousePiccapBusy = false;',
+    '            console.warn("glasshouse keyfilter: " + e);',
+    '        }',
+    '    });',
+    '}',
+    '',
     'function glasshouseSendKey(code) {',
     '    lunaCall.send("com.webos.service.networkinput", "/test/sendKeyCode", JSON.stringify({ "keyCode": code }), function () {});',
     '}',
@@ -893,6 +930,11 @@ function filterSource() {
     '            glasshouseScreenOffKey(pressed, autoRepeat);',
     '        } else if (id === ' + JSON.stringify(BRIGHTNESS_UP) + ' || id === ' + JSON.stringify(BRIGHTNESS_DOWN) + ') {',
     '            glasshouseBrightnessKey(id === ' + JSON.stringify(BRIGHTNESS_UP) + ' ? 1 : -1, pressed, autoRepeat);',
+    '        } else if (id === ' + JSON.stringify(PICCAP_TOGGLE) + ') {',
+    '            if (pressed && !autoRepeat) {',
+    '                console.info("glasshouse keyfilter: key", key, "toggles PicCap");',
+    '                glasshouseTogglePiccap();',
+    '            }',
     '        } else if (id === ' + JSON.stringify(POWER_OFF) + ') {',
     '            if (pressed && !autoRepeat) {',
     '                var state = glasshousePowerState.toLowerCase().replace(/[\\s_-]/g, "");',
@@ -954,35 +996,47 @@ function writeKeys(map, cb, home, starting) {
 /*
  * The keys as the filter is to act on them: one set to Glasshouse Home's
  * guide is left to LG while Glasshouse Home is off or has no playlist, as it
- * would only open Home. The choice stays saved, and acts again once both are
- * back (availabilityChanged).
+ * would only open Home, and an Ambient light key is left alone when PicCap is
+ * removed. The choice stays saved, and acts again once it is back (availabilityChanged).
  */
 function inEffect(map) {
-  var out = {}, on = null;
+  var out = {}, on = null, piccap = null;
   for (var k in map) {
     if (!Object.prototype.hasOwnProperty.call(map, k)) continue;
     if (map[k] === HOME_GUIDE) {
       if (on === null) on = homeGuideOn();
       if (!on) continue;
     }
+    if (map[k] === PICCAP_TOGGLE) {
+      if (piccap === null) piccap = piccapOn();
+      if (!piccap) continue;
+    }
     out[k] = map[k];
   }
   return out;
 }
 
-// Glasshouse Home or its playlists came or went: a key set to its guide follows.
+// Glasshouse Home, its playlists, or PicCap came or went: keys set to them follow.
 var lastHomeGuide = null;
+var lastPiccap = null;
 function availabilityChanged() {
-  var on = homeGuideOn();
-  if (on === lastHomeGuide) return;
-  var first = lastHomeGuide === null;
+  var on = homeGuideOn(), pOn = piccapOn();
+  if (on === lastHomeGuide && pOn === lastPiccap) return;
+  var firstGuide = lastHomeGuide === null && on !== lastHomeGuide;
+  var guideChanged = on !== lastHomeGuide;
   lastHomeGuide = on;
-  var map = readMap(), set = false;
-  for (var k in map) if (Object.prototype.hasOwnProperty.call(map, k) && map[k] === HOME_GUIDE) set = true;
-  if (!set || !lunaFn) return;
+  lastPiccap = pOn;
+  var map = readMap(), setGuide = false, setPiccap = false;
+  for (var k in map) {
+    if (!Object.prototype.hasOwnProperty.call(map, k)) continue;
+    if (map[k] === HOME_GUIDE) setGuide = true;
+    if (map[k] === PICCAP_TOGGLE) setPiccap = true;
+  }
+  if ((!setGuide && !setPiccap) || !lunaFn) return;
   applyAny(function (ok) {
-    if (first && on && ok) return;
-    console.log('remotekeys: Guide ' + (on ? 'opens Glasshouse Home\'s guide' : 'left to LG while Glasshouse Home\'s guide is unavailable') + (ok ? '' : ' (not applied)'));
+    if (guideChanged && !(firstGuide && on && ok)) {
+      console.log('remotekeys: Guide ' + (on ? 'opens Glasshouse Home\'s guide' : 'left to LG while Glasshouse Home\'s guide is unavailable') + (ok ? '' : ' (not applied)'));
+    }
   });
 }
 
@@ -1797,9 +1851,28 @@ function buttonPressed(button) {
   if (MUTE_TOASTS_MS[button]) muteToasts(muteToastsMs || MUTE_TOASTS_MS[button]);
   if (!id || !lunaFn) return;
   if (id === SCREEN_OFF) return screenOffFromPress(button);
+  if (id === PICCAP_TOGGLE) return togglePiccapFromPress();
   if (Object.prototype.hasOwnProperty.call(BRIGHTNESS_DELTAS, id)) return stepBrightness(BRIGHTNESS_DELTAS[id] * brightnessStep());
   lunaFn('com.webos.applicationManager/launch', { id: id }, function (r) {
     if (!(r && r.returnValue)) console.log('remotekeys: ' + button + ' could not open ' + id);
+  });
+}
+
+function togglePiccapFromPress() {
+  if (piccapToggleBusy) return;
+  piccapToggleBusy = true;
+  function done(r) {
+    piccapToggleBusy = false;
+    if (!r || !r.ok) console.log('remotekeys: could not toggle PicCap' + (r && r.error ? ': ' + r.error : ''));
+  }
+  if (piccapToggleFn) return piccapToggleFn(done);
+  lunaFn('org.webosbrew.piccap.service/status', {}, function (r) {
+    if (!r || r.returnValue === false || typeof r.isRunning !== 'boolean') {
+      return done({ ok: false, error: 'PicCap did not answer' });
+    }
+    lunaFn('org.webosbrew.piccap.service/' + (r.isRunning ? 'stop' : 'start'), {}, function (w) {
+      done({ ok: !!(w && w.returnValue !== false) });
+    });
   });
 }
 
@@ -2002,6 +2075,7 @@ function actionChoices() {
     { id: BRIGHTNESS_UP, title: msg('srv.remoteKeys.brightnessUp', 'Brightness up'), kind: 'action' },
     { id: BRIGHTNESS_DOWN, title: msg('srv.remoteKeys.brightnessDown', 'Brightness down'), kind: 'action' }
   ];
+  if (piccapOn()) out.push({ id: PICCAP_TOGGLE, title: msg('srv.remoteKeys.piccap', 'Ambient light'), kind: 'action' });
   if (homeAssistantOn()) out.push({ id: HOME_ASSISTANT, title: msg('srv.remoteKeys.homeAssistant', 'Home Assistant'), kind: 'ha' });
   if (homeGuideOn()) out.push({ id: HOME_GUIDE, title: msg('srv.remoteKeys.homeGuide', 'Glasshouse Home\'s guide'), kind: 'action' });
   return out;
@@ -2009,11 +2083,13 @@ function actionChoices() {
 
 // webOS 11's actions, for the keys in SCREEN_OFF_BUTTONS.
 function loggedActionChoices() {
-  return [
+  var out = [
     { id: SCREEN_OFF, title: msg('srv.remoteKeys.screenOff', 'Screen off'), kind: 'action' },
     { id: BRIGHTNESS_UP, title: msg('srv.remoteKeys.brightnessUp', 'Brightness up'), kind: 'action' },
     { id: BRIGHTNESS_DOWN, title: msg('srv.remoteKeys.brightnessDown', 'Brightness down'), kind: 'action' }
   ];
+  if (piccapOn()) out.push({ id: PICCAP_TOGGLE, title: msg('srv.remoteKeys.piccap', 'Ambient light'), kind: 'action' });
+  return out;
 }
 
 // Whether a key's presses reach Home Assistant, so it can be set to send them there.
@@ -2193,6 +2269,7 @@ function describeKeys(keys, inChain, cb, native) {
       titles[HOME_ASSISTANT] = msg('srv.remoteKeys.homeAssistant', 'Home Assistant');
       titles[HOME_GUIDE] = msg('srv.remoteKeys.homeGuide', 'Glasshouse Home\'s guide');
       titles[INPUT_BAR] = msg('srv.remoteKeys.inputBar', 'Input bar');
+      titles[PICCAP_TOGGLE] = msg('srv.remoteKeys.piccap', 'Ambient light');
       switchers.concat(inputs, actionChoices(), loggedActionChoices(), mediaChoices(), homeChoices(false), barChoices(false)).forEach(function (c) { titles[c.id] = c.title; });
       var out = keys.map(function (k) {
         var set = Object.prototype.hasOwnProperty.call(map, k.key);

@@ -24,7 +24,7 @@ When PicCap is installed, **Ambient Light** (`/?tab=ambient`), below Home in the
 * **On:** Instructs PicCap's service to start capturing (`org.webosbrew.piccap.service/start`). The ambient backlights turn on and follow the screen.
 * **Off:** Instructs PicCap to stop capturing (`org.webosbrew.piccap.service/stop`). The ambient backlights turn dark, and the TV's processor stops encoding video frames.
 
-This allows toggling ambient lighting instantly from any phone, tablet, or browser without needing to open the PicCap application on the TV or use the Magic Remote.
+This allows toggling ambient lighting instantly from any phone, tablet, or browser without needing to open the PicCap application on the TV or use the Magic Remote. Where PicCap is installed, **Remote keys** on the [Remote](dashboard/remote.md) tab also offers an **Ambient light** action so a single remote button can toggle PicCap capture on or off.
 
 While PicCap is capturing, the dashboard's [screen glow](dashboard/index.md#screen-glow) waits, so its own captures never run beside PicCap's.
 
