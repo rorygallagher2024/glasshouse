@@ -1997,6 +1997,46 @@ step('on webOS 5 and 6, a close while another app starts, the TV switches off or
   });
 });
 
+/*
+ * A C1 (webOS 6.5.3) with the eARC Volume Overlay: a transparent app whose
+ * window is _WEBOS_WINDOW_TYPE_OVERLAY, launched over the app in front on each
+ * volume key. sam sent "foreground" for it with that window type, then
+ * "close" when it timed out, and left the app underneath on screen.
+ */
+step('on webOS 5 and 6, an overlay closing over the app in front opens nothing', function (done) {
+  var subs = [];
+  function FakeSub(uri, payload, appId, handlers) { this.uri = uri; this.handlers = handlers || {}; subs.push(this); }
+  FakeSub.prototype.start = function () { this.started = true; };
+  FakeSub.prototype.stop = function () { this.started = false; };
+  function life(id, ev, windowType) {
+    subs.filter(function (s) { return s.started && /getAppLifeEvents/.test(s.uri); })
+      .forEach(function (s) { s.handlers.message({ appId: id, event: ev, reason: 'undefined', windowType: windowType }); });
+  }
+  start(null, {
+    webosVersion: '6.5.3',
+    lgHomeSettleMs: 40,
+    Subscription: FakeSub,
+    allowExperimental: function () { return true; },
+    installApp: function (action, cb) { tv.oldAppInstalled = true; cb({ ok: true }); },
+    setHomeKey: function (id, cb) { cb({ ok: true }); },
+    injectKey: function (code, cb) { if (cb) cb(true); }
+  });
+  home.enable(function (r) {
+    assert.ok(r.ok, r.error);
+    foreground('netflix');
+    life('netflix', 'foreground', '_WEBOS_WINDOW_TYPE_CARD');
+    tv.launched = [];
+    life('volume.overlay', 'launch');
+    life('volume.overlay', 'foreground', '_WEBOS_WINDOW_TYPE_OVERLAY');
+    life('volume.overlay', 'close');
+    life('volume.overlay', 'stop');
+    assert.deepEqual(tv.launched, [], 'the app under the overlay stays in front');
+    life('netflix', 'close');
+    assert.ok(tv.launched.length > 0, 'the app under it closing still opens Glasshouse Home');
+    home.disable(function () { done(); });
+  });
+});
+
 step('a switch-on that cannot give the Home key to the app removes the app it installed', function (done) {
   var actions = [];
   start(null, {

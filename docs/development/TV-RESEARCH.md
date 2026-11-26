@@ -1092,6 +1092,15 @@ Reported on PR #910 on 27 October 2026.
   `launch netflix`, then `close youtube.leanback.v4`, then
   `foreground netflix` about 0.5 s later. A preload sends `preload` and
   `background` (status `preload`), not `launch`.
+- **An overlay app comes forward and closes back to the app under it.** On
+  an OLED65C11LB (webOS 6.5.3, firmware 03.53.45), the eARC Volume Overlay
+  (`com.github.nikolay1243.earcvolume`, `"defaultWindowType": "overlay"` and
+  `"transparent": true` in its `appinfo.json`), launched over Glasshouse
+  Home, gave `launch`, then `foreground` with `windowType`
+  `_WEBOS_WINDOW_TYPE_OVERLAY` (the card under it had `foreground` with
+  `_WEBOS_WINDOW_TYPE_CARD`), then `close` and `stop` when it timed out. The
+  card got no `background`. Launched over Live TV, it left Live TV in front
+  after its close.
 - **Switching off, tvpower's steps come before any close.** With the remote's
   power key, `getPowerState` replied `Request Power Off`, `Request Active
   Standby`, `Request Suspend` and `Prepare Suspend`, each with state `Active`
