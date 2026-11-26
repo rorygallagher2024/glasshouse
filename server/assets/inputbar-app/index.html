@@ -58,7 +58,7 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
  * icon (a sun of the same 4 px stroke and 36 px height as its speaker) before the digits.
  */
 #osdv{position:absolute;right:57px;top:calc(50% - 1px);-webkit-transform:translateY(-50%);transform:translateY(-50%);
-  display:-webkit-flex;display:flex;-webkit-align-items:center;align-items:center;opacity:0;
+  display:-webkit-flex;display:flex;-webkit-align-items:center;align-items:center;opacity:0;pointer-events:none;
   -webkit-transition:opacity .15s linear;transition:opacity .15s linear}
 /* It appears at once and fades out over 150 ms (LG's fadeAnimationDuration); a cut out reads as a pop. */
 .osdon #osdv{opacity:1;-webkit-transition:none;transition:none}
@@ -74,7 +74,7 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
 #osdv .vfill{position:absolute;left:-1px;bottom:2px;width:18px;height:0;border-radius:9px;background:#e4e7e6}
 /* Centred, and as wide as its parts, which do not change with the level. */
 #osd{position:absolute;left:50%;bottom:80px;height:80px;border-radius:40px;-webkit-transform:translateX(-50%);transform:translateX(-50%);
-  background:rgba(34,34,36,.94);opacity:0;display:-webkit-flex;display:flex;
+  background:rgba(34,34,36,.94);opacity:0;pointer-events:none;display:-webkit-flex;display:flex;
   -webkit-align-items:center;align-items:center;padding:0 32px;
   -webkit-transition:opacity .16s ease-out;transition:opacity .16s ease-out}
 .osdon #osd{opacity:1}
@@ -390,12 +390,29 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
     e.preventDefault();
   }, true);
   // The Magic Remote's pointer: hovering a tile focuses it, clicking switches.
+  function tileIndex(target, root) {
+    var el = target;
+    while (el && el !== root && !el.getAttribute('data-i')) el = el.parentNode;
+    return el && el !== root ? +el.getAttribute('data-i') : null;
+  }
+  var lastPtrX = -1, lastPtrY = -1;
   $('tiles').addEventListener('mouseover', function (e) {
-    var el = e.target;
-    while (el && el !== this && !el.getAttribute('data-i')) el = el.parentNode;
-    if (el && el !== this) setFocus(+el.getAttribute('data-i'));
+    var idx = tileIndex(e.target, this);
+    if (idx !== null) setFocus(idx);
   });
-  $('tiles').addEventListener('click', function () { choose(); });
+  $('tiles').addEventListener('mousemove', function (e) {
+    if (e.clientX === lastPtrX && e.clientY === lastPtrY) return;
+    lastPtrX = e.clientX;
+    lastPtrY = e.clientY;
+    var idx = tileIndex(e.target, this);
+    if (idx !== null) setFocus(idx);
+  });
+  $('tiles').addEventListener('click', function (e) {
+    var idx = tileIndex(e.target, this);
+    if (idx === null) return;
+    setFocus(idx);
+    choose();
+  });
   var CACHE = 'glasshouse.inputbar';
   var moved = false, waiting = 0, now = null, cat = null;
   function focusOn() {
