@@ -2102,6 +2102,27 @@ button.tools-jump:active{background:var(--w80)}
 .audio-fold .pv-sub{font-family:'Manrope';font-weight:400;margin:0}
 .audio-more{margin-top:clamp(34px,4.5vw,48px)}
 .audio-more[open]>summary{margin-bottom:6px}
+#audio-bar > summary{justify-content:space-between}
+.soundbar-head,.soundbar-actions{display:flex;align-items:center;flex-wrap:wrap;gap:10px}
+.soundbar-head{justify-content:space-between;margin:12px 0 16px}
+#audio-bar-status{margin:0;flex:1;overflow-wrap:anywhere}
+.soundbar-grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(min(100%,286px),1fr))}
+#audio-bar-rows{display:contents}
+.soundbar-group{min-width:0;padding:16px 18px;border:1px solid var(--w12);border-radius:var(--r-md);background:rgba(var(--fg),.025)}
+.soundbar-group h3{font:500 20px/1.25 'Outfit','Onest',sans-serif;letter-spacing:.01em;color:var(--w100);margin:0 0 6px}
+.soundbar-row{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:46px;padding:5px 0}
+.soundbar-row+.soundbar-row{border-top:1px solid var(--w10)}
+.soundbar-row label,.soundbar-connect label{font-size:14px;font-weight:500;color:var(--w90);overflow-wrap:anywhere}
+.soundbar-row small:not([hidden]){display:block;color:var(--w70);font-size:12px}
+.soundbar-row .pill-sel{max-width:58%;min-width:0}
+.soundbar-row .pill-toggle{min-width:76px}
+.soundbar-range{gap:8px;flex:0 1 46%;min-width:84px}
+.soundbar-range input{width:100%;min-width:0;margin:0;height:28px}
+.soundbar-range .num{min-width:3ch;font-variant-numeric:tabular-nums}
+.soundbar-connect{display:grid;gap:8px;max-width:24rem;padding:8px 0 2px}
+#audio-bar-host{min-width:0;width:100%;padding:9px 12px;font:inherit;color:var(--w100);background:var(--bg);border:1px solid var(--edge);border-radius:var(--r-sm)}
+.soundbar-actions{margin-top:4px}
+.soundbar-actions .pill,.soundbar-head .pill{min-width:0;padding-inline:16px;min-height:36px}
 .audio-head{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;margin:0 0 18px}
 .audio-head .pill{flex-shrink:0;min-height:36px}
 .audio-bt-btns{display:flex;gap:8px;flex-shrink:0}

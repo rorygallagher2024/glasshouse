@@ -18,7 +18,7 @@ changed.
 
 ## LG Wi-Fi soundbar
 
-On the web dashboard, open **LG Wi-Fi soundbar**, enter the local IPv4 address of the LG DS90TR and choose **Connect**. The bar can keep playing over HDMI eARC. Its sound mode, Night mode, speaker levels, tone, volume, input and other settings appear as the bar reports them. **Refresh** reads changes made with ThinQ or the remote. **Remove** forgets the saved connection. Use ThinQ for AI Room Calibration.
+On the web dashboard, open **LG Wi-Fi soundbar**, enter the local IPv4 address of the LG DS90TR and choose **Connect**. The bar can keep playing over HDMI eARC. **Playback** holds input, volume, mute and audio delay. **Sound processing** holds the listening mode, Night mode and volume processing. **Speaker levels** adjusts individual channels and **Tone controls** adjusts bass, midrange and treble. **Device settings** holds power, display and voice feedback. The slider and mute switch use the bar’s own readings. On HDMI ARC/eARC, **TV-reported volume** appears below the slider label when the TV reports a different numeric level. It updates with the regular Glasshouse remote every two seconds. A setting the bar does not confirm returns to its last reported value. **Remove** forgets the saved connection. Use ThinQ for AI Room Calibration.
 
 ## Bluetooth audio
 

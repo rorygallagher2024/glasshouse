@@ -290,6 +290,7 @@ async function tick() {
     const r = await fetch(api('/api/stats'), { cache: 'no-store' });
     if (!r.ok) throw new Error(r.status === 401 ? t('common.unauthorised', 'Unauthorised \u2014 token missing or wrong') : 'HTTP ' + r.status);
     const d = await r.json();
+    soundbarTVPlayback(d);
     q('panels').classList.remove('stale');
     if (!errTimer) {
       q('offline').hidden = true;

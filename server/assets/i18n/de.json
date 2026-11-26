@@ -838,7 +838,13 @@
  "audio.bar.autoOff": {"from": "Auto off", "text": "Automatisch aus"},
  "audio.bar.badAddress": {"from": "Enter the local IPv4 address of the soundbar.", "text": "Die lokale IPv4-Adresse der Soundbar eingeben."},
  "audio.bar.wrong": {"from": "Check the address and reconnect the DS90TR.", "text": "Adresse prüfen und die DS90TR erneut verbinden."},
- "audio.bar.check": {"from": "The soundbar could not confirm this setting. Refresh to see its current value.", "text": "Die Soundbar konnte die Einstellung nicht bestätigen. Aktualisieren, um den aktuellen Wert zu sehen."},
+ "audio.bar.check": {"from": "The soundbar could not confirm this setting.", "text": "Die Soundbar konnte die Einstellung nicht bestätigen."},
  "audio.bar.saveError": {"from": "Could not save the soundbar connection.", "text": "Die Soundbar-Verbindung konnte nicht gespeichert werden."},
- "audio.bar.offline": {"from": "Could not read the soundbar. Check its power and IP address.", "text": "Die Soundbar antwortet nicht. Stromversorgung und IP-Adresse prüfen."}
+ "audio.bar.offline": {"from": "Could not read the soundbar. Check its power and IP address.", "text": "Die Soundbar antwortet nicht. Stromversorgung und IP-Adresse prüfen."},
+ "audio.bar.processing": {"from": "Sound processing", "text": "Klangverarbeitung"},
+ "audio.bar.levels": {"from": "Speaker levels", "text": "Lautsprecherpegel"},
+ "audio.bar.tone": {"from": "Tone controls", "text": "Klangregelung"},
+ "audio.bar.device": {"from": "Device settings", "text": "Geräteeinstellungen"},
+ "audio.bar.volume": {"from": "Soundbar volume", "text": "Soundbar-Lautstärke"},
+ "audio.bar.tvVolume": {"from": "TV-reported volume: {value}", "text": "Vom TV gemeldete Lautstärke: {value}"}
 }

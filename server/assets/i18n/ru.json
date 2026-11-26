@@ -4022,7 +4022,13 @@
  "audio.bar.autoOff": {"from": "Auto off", "text": "Автовыключение"},
  "audio.bar.badAddress": {"from": "Enter the local IPv4 address of the soundbar.", "text": "Введите локальный IPv4-адрес саундбара."},
  "audio.bar.wrong": {"from": "Check the address and reconnect the DS90TR.", "text": "Проверьте адрес и снова подключите DS90TR."},
- "audio.bar.check": {"from": "The soundbar could not confirm this setting. Refresh to see its current value.", "text": "Саундбар не подтвердил настройку. Обновите данные, чтобы увидеть текущее значение."},
+ "audio.bar.check": {"from": "The soundbar could not confirm this setting.", "text": "Саундбар не подтвердил настройку."},
  "audio.bar.saveError": {"from": "Could not save the soundbar connection.", "text": "Не удалось сохранить подключение к саундбару."},
- "audio.bar.offline": {"from": "Could not read the soundbar. Check its power and IP address.", "text": "Не удалось получить данные саундбара. Проверьте питание и IP-адрес."}
+ "audio.bar.offline": {"from": "Could not read the soundbar. Check its power and IP address.", "text": "Не удалось получить данные саундбара. Проверьте питание и IP-адрес."},
+ "audio.bar.processing": {"from": "Sound processing", "text": "Обработка звука"},
+ "audio.bar.levels": {"from": "Speaker levels", "text": "Уровни динамиков"},
+ "audio.bar.tone": {"from": "Tone controls", "text": "Регулировка тембра"},
+ "audio.bar.device": {"from": "Device settings", "text": "Настройки устройства"},
+ "audio.bar.volume": {"from": "Soundbar volume", "text": "Громкость саундбара"},
+ "audio.bar.tvVolume": {"from": "TV-reported volume: {value}", "text": "Громкость по данным телевизора: {value}"}
 }

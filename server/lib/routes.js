@@ -284,11 +284,33 @@ function unreadableConfigError() {
   return new Error(msg('srv.configUnreadable', '{file} could not be read, so it was left as it is. Correct it, or remove it to start again, then restart Glasshouse.', { file: configFilePath }));
 }
 
+function soundbarSelection() {
+  var target = config.soundbar || {};
+  return { host: target.host || '', id: target.id || '', writable: !!config.allowControl };
+}
+
+function soundbarEvents(req, res) {
+  if (req.method !== 'GET') return send(res, 405, JSON.stringify({ ok: false }));
+  res.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-store',
+    'X-Accel-Buffering': 'no', 'X-Content-Type-Options': 'nosniff' });
+  res.write('retry: 1500\n\n');
+  res.write('event: selection\ndata: ' + JSON.stringify(soundbarSelection()) + '\n\n');
+  if (!config.soundbar || !config.soundbar.id) return res.end();
+  var heartbeat = setInterval(function () { res.write(': keepalive\n\n'); }, 20000);
+  var unsubscribe = soundbar.watch(config.soundbar, function (reason, device) {
+    if (reason) return res.end('event: fault\ndata: ' + JSON.stringify(reason) + '\n\n');
+    res.write('data: ' + JSON.stringify(device) + '\n\n');
+  });
+  res.on('close', cleanup);
+  res.on('finish', cleanup);
+  function cleanup() { clearInterval(heartbeat); unsubscribe(); }
+}
+
 function handleSoundbar(req, res) {
   function reply(status, error, current) {
-    var target = config.soundbar || {};
-    send(res, status, JSON.stringify({ ok: !error, reason: error, writable: !!config.allowControl,
-      host: target.host || '', id: target.id || '', device: current || null }));
+    var result = soundbarSelection();
+    send(res, status, JSON.stringify({ host: result.host, id: result.id, writable: result.writable,
+      ok: !error, reason: error, device: current || null }));
   }
   if (req.method === 'GET') {
     if (!config.soundbar || !config.soundbar.host) return reply(200);
@@ -307,6 +329,7 @@ function handleSoundbar(req, res) {
         soundbarChanging = false;
         if (err) return reply(500, 'save');
         config.soundbar = selection;
+        if (target.id && (!selection || target.id !== selection.id || target.host !== selection.host)) soundbar.forget(target);
         reply(200, null, current);
       });
     }
@@ -1892,6 +1915,7 @@ function handleRequest(req, res) {
   }
 
   if (pathname === '/api/audio/soundbar') return handleSoundbar(req, res);
+  if (pathname === '/api/audio/soundbar/events') return soundbarEvents(req, res);
 
   if (pathname === '/api/audio' && audioModule) {
     if (req.method === 'GET') {

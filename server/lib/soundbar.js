@@ -75,77 +75,164 @@ function wireValue(row, value) {
   return (value - row.offset) / row.step;
 }
 
-// Only a selected private address and the LG speaker port can be contacted.
-// A write rechecks the saved device identity and current limits on the very socket that sends it.
-function request(target, change, cb, connect) {
-  if (!target || !privateAddress(target.host)) return cb('address');
+// Each selected bar has one socket shared by open dashboards, refreshes and writes.
+var sessions = {};
+function sessionFor(target, connect) {
+  var name = JSON.stringify([target.host, target.id || '']);
+  if (!connect && sessions[name]) return sessions[name];
   var socket = (connect || net.connect)(9741, target.host);
-  var pending = views.slice(), state = {}, buffer = util.allocBuffer(0), done = false;
-  var writing = null, requested = null;
-  var deadline = setTimeout(function () { finish(writing ? 'unconfirmed' : 'offline'); }, 4000);
-  function finish(error, result) {
-    if (done) return;
-    done = true;
-    clearTimeout(deadline);
-    socket.destroy();
-    cb(error, result);
+  var state = {}, listeners = [], readers = [], missing = views.slice();
+  var closed = false, ready = false, writing = null, retry, monitor, lastSpeaker = 0, cycle = 0;
+  var buffer = util.allocBuffer(0), previous = '';
+  var deadline = setTimeout(function () { stop('offline'); }, 4000);
+  function send(cmd, msg, data) { socket.write(frame({ cmd: cmd, msg: msg, data: data })); }
+  function get(view) { send('get', view); }
+  function snapshot() {
+    return { host: target.host, id: state[product].s_uuid, model: state[product].s_model_name,
+      name: state[speaker].s_user_name || state[product].s_model_name, rows: controls(state) };
   }
-  function send(command) { socket.write(frame(command)); }
-  function result(rows) {
-    var identity = state[product];
-    return { host: target.host, id: identity.s_uuid, model: identity.s_model_name,
-      name: state[speaker].s_user_name || identity.s_model_name, rows: rows };
+  function release() {
+    if (!listeners.length && !readers.length && !writing) stop();
+  }
+  function finishWrite(error) {
+    var action = writing;
+    writing = null;
+    clearTimeout(retry);
+    action.cb(error, ready && !closed ? snapshot() : null);
+    release();
+  }
+  function stop(reason) {
+    if (closed) return;
+    closed = true;
+    if (sessions[name] === session) delete sessions[name];
+    clearTimeout(deadline);
+    clearInterval(monitor);
+    clearTimeout(retry);
+    socket.destroy();
+    if (writing) finishWrite(reason === 'identity' ? reason : 'unconfirmed');
+    readers.splice(0).forEach(function (cb) { cb(reason || 'offline'); });
+    listeners.splice(0).forEach(function (cb) { cb(reason || 'offline'); });
+  }
+  function publish() {
+    if (!listeners.length) return;
+    var current = snapshot(), signature = JSON.stringify(current);
+    if (signature === previous) return;
+    previous = signature;
+    listeners.slice().forEach(function (cb) { cb(null, current); });
+  }
+  function apply(change, cb) {
+    var row = controls(state).filter(function (entry) { return entry.key === change.key; })[0];
+    var value = row && wireValue(row, change.value);
+    if (!target.id || !row || value === null) return cb('invalid', snapshot());
+    if (writing) return cb('busy');
+    writing = { row: row, value: value, cb: cb };
+    var data = {};
+    data[row.key] = value;
+    send('set', row.view, data);
+    // The first read can still carry the old value. Re-read without sending the change twice.
+    var attempts = 0;
+    function confirm() {
+      if (++attempts > 6) return finishWrite('unconfirmed');
+      retry = setTimeout(confirm, 300);
+      get(row.view);
+    }
+    confirm();
+  }
+  function read(change, cb) {
+    function complete(error) {
+      if (error) return cb(error);
+      if (change) return apply(change, cb);
+      cb(null, snapshot());
+    }
+    if (ready && change) return complete(null);
+    readers.push(complete);
+    if (ready && !missing.length) {
+      missing = views.slice();
+      deadline = setTimeout(function () { stop('offline'); }, 4000);
+      views.forEach(get);
+    }
+  }
+  function watch(cb) {
+    listeners.push(cb);
+    if (ready) cb(null, snapshot());
+    if (!monitor) monitor = setInterval(function () {
+      if (!ready) return;
+      if (Date.now() - lastSpeaker > 8000) return stop('offline');
+      // Some eARC volume steps do not produce an unsolicited speaker update.
+      if (++cycle % 5 === 0) views.forEach(get);
+      else get(speaker);
+    }, 1500);
+    return function () {
+      var idx = listeners.indexOf(cb);
+      if (idx >= 0) listeners.splice(idx, 1);
+      if (!listeners.length) { clearInterval(monitor); monitor = null; }
+      release();
+    };
   }
   function receive(message) {
-    if (message.result && message.result !== 'ok') return finish(writing ? 'unconfirmed' : 'protocol');
-    if (message.cmd !== 'notibyget') return;
-    if (views.indexOf(message.msg) < 0 || !message.data || typeof message.data !== 'object') return;
-    if (writing) {
-      if (message.msg === writing.view) {
-        if (message.data[writing.key] !== requested) return finish('unconfirmed');
-        state[writing.view] = message.data;
-        finish(null, result(controls(state)));
-      }
+    var view = message.msg, data = message.data;
+    if (views.indexOf(view) < 0 || !/^noti/.test(message.cmd)) return;
+    if (message.result && message.result !== 'ok') {
+      if (writing && writing.row.view === view) finishWrite('unconfirmed');
       return;
     }
-    var index = pending.indexOf(message.msg);
-    if (index < 0) return;
-    state[message.msg] = message.data;
-    pending.splice(index, 1);
-    if (pending.length) return;
-    var identity = state[product];
-    if (!/^(D?S90TR)$/i.test(identity.s_model_name) || typeof identity.s_uuid !== 'string' || !identity.s_uuid) return finish('model');
-    if (target.id && target.id !== identity.s_uuid) return finish('identity');
-    var rows = controls(state);
-    if (!change) return finish(null, result(rows));
-    var row = rows.filter(function (entry) { return entry.key === change.key; })[0];
-    if (!target.id || !row || (requested = wireValue(row, change.value)) === null) return finish('invalid');
-    if (row.value === change.value) return finish(null, result(rows));
-    writing = row;
-    var data = {};
-    data[row.key] = requested;
-    send({ cmd: 'set', msg: row.view, data: data });
-    send({ cmd: 'get', msg: row.view });
+    if (!data || typeof data !== 'object') return;
+    if (view === product && data.s_model_name && !/^D?S90TR$/i.test(data.s_model_name)) return stop('model');
+    if (view === product && data.s_uuid && target.id && data.s_uuid !== target.id) return stop('identity');
+    if (!state[view]) state[view] = {};
+    Object.keys(data).forEach(function (field) {
+      if (/^(i_|ai_|b_|s_)/.test(field)) state[view][field] = data[field];
+    });
+    if (view === speaker) lastSpeaker = Date.now();
+    var index = missing.indexOf(view);
+    if (index >= 0 && message.cmd === 'notibyget') missing.splice(index, 1);
+    if (ready && writing && view === writing.row.view && data[writing.row.key] === writing.value) finishWrite(null);
+    if (!missing.length && (!ready || readers.length)) {
+      var identity = state[product];
+      if (!/^D?S90TR$/i.test(identity.s_model_name) || !identity.s_uuid) return stop('model');
+      if (target.id && target.id !== identity.s_uuid) return stop('identity');
+      ready = true;
+      clearTimeout(deadline);
+      readers.splice(0).forEach(function (cb) { cb(null); });
+      release();
+    }
+    if (ready) publish();
   }
-  socket.on('connect', function () {
-    views.forEach(function (view) { send({ cmd: 'get', msg: view }); });
-  });
+  var session = { read: read, watch: watch, stop: stop };
+  if (!connect) sessions[name] = session;
+  socket.on('connect', function () { views.forEach(get); });
   socket.on('data', function (chunk) {
     buffer = Buffer.concat([buffer, chunk]);
     try {
-      while (!done && buffer.length >= 5) {
+      while (!closed && buffer.length >= 5) {
         var size = buffer.readUInt32BE(1);
-        if (buffer[0] !== 16 || !size || size > 65536 || size % 16) return finish('protocol');
+        if (buffer[0] !== 16 || !size || size > 65536 || size % 16) return stop('protocol');
         if (buffer.length < 5 + size) return;
         var decipher = crypto.createDecipheriv('aes-256-cbc', key, iv);
         var decoded = Buffer.concat([decipher.update(buffer.slice(5, size + 5)), decipher.final()]);
         buffer = buffer.slice(size + 5);
         receive(JSON.parse(decoded.toString('utf8')));
       }
-    } catch (err) { finish('protocol'); }
+    } catch (err) { stop('protocol'); }
   });
-  socket.on('error', function () { finish(writing ? 'unconfirmed' : 'offline'); });
-  socket.on('close', function () { finish(writing ? 'unconfirmed' : 'offline'); });
+  socket.on('error', function () { stop('offline'); });
+  socket.on('close', function () { stop('offline'); });
+  return session;
 }
 
-module.exports = { request: request };
+function request(target, change, cb, connect) {
+  if (!target || !privateAddress(target.host)) return cb('address');
+  sessionFor(target, connect).read(change, cb);
+}
+
+function watch(target, cb, connect) {
+  if (!target || !privateAddress(target.host) || !target.id) { cb('address'); return function () {}; }
+  return sessionFor(target, connect).watch(cb);
+}
+
+function forget(target) {
+  var session = sessions[JSON.stringify([target.host, target.id || ''])];
+  if (session) session.stop('selection');
+}
+
+module.exports = { request: request, watch: watch, forget: forget };
