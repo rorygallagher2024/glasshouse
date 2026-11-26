@@ -1336,20 +1336,20 @@ function glasshouseHomeRows(d) {
     r.push(homeSwitchRow(d, 'rowsBottom', t('home.rowsBottom', 'Rows along the bottom'), t('home.rowsBottomDesc', 'The rows of apps and inputs sit along the bottom of the screen, as on LG’s Home, rather than in the middle.'), 'homeShow', d.layout.rowsBottom === true));
     r.push(homeSwitchRow(d, 'centerRows', t('home.centerRows', 'Centre the rows'), t('home.centerRowsDesc', 'The apps and inputs of a row that fits on the screen sit in the middle of it, rather than from the left. A longer row still starts at the left.'), 'homeShow', d.layout.centerRows === true));
     // Where the clock sits; OK steps through them.
-    var clockPositions = { auto: t('home.clockPosition.auto', 'Automatic'), left: t('home.clockPosition.left', 'Left'), center: t('home.clockPosition.center', 'Centre'), right: t('home.clockPosition.right', 'Right') };
+    var clockPositions = { auto: t('home.clockPosition.auto', 'Default'), left: t('home.clockPosition.left', 'Left'), center: t('home.clockPosition.center', 'Centre'), right: t('home.clockPosition.right', 'Right') };
     var clockNow = clockPositions[d.layout.clockPosition] ? d.layout.clockPosition : 'auto';
     r.push({ label: t('home.clockPosition', 'Clock position'), key: 'clockPosition', value: clockPositions[clockNow], cls: 'on',
              act: can ? 'homeClockPosition' : null,
              press: t('tv.press.change', 'Press OK to change'),
-             hint: t('home.clockPositionDesc', 'Where the clock and date sit at the top of Glasshouse Home. Automatic puts them on the left, or on the right in Alternative View.') });
+             hint: t('home.clockPositionDesc', 'Where the clock and date sit at the top of Glasshouse Home. Default puts them on the left, or on the right in Alternative View.') });
     // The outline of the apps' icons; OK steps through them.
-    var iconShapes = { auto: t('home.iconShape.auto', 'Automatic'), square: t('home.iconShape.square', 'Square'), squircle: t('home.iconShape.squircle', 'Squircle'),
+    var iconShapes = { auto: t('home.iconShape.auto', 'Default'), square: t('home.iconShape.square', 'Square'), squircle: t('home.iconShape.squircle', 'Squircle'),
       circle: t('home.iconShape.circle', 'Circle'), leaf: t('home.iconShape.leaf', 'Leaf'), arch: t('home.iconShape.arch', 'Arch'), drop: t('home.iconShape.drop', 'Drop') };
     var shapeNow = iconShapes[d.layout.iconShape] ? d.layout.iconShape : 'auto';
     r.push({ label: t('home.iconShape', 'Icon shape'), key: 'iconShape', value: iconShapes[shapeNow], cls: 'on',
              act: can ? 'homeIconShape' : null,
              press: t('tv.press.change', 'Press OK to change'),
-             hint: t('home.iconShapeDesc', 'The outline of each app’s icon, and of its tile too when app labels are off. Automatic is Glasshouse Home’s own rounded square. Not used with apps as cards.') });
+             hint: t('home.iconShapeDesc', 'The outline of each app’s icon, and of its tile too when app labels are off. Default is Glasshouse Home’s own rounded square. Not used with apps as cards.') });
     var altOn = d.layout.view === 'alternative';
     r.push({ label: t('home.alternative', 'Alternative View'),
              value: altOn ? t('common.on', 'On') : t('common.off', 'Off'), cls: altOn ? 'on' : 'off',
