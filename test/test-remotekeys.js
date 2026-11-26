@@ -1412,7 +1412,8 @@ step(function (next) {
         assert.strictEqual(all.remotes.mode, 'all');
         assert.strictEqual(all.remotes.canFold, true, 'the switch stays offered while folding is turned off');
         assert.strictEqual(all.remotes.folding, false, 'all buttons folds nothing');
-        assert.ok(!all.keys.some(function (k) { return k.offRemote; }));
+        assert.ok(all.keys.some(function (k) { return k.offRemote; }), 'keys off the remote in use stay marked, so the page can still set them apart');
+        assert.ok(!all.keys.filter(function (k) { return k.offRemote; }).some(function (k) { return k.key === 'netflix'; }), 'its own key is not marked');
         // Refused: no such mode
         rk.setRemoteSelection('some', guard(function (mode) {
           assert.strictEqual(mode.ok, false);
