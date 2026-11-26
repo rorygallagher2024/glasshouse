@@ -159,6 +159,25 @@ test("another tool's sinkholes are kept from its file, and from under this table
     "this table's own sinkholes stay its own; another tool's under the header are kept, even for a name both block");
 });
 
+// Their comments go with their lines (#1716): Life's Good Without Spying looks for its marker.
+var NOSPY = '# lifesgoodwithoutspying - blocked LG ad/ACR/telemetry endpoints generation 1795428444-5501';
+var UPDATER = '# LG App Update Blocker - Update domains';
+
+test("another tool's comments are kept with its lines, in their order, and the table's own are not", function () {
+  var theirs = '127.0.0.1 localhost\n::1 localhost ip6-localhost ip6-loopback\n' + NOSPY + '\n' + LGWSS.join('\n') + '\n\n' +
+    UPDATER + '\n0.0.0.0 snu.lge.com\n';
+  assert.deepEqual(privacy.foreignHostsLines(theirs), [NOSPY].concat(LGWSS, [UPDATER, '0.0.0.0 snu.lge.com']));
+  // Carried in the table, and read back out of it unchanged.
+  var table = privacy.adBlockHostsTable('ads', privacy.foreignHostsLines(theirs));
+  assert.ok(table.indexOf(NOSPY) !== -1, 'the marker is in the table');
+  assert.deepEqual(privacy.foreignHostsLines(table), [NOSPY].concat(LGWSS, [UPDATER, '0.0.0.0 snu.lge.com']));
+  // A boot hook appending its section to the table, without the table's header.
+  var appended = privacy.adBlockHostsTable('ads') + UPDATER + '\n0.0.0.0 su.lge.com\n';
+  assert.deepEqual(privacy.foreignHostsLines(appended), [UPDATER, '0.0.0.0 su.lge.com'], 'its section, with its header');
+  // A comment over lines that are not kept goes with them.
+  assert.deepEqual(privacy.foreignHostsLines('# webosbrew startup script\n127.0.0.1 snu.lge.com\n'), []);
+});
+
 test("with only updates blocked, the table keeps another blocker's sinkholes, and drops a tier's when it is switched off", function () {
   var TABLE = '/var/lib/tvweb/adblock_hosts';
   var saved = mockEnv.files['/etc/hosts'];

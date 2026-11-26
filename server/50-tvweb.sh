@@ -60,22 +60,36 @@ if [ -f /var/lib/tvweb/adblock_enabled ] && [ -f /var/lib/tvweb/adblock_hosts ];
   sed -i '/nextlgsdp\.com/d; /tv\.wiselg\.com/d' /var/lib/tvweb/adblock_hosts 2>/dev/null || true
   # Other tools' lines (AmazOff, whose boot hook runs before this one, and
   # other blockers' sinkholes, #1370) are taken from this boot's /etc/hosts,
-  # and the last boot's are dropped. The table's own lines are comments,
-  # localhost and its sinkholes, up to KEPT; the Homebrew Channel's update
-  # block points the update servers at 127.0.0.1. privacy.js
-  # foreignHostsLines tells them apart the same way.
+  # with the comments over them (#1716), and the last boot's are dropped. The
+  # table's own lines are its comments, localhost and its sinkholes, up to
+  # KEPT or another tool's comment; the Homebrew Channel's update block points
+  # the update servers at 127.0.0.1. privacy.js foreignHostsLines tells them
+  # apart the same way.
   OWN='^[[:space:]]*(#|$)|^[[:space:]]*(0\.0\.0\.0|::)[[:space:]]|localhost|ip6-'
-  SINK='^[[:space:]]*(0\.0\.0\.0|::)[[:space:]]'
-  UPDATES='[[:space:]](snu|snu-dev|su|su-dev|su-ssl|nsu)\.lge\.com([[:space:]]|$)'
   KEPT='# Kept from /etc/hosts, where other tools put them'
-  if grep -q -F 'LG Ad & Telemetry Blackhole' /etc/hosts 2>/dev/null; then
-    # This table, mounted already: other tools' sinkholes are under KEPT.
-    OTHERS=$(awk -v h="$KEPT" 'f; $0 == h { f = 1 }' /etc/hosts | grep -E "$SINK"; grep -v -E "$OWN|$UPDATES" /etc/hosts)
-  else
-    OTHERS=$(grep -E "$SINK" /etc/hosts; grep -v -E "$OWN|$UPDATES" /etc/hosts)
-  fi
+  OURS=0
+  grep -q -F 'LG Ad & Telemetry Blackhole' /etc/hosts 2>/dev/null && OURS=1
+  OTHERS=$(awk -v kept="$KEPT" -v ours="$OURS" '
+    function keep(l,  i) {
+      for (i = 1; i <= n; i++) if (!(c[i] in seen)) { print c[i]; seen[c[i]] = 1 }
+      n = 0
+      if (!(l in seen)) { print l; seen[l] = 1 }
+    }
+    BEGIN { others = !ours; n = 0 }
+    {
+      l = $0; sub(/^[ \t]+/, "", l); sub(/[ \t]+$/, "", l)
+      if (l == "") next
+      if (substr(l, 1, 1) == "#") {
+        if (l == kept) others = 1
+        if (l == kept || index(l, "LG Ad & Telemetry Blackhole") || index(l, "TV software updates, blocked by")) { n = 0; next }
+        others = 1; c[++n] = l; next
+      }
+      if (l ~ /^(0\.0\.0\.0|::)[ \t]/) { if (others) keep(l); else n = 0; next }
+      if (l ~ /localhost|ip6-/ || l ~ /[ \t](snu|snu-dev|su|su-dev|su-ssl|nsu)\.lge\.com([ \t]|$)/) { n = 0; next }
+      keep(l)
+    }' /etc/hosts 2>/dev/null)
   {
-    awk -v h="$KEPT" '$0 == h { exit } { print }' /var/lib/tvweb/adblock_hosts | grep -E "$OWN"
+    awk -v h="$KEPT" '$0 == h { exit } /^#/ && !index($0, "LG Ad & Telemetry Blackhole") && !index($0, "TV software updates, blocked by") { exit } { print }' /var/lib/tvweb/adblock_hosts | grep -E "$OWN"
     if [ -n "$OTHERS" ]; then printf '%s\n%s\n' "$KEPT" "$OTHERS"; fi
   } > /var/lib/tvweb/adblock_hosts.new 2>/dev/null \
     && cat /var/lib/tvweb/adblock_hosts.new > /var/lib/tvweb/adblock_hosts
