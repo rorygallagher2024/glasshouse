@@ -302,6 +302,15 @@ html.resting #wall .layer{-webkit-animation-play-state:paused;animation-play-sta
 .center-rows .track>:first-child{margin-left:auto}
 .center-rows .track>:last-child{margin-right:auto}
 .center-rows .row h2{text-align:center}
+/* Icon shape (#iconShape): the outline of the apps' icons, and of their
+   tile too when it holds only the icon, with no name under it. Not with apps
+   as cards, which have their own shape. */
+.shape-square .app img,.shape-square .app .mono,.shape-square .app .fold,.no-app-labels.shape-square .tile.app{border-radius:4%}
+.shape-squircle .app img,.shape-squircle .app .mono,.shape-squircle .app .fold,.no-app-labels.shape-squircle .tile.app{border-radius:34%}
+.shape-circle .app img,.shape-circle .app .mono,.shape-circle .app .fold,.no-app-labels.shape-circle .tile.app{border-radius:50%}
+.shape-leaf .app img,.shape-leaf .app .mono,.shape-leaf .app .fold,.no-app-labels.shape-leaf .tile.app{border-radius:50% 8%}
+.shape-arch .app img,.shape-arch .app .mono,.shape-arch .app .fold,.no-app-labels.shape-arch .tile.app{border-radius:50% 50% 12% 12%}
+.shape-drop .app img,.shape-drop .app .mono,.shape-drop .app .fold,.no-app-labels.shape-drop .tile.app{border-radius:50% 50% 50% 6%}
 .row{-webkit-flex:0 0 auto;flex:0 0 auto}
 .row.empty{display:none}
 .arranging .row.empty{display:block}
@@ -2676,11 +2685,17 @@ html[lang="vi"] #srcTitle,html[lang="vi"] #plMode,html[lang="vi"] #pvMode,html[l
     return pos === 'left' || pos === 'center' || pos === 'right' ? ' clock-' + pos : '';
   }
 
+  function iconShapeClass() {
+    var shape = layout && layout.iconShape;
+    if (cardsOn() || !/^(square|squircle|circle|leaf|arch|drop)$/.test(shape || '')) return '';
+    return ' shape-' + shape;
+  }
+
   function stageClass() {
     $('stage').className = (state.arranging ? 'arranging' : '') + (recents.open ? ' recents' : '') +
       (finder.open ? ' finding' : '') + (finder.typing ? ' typing' : '') + (searchOn() ? '' : ' no-search') + (folder.open ? ' folder' : '') +
       (!layout || layout.showClock === false ? ' no-clock' : '') + (layout && layout.rowsBottom === true ? ' rows-bottom' : '') +
-      (layout && layout.centerRows === true ? ' center-rows' : '') + clockPositionClass() +
+      (layout && layout.centerRows === true ? ' center-rows' : '') + clockPositionClass() + iconShapeClass() +
       (layout && layout.view === 'alternative' ? ' alternative' : '') + (layout && layout.showAppLabels === false ? ' no-app-labels' : '') +
       (cardsOn() ? ' cards' : '') + (layout && layout.focusPulse === true ? ' pulse' : '') +
       (player.open ? ' playing' : '') + (adder.open ? ' adding' : '') +

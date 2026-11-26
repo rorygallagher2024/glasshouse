@@ -179,6 +179,7 @@ function renderLauncherPreview(kind, st) {
     const bottom = !!(homeLayout && homeLayout.rowsBottom);
     const centred = !!(homeLayout && homeLayout.centerRows);
     const clockAt = ['left', 'center', 'right'].includes(homeLayout && homeLayout.clockPosition) ? ` clock-${homeLayout.clockPosition}` : '';
+    const shape = ['square', 'squircle', 'circle', 'leaf', 'arch', 'drop'].includes(homeLayout && homeLayout.iconShape) ? ` shape-${homeLayout.iconShape}` : '';
     const preview = !!(homeLayout && homeLayout.livePreview);
     const showClock = !homeLayout || homeLayout.showClock !== false;
     const apps = homePreviewTiles(4);
@@ -190,7 +191,7 @@ function renderLauncherPreview(kind, st) {
         : `<span class="${cls}"><i class="hm-gh-glyph"></i></span>`;
     }).join('');
     const inputs = [0, 1, 2].map(() => `<span class="hm-gh-tile inp"><i></i></span>`).join('');
-    return `<span class="hm-s hm-s-gh${alt ? ' alt' : ''}${bottom ? ' bottom' : ''}${centred ? ' centred' : ''}${clockAt}" style="--look-text:${c.text};--look-accent:${c.accent};--look-highlight:${hl}">
+    return `<span class="hm-s hm-s-gh${alt ? ' alt' : ''}${bottom ? ' bottom' : ''}${centred ? ' centred' : ''}${clockAt}${shape}" style="--look-text:${c.text};--look-accent:${c.accent};--look-highlight:${hl}">
       <span class="hm-gh-head">
         ${showClock ? `<span class="hm-gh-clock">${clock}</span>` : '<span></span>'}
         ${preview ? `<span class="hm-gh-pip"><i></i></span>` : ''}
@@ -353,6 +354,13 @@ function renderHome() {
   }
   const clockRow = q('home-clock-position-row');
   if (clockRow) clockRow.hidden = !st.supported.ok;
+  const shapeRow = q('home-icon-shape-row');
+  if (shapeRow) shapeRow.hidden = !st.supported.ok;
+  const shapeSel = q('home-icon-shape-sel');
+  if (shapeSel) {
+    shapeSel.value = (st.layout && st.layout.iconShape) || 'auto';
+    shapeSel.disabled = !homeWritable();
+  }
   const clockSel = q('home-clock-position-sel');
   if (clockSel) {
     clockSel.value = (st.layout && st.layout.clockPosition) || 'auto';
@@ -2165,6 +2173,10 @@ function homeCenterRows() {
 
 function homeClockPosition(value) {
   homeSaveLayout({ clockPosition: value });
+}
+
+function homeIconShape(value) {
+  homeSaveLayout({ iconShape: value });
 }
 
 function homeFade() {

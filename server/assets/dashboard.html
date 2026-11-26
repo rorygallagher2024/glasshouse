@@ -1342,6 +1342,14 @@ function glasshouseHomeRows(d) {
              act: can ? 'homeClockPosition' : null,
              press: t('tv.press.change', 'Press OK to change'),
              hint: t('home.clockPositionDesc', 'Where the clock and date sit at the top of Glasshouse Home. Automatic puts them on the left, or on the right in Alternative View.') });
+    // The outline of the apps' icons; OK steps through them.
+    var iconShapes = { auto: t('home.iconShape.auto', 'Automatic'), square: t('home.iconShape.square', 'Square'), squircle: t('home.iconShape.squircle', 'Squircle'),
+      circle: t('home.iconShape.circle', 'Circle'), leaf: t('home.iconShape.leaf', 'Leaf'), arch: t('home.iconShape.arch', 'Arch'), drop: t('home.iconShape.drop', 'Drop') };
+    var shapeNow = iconShapes[d.layout.iconShape] ? d.layout.iconShape : 'auto';
+    r.push({ label: t('home.iconShape', 'Icon shape'), key: 'iconShape', value: iconShapes[shapeNow], cls: 'on',
+             act: can ? 'homeIconShape' : null,
+             press: t('tv.press.change', 'Press OK to change'),
+             hint: t('home.iconShapeDesc', 'The outline of each app’s icon, and of its tile too when app labels are off. Automatic is Glasshouse Home’s own rounded square. Not used with apps as cards.') });
     var altOn = d.layout.view === 'alternative';
     r.push({ label: t('home.alternative', 'Alternative View'),
              value: altOn ? t('common.on', 'On') : t('common.off', 'Off'), cls: altOn ? 'on' : 'off',
@@ -3654,6 +3662,10 @@ function activate() {
       var clockOrder = ['auto', 'left', 'center', 'right'];
       var clockAt = clockOrder.indexOf((homeData && homeData.layout && homeData.layout.clockPosition) || 'auto');
       return homeLayout({ clockPosition: clockOrder[(clockAt + 1) % clockOrder.length] });
+    case 'homeIconShape':
+      var shapeOrder = ['auto', 'square', 'squircle', 'circle', 'leaf', 'arch', 'drop'];
+      var shapeAt = shapeOrder.indexOf((homeData && homeData.layout && homeData.layout.iconShape) || 'auto');
+      return homeLayout({ iconShape: shapeOrder[(shapeAt + 1) % shapeOrder.length] });
     case 'homePreviewSize':
       var pvSizeOrder = ['small', 'medium', 'large'];
       var pvSizeAt = pvSizeOrder.indexOf((homeData && homeData.layout && homeData.layout.previewSize) || 'small');

@@ -3264,6 +3264,23 @@ step('the clock keeps its own place until another is chosen, which is saved, and
   });
 });
 
+step('icons keep Home\'s own shape until another is chosen, which is saved, and anything else is automatic', function (done) {
+  start(null);
+  assert.strictEqual(home.layout().iconShape, 'auto');
+  home.setLayout({ iconShape: 'circle' }, function (r) {
+    assert.strictEqual(r.layout.iconShape, 'circle');
+    var saved = home.normalise(JSON.parse(fs.readFileSync(path.join(dir, 'home.json'), 'utf8')));
+    assert.strictEqual(saved.iconShape, 'circle');
+    home.setLayout({ centerRows: true }, function (r2) {
+      assert.strictEqual(r2.layout.iconShape, 'circle', 'kept by a save that does not name it');
+      home.setLayout({ iconShape: 'star' }, function (r3) {
+        assert.strictEqual(r3.layout.iconShape, 'auto');
+        done();
+      });
+    });
+  });
+});
+
 step('live preview stays off until switched on, and is saved', function (done) {
   start(null);
   assert.strictEqual(home.layout().livePreview, false);
