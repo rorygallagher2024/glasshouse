@@ -1092,20 +1092,31 @@ function topHostsLayer() {
  * Binds the table over /etc/hosts. Where /etc/hosts is itself a mount shared
  * with others, a mount on it reaches them too: on a B4 (webOS 10.3.2) the
  * table also covered Life's Good Without Spying's file, which that tool's
- * layer is bound from, so the tool copying /etc/hosts into its file failed
- * (#1571); on a C2 (webOS 9.2) it also covered /tmp/hosts, which LG's
- * /etc/hosts is. Made a slave first, that mount still takes what reaches it
- * from the others but no longer passes this one on.
+ * layer is bound from (#1571); on a C2 (webOS 9.2) it also covered /tmp/hosts.
+ * Made a slave first, /etc/hosts stops passing the bind on. The table's own
+ * new bind mount still inherits the peer group of /var/lib (shared:39), so
+ * /etc/hosts is made a slave again after binding; otherwise a mount another
+ * tool puts over /etc/hosts later propagates back onto adblock_hosts (#1712).
  */
-function mountTable(cb) {
-  var bind = function () {
-    execFn('/bin/mount', ['--bind', ADBLOCK_HOSTS_FILE, '/etc/hosts'], { timeout: 3000 }, function (err) { cb(err); });
-  };
+function isOwnHostsLayer(layer) {
+  return !!(layer && layer.root && /\/adblock_hosts$/.test(layer.root));
+}
+
+function makeHostsSlave(cb) {
   var top = topHostsLayer();
-  if (!top || !top.shared) return bind();
+  if (!top || !top.shared) return cb();
   execFn('/bin/mount', ['--make-slave', '/etc/hosts'], { timeout: 3000 }, function (err) {
     if (err) console.log('adblock: could not keep the table to /etc/hosts alone: ' + (err.message || err));
-    bind();
+    cb();
+  });
+}
+
+function mountTable(cb) {
+  makeHostsSlave(function () {
+    execFn('/bin/mount', ['--bind', ADBLOCK_HOSTS_FILE, '/etc/hosts'], { timeout: 3000 }, function (err) {
+      if (err) return cb(err);
+      makeHostsSlave(function () { cb(null); });
+    });
   });
 }
 
@@ -1146,7 +1157,11 @@ function applyHostsTable(cb) {
     }
     if (waitsForSdp(mode)) scheduleSdpBlock();
     else clearSdpTimer();
-    if (mounted) return done();
+    if (mounted) {
+      var top = topHostsLayer();
+      if (top && top.shared && isOwnHostsLayer(top)) return makeHostsSlave(done);
+      return done();
+    }
     return mountTable(function (err) { if (!err) return done(); clearCache(); cb('could not mount the hosts table'); });
   }
   clearSdpTimer();
@@ -1242,7 +1257,11 @@ function checkBootAdBlock(cliMode) {
           console.log('adblock: restored /etc/hosts bind-mount from previous boot');
         }
       });
-    } else syncAppHosts();
+    } else {
+      var top = topHostsLayer();
+      if (top && top.shared && isOwnHostsLayer(top)) makeHostsSlave(function () { clearCache(); syncAppHosts(); });
+      else syncAppHosts();
+    }
     if (waitsForSdp(mode)) scheduleSdpBlock();
   } catch (e) {}
 }
