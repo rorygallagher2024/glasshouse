@@ -1673,14 +1673,15 @@ saturation and brightness, or the half's average where nothing is vivid. A
 near-black screen has no accent. One capture serves every request within
 1.5 s.
 
-Which service the TV has is asked once, 15 s after start-up, without a
-capture: `executeOneShot` with no path. A service that is there refuses the
-request (`Invalid argument` on a B8, `ERROR_NOT_ENOUGH_MEMORY` on a C2), and
-the bus answers `Service does not exist` for one that is not. With neither,
-the Server tab's summary has `screenGlowSupported: false`, the route answers
-`{ ok: false, unsupported: true }`, and the dashboard hides the glow's
-switches and says why on the Server tab. A capture that finds both missing
-counts the same. A service that does not answer leaves the question open.
+Which service the TV has is learned from the first capture a dashboard asks
+for, never at start-up: even `executeOneShot` with no path makes a C1's
+captureservice (webOS 6) acquire `VT_CAPTURE` from the resource manager, taking
+it from PicCap, which stays stopped until the screen is turned off and on
+(#1754). The bus answers `Service does not exist` for a service that is not
+there. With neither, the Server tab's summary has `screenGlowSupported: false`,
+the route answers `{ ok: false, unsupported: true }`, and the dashboard hides
+the glow's switches and says why on the Server tab. Until then the summary has
+`null` and the switches show.
 
 A capture takes about 0.2 s on a C2 and 0.7 s on a B8, mostly the capture
 hardware: one every 3 s added under 1% to a B8's CPU. With no signal on an

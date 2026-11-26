@@ -601,8 +601,6 @@ appHosts.init({});
 privacy.init({ luna: luna, lunaCached: lunaCached, config: CONFIG, lgSettings: lgSettings, services: servicesModule, appHosts: CLI_MODE ? null : appHosts });
 oled.init({ luna: luna, config: CONFIG });
 screenColour.init({ luna: luna });
-// Which capture service the TV has, asked once, a little after start-up.
-if (!CLI_MODE) setTimeout(function () { screenColour.probe(); }, 15000);
 samrescan.init({ luna: luna });
 appsModule.init({ luna: luna, config: CONFIG });
 iconServer.init({ config: CONFIG, apps: appsModule, iptv: iptv });
