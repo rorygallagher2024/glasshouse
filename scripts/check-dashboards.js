@@ -2107,6 +2107,54 @@ async function visitHomeGuide(browser, base, problems) {
   } finally { await page.close(); }
 }
 
+// A return comes as a relaunch and the page shown again, in either order: one
+// catalogue and one /now, and a catalogue with the rev the view has leaves
+// the rows as they are.
+async function visitHomeReturnOnce(browser, base, problems) {
+  const page = await browser.newPage({ viewport: { width: 1920, height: 1080 } });
+  page.on('pageerror', e => problems.push('Home return: ' + e.message));
+  const layout = { rows: ['app', 'dev', 'ch'], order: { app: [], dev: [], ch: [] },
+    hidden: { app: [], dev: [], ch: [] }, channels: [], hintSeen: true, searchHintSeen: true };
+  const asked = { catalogue: 0, now: 0 };
+  await page.route('**/api/home/**', route => {
+    const url = new URL(route.request().url());
+    const reply = body => route.fulfill({ contentType: 'application/json', body: JSON.stringify(body) });
+    if (url.pathname.endsWith('/catalogue')) {
+      asked.catalogue++;
+      return reply({ ok: true, rev: 'r1', layoutVersion: '1', layout, apps: [{ id: 'app0', title: 'App 0' }], devices: [], channels: [],
+        sources: { channels: 0 }, order: { app: ['app0'], dev: [], ch: [] } });
+    }
+    if (url.pathname.endsWith('/now')) { asked.now++; return reply({ kind: null }); }
+    return reply({ ok: true, build: 'one' });
+  });
+  try {
+    await page.goto(base + '/assets/home.html');
+    await page.waitForSelector('.tile');
+    await page.evaluate(() => {
+      window.__hidden = false;
+      Object.defineProperty(document, 'hidden', { configurable: true, get: () => window.__hidden });
+      Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => window.__hidden ? 'hidden' : 'visible' });
+      window.__tile = document.querySelector('.tile');
+    });
+    for (const order of [['shown', 'relaunch'], ['relaunch', 'shown']]) {
+      await page.evaluate(() => { window.__hidden = true; document.dispatchEvent(new Event('visibilitychange')); });
+      const before = Object.assign({}, asked);
+      await page.evaluate(steps => {
+        for (const step of steps) {
+          if (step === 'relaunch') document.dispatchEvent(new Event('webOSRelaunch'));
+          else { window.__hidden = false; document.dispatchEvent(new Event('visibilitychange')); }
+        }
+      }, order);
+      await page.waitForFunction(() => document.querySelector('.tile') && !document.hidden);
+      await page.waitForTimeout(300);
+      const what = order.join(' then ');
+      if (asked.catalogue - before.catalogue !== 1) problems.push('Home return: ' + what + ' asked for the catalogue ' + (asked.catalogue - before.catalogue) + ' times');
+      if (asked.now - before.now !== 1) problems.push('Home return: ' + what + ' asked what is on ' + (asked.now - before.now) + ' times');
+      if (!(await page.evaluate(() => document.querySelector('.tile') === window.__tile))) problems.push('Home return: ' + what + ' rebuilt the rows for the same catalogue');
+    }
+  } finally { await page.close(); }
+}
+
 // Glasshouse Home's fading and its Inputs row without the inputs that have
 // nothing plugged in, each where the layout asks for it.
 async function visitHomeFadeAndInputs(browser, base, problems) {
@@ -5388,7 +5436,7 @@ function groups(web, tv) {
     { job: 'home', tabs: [], visits: [visitHomePicture, visitHomePreview, visitHomePreviewOptions, visitHomePreviewWebos4, visitHomePreviewSize, visitHomePreviewSizeDetails, visitInputBarBehindHome, visitInputBarSwitchOnOk, visitHomeBarPrewarm, visitHomeBarIconsReady, visitHomeBarTiles, visitHomeBarHaTile, visitHomeBarBesideHome, visitHomeBarScroll, visitHaBar, visitHomeHaRow, visitHomeUpDown, visitHomeFolderKeys, visitHomePointerOff, visitHomeOrder, visitHomeAvailability, visitHomeSearch, visitHomeWeather, visitHomeWeatherSetting, visitHomeRemoteBattery, visitHomeRemoteBatterySetting] },
     { job: 'home', tabs: [], visits: [visitHomeArrangement, visitHomeVisibility, visitHomeColours, visitHomeInputsEditor, visitHomeEditor,
       visitHomeRecentsHidden, visitHomeSaverWake, visitHomeUploads, visitHomeShuffle, visitHomeLauncher, visitHomeReadiness, visitAudioOverride, visitHomeRecents, visitHomeGuide,
-      visitHomeFadeAndInputs] },
+      visitHomeFadeAndInputs, visitHomeReturnOnce] },
     { job: 'home', tabs: [], visits: [visitHomeInternetTv, visitIptvChannels] },
     /*
      * Scrolling and motion read the row's place frame by frame, and missed
