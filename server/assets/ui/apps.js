@@ -440,7 +440,7 @@ let rkDirty = false;   // a redraw skipped while a choice was open
 let rkCols = 0;        // the columns its grid had when it opened
 let rkWritable = false;
 let rkMoreOpen = false;  // the other countries' keys, folded until opened
-let rkOtherOpen = false; // the keys of other remotes, folded until opened
+let rkOtherOpen = false; // the other remotes' keys, folded until opened
 
 function rkIcon(id) {
   return `<img class="rk-ico" src="${esc(api('/api/apps/icon?id=' + encodeURIComponent(id)))}" alt="" onerror="this.style.visibility='hidden'">`;
@@ -600,7 +600,11 @@ function renderRemoteKeys(d) {
       </select></div></div>`;
   }
   const brightness = stepRow ? `<div class="rk-grp">${esc(t('apps.remoteKeys.brightnessSection', 'Brightness key settings'))}</div><div class="prot-table">${stepRow}${barStyleRow}</div>` : '';
-  const other = otherRemotes.length ? `<details class="rk-more"${rkOtherOpen ? ' open' : ''} ontoggle="rkOtherOpen = this.open">
+  // otherRemotes keys are always left out of the groups above. With Display only buttons for
+  // your remote on (mode 'auto'), they are dead on the remote in use and left off the page
+  // entirely; off (mode 'all'), they come back here, apart, in case another remote has them.
+  const folded = rk.remotes && rk.remotes.mode === 'auto';
+  const other = otherRemotes.length && !folded ? `<details class="rk-more"${rkOtherOpen ? ' open' : ''} ontoggle="rkOtherOpen = this.open">
       <summary class="rk-grp">${esc(t('apps.remoteKeys.otherRemotes', 'Buttons on other remotes ({n})', { n: otherRemotes.length }))}</summary>
       <div class="rk-grid">${otherRemotes.map(tile).join('')}</div></details>` : '';
   list.innerHTML = groups + more + other + brightness;
@@ -664,6 +668,7 @@ function toggleRemoteKey(tile) {
   pick.innerHTML = `<div class="rk-pick-head"><span translate="no">${esc(t('apps.remoteKeys.keyLabel', '{key} key', { key: k.title }))}</span>
       <button type="button" class="rk-close" onclick="closeRemoteKeyPicker(true)">${esc(t('apps.remoteKeys.close', 'Close'))}</button></div>
     ${k.blocksApp ? `<div class="pv-note">${esc(t('apps.remoteKeys.blocksAlexa', 'Setting this key stops Alexa from opening until it is As LG has it again. Amazon still shows that Alexa is loading for a few seconds.'))}</div>` : ''}
+    ${k.observedColor ? `<div class="pv-note">${esc(t('apps.remoteKeys.observedColor', 'Glasshouse must be running for this shortcut. The key may still perform its original action in the current app.'))}</div>` : ''}
     ${k.replacesVoice ? `<div class="pv-note">${esc(t('apps.remoteKeys.replacesVoice', 'Set to anything else, this button no longer starts voice control. As LG has it brings it back.'))}</div>` : ''}
     ${k.homeGuide ? `<div class="pv-note">${esc(t('apps.remoteKeys.guideNative', 'On this TV the Guide key needs a change to LG’s key handler. Setting it restarts the TV’s screen once, and again each time the TV starts.'))}</div>` : ''}
     ${k.nativeInput ? `<div class="pv-note">${esc(t('apps.remoteKeys.inputNative', 'On this TV the Input key needs a change to LG’s key handler. Setting it, or setting it back to LG’s list, restarts the TV’s screen once, and the change is made again each time the TV starts.'))}</div>` : ''}

@@ -1,4 +1,5 @@
 {
+ "apps.remoteKeys.observedColor": {"text": "Glasshouse muss für diese Verknüpfung laufen. Die Taste kann in der aktuellen App weiterhin ihre ursprüngliche Aktion ausführen.", "from": "Glasshouse must be running for this shortcut. The key may still perform its original action in the current app."},
   "home.arrange.done": {
     "text": "Fertig",
     "from": "Done"
@@ -1297,5 +1298,6 @@
  "apps.remote.desc": {"from": "Folds buttons your remote does not have into Buttons on other remotes. Keys you have changed always stay visible.", "text": "Klappt Tasten, die deine Fernbedienung nicht hat, unter „Tasten auf anderen Fernbedienungen“ ein. Geänderte Tasten bleiben immer sichtbar."},
  "apps.remote.detected": {"from": "Detected: {name}", "text": "Erkannt: {name}"},
  "apps.remoteKeys.otherRemotes": {"from": "Buttons on other remotes ({n})", "text": "Tasten auf anderen Fernbedienungen ({n})"},
- "srv.remoteKeys.badRemotes": {"from": "Choose whether to show every button", "text": "Wähle aus, ob alle Tasten angezeigt werden sollen"}
+ "srv.remoteKeys.badRemotes": {"from": "Choose whether to show every button", "text": "Wähle aus, ob alle Tasten angezeigt werden sollen"},
+ "home.motion.driftDesc": {"from": "The wallpaper shifts sideways very slowly, so it never sits still on the screen.", "text": "Das Hintergrundbild verschiebt sich sehr langsam seitwärts, sodass es nie still auf dem Bildschirm steht."}
 }

@@ -4020,6 +4020,13 @@ bind-mounted over the file takes effect once the input app is restarted
 launch. With an input in front, the B8 keeps the input and draws it again after
 a moment; the C2 closes the input and opens Home.
 
+On webOS 9.2.2 (and 10.3.1), when LG's **No Signal Image** setting
+(`general.noSignalScreenSaver`, `"on"` by default) is enabled,
+`noSignalPhotoModel.enabled` is true: `PhotoSlide` (`photoModel:
+noSignalPhotoModel`) displays LG's gallery photos together with
+`textBoxOverPhoto`, while `RandomMoveItem` is hidden by
+`visible: visibleScreensaver && noSignalPhotoModel && !noSignalPhotoModel.enabled && !noSignalPhotoModel.opend`.
+
 A TV boots onto its last input, and the input app is started early in the boot
 (5 s in on the C2, 7 s on the B8), before the Homebrew Channel's start-up runs.
 `com.webos.service.eim/getAllInputStatus` lists each input with `activate`:
@@ -4161,3 +4168,7 @@ On a B8 (OLED65B8SLC, webOS 4.4.3), no filter names a channel key (only
 can name them. With CH+ set to open the browser, a CH+ press written to the
 remote's input device (`LGE RCU`, event1) brought the browser to the front over
 HDMI 2; set back to As LG has it, the same press left HDMI 2 in front.
+
+## Color-key observation on a C3 with webOS 11.2
+
+An OLED65C31LA on webOS 11.2.0, firmware 43.21.71, reports physical Red, Green, Yellow and Blue presses to Glasshouse’s existing remote-button worker as Linux codes 398, 399, 400 and 401. `inputcommon` can repeat a press later as Qt codes 18874385–18874388; Red was observed again 685 ms after the physical event. A launch shortcut uses only the physical event so a delayed copy cannot reselect a previous input. Local shortcuts from those four events to HDMI 1–4 were confirmed with the physical remote. Reading the event does not consume it or suppress an app’s own use of the color key.
