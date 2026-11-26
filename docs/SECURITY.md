@@ -95,6 +95,14 @@ it before exposing it more widely.
   is allowed (`apps.sideload`, a token, or the TV itself), since a catalog
   added there is trusted as a URL install is, and the server logs each one
   added.
+- **Community catalog add-ons follow the same rules as sideloads and launchers.**
+  Catalog packages are downloaded over HTTPS and verified against the SHA-256
+  checksum in `glasshouse-catalog`. Installing an unlisted add-on from a
+  GitHub or archive URL requires `apps.sideload`, a token, or the TV itself, and
+  passes the same `Host` header check. Community screen savers cannot declare
+  `stats`, `art`, or `news` in `uses` (since those expose dashboard tokens),
+  while community launchers run inside the Home app with the same access as an
+  uploaded custom launcher.
 - **An upload disconnected while space is being reserved is cancelled before its staging file opens.** Its reservation is released, as for a connection dropped during streaming.
 - **Never port-forward this.** It is designed for a trusted LAN.
 - **Bind to `127.0.0.1` to keep the on-TV app but close the port.** With

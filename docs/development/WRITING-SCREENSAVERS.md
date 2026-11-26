@@ -10,16 +10,9 @@ A screen saver is a folder in `/var/lib/tvweb/screensavers/` on the TV holding
 a `saver.json` and some QML. It is QML, the language of Qt Quick, run by the
 TV's own screen saver app, so it can do what QML can.
 
-## Start from the example
+## Start from an example or test via the catalog
 
-Glasshouse installs one there itself, **Pigs - Three Different Ones**. On the
-TV, copy it to a folder of your own and change it:
-
-```
-cp -r /var/lib/tvweb/screensavers/pigs /var/lib/tvweb/screensavers/my-saver
-```
-
-Or start from nothing. This is a whole screen saver: a dot that wanders the
+You can install an existing saver from **Community screen savers** on the **Screensaver** tab and inspect it in `/var/lib/tvweb/screensavers/`, or start from nothing. This is a whole screen saver: a dot that wanders the
 screen and changes color. `my-saver/saver.json`:
 
 ```json
@@ -190,11 +183,13 @@ A screen saver names in `uses` what Glasshouse should fill in:
   that.
 * `choice` - `__TVWEB_CHOICE__` becomes the value of the option picked from
   the screen saver's `choices`, which the dashboard offers as a dropdown.
+* `audio` - `__TVWEB_AUDIO__` becomes the address of the TV's sound output
+  levels and beat while the screen saver is showing.
 
-Glasshouse's own can also ask for `stats`, the address of the TV's readings,
-`audio`, the address of the sound output's levels and beat, and `art`, the
-address of the picture frame's next picture. All three carry the dashboard's
-access token, so one added on the TV is given none of them.
+Glasshouse's own can also ask for `stats` (the address of the TV's readings),
+`art` (the picture frame's next picture), and `news` (the configured news
+feeds). All three carry the dashboard's access token, so one added on the TV or
+installed from the community catalog cannot use them.
 
 What one added on the TV does past the screen is noted under it in the list,
 and it can still be picked: *It reaches the network* for `XMLHttpRequest`, a
@@ -204,8 +199,7 @@ services* for `Qt.openUrlExternally` or the TV's service bus.
 
 ## Sharing it
 
-Share the folder, packed as a `.tar` or `.zip`. Fill in what a viewer of the
-list sees and someone else needs:
+Host the folder in a GitHub repository with a complete `saver.json`:
 
 ```json
 {
@@ -215,7 +209,7 @@ list sees and someone else needs:
   "description": { "en": "A dot wandering the screen.", "es": "Un punto que recorre la pantalla." },
   "author": "Your Name",
   "license": "MIT",
-  "homepage": "https://example.com/my-saver",
+  "homepage": "https://github.com/yourname/glasshouse-my-saver",
   "uses": ["level"]
 }
 ```
@@ -225,16 +219,21 @@ language Glasshouse has; the list shows the viewer's, or English. A screen
 saver of your own can be under any license; code taken from someone else's has
 to be under one that allows it.
 
+To publish it in **Community screen savers**:
+
+1. Test the repository directly on a TV first via **Screensaver → Community screen savers → Install from a GitHub link or .zip URL**.
+2. Tag a release on GitHub attaching a `.zip` of the screen saver folder (or files at root) and compute its SHA-256 checksum (`shasum -a 256 my-saver.zip` or `sha256sum my-saver.zip`).
+3. Open a pull request against [rorygallagher2024/glasshouse-catalog](https://github.com/rorygallagher2024/glasshouse-catalog) adding your entry to `registry.json`.
+
 ## Removing it
 
-Pick another screen saver first, then delete the folder:
+Pick another screen saver first, or click **Remove** under **Community screen savers** if installed from the catalog; otherwise delete the folder:
 
 ```
 rm -r /var/lib/tvweb/screensavers/my-saver
 ```
 
-Deleted while in use, it keeps showing until another is picked. The pigs
-example comes back with the next Glasshouse update.
+Deleted while in use, it keeps showing until another is picked.
 
 ## Troubleshooting
 

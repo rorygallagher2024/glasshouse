@@ -121,6 +121,8 @@ var tvAppFn = null;
 var restartSelfFn = null;
 /** @type {typeof import('./repo')} */
 var repoModule = null;
+/** @type {typeof import('./catalog') | null} */
+var catalogModule = null;
 /** @type {typeof import('./installer')} */
 var installerModule = null;
 /** @type {typeof import('./prometheus')} */
@@ -971,7 +973,7 @@ function isInstallRoute(pathname) {
 
 // A custom launcher runs as LG's Home app, so putting one in place is guarded as an install is.
 function needsAllowedHost(pathname) {
-  return isInstallRoute(pathname) || pathname.indexOf('/api/home/launcher') === 0;
+  return isInstallRoute(pathname) || pathname.indexOf('/api/home/launcher') === 0 || pathname.indexOf('/api/community') === 0;
 }
 
 function installError(res, text, status) {
@@ -1976,6 +1978,37 @@ function handleRequest(req, res) {
     var ssList = screensaversModule.screensaverList();
     ssList.noSignal = nosignal.status();
     return send(res, 200, JSON.stringify(ssList));
+  }
+
+  if (pathname === '/api/community' && req.method === 'GET' && catalogModule) {
+    if (!authed(u.query, req)) return send(res, 401, JSON.stringify({ ok: false, error: 'unauthorised' }));
+    return catalogModule.list({
+      kind: u.query && u.query.kind,
+      refresh: u.query && u.query.refresh === '1',
+      sideloadVia: sideloadVia(req)
+    }, function (r) {
+      send(res, r.ok ? 200 : 500, JSON.stringify(r));
+    });
+  }
+  if ((pathname === '/api/community/install' || pathname === '/api/community/remove') && catalogModule) {
+    if (!postGuard(req, res, 'application/json', true)) return;
+    return readJsonBody(req, res, function (body) {
+      var kind = body && body.kind;
+      if (pathname === '/api/community/install') {
+        if (body && typeof body.url === 'string' && body.url.trim()) {
+          if (!sideloadVia(req)) return sideloadRefused(res);
+          return catalogModule.installFromUrl(kind, body.url, function (r) {
+            send(res, r.ok ? 200 : 400, JSON.stringify(r));
+          });
+        }
+        return catalogModule.installFromCatalog(kind, body && body.id, function (r) {
+          send(res, r.ok ? 200 : 400, JSON.stringify(r));
+        });
+      }
+      return catalogModule.remove(kind, body && body.id, function (r) {
+        send(res, r.ok ? 200 : 400, JSON.stringify(r));
+      });
+    }, 4096);
   }
 
   /* Everything the staged screen saver declared, in one answer. The saver is
@@ -3026,6 +3059,7 @@ function init(opts) {
   if (opts.huesyncStatus) huesyncStatusFn = opts.huesyncStatus;
   if (opts.keyboardUp) keyboardUpFn = opts.keyboardUp;
   if (opts.repo) repoModule = opts.repo;
+  if (opts.catalog) catalogModule = opts.catalog;
   if (opts.installer) installerModule = opts.installer;
   if (opts.prometheus) prometheusModule = opts.prometheus;
   if (opts.syslog) syslogModule = opts.syslog;

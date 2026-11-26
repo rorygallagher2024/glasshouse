@@ -152,7 +152,7 @@ console.log('Running test-screensavers.js ...');
   assert.ok(ids.indexOf('tesseract') !== -1, 'catalog must include tesseract');
   assert.ok(ids.indexOf('art') !== -1, 'catalog must include art');
   assert.ok(ids.indexOf('news') !== -1, 'catalog must include news');
-  assert.strictEqual(ids.length, 21, 'catalog must have exactly 21 entries');
+  assert.strictEqual(ids.length, 20, 'catalog must have exactly 20 entries');
   assert.ok(ids.indexOf('video') !== -1, 'catalog must include the Video screen saver');
   var video = all.filter(function (s) { return s.id === 'video'; })[0];
   assert.strictEqual(video.runtime, 'web', 'Video uses the browser playback runtime');

@@ -1177,6 +1177,30 @@
   <div class="pv-note" id="ss-note"></div>
   </div>
   </div>
+
+  <details class="pv-d comm-disc" id="disc-ss-community" ontoggle="commOnToggle('screensaver')">
+    <summary><span data-t="community.ss.heading">Community screen savers</span> <span class="cur" id="ss-community-summary"></span></summary>
+    <div class="pv-note warn" data-t="community.disclaimer">Community add-ons are created and maintained by their authors, not by Glasshouse.</div>
+    <div class="comm-head-bar">
+      <button type="button" class="pill idle" id="ss-community-refresh" onclick="loadCommunity('screensaver', true)" data-t="community.refresh">Refresh</button>
+    </div>
+    <div class="comm-grid" id="ss-community-list"></div>
+    <div class="sub" id="ss-community-note" role="status"></div>
+    <div class="prot-table">
+      <div class="prot-row">
+        <div class="prot-main">
+          <div class="prot-title" data-t="community.urlTitle">Install from a GitHub link or .zip URL</div>
+          <div class="prot-desc" data-t="community.urlDesc">For testing unlisted screen savers from an https:// GitHub repository or direct archive link.</div>
+          <div class="pv-note" id="ss-community-url-off" hidden data-t="community.urlOff">Installing from a link needs Install app from a URL or file switched on (Apps tab), a token, or the TV's browser.</div>
+          <form class="toast-form" onsubmit="event.preventDefault();communityInstallUrl('screensaver');">
+            <input type="text" id="ss-community-url" placeholder="https://github.com/owner/repo" translate="no" maxlength="2000" autocomplete="off" spellcheck="false">
+            <button type="submit" id="ss-community-url-btn" data-t="community.install">Install</button>
+          </form>
+        </div>
+      </div>
+    </div>
+    <div class="pv-sub"><a href="https://rorygallagher2024.github.io/glasshouse/development/WRITING-SCREENSAVERS/" target="_blank" rel="noopener" data-t="community.ss.docs">Writing a screen saver</a> &middot; <a href="https://github.com/rorygallagher2024/glasshouse-catalog" target="_blank" rel="noopener" data-t="community.submit">Submit to the catalog</a></div>
+  </details>
 </section>
 
 <section class="priv panel" id="appspane" role="tabpanel" hidden>
@@ -1459,6 +1483,29 @@
   <div class="sub" data-t="home.launcher.intro">A home screen of your own in Glasshouse Home&rsquo;s place: a web app uploaded here, or a web page. The Home and Back buttons open it, as they do Glasshouse Home, and holding Home still opens LG&rsquo;s Home. If it stops working, LG&rsquo;s Home comes back by itself.</div>
   <div class="pv-note warn" data-t="home.launcher.trust">A launcher can do anything on the TV that Glasshouse can. Only use one you trust.</div>
   <div class="prot-table" id="home-launchers"></div>
+  <details class="pv-d comm-disc" id="disc-home-community" ontoggle="commOnToggle('launcher')">
+    <summary><span data-t="community.launcher.heading">Community launchers</span> <span class="cur" id="home-community-summary"></span></summary>
+    <div class="pv-note warn" data-t="community.disclaimer">Community add-ons are created and maintained by their authors, not by Glasshouse.</div>
+    <div class="comm-head-bar">
+      <button type="button" class="pill idle" id="home-community-refresh" onclick="loadCommunity('launcher', true)" data-t="community.refresh">Refresh</button>
+    </div>
+    <div class="comm-grid" id="home-community-list"></div>
+    <div class="sub" id="home-community-note" role="status"></div>
+    <div class="prot-table">
+      <div class="prot-row">
+        <div class="prot-main">
+          <div class="prot-title" data-t="community.launcher.urlTitle">Install from a GitHub link or .zip URL</div>
+          <div class="prot-desc" data-t="community.launcher.urlDesc">For testing unlisted web launchers from an https:// GitHub repository or direct archive link.</div>
+          <div class="pv-note" id="home-community-url-off" hidden data-t="community.urlOff">Installing from a link needs Install app from a URL or file switched on (Apps tab), a token, or the TV's browser.</div>
+          <form class="toast-form" onsubmit="event.preventDefault();communityInstallUrl('launcher');">
+            <input type="text" id="home-community-url" placeholder="https://github.com/owner/repo" translate="no" maxlength="2000" autocomplete="off" spellcheck="false">
+            <button type="submit" id="home-community-url-btn" data-t="community.install">Install</button>
+          </form>
+        </div>
+      </div>
+    </div>
+    <div class="pv-sub"><a href="https://rorygallagher2024.github.io/glasshouse/development/WRITING-LAUNCHERS/" target="_blank" rel="noopener" data-t="home.launcher.docs">Writing a launcher</a> &middot; <a href="https://github.com/rorygallagher2024/glasshouse-catalog" target="_blank" rel="noopener" data-t="community.submit">Submit to the catalog</a></div>
+  </details>
   <div class="prot-table">
     <div class="prot-row">
       <div class="prot-main">
@@ -2973,6 +3020,7 @@
 <script src="/assets/ui/glow.js"></script>
 <script src="/assets/ui/oled.js"></script>
 <script src="/assets/ui/screensavers.js"></script>
+<script src="/assets/ui/community.js"></script>
 <script src="/assets/ui/mqtt.js"></script>
 <script src="/assets/ui/tools.js"></script>
 <script src="/assets/ui/search-aliases.js"></script>

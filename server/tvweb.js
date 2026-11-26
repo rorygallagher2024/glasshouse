@@ -45,6 +45,7 @@ var updater = require('./lib/updater');
 var fetchLib = require('./lib/fetch');
 var children = require('./lib/children');
 var repo = require('./lib/repo');
+var catalogModule = require('./lib/catalog');
 var installer = require('./lib/installer');
 var privacy = require('./lib/privacy');
 var devtools = require('./lib/devtools');
@@ -1147,6 +1148,7 @@ updateAsk.init({
 // Bare in the user agent: a catalog has no use for the commit.
 fetchLib.init({ config: CONFIG, version: TVWEB_VERSION });
 repo.init({ config: CONFIG, luna: luna, fetch: fetchLib });
+catalogModule.init({ config: CONFIG, fetch: fetchLib, screensavers: screensavers, homeLauncher: homeLauncher, stateDir: __dirname });
 installer.init({
   config: CONFIG,
   luna: luna,
@@ -1192,6 +1194,7 @@ routes.init({
     return kb && typeof kb.keyboard_visible === 'boolean' ? kb.keyboard_visible : null;
   },
   repo: repo,
+  catalog: catalogModule,
   installer: installer,
   prometheus: prometheus,
   syslog: syslogForwarder,
