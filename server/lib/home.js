@@ -4692,6 +4692,7 @@ module.exports = {
   layout: function () { return layoutOf(readConfig()); },
   programme: programme,
   enabled: function () { return readConfig().enabled; },
+  isStandalone: isStandalone,
   haBarInHomeBar: haBarInHomeBar,
   portName: portName,
   refreshApp: refreshApp,

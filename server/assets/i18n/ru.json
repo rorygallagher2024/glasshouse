@@ -2106,7 +2106,6 @@
  "srv.huesync.didnotstart": {"text": "Hue Sync не начал трансляцию", "from": "Hue Sync did not start streaming"},
  "srv.huesync.refused": {"text": "Hue Sync отклонил запрос", "from": "Hue Sync refused the request"},
  "srv.huesync.unavailable": {"text": "Hue Sync недоступен", "from": "Hue Sync is not available"},
- "srv.remoteKeys.home": {"text": "Главный экран", "from": "Home"},
  "srv.saver.badFolder": {"text": "Имя папки «{name}» может содержать только строчные латинские буквы, цифры и -, начинаться с буквы или цифры и быть не длиннее 32 символов.", "from": "Its folder name, \"{name}\", can only have lowercase letters, digits and -, starting with a letter or digit, up to 32 characters."},
  "srv.saver.badRuntime": {"text": "{file}: runtime должен быть \"qml\" или \"web\".", "from": "{file}: runtime must be \"qml\" or \"web\"."},
  "srv.saver.badMain": {"text": "{file}: main должен указывать файл .qml или web/index.html для веб-заставки.", "from": "{file}: main must name a .qml file, or web/index.html for a web saver."},

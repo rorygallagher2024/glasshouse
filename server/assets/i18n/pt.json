@@ -1558,7 +1558,6 @@
  "srv.remoteKeys.badRemotes": {"from": "Choose whether to show every button", "text": "Escolha se quer mostrar todos os botões"},
  "srv.remoteKeys.chainFailed": {"text": "A TV não aceitou a alteração", "from": "The TV did not take the change"},
  "srv.remoteKeys.fastForward": {"text": "Avançar", "from": "Fast forward"},
- "srv.remoteKeys.home": {"text": "Início", "from": "Home"},
  "srv.remoteKeys.inputSwitcher": {"text": "Seletor de entrada", "from": "Input switcher"},
  "srv.remoteKeys.liveTv": {"text": "TV em direto", "from": "Live TV"},
  "srv.remoteKeys.mute": {"text": "Silenciar", "from": "Mute"},

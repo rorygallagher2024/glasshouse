@@ -2374,7 +2374,6 @@
  "srv.remoteKeys.badRemotes": {"from": "Choose whether to show every button", "text": "Choisissez d’afficher ou non toutes les touches"},
  "srv.remoteKeys.chainFailed": {"from": "The TV did not take the change", "text": "La TV n'a pas accepté le changement"},
  "srv.remoteKeys.fastForward": {"from": "Fast forward", "text": "Avance rapide"},
- "srv.remoteKeys.home": {"from": "Home", "text": "Accueil"},
  "srv.remoteKeys.homeAssistant": {"from": "Home Assistant", "text": "Home Assistant"},
  "srv.remoteKeys.homeGuide": {"from": "Glasshouse Home's guide", "text": "Le guide de Glasshouse Home"},
  "srv.remoteKeys.inputSwitcher": {"from": "Input switcher", "text": "Sélecteur d'entrée"},

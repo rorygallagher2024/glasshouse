@@ -1559,7 +1559,6 @@
  "srv.remoteKeys.badRemotes": {"from": "Choose whether to show every button", "text": "اختر ما إذا كان يجب عرض كل الأزرار"},
  "srv.remoteKeys.chainFailed": {"text": "لم يقبل التلفاز التغيير", "from": "The TV did not take the change"},
  "srv.remoteKeys.fastForward": {"text": "تقديم سريع", "from": "Fast forward"},
- "srv.remoteKeys.home": {"text": "الرئيسية", "from": "Home"},
  "srv.remoteKeys.inputSwitcher": {"text": "مبدّل المداخل", "from": "Input switcher"},
  "srv.remoteKeys.liveTv": {"text": "البث المباشر", "from": "Live TV"},
  "srv.remoteKeys.mute": {"text": "كتم الصوت", "from": "Mute"},

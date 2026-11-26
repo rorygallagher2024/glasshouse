@@ -2055,7 +2055,6 @@
  "srv.saver.powerOff.bad": {"text": "Apagar después de admite un número de minutos de 1 a {max}, o en blanco para desactivarlo", "from": "Poweroff after takes a number of minutes from 1 to {max}, or blank for off"},
  "ss.powerOff.onOne": {"text": "La TV pasa a modo de espera cuando un salvapantallas lleva un minuto. Cualquier botón del mando reinicia la cuenta.", "from": "The TV goes to standby once a screen saver has been on for a minute. Any button on the remote starts the count again."},
  "lang.partial": {"text": "{name} (parcial)", "from": "{name} (partial)"},
- "srv.remoteKeys.home": {"text": "Inicio", "from": "Home"},
  "home.folder.title": {"text": "Más apps", "from": "More apps"},
  "home.folder.label": {"text": "En Más apps", "from": "In More apps"},
  "home.arrange.folder": {"text": "Meter en Más apps o sacar", "from": "Into or out of More apps"},

@@ -1577,7 +1577,6 @@
  "srv.remoteKeys.badRemotes": {"from": "Choose whether to show every button", "text": "Wybierz, czy pokazywać wszystkie przyciski"},
  "srv.remoteKeys.chainFailed": {"text": "Telewizor nie przyjął zmiany", "from": "The TV did not take the change"},
  "srv.remoteKeys.fastForward": {"text": "Przewiń do przodu", "from": "Fast forward"},
- "srv.remoteKeys.home": {"text": "Home", "from": "Home"},
  "srv.remoteKeys.homeAssistant": {"text": "Home Assistant", "from": "Home Assistant"},
  "srv.remoteKeys.inputSwitcher": {"text": "Przełącznik wejść", "from": "Input switcher"},
  "srv.remoteKeys.liveTv": {"text": "Telewizja na żywo", "from": "Live TV"},

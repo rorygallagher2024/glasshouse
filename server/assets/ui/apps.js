@@ -214,6 +214,8 @@ const RK_PICK_SVGS = {
   'media:mute': '<polygon points="3,9 7,9 12,5 12,19 7,15 3,15"/><path d="M16 9.5l5 5M21 9.5l-5 5"/>',
   // webOS 11: Glasshouse Home's guide on the Guide key, and the input bar on the Input key.
   guide: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18M9 10v9"/>',
+  // LG's Home: a plain house, where Home Assistant's has a dot inside.
+  lgHome: '<path d="M4 11l8-7 8 7"/><path d="M6 10v9h4v-5h4v5h4v-9"/>',
   inputbar: '<rect x="3" y="14" width="18" height="6" rx="2"/><path d="M7 17h2M11 17h2M15 17h2"/>'
 };
 
@@ -245,8 +247,34 @@ function qaDevSvg(dev) {
   return '<i class="dico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 9h14v3l-2 3H7l-2-3z"/><path d="M8 15v3h8v-3"/></svg></i>';
 }
 
+// Choices that are Glasshouse's own show its icon: its Home, Home's guide.
+const RK_GLASSHOUSE_IDS = { 'action:homeGuide': true, 'com.tvweb.home': true, 'com.tvweb.dashboard': true, 'com.tvweb.homebar': true };
+function rkChoiceIconHint(id) {
+  const lists = [typeof rkData !== 'undefined' && rkData && rkData.choices, typeof qaData !== 'undefined' && qaData && qaData.choices];
+  for (const list of lists) {
+    const c = Array.isArray(list) && list.find(x => x.id === id);
+    if (c && c.icon) return c.icon;
+  }
+  return RK_GLASSHOUSE_IDS[id] ? 'glasshouse' : '';
+}
+// Glasshouse's own choices, in their own group in this order: its Home, Home's
+// guide, its bars and the dashboard. A choice not listed here keeps its group.
+const RK_GLASSHOUSE_ORDER = ['com.webos.app.home', 'com.tvweb.home', 'action:homeGuide', 'com.tvweb.homebar', 'com.tvweb.habar', 'com.tvweb.inputbar', 'com.tvweb.dashboard'];
+function rkIsGlasshouse(c) {
+  if (c.id === 'com.webos.app.home') return c.icon === 'glasshouse';
+  return RK_GLASSHOUSE_ORDER.indexOf(c.id) !== -1 || /^com\.tvweb\./.test(c.id);
+}
+function rkGlasshouseFirst(list) {
+  const at = id => { const i = RK_GLASSHOUSE_ORDER.indexOf(id); return i === -1 ? RK_GLASSHOUSE_ORDER.length : i; };
+  return list.slice().sort((a, b) => at(a.id) - at(b.id));
+}
 function rkChoiceIcon(id, kind, title) {
   const k = kind || qaChoiceKind(id, null);
+  const hint = rkChoiceIconHint(id);
+  if (hint === 'glasshouse') return rkIcon('com.tvweb.dashboard');
+  if (hint === 'lgHome') {
+    return `<span class="rk-ico rk-ico-svg" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">${RK_PICK_SVGS.lgHome}</svg></span>`;
+  }
   if (k === 'input') return `<span class="rk-ico rk-ico-svg" aria-hidden="true">${qaDevSvg(qaInputDevice(id, title))}</span>`;
   if (k === 'switcher') return `<span class="rk-ico rk-ico-svg" aria-hidden="true">${qaDevSvg({ kind: 'allinputs' })}</span>`;
   const svg = RK_PICK_SVGS[id] || RK_PICK_SVGS[k];
@@ -337,7 +365,8 @@ function toggleQuickAccessKey(tile) {
       data-value="${esc(value)}" aria-pressed="${isOn(value)}" onclick="chooseQuickAccessKey(this)">${html}</button>`;
   const optLabel = text => `<span class="rk-opt-label" translate="no">${esc(text)}</span>`;
   const inputs = qaData.choices.filter(c => c.kind === 'input');
-  const apps = qaData.choices.filter(c => c.kind === 'app');
+  const ghs = rkGlasshouseFirst(qaData.choices.filter(c => c.kind === 'app' && rkIsGlasshouse(c)));
+  const apps = qaData.choices.filter(c => c.kind === 'app' && !rkIsGlasshouse(c));
   // A key set to something not offered here (a channel, a hidden LG app) still shows it.
   const gone = k.id && !qaData.choices.some(c => c.id === k.id)
     ? opt(k.id, `${rkChoiceIcon(k.id, qaChoiceKind(k.id, qaData.choices), k.title)}${optLabel(k.title)}`) : '';
@@ -351,6 +380,8 @@ function toggleQuickAccessKey(tile) {
     <div class="rk-opts">${opt(QA_LG, esc(t('apps.remoteKeys.lg', 'As LG has it')))}${opt('', esc(t('apps.quickAccess.reset', 'None')))}${gone}</div>
     ${inputs.length ? `<div class="rk-sub">${esc(t('apps.quickAccess.inputs', 'Inputs'))}</div>
     <div class="rk-opts rk-opts-grid">${inputs.map(c => opt(c.id, `${rkChoiceIcon(c.id, 'input', c.title)}${optLabel(c.title)}`)).join('')}</div>` : ''}
+    ${ghs.length ? `<div class="rk-sub">Glasshouse</div>
+    <div class="rk-opts rk-opts-grid">${ghs.map(c => opt(c.id, `${rkChoiceIcon(c.id, 'app', c.title)}${optLabel(c.title)}`)).join('')}</div>` : ''}
     ${apps.length ? `<div class="rk-sub">${esc(t('apps.quickAccess.apps', 'Apps'))}</div>
     <div class="rk-opts rk-opts-grid">${apps.map(c => opt(c.id, `${rkChoiceIcon(c.id, 'app', c.title)}${optLabel(c.title)}`)).join('')}</div>` : ''}`;
   after.after(pick);
@@ -646,7 +677,9 @@ function toggleRemoteKey(tile) {
   const fits = c => !nativeInput || c.id.length <= k.maxIdLength;
   const media = rkData.choices.filter(c => c.kind === 'media');
   const inputs = rkData.choices.filter(c => c.kind === 'input' && fits(c));
-  const apps = rkData.choices.filter(c => c.kind === 'app' && fits(c));
+  const offered = c => c.kind === 'app' || (c.kind === 'action' && !k.noScreenOff) || (c.kind === 'guide' && k.homeGuide);
+  const ghs = rkGlasshouseFirst(rkData.choices.filter(c => offered(c) && rkIsGlasshouse(c) && fits(c)));
+  const apps = rkData.choices.filter(c => c.kind === 'app' && !rkIsGlasshouse(c) && fits(c));
   const optLabel = text => `<span class="rk-opt-label" translate="no">${esc(text)}</span>`;
   // webOS 11's Input key: Glasshouse's input bar among its choices.
   const barChoice = nativeInput ? rkData.choices.filter(c => c.kind === 'inputbar').map(c => opt(c.id, `${rkChoiceIcon(c.id, 'inputbar', c.title)}<span>${esc(c.title)}</span>`)).join('') : '';
@@ -654,9 +687,8 @@ function toggleRemoteKey(tile) {
   const switchers = nativeInput ? '' : rkData.choices.filter(c => c.kind === 'switcher')
     .map(c => opt(c.id, `${rkChoiceIcon(c.id, 'switcher', '')}<span>${esc(t('apps.remoteKeys.inputSwitcher', 'Input switcher'))}</span>`)).join('') +
     // On webOS 11, Screen off only on the keys whose presses the TV logs.
-    (k.noScreenOff ? '' : rkData.choices.filter(c => c.kind === 'action').map(c => opt(c.id, `${rkChoiceIcon(c.id, 'action', c.title)}<span>${esc(c.title)}</span>`)).join('')) +
+    (k.noScreenOff ? '' : rkData.choices.filter(c => c.kind === 'action' && !rkIsGlasshouse(c)).map(c => opt(c.id, `${rkChoiceIcon(c.id, 'action', c.title)}<span>${esc(c.title)}</span>`)).join('')) +
     // webOS 11: the Guide key, where Glasshouse can change LG's key handler for it.
-    (k.homeGuide ? rkData.choices.filter(c => c.kind === 'guide').map(c => opt(c.id, `${rkChoiceIcon(c.id, 'guide', c.title)}<span>${esc(c.title)}</span>`)).join('') : '') +
     // Only on a key whose presses Home Assistant receives.
     (k.homeAssistant ? rkData.choices.filter(c => c.kind === 'ha').map(c => opt(c.id, `${rkChoiceIcon(c.id, 'ha', c.title)}<span>${esc(c.title)}</span>`)).join('') : '');
   // A key set to something no longer offered (an app since removed) still shows it.
@@ -681,6 +713,8 @@ function toggleRemoteKey(tile) {
     <div class="rk-opts rk-opts-grid">${media.map(c => opt(c.id, `${rkChoiceIcon(c.id, 'media', c.title)}<span class="rk-opt-label">${esc(c.title)}</span>`)).join('')}</div>` : ''}
     ${inputs.length ? `<div class="rk-sub">${esc(t('apps.remoteKeys.inputs', 'Inputs'))}</div>
     <div class="rk-opts rk-opts-grid">${inputs.map(c => opt(c.id, `${rkChoiceIcon(c.id, 'input', c.title)}${optLabel(c.title)}`)).join('')}</div>` : ''}
+    ${ghs.length ? `<div class="rk-sub">Glasshouse</div>
+    <div class="rk-opts rk-opts-grid">${ghs.map(c => opt(c.id, `${rkChoiceIcon(c.id, c.kind, c.title)}${optLabel(c.title)}`)).join('')}</div>` : ''}
     ${apps.length ? `<div class="rk-sub">${esc(t('apps.remoteKeys.apps', 'Apps'))}</div>
     <div class="rk-opts rk-opts-grid">${apps.map(c => opt(c.id, `${rkChoiceIcon(c.id, 'app', c.title)}${optLabel(c.title)}`)).join('')}</div>` : ''}`;
   after.after(pick);
