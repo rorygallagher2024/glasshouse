@@ -1287,6 +1287,7 @@ html[lang="vi"] #srcTitle,html[lang="vi"] #plMode,html[lang="vi"] #pvMode,html[l
   }
 
   function render() {
+    rowsToSettle = false;
     stageClass();
     var html = '';
     barWidths = [];
@@ -3442,12 +3443,14 @@ html[lang="vi"] #srcTitle,html[lang="vi"] #plMode,html[lang="vi"] #pvMode,html[l
     if (!data || (!(data.iptv && data.iptv.length) && !(data.iptvStatus && data.iptvStatus.lineup > 0))) return;
     getJson('/api/iptv/guide', function (r) {
       if (!r || !r.guide) return;
+      var same = JSON.stringify(r.guide) === JSON.stringify(tvGuide);
       tvGuide = r.guide;
       clearTimeout(tvGuideTimer);
       // Redrawn at the next programme's start, not up to a minute late.
       if (r.nextChange && r.nextChange > Date.now()) {
         tvGuideTimer = setTimeout(refreshTvGuide, Math.min(r.nextChange - Date.now() + 800, 30 * 60000));
       }
+      if (same) return;
       if (!state.arranging && data) renderWhenStill();
       if (player.open) { renderBand(); if (player.list) renderList(); }
     });
@@ -4497,7 +4500,7 @@ html[lang="vi"] #srcTitle,html[lang="vi"] #plMode,html[lang="vi"] #pvMode,html[l
     clearTimeout(adder.timer);
     adStopTyping();
     stageClass();
-    if (adder.changed) load();
+    if (adder.changed) load(null, false, null, cataloguesSent);
     else applyFocus();
   }
 
@@ -5258,6 +5261,7 @@ html[lang="vi"] #srcTitle,html[lang="vi"] #plMode,html[lang="vi"] #pvMode,html[l
       layoutRevision++;
       if (!r || !r.ok || !r.layout) {
         layoutBusy = false;
+        if (data) data.rev = null;
         return toast(t('home.arrange.saveFailed', 'Layout could not be saved'));
       }
       movedRows = {};
@@ -5276,6 +5280,9 @@ html[lang="vi"] #srcTitle,html[lang="vi"] #plMode,html[lang="vi"] #pvMode,html[l
   function setArranging(on) {
     if (layoutBusy) return;
     layoutRevision++;
+    // Arranging edits data and layout in place: the next catalogue is applied
+    // in full, whatever its rev.
+    if (data) data.rev = null;
     // The focus stays on the same item as hidden tiles appear or go.
     var kind = rowKey(), cur = items(kind)[colOf(kind)];
     state.arranging = on;
@@ -6878,12 +6885,37 @@ html[lang="vi"] #srcTitle,html[lang="vi"] #plMode,html[lang="vi"] #pvMode,html[l
   // ---------------------------------------------------------------- data
 
   // onNow, where given, is called once what was last on has been refreshed too.
-  function load(cb, whileArranging, onNow) {
-    if ((layoutBusy || state.arranging) && !whileArranging) return;
+  /*
+   * One catalogue request at a time: a load asked for while one is out, as a
+   * return's and its heartbeat's, waits for that one's reply. Every caller is
+   * answered, false when nothing was applied. after: the count of catalogue
+   * requests sent before the change the caller wants; one sent no later is
+   * waited for and then asked again.
+   */
+  var loading = null, cataloguesSent = 0;
+  function load(cb, whileArranging, onNow, after) {
+    if ((layoutBusy || state.arranging) && !whileArranging) {
+      if (cb) cb(false);
+      if (onNow) onNow();
+      return;
+    }
     var revision = layoutRevision;
+    if (loading && !whileArranging && loading.revision === revision) {
+      if (after !== undefined && loading.sent <= after) loading.again = true;
+      loading.waiting.push({ cb: cb, onNow: loading.nowBack ? null : onNow });
+      if (loading.nowBack && onNow) onNow();
+      return;
+    }
+    var mine = { revision: revision, waiting: [{ cb: cb, onNow: onNow }], nowBack: false, sent: ++cataloguesSent, again: false };
+    if (!whileArranging) loading = mine;
+    var answer = function (ok) {
+      mine.waiting.forEach(function (w) { if (w.cb) w.cb(ok); });
+      if (mine.again) load();
+    };
     bootMark('catalogueSent');
     getJson('/api/home/catalogue', function (r) {
       bootMark('catalogueReply');
+      if (loading === mine) loading = null;
       if (!r || !r.ok) {
         if (!data) {
           if (Date.now() - pageOpenedAt > STARTING_MS) $('fault').className = 'show';
@@ -6895,10 +6927,11 @@ html[lang="vi"] #srcTitle,html[lang="vi"] #plMode,html[lang="vi"] #pvMode,html[l
           clearTimeout(loadRetry);
           loadRetry = setTimeout(function () { if (!document.hidden) load(); }, 2000);
         }
-        return cb && cb(false);
+        return answer(false);
       }
       // A reply sent before arranging or saving must not replace local edits.
-      if (revision !== layoutRevision || ((layoutBusy || state.arranging) && !whileArranging)) return;
+      if (revision !== layoutRevision || ((layoutBusy || state.arranging) && !whileArranging)) return answer(false);
+      if (data && r.rev && data.rev === r.rev) return sameCatalogue(r, answer);
       var firstLoad = !data;
       (r.iptv || []).forEach(tidyItem);
       data = r;
@@ -6951,18 +6984,41 @@ html[lang="vi"] #srcTitle,html[lang="vi"] #plMode,html[lang="vi"] #pvMode,html[l
       // The player keeps its frozen order; its channels' names and guide follow.
       if (player.open) { renderBand(); if (player.list) renderList(); }
       if (guide.open) renderGuide();
-      if (cb) cb(true);
+      answer(true);
     });
-    refreshNow(onNow);
+    refreshNow(function () {
+      mine.nowBack = true;
+      mine.waiting.forEach(function (w) { var f = w.onNow; w.onNow = null; if (f) f(); });
+    });
+  }
+
+  /*
+   * The catalogue as the view already has it (the same rev): nothing to apply
+   * again, but the view is brought back to where it was left, its guides read
+   * and a guide or channel asked for at launch opened.
+   */
+  function sameCatalogue(r, answer) {
+    if (r.layoutVersion) layoutVersion = r.layoutVersion;
+    clearTimeout(loadRetry);
+    loadLineup();
+    // A return left the rows where they were headed without drawing them there.
+    if (rowsToSettle && !state.arranging) { rowsToSettle = false; renderWhenStill(); }
+    refreshGuide();
+    refreshTvGuide();
+    syncHaPolling(true);
+    openAskedGuide();
+    openAskedPlay();
+    answer(true);
   }
 
   function refreshNow(cb) {
     getJson('/api/home/now', function (r) {
       if (r) {
+        var same = JSON.stringify(r) === JSON.stringify(lastOn);
         lastOn = r;
         renderNow();
         refreshPicture();
-        if (data && !state.arranging) renderWhenStill();
+        if (!same && data && !state.arranging) renderWhenStill();
       }
       if (cb) cb();
     });
@@ -6971,7 +7027,7 @@ html[lang="vi"] #srcTitle,html[lang="vi"] #plMode,html[lang="vi"] #pvMode,html[l
   function refreshGuide() {
     if (!layout || !layout.channels.length) return;
     getJson('/api/home/guide', function (r) {
-      if (!r || !r.guide) return;
+      if (!r || !r.guide || JSON.stringify(r.guide) === JSON.stringify(guideData)) return;
       guideData = r.guide;
       if (!state.arranging && data) renderWhenStill();
     });
@@ -7103,6 +7159,8 @@ html[lang="vi"] #srcTitle,html[lang="vi"] #plMode,html[lang="vi"] #pvMode,html[l
     // in front and get no keys (#1122).
     var boot;
     if (!bootSent && bootMarks.firstFrame) { boot = bootMarks; bootSent = true; }
+    // A catalogue asked for after this beat went out carries what it reports.
+    var sentBefore = cataloguesSent;
     postJson('/api/home/beat', { focused: document.hasFocus(), visible: document.visibilityState || '', iptv: !!(player.open || guide.open), perf: takeTrace(), boot: boot }, function (r) {
       if (r && r.ok) {
         beatFails = 0;
@@ -7155,14 +7213,36 @@ html[lang="vi"] #srcTitle,html[lang="vi"] #plMode,html[lang="vi"] #pvMode,html[l
           }
           sleeps = r.sleeps;
         }
-        if (r.layoutVersion && layoutVersion && r.layoutVersion !== layoutVersion && !state.arranging && !layoutBusy) load();
+        if (r.layoutVersion && layoutVersion && r.layoutVersion !== layoutVersion && !state.arranging && !layoutBusy) load(null, false, null, sentBefore);
         return;
       }
       if (++beatFails === 3) $('fault').className = 'show';
     });
   }
 
-  function returned() {
+  /*
+   * A return can come as both a relaunch and the page shown again, in either
+   * order, and running it twice closes a guide the relaunch just opened. The
+   * second of the pair only takes the relaunch's parameters. Two relaunches
+   * are two Home presses, each run in full.
+   */
+  var hiddenGen = 0, returnedGen = -1, returnedBy = '', returnedAt = 0, rowsToSettle = false, keyAt = 0;
+  function relaunched() {
+    // A key since the return makes this a Home press of its own.
+    if (returnedGen === hiddenGen && returnedBy === 'shown' && Date.now() - returnedAt < 2000 && keyAt < returnedAt) {
+      returnedBy = 'both';
+      readLaunchParams();
+      updateWall();
+      if (data) { openAskedGuide(); openAskedPlay(); }
+      return;
+    }
+    returned('relaunch');
+  }
+
+  function returned(by) {
+    returnedGen = hiddenGen;
+    returnedBy = by || '';
+    returnedAt = Date.now();
     tilePreview.opened = null;
     applyPointer(true);
     var dark = faded;
@@ -7196,6 +7276,7 @@ html[lang="vi"] #srcTitle,html[lang="vi"] #plMode,html[lang="vi"] #pvMode,html[l
     // Back from an app, Home is as it was left: the same tile in focus and
     // every row where it was scrolled, brought to rest where it was headed.
     state.bar = -1;
+    rowsToSettle = true;
     stopPointing();
     landAll();
     for (var key in tracks) {
@@ -7216,6 +7297,7 @@ html[lang="vi"] #srcTitle,html[lang="vi"] #plMode,html[lang="vi"] #pvMode,html[l
 
   window.addEventListener('resize', fit);
   document.addEventListener('keydown', noteOkKey, true);
+  document.addEventListener('keydown', function () { keyAt = Date.now(); }, true);
   document.addEventListener('keydown', noteWallVideoInput, true);
   document.addEventListener('mousemove', noteWallVideoInput, true);
   document.addEventListener('onwheel' in document ? 'wheel' : 'mousewheel', noteWallVideoInput, true);
@@ -7244,13 +7326,24 @@ html[lang="vi"] #srcTitle,html[lang="vi"] #plMode,html[lang="vi"] #pvMode,html[l
   document.addEventListener('mouseout', function (e) { if (!e.relatedTarget) stopPointing(); });
   document.addEventListener('click', onClick);
   // Home pressed with the view already open reaches it as a relaunch.
-  document.addEventListener('webOSRelaunch', function () { guideLaunch(); returned(); });
+  document.addEventListener('webOSRelaunch', function () { guideLaunch(); relaunched(); });
   document.addEventListener('visibilitychange', function () {
     // Hidden behind an app, which may need the decoder the wallpaper holds.
     // A frame gap across the time hidden is not a stall.
-    if (document.hidden) { if (trace) trace.last = 0; animStop(); darken(); unloadWallVideo(); syncHaPolling(); }
+    if (document.hidden) { hiddenGen++; if (trace) trace.last = 0; animStop(); darken(); unloadWallVideo(); syncHaPolling(); }
     // Shown again: the first gap counts from here, so the work of the return is in it.
-    else { if (trace) trace.last = performance.now(); returned(); animRun(); syncHaPolling(true); }
+    else {
+      if (trace) trace.last = performance.now();
+      if (returnedGen !== hiddenGen || returnedBy !== 'relaunch') returned('shown');
+      else {
+        // The relaunch ran while the page was hidden, when the wallpaper and
+        // the live preview wait for it to show.
+        updateWall();
+        followPreview();
+      }
+      animRun();
+      syncHaPolling(true);
+    }
   });
   window.addEventListener('pagehide', function () { if (player.open) closePlayer(); stopPreview(); });
 
@@ -7277,7 +7370,12 @@ html[lang="vi"] #srcTitle,html[lang="vi"] #plMode,html[lang="vi"] #pvMode,html[l
       renderGuide();
     }
   }, 15000);
-  setInterval(function () { refreshNow(); refreshGuide(); }, 60000);
+  // The programmes' progress bars move on every minute, whatever the replies.
+  setInterval(function () {
+    refreshNow();
+    refreshGuide();
+    if (data && !state.arranging) renderWhenStill();
+  }, 60000);
   setInterval(function () { if (!state.arranging) load(); }, 5 * 60000);
 })();
 </script>
