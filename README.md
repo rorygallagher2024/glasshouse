@@ -57,7 +57,7 @@ https://github.com/user-attachments/assets/a1efd451-681d-4c3b-87d7-8358ff3d19f3
 
 This project is intended to give a rooted webOS TV a useful local control surface instead of requiring the owner to work around the TV's built-in menus, vendor services and cloud dependencies.
 
-1. **[A cleaner Home screen](https://rorygallagher2024.github.io/glasshouse/dashboard/home/).** A replacement Home app with full control over what displays, and no ads: your own pictures or videos as the background, the remote's battery after the date, and a row of Internet TV channels from your own IPTV playlist or satellite tuner. Or choose Glasshouse Minimal, Glasshouse Bar along the bottom of the picture, a launcher of your own, or a web page such as a Home Assistant dashboard. Reported working on webOS 3 to 7 and 9 to 11, and offered with a note on other versions.
+1. **[Cleaner Home screens](https://rorygallagher2024.github.io/glasshouse/dashboard/home/).** A choice of replacement home screens to choose from, all with full control, and no ads. Features include using your own pictures or videos as the background, Internet TV channels (from your own IPTV playlist or satellite tuner) and control of your home via Home Assistant.
 
 2. **[Controlling the TV without the cloud](https://rorygallagher2024.github.io/glasshouse/dashboard/control/).** A remote that comes up over any tab or sits on a phone's Home Screen, with a D-pad, touchpad and keyboard, plus volume, inputs, power, sleep timer, comprehensive picture and sound settings, Game Optimizer, and much more.
 
@@ -67,7 +67,7 @@ This project is intended to give a rooted webOS TV a useful local control surfac
 
 5. **[Remapping the remote's buttons](https://rorygallagher2024.github.io/glasshouse/dashboard/remote/).** Point Netflix, Prime Video, Guide, the color keys and the TV's other shortcut buttons at any installed app, an HDMI input or Live TV, or turn them off, or have a key open [a strip of the HDMI inputs](https://rorygallagher2024.github.io/glasshouse/dashboard/inputs/#glasshouse-input-bar) or [Glasshouse Bar](https://rorygallagher2024.github.io/glasshouse/dashboard/home/#glasshouse-bar) over the picture.
 
-6. **[Replacing the screen saver](https://rorygallagher2024.github.io/glasshouse/dashboard/screen-savers/).** Over a dozen screensavers to choose from, and customisable brightness settings.
+6. **[Replacing the screen saver](https://rorygallagher2024.github.io/glasshouse/dashboard/screen-savers/).** Over a dozen screensavers to choose from, community screensavers to download, and customisable settings including brightness control.
 
 7. **[Integrating the TV with a smart home](https://rorygallagher2024.github.io/glasshouse/HOME-ASSISTANT/).** The MQTT bridge exposes the TV as a single device with its controls and telemetry, with Home Assistant support through MQTT Discovery and the same underlying interface available to other MQTT clients. An optional media player card brings power, volume, sources, apps and Internet TV channels together, and button press events let your TV remote control your smart home.
 
