@@ -363,6 +363,27 @@ async function visitInputBarBehindHome(browser, base, problems) {
       if (!behindHome) {
         await page.goto(base + '/assets/inputbar-app/index.html');
         await page.waitForSelector('.tile.focus');
+        const mid = await page.evaluate(() => {
+          const tiles = Array.from(document.querySelectorAll('#tiles .tile'));
+          const hits = tiles.map(t => {
+            const r = t.getBoundingClientRect();
+            const el = document.elementFromPoint(Math.round(r.left + r.width / 2), Math.round(r.top + r.height / 2));
+            return !!(el && t.contains(el));
+          });
+          const mr = tiles[1].getBoundingClientRect();
+          return { allHit: hits.every(Boolean), x: Math.round(mr.left + mr.width / 2), y: Math.round(mr.top + mr.height / 2) };
+        });
+        if (!mid.allHit) problems.push(name + 'pointer hit blocked on input tiles');
+        await page.mouse.move(mid.x, mid.y);
+        await page.waitForFunction(() => document.querySelectorAll('#tiles .tile')[1].classList.contains('focus'));
+        await page.mouse.click(mid.x, mid.y);
+        await page.waitForTimeout(300);
+        const clickLaunches = await page.evaluate(() => window.launches);
+        if (clickLaunches.indexOf('com.webos.app.hdmi1') === -1) problems.push(name + 'clicking hovered HDMI 1 did not launch it');
+
+        await page.evaluate(() => { window.launches = []; });
+        await page.goto(base + '/assets/inputbar-app/index.html');
+        await page.waitForSelector('.tile.focus');
         await page.keyboard.press('ArrowLeft');
         await page.keyboard.press('ArrowLeft');
         await page.keyboard.press('Enter');
