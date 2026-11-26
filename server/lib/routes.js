@@ -2186,6 +2186,8 @@ function handleRequest(req, res) {
     return send(res, 200, JSON.stringify({
       ok: true,
       configured: !!(haEntityModule && haEntityModule.configured()),
+      inHomeBar: !!(homeModule && homeModule.haBarInHomeBar()),
+      homeBarOffered: !!(homebarModule && homebarModule.status().offered),
       entities: haBarModule.listConfig().entities
     }));
   }
@@ -2197,6 +2199,9 @@ function handleRequest(req, res) {
     }
     return readJsonBody(req, res, function (body) {
       var saved = haBarModule.saveConfig(body && body.entities);
+      if (saved.ok && saved.entities && saved.entities.length && homeModule && homeModule.haBarInHomeBar() && haBarModule.sync) {
+        haBarModule.sync();
+      }
       send(res, saved.ok ? 200 : 400, JSON.stringify(saved));
     });
   }

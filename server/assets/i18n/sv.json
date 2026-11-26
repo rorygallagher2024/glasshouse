@@ -3983,5 +3983,19 @@
  "srv.habar.serviceFailed": {"from": "Home Assistant service call failed", "text": "anrop till Home Assistant-tjänst misslyckades"},
  "srv.habar.tooMany": {"from": "too many entities (max {max})", "text": "för många entiteter (max {max})"},
  "srv.remoteKeys.haBar": {"from": "Home Assistant bar", "text": "Home Assistant-fältet"},
- "srv.remoteKeys.haBarInstall": {"from": "The Home Assistant bar could not be put on the TV. Try again in a moment.", "text": "Det gick inte att lägga till Home Assistant-fältet på TV:n. Försök igen om en stund."}
+ "srv.remoteKeys.haBarInstall": {"from": "The Home Assistant bar could not be put on the TV. Try again in a moment.", "text": "Det gick inte att lägga till Home Assistant-fältet på TV:n. Försök igen om en stund."},
+ "ha.bar.inHomeBar": {"from": "Show in Glasshouse Bar", "text": "Visa i Glasshouse Bar"},
+ "ha.bar.inHomeBarDesc": {"from": "Adds a Home Assistant tile at the end of Glasshouse Bar to open this control bar.", "text": "Lägger till en Home Assistant-ruta i slutet av Glasshouse Bar för att öppna denna kontrollrad."},
+ "home.bar.haTile": {"from": "Home Assistant bar tile", "text": "Home Assistant-fältets ruta"},
+ "home.bar.haTileDesc": {"from": "Adds a Home Assistant tile at the end of Glasshouse Bar to open the Home Assistant control bar.", "text": "Lägger till en Home Assistant-ruta i slutet av Glasshouse Bar för att öppna Home Assistant-kontrollraden."},
+ "home.ha.activated": {"from": "Activated", "text": "Aktiverad"},
+ "home.ha.decrease": {"from": "Decrease", "text": "Minska"},
+ "home.ha.failed": {"from": "Action failed", "text": "Åtgärden misslyckades"},
+ "home.ha.increase": {"from": "Increase", "text": "Öka"},
+ "home.ha.ran": {"from": "Ran", "text": "Körd"},
+ "home.haRowDesc": {"from": "Controls {n} entities from the Home Assistant bar.", "text": "Styr {n} entiteter från Home Assistant-raden."},
+ "home.haRowEdit": {"from": "Edit on HA & MQTT", "text": "Redigera i HA och MQTT"},
+ "home.row.ha": {"from": "Home Assistant", "text": "Home Assistant"},
+ "home.row.haArrange": {"from": "Entities from the Home Assistant bar", "text": "Entiteter från Home Assistant-raden"},
+ "home.row.haHint": {"from": "OK to toggle, Ch +/- to adjust", "text": "OK för att växla, Ch +/- för att justera"}
 }

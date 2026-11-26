@@ -450,11 +450,22 @@ function keySet() {
   poke();
 }
 
+function sync() {
+  failures = 0;
+  if (!wanted()) {
+    clearTimeout(timer);
+    timer = null;
+    return;
+  }
+  appFn('install', function () { poke(); });
+}
+
 module.exports = {
   init: init,
   start: start,
   poke: poke,
   keySet: keySet,
+  sync: sync,
   available: available,
   listConfig: listConfig,
   saveConfig: saveConfig,

@@ -704,6 +704,62 @@ async function visitHomeBarTiles(browser, base, problems) {
   }
 }
 
+async function visitHomeBarHaTile(browser, base, problems) {
+  const fail = what => problems.push('Glasshouse Bar HA tile: ' + what);
+  const setup = async (haBar) => {
+    const page = await browser.newPage({ viewport: { width: 1920, height: 1080 } });
+    page.on('pageerror', e => fail(e.message));
+    await page.addInitScript(() => {
+      window.PalmSystem = { launchParams: '{}' };
+      window.__calls = [];
+      window.PalmServiceBridge = function () {};
+      window.PalmServiceBridge.prototype.call = function (uri, body) {
+        window.__calls.push({ uri, body: JSON.parse(body) });
+        if (this.onservicecallback) this.onservicecallback(JSON.stringify({ returnValue: true }));
+      };
+      window.close = function () {};
+    });
+    await page.route('http://localhost:8080/**', route => {
+      const url = new URL(route.request().url());
+      if (url.pathname === '/assets/devicons.js') return route.continue({ url: base + '/assets/devicons.js' });
+      if (url.pathname === '/api/home/now') return route.fulfill({ json: { kind: 'input', port: 1 } });
+      if (url.pathname === '/api/home/catalogue') {
+        return route.fulfill({ json: { ok: true, haBar, layout: { hidden: { app: [] } },
+          order: { app: ['app1'], dev: ['hdmi1'] }, apps: [{ id: 'app1', title: 'Test App' }],
+          devices: [{ id: 'hdmi1', name: 'HDMI 1', input: 'hdmi1', port: 1 }] } });
+      }
+      return route.fulfill({ json: {} });
+    });
+    await page.goto(base + '/assets/homebar-app/index.html');
+    await page.waitForFunction(() => document.querySelectorAll('#row .tile').length > 0);
+    return page;
+  };
+
+  let page = await setup(false);
+  try {
+    if (await page.locator('#row .tile.habar').count()) fail('HA tile shown while disabled');
+  } finally { await page.close(); }
+
+  page = await setup(true);
+  try {
+    const count = await page.locator('#row .tile.habar').count();
+    if (count !== 1) return fail('expected 1 HA tile, got ' + count);
+    const afterGap = await page.evaluate(() => {
+      const ha = document.querySelector('#row .tile.habar');
+      return !!(ha && ha.previousElementSibling && ha.previousElementSibling.classList.contains('gap'));
+    });
+    if (!afterGap) fail('expected separator gap before HA tile');
+    await page.keyboard.press('ArrowRight');
+    await page.keyboard.press('ArrowRight');
+    await page.keyboard.press('Enter');
+    await page.waitForFunction(() => window.__calls.some(c => /launch$/.test(c.uri)));
+    const launch = await page.evaluate(() => window.__calls.filter(c => /launch$/.test(c.uri)).pop().body);
+    if (launch.id !== 'com.tvweb.habar' || !launch.params || launch.params.glasshouse !== 'habar') {
+      fail('unexpected launch payload: ' + JSON.stringify(launch));
+    }
+  } finally { await page.close(); }
+}
+
 /*
  * Glasshouse Bar on a remote key beside Glasshouse Home (#1499): no LG's Home
  * tile, which would open Glasshouse Home there, and a press over Glasshouse
@@ -828,6 +884,83 @@ async function visitHaBar(browser, base, problems) {
   } finally {
     await page.close();
   }
+}
+
+async function visitHomeHaRow(browser, base, problems) {
+  const fail = what => problems.push('Home HA row: ' + what);
+  const runCase = async (haRow, haBarAvailable) => {
+    const page = await browser.newPage({ viewport: { width: 1920, height: 1080 } });
+    page.on('pageerror', e => fail(e.message));
+    const layout = { rows: ['app', 'ha'], order: { app: [], ha: [] }, hidden: { app: [], ha: [] },
+      hiddenRows: [], channels: [], hintSeen: true, searchHintSeen: true, haRow };
+    let pct = 40, swOn = false;
+    const acts = [];
+    await page.route('**/api/home/**', route => {
+      const p = new URL(route.request().url()).pathname;
+      if (p === '/api/home/catalogue') {
+        return route.fulfill({ json: { ok: true, layout, layoutVersion: 1, haBarAvailable, haBarCount: 3,
+          apps: [{ id: 'netflix', title: 'Netflix' }], devices: [], channels: [],
+          sources: { channels: 0 }, order: { app: ['netflix'], ha: [] } } });
+      }
+      return route.fulfill({ json: { ok: true, layout, layoutVersion: 1 } });
+    });
+    await page.route('**/api/ha/bar/**', route => {
+      const p = new URL(route.request().url()).pathname;
+      if (p.endsWith('/state')) {
+        return route.fulfill({ json: { ok: true, configured: true, tiles: [
+          { id: 'switch.kettle', domain: 'switch', label: 'Kettle', state: swOn ? 'on' : 'off', active: swOn, adjustable: false, pct: null, valueText: swOn ? 'On' : 'Off', subText: '' },
+          { id: 'light.desk', domain: 'light', label: 'Desk', state: 'on', active: true, adjustable: true, pct, valueText: pct + '%', subText: '' },
+          { id: 'scene.movie', domain: 'scene', label: 'Movie Time', state: 'scening', active: false, adjustable: false, pct: null, valueText: 'Activate', subText: '' }
+        ] } });
+      }
+      if (p.endsWith('/act')) {
+        const body = JSON.parse(route.request().postData() || '{}');
+        acts.push(body);
+        if (body.id === 'switch.kettle') {
+          swOn = !swOn;
+          return route.fulfill({ json: { ok: true, tile: { id: 'switch.kettle', domain: 'switch', label: 'Kettle', state: swOn ? 'on' : 'off', active: swOn, adjustable: false, pct: null, valueText: swOn ? 'On' : 'Off', subText: '' } } });
+        }
+        if (body.id === 'light.desk' && body.action === 'step') {
+          pct = Math.max(0, Math.min(100, pct + (body.value > 0 ? 10 : -10)));
+          return route.fulfill({ json: { ok: true, tile: { id: 'light.desk', domain: 'light', label: 'Desk', state: 'on', active: true, adjustable: true, pct, valueText: pct + '%', subText: '' } } });
+        }
+        return route.fulfill({ json: { ok: true, tile: { id: 'scene.movie', domain: 'scene', label: 'Movie Time', state: 'scening', active: false, adjustable: false, pct: null, valueText: 'Activate', subText: '' } } });
+      }
+      return route.fulfill({ json: {} });
+    });
+    await page.goto(base + '/assets/home.html');
+    await page.waitForFunction(() => document.querySelectorAll('.row[data-key="app"] .tile').length === 1);
+    return { page, acts };
+  };
+
+  let ctx = await runCase(false, true);
+  try {
+    const visibleOff = await ctx.page.evaluate(() => getComputedStyle(document.querySelector('.row[data-key="ha"]')).display);
+    if (visibleOff !== 'none') fail('HA row should stay hidden when haRow=false (display=' + visibleOff + ')');
+  } finally { await ctx.page.close(); }
+
+  ctx = await runCase(true, true);
+  try {
+    const { page, acts } = ctx;
+    await page.waitForFunction(() => document.querySelectorAll('.row[data-key="ha"] .tile.ha').length === 3);
+    await page.keyboard.press('ArrowDown');
+    await page.waitForFunction(() => document.querySelector('.row.active') && document.querySelector('.row.active').getAttribute('data-key') === 'ha');
+    await page.keyboard.press('Enter');
+    await page.waitForFunction(() => document.querySelector('.tile.ha.focus .ha-val').textContent === 'On');
+    await page.keyboard.press('ArrowRight');
+    await page.keyboard.press('PageUp');
+    await page.waitForFunction(() => document.querySelector('.tile.ha.focus .ha-val').textContent === '50%');
+    await page.click('.tile.ha.focus .ha-step[data-step="1"]');
+    await page.waitForFunction(() => document.querySelector('.tile.ha.focus .ha-val').textContent === '60%');
+    await page.keyboard.press('PageDown');
+    await page.waitForFunction(() => document.querySelector('.tile.ha.focus .ha-val').textContent === '50%');
+    await page.keyboard.press('ArrowRight');
+    await page.keyboard.press('Enter');
+    await page.waitForFunction(() => document.querySelector('.tile.ha.focus .ha-val').textContent === 'Activated');
+    await page.keyboard.press('ArrowUp');
+    await page.waitForFunction(() => document.querySelector('.row.active') && document.querySelector('.row.active').getAttribute('data-key') === 'app');
+    if (acts.length !== 5) fail('expected 5 HA row actions, got ' + JSON.stringify(acts));
+  } finally { await ctx.page.close(); }
 }
 
 async function visitHomeWeather(browser, base, problems) {
@@ -5196,7 +5329,7 @@ function groups(web, tv) {
     { job: 'tabs', tabs: web.map(t => ({ path: '/?tab=' + t, label: 'web ' + t })), visits: [visitHomeAnimations, visitHuesyncSettings, visitInputsAndRemote, visitBrightnessKeySettings, visitRemoteFolding, visitAdblockCards, visitSaverEntitySlots, visitRemoteView, visitRemoteMotion] },
     { job: 'tabs', tabs: tv.map(t => ({ path: '/assets/dashboard.html?tab=' + t, label: 'TV ' + t })),
       visits: [visitTvDashboard, visitTvAudio, visitTvPictureWrites, visitPictureUnavailable, visitTvNonOled, visitTvHuesync] },
-    { job: 'home', tabs: [], visits: [visitHomePicture, visitHomePreview, visitHomePreviewOptions, visitHomePreviewWebos4, visitHomePreviewSize, visitHomePreviewSizeDetails, visitInputBarBehindHome, visitInputBarSwitchOnOk, visitHomeBarPrewarm, visitHomeBarIconsReady, visitHomeBarTiles, visitHomeBarBesideHome, visitHomeBarScroll, visitHaBar, visitHomeUpDown, visitHomeFolderKeys, visitHomePointerOff, visitHomeOrder, visitHomeAvailability, visitHomeSearch, visitHomeWeather, visitHomeWeatherSetting, visitHomeRemoteBattery, visitHomeRemoteBatterySetting] },
+    { job: 'home', tabs: [], visits: [visitHomePicture, visitHomePreview, visitHomePreviewOptions, visitHomePreviewWebos4, visitHomePreviewSize, visitHomePreviewSizeDetails, visitInputBarBehindHome, visitInputBarSwitchOnOk, visitHomeBarPrewarm, visitHomeBarIconsReady, visitHomeBarTiles, visitHomeBarHaTile, visitHomeBarBesideHome, visitHomeBarScroll, visitHaBar, visitHomeHaRow, visitHomeUpDown, visitHomeFolderKeys, visitHomePointerOff, visitHomeOrder, visitHomeAvailability, visitHomeSearch, visitHomeWeather, visitHomeWeatherSetting, visitHomeRemoteBattery, visitHomeRemoteBatterySetting] },
     { job: 'home', tabs: [], visits: [visitHomeArrangement, visitHomeVisibility, visitHomeColours, visitHomeInputsEditor, visitHomeEditor,
       visitHomeRecentsHidden, visitHomeSaverWake, visitHomeUploads, visitHomeShuffle, visitHomeLauncher, visitHomeReadiness, visitAudioOverride, visitHomeRecents, visitHomeGuide,
       visitHomeFadeAndInputs] },

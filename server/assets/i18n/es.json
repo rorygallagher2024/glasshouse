@@ -3967,5 +3967,19 @@
  "srv.habar.serviceFailed": {"from": "Home Assistant service call failed", "text": "falló la llamada al servicio de Home Assistant"},
  "srv.habar.tooMany": {"from": "too many entities (max {max})", "text": "demasiadas entidades (máx. {max})"},
  "srv.remoteKeys.haBar": {"from": "Home Assistant bar", "text": "Barra de Home Assistant"},
- "srv.remoteKeys.haBarInstall": {"from": "The Home Assistant bar could not be put on the TV. Try again in a moment.", "text": "No se pudo instalar la barra de Home Assistant en el TV. Inténtalo de nuevo en un momento."}
+ "srv.remoteKeys.haBarInstall": {"from": "The Home Assistant bar could not be put on the TV. Try again in a moment.", "text": "No se pudo instalar la barra de Home Assistant en el TV. Inténtalo de nuevo en un momento."},
+ "ha.bar.inHomeBar": {"from": "Show in Glasshouse Bar", "text": "Mostrar en Glasshouse Bar"},
+ "ha.bar.inHomeBarDesc": {"from": "Adds a Home Assistant tile at the end of Glasshouse Bar to open this control bar.", "text": "Añade un mosaico de Home Assistant al final de Glasshouse Bar para abrir esta barra de control."},
+ "home.bar.haTile": {"from": "Home Assistant bar tile", "text": "Mosaico de la barra Home Assistant"},
+ "home.bar.haTileDesc": {"from": "Adds a Home Assistant tile at the end of Glasshouse Bar to open the Home Assistant control bar.", "text": "Añade un mosaico de Home Assistant al final de Glasshouse Bar para abrir la barra de control de Home Assistant."},
+ "home.ha.activated": {"from": "Activated", "text": "Activada"},
+ "home.ha.decrease": {"from": "Decrease", "text": "Reducir"},
+ "home.ha.failed": {"from": "Action failed", "text": "Error en la acción"},
+ "home.ha.increase": {"from": "Increase", "text": "Aumentar"},
+ "home.ha.ran": {"from": "Ran", "text": "Ejecutado"},
+ "home.haRowDesc": {"from": "Controls {n} entities from the Home Assistant bar.", "text": "Controla {n} entidades de la barra de Home Assistant."},
+ "home.haRowEdit": {"from": "Edit on HA & MQTT", "text": "Editar en HA y MQTT"},
+ "home.row.ha": {"from": "Home Assistant", "text": "Home Assistant"},
+ "home.row.haArrange": {"from": "Entities from the Home Assistant bar", "text": "Entidades de la barra Home Assistant"},
+ "home.row.haHint": {"from": "OK to toggle, Ch +/- to adjust", "text": "OK para alternar, Ch +/- para ajustar"}
 }

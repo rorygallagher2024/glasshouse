@@ -734,7 +734,10 @@ haBar.init({
   hour12: clockFormat.hour12,
   app: function (action, cb) { tvApp(action, cb, 'habar-app'); },
   on: function () { return !liveState || (liveState.state.snapshot().power || {}).systemOn !== false; },
-  byKey: function () { return remoteKeys.opensHaBar() || quickAccess.opensHaBar(); }
+  byKey: function () {
+    return remoteKeys.opensHaBar() || quickAccess.opensHaBar() ||
+      !!(glasshouseHome && glasshouseHome.haBarInHomeBar() && (homebar.enabled() || remoteKeys.opensHomeBar()));
+  }
 });
 screensavers.init({
   luna: luna,
@@ -2393,6 +2396,8 @@ function startGlasshouseHome() {
     weather: weather,
     news: news,
     haEntity: haEntity,
+    haBar: haBar,
+    ensureHaBarApp: function () { tvApp('install', function () {}, 'habar-app'); },
     mqttOn: function () { return !!(CONFIG.mqtt && CONFIG.mqtt.enabled && CONFIG.mqtt.host); },
     // What the dashboard's Remote section shows: the level, the step it stands
     // in for, and whether it can be read at all. null with no remote paired.

@@ -22,7 +22,8 @@ const HOME_ROWS = {
   dev: () => t('home.row.inputs', 'Inputs'),
   ch: () => t('home.row.channels', 'Channels'),
   rec: () => t('home.row.recommended', 'Recommended'),
-  iptv: () => t('home.row.iptv', 'Internet TV')
+  iptv: () => t('home.row.iptv', 'Internet TV'),
+  ha: () => t('home.row.ha', 'Home Assistant')
 };
 
 async function homeGet(path) {
@@ -668,15 +669,23 @@ function renderHomeRows() {
   // Redrawing after each change keeps the rows that were open, and what was typed in the channel search.
   const open = box.children.length ? [...box.querySelectorAll('details[open]')].map(d => d.dataset.kind) : [];
   const filter = q('home-ch-filter') ? q('home-ch-filter').value : '';
-  box.innerHTML = homeLayout.rows.map((kind, ri) => {
+  const haAvail = !!(homeStatus && homeStatus.haBarAvailable);
+  const visibleRows = homeLayout.rows.map((kind, ri) => ({ kind, ri })).filter(x => x.kind !== 'ha' || haAvail);
+  box.innerHTML = visibleRows.map(({ kind, ri }, vi) => {
     // A hidden row leaves the view whatever its tiles; arranging on the TV still shows it.
-    const rowOff = (homeLayout.hiddenRows || []).includes(kind);
+    const rowOff = kind === 'ha' ? homeLayout.haRow !== true : (homeLayout.hiddenRows || []).includes(kind);
+    const toggleRowFn = kind === 'ha' ? 'homeToggleHaRow()' : `homeToggleRow('${kind}')`;
     const rowMove = `<span class="home-row-move">
           ${renderToggle({ cls: rowOff ? 'idle' : 'good', label: rowOff ? t('home.hidden', 'Hidden') : t('home.shown', 'Shown'),
-            on: !rowOff, disabled: !usable, onclick: `event.preventDefault(); homeToggleRow('${kind}')` })}
-          <button type="button" class="pill idle" ${usable && ri > 0 ? '' : 'disabled'} onclick="event.preventDefault(); homeMoveRow(${ri}, -1)">${esc(t('home.rowUp', 'Row up'))}</button>
-          <button type="button" class="pill idle" ${usable && ri < homeLayout.rows.length - 1 ? '' : 'disabled'} onclick="event.preventDefault(); homeMoveRow(${ri}, 1)">${esc(t('home.rowDown', 'Row down'))}</button>
+            on: !rowOff, disabled: !usable, onclick: `event.preventDefault(); ${toggleRowFn}` })}
+          <button type="button" class="pill idle" ${usable && vi > 0 ? '' : 'disabled'} onclick="event.preventDefault(); homeMoveRow(${ri}, -1)">${esc(t('home.rowUp', 'Row up'))}</button>
+          <button type="button" class="pill idle" ${usable && vi < visibleRows.length - 1 ? '' : 'disabled'} onclick="event.preventDefault(); homeMoveRow(${ri}, 1)">${esc(t('home.rowDown', 'Row down'))}</button>
         </span>`;
+    // The Home Assistant row shares habar.json; entity management lives on the HA & MQTT tab.
+    if (kind === 'ha') {
+      const haDesc = t('home.haRowDesc', 'Controls {n} entities from the Home Assistant bar.', { n: (homeStatus && homeStatus.haBarCount) || 0 });
+      return `<div class="home-row" data-kind="ha"><div class="home-row-head"><span class="prot-title">${esc(HOME_ROWS.ha())}</span>${rowMove}</div><div class="sub" style="padding:2px 0 6px">${esc(haDesc)} <a href="?tab=mqtt" onclick="event.preventDefault(); showTab('mqtt');">${esc(t('home.haRowEdit', 'Edit on HA & MQTT'))}</a></div></div>`;
+    }
     // The apps' cards come and go with their lists, so the row has its switch rather than tiles.
     if (kind === 'rec') {
       return `<details class="home-row" data-kind="rec"${open.includes('rec') ? ' open' : ''}>
@@ -724,10 +733,16 @@ function renderHomeRows() {
         <div class="prot-desc">${esc(t('home.showAppLabelsDesc', 'Under each app icon on Glasshouse Home and Glasshouse Bar. Off leaves the icons on their own.'))}</div></div>
       <div class="prot-status">${renderToggle({ id: 'home-bar-app-labels', cls: labelsOn ? 'good' : 'idle', label: labelsOn ? t('common.on', 'On') : t('common.off', 'Off'),
         on: labelsOn, disabled: !usable, onclick: "homeShow('showAppLabels')" })}</div></div>` : '';
+    const barHaOn = !!homeLayout && homeLayout.haBarInHomeBar === true;
+    const barHaRow = kind === 'app' && haAvail ? `<div class="prot-row home-bar-only">
+      <div class="prot-main"><div class="prot-title">${esc(t('home.bar.haTile', 'Home Assistant bar tile'))}</div>
+        <div class="prot-desc">${esc(t('home.bar.haTileDesc', 'Adds a Home Assistant tile at the end of Glasshouse Bar to open the Home Assistant control bar.'))}</div></div>
+      <div class="prot-status">${renderToggle({ id: 'home-bar-habar', cls: barHaOn ? 'good' : 'idle', label: barHaOn ? t('common.on', 'On') : t('common.off', 'Off'),
+        on: barHaOn, disabled: !usable, onclick: 'homeToggleHaBarTile()' })}</div></div>` : '';
     return `<details class="home-row" data-kind="${kind}"${open.includes(kind) ? ' open' : ''}>
       <summary><span class="prot-title">${esc(HOME_ROWS[kind]())}</span>
         ${rowMove}</summary>
-      <div class="prot-table">${homeSortRow(kind, usable)}${barLabelsRow}${tiles || `<div class="sub">${esc(kind === 'ch' ? t('home.ch.empty', 'No channels yet. Add them below.') : kind === 'iptv' ? t('home.tv.rowEmpty', 'No channels yet. Add them in Internet TV below, or from the row on the TV.') : t('home.rowEmpty', 'Nothing to show in this row yet.'))}</div>`}</div>
+      <div class="prot-table">${homeSortRow(kind, usable)}${barLabelsRow}${barHaRow}${tiles || `<div class="sub">${esc(kind === 'ch' ? t('home.ch.empty', 'No channels yet. Add them below.') : kind === 'iptv' ? t('home.tv.rowEmpty', 'No channels yet. Add them in Internet TV below, or from the row on the TV.') : t('home.rowEmpty', 'Nothing to show in this row yet.'))}</div>`}</div>
       ${kind === 'ch' ? homeChannelPicker() : ''}
     </details>`;
   }).join('');
@@ -754,6 +769,15 @@ function homeRecRow(usable) {
 
 function homeRecommended() {
   homeSaveLayout({ recommended: homeLayout.recommended !== true });
+}
+
+function homeToggleHaRow() {
+  homeSaveLayout({ haRow: homeLayout.haRow !== true });
+}
+
+async function homeToggleHaBarTile() {
+  await homeSaveLayout({ haBarInHomeBar: homeLayout.haBarInHomeBar !== true });
+  if (typeof loadHaBar === 'function' && typeof haBarConfigured !== 'undefined' && haBarConfigured) loadHaBar();
 }
 
 function homeSort(kind) { return homeLayout.sort && homeLayout.sort[kind] === 'recent' ? 'recent' : 'custom'; }
@@ -809,7 +833,9 @@ function homeMoveTile(kind, i, d) {
 
 function homeMoveRow(i, d) {
   const rows = homeLayout.rows.slice();
-  const j = i + d;
+  const haAvail = !!(homeStatus && homeStatus.haBarAvailable);
+  let j = i + d;
+  while (j >= 0 && j < rows.length && rows[j] === 'ha' && !haAvail) j += d;
   if (j < 0 || j >= rows.length) return;
   [rows[i], rows[j]] = [rows[j], rows[i]];
   homeSaveLayout({ rows });

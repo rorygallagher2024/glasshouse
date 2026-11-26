@@ -55,6 +55,8 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
 .ico{display:block;width:112px;height:112px;margin:0 auto 14px;border-radius:20px;background:#333 center/contain no-repeat}
 img.ico{background:none;object-fit:contain}
 .ico.letter{line-height:112px;font-size:52px;font-weight:600;color:#fff;background:#3a3a3a}
+.ico.habar{display:-webkit-flex;display:flex;-webkit-align-items:center;align-items:center;-webkit-justify-content:center;justify-content:center;background:#18bcf2;color:#fff}
+.ico.habar svg{width:64px;height:64px;display:block}
 .nm{font-size:24px;padding:0 12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .no-app-labels .tile:not(.input){width:156px;height:156px;margin-top:22px;padding-top:20px}
 .no-app-labels .tile:not(.input) .ico{margin-bottom:0}
@@ -128,6 +130,7 @@ img.ico{background:none;object-fit:contain}
   // What a tile opens, as Glasshouse Home's tile opens it (lib/home.js open).
   function open(e, cb) {
     if (e.kind === 'lg') return launch(LG_HOME, null, cb);
+    if (e.kind === 'habar') return launch('com.tvweb.habar', { glasshouse: 'habar', t: Date.now() }, cb);
     if (e.kind === 'airplay') {
       return call('luna://airplay.service/showAirplayPage', {}, function (r) {
         if (r && r.returnValue) return cb();
@@ -160,10 +163,16 @@ img.ico{background:none;object-fit:contain}
     $('clock').textContent = pad(d.getHours()) + ':' + pad(d.getMinutes());
   }
 
+  var HA_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+    '<path d="M3 10.5L12 3l9 7.5V20a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-9.5z"/>' +
+    '<circle cx="12" cy="12" r="1.4" fill="currentColor"/><circle cx="8.5" cy="15.5" r="1.1" fill="currentColor"/><circle cx="15.5" cy="15.5" r="1.1" fill="currentColor"/>' +
+    '<path d="M12 13.4V18M9.3 14.7l2.7 1.8M14.7 14.7L12 16.5"/></svg>';
+
   /*
    * The row: the apps of Glasshouse Home's Apps row, less those hidden or in
    * its More apps folder, with LG's Home where that row has its tile, then
-   * the inputs as its Inputs row has them, Live TV among them.
+   * the inputs as its Inputs row has them, Live TV among them, and optionally
+   * the Home Assistant bar shortcut at the end.
    */
   function tilesFrom(cat) {
     var out = [], byId = {}, layout = cat.layout || {};
@@ -202,14 +211,20 @@ img.ico{background:none;object-fit:contain}
                  uniqueId: d.uniqueId, appId: d.appId || null, params: d.params || null, deviceId: d.deviceId || null,
                  dicon: window.glasshouseDevIcon ? window.glasshouseDevIcon(d) : '' });
     });
+    if (cat.haBar) {
+      out.push({ kind: 'habar', id: 'com.tvweb.habar', name: 'Home Assistant', habar: true });
+    }
     return out;
   }
 
   function tileHtml(e, i) {
     // Every input, AirPlay's among them, as an input, with its icon.
     var isDev = !!e.dev;
-    var cls = 'tile' + (isDev ? ' input' : '') + (!isDev && e.icon && iconTone[e.icon] ? ' ' + iconTone[e.icon] : '') + (i === focus ? ' focus' : '') +
+    var cls = 'tile' + (isDev ? ' input' : '') + (e.habar ? ' habar' : '') + (!isDev && e.icon && iconTone[e.icon] ? ' ' + iconTone[e.icon] : '') + (i === focus ? ' focus' : '') +
       (e.kind === 'input' && e.port && e.port === onPort ? ' now' : '');
+    if (e.habar) {
+      return '<div class="' + cls + '" data-i="' + i + '"><span class="ico habar">' + HA_SVG + '</span><div class="nm">' + esc(e.name) + '</div></div>';
+    }
     if (isDev) {
       var sub = e.kind === 'input' ? 'HDMI ' + e.port
         : e.kind === 'av' ? 'AV' : e.kind === 'component' ? 'Component'
@@ -227,11 +242,11 @@ img.ico{background:none;object-fit:contain}
     return '<div class="' + cls + '" data-i="' + i + '">' + ico + '<div class="nm">' + esc(e.name) + '</div></div>';
   }
   function render() {
-    var html = '', wasApp = true;
+    var html = '', prevGroup = '';
     list.forEach(function (e, i) {
-      var isApp = !e.dev;
-      if (wasApp && !isApp && i > 0) html += '<span class="gap"></span>';
-      wasApp = isApp;
+      var group = e.dev ? 'dev' : (e.habar ? 'habar' : 'app');
+      if (i > 0 && prevGroup && prevGroup !== group) html += '<span class="gap"></span>';
+      prevGroup = group;
       html += tileHtml(e, i);
     });
     $('row').innerHTML = html;

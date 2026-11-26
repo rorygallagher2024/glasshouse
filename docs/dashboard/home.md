@@ -151,6 +151,13 @@ The **Recommended** row surfaces content cards provided by installed streaming a
 * **Privacy:** Artwork is loaded directly from each app's own servers, as on LG's Home; no extra telemetry is sent.
 * **Availability:** Switched off by default in the Recommended row settings on the dashboard or TV app. Supported on webOS 10 and webOS 4.10; on TVs where the system reports no app recommendations (such as a C2 on webOS 9.2), the row remains hidden and the switch indicates none are available.
 
+## Home Assistant row
+
+When the **Home Assistant API** is enabled and at least one entity is configured in the [Home Assistant control bar](../HOME-ASSISTANT.md#home-assistant-control-bar) on the **HA & MQTT** tab, a **Home Assistant** row toggle appears under **Rows and tiles** on the web dashboard and under **Rows** on the TV app (off by default).
+
+* **Shared entity list:** Displays and controls the same entities configured for the control bar (`habar.json`), without maintaining a separate list.
+* **Inline control:** **OK** or clicking a tile toggles a switch, light, climate device, cover, or lock, or runs a scene, script, or button; clickable step buttons on focused adjustable tiles or **Ch +** / **Ch -** on the remote adjust brightness, fan percentage, cover state, or target temperature while leaving **Up** and **Down** for row navigation.
+
 ## Search
 
 > [!WARNING]
@@ -436,6 +443,8 @@ Its app, `com.tvweb.homebar`, has no tile of its own. It is kept loaded in the b
 **On a remote key, beside Glasshouse Home.** The Bar can also be opened by another key while Glasshouse Home or LG's Home keeps the Home button: choose **Glasshouse Bar** for a key on the [Remote tab](remote.md#available-actions), such as an app button or a colour key. A press brings it up over whatever is playing, and a second press closes it. Pressed over Glasshouse Home itself, the key does nothing. Beside Glasshouse Home the **LG Home** tile is left out of the row, as **Home** opens Glasshouse Home and holding it opens LG's Home. The app is kept loaded while a key opens it, and removed once no key does and the Bar is not the launcher.
 
 The Home button on the web dashboard's remote opens it too. A phone remote app that opens LG's Home directly, rather than pressing Home, opens LG's Home, as Glasshouse Bar leaves it in place. With the Magic Remote, a notch of the scroll wheel moves the row a tile, and resting the pointer near either end of the row steps it along, as on Glasshouse Home. **Smooth scrolling**, under Animations on the Home tab, applies to the Bar too: off, the row jumps rather than glides.
+
+When the **Home Assistant API** has at least one control bar entity configured, an opt-in **Show in Glasshouse Bar** toggle (also listed under **Apps** → **Home Assistant bar tile** on the Home tab) appends a **Home Assistant** tile at the end of Glasshouse Bar to open the Home Assistant control bar directly.
 
 ## Custom launcher
 

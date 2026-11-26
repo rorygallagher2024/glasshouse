@@ -2564,6 +2564,15 @@
         <span data-t="ha.bar.remoteHint">Map Home Assistant bar to a remote or Quick Access key on the</span>
         <a href="?tab=remote" onclick="event.preventDefault(); showTab('remote');" data-t="ha.bar.remoteLink">Remote tab</a>.
       </div>
+      <div class="pv-table" id="ha-bar-homebar-wrap" style="max-width:560px;margin-top:14px" hidden>
+        <div class="pv-row">
+          <div>
+            <div class="n" data-t="ha.bar.inHomeBar">Show in Glasshouse Bar</div>
+            <div class="d" data-t="ha.bar.inHomeBarDesc">Adds a Home Assistant tile at the end of Glasshouse Bar to open this control bar.</div>
+          </div>
+          <button type="button" class="pill idle" id="ha-bar-homebar-btn" onclick="haBarToggleInHomeBar()">&mdash;</button>
+        </div>
+      </div>
       <div class="ha-bar-actions" id="ha-bar-actions" hidden>
         <button type="button" class="pill idle" id="ha-bar-open-btn" onclick="openHaBarOnTv()" data-t="ha.bar.openOnTv">Open on TV</button>
         <a class="pill idle ha-bar-preview" id="ha-bar-preview-link" href="/assets/habar.html" target="_blank" rel="noopener" data-t="ha.bar.preview">Preview</a>

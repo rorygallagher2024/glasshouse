@@ -3,6 +3,8 @@
 const HA_BAR_MAX = 16;
 let haBarEntities = [];
 let haBarConfigured = false;
+let haBarInHomeBar = false;
+let haBarHomeBarOffered = false;
 let haBarMsgTimer = null;
 
 if (typeof haPickerRegister === 'function') {
@@ -66,6 +68,13 @@ function renderHaBar() {
   if (actions) actions.hidden = !haBarEntities.length;
   const hint = q('ha-bar-remote-hint');
   if (hint) hint.hidden = !haBarEntities.length;
+  const hbWrap = q('ha-bar-homebar-wrap');
+  const hbBtn = q('ha-bar-homebar-btn');
+  if (hbWrap) hbWrap.hidden = !haBarEntities.length || !haBarHomeBarOffered;
+  if (hbBtn) {
+    updateToggle(hbBtn, { cls: haBarInHomeBar ? 'good' : 'idle', label: haBarInHomeBar ? t('common.on', 'On') : t('common.off', 'Off'), on: haBarInHomeBar });
+    hbBtn.disabled = !cfgHaWritable || !haBarEntities.length;
+  }
   const openBtn = q('ha-bar-open-btn');
   if (openBtn) openBtn.disabled = !cfgHaWritable || !haBarEntities.length;
   const prevLink = q('ha-bar-preview-link');
@@ -104,6 +113,8 @@ async function loadHaBar() {
     const j = await r.json();
     if (!j || !j.ok) return;
     haBarConfigured = !!j.configured;
+    haBarInHomeBar = !!j.inHomeBar;
+    haBarHomeBarOffered = !!j.homeBarOffered;
     haBarEntities = Array.isArray(j.entities) ? j.entities : [];
     renderHaBar();
     if (haBarConfigured && typeof ensureHaEntities === 'function') {
@@ -126,6 +137,7 @@ async function saveHaBar() {
     }
     haBarEntities = j.entities || [];
     renderHaBar();
+    if (typeof loadHome === 'function' && typeof homeStatus !== 'undefined' && homeStatus) loadHome(true);
     setHaBarMsg(t('ha.bar.saved', 'Saved.'), 'good');
     return true;
   } catch (e) {
@@ -180,6 +192,31 @@ async function haBarLabel(idx, val) {
   haBarEntities[idx].label = String(val || '').trim();
   if (!(await saveHaBar())) {
     haBarEntities[idx].label = prev;
+    renderHaBar();
+  }
+}
+
+async function haBarToggleInHomeBar() {
+  const btn = q('ha-bar-homebar-btn');
+  if (btn) btn.disabled = true;
+  try {
+    const r = await fetch(api('/api/home/layout'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ haBarInHomeBar: !haBarInHomeBar })
+    });
+    const j = await r.json();
+    if (!j || !j.ok || !j.layout) {
+      setHaBarMsg((j && j.error) || t('mqtt.saveFailed', 'Save failed'), 'bad');
+      return;
+    }
+    haBarInHomeBar = j.layout.haBarInHomeBar === true;
+    renderHaBar();
+    if (typeof loadHome === 'function' && typeof homeStatus !== 'undefined' && homeStatus) loadHome(true);
+    setHaBarMsg(t('ha.bar.saved', 'Saved.'), 'good');
+  } catch (e) {
+    setHaBarMsg(e.message, 'bad');
+  } finally {
     renderHaBar();
   }
 }

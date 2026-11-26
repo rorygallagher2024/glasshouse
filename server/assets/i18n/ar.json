@@ -3967,5 +3967,19 @@
  "srv.habar.serviceFailed": {"from": "Home Assistant service call failed", "text": "فشل استدعاء خدمة Home Assistant"},
  "srv.habar.tooMany": {"from": "too many entities (max {max})", "text": "كيانات كثيرة جدًا (الحد الأقصى {max})"},
  "srv.remoteKeys.haBar": {"from": "Home Assistant bar", "text": "شريط Home Assistant"},
- "srv.remoteKeys.haBarInstall": {"from": "The Home Assistant bar could not be put on the TV. Try again in a moment.", "text": "تعذر وضع شريط Home Assistant على التلفاز. حاول مرة أخرى بعد لحظة."}
+ "srv.remoteKeys.haBarInstall": {"from": "The Home Assistant bar could not be put on the TV. Try again in a moment.", "text": "تعذر وضع شريط Home Assistant على التلفاز. حاول مرة أخرى بعد لحظة."},
+ "ha.bar.inHomeBar": {"from": "Show in Glasshouse Bar", "text": "إظهار في Glasshouse Bar"},
+ "ha.bar.inHomeBarDesc": {"from": "Adds a Home Assistant tile at the end of Glasshouse Bar to open this control bar.", "text": "يضيف مربع Home Assistant في نهاية Glasshouse Bar لفتح شريط التحكم هذا."},
+ "home.bar.haTile": {"from": "Home Assistant bar tile", "text": "مربع شريط Home Assistant"},
+ "home.bar.haTileDesc": {"from": "Adds a Home Assistant tile at the end of Glasshouse Bar to open the Home Assistant control bar.", "text": "يضيف مربع Home Assistant في نهاية Glasshouse Bar لفتح شريط تحكم Home Assistant."},
+ "home.ha.activated": {"from": "Activated", "text": "تم التفعيل"},
+ "home.ha.decrease": {"from": "Decrease", "text": "إنقاص"},
+ "home.ha.failed": {"from": "Action failed", "text": "فشل الإجراء"},
+ "home.ha.increase": {"from": "Increase", "text": "زيادة"},
+ "home.ha.ran": {"from": "Ran", "text": "تم التشغيل"},
+ "home.haRowDesc": {"from": "Controls {n} entities from the Home Assistant bar.", "text": "يتحكم في {n} من الكيانات من شريط Home Assistant."},
+ "home.haRowEdit": {"from": "Edit on HA & MQTT", "text": "تعديل في HA وMQTT"},
+ "home.row.ha": {"from": "Home Assistant", "text": "Home Assistant"},
+ "home.row.haArrange": {"from": "Entities from the Home Assistant bar", "text": "الكيانات من شريط Home Assistant"},
+ "home.row.haHint": {"from": "OK to toggle, Ch +/- to adjust", "text": "OK للتبديل، Ch +/- للضبط"}
 }
