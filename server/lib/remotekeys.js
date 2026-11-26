@@ -2173,9 +2173,10 @@ function describeKeys(keys, inChain, cb, native) {
         var autoOff = remotes.keysOffRemotes(found.auto, keyNames);
         // The remotes in use; all buttons is no remote, which folds nothing.
         var selected = choice.mode === 'all' ? [] : found.auto;
-        // Keys on none of those, folded unless changed (the page decides); only where every one is known.
-        var off = choice.mode === 'all' ? [] : autoOff;
-        out.forEach(function (k) { if (off.indexOf(k.key) !== -1) k.offRemote = true; });
+        // Keys on none of the remotes in use, only where every one is known: left off the page
+        // entirely while folding (mode 'auto'), or shown apart under Buttons on other remotes
+        // while it is off (mode 'all'), so a button a different remote might have stays reachable.
+        out.forEach(function (k) { if (autoOff.indexOf(k.key) !== -1) k.offRemote = true; });
         // A key under the name the remote prints on it (the MR25GA's AI button is the microphone key), unless
         // another key already has that name (webOS 11 offers AI as a key of its own).
         var taken = out.map(function (k) { return k.title; });
@@ -2192,10 +2193,10 @@ function describeKeys(keys, inChain, cb, native) {
           remotes: {
             mode: choice.mode,
             canFold: autoOff.length > 0,
-            folding: off.length > 0,
+            folding: choice.mode !== 'all' && autoOff.length > 0,
             // Why nothing is folded where it is not (for the page to say): 'none' no remote is known to be in use,
             // 'unknown' one is not in the catalogue, 'unfinished' one's list of buttons is not finished.
-            why: off.length > 0 || choice.mode === 'all' ? '' : !selected.length ? 'none'
+            why: autoOff.length > 0 || choice.mode === 'all' ? '' : !selected.length ? 'none'
               : selected.some(function (r) { return !r; }) ? 'unknown'
               : selected.some(function (r) { return r.complete !== true; }) ? 'unfinished' : '',
             selected: selected.filter(Boolean).map(function (r) {

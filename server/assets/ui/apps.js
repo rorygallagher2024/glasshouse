@@ -440,7 +440,7 @@ let rkDirty = false;   // a redraw skipped while a choice was open
 let rkCols = 0;        // the columns its grid had when it opened
 let rkWritable = false;
 let rkMoreOpen = false;  // the other countries' keys, folded until opened
-let rkOtherOpen = false; // the keys of other remotes, folded until opened
+let rkOtherOpen = false; // the other remotes' keys, folded until opened
 
 function rkIcon(id) {
   return `<img class="rk-ico" src="${esc(api('/api/apps/icon?id=' + encodeURIComponent(id)))}" alt="" onerror="this.style.visibility='hidden'">`;
@@ -600,7 +600,11 @@ function renderRemoteKeys(d) {
       </select></div></div>`;
   }
   const brightness = stepRow ? `<div class="rk-grp">${esc(t('apps.remoteKeys.brightnessSection', 'Brightness key settings'))}</div><div class="prot-table">${stepRow}${barStyleRow}</div>` : '';
-  const other = otherRemotes.length ? `<details class="rk-more"${rkOtherOpen ? ' open' : ''} ontoggle="rkOtherOpen = this.open">
+  // otherRemotes keys are always left out of the groups above. With Display only buttons for
+  // your remote on (mode 'auto'), they are dead on the remote in use and left off the page
+  // entirely; off (mode 'all'), they come back here, apart, in case another remote has them.
+  const folded = rk.remotes && rk.remotes.mode === 'auto';
+  const other = otherRemotes.length && !folded ? `<details class="rk-more"${rkOtherOpen ? ' open' : ''} ontoggle="rkOtherOpen = this.open">
       <summary class="rk-grp">${esc(t('apps.remoteKeys.otherRemotes', 'Buttons on other remotes ({n})', { n: otherRemotes.length }))}</summary>
       <div class="rk-grid">${otherRemotes.map(tile).join('')}</div></details>` : '';
   list.innerHTML = groups + more + other + brightness;

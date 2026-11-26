@@ -10,12 +10,12 @@ The **Remotes** column lists entries in the [remote catalogue](../remotes.md) kn
 
 | Remote tab key | webOS 4–10 | webOS 11 | Home Assistant | Remotes |
 | :------------- | :--------- | :------- | :------------- | :------ |
-| Netflix | yes | yes (where listed) | yes | MR25GA |
-| Prime Video | yes | yes (where listed) | yes | MR25GA |
-| Disney+ | yes | yes (where listed) | yes | MR25GA |
-| LG Channels | yes | yes (where listed) | yes | MR25GA |
-| Rakuten TV | yes | yes (where listed) | yes | MR25GA |
-| Movies | yes | yes (where listed) | yes | – |
+| Netflix | yes | yes (where listed) | yes | MR25GA, MR23, MR20, MR18 |
+| Prime Video | yes | yes (where listed) | yes | MR25GA, MR23, MR20, MR18 |
+| Disney+ | yes | yes (where listed) | yes | MR25GA, MR23 |
+| LG Channels | yes | yes (where listed) | yes | MR25GA, MR23 |
+| Rakuten TV | yes | yes (where listed) | yes | MR25GA, MR23 |
+| Movies | yes | yes (where listed) | yes | MR20 |
 | Hulu | yes | yes (where listed) | – | – |
 | BBC iPlayer | yes | yes (where listed) | – | – |
 | Freeview Play | yes | yes (where listed) | – | – |
@@ -26,27 +26,27 @@ The **Remotes** column lists entries in the [remote catalogue](../remotes.md) kn
 | Okko | – | yes (where listed) | – | – |
 | Kinopoisk | – | yes (where listed) | – | – |
 | LG Shop | – | yes (where listed) | – | – |
-| Alexa | yes | yes (blocks Alexa) | yes | MR25GA |
+| Alexa | yes | yes (blocks Alexa) | yes | MR25GA, MR23 |
 | Google Assistant | yes | yes (where listed) | yes | – |
-| Microphone | yes | yes (where listed) | yes | MR25GA |
+| Microphone | yes | yes (where listed) | yes | MR25GA, MR23, MR20, MR18 |
 | Apps | yes | yes (where listed) | – | – |
 | Home Hub | yes (key table checked) | yes | – | MR25GA |
-| AI | – | yes (turns off voice) | – | MR25GA |
+| AI | – | yes (turns off voice) | – | MR25GA, MR23 |
 | ? button | yes | yes | – | MR25GA |
 | ? button, held | – | yes | – | MR25GA |
-| 123 button | yes | – | – | MR25GA |
-| Channel up | yes (incl. webOS 4) | yes (key handler patch) | – | MR25GA |
-| Channel down | yes (incl. webOS 4) | yes (key handler patch) | – | MR25GA |
-| Guide | yes | yes | – | MR25GA |
-| Input | yes | yes (key handler patch) | – | – |
+| 123 button | yes | – | – | MR25GA, MR23, MR20 |
+| Channel up | yes (incl. webOS 4) | yes (key handler patch) | – | MR25GA, MR23, MR20, MR18 |
+| Channel down | yes (incl. webOS 4) | yes (key handler patch) | – | MR25GA, MR23, MR20, MR18 |
+| Guide | yes | yes | – | MR25GA, MR23, MR20, MR18 |
+| Input | yes | yes (key handler patch) | – | MR23, MR20, MR18 |
 | TV | yes | yes (where listed) | – | – |
 | Search | yes | yes (where listed) | – | – |
 | Info | yes | yes (where listed) | – | – |
 | Help | yes | yes (where listed) | – | – |
-| Red | yes | yes (observes presses) | yes | – |
-| Green | yes | yes (observes presses) | yes | – |
-| Yellow | yes | yes (observes presses) | yes | – |
-| Blue | yes | yes (observes presses) | yes | – |
+| Red | yes | yes (observes presses) | yes | MR23, MR20, MR18 |
+| Green | yes | yes (observes presses) | yes | MR23, MR20, MR18 |
+| Yellow | yes | yes (observes presses) | yes | MR23, MR20, MR18 |
+| Blue | yes | yes (observes presses) | yes | MR23, MR20, MR18 |
 
 ## Technical reference
 
