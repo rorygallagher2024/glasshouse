@@ -2168,6 +2168,8 @@ async function visitHomeFadeAndInputs(browser, base, problems) {
   const layout = { rows: ['app', 'dev', 'ch'], order: { app: [], dev: [], ch: [] },
     hidden: { app: [], dev: [], ch: [] }, channels: [], hintSeen: true, searchHintSeen: true, colours: null, fade: false, hideUnused: true };
   let version = 1;
+  let sleeps = 0;
+  let screenOff = false;
   let openFails = false;
   let holdCatalogue = null;
   const opened = [];
@@ -2186,7 +2188,7 @@ async function visitHomeFadeAndInputs(browser, base, problems) {
     }
     const body = pathname === '/api/home/catalogue' ? catalogue()
       : pathname === '/api/home/now' ? { kind: 'none' }
-      : { ok: true, build: 'one', layoutVersion: String(version) };
+      : { ok: true, build: 'one', layoutVersion: String(version), sleeps, screenOff };
     return route.fulfill({ contentType: 'application/json', body: JSON.stringify(body) });
   });
   const faded = () => page.evaluate(() => / ?faded/.test(document.documentElement.className));
@@ -2262,6 +2264,7 @@ async function visitHomeFadeAndInputs(browser, base, problems) {
 
     // Back on screen: dark while the rows and what was last on are refreshed, then in.
     await visible(true);
+    await waitUntil(page, faded, 2000);
     let releaseRows;
     holdCatalogue = new Promise(r => { releaseRows = r; });
     await visible(false);
@@ -2275,6 +2278,7 @@ async function visitHomeFadeAndInputs(browser, base, problems) {
     else if (!/\bin\b/.test(cls)) problems.push('Home fade: coming back did not use the fade in (' + cls + ')');
     // A refresh that does not come: in all the same, before long.
     await visible(true);
+    await waitUntil(page, faded, 2000);
     holdCatalogue = new Promise(r => { releaseRows = r; });
     await visible(false);
     await page.waitForTimeout(1000);
@@ -2282,6 +2286,16 @@ async function visitHomeFadeAndInputs(browser, base, problems) {
     releaseRows();
     holdCatalogue = null;
     await page.waitForTimeout(200);
+
+    // Screen off (TV into standby): stays as it was, and waking shows it without a fade.
+    sleeps++;
+    screenOff = true;
+    await visible(true);
+    await page.waitForTimeout(1200);
+    if (await faded()) problems.push('Home fade: screen going off darkened the view');
+    screenOff = false;
+    await visible(false);
+    if (await faded()) problems.push('Home fade: waking from standby left the view dark');
 
     // Arranging: the input with nothing plugged in shows, greyed out, and is not hidden on its own.
     layout.hideUnused = true;

@@ -3762,11 +3762,13 @@ step('a view that stops beating in standby is left alone', function (done) {
   start(null);
   home.enable(function () {
     foreground(LG_HOME);
-    home.beat();
+    assert.strictEqual(home.beat().screenOff, false, 'awake before standby');
     power(false);
+    assert.strictEqual(home.beat().screenOff, true, 'heartbeat flags standby even after powerChanged already ran');
     wait(10500, function () {
       assert.deepEqual(tv.launched, []);
       power(true);
+      assert.strictEqual(home.beat().screenOff, false, 'cleared again on wake');
       home.disable(function () { done(); });
     });
   });
