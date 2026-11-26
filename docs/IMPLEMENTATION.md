@@ -2131,11 +2131,28 @@ restore-glasshouse-home` over SSH is seen by a running server.
 The apps, inputs, channels and cards the rows are built from are kept as last
 read in `home-lists.json`. Just after the server starts, every luna call waits
 its turn 150 ms apart (`lib/children.js`), and a view opened then waited 7.9 s
-for its first catalogue on a B8 (webOS 4.4.3). Until each list has been read in
-this run, the saved one is answered at once and read again behind it; a list
-that changed bumps `layoutVersion`, so the view reloads on its next heartbeat.
-The catalogue route takes the layout and wallpapers from `viewStatus()`, which
-makes no luna calls. While Glasshouse Home is on, the boot hook starts the
+for its first catalogue on a B8 (webOS 4.4.3). The catalogue and Last watched
+answer from known lists and refresh them after the reply if expired (30 s;
+10 minutes for channels). The channel picker and tile actions wait for an
+expired in-memory list to refresh. One read runs per list, and a failed read
+keeps it. Waiting for those reads made a catalogue take 0.5 s on a G3
+(webOS 9.2.2), ten luna-send children in turn. A changed list bumps
+`layoutVersion`. A catalogue reports the version from before it started, so
+the next heartbeat still picks up any change made during the read. A tile
+that fails to open asks for the catalogue at once, as it may be for an app
+removed while Home was away. The catalogue takes
+the layout and wallpapers from `viewStatus()`, which makes no luna calls, and
+carries `rev`, a hash of everything in it but `layoutVersion`: a view that
+already has that rev applies nothing again. Inputs with no signal are marked
+on copies of the cached list, so the list does not differ from every read.
+The guide on the Channels row is answered from its last read for a minute.
+After that, it is answered from the last read, and read again behind it, only
+while that read has a programme on for every picked channel; otherwise the
+reply waits for a new read, one call per channel in turn. LG can answer with
+no programme for a channel for minutes (BBC One for about ten on a G3, webOS
+9.2.2), and an answer from memory would leave it blank a minute after LG has
+one. The storage manager's media servers are kept sorted, since it lists
+them in a new order at each read and a reordered list would reload the view. While Glasshouse Home is on, the boot hook starts the
 server without its 5 s wait: on webOS 4 the Home key opens the view (25 s into
 a B8's boot) before webosbrew runs the hook (41 s).
 
@@ -2147,8 +2164,23 @@ switch it causes from counting for the others. Live TV's channel is read from
 `utp.boot/getLastChannelId` when Live TV leaves the foreground, since changing
 channel within it changes nothing in front, and when the catalogue is asked
 for while Live TV is still in front: on a G3 the view asks about 0.2 s before
-sam names it. The catalogue waits for that read. Only rows set to Last opened are
+sam names it. The catalogue waits for that read. Otherwise the TV tile and
+what was last on take the channel from the last read. Only rows set to Last opened are
 recorded, and a row going back to its own order is forgotten.
+
+A return to the view comes as a relaunch, the page shown again, or both, in
+either order; it runs once, and a second event within 2 s with no key
+pressed between takes only the relaunch's parameters (a guide or channel
+asked for), since running it again would close a guide the relaunch had just
+opened. A relaunch that came while the page was hidden has the wallpaper and
+the live preview follow once it shows. The view has one catalogue request out
+at a time, answering every caller; a heartbeat that finds the layout changed,
+or a closed channel picker that added channels, waits for a request sent
+after it, not one already out. What was last on and the two guides redraw the
+rows only when their replies changed, besides once a minute for the progress
+bars, and a redraw replaces only the rows whose markup changed: on a G3
+(webOS 9.2.2) every row replaced took 130 ms, at each programme change in the
+guide.
 
 Back on the view opens its Recent apps panel. LG's own is a view inside LG's
 Home with no way in from outside, so `lib/home-recent-apps.js` reads the same

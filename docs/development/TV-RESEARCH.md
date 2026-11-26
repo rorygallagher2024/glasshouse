@@ -1141,6 +1141,22 @@ Measured with `scripts/tv.sh <tv> frames` (testing.md), in Alternative View:
   (`decoding="async"`) too, the longest frame then being 67 to 100 ms.
 - A contributor's G3 (webOS 9.2.2) missed 25 of about 480 frames in 8 s of
   continuous scrolling (#955), which the C2 did not reproduce.
+- **The office G3 (OLED55G36LA, webOS 9.2.2), standard view with a picture
+  wallpaper, 26 November 2026,** five runs of each `frames` scenario on
+  0.160.0: no frame over 33 ms scrolling 36 keys along the Apps row, its
+  `applyFocus` 5.6 ms on average. Recent apps opened with one or two long
+  tasks of 53 to 81 ms, the longest frame 100 to 133 ms; the cards' script
+  took under 10 ms. The rest is likely the browser restyling and compositing
+  the page as the rows fade behind the panel (not yet tested). After a reload
+  of the page every row was replaced once or twice more as what was on and
+  the guide came in, 125 to 160 ms each time.
+- **The TV's storage manager lists media servers in a new order at each
+  read** (`attachedstoragemanager/listDevices`, eight Sonos speakers on the
+  office network, G3, webOS 9.2.2).
+- **Closing Home does not reload it.** `applicationManager/closeByAppId` for
+  `com.webos.app.home` on the G3, then a launch, reached the page as a
+  `webOSRelaunch`: the page was not loaded again. `tv.sh frames cold` reloads
+  the page from its heartbeat instead.
 
 ## Home pressed with Home in front (C2, webOS 9.2.2)
 
@@ -1297,6 +1313,12 @@ G3 in the UK.
   TV's zone, once a channel has been tuned since the TV started; before that it
   has no programme. `tv/getChannelProgramInfo` and `iepg/getEventList` returned
   empty programme lists throughout.
+- With the tuner's channels in use, the call can still answer with no
+  programme for one of them for minutes: BBC One gave none from about 19:24 to
+  19:33 on 26 November 2026 (office G3), on two builds of Glasshouse alike,
+  then its programme again; the cause was not found. At a programme change it
+  moved on at once: polled every 20 s across 20:00, BBC One and Channel 4 gave
+  the next programme in the first poll after it began.
 - `com.webos.service.utp.boot/getLastChannelId` names the channel Live TV is
   on, including one reached with the remote's Channel Up within Live TV, which
   changes nothing in sam's foreground. Measured on 18 October 2026.
@@ -2407,6 +2429,14 @@ prints nothing, for any service; with `ssh -tt` it prints the reply, with
 `\r\n` line ends. `getForegroundAppInfo` answers an empty `appId` while LG's
 Home or Glasshouse Home is in front and in standby, and the input's app
 (`com.webos.app.hdmi2`) while an input is.
+
+On the office G3 (webOS 9.2.2, 26 November 2026) the call itself was not
+always made either: `applicationManager/launch` for the web browser, Live TV,
+Glasshouse Home with launch parameters, and `tvpower/turnOnScreenSaver`, sent
+without a terminal, each left the TV as it was on some tries and worked on
+others, with no error. The same calls with `ssh -tt` worked every time, with
+the app named in front within a few seconds. A script that launches over SSH
+uses a terminal and checks the app in front afterwards.
 
 ## Services a TV does not have (webOS 3.9.3, 43UJ750V; webOS 9.2.2, C2)
 

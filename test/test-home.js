@@ -253,6 +253,10 @@ function luna(uri, p, cb) {
     if (tv.focusedWindows) r.focusedWindowInfo = copy(tv.focusedWindows);
   } else if (uri === 'com.webos.service.utp.boot/getLastChannelId') {
     r.channelId = tv.lastChannel;
+  } else if (uri === 'com.webos.service.apiadapter/tv/getChannelCurrentProgramInfo') {
+    tv.guideReads = (tv.guideReads || 0) + 1;
+    var show = tv.programmes && tv.programmes[p.channelId];
+    if (show) { r.programName = show.title; r.startTime = show.start; r.endTime = show.end; }
   } else if (uri === 'com.webos.service.attachedstoragemanager/listDevices') {
     if (tv.attachedDevices) r.devices = copy(tv.attachedDevices);
   }
@@ -278,7 +282,7 @@ function start(file, opts) {
   freshTv();
   if (file) fs.writeFileSync(path.join(dir, 'home.json'), JSON.stringify(file));
   var o = { luna: luna, liveState: liveState, stateDir: dir, webosVersion: '9.2.2', samrescan: samrescan,
-            wakeSettleMs: 1500, takeoverDir: stageDir, lgHomeDir: appDir, procDir: procDir, exec: exec, kill: kill,
+            wakeSettleMs: 1500, revalidateDelayMs: 0, takeoverDir: stageDir, lgHomeDir: appDir, procDir: procDir, exec: exec, kill: kill,
             lgLayoutDir: layoutDir, checkpointDirs: [checkpointDir],
             installApp: function (action, cb) {
               if (action === 'install') tv.oldAppInstalled = true;
@@ -318,6 +322,13 @@ function until(check, ms, fn) {
 var steps = [];
 var shard = require('./shard');
 function step(name, fn) { steps.push({ name: name, fn: fn }); }
+
+// A list past its time to live is answered as it was and read again behind
+// the reply; the stub TV answers on the next tick, so by setImmediate the
+// read is in and the next catalogue has it.
+function catalogueAfterRead(cb) {
+  home.catalogue(function () { setImmediate(function () { home.catalogue(cb); }); });
+}
 function next() {
   if (!next.picked) { steps = shard.pick(steps); next.picked = true; }
   var s = steps.shift();
@@ -642,6 +653,259 @@ step('device tiles use LG\'s CEC selection contract, or open the port without a 
   })();
 });
 
+step('the catalogue\'s rev holds for the same rows, moves with the layout, and not with a programme boundary', function (done) {
+  var tvRevision = 1;
+  start(null, { iptv: {
+    rowItems: function () { return []; }, rowStatus: function () { return null; },
+    hasPlaylists: function () { return false; }, revision: function () { return tvRevision; }
+  } });
+  home.catalogueReply(function (first) {
+    assert.ok(first.ok && first.rev, 'a rev is given');
+    home.catalogueReply(function (again) {
+      assert.strictEqual(again.rev, first.rev, 'the same rows, the same rev');
+      tvRevision++;
+      home.catalogueReply(function (boundary) {
+        assert.strictEqual(boundary.rev, first.rev, 'an IPTV programme boundary leaves the rev');
+        assert.notStrictEqual(boundary.layoutVersion, first.layoutVersion, 'though the view is told to look');
+        home.setLayout({ order: { app: ['cdp-30', 'netflix'] } }, function (r) {
+          assert.ok(r.ok, r.error);
+          home.catalogueReply(function (moved) {
+            assert.notStrictEqual(moved.rev, first.rev, 'a new order is a new rev');
+            done();
+          });
+        });
+      });
+    });
+  });
+});
+
+step('a list past its time is answered at once and read behind; a failed read keeps it', function (done) {
+  var now = 1000, failing = false, calls = [];
+  start(null, { now: function () { return now; }, luna: function (uri, p, cb) {
+    calls.push(uri);
+    if (failing && uri === 'com.webos.applicationManager/listLaunchPoints') return process.nextTick(function () { cb(null); });
+    luna(uri, p, cb);
+  } });
+  home.catalogue(function (first) {
+    assert.ok(first.apps.length, 'the first read is waited for');
+    calls = [];
+    home.catalogue(function () {
+      assert.deepEqual(calls, [], 'inside its time, nothing is read');
+      failing = true;
+      now += 60000;
+      home.catalogue(function (stale) {
+        assert.deepEqual(stale.apps, first.apps, 'past it, the list as it was, at once');
+        setImmediate(function () {
+          assert.ok(calls.indexOf('com.webos.applicationManager/listLaunchPoints') !== -1, 'and read again behind');
+          home.catalogue(function (kept) {
+            assert.deepEqual(kept.apps, first.apps, 'a failed read keeps the list');
+            done();
+          });
+        });
+      });
+    });
+  });
+});
+
+step('an input with no signal is marked on a copy, so the saved list does not change at each read', function (done) {
+  var now = 1000;
+  start(null, { now: function () { return now; }, hdmiSignal: function (cb) { cb({ 3: { powered: false, locked: false } }); } });
+  tv.devices = [{ id: 'HDMI_3', label: 'HDMI 3', hdmiPlugIn: true, subList: [] }];
+  home.catalogueReply(function (first) {
+    assert.strictEqual(first.devices.filter(function (d) { return d.id === 'hdmi3'; })[0].noSignal, true);
+    var version = first.layoutVersion;
+    now += 60000;
+    home.catalogueReply(function () {
+      setImmediate(function () {
+        home.catalogueReply(function (later) {
+          assert.strictEqual(later.layoutVersion, version, 'the view is not reloaded');
+          assert.strictEqual(later.rev, first.rev);
+          var saved = fs.readFileSync(path.join(dir, 'home-lists.json'), 'utf8');
+          assert.strictEqual(saved.indexOf('noSignal'), -1, 'nothing of it is saved');
+          done();
+        });
+      });
+    });
+  });
+});
+
+step('media servers listed in a new order are the same list, and do not reload the view', function (done) {
+  var now = 1000;
+  start(null, { now: function () { return now; } });
+  var a = { deviceType: 'dms', deviceId: 'RINCON_A', deviceName: 'Sonos A' };
+  var b = { deviceType: 'dms', deviceId: 'RINCON_B', deviceName: 'Sonos B' };
+  tv.attachedDevices = [a, b];
+  home.catalogue(function () {
+    var version = home.layoutVersion();
+    tv.attachedDevices = [b, a];
+    now += 60000;
+    catalogueAfterRead(function () {
+      assert.strictEqual(home.layoutVersion(), version);
+      done();
+    });
+  });
+});
+
+step('the guide is answered from its last read until a programme in it ends', function (done) {
+  // 13:00 to 13:30 and 13:30 to 14:00 UTC, as getChannelCurrentProgramInfo writes them.
+  var now = Date.UTC(2026, 10, 26, 13, 10);
+  start({ channels: ['1_1'] }, { now: function () { return now; } });
+  tv.programmes = { '1_1': { title: 'News', start: '2026,11,26,13,00,00', end: '2026,11,26,13,30,00' } };
+  home.guide(function (first) {
+    assert.strictEqual(first['1_1'][0].title, 'News');
+    var reads = tv.guideReads;
+    now += 61000;
+    tv.programmes['1_1'].title = 'News at One';
+    home.guide(function (stale) {
+      assert.strictEqual(stale['1_1'][0].title, 'News', 'past its minute, the last read at once');
+      setImmediate(function () {
+        assert.strictEqual(tv.guideReads, reads + 1, 'and read again behind it');
+        // Past 13:30 with the last read's programme over: waited for, not answered empty.
+        tv.programmes['1_1'] = { title: 'Quiz', start: '2026,11,26,13,30,00', end: '2026,11,26,14,00,00' };
+        now = Date.UTC(2026, 10, 26, 13, 31);
+        home.guide(function (after) {
+          assert.ok(after['1_1'] && after['1_1'][0].title === 'Quiz', 'a programme that ended is read again before the reply');
+          done();
+        });
+      });
+    });
+  });
+});
+
+step('a guide read with a channel showing nothing is read again before the next reply', function (done) {
+  var now = Date.UTC(2026, 10, 26, 13, 10);
+  start({ channels: ['1_1', '1_2'] }, { now: function () { return now; } });
+  tv.programmes = { '1_1': { title: 'News', start: '2026,11,26,13,00,00', end: '2026,11,26,13,30,00' } };
+  home.guide(function (first) {
+    assert.ok(!first['1_2'], 'LG had nothing on for 1_2');
+    tv.programmes['1_2'] = { title: 'Film', start: '2026,11,26,13,00,00', end: '2026,11,26,15,00,00' };
+    now += 61000;
+    home.guide(function (next) {
+      assert.ok(next['1_2'] && next['1_2'][0].title === 'Film', 'waited for, as LG has it now');
+      done();
+    });
+  });
+});
+
+step('a list that changed in a read behind a reply has the view reload, the channels too', function (done) {
+  var now = 1000;
+  start(null, { now: function () { return now; } });
+  tv.channels = ['1_1'];
+  home.catalogue(function () {
+    var before = home.beat().layoutVersion;
+    tv.channels = ['1_1', '1_2'];
+    now += 600001;
+    home.catalogue(function () {
+      until(function () { return home.beat().layoutVersion !== before; }, 2000, function () {
+        assert.notStrictEqual(home.beat().layoutVersion, before, 'the view is told to look');
+        done();
+      });
+    });
+  });
+});
+
+step('a refused read of the last channel is not kept as no channel', function (done) {
+  var refuse = true, reads = 0;
+  start(null, { luna: function (uri, p, cb) {
+    if (uri !== 'com.webos.service.utp.boot/getLastChannelId') return luna(uri, p, cb);
+    reads++;
+    if (refuse) return process.nextTick(function () { cb({ returnValue: false }); });
+    luna(uri, p, cb);
+  } });
+  tv.channels = ['1_1'];
+  tv.lastChannel = '1_1';
+  home.catalogue(function () {
+    refuse = false;
+    home.catalogue(function (second) {
+      assert.strictEqual(reads, 2, 'read again');
+      assert.strictEqual(second.devices.filter(function (d) { return d.tuner; })[0].channel.id, '1_1');
+      done();
+    });
+  });
+});
+
+step('a guide read started before channels changed does not answer or overwrite the new channel list', function (done) {
+  var now = Date.UTC(2026, 10, 26, 13, 10), held = null;
+  start({ channels: ['1_1'] }, { now: function () { return now; }, luna: function (uri, p, cb) {
+    if (uri === 'com.webos.service.apiadapter/tv/getChannelCurrentProgramInfo' && p.channelId === '1_1' && held === 'hold') {
+      held = function () { luna(uri, p, cb); };
+      return;
+    }
+    luna(uri, p, cb);
+  } });
+  tv.programmes = {
+    '1_1': { title: 'News', start: '2026,11,26,13,00,00', end: '2026,11,26,13,30,00' },
+    '1_2': { title: 'Film', start: '2026,11,26,13,00,00', end: '2026,11,26,15,00,00' }
+  };
+  held = 'hold';
+  home.guide(function () {});
+  home.setLayout({ channels: ['1_1', '1_2'] }, function (r) {
+    assert.ok(r.ok, r.error);
+    home.guide(function (g) {
+      assert.ok(g['1_1'] && g['1_2'] && g['1_2'][0].title === 'Film', 'new channel is included, not coalesced onto the old read');
+      var finish = held;
+      held = null;
+      finish();
+      setImmediate(function () {
+        home.guide(function (after) {
+          assert.ok(after['1_2'] && after['1_2'][0].title === 'Film', 'finishing the old read did not overwrite the new cache');
+          done();
+        });
+      });
+    });
+  });
+});
+
+step('a last-channel read started before Live TV left does not stand for the channel left on', function (done) {
+  var held = null;
+  start(null, { luna: function (uri, p, cb) {
+    if (uri === 'com.webos.service.utp.boot/getLastChannelId' && held === 'hold') {
+      held = function () { cb({ returnValue: true, channelId: '1_1' }); };
+      return;
+    }
+    luna(uri, p, cb);
+  } });
+  tv.channels = ['1_1', '1_2'];
+  tv.lastChannel = '1_1';
+  foreground('com.webos.app.livetv');
+  held = 'hold';
+  home.catalogue(function () {});
+  until(function () { return typeof held === 'function'; }, 1000, function () {
+    tv.lastChannel = '1_2';
+    foreground('com.webos.app.home');
+    var finishStale = held;
+    held = null;
+    finishStale();
+    home.catalogue(function (after) {
+      assert.strictEqual(after.devices.filter(function (d) { return d.tuner; })[0].channel.id, '1_2', 'stale read did not poison the cache');
+      done();
+    });
+  });
+});
+
+step('the channel Live TV was on is read once, and afresh while Live TV is in front', function (done) {
+  var reads = 0;
+  start(null, { luna: function (uri, p, cb) {
+    if (uri === 'com.webos.service.utp.boot/getLastChannelId') reads++;
+    luna(uri, p, cb);
+  } });
+  tv.channels = ['1_1', '1_2'];
+  tv.lastChannel = '1_2';
+  home.catalogue(function (first) {
+    var tuner = first.devices.filter(function (d) { return d.tuner; })[0];
+    assert.strictEqual(tuner.channel.id, '1_2');
+    home.catalogue(function () {
+      assert.strictEqual(reads, 1, 'behind Home, the last read stands');
+      foreground('com.webos.app.livetv');
+      tv.lastChannel = '1_1';
+      home.catalogue(function (inLive) {
+        assert.strictEqual(inLive.devices.filter(function (d) { return d.tuner; })[0].channel.id, '1_1', 'in Live TV, read afresh');
+        done();
+      });
+    });
+  });
+});
+
 // An Xbox's tile drawn as the port, before eim listed the console on it (#1462).
 step('a port that gains a CEC device redraws the view, and its old tile still opens the port', function (done) {
   var now = 1000;
@@ -654,7 +918,7 @@ step('a port that gains a CEC device redraws the view, and its old tile still op
     tv.devices = [{ id: 'HDMI_4', label: 'XBOX Game Console', hdmiPlugIn: true,
                     subList: [{ id: 'SIMPLINK', depth: 1, osdName: 'XBOX', uniqueId: 4 }] }];
     now += 60000;
-    home.catalogue(function (after) {
+    catalogueAfterRead(function (after) {
       assert.deepEqual(after.devices.map(function (d) { return d.id; }), ['hdmi4:xbox']);
       assert.notStrictEqual(home.layoutVersion(), version, 'the view is told to draw its tiles again');
       // The tile still on screen opens the port, with the console chosen.
@@ -702,7 +966,7 @@ step('an input keeps its hiding, place and name whether the TV lists its device 
     // Off the list again, the port's tile has them back.
     tv.devices = plain;
     now += 60000;
-    home.catalogue(function (back) {
+    catalogueAfterRead(function (back) {
       assert.deepEqual(back.order.dev, ['hdmi4', 'hdmi1']);
       assert.deepEqual(home.layout().hidden.dev, ['hdmi4']);
       assert.strictEqual(back.devices.filter(function (d) { return d.id === 'hdmi4'; })[0].name, 'Xbox One', 'with its new name');
@@ -711,7 +975,7 @@ step('an input keeps its hiding, place and name whether the TV lists its device 
         { id: 'SIMPLINK', depth: 1, osdName: 'Receiver', uniqueId: 5 },
         { id: 'SIMPLINK', depth: 2, osdName: 'XBOX', uniqueId: 4 }] }];
       now += 60000;
-      home.catalogue(function () {
+      catalogueAfterRead(function () {
         assert.deepEqual(home.layout().hidden.dev, ['hdmi4'], 'neither device takes the port\'s hiding');
         done();
       });
