@@ -29,7 +29,7 @@
 # keys are sent on the TV over loopback. A scenario names a fixed run: scroll
 # (36 keys along the Apps row and back), steps, rows, recents (Recent apps
 # opened, scrolled and closed), return (Home pressed 10 s after the browser
-# came in front) and cold (Home closed and opened afresh, with its start marks).
+# came in front) and cold (Home's page reloaded, with its start marks).
 # Each run first prints the build and webOS on the TV and its load. The trace
 # is switched off again however it ends. TV_PORT is the dashboard's port (8080).
 #
@@ -108,6 +108,7 @@ case "$cmd" in
     trace=/var/lib/tvweb/home-trace
     log=/var/lib/tvweb/tvweb.log
     port=${TV_PORT:-8080}
+    case "$port" in *[!0-9]*) echo 'TV_PORT must be a number' >&2; exit 2 ;; esac
     mode=${1:-keys}
     case "$mode" in
       keys|cold|return|recents|scroll|steps|rows|scenarios) [ $# -gt 0 ] && shift ;;
@@ -117,31 +118,38 @@ case "$cmd" in
       for m in scroll steps rows recents; do "$0" "$tv" frames "$m"; done
       exit 0
     fi
+    if [ "$mode" = keys ]; then
+      for key in "$@"; do
+        case "$key" in ''|*[!a-zA-Z]*) echo "invalid key: $key" >&2; exit 2 ;; esac
+      done
+    fi
     # The keys are sent on the TV, over loopback, by one shell: 0.15 s apart
     # whatever the network does. Each costs the server one luna-send.
     press() {
       script=''
       for key in "$@"; do
         if [ "$key" = wait ]; then script="$script sleep 1;"; continue; fi
-        script="$script r=\$(curl -s -m 5 -X POST -H 'Content-Type: application/json' -d '{\"action\":\"rcu\",\"value\":\"$key\"}' http://127.0.0.1:$port/api/control); case \"\$r\" in *'\"ok\":true'*) ;; *) echo \"key $key: \$r\" >&2 ;; esac; sleep 0.15;"
+        script="$script r=\$(curl -sS -m 5 -X POST -H 'Content-Type: application/json' -d '{\"action\":\"rcu\",\"value\":\"$key\"}' http://127.0.0.1:$port/api/control); case \"\$r\" in *'\"ok\":true'*) ;; *) echo \"key $key: \$r\" >&2; exit 1 ;; esac; sleep 0.15;"
       done
       on_tv "$script"
     }
     forks() { on_tv 'sed -n "s/^processes //p" /proc/stat'; }
+    wait_for_line() {
+      tries=0
+      until on_tv "tail -n +$((from + 1)) $log | grep -a -q $(quote "$1")"; do
+        tries=$((tries + 1))
+        [ "$tries" -lt "$2" ] || return 1
+        sleep 1
+      done
+    }
     # What was benched: the build on the TV, its webOS, and how busy it was.
     # shellcheck disable=SC2016 # expanded on the TV
     echo "bench: mode=$mode at=$(date -u +%Y-%m-%dT%H:%M:%SZ) tv=$tv $(on_tv 'printf "webos=%s build=%s load=%s" "$(head -1 /etc/issue | sed "s/^webOS TV //; s/ .*//")" "$(tr -d " \n" < /var/lib/tvweb/build.json 2>/dev/null)" "$(cut -d" " -f1-3 /proc/loadavg | tr " " /)"')"
-    # shellcheck disable=SC2064 # $trace is fixed above
-    trap "on_tv 'rm -f $trace'" EXIT
     from=$(on_tv "wc -l < $log")
-    on_tv "touch $trace"
+    on_tv "set -C; : > $trace" || { echo 'could not start a new Home frame trace' >&2; exit 1; }
+    trap 'on_tv "rm -f $trace"' EXIT
     # The view starts measuring at its next beat, which is then logged.
-    tries=0
-    until on_tv "tail -n +$((from + 1)) $log | grep -a -q 'home: frames'"; do
-      tries=$((tries + 1))
-      [ $tries -lt 15 ] || { echo "Home sent no frame trace in 15 s: is Glasshouse Home in front?" >&2; exit 1; }
-      sleep 1
-    done
+    wait_for_line 'home: frames ' 15 || { echo 'Home sent no frame trace. Is Glasshouse Home in front?' >&2; exit 1; }
     from=$(on_tv "wc -l < $log")
     forks0=$(forks)
     case "$mode" in
@@ -166,7 +174,9 @@ case "$cmd" in
         sleep 10
         press home ;;
       # The view reloads at its next beat; its start marks come with the first beat after its first rows.
-      cold) on_tv "echo reload > $trace" ;;
+      cold)
+        on_tv "echo reload > $trace"
+        wait_for_line 'home: boot ' 20 || { echo 'Home did not report a new page load' >&2; exit 1; } ;;
     esac
     forks1=$(forks)
     # Two beats, so the last key's frames are in.
@@ -174,6 +184,12 @@ case "$cmd" in
     echo "forks: $((forks1 - forks0)) (system-wide, threads included)"
     lines=$(on_tv "tail -n +$((from + 1)) $log | grep -a -E 'home: (frames|luna|boot) '" | sed 's/^.*home: //')
     [ -n "$lines" ] || { echo "no frame trace came back" >&2; exit 1; }
+    if [ "$mode" = return ]; then
+      case "$(on_tv "curl -fsS -m 5 http://127.0.0.1:$port/api/home/now")" in
+        *'"homeInFront":true'*) ;;
+        *) echo 'Glasshouse Home did not come back to the front' >&2; exit 1 ;;
+      esac
+    fi
     printf '%s\n' "$lines"
     ;;
   *)

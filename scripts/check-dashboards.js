@@ -2128,8 +2128,11 @@ async function visitHomeReturnOnce(browser, base, problems) {
     return reply({ ok: true, build: 'one' });
   });
   try {
+    const homeResponse = endpoint => page.waitForResponse(response => new URL(response.url()).pathname === '/api/home/' + endpoint);
+    const startNow = homeResponse('now');
     await page.goto(base + '/assets/home.html');
     await page.waitForSelector('.tile');
+    await startNow;
     await page.evaluate(() => {
       window.__hidden = false;
       Object.defineProperty(document, 'hidden', { configurable: true, get: () => window.__hidden });
@@ -2139,13 +2142,15 @@ async function visitHomeReturnOnce(browser, base, problems) {
     for (const order of [['shown', 'relaunch'], ['relaunch', 'shown']]) {
       await page.evaluate(() => { window.__hidden = true; document.dispatchEvent(new Event('visibilitychange')); });
       const before = Object.assign({}, asked);
+      const replies = Promise.all([homeResponse('catalogue'), homeResponse('now')]);
       await page.evaluate(steps => {
         for (const step of steps) {
           if (step === 'relaunch') document.dispatchEvent(new Event('webOSRelaunch'));
           else { window.__hidden = false; document.dispatchEvent(new Event('visibilitychange')); }
         }
       }, order);
-      await page.waitForFunction(() => document.querySelector('.tile') && !document.hidden);
+      await replies;
+      // Leave time for a duplicate request queued behind the first reply.
       await page.waitForTimeout(300);
       const what = order.join(' then ');
       if (asked.catalogue - before.catalogue !== 1) problems.push('Home return: ' + what + ' asked for the catalogue ' + (asked.catalogue - before.catalogue) + ' times');

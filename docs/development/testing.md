@@ -501,15 +501,16 @@ token from the network needs nothing more. A named scenario replaces the
 keys: `scroll` (36 keys along the Apps row and back), `steps` (single steps
 a second apart), `rows` (down and up between rows), `recents` (Recent apps
 opened, scrolled and closed), `return` (the web browser opened, then Home
-10 s after it is in front; the run fails if the browser does not come in front
-in 20 s), `cold` (the view reloaded, printing its start marks as `boot`:
+10 s after it is in front; the run checks that the browser opened and Home
+returned), `cold` (the view reloaded, printing its start marks as `boot`:
 `navStart`, `opened` at the script's start, `scriptEnd`, `catalogueSent` and
 `catalogueReply`, `firstRender` and `firstRenderMs`, and `firstFrame`, all
 epoch ms) and `scenarios` (the first four in turn). Each run first prints a
 `bench:` line with the TV's webOS, the build it runs (`build.json`: version,
 commit and whether the tree was dirty) and its load average, then the forks
 the whole system made while the keys were pressed (`/proc/stat`, threads
-included). It fails if Home sends no trace within 15 s.
+included). It fails if Home sends no trace within 15 s, a key is refused,
+or `cold` receives no new page-load marks. It leaves an existing trace alone.
 
 ```bash
 scripts/tv.sh 192.168.1.131 frames return
