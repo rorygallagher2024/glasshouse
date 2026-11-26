@@ -2318,6 +2318,11 @@ function handleRequest(req, res) {
         body && typeof body.id === 'string' ? body.id : '');
     });
   }
+  // The key filter's Ambient light key: PicCap toggled here, as the dashboard does. The TV only.
+  if (pathname === '/api/remotekeys/piccap' && req.method === 'POST' && remoteKeysModule) {
+    if (!fromTV(req)) return send(res, 403, JSON.stringify({ ok: false, error: 'from the TV only' }));
+    return remoteKeysModule.piccapFromFilter(function (r) { send(res, 200, JSON.stringify(r)); });
+  }
   if (pathname === '/api/ha/bar/act' && req.method === 'POST' && haBarModule) {
     if (!fromTV(req) && !authed(u.query, req)) return send(res, 401, JSON.stringify({ ok: false, error: 'unauthorized' }));
     if (!fromTV(req) && !config.allowControl) {

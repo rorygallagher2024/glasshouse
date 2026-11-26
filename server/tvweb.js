@@ -647,6 +647,7 @@ function detectRemotes(cb) {
   });
 }
 remoteKeys.init({ detectRemotes: detectRemotes, luna: luna, subscription: lunaTransport.Subscription, services: servicesModule, inputNames: telemetry.inputNameMap, stateDir: __dirname,
+  port: CONFIG.port,
   lunaUrgent: lunaTransport.callUrgent,
   colorButtonsSupported: function () { return remotebuttons.findRcuDevices().length > 0; },
   watchColorButtons: function (on) { remotebuttons.want('remoteKeys', on); },

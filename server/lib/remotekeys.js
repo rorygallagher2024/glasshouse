@@ -391,6 +391,8 @@ var homeIsGlasshouseFn = function () { return false; };
 /** @type {function(): boolean} */
 var piccapOn = function () { return false; };
 var piccapToggleFn = null;
+// The server's port, for the filter to ask it to toggle PicCap.
+var serverPort = 8080;
 var piccapToggleBusy = false;
 // Told when the compositor was restarted for a change to LG's key handler, so Glasshouse Home's view can be opened again.
 var compositorRestartedFn = function () {};
@@ -449,6 +451,7 @@ function init(opts) {
   homeIsGlasshouseFn = opts.homeIsGlasshouse || function () { return false; };
   piccapOn = typeof opts.piccap === 'function' ? opts.piccap : function () { return false; };
   piccapToggleFn = typeof opts.togglePiccap === 'function' ? opts.togglePiccap : null;
+  serverPort = parseInt(opts.port, 10) || 8080;
   piccapToggleBusy = false;
   compositorRestartedFn = opts.compositorRestarted || function () {};
   messagesPath = opts.messagesPath || MESSAGES_LOG;
@@ -854,11 +857,29 @@ function filterSource() {
     '    lunaCall.send("com.webos.service.tvpower", "/power/turnOffScreen", "{}", function () {});',
     '}',
     '',
+    // Glasshouse's server toggles PicCap, as its dashboard does: the compositor
+    // may not be let call PicCap's service itself (#1757, an OLED65B29LA on
+    // webOS 10.3). Only where the server does not answer is PicCap asked here.
     'function glasshouseTogglePiccap() {',
     '    if (glasshousePiccapBusy) return;',
     '    glasshousePiccapBusy = true;',
     '    var run = ++glasshousePiccapRun;',
     '    try { genericTimer.set(2000, function () { if (run === glasshousePiccapRun) glasshousePiccapBusy = false; }); } catch (e) {}',
+    '    try {',
+    '        var x = new XMLHttpRequest();',
+    '        x.onreadystatechange = function () {',
+    '            if (x.readyState !== 4) return;',
+    '            if (x.status === 200) { glasshousePiccapBusy = false; return; }',
+    '            glasshouseTogglePiccapHere();',
+    '        };',
+    '        x.open("POST", "http://127.0.0.1:' + serverPort + '/api/remotekeys/piccap");',
+    '        x.setRequestHeader("Content-Type", "application/json");',
+    '        x.send("{}");',
+    '    } catch (e) {',
+    '        glasshouseTogglePiccapHere();',
+    '    }',
+    '}',
+    'function glasshouseTogglePiccapHere() {',
     '    lunaCall.send("org.webosbrew.piccap.service", "/status", "{}", function (payload) {',
     '        try {',
     '            var r = typeof payload === "string" ? JSON.parse(payload) : payload;',
@@ -1899,6 +1920,17 @@ function buttonPressed(button) {
   });
 }
 
+// The filter's Ambient light key, asked of the server (routes.js). cb({ ok }).
+function piccapFromFilter(cb) {
+  cb = cb || function () {};
+  if (!piccapToggleFn) return cb({ ok: false, error: 'PicCap is not available' });
+  console.log('remotekeys: a key toggles PicCap');
+  piccapToggleFn(function (r) {
+    if (!r || !r.ok) console.log('remotekeys: could not toggle PicCap' + (r && r.error ? ': ' + r.error : ''));
+    cb(r || { ok: false });
+  });
+}
+
 function togglePiccapFromPress() {
   if (piccapToggleBusy) return;
   piccapToggleBusy = true;
@@ -2878,6 +2910,7 @@ module.exports = {
   setHome: setHome,
   setBrightnessStep: setBrightnessStep,
   setHomeAdjust: setHomeAdjust,
+  piccapFromFilter: piccapFromFilter,
   homeAdjustLast: homeAdjustLast,
   setBrightnessBarStyle: setBrightnessBarStyle,
   getBrightness: levelBar.getBrightness,
