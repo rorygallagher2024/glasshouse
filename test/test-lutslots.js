@@ -91,6 +91,10 @@ lutslots.readSlots(function (r) {
   function finish() {
     // The hash is cached by size and mtime: same mtime keeps it, a new mtime re-reads.
     var file = path.join(tmp, 'cinema_profile0_1D_DPG_DATA');
+    // Whole-second times only: older Node rounds a Date to a float of seconds, so a
+    // sub-second mtime does not survive utimesSync unchanged.
+    var base = new Date(Math.floor(Date.now() / 1000) * 1000 - 60000);
+    fs.utimesSync(file, base, base);
     lutslots.init({ dir: tmp });
     lutslots.readSlots(function (first) {
       var before = first.slots[0].sha256;
