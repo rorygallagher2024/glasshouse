@@ -156,7 +156,7 @@ The **Recommended** row surfaces content cards provided by installed streaming a
 When the **Home Assistant API** is enabled and at least one entity is configured in the [Home Assistant control bar](../HOME-ASSISTANT.md#home-assistant-control-bar) on the **HA & MQTT** tab, a **Home Assistant** row toggle appears under **Rows and tiles** on the web dashboard and under **Rows** on the TV app (off by default).
 
 * **Shared entity list:** Displays and controls the same entities configured for the control bar (`habar.json`), without maintaining a separate list.
-* **Inline control:** **OK** or clicking a tile toggles a switch, light, climate device, cover, or lock, or runs a scene, script, or button; clickable step buttons on focused adjustable tiles or **Ch +** / **Ch -** on the remote adjust brightness, fan percentage, cover state, or target temperature while leaving **Up** and **Down** for row navigation.
+* **Inline control:** **OK** or clicking a tile toggles a switch, light, climate device, cover, or lock, or runs a scene, script, or button; clickable step buttons on focused adjustable tiles or **Ch +** / **Ch -** on the remote adjust brightness, fan percentage, cover state, or target temperature while leaving **Up** and **Down** for row navigation. Where **Ch +** and **Ch -** are set to **Brightness up** and **Brightness down** on the [Remote](remote.md) tab, they step the tile in focus instead while one that steps has focus, and set the TV's brightness everywhere else.
 
 ![Home Assistant row on Glasshouse Home showing interactive light, thermostat, switch, fan, blinds, lock and scene tiles](../screenshots/home-ha-row.png)
 

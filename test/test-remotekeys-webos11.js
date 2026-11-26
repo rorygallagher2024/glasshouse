@@ -623,6 +623,36 @@ step('the channel keys are taken by LG\'s first key filter where its library can
   });
 });
 
+step('a channel key set to Brightness steps the Home Assistant tile Glasshouse Home has in focus instead', function (next) {
+  var lab = fakeLibrary();
+  var homeSteps = [];
+  lab.opts.homeAdjustStep = function (id, dir, cb) { homeSteps.push(id + ':' + dir); cb({ id: id, n: homeSteps.length }); };
+  rk.init(lab.opts);
+  set('channelup', 'open', 'action:brightnessUp', function () {
+    afterWatching(function () {
+      panel.backlight = 50;
+      var seq = rk.homeAdjustLast().seq;
+      rk.setHomeAdjust(true, function (r) {
+        assert.ok(r.ok);
+        // The press and a repeat each step the tile; the brightness is left alone.
+        logLine(channelLine(402, 0) + channelLine(402, 2) + channelLine(402, 1));
+        until(function () { return homeSteps.length === 2; }, 5000, function () {
+          assert.deepEqual(homeSteps, ['light.desk:1', 'light.desk:1']);
+          assert.strictEqual(panel.backlight, 50, 'the brightness left as it was');
+          assert.strictEqual(rk.homeAdjustLast().seq, seq + 2, 'Home reads the stepped tile');
+          rk.setHomeAdjust(false, function () {
+            logLine(channelLine(402, 0) + channelLine(402, 1));
+            until(function () { return panel.backlight === 60; }, 5000, function () {
+              assert.strictEqual(homeSteps.length, 2, 'off: the brightness again');
+              set('channelup', 'lg', '', function () { rk.restore(function () { lab.finish(next); }); });
+            });
+          });
+        });
+      }, 'light.desk');
+    });
+  });
+});
+
 step('a compositor that does not restart on the changed handler is restarted on LG\'s own', function (next) {
   var lab = fakeLibrary();
   lab.failRestarts = 1;

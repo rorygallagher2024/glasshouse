@@ -1616,6 +1616,8 @@ html[lang="vi"] #srcTitle,html[lang="vi"] #plMode,html[lang="vi"] #pvMode,html[l
     });
   }
   function syncHaPolling(refreshNow) {
+    // Covered, hidden or shown again: the channel keys follow.
+    syncHaKeys();
     if (haTimer) { clearInterval(haTimer); haTimer = null; }
     if (!haRowActive() || document.hidden || document.documentElement.classList.contains('resting')) {
       if (!haRowActive() && haTiles.length) {
@@ -1626,6 +1628,55 @@ html[lang="vi"] #srcTitle,html[lang="vi"] #plMode,html[lang="vi"] #pvMode,html[l
     }
     if (refreshNow || !haTiles.length) loadHaRow();
     haTimer = setInterval(loadHaRow, HA_POLL_MS);
+  }
+  /*
+   * Whether a tile that steps is in focus, told to the server, so Channel up
+   * and down set to Brightness on the Remote tab come here and step it, as the
+   * row's hint says, rather than the TV's brightness. Sent only on a change,
+   * after a moment, so moving along the row does not send each tile.
+   */
+  var haKeysSent = '', haKeysTimer = null, haKeysWatch = null, haKeysSeq = -1;
+  // The tile that steps in focus, by its entity ID, or ''.
+  function haKeysWanted() {
+    if (!haRowActive() || document.hidden || document.documentElement.classList.contains('resting')) return '';
+    if (state.arranging || state.bar >= 0 || state.rail || rowKey() !== 'ha') return '';
+    var it = items('ha')[colOf('ha')];
+    return it && it.adjustable ? it.id : '';
+  }
+  function syncHaKeys() {
+    if (!data || !layout) return;
+    var want = haKeysWanted();
+    if (haKeysTimer) { clearTimeout(haKeysTimer); haKeysTimer = null; }
+    if (want === haKeysSent) return;
+    haKeysTimer = setTimeout(function () {
+      haKeysTimer = null;
+      if (haKeysWanted() !== want || want === haKeysSent) return;
+      haKeysSent = want;
+      postJson('/api/home/ha-keys', { on: !!want, id: want });
+      watchHaKeys();
+    }, want ? 150 : 0);
+  }
+  /*
+   * On webOS 11 the server steps the tile itself, as the key never reaches
+   * this page, so while a tile is named its last step is read each second,
+   * from the server's memory, not Home Assistant.
+   */
+  function watchHaKeys() {
+    if (haKeysWatch) { clearInterval(haKeysWatch); haKeysWatch = null; }
+    if (!haKeysSent) return;
+    haKeysWatch = setInterval(function () {
+      getJson('/api/home/ha-keys', function (r) {
+        var last = r && r.ok && r.last;
+        if (!last) return;
+        if (haKeysSeq < 0 || !last.tile) { haKeysSeq = last.seq; return; }
+        if (last.seq === haKeysSeq) return;
+        haKeysSeq = last.seq;
+        for (var i = 0; i < haTiles.length; i++) {
+          if (haTiles[i].id === last.tile.id) { haTiles[i] = last.tile; break; }
+        }
+        updateHaTilesInPlace();
+      });
+    }, 1000);
   }
   function actHa(item, action, value) {
     if (!item || !item.id || haBusy[item.id]) return;
@@ -1683,6 +1734,7 @@ html[lang="vi"] #srcTitle,html[lang="vi"] #plMode,html[lang="vi"] #pvMode,html[l
       if (!noScroll && active) scrollTrack(rowEl, tiles[c], instant);
     }
     if (!noScroll) keepRowInView(instant);
+    syncHaKeys();
     for (var b = 0; b < BAR.length; b++) setClass($(BAR[b]), 'btn' + (state.bar === b ? ' focus' : ''));
     setClass($('rail'), state.rail && !finder.open ? 'focus' : '');
     followApps();

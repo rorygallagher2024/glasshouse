@@ -399,6 +399,9 @@ var detectRemotesFn = null;
 
 function init(opts) {
   opts = opts || {};
+  homeAdjustStepFn = opts.homeAdjustStep || null;
+  homeAdjust = false;
+  homeAdjustId = '';
   watchColorButtons(false);
   colorTargets = {};
   colorButtonsSupported = opts.colorButtonsSupported || function () { return false; };
@@ -679,6 +682,10 @@ function filterSource() {
     'var glasshouseBarPress = 0;',
     'var glasshouseBrightnessStep = ' + BRIGHTNESS_DEFAULT_STEP + ';',
     'var glasshousePiccapBusy = false;',
+    // Glasshouse Home has a Home Assistant tile in focus that steps: Channel
+    // up and down set to Brightness go to Home instead, while it is in front.
+    'var glasshouseHomeAdjust = false;',
+    'var glasshouseChannelCodes = {};',
     'var glasshousePiccapRun = 0;',
     '',
     '// Key code by name; a name this firmware lacks is left out.',
@@ -705,6 +712,10 @@ function filterSource() {
     '        // Home, only while Glasshouse Home sets it.',
     '        if (typeof value.home === "string" && value.home) ids[Qt.Key_Super_L] = value.home;',
     '        glasshouseKeyIds = ids;',
+    '        glasshouseHomeAdjust = value.homeAdjust === true;',
+    '        glasshouseChannelCodes = {};',
+    '        if (codes.channelup !== undefined) glasshouseChannelCodes[codes.channelup] = true;',
+    '        if (codes.channeldown !== undefined) glasshouseChannelCodes[codes.channeldown] = true;',
     '        glasshousePowerOffArmed = {};',
     '        glasshouseStarting = typeof value.starting === "string" ? value.starting : "";',
     levelBar.filterConfig(),
@@ -721,6 +732,16 @@ function filterSource() {
     '    try {',
     '        return typeof global !== "undefined" && typeof global.isForegroundApp === "function" &&',
     '            typeof global.sendKeyToFocusWindow === "function" && global.isForegroundApp(' + JSON.stringify(INPUT_BAR) + ') === true;',
+    '    } catch (e) {',
+    '        return false;',
+    '    }',
+    '}',
+    '',
+    // Glasshouse Home in front: LG's Home's id where it runs under it, or its own app's on webOS 4.
+    'function glasshouseHomeInFront() {',
+    '    try {',
+    '        return typeof global !== "undefined" && typeof global.isForegroundApp === "function" &&',
+    '            global.isForegroundApp(glasshouseKeyIds[Qt.Key_Super_L] || ' + JSON.stringify(HOME_APP) + ') === true;',
     '    } catch (e) {',
     '        return false;',
     '    }',
@@ -936,6 +957,10 @@ function filterSource() {
     '            if (!pressed && glasshouseScreenOffArmed) console.info("glasshouse keyfilter: key", key, "turns the screen off");',
     '            glasshouseScreenOffKey(pressed, autoRepeat);',
     '        } else if (id === ' + JSON.stringify(BRIGHTNESS_UP) + ' || id === ' + JSON.stringify(BRIGHTNESS_DOWN) + ') {',
+    '            if (glasshouseHomeAdjust && glasshouseChannelCodes[key] && glasshouseHomeInFront()) {',
+    '                glasshouseBrightnessHeld = 0;',
+    '                return KeyPolicy.NextPolicy;',
+    '            }',
     '            glasshouseBrightnessKey(id === ' + JSON.stringify(BRIGHTNESS_UP) + ' ? 1 : -1, pressed, autoRepeat);',
     '        } else if (id === ' + JSON.stringify(PICCAP_TOGGLE) + ') {',
     '            if (pressed && !autoRepeat) {',
@@ -991,6 +1016,7 @@ function writeKeys(map, cb, home, starting) {
   if (starting) value.starting = starting;
   var step = readStoredBrightnessStep();
   if (step) value.brightnessStep = step;
+  if (homeAdjust) value.homeAdjust = true;
   if (levelBarShown() && barAvailable() && Object.keys(map).some(function (k) { return isBrightnessAction(map[k]); })) value.osd = true;
   var barStyle = readStoredBarStyle();
   if (barStyle === 'horizontal' || barStyle === 'vertical') value.osdStyle = barStyle;
@@ -1843,7 +1869,9 @@ function keyEvent(code, ev) {
   if (ev === KEY_PRESSED) return buttonPressed(button);
   if (ev !== KEY_REPEATED || !lunaFn || !Object.prototype.hasOwnProperty.call(pressTargets, button)) return;
   var id = pressTargets[button];
-  if (Object.prototype.hasOwnProperty.call(BRIGHTNESS_DELTAS, id)) stepBrightness(BRIGHTNESS_DELTAS[id] * brightnessStep());
+  if (!Object.prototype.hasOwnProperty.call(BRIGHTNESS_DELTAS, id)) return;
+  if (homeAdjustPress(button, BRIGHTNESS_DELTAS[id])) return;
+  stepBrightness(BRIGHTNESS_DELTAS[id] * brightnessStep());
 }
 
 // lginput2 logs a press once; a second within half a second is the same one,
@@ -1859,7 +1887,10 @@ function buttonPressed(button) {
   if (!id || !lunaFn) return;
   if (id === SCREEN_OFF) return screenOffFromPress(button);
   if (id === PICCAP_TOGGLE) return togglePiccapFromPress();
-  if (Object.prototype.hasOwnProperty.call(BRIGHTNESS_DELTAS, id)) return stepBrightness(BRIGHTNESS_DELTAS[id] * brightnessStep());
+  if (Object.prototype.hasOwnProperty.call(BRIGHTNESS_DELTAS, id)) {
+    if (homeAdjustPress(button, BRIGHTNESS_DELTAS[id])) return;
+    return stepBrightness(BRIGHTNESS_DELTAS[id] * brightnessStep());
+  }
   lunaFn('com.webos.applicationManager/launch', { id: id }, function (r) {
     if (!(r && r.returnValue)) console.log('remotekeys: ' + button + ' could not open ' + id);
   });
@@ -2484,6 +2515,48 @@ function applyAny(cb) {
  * BRIGHTNESS_MAX_STEP. Kept with the keys and sent to the filter with them.
  * cb({ ok, error }).
  */
+/*
+ * Glasshouse Home says whether a Home Assistant tile that steps, such as a
+ * light's brightness, is in focus. While it is, and Home is in front, Channel
+ * up and down set to Brightness reach Home, which steps the tile, as its hint
+ * says; anywhere else they set the brightness. Kept in memory only, and only
+ * the configd value is written. cb({ ok }).
+ *
+ * On webOS 4 to 10 the filter hands the keys to Home. On webOS 11 the patched
+ * key handler takes them and this server steps the brightness from the logged
+ * press (buttonPressed), so it steps the tile Home named instead, and Home
+ * reads the result from homeAdjustLast().
+ */
+var homeAdjust = false;
+var homeAdjustId = '';
+var homeAdjustStepFn = null;
+var homeAdjustLastStep = { seq: 0, tile: null };
+function setHomeAdjust(on, cb, id) {
+  cb = cb || function () {};
+  on = on === true;
+  var map = readMap();
+  // Only a Brightness key on a channel key has anything to hand over.
+  if (on && !(isBrightnessAction(map.channelup) || isBrightnessAction(map.channeldown))) on = false;
+  homeAdjustId = on && typeof id === 'string' ? id : '';
+  if (on === homeAdjust) return cb({ ok: true, changed: false });
+  if (!lunaFn) return cb({ ok: false, error: 'no luna wrapper' });
+  homeAdjust = on;
+  writeKeys(map, function (ok) { cb({ ok: ok, changed: true }); }, readHome(), readStarting());
+}
+
+// A channel key's press or repeat on webOS 11 while Home has a tile that steps in focus. True when taken.
+function homeAdjustPress(button, delta) {
+  if (!homeAdjust || !homeAdjustId || !homeAdjustStepFn || !CHANNEL_BUTTON_NAMES[button]) return false;
+  homeAdjustStepFn(homeAdjustId, delta > 0 ? 1 : -1, function (tile) {
+    if (tile) homeAdjustLastStep = { seq: homeAdjustLastStep.seq + 1, tile: tile };
+  });
+  return true;
+}
+var CHANNEL_BUTTON_NAMES = { KEY_CHANNELUP: true, KEY_CHANNELDOWN: true };
+
+// The tile last stepped that way, for Home to show: { seq, tile }.
+function homeAdjustLast() { return homeAdjustLastStep; }
+
 function setBrightnessStep(value, cb) {
   var step = Number(value);
   if (!(step >= 1 && step <= BRIGHTNESS_MAX_STEP && Math.floor(step) === step)) {
@@ -2791,6 +2864,8 @@ module.exports = {
   setRemoteKey: setRemoteKey,
   setHome: setHome,
   setBrightnessStep: setBrightnessStep,
+  setHomeAdjust: setHomeAdjust,
+  homeAdjustLast: homeAdjustLast,
   setBrightnessBarStyle: setBrightnessBarStyle,
   getBrightness: levelBar.getBrightness,
   setRemoteSelection: setRemoteSelection,

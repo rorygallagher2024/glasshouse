@@ -2306,6 +2306,18 @@ function handleRequest(req, res) {
     });
   }
 
+  // Glasshouse Home: a Home Assistant tile that steps is in focus, so Channel
+  // up and down set to Brightness go to Home (lib/remotekeys.js). The TV's own pages only.
+  if (pathname === '/api/home/ha-keys' && remoteKeysModule) {
+    if (!fromTV(req)) return send(res, 403, JSON.stringify({ ok: false, error: 'from the TV only' }));
+    // The tile last stepped by a channel key on webOS 11, which Home shows.
+    if (req.method === 'GET') return send(res, 200, JSON.stringify({ ok: true, last: remoteKeysModule.homeAdjustLast() }));
+    if (req.method !== 'POST') return send(res, 405, JSON.stringify({ ok: false }));
+    return readJsonBody(req, res, function (body) {
+      remoteKeysModule.setHomeAdjust(!!(body && body.on === true), function (r) { send(res, 200, JSON.stringify(r)); },
+        body && typeof body.id === 'string' ? body.id : '');
+    });
+  }
   if (pathname === '/api/ha/bar/act' && req.method === 'POST' && haBarModule) {
     if (!fromTV(req) && !authed(u.query, req)) return send(res, 401, JSON.stringify({ ok: false, error: 'unauthorized' }));
     if (!fromTV(req) && !config.allowControl) {
