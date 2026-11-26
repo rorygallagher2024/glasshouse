@@ -2129,6 +2129,28 @@ compositor a new chain destroys the loader, not what it made.
 - **After the restart the screen shows LG's Home first.** Glasshouse Home had the
   place again 33 to 37 s after each of two restarts of the service.
 
+## The Guide key on another build (OLED65C35LA, webOS 11.2.0, firmware 43.21.71)
+
+- **The same code, 0x7c8 on.** `libappLaunch.so` is 392,300 bytes here. The
+  `bne` after `isForegroundApp` is at 0x2fa6e and the Guide launch's `{}`
+  literal at 0x30264, both with the same bytes as on the C3. `.rodata` ends
+  with 11 zero bytes, too few for `{"glasshouse":"guide"}`, so the text is put
+  in the 780 zero bytes after `.eh_frame` (0x5d3c8), which the first `PT_LOAD`
+  maps with the rest of its last page (r-x up to 0x5e000).
+- **An input in front takes the key.** The branch logs "handle TVGUide:
+  fullscreen appId, activeFocus, keyfilter, isInput" and, where the app in
+  front is an input, hands the key to it: on HDMI 3 `com.webos.app.hdmi3`
+  launched `com.webos.app.livemenu`, which opened LG's guide, and the key
+  handler launched nothing. The `bne` on `isInput` (0x2fa2c) made a `nop`, the
+  key launched Glasshouse Home's guide from HDMI as well.
+- **The guide opened only with a starred channel.** Home's guide asked for by
+  the key needed a channel in Home's row; with a lineup and no favourite it
+  launched Home and stayed on it.
+- **The first compositor of a boot crashed as it was restarted.** A
+  segmentation fault in `libweston-10.so.0` (`surface-manager`, the boot's pid)
+  was in `/var/log/reports/librdx` after the restart that loaded the copy; the
+  compositor came back and kept running.
+
 ## The Input key's launch, native key filters (OLED48C31LA, webOS 11.2.0, firmware 44.00.92)
 
 - **The Input key reads no value.** In `libappLaunch.so` its handler
