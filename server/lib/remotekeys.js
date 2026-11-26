@@ -266,6 +266,9 @@ var KEYS = [
   { key: 'okko', title: 'Okko', nativeMapping: true },
   { key: 'kinopoisk', title: 'Kinopoisk', nativeMapping: true },
   { key: 'shop', title: 'LG Shop', nativeMapping: true },
+  // Verified in an OLED48C6PSA's webOS 11 mapping_info (#1738); older Qt key symbols are unverified.
+  { key: 'stan', title: 'Stan', nativeMapping: true },
+  { key: 'youtube', title: 'YouTube', nativeMapping: true },
   // The voice assistants' own buttons on recent Magic Remotes: LG's filters
   // launch Alexa or the Google Assistant on a press, as for a streaming
   // button. The microphone button (Key_webOS_Voice) drives voice control; set
