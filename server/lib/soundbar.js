@@ -4,9 +4,15 @@ var net = require('net');
 var util = require('./util');
 var key = util.toBuffer('T^&*J%^7tr~4^%^&I(o%^!jIJ__+a0 k', 'ascii');
 var iv = util.toBuffer("'%^Ur7gy$~t+f)%@", 'ascii');
-var product = 'PRODUCT_INFO', speaker = 'SPK_LIST_VIEW_INFO', settings = 'SETTING_VIEW_INFO';
-var eq = 'EQ_VIEW_INFO', inputs = 'FUNC_VIEW_INFO';
-var views = [product, speaker, settings, eq, inputs];
+var productView = 'PRODUCT_INFO', speakerView = 'SPK_LIST_VIEW_INFO', settingsView = 'SETTING_VIEW_INFO';
+var eqView = 'EQ_VIEW_INFO', inputsView = 'FUNC_VIEW_INFO';
+var views = [productView, speakerView, settingsView, eqView, inputsView];
+var connectTo = net.connect;
+
+function init(options) {
+  options = options || {};
+  if (options.connect) connectTo = options.connect;
+}
 
 function privateAddress(host) {
   return typeof host === 'string' && net.isIPv4(host) &&
@@ -22,49 +28,61 @@ function frame(message) {
   return Buffer.concat([header, body]);
 }
 
+function decode(body) {
+  try {
+    var decipher = crypto.createDecipheriv('aes-256-cbc', key, iv);
+    var message = JSON.parse(Buffer.concat([decipher.update(body), decipher.final()]).toString('utf8'));
+    return message && typeof message === 'object' ? message : null;
+  } catch (err) {
+    return null;
+  }
+}
+
 function integer(n) { return typeof n === 'number' && isFinite(n) && Math.floor(n) === n; }
 
 // Rows carry only settings for which the soundbar supplied a usable value and range.
+// A view the bar rejected is an empty object and adds no rows.
 function controls(state) {
   var rows = [];
-  function add(group, field, row) {
+  function addRow(view, field, row) {
     row.key = field;
-    row.view = group;
+    row.view = view;
     rows.push(row);
   }
-  function choice(group, field, choices) {
-    var value = state[group][field];
+  function addChoiceRow(view, field, choices) {
+    var value = state[view][field];
     if (integer(value) && Array.isArray(choices)) {
       var options = choices.filter(integer);
-      if (options.length) add(group, field, { value: value, options: options });
+      if (options.length) addRow(view, field, { value: value, options: options });
     }
   }
-  function number(group, field, min, max, offset, step) {
-    var raw = state[group][field];
+  function addRangeRow(view, field, min, max, offset, step) {
+    var raw = state[view][field];
     if (!integer(raw) || !integer(min) || !integer(max) || min > max || max - min > 1000) return;
     var value = raw * step + offset;
-    if (value >= min && value <= max) add(group, field, { value: value, min: min, max: max, offset: offset, step: step });
+    if (value >= min && value <= max) addRow(view, field, { value: value, min: min, max: max, offset: offset, step: step });
   }
-  function toggle(group, field) {
-    if (typeof state[group][field] === 'boolean') add(group, field, { value: state[group][field] });
+  function addToggleRow(view, field) {
+    if (typeof state[view][field] === 'boolean') addRow(view, field, { value: state[view][field] });
   }
-  number(speaker, 'i_vol', state[speaker].i_vol_min, state[speaker].i_vol_max, 0, 1);
-  toggle(speaker, 'b_mute');
-  choice(eq, 'i_curr_eq', state[eq].ai_eq_list);
-  choice(inputs, 'i_curr_func', state[inputs].ai_func_list);
-  if (state[settings].b_nighttime_enable !== false) toggle(settings, 'b_night_time');
+  var speaker = state[speakerView], settings = state[settingsView], eq = state[eqView];
+  addRangeRow(speakerView, 'i_vol', speaker.i_vol_min, speaker.i_vol_max, 0, 1);
+  addToggleRow(speakerView, 'b_mute');
+  addChoiceRow(eqView, 'i_curr_eq', eq.ai_eq_list);
+  addChoiceRow(inputsView, 'i_curr_func', state[inputsView].ai_func_list);
+  if (settings.b_nighttime_enable !== false) addToggleRow(settingsView, 'b_night_time');
   ['woofer', 'center', 'side', 'top', 'rear', 'dialog'].forEach(function (name) {
-    if (name === 'dialog' && !state[settings].b_enable_dialog) return;
+    if (name === 'dialog' && !settings.b_enable_dialog) return;
     var prefix = 'i_' + name;
     // Levels count up from zero on the wire, even when the displayed minimum is negative.
-    number(settings, prefix + '_level', state[settings][prefix + '_min'], state[settings][prefix + '_max'], state[settings][prefix + '_min'], 1);
+    addRangeRow(settingsView, prefix + '_level', settings[prefix + '_min'], settings[prefix + '_max'], settings[prefix + '_min'], 1);
   });
   ['i_bass', 'i_middle', 'i_treble'].forEach(function (field) {
-    number(eq, field, state[eq][field + '_min'], state[eq][field + '_max'], state[eq][field + '_min'], 1);
+    addRangeRow(eqView, field, eq[field + '_min'], eq[field + '_max'], eq[field + '_min'], 1);
   });
-  ['b_drc', 'b_auto_vol', 'b_auto_power', 'b_voice_feedback', 'b_neuralx'].forEach(function (field) { toggle(settings, field); });
-  number(settings, 'i_av_sync', 0, 300, 0, 10);
-  choice(settings, 'i_back_light', [0, 1, 2]);
+  ['b_drc', 'b_auto_vol', 'b_auto_power', 'b_voice_feedback', 'b_neuralx'].forEach(function (field) { addToggleRow(settingsView, field); });
+  addRangeRow(settingsView, 'i_av_sync', 0, 300, 0, 10);
+  addChoiceRow(settingsView, 'i_back_light', [0, 1, 2]);
   return rows;
 }
 
@@ -75,21 +93,23 @@ function wireValue(row, value) {
   return (value - row.offset) / row.step;
 }
 
+function sessionName(target) { return JSON.stringify([target.host, target.id || '']); }
+
 // Each selected bar has one socket shared by open dashboards, refreshes and writes.
 var sessions = {};
-function sessionFor(target, connect) {
-  var name = JSON.stringify([target.host, target.id || '']);
-  if (!connect && sessions[name]) return sessions[name];
-  var socket = (connect || net.connect)(9741, target.host);
+function sessionFor(target) {
+  var name = sessionName(target);
+  if (sessions[name]) return sessions[name];
+  var socket = connectTo(9741, target.host);
   var state = {}, listeners = [], readers = [], missing = views.slice();
-  var closed = false, ready = false, writing = null, retry, monitor, lastSpeaker = 0, cycle = 0;
+  var closed = false, ready = false, writing = null, retry, monitor, lastReply = 0, cycle = 0;
   var buffer = util.allocBuffer(0), previous = '';
   var deadline = setTimeout(function () { stop('offline'); }, 4000);
   function send(cmd, msg, data) { socket.write(frame({ cmd: cmd, msg: msg, data: data })); }
   function get(view) { send('get', view); }
   function snapshot() {
-    return { host: target.host, id: state[product].s_uuid, model: state[product].s_model_name,
-      name: state[speaker].s_user_name || state[product].s_model_name, rows: controls(state) };
+    return { host: target.host, id: state[productView].s_uuid, model: state[productView].s_model_name,
+      name: state[speakerView].s_user_name || state[productView].s_model_name, rows: controls(state) };
   }
   function release() {
     if (!listeners.length && !readers.length && !writing) stop();
@@ -154,13 +174,18 @@ function sessionFor(target, connect) {
   }
   function watch(cb) {
     listeners.push(cb);
-    if (ready) cb(null, snapshot());
+    if (ready) {
+      var current = snapshot();
+      // Listeners already open have this state, so the next poll must not send it again.
+      previous = JSON.stringify(current);
+      cb(null, current);
+    }
     if (!monitor) monitor = setInterval(function () {
       if (!ready) return;
-      if (Date.now() - lastSpeaker > 8000) return stop('offline');
+      if (Date.now() - lastReply > 8000) return stop('offline');
       // Some eARC volume steps do not produce an unsolicited speaker update.
       if (++cycle % 5 === 0) views.forEach(get);
-      else get(speaker);
+      else get(speakerView);
     }, 1500);
     return function () {
       var idx = listeners.indexOf(cb);
@@ -172,22 +197,24 @@ function sessionFor(target, connect) {
   function receive(message) {
     var view = message.msg, data = message.data;
     if (views.indexOf(view) < 0 || !/^noti/.test(message.cmd)) return;
-    if (message.result && message.result !== 'ok') {
-      if (writing && writing.row.view === view) finishWrite('unconfirmed');
-      return;
-    }
-    if (!data || typeof data !== 'object') return;
-    if (view === product && data.s_uuid && target.id && data.s_uuid !== target.id) return stop('identity');
+    lastReply = Date.now();
+    var failed = message.result && message.result !== 'ok';
+    if (failed && writing && writing.row.view === view) finishWrite('unconfirmed');
+    if (closed || (!failed && (!data || typeof data !== 'object'))) return;
+    // A compatible bar can reject a view the DS90TR has. Loading goes on without its rows.
     if (!state[view]) state[view] = {};
-    Object.keys(data).forEach(function (field) {
-      if (/^(i_|ai_|b_|s_)/.test(field)) state[view][field] = data[field];
-    });
-    if (view === speaker) lastSpeaker = Date.now();
+    if (!failed) {
+      if (view === productView && data.s_uuid && target.id && data.s_uuid !== target.id) return stop('identity');
+      Object.keys(data).forEach(function (field) {
+        if (/^(i_|ai_|b_|s_)/.test(field)) state[view][field] = data[field];
+      });
+    }
     var index = missing.indexOf(view);
     if (index >= 0 && message.cmd === 'notibyget') missing.splice(index, 1);
-    if (ready && writing && view === writing.row.view && data[writing.row.key] === writing.value) finishWrite(null);
+    if (!failed && ready && writing && view === writing.row.view && data[writing.row.key] === writing.value) finishWrite(null);
+    if (closed) return;
     if (!missing.length && (!ready || readers.length)) {
-      var identity = state[product];
+      var identity = state[productView];
       if (typeof identity.s_model_name !== 'string' || !identity.s_model_name.trim() ||
           typeof identity.s_uuid !== 'string' || !identity.s_uuid.trim()) return stop('model');
       if (target.id && target.id !== identity.s_uuid) return stop('identity');
@@ -199,40 +226,40 @@ function sessionFor(target, connect) {
     if (ready) publish();
   }
   var session = { read: read, watch: watch, stop: stop };
-  if (!connect) sessions[name] = session;
+  sessions[name] = session;
   socket.on('connect', function () { views.forEach(get); });
   socket.on('data', function (chunk) {
     buffer = Buffer.concat([buffer, chunk]);
-    try {
-      while (!closed && buffer.length >= 5) {
-        var size = buffer.readUInt32BE(1);
-        if (buffer[0] !== 16 || !size || size > 65536 || size % 16) return stop('protocol');
-        if (buffer.length < 5 + size) return;
-        var decipher = crypto.createDecipheriv('aes-256-cbc', key, iv);
-        var decoded = Buffer.concat([decipher.update(buffer.slice(5, size + 5)), decipher.final()]);
-        buffer = buffer.slice(size + 5);
-        receive(JSON.parse(decoded.toString('utf8')));
-      }
-    } catch (err) { stop('protocol'); }
+    while (!closed && buffer.length >= 5) {
+      var size = buffer.readUInt32BE(1);
+      if (buffer[0] !== 16 || !size || size > 65536 || size % 16) return stop('protocol');
+      if (buffer.length < 5 + size) return;
+      var message = decode(buffer.slice(5, size + 5));
+      buffer = buffer.slice(size + 5);
+      if (!message) return stop('protocol');
+      // Outside the decoder's error handling: a dashboard callback that throws is
+      // its own bug, not a fault of the bar shared by every open panel.
+      receive(message);
+    }
   });
   socket.on('error', function () { stop('offline'); });
   socket.on('close', function () { stop('offline'); });
   return session;
 }
 
-function request(target, change, cb, connect) {
+function request(target, change, cb) {
   if (!target || !privateAddress(target.host)) return cb('address');
-  sessionFor(target, connect).read(change, cb);
+  sessionFor(target).read(change, cb);
 }
 
-function watch(target, cb, connect) {
+function watch(target, cb) {
   if (!target || !privateAddress(target.host) || !target.id) { cb('address'); return function () {}; }
-  return sessionFor(target, connect).watch(cb);
+  return sessionFor(target).watch(cb);
 }
 
 function forget(target) {
-  var session = sessions[JSON.stringify([target.host, target.id || ''])];
+  var session = sessions[sessionName(target)];
   if (session) session.stop('selection');
 }
 
-module.exports = { request: request, watch: watch, forget: forget };
+module.exports = { init: init, request: request, watch: watch, forget: forget };

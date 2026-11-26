@@ -10,6 +10,11 @@ let soundbarTVVolume = null;
 let soundbarOnline = false;
 let soundbarSchema = '';
 let soundbarMessage = '';
+// After a fault the stream is closed rather than left to EventSource's own
+// 1.5 s retry, since each reconnect opens a socket from the TV to the bar.
+let soundbarRetry = null;
+let soundbarRetryDelay = 0;
+let soundbarHalted = false;
 
 function soundbarGroups() {
   return [
@@ -50,7 +55,10 @@ function soundbarChoice(key, value) {
       10: 'HDMI 2', 11: 'HDMI 3', 12: 'LG TV', 14: 'Chromecast', 15: 'OPT / HDMI ARC', 18: 'USB', 20: 'HDMI eARC' };
     return names[value] || t('audio.bar.inputId', 'Input {id}', { id: value });
   }
-  if (key === 'i_back_light') return [t('audio.bar.dim', 'Auto dim'), t('audio.bar.autoOff', 'Auto off'), t('common.on', 'On')][value];
+  if (key === 'i_back_light') {
+    return [t('audio.bar.dim', 'Auto dim'), t('audio.bar.autoOff', 'Auto off'), t('common.on', 'On')][value] ||
+      t('audio.bar.modeId', 'Mode {id}', { id: value });
+  }
   return String(value);
 }
 
@@ -228,7 +236,7 @@ function soundbarClose() {
 
 function soundbarViewChanged() {
   if (activeTab !== 'audio' || !q('audio-bar').open || document.hidden) return soundbarClose();
-  if (soundbarStream) return;
+  if (soundbarStream || soundbarRetry || soundbarHalted) return;
   const stream = new EventSource(api('/api/audio/soundbar/events'));
   soundbarStream = stream;
   soundbarMessage = t('tv.loading', 'Loading…');
@@ -244,6 +252,7 @@ function soundbarViewChanged() {
     const device = JSON.parse(event.data);
     if (device.id !== soundbarSelection || device.host !== soundbarHost) return;
     if (!soundbarOnline) soundbarMessage = '';
+    soundbarRetryDelay = 0;
     soundbarReceiveDevice(device);
     soundbarOnline = true;
     soundbarRender();
@@ -256,7 +265,24 @@ function soundbarViewChanged() {
     soundbarMessage = soundbarReason(reason);
     soundbarRender();
   }
-  stream.addEventListener('fault', event => lost(JSON.parse(event.data)));
+  stream.addEventListener('fault', event => {
+    if (stream !== soundbarStream) return;
+    const reason = JSON.parse(event.data);
+    lost(reason);
+    soundbarClose();
+    // Another dashboard chose a different bar: read the new selection now.
+    if (reason === 'selection') return soundbarViewChanged();
+    // Retrying cannot fix these. Refresh or Connect opens the stream again.
+    if (['identity', 'model', 'address'].includes(reason)) {
+      soundbarHalted = true;
+      return;
+    }
+    soundbarRetryDelay = Math.min(60000, soundbarRetryDelay ? soundbarRetryDelay * 2 : 5000);
+    soundbarRetry = setTimeout(() => {
+      soundbarRetry = null;
+      soundbarViewChanged();
+    }, soundbarRetryDelay);
+  });
   stream.onerror = () => { if (soundbarOnline || !soundbarMessage || soundbarMessage === t('tv.loading', 'Loading…')) lost('offline'); };
 }
 
@@ -291,6 +317,10 @@ async function soundbarRequest(body) {
     }
     if (!response.ok || !result.ok) throw new Error(result.error || soundbarReason(result.reason));
     soundbarMessage = '';
+    // The bar answered, so a stream held back after a fault can open now.
+    clearTimeout(soundbarRetry);
+    soundbarRetry = null;
+    soundbarHalted = false;
     if (body?.action === 'connect' || body?.action === 'forget') soundbarClose();
     if (soundbarSelection) soundbarViewChanged();
   } catch (err) {

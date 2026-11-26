@@ -24,6 +24,7 @@ var fetchLib = require('./fetch');
 var devtools = require('./devtools');
 var names = require('./names');
 var nosignal = require('./nosignal');
+/** @type {typeof import('./soundbar')} */
 var soundbar = require('./soundbar');
 var soundbarChanging = false;
 
@@ -361,10 +362,19 @@ function handleSoundbar(req, res) {
     if (!forgetting && !pairing && (body.action !== 'set' || !target.id)) return reply(400, 'invalid');
     soundbarChanging = true;
     if (forgetting) return save(null);
-    soundbar.request(pairing ? { host: body.host } : target, pairing ? null : body, function (err, current) {
+    function done(err, current) {
       if (!err && pairing) return save({ host: current.host, id: current.id }, current);
       soundbarChanging = false;
       reply(err === 'address' || err === 'invalid' ? 400 : err ? 502 : 200, err, current);
+    }
+    if (!pairing) return soundbar.request(target, body, done);
+    // Connecting again to the selected bar reads through its open session rather
+    // than opening a second socket. Another bar now at that address fails the
+    // identity check there and is then paired on its own.
+    if (!target.id || target.host !== body.host) return soundbar.request({ host: body.host }, null, done);
+    soundbar.request(target, null, function (err, current) {
+      if (err === 'identity') return soundbar.request({ host: body.host }, null, done);
+      done(err, current);
     });
   });
 }
@@ -3216,6 +3226,7 @@ function init(opts) {
   if (opts.quickAccess) quickAccessModule = opts.quickAccess;
   if (opts.remoteKeys) remoteKeysModule = opts.remoteKeys;
   if (opts.remoteDetect) remoteDetectModule = opts.remoteDetect;
+  if (opts.soundbar) soundbar = opts.soundbar;
   if (opts.homeScreen) homeScreenModule = opts.homeScreen;
   if (opts.home) homeModule = opts.home;
   if (opts.news) newsModule = opts.news;

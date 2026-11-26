@@ -7,7 +7,7 @@ something is wrong, and Home Assistant and the TV's own browser fail quietly.
 
 ## On every pull request
 
-`test-soundbar.js` uses a simulated LG speaker to check fragmented replies, pairing by model name and device identifier, stream cleanup after a dashboard disconnect, supported controls, level offsets, delayed write confirmations and live volume changes with and without a notification. `test-soundbar-ui.js` checks that volume and mute stay tied to the bar and a differing ARC volume from the TV appears separately.
+`test-soundbar.js` uses a simulated LG speaker to check fragmented replies, pairing by model name and device identifier, a bar that rejects some views, Connect reading through the selected bar's open connection, stream cleanup after a dashboard disconnect, supported controls, level offsets, delayed write confirmations, live volume changes with and without a notification, and that a viewer joining is not sent the same state twice. `test-soundbar-ui.js` checks that volume and mute stay tied to the bar and a differing ARC volume from the TV appears separately.
 
 `test-apphosts.js` checks old jail copies, launch resets, new jails and
 recreated `etc` directories, missed watches, atomic writes, symlink refusal,
