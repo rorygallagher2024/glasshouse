@@ -112,6 +112,38 @@
         "The owner confirmed the remote has no Disney+, LG Channels, Rakuten TV, Alexa, Home Hub (house in a circle), ? button, Apps or Info key, has colour keys (not pressed individually, assumed from LG's usual four), and has Play, Pause and a List key, which the Remote tab does not offer"
       ],
       "notes": "Every Remote tab key the owner could identify was pressed and read from the log, except channel up and down (confirmed by what they do instead) and the colour keys (assumed, universal on LG remotes)."
+    },
+    {
+      "id": "MR18",
+      "title": "Magic Remote MR18",
+      "names": [
+        "LGE MR18"
+      ],
+      "nameEvidence": "measured",
+      "year": null,
+      "numberKeys": true,
+      "complete": true,
+      "keys": {
+        "netflix": "measured",
+        "amazon": "measured",
+        "guide": "measured",
+        "input": "measured",
+        "voice": "measured",
+        "channelup": "documented",
+        "channeldown": "documented",
+        "red": "assumed",
+        "green": "assumed",
+        "yellow": "assumed",
+        "blue": "assumed"
+      },
+      "sources": [
+        "49SK8500PLA, webOS 4.4.3, 26 November 2026: the remote already paired with the TV, reported by the TV as LGE MR18, read from lginput2's NL_BUTTON_CLICK lines in /var/log/messages, pressed one at a time: Netflix (KEY_NETFLIX), Prime Video (KEY_AMAZON) and the microphone (KEY_VOICE)",
+        "Guide opened Glasshouse Home's guide and Input opened com.tvweb.inputbar, read from the SAM launch lines, not a button_type line; a number key opened LG's own remoteUserList (Quick Access) overlay, read the same way",
+        "The owner confirmed channel up and down are handled; not read from the log, since this TV has no tuned channels and Live TV opens LG Channels instead",
+        "The owner confirmed the remote has List, Guide, AD, Netflix, Prime Video, Text, T.Opt, Live Zoom, colour keys, Input and a microphone, and that it has no Home Hub (house in a circle), ? button, Movies, Info or Apps key; List, AD, Text, T.Opt and Live Zoom are not keys the Remote tab offers",
+        "Colour keys are offered on this webOS version through the existing filter-based Remote tab mechanism (action 'lg' by default), independent of this entry; not pressed individually"
+      ],
+      "notes": "Netflix, Prime Video and the microphone were read as button_type lines; Guide, Input and the number keys were confirmed by what they opened instead, since webOS 4.4.3 does not log them as streaming-button clicks. Channel up and down were confirmed by the owner rather than read. Colour keys are assumed present and already configurable on this webOS version regardless of the remote's catalogue entry."
     }
   ]
 }

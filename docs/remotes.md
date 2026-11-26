@@ -9,6 +9,7 @@ The LG remotes Glasshouse knows, with the Remote tab keys each is known to have.
 | [Magic Remote MR25GA](#mr25ga) | not known | `LGE MR25GA` | 14 | yes |
 | [Magic Remote MR23](#mr23) | not known | `LGE MR23` | 17 | yes |
 | [Magic Remote MR20](#mr20) | not known | `LGE MR20` | 13 | yes |
+| [Magic Remote MR18](#mr18) | not known | `LGE MR18` | 11 | yes |
 
 How sure each fact is:
 
@@ -113,6 +114,36 @@ Where this comes from:
 * The … button opened com.webos.app.screenremote, the Remote tab's 123 button key, though its own NL_BUTTON_CLICK line was not caught
 * Channel up and down were not read from the log on this webOS version, but the owner confirmed they move the Guide's screens
 * The owner confirmed the remote has no Disney+, LG Channels, Rakuten TV, Alexa, Home Hub (house in a circle), ? button, Apps or Info key, has colour keys (not pressed individually, assumed from LG's usual four), and has Play, Pause and a List key, which the Remote tab does not offer
+
+## Magic Remote MR18
+
+<a id="mr18"></a>
+
+Reported by the TV as `LGE MR18` (measured). Has number keys. The list of keys below is every button the remote has.
+
+| Remote tab key | Evidence |
+| :------------- | :------- |
+| Netflix (`netflix`) | measured |
+| Prime Video (`amazon`) | measured |
+| Guide (`guide`) | measured |
+| Input (`input`) | measured |
+| Microphone (`voice`) | measured |
+| Channel up (`channelup`) | documented |
+| Channel down (`channeldown`) | documented |
+| Red (`red`) | assumed |
+| Green (`green`) | assumed |
+| Yellow (`yellow`) | assumed |
+| Blue (`blue`) | assumed |
+
+Netflix, Prime Video and the microphone were read as button_type lines; Guide, Input and the number keys were confirmed by what they opened instead, since webOS 4.4.3 does not log them as streaming-button clicks. Channel up and down were confirmed by the owner rather than read. Colour keys are assumed present and already configurable on this webOS version regardless of the remote's catalogue entry.
+
+Where this comes from:
+
+* 49SK8500PLA, webOS 4.4.3, 26 November 2026: the remote already paired with the TV, reported by the TV as LGE MR18, read from lginput2's NL_BUTTON_CLICK lines in /var/log/messages, pressed one at a time: Netflix (KEY_NETFLIX), Prime Video (KEY_AMAZON) and the microphone (KEY_VOICE)
+* Guide opened Glasshouse Home's guide and Input opened com.tvweb.inputbar, read from the SAM launch lines, not a button_type line; a number key opened LG's own remoteUserList (Quick Access) overlay, read the same way
+* The owner confirmed channel up and down are handled; not read from the log, since this TV has no tuned channels and Live TV opens LG Channels instead
+* The owner confirmed the remote has List, Guide, AD, Netflix, Prime Video, Text, T.Opt, Live Zoom, colour keys, Input and a microphone, and that it has no Home Hub (house in a circle), ? button, Movies, Info or Apps key; List, AD, Text, T.Opt and Live Zoom are not keys the Remote tab offers
+* Colour keys are offered on this webOS version through the existing filter-based Remote tab mechanism (action 'lg' by default), independent of this entry; not pressed individually
 
 ## Adding a remote
 
