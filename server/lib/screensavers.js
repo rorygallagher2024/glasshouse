@@ -258,8 +258,8 @@ function readSaver(root, name) {
     }
   }
   e.uses = uses;
-  // The stats and audio addresses carry the dashboard's access token.
-  if (!root.builtin && (uses.indexOf('stats') !== -1 || uses.indexOf('audio') !== -1)) {
+  // The stats address carries the dashboard's access token.
+  if (!root.builtin && uses.indexOf('stats') !== -1) {
     return problem(msg('srv.saver.noStats', 'It asks for the TV\'s readings, which only Glasshouse\'s own screen savers are given.'));
   }
   // So does the address of Art's pictures.
@@ -713,6 +713,20 @@ function hasHomeVideos() { return homeWallpapers.videoSources().urls.length > 0;
 
 function savers() { return catalogCache || scanSavers(); }
 
+function invalidateCatalog() {
+  catalogCache = null;
+  qmlChecked = {};
+}
+
+// Validate a candidate folder outside saverRoots without mutating catalogCache.
+function validateFolder(dir, name) {
+  var savedCache = qmlChecked;
+  qmlChecked = {};
+  var e = readSaver({ dir: path.dirname(dir), builtin: false }, name);
+  qmlChecked = savedCache;
+  return { ok: !e.problem, saver: e, error: e.problem || null };
+}
+
 // The screen savers, LG's first, each { id, label, description, builtin, ... }.
 // Reads the folders again, so one just added on the TV is there.
 function catalog() { return scanSavers().list; }
@@ -828,6 +842,74 @@ function clearStagedScreensaver() {
   unlinkQuiet(path.join(SCREENSAVER_DIR, SCREENSAVER_CHOICE_MARKER));
   unlinkQuiet(path.join(SCREENSAVER_DIR, 'appinfo.json'));
   removeTree(path.join(SCREENSAVER_DIR, 'qml'));
+}
+
+function copyTree(src, dst) {
+  mkdirp(dst);
+  var entries = fs.readdirSync(src);
+  for (var i = 0; i < entries.length; i++) {
+    var s = path.join(src, entries[i]);
+    var d = path.join(dst, entries[i]);
+    var st = fs.lstatSync(s);
+    if (st.isSymbolicLink()) continue;
+    if (st.isDirectory()) copyTree(s, d);
+    else if (st.isFile()) fs.writeFileSync(d, fs.readFileSync(s));
+  }
+}
+
+/*
+ * Retired built-in savers (such as music-highway, now in the community
+ * catalog): an updater tarball or package install leaves the old folder behind
+ * under builtinDir and may still have it active on the TV or listed in Random.
+ * Preserve it in USER_SAVERS_DIR as user-music-highway when in use or in the
+ * Random pool, rewrite markers/pool, and remove the stale built-in copy.
+ */
+var RETIRED_BUILTINS = ['music-highway'];
+function migrateRetiredBuiltins() {
+  var builtinRoot = null, userRoot = null;
+  for (var r = 0; r < saverRoots.length; r++) {
+    if (saverRoots[r].builtin && !builtinRoot) builtinRoot = saverRoots[r].dir;
+    else if (!saverRoots[r].builtin && !saverRoots[r].apps && !userRoot) userRoot = saverRoots[r].dir;
+  }
+  if (!builtinRoot) return;
+  var curApp = readTrimmed(path.join(SCREENSAVER_APP_DIR, SCREENSAVER_MARKER));
+  var curDir = readTrimmed(path.join(SCREENSAVER_DIR, SCREENSAVER_MARKER));
+  var rndCfg = readRandomConfig();
+  var rndPool = Array.isArray(rndCfg.pool) ? rndCfg.pool : [];
+  for (var i = 0; i < RETIRED_BUILTINS.length; i++) {
+    var name = RETIRED_BUILTINS[i];
+    var userId = USER_PREFIX + name;
+    var legacy = path.join(builtinRoot, name);
+    var hasLegacy = false;
+    try { hasLegacy = fs.existsSync(legacy); } catch (e) {}
+    var inPool = rndPool.indexOf(name) !== -1;
+    var inUse = curApp === name || curDir === name || inPool;
+    if (inUse && userRoot) {
+      var dst = path.join(userRoot, name);
+      if (hasLegacy && !fs.existsSync(dst)) {
+        try {
+          copyTree(legacy, dst);
+          console.log('screensaver: moved "' + name + '" to "' + dst + '" (' + userId + ')');
+        } catch (eCopy) {
+          console.error('screensaver: could not move ' + name + ': ' + eCopy.message);
+        }
+      }
+      if (fs.existsSync(dst)) {
+        if (curDir === name) {
+          try { fs.writeFileSync(path.join(SCREENSAVER_DIR, SCREENSAVER_MARKER), userId); } catch (e1) {}
+        }
+        if (curApp === name) {
+          try { fs.writeFileSync(path.join(SCREENSAVER_APP_DIR, SCREENSAVER_MARKER), userId); } catch (e2) {}
+        }
+        if (inPool) {
+          rndCfg.pool = rndPool.map(function (p) { return p === name ? userId : p; });
+          try { fs.writeFileSync(randomConfigFile, JSON.stringify(rndCfg, null, 2)); } catch (e3) {}
+        }
+      }
+    }
+    if (hasLegacy) removeTree(legacy);
+  }
+  catalogCache = null;
 }
 
 // A folder and everything in it, quietly: the staged copy of a saver.
@@ -1625,8 +1707,10 @@ function fillSaverQml(e, qml, level, choice, effEnts, entityList) {
       'http://127.0.0.1:' + port + '/api/stats' + (token ? '?k=' + encodeURIComponent(token) : ''));
   }
   if (e.uses.indexOf('audio') !== -1) {
+    // Only built-in savers receive the dashboard token; local requests from
+    // the TV app are authorised by loopback without it.
     qml = qml.replace(/__TVWEB_AUDIO__/g,
-      'http://127.0.0.1:' + port + '/api/audio/levels' + (token ? '?k=' + encodeURIComponent(token) : ''));
+      'http://127.0.0.1:' + port + '/api/audio/levels' + (e.builtin && token ? '?k=' + encodeURIComponent(token) : ''));
   }
   effEnts = effEnts || effectiveSaverEntities(e);
   // One address per declared entity, carrying the token like any other read.
@@ -1741,6 +1825,9 @@ function setScreensaver(mode, level, cb, choice) {
   saveRandomConfig({ enabled: false });
   // Read again, so a saver just added on the TV can be picked.
   if (mode !== 'stock') scanSavers();
+  if (RETIRED_BUILTINS.indexOf(mode) !== -1 && !saverById(mode) && saverById(USER_PREFIX + mode)) {
+    mode = USER_PREFIX + mode;
+  }
   var saver = mode === 'stock' ? STOCK : saverById(mode);
   if (!saver) return cb({ ok: false, error: 'unknown screen saver: ' + mode });
   if (saver.problem) return cb({ ok: false, error: saver.problem });
@@ -1879,6 +1966,7 @@ function appSaverGone(playlistChanged) {
 // At start, when the clock's format changes, and after an app is removed.
 // playlistChanged: Home's video playlist was just saved.
 function restageScreensaver(playlistChanged) {
+  migrateRetiredBuiltins();
   // Read again, as an app with a screen saver may have been removed.
   scanSavers();
   var mode = screensaverMode();
@@ -2309,6 +2397,9 @@ module.exports = {
   SCREENSAVER_DIR: SCREENSAVER_DIR,
   USER_SAVERS_DIR: USER_SAVERS_DIR,
   catalog: catalog,
+  invalidateCatalog: invalidateCatalog,
+  validateFolder: validateFolder,
+  migrateRetiredBuiltins: migrateRetiredBuiltins,
   init: init,
   clearStagedScreensaver: clearStagedScreensaver,
   stagedCopyMounted: stagedCopyMounted,

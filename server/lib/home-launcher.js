@@ -148,6 +148,7 @@ function describeOne(id, l, chosenId) {
   else { out.files = l.files; out.bytes = l.bytes; }
   if (l.version) out.version = l.version;
   if (l.author) out.author = l.author;
+  if (l.sourceUrl) out.sourceUrl = l.sourceUrl;
   return out;
 }
 
@@ -400,7 +401,11 @@ function launcherRoot(paths) {
   return { strip: shared ? 1 : 0, kept: kept };
 }
 
-function unpackZip(file, into, cb) {
+function unpackZip(file, into, limits, cb) {
+  if (typeof limits === 'function') { cb = limits; limits = null; }
+  var maxFiles = (limits && typeof limits.maxFiles === 'number') ? limits.maxFiles : MAX_FILES;
+  var maxBytes = (limits && typeof limits.maxBytes === 'number') ? limits.maxBytes : MAX_UNPACKED;
+  var maxFile = (limits && typeof limits.maxFile === 'number') ? limits.maxFile : MAX_FILE;
   fs.open(file, 'r', function (err, fd) {
     if (err) return cb(err);
     function done(e, info) { try { fs.closeSync(fd); } catch (x) {} cb(e, info); }
@@ -410,12 +415,14 @@ function unpackZip(file, into, cb) {
         if (err3) return done(err3);
         var root = launcherRoot(entries.map(function (e) { return e.segs; }));
         var todo = entries.filter(function (e) { return root.kept.indexOf(e.segs) !== -1; });
+        if (todo.length > maxFiles) return done(tooLarge());
         var total = 0, files = 0;
         (function next(i) {
           if (i >= todo.length) return done(null, { files: files, bytes: total });
           var e = todo[i];
+          if (e.size > maxFile) return done(tooLarge());
           total += e.size;
-          if (total > MAX_UNPACKED) return done(tooLarge());
+          if (total > maxBytes) return done(tooLarge());
           zipData(fd, e, function (err4, data) {
             if (err4) return done(err4);
             try { writeFileIn(into, e.segs.slice(root.strip), data); } catch (x) { return done(x); }
@@ -519,8 +526,11 @@ function kindOf(head) {
  * Unpacks the upload at file to the owner's own launcher's folder, in place of
  * the one there, keeping whether it is chosen.
  */
-function install(file, name, cb) {
-  var id = OWN;
+function install(file, name, opts, cb) {
+  if (typeof opts === 'function') { cb = opts; opts = null; }
+  opts = opts || {};
+  var id = typeof opts.id === 'string' && opts.id ? opts.id : OWN;
+  var source = typeof opts.source === 'string' && opts.source ? opts.source : OWN;
   var fd;
   try { fd = fs.openSync(file, 'r'); } catch (e) { return cb(fail(e.message)); }
   var head = util.allocBuffer(512);
@@ -557,7 +567,10 @@ function install(file, name, cb) {
       try { rmTree(staging); } catch (x) {}
       return cb(fail(d.error));
     }
-    var entry = { kind: 'app', title: d.title, main: d.main, files: info.files, bytes: info.bytes, source: OWN };
+    var entry = { kind: 'app', title: opts.title ? cleanTitle(opts.title, d.title) : d.title, main: d.main, files: info.files, bytes: info.bytes, source: source };
+    if (typeof opts.author === 'string' && opts.author) entry.author = opts.author;
+    if (typeof opts.version === 'string' && opts.version) entry.version = opts.version;
+    if (typeof opts.sourceUrl === 'string' && opts.sourceUrl) entry.sourceUrl = opts.sourceUrl;
     try {
       keep(id, entry, root);
       if (root !== staging) rmTree(staging);
@@ -692,6 +705,7 @@ module.exports = {
   remove: remove,
   upload: upload,
   install: install,
+  unpackZip: unpackZip,
   resolve: resolve,
   withKit: withKit,
   store: store,

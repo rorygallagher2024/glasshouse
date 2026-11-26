@@ -59,7 +59,6 @@ function byId(list, id) { return list.filter(function (m) { return m.id === id; 
   assert.strictEqual(mine.license, 'MIT');
   [['user-broken', /could not be read/],
    ['user-greedy', /readings/],
-   ['user-listener', /readings/],
    ['user-sneaky', /__TVWEB_LEVEL__ without "level"/],
    ['user-newer', /format 2/],
    ['user-Bad_Name', /folder name, "Bad_Name", can only have lowercase letters/]].forEach(function (c) {
@@ -68,6 +67,8 @@ function byId(list, id) { return list.filter(function (m) { return m.id === id; 
     assert.strictEqual(m.available, false, c[0] + ' unavailable');
     assert.ok(c[1].test(m.note), c[0] + ': ' + m.note);
   });
+  var listener = byId(modes, 'user-listener');
+  assert.ok(listener && listener.available, 'community savers may ask for audio levels');
   console.log('  ✓ a folder with something wrong, its name included, is listed, unavailable, with the reason');
 })();
 
@@ -110,14 +111,20 @@ function byId(list, id) { return list.filter(function (m) { return m.id === id; 
   console.log('  ✓ a built-in that asks for stats gets the address with the token');
 })();
 
-// 6b. One that asks for audio gets the sound levels' address, with the token
+// 6b. A community saver asking for audio gets the levels address without the dashboard token
 (function testAudio() {
-  env.files[path.join(APP, '.tvweb-screensaver')] = 'music-highway';
+  screensavers.init({
+    luna: env.mockLuna,
+    config: { port: 8123, allowControl: true, token: 'abc' },
+    saverRoots: [{ dir: BUILTIN, builtin: true }, { dir: USER, builtin: false }]
+  });
+  env.files[path.join(APP, '.tvweb-screensaver')] = 'user-listener';
   screensavers.restageScreensaver();
   var main = env.files[path.join(STAGE, 'qml', 'main.qml')];
-  assert.ok(main.indexOf('"http://127.0.0.1:8123/api/audio/levels?k=abc"') !== -1, 'audio address filled in');
+  assert.ok(main.indexOf('"http://127.0.0.1:8123/api/audio/levels"') !== -1, 'audio address filled in without token');
+  assert.strictEqual(main.indexOf('?k=abc'), -1, 'dashboard token is not leaked to community savers');
   assert.strictEqual(main.indexOf('__TVWEB_'), -1, 'no placeholder left');
-  console.log('  ✓ a built-in that asks for audio gets the levels address with the token');
+  console.log('  ✓ a community saver asking for audio gets the levels address without the token');
 })();
 
 // 7. A name's translation comes from its saver.json
@@ -166,24 +173,44 @@ function byId(list, id) { return list.filter(function (m) { return m.id === id; 
   console.log('  ✓ QML that would show black cannot be picked; the network and sound are noted');
 })();
 
-// 9. The example Glasshouse installs among the TV's own reads as one of them
-(function testShippedExample() {
+// 9. Retired built-in savers (such as music-highway) migrate to user- when in use
+(function testRetiredMigration() {
+  var fs = require('fs');
+  var os = require('os');
+  env.restore();
+  var tmp = path.join(__dirname, '.tmp-saver-migrate-' + process.pid);
+  var bDir = path.join(tmp, 'builtin');
+  var uDir = path.join(tmp, 'user');
+  fs.mkdirSync(tmp);
+  fs.mkdirSync(bDir);
+  fs.mkdirSync(path.join(bDir, 'music-highway'));
+  fs.mkdirSync(uDir);
+  fs.writeFileSync(path.join(bDir, 'music-highway', 'saver.json'),
+    JSON.stringify({ manifest: 1, version: '1.0.0', name: 'Music highway', description: 'Track.', author: 'vecluu', license: 'MIT', uses: ['level'] }));
+  fs.writeFileSync(path.join(bDir, 'music-highway', 'main.qml'),
+    'import QtQuick 2.4\nimport Eos.Window 0.1\nWebOSWindow { width: 1920; height: 1080; property int lvl: __TVWEB_LEVEL__ }\n');
+
+  env.install();
+  env.files[path.join(APP, '.tvweb-screensaver')] = 'music-highway';
+  env.files[path.join(STAGE, '.tvweb-screensaver')] = 'music-highway';
   screensavers.init({
     luna: env.mockLuna,
     config: { port: 8080, allowControl: true },
-    saverRoots: [{ dir: BUILTIN, builtin: true },
-                 { dir: path.join(__dirname, '..', 'server', 'screensavers'), builtin: false }]
+    saverRoots: [{ dir: bDir, builtin: true }, { dir: uDir, builtin: false }]
   });
-  var pigs = byId(screensavers.screensaverList().modes, 'user-pigs');
-  assert.ok(pigs, 'user-pigs listed');
-  assert.strictEqual(pigs.available, true, pigs.note);
-  assert.strictEqual(pigs.builtin, false);
-  assert.strictEqual(pigs.label, 'Pigs - Three Different Ones');
-  assert.strictEqual(pigs.author, 'Michael Nestrud');
-  var highway = byId(screensavers.screensaverList().modes, 'music-highway');
-  assert.ok(highway, 'music-highway listed');
-  assert.strictEqual(highway.author, 'vecluu');
-  console.log('  ✓ the pigs Glasshouse installs as an example read as an added screen saver');
+  screensavers.restageScreensaver();
+  assert.ok(fs.existsSync(path.join(uDir, 'music-highway', 'saver.json')), 'moved to user savers');
+  assert.ok(!fs.existsSync(path.join(bDir, 'music-highway')), 'legacy built-in copy cleaned up');
+  assert.strictEqual(env.files[path.join(APP, '.tvweb-screensaver')], 'user-music-highway', 'marker rewritten to user-music-highway');
+  assert.strictEqual(screensavers.screensaverMode(), 'user-music-highway');
+
+  fs.unlinkSync(path.join(uDir, 'music-highway', 'main.qml'));
+  fs.unlinkSync(path.join(uDir, 'music-highway', 'saver.json'));
+  fs.rmdirSync(path.join(uDir, 'music-highway'));
+  fs.rmdirSync(uDir);
+  fs.rmdirSync(bDir);
+  fs.rmdirSync(tmp);
+  console.log('  ✓ retired built-in screen savers migrate cleanly to user savers when active');
 })();
 
 // 10. Clock's Show option draws the seconds and date, and Clock with date's old

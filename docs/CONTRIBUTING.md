@@ -7,6 +7,7 @@ Contributions are welcome. This guide outlines how to propose changes, write com
 * **You own the glass:** The project exists to give owners direct control over their TV without vendor lock-in, cloud dependencies, or tracking. No telemetry or analytics are collected.
 * **Keep the TV lightweight:** The TV's onboard CPU and RAM are shared with video decoding and system processes. Code running on the TV must remain fast, lean, and free of unnecessary background work.
 * **Zero runtime dependencies:** The on-TV server runs with no npm packages installed on the device.
+* **Community add-ons live in the catalog:** New community screen savers and custom launchers belong in their own repositories registered with [rorygallagher2024/glasshouse-catalog](https://github.com/rorygallagher2024/glasshouse-catalog) rather than bundled into core Glasshouse.
 
 ## Working conventions
 

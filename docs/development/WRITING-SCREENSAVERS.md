@@ -10,16 +10,9 @@ A screen saver is a folder in `/var/lib/tvweb/screensavers/` on the TV holding
 a `saver.json` and some QML. It is QML, the language of Qt Quick, run by the
 TV's own screen saver app, so it can do what QML can.
 
-## Start from the example
+## Start from an example or test via the catalog
 
-Glasshouse installs one there itself, **Pigs - Three Different Ones**. On the
-TV, copy it to a folder of your own and change it:
-
-```
-cp -r /var/lib/tvweb/screensavers/pigs /var/lib/tvweb/screensavers/my-saver
-```
-
-Or start from nothing. This is a whole screen saver: a dot that wanders the
+You can install an existing saver from **Community screen savers** on the **Screensaver** tab and inspect it in `/var/lib/tvweb/screensavers/`, or start from nothing. This is a whole screen saver: a dot that wanders the
 screen and changes color. `my-saver/saver.json`:
 
 ```json
@@ -227,14 +220,13 @@ to be under one that allows it.
 
 ## Removing it
 
-Pick another screen saver first, then delete the folder:
+Pick another screen saver first, or click **Remove** under **Community screen savers** if installed from the catalog; otherwise delete the folder:
 
 ```
 rm -r /var/lib/tvweb/screensavers/my-saver
 ```
 
-Deleted while in use, it keeps showing until another is picked. The pigs
-example comes back with the next Glasshouse update.
+Deleted while in use, it keeps showing until another is picked. Once ready to share your screen saver, register your repository with [rorygallagher2024/glasshouse-catalog](https://github.com/rorygallagher2024/glasshouse-catalog) (you can test from a GitHub link under **Community screen savers** first).
 
 ## Troubleshooting
 

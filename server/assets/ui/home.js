@@ -1049,6 +1049,10 @@ async function homeLauncherChoose(id) {
 
 function homeLauncherDesc(l) {
   if (l.kind === 'web') return t('home.launcher.nowWeb', 'Web page: {address}', { address: l.address });
+  const parts = [];
+  if (l.author) parts.push(t('ss.by', 'by {author}', { author: l.author }));
+  if (l.version) parts.push('v' + l.version);
+  if (parts.length) return parts.join(' · ');
   return l.files === 1
     ? t('home.launcher.nowAppOne', 'Uploaded: one file, {size}', { size: fmtSize(l.bytes) })
     : t('home.launcher.nowApp', 'Uploaded: {files} files, {size}', { files: l.files, size: fmtSize(l.bytes) });
@@ -1068,6 +1072,9 @@ function renderHomeLauncher() {
   q('home-launchers').innerHTML = kept.map(l => `<div class="prot-row">
       <div class="prot-main"><div class="prot-title">${esc(l.title)}</div><div class="prot-desc">${esc(homeLauncherDesc(l))}</div></div>
       <div class="prot-status">
+        ${l.id === chosen
+          ? `<span class="ss-tag">${esc(t('ss.inUse', 'In use'))}</span>`
+          : `<button type="button" class="pill idle" ${busy ? 'disabled' : ''} onclick="homeLauncherUse('${esc(l.id)}')">${esc(t('community.use', 'Use'))}</button>`}
         <button type="button" class="pill idle" ${busy ? 'disabled' : ''} onclick="homeLauncherRemove('${esc(l.id)}')">${esc(t('home.launcher.remove', 'Remove'))}</button>
       </div>
     </div>`).join('');

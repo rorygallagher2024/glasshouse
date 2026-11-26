@@ -175,34 +175,19 @@ A four-dimensional hypercube turning through the fourth dimension, rendered in f
 
 A live panel diagnostics dashboard on black, showing the TV's cumulative panel hours, short clean and refresher countdowns, processor silicon, Wi-Fi link quality, and remote battery. The card cluster periodically moves to protect the panel.
 
-### Music highway
+## Community screen savers
 
-A neon track floating in the dark, rising over hills, dipping and banking through bends, with a small spaceship riding it. It moves to whatever the TV is playing: busier music makes the track faster, steeper and more twisting, and turns it from blue toward magenta. Its edges flare on every beat, hardest on the first of each bar; walls of laser beams lean out from both sides of the road and flash on hits; the bass lights the horizon; and blocks in three lanes come for the ship, whose engines flare and throw sparks as it catches them. With nothing playing, the track cruises slowly and dimly, and nothing on the screen ever stands still.
-
-**Blocks** picks how they are placed:
-
-* **On the beat** (the default) follows the music's tempo and reads it the way dance music is written, in bars of four beats and phrases of eight bars. Each block arrives at the craft exactly on an eighth note, in the lane of whatever plays loudest there: kicks on the left, claps and snares in the middle, hi-hats on the right. The track surges on every beat, and a gate across the track marks the start of each phrase. When the bass drops out for a few bars, the track slows, flattens and cools for the breakdown; a build climbs and speeds up, filling every eighth note for its last bars, toward the drop it expects on the next phrase line; and the drop arrives as a big gate with a flash, the track at full speed with its biggest hills and bends. Until the tempo is found, a few seconds into a song, blocks come as in the other mode.
-* **React to each hit** starts a block on each beat or hit as it is heard. It reacts to anything, tempo or not, but its blocks reach the craft a few seconds later, off the beat.
-
-To hear the music, Glasshouse reads the TV's own sound output (what it plays, not a microphone) while this screen saver is on screen, and stops 3 seconds after it closes. The sound is turned into levels and beats as it arrives; none of it is kept or sent anywhere. The TV does not start a screen saver while a video plays, but it does over music apps such as Spotify.
+Below **Choose a screen saver**, **Community screen savers** lists third-party screen savers from [rorygallagher2024/glasshouse-catalog](https://github.com/rorygallagher2024/glasshouse-catalog) (including **Pigs - Three Different Ones** by Michael Nestrud and **Music highway** by vecluu, which were previously bundled in core Glasshouse). Community add-ons are created and maintained by their authors, not by Glasshouse; each entry displays its author, licence, version, and source repository, and downloads are verified by SHA-256 before unpacking into `/var/lib/tvweb/screensavers/`. You can also test an unlisted screen saver from an `https://` GitHub repository or `.zip` link (requires **Install app from a URL or file** on the [Apps tab](apps.md#install-app-from-a-url-or-file), a token, or the TV's browser).
 
 ## Adding your own
 
-A screen saver added on the TV is a folder in `/var/lib/tvweb/screensavers/`, named as you like within a few rules (lowercase letters, digits and `-`, up to 32 characters; see the format below), holding a `saver.json` that names and describes it, its QML, and anything else it uses. The tab lists it after Glasshouse's own, marked *Added on this TV* with its author and license, and a Glasshouse update leaves the folder alone. To add one, copy its folder there and open the tab:
+A screen saver added on the TV is a folder in `/var/lib/tvweb/screensavers/`, named as you like within a few rules (lowercase letters, digits and `-`, up to 32 characters; see the format below), holding a `saver.json` that names and describes it, its QML, and anything else it uses. The tab lists it after Glasshouse's own, marked *Added on this TV* with its author and license, and a Glasshouse update leaves the folder alone. To add one, install it from **Community screen savers** above or copy its folder to the TV and open the tab:
 
 ```
 scp -r my-saver root@<tv-ip>:/var/lib/tvweb/screensavers/
 ```
 
 One with something wrong in its folder, or whose QML would only show black, is listed with the reason and cannot be picked. One that reaches the network, can play sound, or can open apps says so under its name, and can still be picked. A screen saver can also draw Home Assistant values: it names the entities it wants in its `saver.json` and reads each from the address Glasshouse gives it, with the token kept on the server. [Writing a screen saver](../development/WRITING-SCREENSAVERS.md) covers making one, and the format is in [Screen saver design principles](../development/SCREENSAVER-DESIGN.md#screen-saver-folders).
-
-Glasshouse installs one there itself, as an example: **Pigs - Three Different Ones**, a pink pig, a saddleback and a razorback, big and small, flapping across a pixel-art night over Chicago. An update puts it back if it has been removed.
-
-### Pigs - Three Different Ones
-
-![Pigs screen saver: pink pig, saddleback and razorback flapping across Chicago night](../screenshots/screensaver-pigs.png)
-
-*Bundled example screen saver installed into `/var/lib/tvweb/screensavers/pigs`.*
 
 ## Screen savers from homebrew apps
 
