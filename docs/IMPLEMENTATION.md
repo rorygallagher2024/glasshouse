@@ -1209,9 +1209,12 @@ Spying binds its own file there. A mount on it then reaches its peers, so the
 table also covered `/tmp/hosts` or that tool's file, and the tool, which
 copies `/etc/hosts` into its file, failed
 ([#1571](https://github.com/rorygallagher2024/glasshouse/issues/1571)). So
-before the table is bound, both by the server and by `50-tvweb`, the mount at
-`/etc/hosts` is made a slave (`mount --make-slave`): it still takes what
-reaches it from its peers, and no longer passes the table on. A line is the
+before and after the table is bound (and on server start if an already-mounted
+table is shared), both by the server and by `50-tvweb`, the mount at
+`/etc/hosts` is made a slave (`mount --make-slave`): before binding it stops the
+table from reaching peers underneath, and after binding it stops the new mount
+from inheriting `/var/lib`'s shared group and passing later mounts onto
+`adblock_hosts` ([#1712](https://github.com/rorygallagher2024/glasshouse/issues/1712)). A line is the
 blocker's own if it is a comment, a localhost line, one of its sinkholes above
 that header, or a non-sinkhole line naming a host the table decides on, and
 anyone else's otherwise. The last rule is for the Homebrew Channel's update

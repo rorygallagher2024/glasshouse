@@ -4052,7 +4052,10 @@ root `/hosts` on a `tmpfs`. Life's Good Without Spying 0.11.3 then binds a file
 of its own, `/var/lib/webosbrew/lifesgoodwithoutspying.hosts` on ext4, built
 from a copy of `/etc/hosts`, so it carries the same comment and update entries.
 The comment alone does not say whose layer is on top; the mount table's root
-and filesystem do (#1369).
+and filesystem do (#1369). On webOS 9 and 10, a new bind mount from `/var/lib`
+also inherits `/var/lib`'s `shared:` peer group in `/proc/self/mountinfo`, so a
+mount made over `/etc/hosts` without calling `mount --make-slave /etc/hosts`
+again after binding propagates back onto `/var/lib/tvweb/adblock_hosts` (#1712).
 
 ## AirPlay's app without a tile (C2, webOS 9.2.2)
 
