@@ -3997,5 +3997,8 @@
  "home.haRowEdit": {"from": "Edit on HA & MQTT", "text": "Redigera i HA och MQTT"},
  "home.row.ha": {"from": "Home Assistant", "text": "Home Assistant"},
  "home.row.haArrange": {"from": "Entities from the Home Assistant bar", "text": "Entiteter från Home Assistant-raden"},
- "home.row.haHint": {"from": "OK to toggle, Ch +/- to adjust", "text": "OK för att växla, Ch +/- för att justera"}
+ "home.row.haHint": {"from": "OK to toggle, Ch +/- to adjust", "text": "OK för att växla, Ch +/- för att justera"},
+ "ha.bar.showHints": {"from": "Button hints", "text": "Knapptips"},
+ "ha.bar.showHintsDesc": {"from": "Show remote control hints (OK toggle, Up/Down adjust, Back close) above the Home Assistant bar and on the Glasshouse Home row.", "text": "Visa fjärrkontrollstips (OK växla, Upp/Ner justera, Tillbaka stäng) ovanför Home Assistant-raden och i raden på Glasshouse Home."},
+ "srv.habar.badOptions": {"from": "invalid options", "text": "ogiltiga alternativ"}
 }

@@ -3995,5 +3995,8 @@
  "home.haRowEdit": {"from": "Edit on HA & MQTT", "text": "Изменить в HA и MQTT"},
  "home.row.ha": {"from": "Home Assistant", "text": "Home Assistant"},
  "home.row.haArrange": {"from": "Entities from the Home Assistant bar", "text": "Объекты с панели Home Assistant"},
- "home.row.haHint": {"from": "OK to toggle, Ch +/- to adjust", "text": "OK переключить, Ch +/- изменить"}
+ "home.row.haHint": {"from": "OK to toggle, Ch +/- to adjust", "text": "OK переключить, Ch +/- изменить"},
+ "ha.bar.showHints": {"from": "Button hints", "text": "Подсказки кнопок"},
+ "ha.bar.showHintsDesc": {"from": "Show remote control hints (OK toggle, Up/Down adjust, Back close) above the Home Assistant bar and on the Glasshouse Home row.", "text": "Показывать подсказки пульта (OK переключить, Вверх/Вниз изменить, Назад закрыть) над панелью Home Assistant и в строке Glasshouse Home."},
+ "srv.habar.badOptions": {"from": "invalid options", "text": "недопустимые параметры"}
 }

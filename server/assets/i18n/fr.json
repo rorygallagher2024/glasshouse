@@ -3981,5 +3981,8 @@
  "home.haRowEdit": {"from": "Edit on HA & MQTT", "text": "Modifier dans HA et MQTT"},
  "home.row.ha": {"from": "Home Assistant", "text": "Home Assistant"},
  "home.row.haArrange": {"from": "Entities from the Home Assistant bar", "text": "Entités de la barre Home Assistant"},
- "home.row.haHint": {"from": "OK to toggle, Ch +/- to adjust", "text": "OK pour basculer, Ch +/- pour ajuster"}
+ "home.row.haHint": {"from": "OK to toggle, Ch +/- to adjust", "text": "OK pour basculer, Ch +/- pour ajuster"},
+ "ha.bar.showHints": {"from": "Button hints", "text": "Indications des touches"},
+ "ha.bar.showHintsDesc": {"from": "Show remote control hints (OK toggle, Up/Down adjust, Back close) above the Home Assistant bar and on the Glasshouse Home row.", "text": "Affiche les indications de télécommande (OK basculer, Haut/Bas régler, Retour fermer) au-dessus de la barre Home Assistant et sur la ligne Glasshouse Home."},
+ "srv.habar.badOptions": {"from": "invalid options", "text": "options non valides"}
 }

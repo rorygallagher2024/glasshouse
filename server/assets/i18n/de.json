@@ -811,5 +811,8 @@
  "home.haRowEdit": {"from": "Edit on HA & MQTT", "text": "Unter HA und MQTT bearbeiten"},
  "home.row.ha": {"from": "Home Assistant", "text": "Home Assistant"},
  "home.row.haArrange": {"from": "Entities from the Home Assistant bar", "text": "Entitäten aus der Home-Assistant-Leiste"},
- "home.row.haHint": {"from": "OK to toggle, Ch +/- to adjust", "text": "OK zum Umschalten, Ch +/- zum Anpassen"}
+ "home.row.haHint": {"from": "OK to toggle, Ch +/- to adjust", "text": "OK zum Umschalten, Ch +/- zum Anpassen"},
+ "ha.bar.showHints": {"from": "Button hints", "text": "Tastenhinweise"},
+ "ha.bar.showHintsDesc": {"from": "Show remote control hints (OK toggle, Up/Down adjust, Back close) above the Home Assistant bar and on the Glasshouse Home row.", "text": "Fernbedienungshinweise (OK umschalten, Auf/Ab anpassen, Zurück schließen) über der Home-Assistant-Leiste und in der Glasshouse-Home-Zeile anzeigen."},
+ "srv.habar.badOptions": {"from": "invalid options", "text": "ungültige Optionen"}
 }

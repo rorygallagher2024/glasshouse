@@ -833,6 +833,7 @@ async function visitHaBar(browser, base, problems) {
     window.close = function () { window.__closed = true; };
   });
   let pct = 50;
+  let showHints = true;
   const acts = [];
   await page.route('**/api/ha/bar/**', route => {
     const req = route.request();
@@ -843,6 +844,7 @@ async function visitHaBar(browser, base, problems) {
           ok: true,
           configured: true,
           hour12: false,
+          showHints: showHints,
           tiles: [
             { id: 'light.desk', domain: 'light', label: 'Desk Lamp', state: 'on', active: true, adjustable: true, pct: pct, valueText: pct + '%', subText: '' },
             { id: 'climate.living', domain: 'climate', label: 'Thermostat', state: 'heat', active: true, adjustable: true, pct: null, valueText: '22°C · heat', subText: 'Now 20.1°C' },
@@ -868,6 +870,8 @@ async function visitHaBar(browser, base, problems) {
   try {
     await page.goto(base + '/assets/habar.html');
     await page.waitForFunction(() => document.querySelectorAll('#row .tile').length === 3 && document.body.className === 'on');
+    const hintOn = await page.textContent('#hint');
+    if (hintOn.indexOf('OK toggle') === -1) fail('expected hint text when showHints=true, got ' + hintOn);
     await page.keyboard.press('ArrowUp');
     await page.waitForFunction(() => document.querySelector('.tile.focus .val').textContent === '60%');
     await page.keyboard.press('ArrowRight');
@@ -881,6 +885,15 @@ async function visitHaBar(browser, base, problems) {
     await page.keyboard.press('Escape');
     await page.waitForFunction(() => window.__closed === true);
     if (acts.length !== 3) fail('expected 3 act calls, got ' + acts.length);
+
+    showHints = false;
+    await page.evaluate(() => { window.__closed = false; });
+    await page.goto(base + '/assets/habar.html');
+    await page.waitForFunction(() => document.querySelectorAll('#row .tile').length === 3 && document.body.className === 'on');
+    const hintOff = await page.textContent('#hint');
+    const clockOff = await page.textContent('#clock');
+    if (hintOff !== '') fail('expected empty #hint when showHints=false, got ' + JSON.stringify(hintOff));
+    if (!clockOff) fail('expected #clock to remain visible when showHints=false');
   } finally {
     await page.close();
   }
@@ -888,7 +901,7 @@ async function visitHaBar(browser, base, problems) {
 
 async function visitHomeHaRow(browser, base, problems) {
   const fail = what => problems.push('Home HA row: ' + what);
-  const runCase = async (haRow, haBarAvailable) => {
+  const runCase = async (haRow, haBarAvailable, showHints = true) => {
     const page = await browser.newPage({ viewport: { width: 1920, height: 1080 } });
     page.on('pageerror', e => fail(e.message));
     const layout = { rows: ['app', 'ha'], order: { app: [], ha: [] }, hidden: { app: [], ha: [] },
@@ -907,7 +920,7 @@ async function visitHomeHaRow(browser, base, problems) {
     await page.route('**/api/ha/bar/**', route => {
       const p = new URL(route.request().url()).pathname;
       if (p.endsWith('/state')) {
-        return route.fulfill({ json: { ok: true, configured: true, tiles: [
+        return route.fulfill({ json: { ok: true, configured: true, showHints, tiles: [
           { id: 'switch.kettle', domain: 'switch', label: 'Kettle', state: swOn ? 'on' : 'off', active: swOn, adjustable: false, pct: null, valueText: swOn ? 'On' : 'Off', subText: '' },
           { id: 'light.desk', domain: 'light', label: 'Desk', state: 'on', active: true, adjustable: true, pct, valueText: pct + '%', subText: '' },
           { id: 'scene.movie', domain: 'scene', label: 'Movie Time', state: 'scening', active: false, adjustable: false, pct: null, valueText: 'Activate', subText: '' }
@@ -960,6 +973,13 @@ async function visitHomeHaRow(browser, base, problems) {
     await page.keyboard.press('ArrowUp');
     await page.waitForFunction(() => document.querySelector('.row.active') && document.querySelector('.row.active').getAttribute('data-key') === 'app');
     if (acts.length !== 5) fail('expected 5 HA row actions, got ' + JSON.stringify(acts));
+  } finally { await ctx.page.close(); }
+
+  ctx = await runCase(true, true, false);
+  try {
+    await ctx.page.waitForFunction(() => document.querySelectorAll('.row[data-key="ha"] .tile.ha').length === 3);
+    const haHead = await ctx.page.textContent('.row[data-key="ha"] h2');
+    if (haHead.indexOf('Ch +/-') !== -1) fail('expected no Ch +/- hint when showHints=false, got ' + haHead);
   } finally { await ctx.page.close(); }
 }
 

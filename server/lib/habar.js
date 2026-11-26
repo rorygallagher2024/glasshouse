@@ -55,13 +55,14 @@ function listConfig() {
     out.push({ id: id, label: label });
     if (out.length >= MAX_ENTITIES) break;
   }
-  return { entities: out };
+  return { entities: out, showHints: !(j && j.showHints === false) };
 }
 
-function saveConfig(list) {
+function saveConfig(list, opts) {
   if (!Array.isArray(list)) {
     return { ok: false, error: msg('srv.habar.badList', 'entities array expected') };
   }
+  var showHints = opts && typeof opts.showHints === 'boolean' ? opts.showHints : listConfig().showHints;
   var out = [], seen = {};
   for (var i = 0; i < list.length; i++) {
     var raw = list[i];
@@ -90,7 +91,7 @@ function saveConfig(list) {
     if (!out.length) {
       if (fs.existsSync(stateFile())) fs.unlinkSync(stateFile());
     } else {
-      util.writeJsonAtomic(stateFile(), { entities: out });
+      util.writeJsonAtomic(stateFile(), { entities: out, showHints: showHints });
     }
   } catch (e) {
     return { ok: false, error: e.message };
@@ -100,7 +101,16 @@ function saveConfig(list) {
     clearTimeout(timer);
     timer = null;
   }
-  return { ok: true, entities: out };
+  return { ok: true, entities: out, showHints: showHints };
+}
+
+function setOptions(opts) {
+  if (!opts || typeof opts !== 'object' || typeof opts.showHints !== 'boolean') {
+    return { ok: false, error: msg('srv.habar.badOptions', 'invalid options') };
+  }
+  var cur = listConfig();
+  if (!cur.entities.length) return { ok: true, entities: [], showHints: opts.showHints };
+  return saveConfig(cur.entities, { showHints: opts.showHints });
 }
 
 function available() {
@@ -281,10 +291,11 @@ function formatTile(item, ent, err) {
 
 function state(cb) {
   cb = cb || function () {};
-  var list = listConfig().entities;
+  var cfg = listConfig();
+  var list = cfg.entities;
   var configured = !!(haEntityFn && haEntityFn.configured());
   if (!configured || !list.length) {
-    return cb({ ok: true, configured: configured, hour12: !!hour12Fn(), tiles: [] });
+    return cb({ ok: true, configured: configured, hour12: !!hour12Fn(), showHints: cfg.showHints, tiles: [] });
   }
   var ids = list.map(function (it) { return it.id; });
   haEntityFn.readMany(ids, function (r) {
@@ -293,7 +304,7 @@ function state(cb) {
     var tiles = list.map(function (it) {
       return formatTile(it, ents[it.id] || null, errs[it.id] || '');
     });
-    cb({ ok: true, configured: true, hour12: !!hour12Fn(), tiles: tiles });
+    cb({ ok: true, configured: true, hour12: !!hour12Fn(), showHints: cfg.showHints, tiles: tiles });
   });
 }
 
@@ -469,6 +480,7 @@ module.exports = {
   available: available,
   listConfig: listConfig,
   saveConfig: saveConfig,
+  setOptions: setOptions,
   state: state,
   act: act,
   open: open,

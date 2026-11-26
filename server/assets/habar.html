@@ -95,6 +95,7 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
   var closing = false;
   var busyId = '';
   var useHour12 = false;
+  var showHints = true;
   var flashUntil = {};
   var closeTimer = null;
   var clockTimer = null;
@@ -163,6 +164,10 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
   function updateHint() {
     if (!tiles.length || tiles[0].empty) {
       $('hint').textContent = 'Home Assistant';
+      return;
+    }
+    if (!showHints) {
+      $('hint').textContent = '';
       return;
     }
     var cur = tiles[focus];
@@ -285,6 +290,7 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
         return;
       }
       useHour12 = !!j.hour12;
+      showHints = j.showHints !== false;
       tick();
       if (!j.configured) {
         if (!silent) showFallback('Home Assistant is not configured', 'Set it up on the HA & MQTT tab');

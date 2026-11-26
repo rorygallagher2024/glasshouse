@@ -2183,12 +2183,14 @@ function handleRequest(req, res) {
 
   if (pathname === '/api/ha/bar' && req.method === 'GET' && haBarModule) {
     if (!authed(u.query, req)) return send(res, 401, JSON.stringify({ ok: false, error: 'unauthorized' }));
+    var haBarCfg = haBarModule.listConfig();
     return send(res, 200, JSON.stringify({
       ok: true,
       configured: !!(haEntityModule && haEntityModule.configured()),
       inHomeBar: !!(homeModule && homeModule.haBarInHomeBar()),
       homeBarOffered: !!(homebarModule && homebarModule.status().offered),
-      entities: haBarModule.listConfig().entities
+      entities: haBarCfg.entities,
+      showHints: haBarCfg.showHints
     }));
   }
 
@@ -2198,7 +2200,14 @@ function handleRequest(req, res) {
       return send(res, 403, JSON.stringify({ ok: false, error: msg('srv.controlsOff', 'controls disabled in config') }));
     }
     return readJsonBody(req, res, function (body) {
-      var saved = haBarModule.saveConfig(body && body.entities);
+      var saved;
+      if (body && body.entities !== undefined) {
+        saved = haBarModule.saveConfig(body.entities, typeof body.showHints === 'boolean' ? { showHints: body.showHints } : null);
+      } else if (body && typeof body.showHints === 'boolean') {
+        saved = haBarModule.setOptions({ showHints: body.showHints });
+      } else {
+        saved = haBarModule.saveConfig(body && body.entities);
+      }
       if (saved.ok && saved.entities && saved.entities.length && homeModule && homeModule.haBarInHomeBar() && haBarModule.sync) {
         haBarModule.sync();
       }

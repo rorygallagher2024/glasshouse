@@ -3981,5 +3981,8 @@
  "home.haRowEdit": {"from": "Edit on HA & MQTT", "text": "تعديل في HA وMQTT"},
  "home.row.ha": {"from": "Home Assistant", "text": "Home Assistant"},
  "home.row.haArrange": {"from": "Entities from the Home Assistant bar", "text": "الكيانات من شريط Home Assistant"},
- "home.row.haHint": {"from": "OK to toggle, Ch +/- to adjust", "text": "OK للتبديل، Ch +/- للضبط"}
+ "home.row.haHint": {"from": "OK to toggle, Ch +/- to adjust", "text": "OK للتبديل، Ch +/- للضبط"},
+ "ha.bar.showHints": {"from": "Button hints", "text": "تلميحات الأزرار"},
+ "ha.bar.showHintsDesc": {"from": "Show remote control hints (OK toggle, Up/Down adjust, Back close) above the Home Assistant bar and on the Glasshouse Home row.", "text": "إظهار تلميحات جهاز التحكم (OK للتبديل، أعلى/أسفل للضبط، رجوع للإغلاق) أعلى شريط Home Assistant وفي صف شاشة Glasshouse الرئيسية."},
+ "srv.habar.badOptions": {"from": "invalid options", "text": "خيارات غير صالحة"}
 }

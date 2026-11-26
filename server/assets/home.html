@@ -1230,6 +1230,7 @@ html[lang="vi"] #srcTitle,html[lang="vi"] #plMode,html[lang="vi"] #pvMode,html[l
   function rowNote(kind, list) {
     if (kind === 'ha') {
       if (state.arranging) return t('home.row.haArrange', 'Entities from the Home Assistant bar');
+      if (!haShowHints) return '';
       for (var i = 0; i < list.length; i++) {
         if (list[i] && list[i].adjustable) return t('home.row.haHint', 'OK to toggle, Ch +/- to adjust');
       }
@@ -1493,7 +1494,7 @@ html[lang="vi"] #srcTitle,html[lang="vi"] #plMode,html[lang="vi"] #pvMode,html[l
     }
   };
 
-  var haTiles = [], haTimer = null, haLoading = false, haBusy = {}, haFlash = {};
+  var haTiles = [], haShowHints = true, haTimer = null, haLoading = false, haBusy = {}, haFlash = {};
   var HA_POLL_MS = 10000;
   function haRowActive() { return !!(data && layout && layout.haRow === true && data.haBarAvailable === true); }
   function haIsOneShot(domain) {
@@ -1569,8 +1570,11 @@ html[lang="vi"] #srcTitle,html[lang="vi"] #plMode,html[lang="vi"] #pvMode,html[l
     getJson('/api/ha/bar/state', function (r) {
       haLoading = false;
       if (!r || !r.ok || !Array.isArray(r.tiles)) return;
+      var nextHints = r.showHints !== false;
+      var hintsChanged = nextHints !== haShowHints;
+      haShowHints = nextHints;
       haTiles = r.tiles;
-      if (!state.arranging && !updateHaTilesInPlace()) renderWhenStill();
+      if (!state.arranging && (hintsChanged || !updateHaTilesInPlace())) renderWhenStill();
     });
   }
   function syncHaPolling(refreshNow) {
