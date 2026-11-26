@@ -221,7 +221,7 @@
  "apps.quickAccess.lgDefault": {"text": "Ustawione przez LG", "from": "Set by LG"},
  "apps.quickAccess.none": {"text": "Nic nie ustawiono", "from": "Nothing set"},
  "apps.quickAccess.reset": {"text": "Brak", "from": "None"},
- "apps.remote.desc": {"from": "Leaves a key your remote does not have off the page. Off, it shows again under Buttons on other remotes. Keys you have changed always stay visible.", "text": "Zostawia poza stroną przycisk, którego Twój pilot nie ma. Po wyłączeniu wraca w sekcji «Przyciski innych pilotów». Zmienione przyciski zawsze pozostają widoczne."},
+ "apps.remote.desc": {"from": "Hides buttons your remote does not have. Off, the Buttons on other remotes section comes back. Keys you have changed always stay visible.", "text": "Ukrywa przyciski, których Twój pilot nie ma. Po wyłączeniu wraca sekcja «Przyciski innych pilotów». Zmienione przyciski zawsze pozostają widoczne."},
  "apps.remote.detected": {"from": "Detected: {name}", "text": "Wykryto: {name}"},
  "apps.remoteKeys": {"text": "Przyciski pilota", "from": "Remote keys"},
  "apps.remoteKeys.apps": {"text": "Aplikacje", "from": "Apps"},
