@@ -768,7 +768,7 @@ require('./lib/art').init({
   watchKeys: function (on) { if (!on || remotebuttons.isSupported()) remotebuttons.want('art', on); }
 });
 // A mount does not outlive a reboot: the plain No Signal screen is mounted again.
-nosignal.init({ luna: luna, config: CONFIG });
+nosignal.init({ luna: luna, config: CONFIG, inputNames: telemetry.inputNameMap });
 nosignal.apply();
 telemetry.init({
   luna: luna,

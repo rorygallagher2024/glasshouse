@@ -20,7 +20,10 @@
  *
  * The input app holds the file it loaded until it starts again, so it is
  * restarted, and only while no input with a picture is on screen, as
- * restarting it blanks the input in front for a moment. A mount does not
+ * restarting it blanks the input in front for a moment, and while no input is
+ * open behind an app: on a C9 (webOS 4.10) an HDMI input open in the background
+ * when it restarted never came back to the screen until a reboot (#1755). A
+ * B8 (webOS 4.4) closed it instead. A mount does not
  * outlive a reboot; the server mounts it again at start. A TV boots onto its
  * last input with the input app started before the server (5 s into a C2's
  * boot, 7 s into a B8's), so an input with nothing coming in does not hold the
@@ -332,6 +335,17 @@ var mountinfo = '/proc/self/mountinfo';
 var pendingFile = '/var/run/tvweb-nosignal-restart';
 var retryTimer = null;
 var restartPending = false;
+// The input open behind an app that holds the restart back, or ''.
+var heldBy = '';
+var inputNames = {};   // short id (hdmi2) to the input's name, as the Inputs tab shows it
+
+// The input holding the restart back, by its name.
+function heldByName() {
+  if (!heldBy) return '';
+  var short = heldBy.replace(/^com\.webos\.app\./, '');
+  var m = /^hdmi(\d)$/.exec(short);
+  return inputNames[short] || (m ? 'HDMI ' + m[1] : short);
+}
 var lastProblem = '';
 var config = {};
 var webosMajor = 0;
@@ -569,6 +583,8 @@ function init(opts) {
   webosMajor = opts.webos ? parseInt(String(opts.webos), 10) : 0;
   customCache = null;
   restartPending = false;
+  heldBy = '';
+  inputNames = opts.inputNames || {};
   if (retryTimer) clearTimeout(retryTimer);
   retryTimer = null;
 }
@@ -705,6 +721,15 @@ function nothingComingIn(reply, appId) {
   return false;
 }
 
+// An input SAM lists as running other than the one in front, or ''.
+function inputsBehind(running, front) {
+  for (var i = 0; i < running.length; i++) {
+    var id = running[i] && running[i].id;
+    if (typeof id === 'string' && id !== INPUT_APP && id !== front && INPUT_IN_FRONT.test(id)) return id;
+  }
+  return '';
+}
+
 /*
  * Restarts the input app: now if no input is in front or the one in front has
  * nothing coming in, otherwise once that is so.
@@ -723,6 +748,7 @@ function restartWhenFree() {
   // changes nothing.
   var restart = function (reopen) {
     restartPending = false;
+    heldBy = '';
     try { fs.unlinkSync(pendingFile); } catch (e) { /* not there */ }
     execFn('/usr/bin/killall', [INPUT_APP], { timeout: 5000 }, function () {
       console.log('nosignal: the input app restarted, so its No Signal screen is ' + modeLabel(wanted()));
@@ -734,11 +760,23 @@ function restartWhenFree() {
     if (!restartPending) return;
     ask('com.webos.applicationManager/getForegroundAppInfo', {}, function (r) {
       var appId = r && typeof r.appId === 'string' ? r.appId : '';
-      if (!INPUT_IN_FRONT.test(appId)) return restart(null);
-      ask('com.webos.service.eim/getAllInputStatus', {}, function (inputs) {
+      ask('com.webos.applicationManager/running', {}, function (rr) {
         if (!restartPending) return;
-        if (nothingComingIn(inputs, appId)) restart(appId);
-        else later();
+        // Not known which apps run: asked again later, as one may be an input.
+        if (!rr || !Array.isArray(rr.running)) return later();
+        var behind = inputsBehind(rr.running, appId);
+        if (behind) {
+          if (behind !== heldBy) console.log('nosignal: the input app restarts once ' + behind + ', open behind ' + (appId || 'another app') + ', is closed');
+          heldBy = behind;
+          return later();
+        }
+        heldBy = '';
+        if (!INPUT_IN_FRONT.test(appId)) return restart(null);
+        ask('com.webos.service.eim/getAllInputStatus', {}, function (inputs) {
+          if (!restartPending) return;
+          if (nothingComingIn(inputs, appId)) restart(appId);
+          else later();
+        });
       });
     });
   };
@@ -877,9 +915,9 @@ function status() {
     try { lgText = fs.readFileSync(isMounted ? origFile() : file, 'utf8'); } catch (e) { lgText = null; }
     available = isMounted || (lgText !== null && !!patch(lgText, 'icon'));
     art = lgText !== null && !!patch(lgText, 'art');
-    return { ok: true, available: available, art: art, custom: art, customScreens: customScreens, on: mode !== 'lg', mode: mode, applied: isMounted, restartPending: restartPending };
+    return { ok: true, available: available, art: art, custom: art, customScreens: customScreens, on: mode !== 'lg', mode: mode, applied: isMounted, restartPending: restartPending, heldBy: restartPending ? heldByName() : '' };
   }
-  return { ok: true, available: false, art: false, custom: false, customScreens: customScreens, on: mode !== 'lg', mode: mode, applied: false, restartPending: false };
+  return { ok: true, available: false, art: false, custom: false, customScreens: customScreens, on: mode !== 'lg', mode: mode, applied: false, restartPending: false, heldBy: '' };
 }
 
 module.exports = {

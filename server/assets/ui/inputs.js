@@ -332,9 +332,10 @@ function renderNoSignal() {
   if (!frame.hidden && typeof frameLoad === 'function') frameLoad(true);
   const desc = q('inputs-nosignal-desc');
   desc.hidden = !ns.restartPending;
-  desc.textContent = ns.restartPending
-    ? t('ss.noSignal.pending', 'It takes effect once no input with a picture is on screen, such as at the Home screen.')
-    : '';
+  desc.textContent = !ns.restartPending ? ''
+    : ns.heldBy
+      ? t('ss.noSignal.pendingBehind', 'It takes effect once {input} is closed: it is open behind another app, and the TV\u2019s input app restarts to show the new screen, which could leave that input blank.', { input: ns.heldBy })
+      : t('ss.noSignal.pending', 'It takes effect once no input with a picture is on screen, such as at the Home screen.');
   return true;
 }
 
