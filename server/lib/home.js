@@ -3680,7 +3680,7 @@ function beat(body) {
   checkSaverTimer();
   return { ok: true, wallVideoOnScreen: onScreen, saverIdleMs: saverIdleMs, enabled: readConfig().enabled, standalone: isStandalone(), covered: viewCovered(saver), saver: saver,
            build: buildId, wallpapers: wallpapers.status(),
-           layoutVersion: layoutVersion(), sleeps: sleeps, trace: fs.existsSync(traceFile()), reload: traceReloadAsked() || undefined,
+           layoutVersion: layoutVersion(), sleeps: sleeps, screenOff: !powerActive, trace: fs.existsSync(traceFile()), reload: traceReloadAsked() || undefined,
            // So a push shows within a heartbeat rather than at the next poll.
            weather: currentWeather(), remoteBattery: remoteBatteryBadge(), info: currentInfo(), board: currentBoard(), news: currentNews() };
 }
