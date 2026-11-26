@@ -1201,8 +1201,8 @@ html[lang="vi"] #srcTitle,html[lang="vi"] #plMode,html[lang="vi"] #pvMode,html[l
     measure('rec');
     paint('rec');
     edges();
-    // The next full render builds the rows again with this app's cards.
-    renderedRows = '';
+    // The next render builds the row again with this app's cards.
+    rowChanged('rec');
   }
 
   // An input with nothing plugged in, where the layout leaves those out, as well
@@ -1289,7 +1289,7 @@ html[lang="vi"] #srcTitle,html[lang="vi"] #plMode,html[lang="vi"] #pvMode,html[l
   function render() {
     rowsToSettle = false;
     stageClass();
-    var html = '';
+    var html = '', sections = [];
     barWidths = [];
     if (!shown(state.row)) state.row = nextShown(0, 1);
     layout.rows.forEach(function (kind, ri) {
@@ -1298,22 +1298,44 @@ html[lang="vi"] #srcTitle,html[lang="vi"] #plMode,html[lang="vi"] #pvMode,html[l
       var tiles = '';
       list.forEach(function (it, i) { tiles += TILE[kind](it, i); });
       var note = esc(rowNote(kind, list));
-      html += '<section class="row"' + (unavail ? ' data-unavail="1"' : '') + (list.length ? '' : ' data-empty="1"') + (rowOff(kind) ? ' data-off="1"' : '') + ' data-row="' + ri + '" data-key="' + kind + '">' +
+      var section = '<section class="row"' + (unavail ? ' data-unavail="1"' : '') + (list.length ? '' : ' data-empty="1"') + (rowOff(kind) ? ' data-off="1"' : '') + ' data-row="' + ri + '" data-key="' + kind + '">' +
         '<h2>' + esc(ROW_TITLES[kind]) + (list.length && note ? '<span>' + note + '</span>' : '') +
         '<em class="sort">' + esc(sortLabel(kind)) + '</em></h2>' +
         (list.length ? '<div class="wrap"><i class="edge l"></i><i class="edge r"></i><div class="track">' + tiles + '</div></div>'
           : '<div class="slot">' + note + '</div>') +
         '</section>';
+      sections.push(section);
+      html += section;
     });
     // Rebuilt only when something shown changed: the minute's refresh of
     // what was last on leaves the rows, and where they are scrolled, alone.
-    var changed = html !== renderedRows;
+    // Only the rows that changed are replaced: a programme moving on in the
+    // guide, or the channel last on, redraws its own row rather than every
+    // row and image (130 ms each time on a G3, webOS 9.2.2).
+    var changed = rowsStale || html !== renderedRows;
     if (changed) {
+      var rowsEl = $('rows'), kinds = layout.rows.join(',');
       if (trace) trace.rebuilds++;
       parkPreview();
-      $('rows').innerHTML = html;
+      if (renderedRows && kinds === renderedKinds && rowsEl.children.length === sections.length) {
+        for (var si = 0; si < sections.length; si++) {
+          if (sections[si] === renderedSections[si]) continue;
+          var holder = document.createElement('div');
+          holder.innerHTML = sections[si];
+          var fresh = holder.firstChild;
+          rowsEl.replaceChild(fresh, rowsEl.children[si]);
+          wireGlyphs(fresh);
+          if (trace) trace.rowsReplaced++;
+        }
+      } else {
+        rowsEl.innerHTML = html;
+        wireGlyphs(rowsEl);
+        if (trace) trace.rowsReplaced += sections.length;
+      }
       renderedRows = html;
-      wireGlyphs($('rows'));
+      renderedSections = sections;
+      renderedKinds = kinds;
+      rowsStale = false;
     }
     // A programme's progress is set in place, so the minute's refresh does
     // not rebuild the rows.
@@ -1336,7 +1358,14 @@ html[lang="vi"] #srcTitle,html[lang="vi"] #plMode,html[lang="vi"] #pvMode,html[l
     if (folder.open) renderFolder();
     if (syncAnim()) updateWall();
   }
-  var renderedRows = '', barWidths = [], wasAtBottom = false;
+  // renderedRows '' rebuilds every row; a row of renderedSections '' (with rowsStale) only that row.
+  var renderedRows = '', renderedSections = [], renderedKinds = '', rowsStale = false, barWidths = [], wasAtBottom = false;
+  function rowChanged(kind) {
+    var i = layout ? layout.rows.indexOf(kind) : -1;
+    if (i === -1) return;
+    renderedSections[i] = '';
+    rowsStale = true;
+  }
 
   // The minute's refresh waits for a moving row to stop (tick), so the rows
   // are not rebuilt under it. Its changes leave every tile where it was.
@@ -1634,32 +1663,37 @@ html[lang="vi"] #srcTitle,html[lang="vi"] #plMode,html[lang="vi"] #pvMode,html[l
   }
 
   // noScroll: focus only, as the pointer does, leaving each row where it is.
+  function setClass(el, name) { if (el.className !== name) el.className = name; }
+
   function applyFocus(instant, noScroll) {
     var rows = document.querySelectorAll('.row');
     for (var ri = 0; ri < rows.length; ri++) {
       var rowEl = rows[ri], kind = rowEl.getAttribute('data-key'), active = ri === state.row && state.bar < 0 && !state.rail;
-      rowEl.className = 'row' + (rowEl.getAttribute('data-empty') ? ' empty' : '') + (rowEl.getAttribute('data-off') ? ' off-row' : '') + (active ? ' active' : '') + (active && state.held ? ' held-row' : '');
+      // Written only where it changes: each write dirties the style the
+      // layout reads below then wait on, every key (a G3, webOS 9.2.2).
+      setClass(rowEl, 'row' + (rowEl.getAttribute('data-empty') ? ' empty' : '') + (rowEl.getAttribute('data-off') ? ' off-row' : '') + (active ? ' active' : '') + (active && state.held ? ' held-row' : ''));
       var tiles = rowEl.querySelectorAll('.tile'), c = colOf(kind);
       for (var ci = 0; ci < tiles.length; ci++) {
         var on = active && ci === c;
-        tiles[ci].className = tiles[ci].className.replace(/ (focus|held)\b/g, '') + (on ? ' focus' : '') + (on && state.held ? ' held' : '');
+        setClass(tiles[ci], tiles[ci].className.replace(/ (focus|held)\b/g, '') + (on ? ' focus' : '') + (on && state.held ? ' held' : ''));
       }
-      rowEl.querySelector('.sort').className = 'sort' + (active && c === -1 ? ' focus' : '');
+      setClass(rowEl.querySelector('.sort'), 'sort' + (active && c === -1 ? ' focus' : ''));
       // Only the row in focus is moved: one the pointer or the wheel moved
       // stays where it was left.
       if (!noScroll && active) scrollTrack(rowEl, tiles[c], instant);
     }
     if (!noScroll) keepRowInView(instant);
-    for (var b = 0; b < BAR.length; b++) $(BAR[b]).className = 'btn' + (state.bar === b ? ' focus' : '');
-    $('rail').className = state.rail && !finder.open ? 'focus' : '';
+    for (var b = 0; b < BAR.length; b++) setClass($(BAR[b]), 'btn' + (state.bar === b ? ' focus' : ''));
+    setClass($('rail'), state.rail && !finder.open ? 'focus' : '');
     followApps();
     if (state.bar < 0) {
       var focused = items(rowKey())[colOf(rowKey())];
       state.last = focused ? { kind: rowKey(), id: focused.id } : null;
     }
     // Apps and inputs come from the TV and can only be hidden; channels were added, so they are removed.
-    $('btnHide').textContent = state.last && (state.last.kind === 'ch' || state.last.kind === 'iptv')
+    var hideText = state.last && (state.last.kind === 'ch' || state.last.kind === 'iptv')
       ? t('home.arrange.removeChannel', 'Remove channel') : t('home.arrange.hide', 'Hide or show');
+    if ($('btnHide').textContent !== hideText) $('btnHide').textContent = hideText;
     if (state.arranging) {
       var it = items(rowKey())[colOf(rowKey())];
       $('bannerState').textContent = colOf(rowKey()) === -1
@@ -3351,13 +3385,15 @@ html[lang="vi"] #srcTitle,html[lang="vi"] #plMode,html[lang="vi"] #pvMode,html[l
     var same = document.querySelectorAll('.glyph img[data-judge]');
     for (var i = 0; i < same.length; i++) {
       if (same[i].getAttribute('src') !== img.getAttribute('src')) continue;
+      for (var up = same[i].parentNode; up && up !== document; up = up.parentNode) {
+        if (up.tagName === 'SECTION' && up.getAttribute('data-key')) { rowChanged(up.getAttribute('data-key')); break; }
+      }
       if (look === 'none') { same[i].onerror(); continue; }
       same[i].className = look;
       same[i].removeAttribute('data-judge');
       same[i].style.visibility = '';
     }
-    // The rows' markup changed under them; the next render redraws.
-    renderedRows = '';
+    // The rows' markup changed under them; the next render redraws them.
   }
 
   /*
@@ -7067,7 +7103,7 @@ html[lang="vi"] #srcTitle,html[lang="vi"] #plMode,html[lang="vi"] #pvMode,html[l
   function freshTrace(last) {
     var hist = [];
     for (var i = 0; i <= TRACE_BUCKETS.length; i++) hist.push(0);
-    return { frames: 0, over33: 0, over100: 0, worst: 0, last: last || 0, long: [], fn: {}, req: {}, rebuilds: 0, hist: hist };
+    return { frames: 0, over33: 0, over100: 0, worst: 0, last: last || 0, long: [], fn: {}, req: {}, rebuilds: 0, rowsReplaced: 0, hist: hist, errors: [] };
   }
   function noteRequest(url, ms) {
     var key = url.split('?')[0], s = trace.req[key] || (trace.req[key] = { n: 0, ms: 0, max: 0 });
@@ -7079,6 +7115,10 @@ html[lang="vi"] #srcTitle,html[lang="vi"] #plMode,html[lang="vi"] #pvMode,html[l
     trace = freshTrace();
     if (!traceWrapped) {
       traceWrapped = true;
+      // The page's script errors, which nothing else reports from the TV.
+      window.addEventListener('error', function (e) {
+        if (trace && trace.errors.length < 10) trace.errors.push(String(e.message) + ' @' + e.lineno + ':' + e.colno);
+      });
       // Times are inclusive: render contains applyFocus. Wrapped load and
       // openRecents time only sending the request; req has the replies.
       render = timed('render', render); applyFocus = timed('applyFocus', applyFocus); move = timed('move', move);
@@ -7137,7 +7177,7 @@ html[lang="vi"] #srcTitle,html[lang="vi"] #plMode,html[lang="vi"] #pvMode,html[l
       req[k] = { n: s.n, avg: Math.round(s.ms / s.n), max: Math.round(s.max) };
     });
     var out = { frames: trace.frames, over33: trace.over33, over100: trace.over100, worst: Math.round(trace.worst), long: trace.long, fn: fn,
-      req: req, rebuilds: trace.rebuilds, hist: trace.hist };
+      req: req, rebuilds: trace.rebuilds, rowsReplaced: trace.rowsReplaced, hist: trace.hist, errors: trace.errors };
     var fresh = freshTrace(trace.last);
     fresh.observer = trace.observer;
     // The frame loop and the observer hold the trace object itself.
