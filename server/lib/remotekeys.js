@@ -2207,10 +2207,11 @@ function describeKeys(keys, inChain, cb, native) {
         if (k.replacesVoice) key.replacesVoice = true;
         if (native && COLOR_CODES[k.key]) { key.observedColor = true; key.noNothing = true; }
         if (native && NATIVE_BLOCK_KEYS[k.key]) key.blocksApp = true;
-        if (native && !SCREEN_OFF_BUTTONS[k.key] && !k.blockCode) key.noScreenOff = true;
+        var channelNative = k.blockCode && guidePatch.status().channel;
+        if (native && !SCREEN_OFF_BUTTONS[k.key] && (!k.blockCode || !channelNative)) key.noScreenOff = true;
         if (native && k.blockCode) {
-          if (guidePatch.status().channel) key.channelNative = true;
-          else if (CHANNEL_EVDEV_CODES[k.key]) key.observedChannel = true;
+          if (channelNative) key.channelNative = true;
+          else if (CHANNEL_EVDEV_CODES[k.key]) { key.observedChannel = true; key.noNothing = true; }
         }
         if (nativeChoices(k, native).length) key[k.key === 'guide' ? 'homeGuide' : 'nativeInput'] = true;
         // The Input key's launch holds an id of so many characters, and cannot do nothing or send a media key.
@@ -2296,8 +2297,13 @@ function setOfferedKey(def, action, id, kind, cb) {
     return save(map, saved);
   }
   var nativeInput = kind !== 'filter' && def.key === 'input';
+  // Observed rather than native-blocked (CHANNEL_EVDEV_CODES, kind 'native'): only open an app or input,
+  // the same as the color keys an open PR observes the same way (#1718).
+  var channelObservedOnly = kind === 'native' && def.blockCode && !!CHANNEL_EVDEV_CODES[def.key] && !guidePatch.status().channel;
   if (action === 'nothing') {
-    if ((def.noNothing && kind !== 'filter') || nativeInput || (kind === 'native' && COLOR_CODES[def.key])) return cb({ ok: false, error: msg('srv.remoteKeys.noNothing', 'This key cannot be set to do nothing') });
+    if ((def.noNothing && kind !== 'filter') || nativeInput || (kind === 'native' && COLOR_CODES[def.key]) || channelObservedOnly) {
+      return cb({ ok: false, error: msg('srv.remoteKeys.noNothing', 'This key cannot be set to do nothing') });
+    }
     map[def.key] = '';
     return save(map, saved);
   }
@@ -2305,7 +2311,7 @@ function setOfferedKey(def, action, id, kind, cb) {
   switcherChoices(function (switchers) {
     listApps(function (apps) {
       if (!apps) return cb({ ok: false, error: msg('srv.remoteKeys.noApps', 'Could not read the TV\'s apps. Try again in a moment.') });
-      var media = kind === 'filter' ? actionChoices().concat(mediaChoices()) : (SCREEN_OFF_BUTTONS[def.key] || def.blockCode) ? loggedActionChoices() : [];
+      var media = kind === 'filter' ? actionChoices().concat(mediaChoices()) : (SCREEN_OFF_BUTTONS[def.key] || (def.blockCode && !channelObservedOnly)) ? loggedActionChoices() : [];
       // On webOS 11 the Input key opens an app, an input or the input bar, by an id its launch can hold.
       var nativeInputOk = nativeInput && guidePatch.validId(id) &&
         inputChoices().concat(appChoices(apps), nativeChoices(def, true)).some(function (c) { return c.id === id; });
