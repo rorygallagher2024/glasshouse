@@ -1478,6 +1478,27 @@ step(function (next) {
       tv.piccapHold.shift()();
       tv.piccapHold = null;
       assert.strictEqual(tv.piccapRunning, true, 'completed held toggle');
+      // With the server answering, it toggles PicCap and the filter asks PicCap nothing (#1757).
+      var posted = [], answer = 200;
+      function FakeXhr() { this.readyState = 0; this.status = 0; }
+      FakeXhr.prototype.open = function (method, url) { this.method = method; this.url = url; };
+      FakeXhr.prototype.setRequestHeader = function (k, v) { this.type = v; };
+      FakeXhr.prototype.send = function () {
+        posted.push(this.method + ' ' + this.url + ' ' + this.type);
+        this.readyState = 4; this.status = answer; this.onreadystatechange();
+      };
+      var fx = loadFilter(null, { XMLHttpRequest: FakeXhr });
+      var before = tv.piccapRunning;
+      assert.strictEqual(fx.handle(1004, true, false), 'accepted');
+      assert.deepEqual(posted, ['POST http://127.0.0.1:8080/api/remotekeys/piccap application/json']);
+      assert.strictEqual(tv.piccapRunning, before, 'PicCap left to the server');
+      assert.ok(!fx.sent.some(function (x) { return /piccap/.test(x.uri); }), 'no call to PicCap from the compositor');
+      // The server not answering: PicCap is asked from the filter, as before.
+      answer = 0;
+      var fy = loadFilter(null, { XMLHttpRequest: FakeXhr });
+      assert.strictEqual(fy.handle(1004, true, false), 'accepted');
+      assert.strictEqual(tv.piccapRunning, !before, 'toggled from the filter without the server');
+      tv.piccapRunning = before;
       // Removing PicCap stops putting the key in configd while keeping the saved label.
       piccapHere = false;
       rk.availabilityChanged();
@@ -1489,7 +1510,19 @@ step(function (next) {
           assert.strictEqual(red.opens, 'Ambient light', 'keeps friendly title while missing');
           rk.setRemoteKey('red', 'lg', '', guard(function () {
             console.log('  ✓ Ambient light toggle toggles PicCap in the filter without repeats and hides when absent');
-            next();
+            // The server's side: the toggle it is given, its answer passed back.
+            var toggles = 0;
+            rk.init({ luna: luna, inputNames: { hdmi1: 'HDMI 1', hdmi2: 'Apple TV' }, stateDir: stateDir, filtersDir: filtersDir,
+              togglePiccap: function (cb) { toggles++; cb({ ok: true, isRunning: true }); } });
+            rk.piccapFromFilter(guard(function (r) {
+              assert.deepEqual([toggles, r.ok], [1, true]);
+              rk.init({ luna: luna, inputNames: { hdmi1: 'HDMI 1', hdmi2: 'Apple TV' }, stateDir: stateDir, filtersDir: filtersDir });
+              rk.piccapFromFilter(guard(function (r2) {
+                assert.strictEqual(r2.ok, false, 'no PicCap, no toggle');
+                console.log('  ✓ the filter asks the server to toggle PicCap, and asks PicCap itself only where the server does not answer');
+                next();
+              }));
+            }));
           }));
         }));
       }), 20);
