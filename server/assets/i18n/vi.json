@@ -2817,7 +2817,6 @@
  "srv.remoteKeys.brightnessUp": {"text": "Tăng độ sáng", "from": "Brightness up"},
  "srv.remoteKeys.chainFailed": {"text": "TV không áp dụng thay đổi", "from": "The TV did not take the change"},
  "srv.remoteKeys.fastForward": {"text": "Tua tới", "from": "Fast forward"},
- "srv.remoteKeys.home": {"text": "Màn hình chính", "from": "Home"},
  "srv.remoteKeys.homeAssistant": {"text": "Home Assistant", "from": "Home Assistant"},
  "srv.remoteKeys.homeBar": {"text": "Glasshouse Bar", "from": "Glasshouse Bar"},
  "srv.remoteKeys.piccap": {"from": "Ambient light", "text": "Ánh sáng xung quanh"},

@@ -654,6 +654,7 @@ remoteKeys.init({ detectRemotes: detectRemotes, luna: luna, subscription: lunaTr
   watchChannelButtons: function (on) { remotebuttons.want('remoteKeysChannel', on); },
   // The Guide key can open Glasshouse Home's Internet TV guide.
   homeGuide: function () { return !!(glasshouseHome && iptv && glasshouseHome.enabled() && iptv.hasPlaylists()); },
+  homeIsGlasshouse: function () { return !!(glasshouseHome && glasshouseHome.enabled() && !glasshouseHome.isStandalone()); },
   // PicCap capture on or off, offered where PicCap is installed on webOS 3+.
   piccap: function () { return !!(piccap && piccap.isInstalled()); },
   togglePiccap: function (cb) { if (piccap) piccap.toggle(cb); },

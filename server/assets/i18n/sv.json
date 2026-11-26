@@ -2864,7 +2864,6 @@
  "srv.remoteKeys.brightnessUp": {"from": "Brightness up", "text": "Ljusstyrka upp"},
  "srv.remoteKeys.chainFailed": {"from": "The TV did not take the change", "text": "TV:n tog inte emot ändringen"},
  "srv.remoteKeys.fastForward": {"from": "Fast forward", "text": "Snabbspola framåt"},
- "srv.remoteKeys.home": {"from": "Home", "text": "Hem"},
  "srv.remoteKeys.homeAssistant": {"from": "Home Assistant", "text": "Home Assistant"},
  "srv.remoteKeys.homeBar": {"from": "Glasshouse Bar", "text": "Glasshouse Bar"},
  "srv.remoteKeys.piccap": {"from": "Ambient light", "text": "Omgivningsljus"},

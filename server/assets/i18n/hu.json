@@ -2106,7 +2106,6 @@
  "srv.huesync.didnotstart": {"text": "A Hue Sync nem indította el a streamelést", "from": "Hue Sync did not start streaming"},
  "srv.huesync.refused": {"text": "A Hue Sync elutasította a kérést", "from": "Hue Sync refused the request"},
  "srv.huesync.unavailable": {"text": "A Hue Sync nem érhető el", "from": "Hue Sync is not available"},
- "srv.remoteKeys.home": {"text": "Kezdőképernyő", "from": "Home"},
  "srv.saver.badFolder": {"text": "A mappa neve („{name}”) csak kisbetűket, számjegyeket és - jelet tartalmazhat, betűvel vagy számjeggyel kezdődhet, és legfeljebb 32 karakter lehet.", "from": "Its folder name, \"{name}\", can only have lowercase letters, digits and -, starting with a letter or digit, up to 32 characters."},
  "srv.saver.badRuntime": {"text": "{file}: a runtime értéke \"qml\" vagy \"web\" lehet.", "from": "{file}: runtime must be \"qml\" or \"web\"."},
  "srv.saver.badMain": {"text": "{file}: a main egy .qml fájlt nevezzen meg, webes képernyővédőnél a web/index.html-t.", "from": "{file}: main must name a .qml file, or web/index.html for a web saver."},

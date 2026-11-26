@@ -689,7 +689,7 @@ step(function (next) {
     assert.deepEqual(saved, { amazon: 'com.webos.app.home', red: 'netflix' });
     rk.getRemoteKeys(guard(function (r) {
       var amazon = r.keys.filter(function (k) { return k.key === 'amazon'; })[0];
-      assert.strictEqual(amazon.opens, 'Home');
+      assert.strictEqual(amazon.opens, "LG's Home");
       rk.setRemoteKey('amazon', 'lg', '', guard(function () {
         rk.setRemoteKey('red', 'lg', '', guard(function () {
           console.log('  ✓ a key set to the Glasshouse Home app of earlier builds is set to Home at start');
@@ -1493,6 +1493,22 @@ step(function (next) {
           }));
         }));
       }), 20);
+    }));
+  }));
+});
+
+// Home is named by what it opens: LG's Home, or Glasshouse Home where it runs under LG's Home's id.
+step(function (next) {
+  rk.getRemoteKeys(guard(function (r) {
+    var home = r.choices.filter(function (c) { return c.id === 'com.webos.app.home'; })[0];
+    assert.deepEqual([home.title, home.icon], ["LG's Home", 'lgHome']);
+    rk.init({ luna: luna, inputNames: { hdmi1: 'HDMI 1', hdmi2: 'Apple TV' }, stateDir: stateDir, filtersDir: filtersDir, homeIsGlasshouse: function () { return true; } });
+    rk.getRemoteKeys(guard(function (r2) {
+      var gh = r2.choices.filter(function (c) { return c.id === 'com.webos.app.home'; })[0];
+      assert.deepEqual([gh.title, gh.icon], ['Glasshouse Home', 'glasshouse']);
+      rk.init({ luna: luna, inputNames: { hdmi1: 'HDMI 1', hdmi2: 'Apple TV' }, stateDir: stateDir, filtersDir: filtersDir });
+      console.log('  ✓ the Home choice says whether it opens LG\'s Home or Glasshouse Home');
+      next();
     }));
   }));
 });

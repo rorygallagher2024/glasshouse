@@ -385,6 +385,8 @@ var homeAssistantOn = function () { return false; };
 // Glasshouse Home on, with an IPTV playlist: its guide is a key's choice.
 /** @type {function(): boolean} */
 var homeGuideOn = function () { return false; };
+// Whether LG's Home's id opens Glasshouse Home, as on webOS 7 and later while it is on.
+var homeIsGlasshouseFn = function () { return false; };
 // PicCap installed on webOS 3+: Ambient light toggle is a key's choice.
 /** @type {function(): boolean} */
 var piccapOn = function () { return false; };
@@ -444,6 +446,7 @@ function init(opts) {
   servicesModule = opts.services || null;
   homeAssistantOn = opts.homeAssistant || function () { return false; };
   homeGuideOn = opts.homeGuide || function () { return false; };
+  homeIsGlasshouseFn = opts.homeIsGlasshouse || function () { return false; };
   piccapOn = typeof opts.piccap === 'function' ? opts.piccap : function () { return false; };
   piccapToggleFn = typeof opts.togglePiccap === 'function' ? opts.togglePiccap : null;
   piccapToggleBusy = false;
@@ -2135,9 +2138,14 @@ function reported(key) {
   return reportedButtons().indexOf(key) !== -1;
 }
 
-// Home as a choice, where the JavaScript filter opens it as the Home key would.
+// Home as a choice, where the JavaScript filter opens it as the Home key would,
+// named by what it opens: Glasshouse Home where it runs under LG's Home's id,
+// otherwise LG's own Home (webOS 3 to 6 list Glasshouse Home as its own app).
 function homeChoices(native) {
-  return native ? [] : [{ id: HOME_APP, title: msg('srv.remoteKeys.home', 'Home'), kind: 'app' }];
+  if (native) return [];
+  var gh = !!homeIsGlasshouseFn();
+  return [{ id: HOME_APP, title: gh ? msg('srv.remoteKeys.glasshouseHome', 'Glasshouse Home') : msg('srv.remoteKeys.lgHome', 'LG\'s Home'),
+    kind: 'app', icon: gh ? 'glasshouse' : 'lgHome' }];
 }
 
 /*
@@ -2188,7 +2196,11 @@ function appChoices(apps) {
     if (a.id === LIVE_TV || /^com\.webos\.app\.(hdmi|container)/.test(a.id)) return false;
     seen[a.id] = true;
     return true;
-  }).map(function (a) { return { id: a.id, title: a.title || a.id, kind: 'app' }; })
+  }).map(function (a) {
+    // The dashboard's app is titled Glasshouse, which reads as all of it beside Glasshouse Home.
+    var title = a.id === 'com.tvweb.dashboard' ? msg('srv.remoteKeys.dashboard', 'Glasshouse dashboard') : (a.title || a.id);
+    return { id: a.id, title: title, kind: 'app' };
+  })
     .sort(function (x, y) { return x.title.toLowerCase() < y.title.toLowerCase() ? -1 : 1; });
 }
 
@@ -2310,6 +2322,7 @@ function describeKeys(keys, inChain, cb, native) {
       var guide = nativeChoices({ key: 'guide' }, native).concat(nativeChoices({ key: 'input' }, native));
       var titles = {};
       (apps || []).forEach(function (a) { if (a && a.id) titles[a.id] = a.title || a.id; });
+      appChoices(apps).forEach(function (c) { titles[c.id] = c.title; });
       var inputs = inputChoices();
       var media = native ? loggedActionChoices() : actionChoices().concat(mediaChoices());
       var cc = country();
