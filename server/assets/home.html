@@ -2651,6 +2651,9 @@ html[lang="vi"] #srcTitle,html[lang="vi"] #plMode,html[lang="vi"] #pvMode,html[l
   // Home still in front this long after an open went through, as when LG's
   // Home is slow to come: it fades back in rather than stay dark.
   var FADE_BACK_MS = 4000;
+  // Hidden for this long before asking whether the screen went off (leaveScreen).
+  var SLEEP_CHECK_MS = 1000;
+  var darkenTimer = null;
   var FADE_KEY = 'glasshouse.home.fade';
   var fadeOn = false;
   var faded = false;
@@ -2683,15 +2686,32 @@ html[lang="vi"] #srcTitle,html[lang="vi"] #plMode,html[lang="vi"] #pvMode,html[l
     return true;
   }
 
-  // Off screen: dark at once, so it comes back dark and fades in.
-  function darken() {
-    // Off screen, the stream lets go of the provider: an account may allow one.
+  // Off screen: the stream lets go of the provider at once (an account may
+  // allow one), and Home goes dark so that it comes back dark and fades in.
+  function leaveScreen() {
     if (player.open) closePlayer();
     if (guide.open) closeGuide();
     stopPreview();
     clearTimeout(fadeBack);
     opening = false;
+    clearTimeout(darkenTimer);
     if (!fadeOn) return;
+    // Hidden because the screen went off rather than for an app, Home stays as
+    // it is: a wake from Quick Start+ shows it straight away, where coming back
+    // dark showed it, then black for a second, then faded it in. The server
+    // counts the screen going off in sleeps; asked a moment later, once it has
+    // heard. Darkening while hidden shows nothing, so waiting costs nothing.
+    var asleepBefore = sleeps;
+    darkenTimer = setTimeout(function () {
+      postJson('/api/home/beat', { focused: document.hasFocus(), visible: document.visibilityState || '' }, function (r) {
+        var slept = r && r.ok && typeof r.sleeps === 'number' && asleepBefore !== null && r.sleeps !== asleepBefore;
+        if (r && r.ok && typeof r.sleeps === 'number') sleeps = r.sleeps;
+        if (document.hidden && !slept) darken();
+      });
+    }, SLEEP_CHECK_MS);
+  }
+
+  function darken() {
     faded = true;
     paintFade(false);
   }
@@ -7403,7 +7423,7 @@ html[lang="vi"] #srcTitle,html[lang="vi"] #plMode,html[lang="vi"] #pvMode,html[l
   document.addEventListener('visibilitychange', function () {
     // Hidden behind an app, which may need the decoder the wallpaper holds.
     // A frame gap across the time hidden is not a stall.
-    if (document.hidden) { hiddenGen++; if (trace) trace.last = 0; animStop(); darken(); unloadWallVideo(); syncHaPolling(); }
+    if (document.hidden) { hiddenGen++; if (trace) trace.last = 0; animStop(); leaveScreen(); unloadWallVideo(); syncHaPolling(); }
     // Shown again: the first gap counts from here, so the work of the return is in it.
     else {
       if (trace) trace.last = performance.now();
