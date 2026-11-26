@@ -635,7 +635,7 @@
  "home.motion.crossfade": {"text": "Transição suave do papel de parede", "from": "Wallpaper cross-fade"},
  "home.motion.crossfadeDesc": {"text": "A imagem se funde na seguinte quando o período do dia muda, em vez de trocar de uma vez.", "from": "The picture fades into the next when the part of the day changes, rather than switching at once."},
  "home.motion.drift": {"text": "Movimento do papel de parede", "from": "Wallpaper drift"},
- "home.motion.driftDesc": {"text": "O papel de parede se move e aproxima bem devagar, para nunca ficar parado na tela.", "from": "The wallpaper moves and zooms very slowly, so it never sits still on the screen."},
+ "home.motion.driftDesc": {"text": "O papel de parede se desloca lateralmente bem devagar, para nunca ficar parado na tela.", "from": "The wallpaper shifts sideways very slowly, so it never sits still on the screen."},
  "home.motion.scroll": {"text": "Rolagem suave", "from": "Smooth scrolling"},
  "home.motion.scrollDesc": {"text": "Uma fileira desliza até o bloco escolhido, em vez de pular para ele.", "from": "A row glides to the chosen tile, rather than jumping to it."},
  "home.motion.slide": {"text": "Painéis deslizantes", "from": "Sliding panels"},

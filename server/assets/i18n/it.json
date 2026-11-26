@@ -2651,7 +2651,7 @@
  "home.group.search": {"text": "Cerca", "from": "Search"},
  "home.group.motion": {"text": "Animazioni", "from": "Animations"},
  "home.motion.drift": {"text": "Movimento dello sfondo", "from": "Wallpaper drift"},
- "home.motion.driftDesc": {"text": "Lo sfondo si muove e si ingrandisce molto lentamente, così non resta mai fermo sullo schermo.", "from": "The wallpaper moves and zooms very slowly, so it never sits still on the screen."},
+ "home.motion.driftDesc": {"text": "Lo sfondo si sposta lateralmente molto lentamente, così non resta mai fermo sullo schermo.", "from": "The wallpaper shifts sideways very slowly, so it never sits still on the screen."},
  "home.motion.crossfade": {"text": "Dissolvenza dello sfondo", "from": "Wallpaper cross-fade"},
  "home.motion.crossfadeDesc": {"text": "L’immagine sfuma nella successiva quando cambia la parte del giorno, invece di cambiare di colpo.", "from": "The picture fades into the next when the part of the day changes, rather than switching at once."},
  "home.motion.scroll": {"text": "Scorrimento fluido", "from": "Smooth scrolling"},

@@ -2619,7 +2619,7 @@
  "home.group.search": {"text": "Keresés", "from": "Search"},
  "home.group.motion": {"text": "Animációk", "from": "Animations"},
  "home.motion.drift": {"text": "Háttérkép mozgása", "from": "Wallpaper drift"},
- "home.motion.driftDesc": {"text": "A háttérkép nagyon lassan mozog és nagyít, így sosem áll egy helyben a képernyőn.", "from": "The wallpaper moves and zooms very slowly, so it never sits still on the screen."},
+ "home.motion.driftDesc": {"text": "A háttérkép nagyon lassan oldalirányban mozog, így sosem áll egy helyben a képernyőn.", "from": "The wallpaper shifts sideways very slowly, so it never sits still on the screen."},
  "home.motion.crossfade": {"text": "Háttérkép átúsztatása", "from": "Wallpaper cross-fade"},
  "home.motion.crossfadeDesc": {"text": "A kép átúszik a következőbe, amikor a napszak változik, ahelyett hogy egyszerre váltana.", "from": "The picture fades into the next when the part of the day changes, rather than switching at once."},
  "home.motion.scroll": {"text": "Sima görgetés", "from": "Smooth scrolling"},
