@@ -165,10 +165,8 @@ case "$cmd" in
         done
         sleep 10
         press home ;;
-      cold)
-        on_tv "luna-send -n 1 -f luna://com.webos.applicationManager/closeByAppId '{\"id\":\"com.webos.app.home\"}' >/dev/null"
-        sleep 3
-        press home ;;
+      # The view reloads at its next beat; its start marks come with the first beat after its first rows.
+      cold) on_tv "echo reload > $trace" ;;
     esac
     forks1=$(forks)
     # Two beats, so the last key's frames are in.

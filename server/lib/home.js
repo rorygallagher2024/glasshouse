@@ -458,6 +458,17 @@ function configFile() { return path.join(stateDir, 'home.json'); }
 // While this file exists, the view measures its frames and sends them with
 // each beat, and they are logged (docs/development/testing.md, scripts/tv.sh frames).
 function traceFile() { return path.join(stateDir, 'home-trace'); }
+// "reload" in the trace file reloads the view once, for timing a cold start
+// (tv.sh frames cold): closing LG's Home app on webOS 9 relaunches the page
+// rather than loading it again.
+function traceReloadAsked() {
+  var file = traceFile();
+  try {
+    if (fs.readFileSync(file, 'utf8').trim() !== 'reload') return false;
+    fs.writeFileSync(file, '');
+    return true;
+  } catch (e) { return false; }
+}
 
 function luna(uri, payload, cb) {
   if (!lunaFn) return cb(null);
@@ -3530,7 +3541,7 @@ function beat(body) {
   checkSaverTimer();
   return { ok: true, wallVideoOnScreen: onScreen, saverIdleMs: saverIdleMs, enabled: readConfig().enabled, standalone: isStandalone(), covered: viewCovered(saver), saver: saver,
            build: buildId, wallpapers: wallpapers.status(),
-           layoutVersion: layoutVersion(), sleeps: sleeps, trace: fs.existsSync(traceFile()),
+           layoutVersion: layoutVersion(), sleeps: sleeps, trace: fs.existsSync(traceFile()), reload: traceReloadAsked() || undefined,
            // So a push shows within a heartbeat rather than at the next poll.
            weather: currentWeather(), remoteBattery: remoteBatteryBadge(), info: currentInfo(), board: currentBoard(), news: currentNews() };
 }

@@ -7108,6 +7108,7 @@ html[lang="vi"] #srcTitle,html[lang="vi"] #plMode,html[lang="vi"] #pvMode,html[l
         beatFails = 0;
         // A custom launcher chosen in Glasshouse Home's place (lib/home-launcher).
         if (r.launcher) return location.replace('/home/launcher/');
+        if (r.reload) return location.reload();
         if (r.trace && !trace) startTrace();
         else if (!r.trace && trace) stopTrace();
         var standalone = !!(data && data.supported && data.supported.standalone);
