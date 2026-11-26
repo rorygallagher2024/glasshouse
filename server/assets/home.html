@@ -289,8 +289,9 @@ html.resting #wall .layer{-webkit-animation-play-state:paused;animation-play-sta
 .alternative .dev .nm{font-size:26px}
 .alternative .dev .path,.alternative .dev .st{font-size:17px}
 .row{-webkit-flex:0 0 auto;flex:0 0 auto}
-.row.empty{display:none}
+.row.empty,.row[data-unavail="1"]{display:none}
 .arranging .row.empty{display:block}
+.arranging .row[data-unavail="1"]{display:none}
 .arranging .row.off-row{opacity:.4}
 .slot{margin:0 112px;height:64px;line-height:60px;padding:0 22px;font-size:21px;color:#6b665e;
   border:2px dashed #2a2825;border-radius:6px}
@@ -405,6 +406,45 @@ html.resting #wall .layer{-webkit-animation-play-state:paused;animation-play-sta
 .rec .cat{font-size:17px;color:#6b665e;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 /* Alternative View's rounded tiles: the picture's corners follow the tile's, less its padding */
 .alternative .rec .pic{border-radius:8px}
+
+/* Home Assistant row tiles (sharing habar.json with the control bar) */
+.ha{width:276px;height:164px;border:1px solid rgba(255,255,255,.08);
+  display:-webkit-flex;display:flex;-webkit-flex-direction:column;flex-direction:column;
+  -webkit-justify-content:space-between;justify-content:space-between}
+.ha.is-on{border-color:rgba(94,214,132,.42);background:rgba(28,52,36,.32)}
+.ha.dom-light.is-on{border-color:rgba(246,196,83,.48);background:rgba(52,40,18,.34)}
+.ha.dom-climate.is-on{border-color:rgba(104,196,255,.48);background:rgba(20,42,56,.34)}
+.ha.err{border-color:rgba(224,90,90,.42)}
+.ha.flash{border-color:#5ed684;background:rgba(28,62,38,.52)}
+.ha.unavail{opacity:.45}
+.ha.busy{opacity:.68}
+.ha-top{display:-webkit-flex;display:flex;-webkit-align-items:center;align-items:center;-webkit-justify-content:space-between;justify-content:space-between;min-height:34px}
+.ha-ico{width:34px;height:34px;border-radius:9px;background:rgba(255,255,255,.08);color:#a39d93;
+  display:-webkit-flex;display:flex;-webkit-align-items:center;align-items:center;-webkit-justify-content:center;justify-content:center}
+.ha-ico svg{width:20px;height:20px;display:block}
+.ha.is-on .ha-ico,.ha.flash .ha-ico{background:rgba(94,214,132,.2);color:#7fe8a1}
+.ha.dom-light.is-on .ha-ico{background:rgba(246,196,83,.2);color:#ffd269}
+.ha.dom-climate.is-on .ha-ico{background:rgba(104,196,255,.2);color:#85d5ff}
+.ha.err .ha-ico{background:rgba(224,90,90,.2);color:#ff8f8f}
+.ha-steps{display:-webkit-flex;display:flex;-webkit-align-items:center;align-items:center;opacity:.45;-webkit-transition:opacity .12s;transition:opacity .12s}
+.ha.focus .ha-steps,.ha:hover .ha-steps{opacity:1}
+.ha-step{width:34px;height:28px;border:1px solid rgba(255,255,255,.22);border-radius:6px;background:rgba(255,255,255,.1);color:#ece7df;
+  font-family:inherit;font-size:19px;line-height:24px;text-align:center;cursor:pointer;padding:0}
+.ha-step+.ha-step{margin-left:6px}
+.ha-step:hover,.ha-step:active{background:rgba(255,255,255,.24)}
+.ha-nm{font-size:22px;font-weight:600;margin-top:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ha-bot{min-width:0}
+.ha-val{font-size:20px;color:#a39d93;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ha.is-on .ha-val,.ha.flash .ha-val{color:#98ebb2}
+.ha.dom-light.is-on .ha-val{color:#ffd87c}
+.ha.dom-climate.is-on .ha-val{color:#8ad8ff}
+.ha.err .ha-val{color:#ff9b9b}
+.ha-sub{font-size:16px;color:#6b665e;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ha-meter{height:3px;border-radius:2px;background:rgba(255,255,255,.12);margin-top:8px;overflow:hidden}
+.ha-meter i{display:block;height:100%;background:#5ed684}
+.ha.dom-light .ha-meter i{background:#f5b82e}
+.ha.dom-climate .ha-meter i{background:#47b6f5}
+.alternative .ha{height:152px}
 
 /* Arranging */
 .arranging .row h2{color:#ece7df}
@@ -885,7 +925,8 @@ html[lang="vi"] #srcTitle,html[lang="vi"] #plMode,html[lang="vi"] #pvMode,html[l
     dev: t('home.row.inputs', 'Inputs'),
     ch: t('home.row.channels', 'Channels'),
     rec: t('home.row.recommended', 'Recommended'),
-    iptv: t('home.row.iptv', 'Internet TV')
+    iptv: t('home.row.iptv', 'Internet TV'),
+    ha: t('home.row.ha', 'Home Assistant')
   };
   var LG_HOME_TILE = 'lg-home';
   // The remote's keys as webOS reports them to a page.
@@ -925,12 +966,13 @@ html[lang="vi"] #srcTitle,html[lang="vi"] #plMode,html[lang="vi"] #pvMode,html[l
     // in front), so the live preview and the animated background stop here as
     // well: under the screen saver the preview kept the tuner playing (#1209).
     followPreview();
-    if (on) unloadWallVideo();
+    if (on) { unloadWallVideo(); syncHaPolling(); }
     else {
       // Uncovered by a key Home did not see, such as the one ending the screen saver.
       wallVideoInputAt = Date.now();
       scheduleWallVideoIdle();
       updateWall();
+      syncHaPolling(true);
     }
     if (!anim) return;
     if (on) animStop();
@@ -1087,6 +1129,7 @@ html[lang="vi"] #srcTitle,html[lang="vi"] #plMode,html[lang="vi"] #pvMode,html[l
     // The apps' cards follow the Apps row, so arranging moves the row, not its cards.
     if (!state.arranging && rowOff(kind)) return out;
     if (kind === 'rec') return state.arranging ? out : recCards();
+    if (kind === 'ha') return state.arranging || !haRowActive() ? out : haTiles;
     (data.order[kind] || []).forEach(function (id) {
       var it = byId(kind, id);
       if (it && (state.arranging || (!hidden(kind, id) && !inFolder(kind, id))) && !leftOut(kind, it)) out.push(it);
@@ -1160,7 +1203,12 @@ html[lang="vi"] #srcTitle,html[lang="vi"] #plMode,html[lang="vi"] #pvMode,html[l
   function leftOut(kind, it) { return kind === 'dev' && it.unused && layout.hideUnused === true && !state.arranging; }
   function rowKey() { return layout.rows[state.row]; }
   // A row with nothing to show is left out of the view, but not while arranging.
-  function shown(ri) { return state.arranging || items(layout.rows[ri]).length > 0; }
+  function shown(ri) {
+    if (!layout || ri < 0 || ri >= layout.rows.length) return false;
+    var k = layout.rows[ri];
+    if (k === 'ha' && !haRowActive()) return false;
+    return state.arranging || items(k).length > 0;
+  }
   // The first shown row from ri on in direction dir, or ri when there is none.
   function nextShown(ri, dir) {
     for (var i = ri; i >= 0 && i < layout.rows.length; i += dir) if (shown(i)) return i;
@@ -1175,11 +1223,19 @@ html[lang="vi"] #srcTitle,html[lang="vi"] #plMode,html[lang="vi"] #pvMode,html[l
   // ---------------------------------------------------------------- rows
 
   function sortLabel(kind) {
-    if (kind === 'rec') return '';
+    if (kind === 'rec' || kind === 'ha') return '';
     return byRecent(kind) ? t('home.arrange.orderRecent', 'Order: last opened') : t('home.arrange.orderCustom', 'Order: yours');
   }
 
   function rowNote(kind, list) {
+    if (kind === 'ha') {
+      if (state.arranging) return t('home.row.haArrange', 'Entities from the Home Assistant bar');
+      if (!haShowHints) return '';
+      for (var i = 0; i < list.length; i++) {
+        if (list[i] && list[i].adjustable) return t('home.row.haHint', 'OK to toggle, Ch +/- to adjust');
+      }
+      return '';
+    }
     if (kind === 'app') {
       if (layout.showAppCount === false) return '';
       var folded = folderItems().length;
@@ -1230,10 +1286,11 @@ html[lang="vi"] #srcTitle,html[lang="vi"] #plMode,html[lang="vi"] #pvMode,html[l
     if (!shown(state.row)) state.row = nextShown(0, 1);
     layout.rows.forEach(function (kind, ri) {
       var list = items(kind);
+      var unavail = kind === 'ha' && !haRowActive();
       var tiles = '';
       list.forEach(function (it, i) { tiles += TILE[kind](it, i); });
       var note = esc(rowNote(kind, list));
-      html += '<section class="row"' + (list.length ? '' : ' data-empty="1"') + (rowOff(kind) ? ' data-off="1"' : '') + ' data-row="' + ri + '" data-key="' + kind + '">' +
+      html += '<section class="row"' + (unavail ? ' data-unavail="1"' : '') + (list.length ? '' : ' data-empty="1"') + (rowOff(kind) ? ' data-off="1"' : '') + ' data-row="' + ri + '" data-key="' + kind + '">' +
         '<h2>' + esc(ROW_TITLES[kind]) + (list.length && note ? '<span>' + note + '</span>' : '') +
         '<em class="sort">' + esc(sortLabel(kind)) + '</em></h2>' +
         (list.length ? '<div class="wrap"><i class="edge l"></i><i class="edge r"></i><div class="track">' + tiles + '</div></div>'
@@ -1431,8 +1488,133 @@ html[lang="vi"] #srcTitle,html[lang="vi"] #plMode,html[lang="vi"] #pvMode,html[l
       return '<div class="tile rec" data-c="' + i + '"><i class="pic"' + pic + '></i>' +
         '<div class="nm">' + esc(r.title) + '</div>' +
         '<div class="cat">' + esc(r.category || (app ? app.title : '')) + '</div></div>';
+    },
+    ha: function (h, i) {
+      return '<div class="' + haTileClass(h) + '" data-c="' + i + '" data-ha="' + esc(h.id) + '">' + haTileInner(h) + '</div>';
     }
   };
+
+  var haTiles = [], haShowHints = true, haTimer = null, haLoading = false, haBusy = {}, haFlash = {};
+  var HA_POLL_MS = 10000;
+  function haRowActive() { return !!(data && layout && layout.haRow === true && data.haBarAvailable === true); }
+  function haIsOneShot(domain) {
+    return domain === 'scene' || domain === 'script' || domain === 'button' || domain === 'input_button';
+  }
+  function haIconSvg(domain) {
+    if (domain === 'light') {
+      return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-4 10.5c.6.6 1 1.5 1 2.5h6c0-1 .4-1.9 1-2.5A6 6 0 0 0 12 3z"/></svg>';
+    }
+    if (domain === 'climate') {
+      return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 14.76V3.5a2 2 0 0 0-4 0v11.26a4 4 0 1 0 4 0z"/></svg>';
+    }
+    if (domain === 'fan') {
+      return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="2"/><path d="M12 10c0-3 2-5 4-5s3 2 1 4-3 1-5 1zM14 12c3 0 5 2 5 4s-2 3-4 1-1-3-1-5zM12 14c0 3-2 5-4 5s-3-2-1-4 3-1 5-1zM10 12c-3 0-5-2-5-4s2-3 4-1 1 3 1 5z"/></svg>';
+    }
+    if (domain === 'cover') {
+      return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="1"/><path d="M4 10h16M12 14v4"/></svg>';
+    }
+    if (domain === 'lock') {
+      return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>';
+    }
+    if (haIsOneShot(domain)) {
+      return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="6 4 20 12 6 20 6 4"/></svg>';
+    }
+    return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2v10"/><path d="M18.36 6.64a9 9 0 1 1-12.73 0"/></svg>';
+  }
+  function haFlashed(h) { return !!(haFlash[h.id] && haFlash[h.id].until > Date.now()); }
+  function haTileClass(h, focused, held) {
+    var cls = 'tile ha dom-' + h.domain +
+      (h.active ? ' is-on' : '') +
+      (h.error ? ' err' : '') +
+      (h.state === 'unavailable' ? ' unavail' : '') +
+      (haFlashed(h) ? ' flash' : '') +
+      (haBusy[h.id] ? ' busy' : '') +
+      (focused ? ' focus' : '') +
+      (held ? ' held' : '');
+    return cls;
+  }
+  function haTileInner(h) {
+    var valText = haFlashed(h) ? haFlash[h.id].text : (h.valueText || '');
+    var steps = h.adjustable
+      ? '<div class="ha-steps">' +
+        '<button type="button" class="ha-step" data-step="-1" aria-label="' + esc(t('home.ha.decrease', 'Decrease')) + '">&minus;</button>' +
+        '<button type="button" class="ha-step" data-step="1" aria-label="' + esc(t('home.ha.increase', 'Increase')) + '">+</button>' +
+        '</div>'
+      : '';
+    var meter = typeof h.pct === 'number' && h.active && !h.error
+      ? '<div class="ha-meter"><i style="width:' + Math.max(0, Math.min(100, h.pct)) + '%"></i></div>'
+      : '';
+    var subHtml = h.subText ? '<div class="ha-sub">' + esc(h.subText) + '</div>' : '';
+    return '<div class="ha-top"><div class="ha-ico">' + haIconSvg(h.domain) + '</div>' + steps + '</div>' +
+      '<div class="ha-nm">' + esc(h.label || h.id) + '</div>' +
+      '<div class="ha-bot"><div class="ha-val">' + esc(valText) + '</div>' + subHtml + meter + '</div>';
+  }
+  function updateHaTilesInPlace() {
+    var rowEl = document.querySelector('.row[data-key="ha"]');
+    if (!rowEl) return false;
+    var els = rowEl.querySelectorAll('.tile.ha');
+    if (els.length !== haTiles.length) return false;
+    for (var i = 0; i < haTiles.length; i++) {
+      if (els[i].getAttribute('data-ha') !== haTiles[i].id) return false;
+    }
+    for (var j = 0; j < haTiles.length; j++) {
+      var focused = /\bfocus\b/.test(els[j].className), held = /\bheld\b/.test(els[j].className);
+      els[j].className = haTileClass(haTiles[j], focused, held);
+      els[j].innerHTML = haTileInner(haTiles[j]);
+    }
+    return true;
+  }
+  function loadHaRow() {
+    if (!haRowActive() || haLoading) return;
+    haLoading = true;
+    getJson('/api/ha/bar/state', function (r) {
+      haLoading = false;
+      if (!r || !r.ok || !Array.isArray(r.tiles)) return;
+      var nextHints = r.showHints !== false;
+      var hintsChanged = nextHints !== haShowHints;
+      haShowHints = nextHints;
+      haTiles = r.tiles;
+      if (!state.arranging && (hintsChanged || !updateHaTilesInPlace())) renderWhenStill();
+    });
+  }
+  function syncHaPolling(refreshNow) {
+    if (haTimer) { clearInterval(haTimer); haTimer = null; }
+    if (!haRowActive() || document.hidden || document.documentElement.classList.contains('resting')) {
+      if (!haRowActive() && haTiles.length) {
+        haTiles = [];
+        if (!state.arranging && data) renderWhenStill();
+      }
+      return;
+    }
+    if (refreshNow || !haTiles.length) loadHaRow();
+    haTimer = setInterval(loadHaRow, HA_POLL_MS);
+  }
+  function actHa(item, action, value) {
+    if (!item || !item.id || haBusy[item.id]) return;
+    haBusy[item.id] = true;
+    updateHaTilesInPlace();
+    postJson('/api/ha/bar/act', { id: item.id, action: action, value: value }, function (r) {
+      delete haBusy[item.id];
+      if (!r || !r.ok) {
+        toast(item.label || item.id, (r && r.error) || t('home.ha.failed', 'Action failed'));
+        updateHaTilesInPlace();
+        return;
+      }
+      if (r.tile) {
+        for (var i = 0; i < haTiles.length; i++) {
+          if (haTiles[i].id === r.tile.id) { haTiles[i] = r.tile; break; }
+        }
+      }
+      if (haIsOneShot(item.domain)) {
+        haFlash[item.id] = {
+          until: Date.now() + 900,
+          text: item.domain === 'scene' ? t('home.ha.activated', 'Activated') : t('home.ha.ran', 'Ran')
+        };
+        setTimeout(updateHaTilesInPlace, 920);
+      }
+      updateHaTilesInPlace();
+    });
+  }
 
   // The TV's own tuner, first in Inputs: Live TV, on the channel it was last on.
   function tunerTileHtml(d, i) {
@@ -2497,6 +2679,10 @@ html[lang="vi"] #srcTitle,html[lang="vi"] #plMode,html[lang="vi"] #pvMode,html[l
       var bad = tvUnplayable(it);
       if (bad) return toast(it.name, bad);
       return openPlayer(it);
+    }
+    if (kind === 'ha') {
+      if (it.domain === 'sensor' || it.domain === 'binary_sensor') return;
+      return actHa(it, 'toggle');
     }
     // The input goes back to its own app, which opens it full screen.
     var preview = tilePreview.target;
@@ -5148,6 +5334,7 @@ html[lang="vi"] #srcTitle,html[lang="vi"] #plMode,html[lang="vi"] #pvMode,html[l
 
   function shiftRow(dr) {
     var i = state.row, j = i + dr;
+    while (j >= 0 && j < layout.rows.length && layout.rows[j] === 'ha' && !haRowActive()) j += dr;
     if (j < 0 || j >= layout.rows.length) return;
     var tmp = layout.rows[i]; layout.rows[i] = layout.rows[j]; layout.rows[j] = tmp;
     state.row = j;
@@ -5234,12 +5421,14 @@ html[lang="vi"] #srcTitle,html[lang="vi"] #plMode,html[lang="vi"] #pvMode,html[l
     if (k === KEY.right) return state.held ? shiftTile(1) : move(0, 1);
     if (k === KEY.up) {
       if (state.held) return shiftRow(-1);
-      if (state.row === 0) { state.bar = 0; state.barFrom = 'up'; return applyFocus(); }
+      var prev = nextShown(state.row - 1, -1);
+      if (prev === state.row || !shown(prev)) { state.bar = 0; state.barFrom = 'up'; return applyFocus(); }
       return move(-1, 0);
     }
     if (k === KEY.down) {
       if (state.held) return shiftRow(1);
-      if (state.row === layout.rows.length - 1) { state.bar = 0; state.barFrom = 'down'; return applyFocus(); }
+      var nxt = nextShown(state.row + 1, 1);
+      if (nxt === state.row || !shown(nxt)) { state.bar = 0; state.barFrom = 'down'; return applyFocus(); }
       return move(1, 0);
     }
     if (k === KEY.ok) return pickUp();
@@ -5339,6 +5528,10 @@ html[lang="vi"] #srcTitle,html[lang="vi"] #plMode,html[lang="vi"] #pvMode,html[l
     else if (k === KEY.right) move(0, 1);
     else if (k === KEY.up) move(-1, 0);
     else if (k === KEY.down) move(1, 0);
+    else if ((k === KEY.chUp || k === KEY.chDown) && rowKey() === 'ha') {
+      var haIt = items('ha')[colOf('ha')];
+      if (haIt && haIt.adjustable) actHa(haIt, 'step', k === KEY.chUp ? 1 : -1);
+    }
     else return;
     e.preventDefault();
   }
@@ -5446,6 +5639,17 @@ html[lang="vi"] #srcTitle,html[lang="vi"] #plMode,html[lang="vi"] #pvMode,html[l
       state.row = +sortRow.getAttribute('data-row');
       state.col[rowKey()] = -1;
       return toggleSort(rowKey());
+    }
+    var stepBtn = e.target;
+    while (stepBtn && stepBtn !== document.body && !(stepBtn.className && /\bha-step\b/.test(stepBtn.className))) stepBtn = stepBtn.parentNode;
+    if (stepBtn && stepBtn !== document.body && !state.arranging) {
+      var stepTile = tileAt(stepBtn);
+      if (stepTile) {
+        hoverTile(stepTile);
+        var stepItem = items('ha')[colOf('ha')];
+        if (stepItem && stepItem.adjustable) actHa(stepItem, 'step', +stepBtn.getAttribute('data-step'));
+        return;
+      }
     }
     if (!tileAt(e.target)) return;
     // The tile clicked, which a glide may have moved under the pointer since
@@ -6710,6 +6914,7 @@ html[lang="vi"] #srcTitle,html[lang="vi"] #plMode,html[lang="vi"] #pvMode,html[l
       renderPicture();
       updateWall();
       if (!state.arranging) render();
+      syncHaPolling(true);
       if (firstLoad) { beat(); fadeIn(); }
       if (!layout.hintSeen) {
         toast(t('home.hint.title', 'Hold OK to arrange'), t('home.hint.desc', 'Move or hide tiles and rows. LG\'s Home is the last tile in Apps.'));
@@ -6989,8 +7194,8 @@ html[lang="vi"] #srcTitle,html[lang="vi"] #plMode,html[lang="vi"] #pvMode,html[l
   document.addEventListener('webOSRelaunch', function () { guideLaunch(); returned(); });
   document.addEventListener('visibilitychange', function () {
     // Hidden behind an app, which may need the decoder the wallpaper holds.
-    if (document.hidden) { animStop(); darken(); unloadWallVideo(); }
-    else { returned(); animRun(); }
+    if (document.hidden) { animStop(); darken(); unloadWallVideo(); syncHaPolling(); }
+    else { returned(); animRun(); syncHaPolling(true); }
   });
   window.addEventListener('pagehide', function () { if (player.open) closePlayer(); stopPreview(); });
 

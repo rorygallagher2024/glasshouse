@@ -1770,6 +1770,8 @@ function handleRequest(req, res) {
     var respondWithEntry = function (entry) {
       var etag = '"' + (displayVersionStr || '1') + '-' + entry.raw.length.toString(16) + '"';
       var assetHeaders = { 'ETag': etag, 'Cache-Control': cacheHdr };
+      // Packaged TV overlay apps (file://) load bundled fonts over loopback.
+      if (ext === '.ttf' && fromTV(req)) assetHeaders['Access-Control-Allow-Origin'] = '*';
       if (compressible) assetHeaders['Vary'] = 'Accept-Encoding';
       if (req.headers && req.headers['if-none-match'] === etag) {
         res.writeHead(304, assetHeaders);
@@ -2183,10 +2185,14 @@ function handleRequest(req, res) {
 
   if (pathname === '/api/ha/bar' && req.method === 'GET' && haBarModule) {
     if (!authed(u.query, req)) return send(res, 401, JSON.stringify({ ok: false, error: 'unauthorized' }));
+    var haBarCfg = haBarModule.listConfig();
     return send(res, 200, JSON.stringify({
       ok: true,
       configured: !!(haEntityModule && haEntityModule.configured()),
-      entities: haBarModule.listConfig().entities
+      inHomeBar: !!(homeModule && homeModule.haBarInHomeBar()),
+      homeBarOffered: !!(homebarModule && homebarModule.status().offered),
+      entities: haBarCfg.entities,
+      showHints: haBarCfg.showHints
     }));
   }
 
@@ -2196,7 +2202,17 @@ function handleRequest(req, res) {
       return send(res, 403, JSON.stringify({ ok: false, error: msg('srv.controlsOff', 'controls disabled in config') }));
     }
     return readJsonBody(req, res, function (body) {
-      var saved = haBarModule.saveConfig(body && body.entities);
+      var saved;
+      if (body && body.entities !== undefined) {
+        saved = haBarModule.saveConfig(body.entities, typeof body.showHints === 'boolean' ? { showHints: body.showHints } : null);
+      } else if (body && typeof body.showHints === 'boolean') {
+        saved = haBarModule.setOptions({ showHints: body.showHints });
+      } else {
+        saved = haBarModule.saveConfig(body && body.entities);
+      }
+      if (saved.ok && saved.entities && saved.entities.length && homeModule && homeModule.haBarInHomeBar() && haBarModule.sync) {
+        haBarModule.sync();
+      }
       send(res, saved.ok ? 200 : 400, JSON.stringify(saved));
     });
   }

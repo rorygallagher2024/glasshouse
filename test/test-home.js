@@ -788,14 +788,14 @@ step('the LG Home tile can be hidden, and unknown rows are dropped', function (d
   start(null);
   home.setLayout({ hidden: { app: ['lg-home', 'netflix'] }, rows: ['ch', 'bogus'] }, function (r) {
     assert.deepEqual(r.layout.hidden.app, ['lg-home', 'netflix']);
-    assert.deepEqual(r.layout.rows, ['ch', 'app', 'rec', 'dev', 'iptv']);
+    assert.deepEqual(r.layout.rows, ['ch', 'app', 'rec', 'dev', 'iptv', 'ha']);
     done();
   });
 });
 
 step('a layout saved before the Recommended row gets it under Apps', function (done) {
   start({ rows: ['dev', 'app', 'ch'] });
-  assert.deepEqual(home.layout().rows, ['dev', 'app', 'rec', 'ch', 'iptv']);
+  assert.deepEqual(home.layout().rows, ['dev', 'app', 'rec', 'ch', 'iptv', 'ha']);
   done();
 });
 
@@ -908,7 +908,7 @@ function startRecent(cb) {
   // Opened while the rows are in their own order: nothing is recorded.
   at('netflix');
   home.setLayout({ sort: { app: 'recent', dev: 'recent', ch: 'recent', bogus: 'recent' } }, function (r) {
-    assert.deepEqual(r.layout.sort, { app: 'recent', dev: 'recent', ch: 'recent', rec: 'custom', iptv: 'custom' });
+    assert.deepEqual(r.layout.sort, { app: 'recent', dev: 'recent', ch: 'recent', rec: 'custom', iptv: 'custom', ha: 'custom' });
     cb();
   });
 }
@@ -962,7 +962,7 @@ step('a device\'s own tile counts for that device, and a row back in its own ord
           // Inputs held the only records, so the file goes with them.
           assert.ok(!fs.existsSync(path.join(dir, 'home-recent.json')), 'a row back in its own order forgets what was opened');
           home.setLayout({ reset: true }, function (r) {
-            assert.deepEqual(r.layout.sort, { app: 'custom', dev: 'custom', ch: 'custom', rec: 'custom', iptv: 'custom' });
+            assert.deepEqual(r.layout.sort, { app: 'custom', dev: 'custom', ch: 'custom', rec: 'custom', iptv: 'custom', ha: 'custom' });
             done();
           });
         });
@@ -4315,6 +4315,57 @@ step('custom appNames rename apps in the catalogue and last opened, and clear ba
             assert.strictEqual(nf2.title, 'Netflix');
             assert.strictEqual(nf2.defaultTitle, undefined);
             done();
+          });
+        });
+      });
+    });
+  });
+});
+
+step('Home Assistant bar shortcut and Home row stay opt-in and follow HA bar availability', function (done) {
+  var haAvail = false, haSyncs = 0, haAppInstalls = 0;
+  var mockHaBar = {
+    available: function () { return haAvail; },
+    listConfig: function () { return { entities: haAvail ? [{ id: 'light.desk', label: 'Desk' }] : [] }; },
+    sync: function () { haSyncs++; }
+  };
+  start(null, {
+    haBar: mockHaBar,
+    ensureHaBarApp: function () { haAppInstalls++; }
+  });
+  assert.strictEqual(home.layout().haRow, false);
+  assert.strictEqual(home.layout().haBarInHomeBar, false);
+  assert.strictEqual(home.haBarInHomeBar(), false);
+  home.status(function (stOff) {
+    assert.strictEqual(stOff.haBarAvailable, false);
+    assert.strictEqual(stOff.haBarCount, 0);
+    home.catalogue(function (cOff) {
+      assert.strictEqual(cOff.haBarAvailable, false);
+      assert.strictEqual(cOff.haBarCount, 0);
+      assert.strictEqual(cOff.haBar, false);
+
+      haAvail = true;
+      home.status(function (stOn) {
+        assert.strictEqual(stOn.haBarAvailable, true);
+        assert.strictEqual(stOn.haBarCount, 1);
+        home.setLayout({ hiddenRows: ['ha'], haRow: true, haBarInHomeBar: true }, function (r) {
+          assert.strictEqual(r.ok, true);
+          assert.strictEqual(r.layout.haRow, true);
+          assert.strictEqual(r.layout.haBarInHomeBar, true);
+          assert.deepEqual(r.layout.hiddenRows, []);
+          assert.strictEqual(home.haBarInHomeBar(), true);
+          assert.strictEqual(haAppInstalls, 1, 'enabling shortcut installs habar-app');
+          assert.strictEqual(haSyncs, 1, 'enabling shortcut syncs habar preload');
+          home.catalogue(function (cOn) {
+            assert.strictEqual(cOn.haBarAvailable, true);
+            assert.strictEqual(cOn.haBarCount, 1);
+            assert.strictEqual(cOn.haBar, true);
+            haAvail = false;
+            home.catalogue(function (cGone) {
+              assert.strictEqual(cGone.haBarAvailable, false);
+              assert.strictEqual(cGone.haBar, false);
+              done();
+            });
           });
         });
       });

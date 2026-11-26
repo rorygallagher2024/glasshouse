@@ -3981,5 +3981,22 @@
  "srv.habar.serviceFailed": {"from": "Home Assistant service call failed", "text": "A Home Assistant szolgáltatáshívás sikertelen"},
  "srv.habar.tooMany": {"from": "too many entities (max {max})", "text": "túl sok entitás (max {max})"},
  "srv.remoteKeys.haBar": {"from": "Home Assistant bar", "text": "Home Assistant sáv"},
- "srv.remoteKeys.haBarInstall": {"from": "The Home Assistant bar could not be put on the TV. Try again in a moment.", "text": "A Home Assistant sávot nem sikerült a TV-re tenni. Próbáld meg újra egy pillanat múlva."}
+ "srv.remoteKeys.haBarInstall": {"from": "The Home Assistant bar could not be put on the TV. Try again in a moment.", "text": "A Home Assistant sávot nem sikerült a TV-re tenni. Próbáld meg újra egy pillanat múlva."},
+ "ha.bar.inHomeBar": {"from": "Show in Glasshouse Bar", "text": "Megjelenítés a Glasshouse Barban"},
+ "ha.bar.inHomeBarDesc": {"from": "Adds a Home Assistant tile at the end of Glasshouse Bar to open this control bar.", "text": "Hozzáad egy Home Assistant csempét a Glasshouse Bar végéhez ennek a vezérlősávnak a megnyitásához."},
+ "home.bar.haTile": {"from": "Home Assistant bar tile", "text": "Home Assistant sáv csempe"},
+ "home.bar.haTileDesc": {"from": "Adds a Home Assistant tile at the end of Glasshouse Bar to open the Home Assistant control bar.", "text": "Hozzáad egy Home Assistant csempét a Glasshouse Bar végéhez a Home Assistant vezérlősáv megnyitásához."},
+ "home.ha.activated": {"from": "Activated", "text": "Aktiválva"},
+ "home.ha.decrease": {"from": "Decrease", "text": "Csökkentés"},
+ "home.ha.failed": {"from": "Action failed", "text": "A művelet sikertelen"},
+ "home.ha.increase": {"from": "Increase", "text": "Növelés"},
+ "home.ha.ran": {"from": "Ran", "text": "Lefuttatva"},
+ "home.haRowDesc": {"from": "Controls {n} entities from the Home Assistant bar.", "text": "A Home Assistant sáv {n} entitását vezérli."},
+ "home.haRowEdit": {"from": "Edit on HA & MQTT", "text": "Szerkesztés a HA és MQTT lapon"},
+ "home.row.ha": {"from": "Home Assistant", "text": "Home Assistant"},
+ "home.row.haArrange": {"from": "Entities from the Home Assistant bar", "text": "Entitások a Home Assistant sávból"},
+ "home.row.haHint": {"from": "OK to toggle, Ch +/- to adjust", "text": "OK a váltáshoz, Ch +/- az állításhoz"},
+ "ha.bar.showHints": {"from": "Button hints", "text": "Gomb súgók"},
+ "ha.bar.showHintsDesc": {"from": "Show remote control hints (OK toggle, Up/Down adjust, Back close) above the Home Assistant bar and on the Glasshouse Home row.", "text": "A távirányító súgószövegének (OK váltás, Fel/Le állítás, Vissza bezárás) megjelenítése a Home Assistant sáv felett és a Glasshouse Home sorában."},
+ "srv.habar.badOptions": {"from": "invalid options", "text": "érvénytelen beállítások"}
 }

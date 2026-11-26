@@ -15,7 +15,7 @@ console.log('Running test-homebar.js ...');
 
 var dir = path.join(os.tmpdir(), 'homebar-' + process.pid);
 fs.mkdirSync(dir);
-var events = [], homeKey = '', allowed = true, keyRefused = false, homeOn = true, preloads = 0, byKey = false;
+var events = [], launches = [], homeKey = '', allowed = true, keyRefused = false, homeOn = true, homeFront = false, preloads = 0, byKey = false;
 // webOS 11: the Home key's library changed by lib/guidepatch, which applyKeys does as the choice stands.
 var native = false, libraryOn = false, libraryRefused = false;
 function FakeSub() { this.handlers = {}; }
@@ -24,6 +24,7 @@ var sub = null;
 homebar.init({
   luna: function (uri, params, cb) {
     if (uri === 'com.webos.applicationManager/launch' && params.preload === 'full') preloads++;
+    else if (uri === 'com.webos.applicationManager/launch') launches.push(params);
     setImmediate(function () { cb({ returnValue: true }); });
   },
   stateDir: dir,
@@ -45,6 +46,7 @@ homebar.init({
     setImmediate(function () { cb(true); });
   },
   standing: function () { return 'tried'; },
+  homeInFront: function () { return homeFront; },
   homeOff: function (cb) { events.push(homeOn ? 'Glasshouse Home off' : 'LG Home already'); homeOn = false; setImmediate(function () { cb({ ok: true }); }); },
   byKey: function () { return byKey; }
 });
@@ -63,8 +65,9 @@ var steps = [
     keyRefused = true;
     homebar.enable(function (r) {
       assert.strictEqual(r.ok, false);
-      assert.deepEqual(events, ['Glasshouse Home off', 'install app', 'remove app'], 'the app taken away again');
+      assert.deepEqual(events, ['install app', 'Glasshouse Home off', 'remove app'], 'the app taken away again');
       assert.strictEqual(homebar.enabled(), false);
+      assert.strictEqual(launches.length, 0);
       keyRefused = false;
       events = [];
       console.log('  ✓ not offered where the input bar is not, and a refused Home key leaves the TV as it was');
@@ -74,7 +77,8 @@ var steps = [
   function (next) {
     homebar.enable(function (r) {
       assert.strictEqual(r.ok, true, r.error);
-      assert.deepEqual(events, ['LG Home already', 'install app', 'Home key com.tvweb.homebar', 'watch running']);
+      assert.deepEqual(events, ['install app', 'LG Home already', 'Home key com.tvweb.homebar', 'watch running']);
+      assert.strictEqual(launches.length, 0, 'does not pop up the bar when Home was not in front');
       assert.strictEqual(homebar.enabled(), true);
       assert.deepEqual(homebar.status(), { enabled: true, offered: true, standing: 'tried' });
       // Not running: preloaded, and again after it closes.
@@ -113,7 +117,7 @@ var steps = [
     assert.deepEqual(homebar.status(), { enabled: false, offered: true, standing: 'tried', native: true });
     homebar.enable(function (r) {
       assert.strictEqual(r.ok, true, r.error);
-      assert.deepEqual(events, ['LG Home already', 'install app', 'keys bar']);
+      assert.deepEqual(events, ['install app', 'LG Home already', 'keys bar']);
       assert.strictEqual(homebar.enabled(), true);
       assert.strictEqual(libraryOn, true, 'the Home key\'s library is changed');
       assert.strictEqual(homeKey, '', 'and no key filter is touched');
@@ -132,7 +136,7 @@ var steps = [
     libraryRefused = true; events = [];
     homebar.enable(function (r) {
       assert.strictEqual(r.ok, false, 'a change the TV did not take is a failure');
-      assert.deepEqual(events, ['LG Home already', 'install app', 'keys bar', 'keys LG', 'remove app'], 'the app taken away again');
+      assert.deepEqual(events, ['install app', 'LG Home already', 'keys bar', 'keys LG', 'remove app'], 'the app taken away again');
       assert.strictEqual(homebar.enabled(), false);
       libraryRefused = false; native = false; allowed = true; events = [];
       console.log('  ✓ on webOS 11 a change the TV did not take leaves the TV as it was');
@@ -160,7 +164,22 @@ var steps = [
           waitFor(function () { return preloads > after; }, function () {
             byKey = false;
             console.log('  ✓ opened by a remote key, it is kept loaded, and its app stays when it stops being the launcher');
-            next();
+            homeOn = true;
+            homeFront = true;
+            launches = [];
+            events = [];
+            homebar.enable(function (r3) {
+              assert.strictEqual(r3.ok, true, r3.error);
+              assert.deepEqual(events, ['install app', 'Glasshouse Home off', 'Home key com.tvweb.homebar']);
+              assert.strictEqual(launches.length, 1);
+              assert.strictEqual(launches[0].id, 'com.tvweb.homebar');
+              assert.strictEqual(typeof launches[0].params.press, 'number');
+              homeFront = false;
+              homebar.disable(function () {
+                console.log('  ✓ switching while Glasshouse Home is in front installs first and launches Glasshouse Bar immediately');
+                next();
+              });
+            });
           }, 'a preload for the key after the launcher is switched off', 3000);
         });
       });

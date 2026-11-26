@@ -3981,5 +3981,22 @@
  "srv.habar.serviceFailed": {"from": "Home Assistant service call failed", "text": "ошибка вызова службы Home Assistant"},
  "srv.habar.tooMany": {"from": "too many entities (max {max})", "text": "слишком много объектов (макс. {max})"},
  "srv.remoteKeys.haBar": {"from": "Home Assistant bar", "text": "Панель Home Assistant"},
- "srv.remoteKeys.haBarInstall": {"from": "The Home Assistant bar could not be put on the TV. Try again in a moment.", "text": "Не удалось установить панель Home Assistant на ТВ. Повторите попытку через мгновение."}
+ "srv.remoteKeys.haBarInstall": {"from": "The Home Assistant bar could not be put on the TV. Try again in a moment.", "text": "Не удалось установить панель Home Assistant на ТВ. Повторите попытку через мгновение."},
+ "ha.bar.inHomeBar": {"from": "Show in Glasshouse Bar", "text": "Показывать в Glasshouse Bar"},
+ "ha.bar.inHomeBarDesc": {"from": "Adds a Home Assistant tile at the end of Glasshouse Bar to open this control bar.", "text": "Добавляет плитку Home Assistant в конец Glasshouse Bar для открытия этой панели управления."},
+ "home.bar.haTile": {"from": "Home Assistant bar tile", "text": "Плитка панели Home Assistant"},
+ "home.bar.haTileDesc": {"from": "Adds a Home Assistant tile at the end of Glasshouse Bar to open the Home Assistant control bar.", "text": "Добавляет плитку Home Assistant в конец Glasshouse Bar для открытия панели управления Home Assistant."},
+ "home.ha.activated": {"from": "Activated", "text": "Активировано"},
+ "home.ha.decrease": {"from": "Decrease", "text": "Уменьшить"},
+ "home.ha.failed": {"from": "Action failed", "text": "Сбой действия"},
+ "home.ha.increase": {"from": "Increase", "text": "Увеличить"},
+ "home.ha.ran": {"from": "Ran", "text": "Выполнено"},
+ "home.haRowDesc": {"from": "Controls {n} entities from the Home Assistant bar.", "text": "Управляет {n} объектами из панели Home Assistant."},
+ "home.haRowEdit": {"from": "Edit on HA & MQTT", "text": "Изменить в HA и MQTT"},
+ "home.row.ha": {"from": "Home Assistant", "text": "Home Assistant"},
+ "home.row.haArrange": {"from": "Entities from the Home Assistant bar", "text": "Объекты с панели Home Assistant"},
+ "home.row.haHint": {"from": "OK to toggle, Ch +/- to adjust", "text": "OK переключить, Ch +/- изменить"},
+ "ha.bar.showHints": {"from": "Button hints", "text": "Подсказки кнопок"},
+ "ha.bar.showHintsDesc": {"from": "Show remote control hints (OK toggle, Up/Down adjust, Back close) above the Home Assistant bar and on the Glasshouse Home row.", "text": "Показывать подсказки пульта (OK переключить, Вверх/Вниз изменить, Назад закрыть) над панелью Home Assistant и в строке Glasshouse Home."},
+ "srv.habar.badOptions": {"from": "invalid options", "text": "недопустимые параметры"}
 }

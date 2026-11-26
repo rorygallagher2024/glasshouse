@@ -51,7 +51,8 @@ var SETTINGS = 'com.webos.service.settings/';
 // rec, the apps' recommendations, sits under the Apps row it follows and is not arranged tile by tile.
 // iptv, Internet TV (lib/iptv), holds the channels added from the owner's
 // playlists, in the order of its selection.json rather than home.json's.
-var ROWS = ['app', 'rec', 'dev', 'ch', 'iptv'];
+// ha, the optional Home Assistant row, reads lib/habar's entity list.
+var ROWS = ['app', 'rec', 'dev', 'ch', 'iptv', 'ha'];
 // How a row is ordered: as arranged ('custom'), or the tile opened last first ('recent').
 var SORTS = ['custom', 'recent'];
 var SHOW_KEYS = ['showClock', 'showLastOn', 'showAppCount', 'showAppLabels', 'showCec', 'showTvLogos', 'showPointer'];
@@ -478,9 +479,9 @@ function defaults() {
     enabled: false,
     restorePending: false,
     rows: ROWS.slice(),
-    order: { app: [], dev: [], ch: [], rec: [], iptv: [] },
-    sort: { app: 'custom', dev: 'custom', ch: 'custom', rec: 'custom', iptv: 'custom' },
-    hidden: { app: PROMO_APPS.slice(), dev: [], ch: [], rec: [], iptv: [] },
+    order: { app: [], dev: [], ch: [], rec: [], iptv: [], ha: [] },
+    sort: { app: 'custom', dev: 'custom', ch: 'custom', rec: 'custom', iptv: 'custom', ha: 'custom' },
+    hidden: { app: PROMO_APPS.slice(), dev: [], ch: [], rec: [], iptv: [], ha: [] },
     // Whole rows left off the view, whatever their tiles. They still show
     // while arranging, so that they can be moved.
     hiddenRows: [],
@@ -560,6 +561,9 @@ function defaults() {
     // The Recommended row (lib/home-recommended): off by default, as its
     // pictures come from the apps' own servers.
     recommended: false,
+    // Opt-in Home Assistant bar integrations sharing habar.json.
+    haRow: false,
+    haBarInHomeBar: false,
     // The view fading in as it comes on screen, and out as a tile opens.
     fade: false,
     wallDrift: true,
@@ -692,10 +696,16 @@ function normalise(raw) {
   d.wallShuffleMinutes = SHUFFLE_MINUTES.indexOf(raw.wallShuffleMinutes) !== -1 ? raw.wallShuffleMinutes : d.wallShuffleMinutes;
   d.search = raw.search === true;
   d.recommended = raw.recommended === true;
+  d.haRow = raw.haRow === true;
+  d.haBarInHomeBar = raw.haBarInHomeBar === true;
   // Its cards come and go with the apps' lists, so it keeps no order of its own.
   d.order.rec = [];
   d.sort.rec = 'custom';
   d.hidden.rec = [];
+  // Entities and order come from habar.json, and haRow controls visibility.
+  d.order.ha = [];
+  d.sort.ha = 'custom';
+  d.hidden.ha = [];
   d.fade = raw.fade === true;
   MOTION_KEYS.forEach(function (k) { d[k] = raw[k] !== false; });
   d.darkening = validDarkening(raw.darkening);
@@ -933,6 +943,8 @@ function setLayout(body, cb) {
     wallShuffleMinutes: body.wallShuffleMinutes !== undefined ? body.wallShuffleMinutes : c.wallShuffleMinutes,
     search: typeof body.search === 'boolean' ? body.search : c.search,
     recommended: typeof body.recommended === 'boolean' ? body.recommended : c.recommended,
+    haRow: typeof body.haRow === 'boolean' ? body.haRow : c.haRow,
+    haBarInHomeBar: typeof body.haBarInHomeBar === 'boolean' ? body.haBarInHomeBar : c.haBarInHomeBar,
     fade: typeof body.fade === 'boolean' ? body.fade : c.fade,
     wallDrift: typeof body.wallDrift === 'boolean' ? body.wallDrift : c.wallDrift,
     wallCrossfade: typeof body.wallCrossfade === 'boolean' ? body.wallCrossfade : c.wallCrossfade,
@@ -957,6 +969,7 @@ function setLayout(body, cb) {
   });
   // A moved or emptied Internet TV row reorders, or removes from, its channels.
   if (iptvModule && body.order && isArray(body.order.iptv)) iptvModule.setOrder(stringList(body.order.iptv, 100));
+  if (body.haRow === true) next.hiddenRows = next.hiddenRows.filter(function (r) { return r !== 'ha'; });
   if (body.reset === true) {
     var d = defaults();
     next.rows = d.rows;
@@ -975,6 +988,8 @@ function setLayout(body, cb) {
   if (JSON.stringify(c.deviceNames) !== JSON.stringify(config.deviceNames)) onDeviceNamesFn();
   if (config.weather === 'internet') setTimeout(internetWeatherTick, 0);
   if (JSON.stringify(c.infoLines) !== JSON.stringify(config.infoLines)) { entityInfo = null; entityInfoAt = 0; }
+  if (!c.haBarInHomeBar && config.haBarInHomeBar && haBarAppFn) haBarAppFn();
+  if (c.haBarInHomeBar !== config.haBarInHomeBar && haBarModule && haBarModule.sync) haBarModule.sync();
   // A row back in its own order keeps no record of what was opened.
   ROWS.forEach(function (r) { if (config.sort[r] !== 'recent') recent.forget(r); });
   cb({ ok: true, layout: layoutOf(config), layoutVersion: layoutVersion() });
@@ -1067,6 +1082,7 @@ function layoutOf(c) {
   return { rows: c.rows, order: withDevIdsNow(c.order), sort: c.sort, hidden: withDevIdsNow(c.hidden), hiddenRows: c.hiddenRows, folder: c.folder, channels: c.channels, hintSeen: c.hintSeen,
     excludedRecents: c.excludedRecents,
     searchHintSeen: c.searchHintSeen, picture: c.picture, livePreview: c.livePreview, search: c.search, recommended: c.recommended,
+    haRow: c.haRow === true, haBarInHomeBar: c.haBarInHomeBar === true,
     fade: c.fade, wallDrift: c.wallDrift, wallCrossfade: c.wallCrossfade, smoothScroll: c.smoothScroll, slidePanels: c.slidePanels,
     darkening: c.darkening, hideUnused: c.hideUnused, showMediaServers: c.showMediaServers, deviceNames: devNamesNow(c.deviceNames), appNames: c.appNames, appCards: c.appCards, focusPulse: c.focusPulse, navSound: c.navSound, pointerSound: c.pointerSound, ownSound: ownSoundInfo(), cardFade: c.cardFade, appIcons: c.appIcons, inputBarTransparent: c.inputBarTransparent, inputBarSwitchOnOk: c.inputBarSwitchOnOk, showClock: c.showClock, rowsBottom: c.rowsBottom, view: c.view,
     showLastOn: c.showLastOn, showAppCount: c.showAppCount, showAppLabels: c.showAppLabels, showCec: c.showCec, showTvLogos: c.showTvLogos, showPointer: c.showPointer, reopenAfterWake: c.reopenAfterWake, weather: c.weather, weatherPlace: c.weatherPlace, info: c.info, infoLines: c.infoLines, board: c.board, boardStrip: c.boardStrip, news: c.news, newsFeeds: c.newsFeeds, newsSpeed: c.newsSpeed, newsStyle: c.newsStyle, previewAlways: c.previewAlways, previewInTile: c.previewInTile, previewSize: c.previewSize, previewSound: c.previewSound, wallAnim: c.wallAnim,
@@ -1740,7 +1756,8 @@ function build(c, apps, devs, chans, recs, tv) {
     dev: tunerFirst(c.order.dev, ordered(devIdsNow(c.order.dev, devs || []), devIds)),
     ch: picked.map(function (p) { return p.id; }),
     rec: [],
-    iptv: (tv || []).map(function (t) { return t.id; })
+    iptv: (tv || []).map(function (t) { return t.id; }),
+    ha: []
   };
   ROWS.forEach(function (r) { if (c.sort[r] === 'recent') order[r] = lastOpenedFirst(r, order[r]); });
   // Each app's cards together, in the Apps row's order; an app hidden there,
@@ -1771,6 +1788,9 @@ function build(c, apps, devs, chans, recs, tv) {
     recommended: cards,
     iptv: tv || [],
     iptvStatus: iptvModule ? iptvModule.rowStatus() : null,
+    haBarAvailable: haBarAvailable(),
+    haBarCount: haBarCount(),
+    haBar: !!(haBarAvailable() && c.haBarInHomeBar === true),
     order: order,
     // recommended: false while the row is off, null when the TV gave no list.
     sources: { apps: !!apps, devices: !!devs, channels: chans ? chans.length : null,
@@ -2064,6 +2084,12 @@ var ENTITY_INFO_MS = 30000;
 var INFO_ENTITY_RE = /^[a-z0-9_]+\.[a-z0-9_]+$/;
 /** @type {typeof import('./haentity')} */
 var haEntityModule = null;
+/** @type {typeof import('./habar') | null} */
+var haBarModule = null;
+var haBarAppFn = null;
+function haBarAvailable() { return !!(haBarModule && haBarModule.available()); }
+function haBarCount() { return haBarModule ? haBarModule.listConfig().entities.length : 0; }
+function haBarInHomeBar() { return readConfig().haBarInHomeBar === true; }
 var entityInfo = null;     // [{ icon, label, before, v, unit }] as last read
 var entityInfoAt = 0;
 var entityInfoReading = false;
@@ -3992,6 +4018,8 @@ function status(cb) {
         // What the lines beside the clock can come from: entities through the
         // Home Assistant API, and lines sent over MQTT.
         haLines: { api: !!(haEntityModule && haEntityModule.configured()), mqtt: !!mqttOnFn() },
+        haBarAvailable: haBarAvailable(),
+        haBarCount: haBarCount(),
         // Both dashboards leave Home out where it is false, as for other features a TV lacks.
         available: sup.ok || c.enabled || c.restorePending,
         supported: sup,
@@ -4105,6 +4133,8 @@ function init(opts) {
   loadHomeInfo();
   weatherModule = opts.weather || null;
   haEntityModule = opts.haEntity || null;
+  haBarModule = opts.haBar || null;
+  haBarAppFn = typeof opts.ensureHaBarApp === 'function' ? opts.ensureHaBarApp : null;
   mqttOnFn = typeof opts.mqttOn === 'function' ? opts.mqttOn : function () { return false; };
   newsModule = opts.news || null;
   homeBoard = null;
@@ -4474,6 +4504,7 @@ module.exports = {
   layout: function () { return layoutOf(readConfig()); },
   programme: programme,
   enabled: function () { return readConfig().enabled; },
+  haBarInHomeBar: haBarInHomeBar,
   portName: portName,
   refreshApp: refreshApp,
   autoLaunchHeld: autoLaunchHeld,

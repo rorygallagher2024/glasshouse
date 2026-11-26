@@ -797,5 +797,22 @@
  "srv.habar.serviceFailed": {"from": "Home Assistant service call failed", "text": "Home-Assistant-Dienstaufruf fehlgeschlagen"},
  "srv.habar.tooMany": {"from": "too many entities (max {max})", "text": "zu viele Entitäten (max. {max})"},
  "srv.remoteKeys.haBar": {"from": "Home Assistant bar", "text": "Home-Assistant-Leiste"},
- "srv.remoteKeys.haBarInstall": {"from": "The Home Assistant bar could not be put on the TV. Try again in a moment.", "text": "Die Home-Assistant-Leiste konnte nicht auf dem TV installiert werden. Bitte gleich erneut versuchen."}
+ "srv.remoteKeys.haBarInstall": {"from": "The Home Assistant bar could not be put on the TV. Try again in a moment.", "text": "Die Home-Assistant-Leiste konnte nicht auf dem TV installiert werden. Bitte gleich erneut versuchen."},
+ "ha.bar.inHomeBar": {"from": "Show in Glasshouse Bar", "text": "In Glasshouse Bar anzeigen"},
+ "ha.bar.inHomeBarDesc": {"from": "Adds a Home Assistant tile at the end of Glasshouse Bar to open this control bar.", "text": "Fügt am Ende der Glasshouse Bar eine Home-Assistant-Kachel hinzu, um diese Steuerleiste zu öffnen."},
+ "home.bar.haTile": {"from": "Home Assistant bar tile", "text": "Home-Assistant-Leiste als Kachel"},
+ "home.bar.haTileDesc": {"from": "Adds a Home Assistant tile at the end of Glasshouse Bar to open the Home Assistant control bar.", "text": "Fügt am Ende der Glasshouse Bar eine Home-Assistant-Kachel hinzu, um die Home-Assistant-Steuerleiste zu öffnen."},
+ "home.ha.activated": {"from": "Activated", "text": "Aktiviert"},
+ "home.ha.decrease": {"from": "Decrease", "text": "Verringern"},
+ "home.ha.failed": {"from": "Action failed", "text": "Aktion fehlgeschlagen"},
+ "home.ha.increase": {"from": "Increase", "text": "Erhöhen"},
+ "home.ha.ran": {"from": "Ran", "text": "Ausgeführt"},
+ "home.haRowDesc": {"from": "Controls {n} entities from the Home Assistant bar.", "text": "Steuert {n} Entitäten aus der Home-Assistant-Leiste."},
+ "home.haRowEdit": {"from": "Edit on HA & MQTT", "text": "Unter HA und MQTT bearbeiten"},
+ "home.row.ha": {"from": "Home Assistant", "text": "Home Assistant"},
+ "home.row.haArrange": {"from": "Entities from the Home Assistant bar", "text": "Entitäten aus der Home-Assistant-Leiste"},
+ "home.row.haHint": {"from": "OK to toggle, Ch +/- to adjust", "text": "OK zum Umschalten, Ch +/- zum Anpassen"},
+ "ha.bar.showHints": {"from": "Button hints", "text": "Tastenhinweise"},
+ "ha.bar.showHintsDesc": {"from": "Show remote control hints (OK toggle, Up/Down adjust, Back close) above the Home Assistant bar and on the Glasshouse Home row.", "text": "Fernbedienungshinweise (OK umschalten, Auf/Ab anpassen, Zurück schließen) über der Home-Assistant-Leiste und in der Glasshouse-Home-Zeile anzeigen."},
+ "srv.habar.badOptions": {"from": "invalid options", "text": "ungültige Optionen"}
 }

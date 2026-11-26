@@ -156,9 +156,22 @@ server.listen(0, '127.0.0.1', function () {
     { id: 'scene.movie', label: '' }
   ]);
   assert.strictEqual(saved.ok, true);
+  assert.strictEqual(saved.showHints, true);
   assert.strictEqual(saved.entities.length, 7);
   assert.strictEqual(haBar.listConfig().entities[0].label, 'Desk');
-  console.log('  \u2713 saveConfig validates, deduplicates, and persists entities');
+  assert.strictEqual(haBar.listConfig().showHints, true);
+  assert.strictEqual(haBar.setOptions({ bad: true }).ok, false);
+  var hintsOff = haBar.setOptions({ showHints: false });
+  assert.strictEqual(hintsOff.ok, true);
+  assert.strictEqual(hintsOff.showHints, false);
+  assert.strictEqual(haBar.listConfig().showHints, false);
+  var reSaved = haBar.saveConfig(saved.entities);
+  assert.strictEqual(reSaved.ok, true);
+  assert.strictEqual(reSaved.showHints, false);
+  var hintsOn = haBar.setOptions({ showHints: true });
+  assert.strictEqual(hintsOn.ok, true);
+  assert.strictEqual(hintsOn.showHints, true);
+  console.log('  \u2713 saveConfig validates, deduplicates, persists entities, and preserves showHints');
 
   // 2. Preload lifecycle
   haBar.start();
@@ -174,6 +187,7 @@ server.listen(0, '127.0.0.1', function () {
         assert.strictEqual(st.ok, true);
         assert.strictEqual(st.configured, true);
         assert.strictEqual(st.hour12, true);
+        assert.strictEqual(st.showHints, true);
         assert.strictEqual(st.tiles.length, 7);
         assert.strictEqual(st.tiles[0].label, 'Desk');
         assert.strictEqual(st.tiles[0].pct, 50);

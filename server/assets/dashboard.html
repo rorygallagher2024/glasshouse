@@ -1285,13 +1285,21 @@ function glasshouseHomeRows(d) {
              press: barOn ? t('tv.home.switch.off', 'Press OK to use LG Home again') : t('tv.home.bar.on', 'Press OK to use Glasshouse Bar'),
              hint: t('home.bar.isOnDesc', 'The Home button opens a row of your apps and inputs over the picture; Back or Home closes it. LG’s Home stays in its place, and its tile is at the end of the apps.'),
              warn: d.bar.report ? tvCompatWarn(d.bar.webos) : undefined });
+    if (barOn && d.haBarAvailable && d.layout) {
+      r.push(homeSwitchRow(d, 'haBarInHomeBar', t('home.bar.haTile', 'Home Assistant bar tile'),
+        t('home.bar.haTileDesc', 'Adds a Home Assistant tile at the end of Glasshouse Bar to open the Home Assistant control bar.'),
+        'homeBarHaTile', d.layout.haBarInHomeBar === true));
+    }
   }
   if (!d.enabled || launcherOn) return r;
   var c = d.catalogue, lay = d.layout;
   // The rows first, as the screen shows them; each opens a list of its own.
   if (c && lay) {
     r.push(head(t('tv.home.rowsHead', 'Rows')));
-    lay.rows.forEach(function (kind) { r.push(homeRowEntry(kind, d)); });
+    lay.rows.forEach(function (kind) {
+      if (kind === 'ha' && !d.haBarAvailable) return;
+      r.push(homeRowEntry(kind, d));
+    });
   }
   r.push(head(t('home.customisation', 'Home customisation')));
   if (d.supported.ok && d.hideLgHomeAtStartAvailable !== false) {
@@ -1480,7 +1488,8 @@ function glasshouseHomeRows(d) {
                hint: t('home.animColoursTv', 'Colours of one’s own are picked on the browser dashboard’s Home tab.') });
     }
     r.push(head(t('tv.home.head.more', 'More')));
-    r.push({ label: t('tv.home.arrange', 'Row order and reset'), value: t('tv.home.firstRow', '{name} first', { name: homeRowNames()[lay.rows[0]] }),
+    var visRows = lay.rows.filter(function (k) { return k !== 'ha' || d.haBarAvailable; });
+    r.push({ label: t('tv.home.arrange', 'Row order and reset'), value: t('tv.home.firstRow', '{name} first', { name: homeRowNames()[visRows[0]] }),
              cls: 'act opens', act: 'open', key: 'homeOrder', press: t('tv.home.openList', 'Press OK to open'),
              hint: t('tv.home.arrangeHint', 'The order of the rows on Glasshouse Home, and putting the layout back as it first was.') });
   }
@@ -1506,7 +1515,8 @@ var PEEK_MAX = 6;
 
 function homeRowNames() {
   return { app: t('home.row.apps', 'Apps'), dev: t('home.row.inputs', 'Inputs'), ch: t('home.row.channels', 'Channels'),
-           rec: t('home.row.recommended', 'Recommended'), iptv: t('home.row.iptv', 'Internet TV') };
+           rec: t('home.row.recommended', 'Recommended'), iptv: t('home.row.iptv', 'Internet TV'),
+           ha: t('home.row.ha', 'Home Assistant') };
 }
 
 function homeSwitchRow(d, key, label, hint, act, on) {
@@ -1547,6 +1557,13 @@ function homeRowEntry(kind, d) {
              press: recOn ? t('tv.press.switchOff', 'Press OK to switch off') : t('tv.press.switchOn', 'Press OK to switch on'),
              hint: t('home.recommendedDesc', 'The titles Netflix, Prime Video, Disney+, HBO Max, YouTube and other apps put on LG’s Home, such as Continue watching, as a row of cards. OK opens the app at the title. An app hidden from the Apps row shows none.'),
              warn: t('home.recommendedPrivacy', 'The cards’ pictures are loaded from each app’s own servers, as on LG’s Home.') };
+  }
+  if (kind === 'ha') {
+    var haOn = lay.haRow === true;
+    return { label: name, value: haOn ? t('common.on', 'On') : t('common.off', 'Off'), cls: haOn ? 'on' : 'off',
+             act: can ? 'homeHaRow' : null, on: haOn,
+             press: haOn ? t('tv.press.switchOff', 'Press OK to switch off') : t('tv.press.switchOn', 'Press OK to switch on'),
+             hint: t('home.haRowDesc', 'Controls {n} entities from the Home Assistant bar.', { n: d.haBarCount || 0 }) };
   }
   // A playlist needs typing, so it is added in a browser.
   if (kind === 'iptv' && !(c.sources && c.sources.iptv)) {
@@ -1686,9 +1703,10 @@ function homeOrderRows(d) {
   var r = [homeBackRow()];
   if (!d || !d.layout) return r;
   var lay = d.layout, can = d.writable !== false, names = homeRowNames();
+  var vis = lay.rows.filter(function (kind) { return kind !== 'ha' || d.haBarAvailable; });
   r.push(head(t('tv.home.rowOrder', 'Row order')));
-  lay.rows.forEach(function (kind, i) {
-    r.push({ label: names[kind], value: t('tv.home.rowPlace', '{n} of {total}', { n: i + 1, total: lay.rows.length }), cls: 'act',
+  vis.forEach(function (kind, i) {
+    r.push({ label: names[kind], value: t('tv.home.rowPlace', '{n} of {total}', { n: i + 1, total: vis.length }), cls: 'act',
              act: can && i > 0 ? 'homeRowUp' : null, key: kind,
              press: i > 0 ? t('tv.home.rowUp.press', 'Press OK to move this row up') : t('tv.home.rowFirst', 'First row'),
              hint: t('tv.home.rowUp.hint', 'The order of the rows on Glasshouse Home.') });
@@ -3650,6 +3668,10 @@ function activate() {
       return homeLayout({ fade: !r.on });
     case 'homeRecommended':
       return homeLayout({ recommended: !r.on });
+    case 'homeHaRow':
+      return homeLayout({ haRow: !r.on });
+    case 'homeBarHaTile':
+      return homeLayout({ haBarInHomeBar: !r.on });
     case 'homeHideUnused':
       return homeLayout({ hideUnused: !r.on });
     case 'homeDarkening':
@@ -3666,8 +3688,11 @@ function activate() {
       return send({ action: 'launchApp', value: homeData && homeData.supported && homeData.supported.standalone ? 'com.tvweb.home' : 'com.webos.app.home' });
     case 'homeRowUp':
       var rowsNow = homeData.layout.rows.slice(), ri = rowsNow.indexOf(r.key);
+      var target = ri - 1;
+      while (target > 0 && rowsNow[target] === 'ha' && !homeData.haBarAvailable) target--;
+      if (target < 0) return;
       rowsNow.splice(ri, 1);
-      rowsNow.splice(ri - 1, 0, r.key);
+      rowsNow.splice(target, 0, r.key);
       // The selection follows the row to its new place once the list is read again.
       initialSel = sel - 1;
       return homeLayout({ rows: rowsNow });

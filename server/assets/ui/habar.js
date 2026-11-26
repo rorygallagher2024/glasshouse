@@ -3,6 +3,9 @@
 const HA_BAR_MAX = 16;
 let haBarEntities = [];
 let haBarConfigured = false;
+let haBarInHomeBar = false;
+let haBarHomeBarOffered = false;
+let haBarShowHints = true;
 let haBarMsgTimer = null;
 
 if (typeof haPickerRegister === 'function') {
@@ -66,6 +69,20 @@ function renderHaBar() {
   if (actions) actions.hidden = !haBarEntities.length;
   const hint = q('ha-bar-remote-hint');
   if (hint) hint.hidden = !haBarEntities.length;
+  const optsWrap = q('ha-bar-opts-wrap');
+  if (optsWrap) optsWrap.hidden = !haBarEntities.length;
+  const hbRow = q('ha-bar-homebar-row');
+  const hbBtn = q('ha-bar-homebar-btn');
+  if (hbRow) hbRow.hidden = !haBarEntities.length || !haBarHomeBarOffered;
+  if (hbBtn) {
+    updateToggle(hbBtn, { cls: haBarInHomeBar ? 'good' : 'idle', label: haBarInHomeBar ? t('common.on', 'On') : t('common.off', 'Off'), on: haBarInHomeBar });
+    hbBtn.disabled = !cfgHaWritable || !haBarEntities.length;
+  }
+  const hintsBtn = q('ha-bar-hints-btn');
+  if (hintsBtn) {
+    updateToggle(hintsBtn, { cls: haBarShowHints ? 'good' : 'idle', label: haBarShowHints ? t('common.on', 'On') : t('common.off', 'Off'), on: haBarShowHints });
+    hintsBtn.disabled = !cfgHaWritable || !haBarEntities.length;
+  }
   const openBtn = q('ha-bar-open-btn');
   if (openBtn) openBtn.disabled = !cfgHaWritable || !haBarEntities.length;
   const prevLink = q('ha-bar-preview-link');
@@ -104,6 +121,9 @@ async function loadHaBar() {
     const j = await r.json();
     if (!j || !j.ok) return;
     haBarConfigured = !!j.configured;
+    haBarInHomeBar = !!j.inHomeBar;
+    haBarHomeBarOffered = !!j.homeBarOffered;
+    haBarShowHints = j.showHints !== false;
     haBarEntities = Array.isArray(j.entities) ? j.entities : [];
     renderHaBar();
     if (haBarConfigured && typeof ensureHaEntities === 'function') {
@@ -125,7 +145,9 @@ async function saveHaBar() {
       return false;
     }
     haBarEntities = j.entities || [];
+    if (typeof j.showHints === 'boolean') haBarShowHints = j.showHints;
     renderHaBar();
+    if (typeof loadHome === 'function' && typeof homeStatus !== 'undefined' && homeStatus) loadHome(true);
     setHaBarMsg(t('ha.bar.saved', 'Saved.'), 'good');
     return true;
   } catch (e) {
@@ -180,6 +202,56 @@ async function haBarLabel(idx, val) {
   haBarEntities[idx].label = String(val || '').trim();
   if (!(await saveHaBar())) {
     haBarEntities[idx].label = prev;
+    renderHaBar();
+  }
+}
+
+async function haBarToggleInHomeBar() {
+  const btn = q('ha-bar-homebar-btn');
+  if (btn) btn.disabled = true;
+  try {
+    const r = await fetch(api('/api/home/layout'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ haBarInHomeBar: !haBarInHomeBar })
+    });
+    const j = await r.json();
+    if (!j || !j.ok || !j.layout) {
+      setHaBarMsg((j && j.error) || t('mqtt.saveFailed', 'Save failed'), 'bad');
+      return;
+    }
+    haBarInHomeBar = j.layout.haBarInHomeBar === true;
+    renderHaBar();
+    if (typeof loadHome === 'function' && typeof homeStatus !== 'undefined' && homeStatus) loadHome(true);
+    setHaBarMsg(t('ha.bar.saved', 'Saved.'), 'good');
+  } catch (e) {
+    setHaBarMsg(e.message, 'bad');
+  } finally {
+    renderHaBar();
+  }
+}
+
+async function haBarToggleHints() {
+  if (!cfgHaWritable || !haBarEntities.length) return;
+  const btn = q('ha-bar-hints-btn');
+  if (btn) btn.disabled = true;
+  try {
+    const r = await fetch(api('/api/ha/bar'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ showHints: !haBarShowHints })
+    });
+    const j = await r.json();
+    if (!j || !j.ok) {
+      setHaBarMsg((j && j.error) || t('mqtt.saveFailed', 'Save failed'), 'bad');
+      return;
+    }
+    haBarShowHints = j.showHints !== false;
+    renderHaBar();
+    setHaBarMsg(t('ha.bar.saved', 'Saved.'), 'good');
+  } catch (e) {
+    setHaBarMsg(e.message, 'bad');
+  } finally {
     renderHaBar();
   }
 }
