@@ -1,5 +1,6 @@
 {
  "apps.remoteKeys.observedColor": {"text": "Glasshouse muss für diese Verknüpfung laufen. Die Taste kann in der aktuellen App weiterhin ihre ursprüngliche Aktion ausführen.", "from": "Glasshouse must be running for this shortcut. The key may still perform its original action in the current app."},
+ "apps.remoteKeys.observedChannel": {"text": "Glasshouse muss für diese Verknüpfung laufen. Die Taste kann weiterhin den Kanal wechseln.", "from": "Glasshouse must be running for this shortcut. The key may still change the channel."},
   "home.arrange.done": {
     "text": "Fertig",
     "from": "Done"

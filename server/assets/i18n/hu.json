@@ -235,6 +235,7 @@
  "apps.remoteKeys.lg": {"text": "Ahogy az LG beállította", "from": "As LG has it"},
  "apps.remoteKeys.nothing": {"text": "Semmi", "from": "Nothing"},
  "apps.remoteKeys.observedColor": {"text": "A parancsikon működéséhez a Glasshouse-nak futnia kell. A gomb az aktuális alkalmazásban továbbra is végrehajthatja az eredeti műveletét.", "from": "Glasshouse must be running for this shortcut. The key may still perform its original action in the current app."},
+ "apps.remoteKeys.observedChannel": {"text": "A parancsikon működéséhez a Glasshouse-nak futnia kell. A gomb továbbra is csatornát válthat.", "from": "Glasshouse must be running for this shortcut. The key may still change the channel."},
  "apps.remoteKeys.opens": {"text": "Megnyitja: {app}", "from": "Opens {app}"},
  "apps.remoteKeys.other": {"text": "Egyéb gombok", "from": "Other keys"},
  "apps.remoteKeys.step": {"text": "Fényerő lépésköze", "from": "Brightness step"},
