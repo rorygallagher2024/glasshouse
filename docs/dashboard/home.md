@@ -111,6 +111,12 @@ Preview cards at the top of the **Home** tab switch between five launcher option
 
     Positions rows along the bottom of the screen (similar to LG's built-in launcher) instead of centered, scrolling subsequent rows into view as you navigate down. Off by default. See [Layout options](#layout-options).
 
+-   **Centred rows and clock position**
+
+    ---
+
+    Centres the apps and inputs of each row that fits on screen, and places the clock on the left, in the centre or on the right. See [Layout options](#layout-options).
+
 -   **Alternative View**
 
     ---
@@ -497,7 +503,7 @@ The Home tab's **Home customisation** section holds what applies to whichever Ho
 
 * While Glasshouse Home is on:
     * **Starting up:** Open Home at power-on, Reopen Home after a wake, Hide LG's Home while the TV starts.
-    * **Layout:** Alternative View, Rows along the bottom.
+    * **Layout:** Alternative View, Rows along the bottom, Centre the rows, Clock position.
     * **Shown on Home:** Clock and date, Last watched, App count, App labels, Apps as cards, Card transparency, Pulse on the app in focus, Sound when moving with the buttons, Sound when moving with the pointer, Weather, Remote battery, Picture details, CEC addresses.
     * **Live preview:** Live preview, with Preview sound, Keep the preview on, Preview in the tile and Preview size once it is on.
     * **Search.**
@@ -517,6 +523,8 @@ While Glasshouse Home is on with this set, a TV switched on with Wake-on-LAN, fr
 The **Layout** section configures the on-screen placement of rows and status elements:
 
 * **Clock and date:** Displayed by default in the upper left; if switched off, its space remains reserved so rows do not jump.
+* **Clock position:** Where the clock and date sit in the top strip: **Automatic** (the default) keeps each view's own place, on the left, or on the right in Alternative View; **Left**, **Centre** and **Right** fix it there in either view. In the centre, Last watched stays on the left and the weather and the preview on the right.
+* **Centre the rows:** Off by default. Switched on, the apps and inputs of a row that fits on the screen sit in the middle of it rather than from the left, and row titles are centred too. A row with more than fits still starts at the left and scrolls as before.
 * **Rows along the bottom:** Places the rows along the bottom of the screen (as on LG's launcher) rather than in the middle. The row in focus sits at the bottom and subsequent rows wait below the screen: moving down scrolls the rows up by one. Off by default.
 
     ![Glasshouse Home with the clock off and the rows along the bottom](../screenshots/home-bottom.jpg)

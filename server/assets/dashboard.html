@@ -1334,6 +1334,14 @@ function glasshouseHomeRows(d) {
     }
     r.push(homeSwitchRow(d, 'showClock', t('home.showClock', 'Clock and date'), t('home.showClockDesc', 'At the top of Glasshouse Home. Switched off, the space stays empty.'), 'homeShow', d.layout.showClock !== false));
     r.push(homeSwitchRow(d, 'rowsBottom', t('home.rowsBottom', 'Rows along the bottom'), t('home.rowsBottomDesc', 'The rows of apps and inputs sit along the bottom of the screen, as on LG’s Home, rather than in the middle.'), 'homeShow', d.layout.rowsBottom === true));
+    r.push(homeSwitchRow(d, 'centerRows', t('home.centerRows', 'Centre the rows'), t('home.centerRowsDesc', 'The apps and inputs of a row that fits on the screen sit in the middle of it, rather than from the left. A longer row still starts at the left.'), 'homeShow', d.layout.centerRows === true));
+    // Where the clock sits; OK steps through them.
+    var clockPositions = { auto: t('home.clockPosition.auto', 'Automatic'), left: t('home.clockPosition.left', 'Left'), center: t('home.clockPosition.center', 'Centre'), right: t('home.clockPosition.right', 'Right') };
+    var clockNow = clockPositions[d.layout.clockPosition] ? d.layout.clockPosition : 'auto';
+    r.push({ label: t('home.clockPosition', 'Clock position'), key: 'clockPosition', value: clockPositions[clockNow], cls: 'on',
+             act: can ? 'homeClockPosition' : null,
+             press: t('tv.press.change', 'Press OK to change'),
+             hint: t('home.clockPositionDesc', 'Where the clock and date sit at the top of Glasshouse Home. Automatic puts them on the left, or on the right in Alternative View.') });
     var altOn = d.layout.view === 'alternative';
     r.push({ label: t('home.alternative', 'Alternative View'),
              value: altOn ? t('common.on', 'On') : t('common.off', 'Off'), cls: altOn ? 'on' : 'off',
@@ -3642,6 +3650,10 @@ function activate() {
       var rbOrder = ['off', 'low', 'always'];
       var rbAt = rbOrder.indexOf((homeData && homeData.layout && homeData.layout.remoteBattery) || 'low');
       return homeLayout({ remoteBattery: rbOrder[(rbAt + 1) % rbOrder.length] });
+    case 'homeClockPosition':
+      var clockOrder = ['auto', 'left', 'center', 'right'];
+      var clockAt = clockOrder.indexOf((homeData && homeData.layout && homeData.layout.clockPosition) || 'auto');
+      return homeLayout({ clockPosition: clockOrder[(clockAt + 1) % clockOrder.length] });
     case 'homePreviewSize':
       var pvSizeOrder = ['small', 'medium', 'large'];
       var pvSizeAt = pvSizeOrder.indexOf((homeData && homeData.layout && homeData.layout.previewSize) || 'small');

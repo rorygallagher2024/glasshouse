@@ -288,6 +288,20 @@ html.resting #wall .layer{-webkit-animation-play-state:paused;animation-play-sta
 .alternative .dev{width:420px;min-height:128px}
 .alternative .dev .nm{font-size:26px}
 .alternative .dev .path,.alternative .dev .st{font-size:17px}
+/* Clock position (#clockPosition): auto leaves each view's own place, left or
+   (Alternative View) right. In the centre it is taken out of the strip, so
+   Last watched keeps its place on the left and the rest stay on the right. */
+.clock-left #when{-webkit-order:-1;order:-1;text-align:left}
+.clock-right #when{-webkit-order:9;order:9;margin-left:auto;text-align:right}
+.clock-center #when{position:absolute;left:50%;bottom:0;-webkit-transform:translateX(-50%);transform:translateX(-50%);text-align:center}
+.clock-right #source,.clock-center #source{border-left:0;padding-left:0}
+.clock-center #source{-webkit-flex:0 1 auto;flex:0 1 auto;max-width:520px;margin-right:auto}
+/* Centred rows: the room left in a row that fits is shared on both sides. A
+   row longer than the screen starts at the left and scrolls as before, as an
+   auto margin takes nothing when there is no room left. */
+.center-rows .track>:first-child{margin-left:auto}
+.center-rows .track>:last-child{margin-right:auto}
+.center-rows .row h2{text-align:center}
 .row{-webkit-flex:0 0 auto;flex:0 0 auto}
 .row.empty{display:none}
 .arranging .row.empty{display:block}
@@ -2657,10 +2671,16 @@ html[lang="vi"] #srcTitle,html[lang="vi"] #plMode,html[lang="vi"] #pvMode,html[l
     return layout.previewSize === 'medium' ? ' pv-medium' : layout.previewSize === 'large' ? ' pv-large' : '';
   }
 
+  function clockPositionClass() {
+    var pos = layout && layout.clockPosition;
+    return pos === 'left' || pos === 'center' || pos === 'right' ? ' clock-' + pos : '';
+  }
+
   function stageClass() {
     $('stage').className = (state.arranging ? 'arranging' : '') + (recents.open ? ' recents' : '') +
       (finder.open ? ' finding' : '') + (finder.typing ? ' typing' : '') + (searchOn() ? '' : ' no-search') + (folder.open ? ' folder' : '') +
       (!layout || layout.showClock === false ? ' no-clock' : '') + (layout && layout.rowsBottom === true ? ' rows-bottom' : '') +
+      (layout && layout.centerRows === true ? ' center-rows' : '') + clockPositionClass() +
       (layout && layout.view === 'alternative' ? ' alternative' : '') + (layout && layout.showAppLabels === false ? ' no-app-labels' : '') +
       (cardsOn() ? ' cards' : '') + (layout && layout.focusPulse === true ? ' pulse' : '') +
       (player.open ? ' playing' : '') + (adder.open ? ' adding' : '') +

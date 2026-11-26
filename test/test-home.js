@@ -3227,6 +3227,43 @@ step('Alternative View is off until chosen, saved, and anything but alternative 
   });
 });
 
+step('the rows are centred only when switched on, and saved', function (done) {
+  start(null);
+  assert.strictEqual(home.layout().centerRows, false);
+  home.setLayout({ centerRows: true }, function (r) {
+    assert.strictEqual(r.layout.centerRows, true);
+    var saved = home.normalise(JSON.parse(fs.readFileSync(path.join(dir, 'home.json'), 'utf8')));
+    assert.strictEqual(saved.centerRows, true);
+    home.setLayout({ centerRows: 'yes' }, function (r2) {
+      assert.strictEqual(r2.layout.centerRows, true, 'only true or false changes it');
+      home.setLayout({ rowsBottom: true }, function (r3) {
+        assert.strictEqual(r3.layout.centerRows, true, 'kept by a save that does not name it');
+        home.setLayout({ centerRows: false }, function (r4) {
+          assert.strictEqual(r4.layout.centerRows, false);
+          done();
+        });
+      });
+    });
+  });
+});
+
+step('the clock keeps its own place until another is chosen, which is saved, and anything else is automatic', function (done) {
+  start(null);
+  assert.strictEqual(home.layout().clockPosition, 'auto');
+  home.setLayout({ clockPosition: 'center' }, function (r) {
+    assert.strictEqual(r.layout.clockPosition, 'center');
+    var saved = home.normalise(JSON.parse(fs.readFileSync(path.join(dir, 'home.json'), 'utf8')));
+    assert.strictEqual(saved.clockPosition, 'center');
+    home.setLayout({ view: 'alternative' }, function (r2) {
+      assert.strictEqual(r2.layout.clockPosition, 'center', 'kept by a save that does not name it');
+      home.setLayout({ clockPosition: 'top' }, function (r3) {
+        assert.strictEqual(r3.layout.clockPosition, 'auto');
+        done();
+      });
+    });
+  });
+});
+
 step('live preview stays off until switched on, and is saved', function (done) {
   start(null);
   assert.strictEqual(home.layout().livePreview, false);
