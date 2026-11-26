@@ -290,6 +290,8 @@ async function tick() {
     const r = await fetch(api('/api/stats'), { cache: 'no-store' });
     if (!r.ok) throw new Error(r.status === 401 ? t('common.unauthorised', 'Unauthorised \u2014 token missing or wrong') : 'HTTP ' + r.status);
     const d = await r.json();
+    // A soundbar fault must not mark the whole dashboard offline.
+    try { soundbarTVPlayback(d); } catch (err) { console.error(err); }
     q('panels').classList.remove('stale');
     if (!errTimer) {
       q('offline').hidden = true;

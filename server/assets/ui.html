@@ -743,6 +743,28 @@
     <div class="err-note audio-error" id="audio-bt-error" role="alert" hidden></div>
   </div>
 
+  <details class="pv-d audio-more" id="audio-bar" ontoggle="soundbarViewChanged()">
+    <summary><span data-t="audio.bar.title">LG Wi-Fi soundbar</span></summary>
+    <div class="soundbar-head">
+      <p class="sub" id="audio-bar-status" role="status"></p>
+      <button type="button" class="pill idle" id="audio-bar-refresh" onclick="soundbarRequest()" data-t="audio.refresh">Refresh</button>
+    </div>
+    <div class="soundbar-grid">
+      <div id="audio-bar-rows"></div>
+      <section class="soundbar-group" aria-labelledby="audio-bar-connection">
+        <h3 id="audio-bar-connection" data-t="ctl.pointer.transport">Connection</h3>
+        <form class="soundbar-connect" onsubmit="event.preventDefault(); soundbarConnect()">
+          <label for="audio-bar-host" data-t="audio.bar.address">Soundbar IP address</label>
+          <input id="audio-bar-host" type="text" inputmode="decimal" autocomplete="off" required>
+          <div class="soundbar-actions">
+            <button type="submit" class="pill good" id="audio-bar-connect" data-t="audio.bt.connect">Connect</button>
+            <button type="button" class="pill bad" id="audio-bar-forget" onclick="soundbarForget()" data-t="audio.bt.remove" hidden>Remove</button>
+          </div>
+        </form>
+      </section>
+    </div>
+  </details>
+
   <details class="pv-d audio-more" id="audio-more">
   <summary><span class="audio-fold"><span data-t="audio.pathTitle">Soundbar and receiver</span><span class="pv-sub" data-t="audio.pathDesc">Whether a soundbar or receiver is connected over HDMI ARC or eARC, and which audio formats the TV and the receiver say they support. Useful when Dolby Atmos or DTS doesn’t come through.</span></span></summary>
   <div class="audio-head">
@@ -3094,6 +3116,7 @@
 <script src="/assets/ui/iptv.js"></script>
 <script src="/assets/ui/tvchannels.js"></script>
 <script src="/assets/ui/audio.js"></script>
+<script src="/assets/ui/soundbar.js"></script>
 <script src="/assets/ui/bluetooth.js"></script>
 <script src="/assets/ui/picture.js"></script>
 <script src="/assets/ui/servicemenu.js"></script>

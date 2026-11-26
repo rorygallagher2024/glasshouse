@@ -4,6 +4,12 @@ Findings about how LG's webOS works, kept so the same ground is not covered
 twice. Each entry names the TV and webOS version it was found on. For how
 Glasshouse itself works, see [IMPLEMENTATION.md](../IMPLEMENTATION.md).
 
+## LG DS90TR over Wi-Fi with HDMI eARC (webOS 10.3.1)
+
+A DS90TR connected to a TV on firmware 33.31.61 answered the LG Wi-Fi Speaker status requests on TCP port 9741 from a computer on the LAN. It advertised itself as an S90T over Google Cast and identified itself as DS90TR in the local control protocol. Its settings included Night mode, woofer, center, side, height and rear levels, bass, midrange and treble. Its woofer value was 19 with a reported range of −15 to +6. The local protocol counts levels from the minimum, giving +4. The bar also reported a calibration status.
+
+The framing is documented in [python-temescal](https://github.com/google/python-temescal) and the level offsets in [LG Soundbar Plus](https://github.com/diogolccsilva/ha-lg-soundbar/blob/main/custom_components/lg_soundbar_plus/number.py).
+
 ## Native DTS playback on the G5 (webOS 10.3.1)
 
 OLED83G54LW.BEKYLJP, firmware 33.31.68, read and tested on 26 October 2026.

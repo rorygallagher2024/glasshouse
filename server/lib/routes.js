@@ -24,6 +24,9 @@ var fetchLib = require('./fetch');
 var devtools = require('./devtools');
 var names = require('./names');
 var nosignal = require('./nosignal');
+/** @type {typeof import('./soundbar')} */
+var soundbar = require('./soundbar');
+var soundbarChanging = false;
 
 var HA_CATEGORIES = ha.HA_CATEGORIES;
 var HA_ENTITIES = ha.HA_ENTITIES;
@@ -280,6 +283,100 @@ function readConfigFile() {
 
 function unreadableConfigError() {
   return new Error(msg('srv.configUnreadable', '{file} could not be read, so it was left as it is. Correct it, or remove it to start again, then restart Glasshouse.', { file: configFilePath }));
+}
+
+function soundbarSelection() {
+  var target = config.soundbar || {};
+  return { host: target.host || '', id: target.id || '', writable: !!config.allowControl };
+}
+
+function soundbarEvents(req, res) {
+  if (req.method !== 'GET') return send(res, 405, JSON.stringify({ ok: false }));
+  res.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-store',
+    'X-Accel-Buffering': 'no', 'X-Content-Type-Options': 'nosniff' });
+  var closed = false, heartbeat, unsubscribe;
+  function cleanup() {
+    if (closed) return;
+    closed = true;
+    clearInterval(heartbeat);
+    if (unsubscribe) unsubscribe();
+  }
+  function writable() {
+    if (!res.writable || res.finished) cleanup();
+    return !closed;
+  }
+  // Since Node 16, request close can mean that the GET finished reading
+  // while its response stream is still open. Older TV runtimes signal a disconnect.
+  req.on('close', function () {
+    if (parseInt(process.versions.node, 10) < 16 || !req.socket || req.socket.destroyed) cleanup();
+  });
+  res.on('close', cleanup);
+  res.on('finish', cleanup);
+  if (!writable()) return;
+  res.write('retry: 1500\n\nevent: selection\ndata: ' + JSON.stringify(soundbarSelection()) + '\n\n');
+  if (!writable()) return;
+  if (!config.soundbar || !config.soundbar.id) return res.end();
+  heartbeat = setInterval(function () { if (writable()) res.write(': keepalive\n\n'); }, 20000);
+  if (heartbeat.unref) heartbeat.unref();
+  unsubscribe = soundbar.watch(config.soundbar, function (reason, device) {
+    if (!writable()) return;
+    if (reason) {
+      cleanup();
+      return res.end('event: fault\ndata: ' + JSON.stringify(reason) + '\n\n');
+    }
+    res.write('data: ' + JSON.stringify(device) + '\n\n');
+  });
+  // watch can report a failed address before returning its unsubscribe function.
+  if (closed) unsubscribe();
+}
+
+function handleSoundbar(req, res) {
+  function reply(status, error, current) {
+    var result = soundbarSelection();
+    send(res, status, JSON.stringify({ host: result.host, id: result.id, writable: result.writable,
+      ok: !error, reason: error, device: current || null }));
+  }
+  if (req.method === 'GET') {
+    if (!config.soundbar || !config.soundbar.host) return reply(200);
+    return soundbar.request(config.soundbar, null, function (err, current) {
+      reply(err ? 502 : 200, err, current);
+    });
+  }
+  if (req.method !== 'POST') return reply(405, 'method');
+  if (!config.allowControl) return reply(403, 'disabled');
+  return readJsonBody(req, res, function (body) {
+    if (soundbarChanging) return reply(409, 'busy');
+    var target = config.soundbar || {};
+    if (body.id !== (target.id || '')) return reply(409, 'identity');
+    function save(selection, current) {
+      writeSettings({ soundbar: selection }, function (err) {
+        soundbarChanging = false;
+        if (err) return reply(500, 'save');
+        config.soundbar = selection;
+        if (target.id && (!selection || target.id !== selection.id || target.host !== selection.host)) soundbar.forget(target);
+        reply(200, null, current);
+      });
+    }
+    var forgetting = body.action === 'forget';
+    var pairing = body.action === 'connect';
+    if (!forgetting && !pairing && (body.action !== 'set' || !target.id)) return reply(400, 'invalid');
+    soundbarChanging = true;
+    if (forgetting) return save(null);
+    function done(err, current) {
+      if (!err && pairing) return save({ host: current.host, id: current.id }, current);
+      soundbarChanging = false;
+      reply(err === 'address' || err === 'invalid' ? 400 : err ? 502 : 200, err, current);
+    }
+    if (!pairing) return soundbar.request(target, body, done);
+    // Connecting again to the selected bar reads through its open session rather
+    // than opening a second socket. Another bar now at that address fails the
+    // identity check there and is then paired on its own.
+    if (!target.id || target.host !== body.host) return soundbar.request({ host: body.host }, null, done);
+    soundbar.request(target, null, function (err, current) {
+      if (err === 'identity') return soundbar.request({ host: body.host }, null, done);
+      done(err, current);
+    });
+  });
 }
 
 function trimmedString(v) { return typeof v === 'string' ? v.trim() : ''; }
@@ -1851,6 +1948,9 @@ function handleRequest(req, res) {
     });
   }
 
+  if (pathname === '/api/audio/soundbar') return handleSoundbar(req, res);
+  if (pathname === '/api/audio/soundbar/events') return soundbarEvents(req, res);
+
   if (pathname === '/api/audio' && audioModule) {
     if (req.method === 'GET') {
       return audioModule.status(function (r) {
@@ -3126,6 +3226,7 @@ function init(opts) {
   if (opts.quickAccess) quickAccessModule = opts.quickAccess;
   if (opts.remoteKeys) remoteKeysModule = opts.remoteKeys;
   if (opts.remoteDetect) remoteDetectModule = opts.remoteDetect;
+  if (opts.soundbar) soundbar = opts.soundbar;
   if (opts.homeScreen) homeScreenModule = opts.homeScreen;
   if (opts.home) homeModule = opts.home;
   if (opts.news) newsModule = opts.news;

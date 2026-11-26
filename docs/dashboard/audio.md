@@ -37,6 +37,14 @@ Paired devices can also be connected and disconnected under **Sound** on the
 [Control tab](control.md). The section isn't shown on TVs without Bluetooth
 audio, or in the TV app.
 
+## LG Wi-Fi soundbar
+
+On the web dashboard, open **LG Wi-Fi soundbar**, enter the local IPv4 address of the soundbar and choose **Connect**. The bar can keep playing over HDMI eARC. **Playback** holds input, volume, mute and audio delay. **Sound processing** holds the listening mode, Night mode and volume processing. **Speaker levels** adjusts individual channels and **Tone controls** adjusts bass, midrange and treble. **Device settings** holds power, display and voice feedback. The slider and mute switch use the bar’s own readings. On HDMI ARC/eARC, **TV-reported volume** appears below the slider label when the TV reports a different numeric level. It updates with the regular Glasshouse remote every two seconds. A setting the bar does not confirm returns to its last reported value. **Remove** forgets the saved connection. Use ThinQ for AI Room Calibration.
+
+The DS90TR has been tested. Other LG Wi-Fi soundbars that answer the same local protocol are untested.
+
+![LG Wi-Fi soundbar settings on a DS90TR](../screenshots/audio-ds90tr.png)
+
 ## Soundbar and receiver
 
 ![G3 audio declarations](../screenshots/audio-g3-formats.png)
