@@ -2079,7 +2079,6 @@
  "audio.inputDeclaration": {"text": "La columna de la TV describe HDMI {port}.", "from": "The TV column describes HDMI {port}."},
  "audio.inputNow": {"text": "Audio entrante", "from": "Incoming audio"},
  "audio.linkInactive": {"text": "Sin enlace ARC activo", "from": "No active ARC link"},
- "audio.linkUnknown": {"text": "Enlace desconocido", "from": "Link unknown"},
  "audio.loading": {"text": "Leyendo las capacidades de audio…", "from": "Reading audio capabilities…"},
  "audio.noInput": {"text": "No se informa de audio", "from": "No audio reported"},
  "audio.notAdvertised": {"text": "No anunciado", "from": "Not advertised"},

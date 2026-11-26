@@ -417,7 +417,6 @@
  "audio.inputNow": {"from": "Incoming audio", "text": "Inkommande ljud"},
  "audio.inputUnavailable": {"from": "Live audio status unavailable", "text": "Live-ljudstatus inte tillgänglig"},
  "audio.linkInactive": {"from": "No active ARC link", "text": "Ingen aktiv ARC-länk"},
- "audio.linkUnknown": {"from": "Link unknown", "text": "Okänd länk"},
  "audio.loading": {"from": "Reading audio capabilities…", "text": "Läser ljudfunktioner…"},
  "audio.nativeHdActive": {"from": "DTS-HD forwarding is active. Complete DTS-HD MA or DTS:X frames are being sent over eARC. Check the receiver’s incoming format to confirm reception.", "text": "DTS-HD-vidarebefordring är aktiv. Kompletta DTS-HD MA- eller DTS:X-ramar skickas över eARC. Kontrollera mottagarens inkommande format för att bekräfta mottagningen."},
  "audio.nativeHdCore": {"from": "The current stream is forwarding DTS core only.", "text": "Den aktuella strömmen vidarebefordrar bara DTS core."},

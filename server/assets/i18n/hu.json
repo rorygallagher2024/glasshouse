@@ -2158,7 +2158,6 @@
  "audio.inputDeclaration": {"text": "A TV oszlopa a HDMI {port} bemenetre vonatkozik.", "from": "The TV column describes HDMI {port}."},
  "audio.inputNow": {"text": "Bejövő hang", "from": "Incoming audio"},
  "audio.linkInactive": {"text": "Nincs aktív ARC-kapcsolat", "from": "No active ARC link"},
- "audio.linkUnknown": {"text": "Ismeretlen kapcsolat", "from": "Link unknown"},
  "audio.loading": {"text": "Hangképességek olvasása…", "from": "Reading audio capabilities…"},
  "audio.noInput": {"text": "Nincs jelzett hang", "from": "No audio reported"},
  "audio.notAdvertised": {"text": "Nem jelzett", "from": "Not advertised"},

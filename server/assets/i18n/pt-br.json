@@ -380,7 +380,6 @@
  "audio.inputNow": {"text": "Áudio recebido", "from": "Incoming audio"},
  "audio.inputUnavailable": {"text": "Status de áudio ao vivo indisponível", "from": "Live audio status unavailable"},
  "audio.linkInactive": {"text": "Nenhum link ARC ativo", "from": "No active ARC link"},
- "audio.linkUnknown": {"text": "Link desconhecido", "from": "Link unknown"},
  "audio.loading": {"text": "Lendo os recursos de áudio…", "from": "Reading audio capabilities…"},
  "audio.nativeHdActive": {"text": "O encaminhamento DTS-HD está ativo. Quadros completos de DTS-HD MA ou DTS:X estão sendo enviados por eARC. Verifique o formato recebido no receiver para confirmar a recepção.", "from": "DTS-HD forwarding is active. Complete DTS-HD MA or DTS:X frames are being sent over eARC. Check the receiver’s incoming format to confirm reception."},
  "audio.nativeHdCore": {"text": "O fluxo atual está encaminhando apenas o DTS core.", "from": "The current stream is forwarding DTS core only."},
