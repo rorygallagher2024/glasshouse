@@ -296,6 +296,7 @@
  "apps.remoteKeys.keyLabel": {"text": "Phím {key}", "from": "{key} key"},
  "apps.remoteKeys.lg": {"text": "Mặc định của LG", "from": "As LG has it"},
  "apps.remoteKeys.nothing": {"text": "Không làm gì", "from": "Nothing"},
+ "apps.remoteKeys.observedColor": {"text": "Glasshouse phải đang chạy để dùng phím tắt này. Phím vẫn có thể thực hiện chức năng ban đầu trong ứng dụng hiện tại.", "from": "Glasshouse must be running for this shortcut. The key may still perform its original action in the current app."},
  "apps.remoteKeys.opens": {"text": "Mở {app}", "from": "Opens {app}"},
  "apps.remoteKeys.other": {"text": "Các phím khác", "from": "Other keys"},
  "apps.remoteKeys.replacesVoice": {"text": "Nếu gán sang chức năng khác, nút này sẽ không còn mở điều khiển bằng giọng nói nữa. Chọn Mặc định của LG để khôi phục.", "from": "Set to anything else, this button no longer starts voice control. As LG has it brings it back."},

@@ -51,7 +51,7 @@ LG uses identical key definitions across countries. Once the TV reports its coun
 
 ## Interception and persistence
 
-Changes take effect immediately across all screens and persist across reboots, working before the Glasshouse server starts. Setting every key back to **As LG has it** (or running `tvwebctl restore-keys` on the TV) removes Glasshouse's filter from the TV's key handling.
+Changes take effect immediately across all screens and persist across reboots. Filter-based assignments work before the Glasshouse server starts; webOS 11 color shortcuts need the server running. Setting every key back to **As LG has it** (or running `tvwebctl restore-keys` on the TV) removes Glasshouse's filter from the TV's key handling.
 
 Glasshouse intercepts keys in the compositor filter chain before apps see them. An assigned key overrides an app's internal use of that key (such as **Guide** in YouTube, or color keys in Live TV teletext). See [Remote keys through the compositor's filter chain](../IMPLEMENTATION.md#remote-keys-through-the-compositors-filter-chain).
 
@@ -60,9 +60,11 @@ Glasshouse intercepts keys in the compositor filter chain before apps see them. 
 
 ## webOS 11 behaviour
 
+**Color shortcuts:** Where Glasshouse can read the remote’s input devices, Red, Green, Yellow and Blue can open an app, HDMI input, Live TV or the input switcher. Choose each under **Color keys** on the Remote tab; **As LG has it** removes the shortcut. Assignments are saved with the other remote keys and included in settings backups. They require the Glasshouse server, without MQTT or Home Assistant. The key still reaches the current app, so its original action may run too; **Nothing** is not offered.
+
 On webOS 11 (LG's webOS 26), LG manages button assignments natively:
 
-* **Supported keys:** Streaming buttons, Apps, Guide, Home Hub (on MR25 remotes), **AI**, **Alexa**, and the **?** button (configurable separately for press and hold). Color keys, Search, Info, Home, and **123** cannot be reassigned, and **Input** only as below.
+* **Supported keys:** Streaming buttons, Apps, Guide, Home Hub (on MR25 remotes), **AI**, **Alexa**, and the **?** button (configurable separately for press and hold). Search, Info, Home, and **123** cannot be reassigned, and **Input** only as below.
 * **Action limits:** LG only permits opening apps on webOS 11. **OK** and the media controls, **Power off**, **Home Assistant**, are unavailable. **Glasshouse Home's guide** is offered on the **Guide** key alone, on TVs whose key handler Glasshouse knows how to change (an OLED48C31LA on firmware 44.00.92 so far): setting it changes a few bytes of LG's `libappLaunch.so.1` in a copy mounted over it and restarts the TV's screen once, which takes about 35 s, and again each time the TV starts. The **Input** key is offered on the same TVs and can open an app, an HDMI input, **Live TV** or the **Glasshouse Input bar**, or stay as LG has it, with the same change to LG's library and the same restart of the screen. It cannot do nothing, and no media key or action can be set on it, and an app whose id is longer than 30 characters is not offered. Where the TV's build is not known, neither choice is offered. A streaming button set to **Nothing** displays LG's "This function is not supported" notice, and the **?** button cannot be set to **Nothing**.
 * **Guide on Live TV and the HDMI inputs:** There, LG hands the **Guide** key to the input before Glasshouse's setting is read, so it opens the input's own guide whatever the key is set to, as on a C3 with webOS 11.2. The setting applies on Home and in apps ([#1615](https://github.com/rorygallagher2024/glasshouse/issues/1615)).
 * **Screen off:** Available on Netflix, Prime Video, and Home Hub buttons. A streaming button displays LG's "This function is not supported" notice, and Glasshouse turns the screen off ~0.5 s after press. LG restores its streaming button assignments when the screen goes off, and Glasshouse reapplies them moments later.

@@ -290,3 +290,7 @@ Control page also has quick toggles below Playback, using the same commands and
 write permissions. Both dashboards hide the Ambient Light tab when neither
 integration is available; saved links then open Control on the web or Metrics
 in the TV app.
+
+### Color shortcuts on webOS 11
+
+Color assignments are kept with the other keys in `/var/lib/tvweb/remotekeys.json`, included in settings backups and retained by the updater. While a color is assigned, the existing remote-button worker reads the physical key and the server launches the saved app or input. No native library, LG mapping or filter chain is changed. The original key still reaches LG and the foreground app. **As LG has it** removes that shortcut; `tvwebctl restore-keys` clears all shortcuts and releases the reader when no other feature needs it.

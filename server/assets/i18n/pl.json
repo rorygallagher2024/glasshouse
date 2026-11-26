@@ -240,6 +240,7 @@
  "apps.remoteKeys.keyLabel": {"text": "Przycisk {key}", "from": "{key} key"},
  "apps.remoteKeys.lg": {"text": "Tak jak u LG", "from": "As LG has it"},
  "apps.remoteKeys.nothing": {"text": "Nic", "from": "Nothing"},
+ "apps.remoteKeys.observedColor": {"text": "Ten skrót wymaga działającego Glasshouse. Przycisk może nadal wykonywać swoją pierwotną funkcję w bieżącej aplikacji.", "from": "Glasshouse must be running for this shortcut. The key may still perform its original action in the current app."},
  "apps.remoteKeys.opens": {"text": "Otwiera {app}", "from": "Opens {app}"},
  "apps.remoteKeys.other": {"text": "Inne przyciski", "from": "Other keys"},
  "apps.remoteKeys.step": {"text": "Krok jasności", "from": "Brightness step"},
