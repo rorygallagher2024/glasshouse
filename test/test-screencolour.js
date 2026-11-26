@@ -97,44 +97,21 @@ sc.init({ luna: function (uri, payload, cb) { cb(null); }, readFile: function ()
 sc.read(function (r) { assert.strictEqual(r.ok, false); });
 console.log('  ✓ one capture for close requests, the service that answers kept, the picture deleted');
 
-// Which capture service the TV has, asked without a capture.
 var NONE = { returnValue: false, errorCode: -1, errorText: 'Service does not exist: com.webos.service.capture.' };
-function probeWith(replies, cb) {
-  var asked = [];
-  sc.init({
-    luna: function (uri, payload, done) {
-      asked.push(uri);
-      assert.deepEqual(payload, {}, 'no path, so nothing is captured');
-      done(replies[uri.split('/')[0]]);
-    },
-    readFile: function () { throw new Error('none'); },
-    removeFile: function () {}
-  });
-  assert.strictEqual(sc.supported(), null, 'unknown until asked');
-  sc.probe(function (v) { cb(v, asked); });
-}
-// A C2 (webOS 9): the first service is there.
-probeWith({ 'com.webos.service.capture': { returnValue: false, errorCode: 5, errorText: 'ERROR_NOT_ENOUGH_MEMORY' } }, function (v, asked) {
-  assert.strictEqual(v, true);
-  assert.deepEqual(asked, ['com.webos.service.capture/executeOneShot']);
-});
-// A B8 (webOS 4): only the second.
-probeWith({ 'com.webos.service.capture': NONE, 'com.webos.service.tv.capture': { returnValue: false, errorCode: 'ERROR_06', errorText: 'Invalid argument' } }, function (v) {
-  assert.strictEqual(v, true);
-});
-// Neither: no glow, and a read answers so without asking again.
-probeWith({ 'com.webos.service.capture': NONE, 'com.webos.service.tv.capture': NONE }, function (v) {
-  assert.strictEqual(v, false);
-  assert.strictEqual(sc.supported(), false);
-  sc.read(function (r) { assert.deepEqual(r, { ok: false, unsupported: true }); });
-});
-// No answer at all: left open, to be asked again.
-probeWith({}, function (v) { assert.strictEqual(v, null); assert.strictEqual(sc.supported(), null); });
+// Nothing is asked at start-up: even a call with no path took the capture
+// hardware from PicCap on a C1 (#1754).
+assert.strictEqual(sc.probe, undefined, 'no start-up probe');
 // A capture that finds both services missing counts the same.
 sc.init({ luna: function (uri, payload, cb) { cb(NONE); }, readFile: function () { throw new Error('none'); }, removeFile: function () {} });
 sc.read(function (r) { assert.strictEqual(r.ok, false); });
 assert.strictEqual(sc.supported(), false, 'both missing on a capture');
-console.log('  ✓ the capture service is found without a capture, and a TV with none does not offer the glow');
+sc.read(function (r) { assert.deepEqual(r, { ok: false, unsupported: true }); });
+// A service that is there but refuses leaves the question open.
+sc.init({ luna: function (uri, payload, cb) { cb({ returnValue: false, errorText: 'Invalid argument' }); }, readFile: function () { throw new Error('none'); }, removeFile: function () {} });
+assert.strictEqual(sc.supported(), null, 'unknown until a capture');
+sc.read(function () {});
+assert.strictEqual(sc.supported(), null, 'a refusal is not a missing service');
+console.log('  ✓ nothing asked at start-up, and a TV with no capture service stops offering the glow');
 
 // The Server tab's switch: on unless switched off, saved, and the route
 // refuses at once while it is off, without a capture.

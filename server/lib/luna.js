@@ -82,8 +82,8 @@ function isUnlistedLgService(service) {
 /*
  * A failure that says the service is not there: no answer at all, or the
  * hub's own refusal. An error from the service itself, such as a B8's
- * com.webos.service.tv.capture answering "Invalid argument" (#1640's check for
- * which capture service a TV has), shows it is there, though not listed.
+ * com.webos.service.tv.capture answering "Invalid argument" to a capture,
+ * shows it is there, though not listed.
  */
 var HUB_ABSENT = /Service does not exist|not (?:be )?listed|LSHUB_NOT_LSTED|no such service/i;
 
