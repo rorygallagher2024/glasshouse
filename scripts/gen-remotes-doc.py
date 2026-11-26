@@ -104,6 +104,9 @@ def render():
       ' transparent background, under 20 KB, original artwork or a picture you may share. A remote without one'
       ' shows the generic outline. The file also goes in `FILES` in `server/deploy.sh`.')
     w('')
+    w('To read a remote\'s reported name and button presses over SSH on a rooted TV, see'
+      ' [Remote keys](development/remote-keys.md#reading-keys-on-a-rooted-tv).')
+    w('')
     return '\n'.join(out)
 
 

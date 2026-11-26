@@ -6,7 +6,7 @@ The LG remotes Glasshouse knows, with the Remote tab keys each is known to have.
 
 | Remote | Year | Reported by the TV as | Keys known | List complete |
 | :----- | :--- | :-------------------- | ---------: | :------------ |
-| [Magic Remote MR25GA](#mr25ga) | not known | `LGE MR25GA` | 14 | yes |
+| [Magic Remote MR25GA](#mr25ga) | not known | `LGE MR25GA` | 15 | yes |
 | [Magic Remote MR23](#mr23) | not known | `LGE MR23` | 17 | yes |
 | [Magic Remote MR20](#mr20) | not known | `LGE MR20` | 13 | yes |
 | [Magic Remote MR18](#mr18) | not known | `LGE MR18` | 11 | yes |
@@ -39,16 +39,18 @@ Reported by the TV as `LGE MR25GA` (measured). Has no number keys. The list of k
 | Home Hub (`homehub`) | measured |
 | ? button (`multikey`) | measured |
 | ? button, held (`multikeyhold`) | measured |
+| 123 button (`screenremote`) | measured |
 
 Every button on the remote was pressed except Power, and the owner confirmed on 22 November 2026 that the list is every button it has.
 
 Where this comes from:
 
 * OLED48C56LB, webOS 10.3.0, 17 November 2026: CH+ and CH- received by the key filter
-* OLED48C56LB, webOS 10.3.0, 21 November 2026: every key but Power pressed and read from the remote's input device (LGE M-RCU - Builtin [0]): Netflix, Prime Video, Disney+, LG Channels, Alexa, the key in Sling TV's place (sent as IR_KEY_RAKUTENTV), CH+ and CH-, Guide, the house in a circle (IR_KEY_INPUT_HUB), ? (IR_KEY_MULTIKEY, held as the same code), and the AI key (RF_KEY_VOICE, the microphone's code); also Home, Back, Settings, 123, the arrows, the wheel and volume, which the Remote tab does not offer
+* OLED48C56LB, webOS 10.3.0, 21 November 2026: every key but Power pressed and read from the remote's input device (LGE M-RCU - Builtin [0]): Netflix, Prime Video, Disney+, LG Channels, Alexa, the key in Sling TV's place (sent as IR_KEY_RAKUTENTV), CH+ and CH-, Guide, the house in a circle (IR_KEY_INPUT_HUB), ? (IR_KEY_MULTIKEY, held as the same code), 123 (IR_KEY_SCREEN_REMOTE), and the AI key (RF_KEY_VOICE, the microphone's code); also Home, Back, Settings, the arrows, the wheel and volume, which the Remote tab does not offer
 * OLED48C56LB, webOS 10.3.0, 22 November 2026: the TV reports the remote as LGE MR25GA in its Bluetooth device list, its pairing file and lginput2's press log; the remote's label says MR25GA
 * The AI key as its own key (ai) is from webOS 11's native mapping; on webOS 10 it arrives as the microphone key (voice), so the Remote tab names that key AI for this remote
 * No number keys, no red, green, yellow or blue keys, and no Info or Input key
+* 123 (screenremote) was pressed on 21 November 2026 above but left out until the Remote tab offered it (#1709)
 
 ## Magic Remote MR23
 
@@ -155,3 +157,5 @@ The catalogue is [`server/lib/remotes.json`](https://github.com/rorygallagher202
 * `complete`: `true` only when the list is every button the remote has. Only a complete list lets the Remote tab treat a key as not on that remote.
 * `sources`: which TV and webOS version each fact came from.
 * `image`: the file name of a small picture under `server/assets/remotes/`, about 160 px wide, a PNG with a transparent background, under 20 KB, original artwork or a picture you may share. A remote without one shows the generic outline. The file also goes in `FILES` in `server/deploy.sh`.
+
+To read a remote's reported name and button presses over SSH on a rooted TV, see [Remote keys](development/remote-keys.md#reading-keys-on-a-rooted-tv).

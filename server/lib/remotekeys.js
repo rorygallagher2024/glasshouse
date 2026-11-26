@@ -235,26 +235,32 @@ var MAPPING_KEY = 'mapping_info';
  * Amazon button is Alexa on some remotes, and the Prime Video button on most.
  */
 /*
+ * lg: LG's name for the button in its key table (/usr/share/X11/xkb/keycodes/lg),
+ * where the TV's code is the Linux input code + 8 and the comment names the Qt
+ * key the filters see. log: the button_type lginput2 logs for a press, where
+ * seen. keyTable: offered only where the TV's key table maps lg to the
+ * symbol. docs/development/remote-keys.md is made from these (scripts/gen-remote-keys-doc.js).
+ *
  * regions: the countries (smartServiceCountryCode2) whose remotes have the
  * key. LG ships one filter set to many regions, so a UK C2 names Hulu and Sling
  * TV too; the dashboard keeps a key from elsewhere out of the way.
  */
 var KEYS = [
-  { key: 'netflix', symbol: 'WebOS.Key_webOS_Netflix', title: 'Netflix' },
-  { key: 'amazon', symbol: 'WebOS.Key_webOS_Amazon', title: 'Prime Video' },
-  { key: 'disneyplus', symbol: 'WebOS.Key_webOS_Disneyplus', title: 'Disney+' },
-  { key: 'lgchannels', symbol: 'WebOS.Key_webOS_LGChannels', title: 'LG Channels' },
-  { key: 'rakutentv', symbol: 'WebOS.Key_webOS_RakutenTV', title: 'Rakuten TV' },
+  { key: 'netflix', lg: 'IR_KEY_NETFLIX', log: 'KEY_NETFLIX', symbol: 'WebOS.Key_webOS_Netflix', title: 'Netflix' },
+  { key: 'amazon', lg: 'IR_KEY_AMAZON', log: 'KEY_AMAZON', symbol: 'WebOS.Key_webOS_Amazon', title: 'Prime Video' },
+  { key: 'disneyplus', lg: 'IR_KEY_DISNEYPLUS', log: 'KEY_DISNEY', symbol: 'WebOS.Key_webOS_Disneyplus', title: 'Disney+' },
+  { key: 'lgchannels', lg: 'IR_KEY_LGCHANNELS', symbol: 'WebOS.Key_webOS_LGChannels', title: 'LG Channels' },
+  { key: 'rakutentv', lg: 'IR_KEY_RAKUTENTV', symbol: 'WebOS.Key_webOS_RakutenTV', title: 'Rakuten TV' },
   // The Movies button on 2020 remotes (the MR20's white MOVIES key). LG's
   // filters open whichever film store the region has from it, a hotkey id
   // from the settings service, under the key it called USP on 2019 sets.
-  { key: 'movies', symbol: 'WebOS.Key_webOS_USP', title: 'Movies' },
-  { key: 'hulu', symbol: 'WebOS.Key_webOS_Hulu', title: 'Hulu', regions: ['us'] },
-  { key: 'iplayer', symbol: 'WebOS.Key_webOS_IPlayer', title: 'BBC iPlayer', regions: ['gb'] },
-  { key: 'freeviewplay', symbol: 'WebOS.Key_webOS_FreeviewPlay', title: 'Freeview Play', regions: ['gb'] },
-  { key: 'slingtv', symbol: 'WebOS.Key_webOS_SlingTV', title: 'Sling TV', regions: ['us'] },
-  { key: 'globoplay', symbol: 'WebOS.Key_webOS_Globoplay', title: 'Globoplay', regions: ['br'] },
-  { key: 'shahid', symbol: 'WebOS.Key_webOS_Shahid', title: 'Shahid', regions: ['ae'] },
+  { key: 'movies', lg: 'IR_KEY_USP', symbol: 'WebOS.Key_webOS_USP', title: 'Movies' },
+  { key: 'hulu', lg: 'IR_KEY_HULU', symbol: 'WebOS.Key_webOS_Hulu', title: 'Hulu', regions: ['us'] },
+  { key: 'iplayer', lg: 'IR_KEY_IPLAYER', symbol: 'WebOS.Key_webOS_IPlayer', title: 'BBC iPlayer', regions: ['gb'] },
+  { key: 'freeviewplay', lg: 'IR_KEY_FREEVIEWPLAY', symbol: 'WebOS.Key_webOS_FreeviewPlay', title: 'Freeview Play', regions: ['gb'] },
+  { key: 'slingtv', lg: 'IR_KEY_SLINGTV', symbol: 'WebOS.Key_webOS_SlingTV', title: 'Sling TV', regions: ['us'] },
+  { key: 'globoplay', lg: 'IR_KEY_GLOBOPLAY', symbol: 'WebOS.Key_webOS_Globoplay', title: 'Globoplay', regions: ['br'] },
+  { key: 'shahid', lg: 'IR_KEY_SHAHID', symbol: 'WebOS.Key_webOS_Shahid', title: 'Shahid', regions: ['ae'] },
   // Verified in a C3's webOS 11 mapping_info; older Qt key symbols are unverified.
   { key: 'ivi', title: 'Ivi', nativeMapping: true },
   { key: 'okko', title: 'Okko', nativeMapping: true },
@@ -265,10 +271,10 @@ var KEYS = [
   // button. The microphone button (Key_webOS_Voice) drives voice control; set
   // to anything else, a press and a hold both do that instead, and voice
   // control comes back with LG's own (a CX, webOS 5.5).
-  { key: 'alexa', symbol: 'WebOS.Key_webOS_ALEXA', title: 'Alexa' },
-  { key: 'googleassistant', symbol: 'WebOS.Key_webOS_GoogleVoice', title: 'Google Assistant' },
-  { key: 'voice', symbol: 'WebOS.Key_webOS_Voice', title: 'Microphone', replacesVoice: true },
-  { key: 'apps', symbol: 'WebOS.Key_webOS_Apps', title: 'Apps' },
+  { key: 'alexa', lg: 'IR_KEY_ALEXA', log: 'KEY_ALEXAVOICE', symbol: 'WebOS.Key_webOS_ALEXA', title: 'Alexa' },
+  { key: 'googleassistant', lg: 'IR_KEY_GOOGLEVOICE', symbol: 'WebOS.Key_webOS_GoogleVoice', title: 'Google Assistant' },
+  { key: 'voice', lg: 'RF_KEY_VOICE', log: 'KEY_VOICE', symbol: 'WebOS.Key_webOS_Voice', title: 'Microphone', replacesVoice: true },
+  { key: 'apps', lg: 'IR_KEY_APPS', symbol: 'WebOS.Key_webOS_Apps', title: 'Apps' },
   // webOS 11's native filters change these (NATIVE_ACTIONS, NATIVE_SETTINGS).
   // Home Hub is the MR25's house-in-a-circle button (IR 1031); the ? button
   // (IR 1132) is LG's custom button, with an action of its own when held.
@@ -284,17 +290,17 @@ var KEYS = [
   // button, so Home Hub is offered only where LG's key table
   // (/usr/share/X11/xkb/keycodes/lg) gives it to the Home Hub button, named
   // lg: keyTable.
-  { key: 'homehub', symbol: 'Qt.Key_Video', lg: 'IR_KEY_INPUT_HUB', keyTable: true, title: 'Home Hub' },
+  { key: 'homehub', log: 'KEY_HOMEDASHBOARD', symbol: 'Qt.Key_Video', lg: 'IR_KEY_INPUT_HUB', keyTable: true, title: 'Home Hub' },
   // The MR25's AI button reads no value: see NATIVE_SERVICE_KEYS.
   { key: 'ai', title: 'AI', nativeOnly: true, turnsOffVoice: true },
-  { key: 'multikey', symbol: 'WebOS.Key_webOS_Multikey', title: '? button', noNothing: true },
+  { key: 'multikey', lg: 'IR_KEY_MULTIKEY', log: 'KEY_MULTIKEY', symbol: 'WebOS.Key_webOS_Multikey', title: '? button', noNothing: true },
   { key: 'multikeyhold', title: '? button, held', nativeOnly: true, noNothing: true },
   // The 123 button, a filter key only: appLaunch.js on an OLED48C56LB (webOS
   // 10.3.0) shows LG's on-screen remote on a press (systemUIManager,
   // com.webos.app.screenremote: user manual, Sport, Quick Help and the colour
   // keys), hands it to YouTube and apps that ask for it, and a hold toggles
   // audio description. Set, the filter takes all of that.
-  { key: 'screenremote', symbol: 'WebOS.Key_webOS_ScreenRemote', title: '123 button', filterOnly: true },
+  { key: 'screenremote', lg: 'IR_KEY_SCREEN_REMOTE', log: 'KEY_SCREEN_REMOTE', symbol: 'WebOS.Key_webOS_ScreenRemote', title: '123 button', filterOnly: true },
   // The channel rocker. On webOS 10 and below the JavaScript key filter names
   // it (symbol), where a key that is set is accepted and so no longer changes
   // the channel. On webOS 11 the filter does not carry it; lib/guidepatch has
@@ -303,18 +309,18 @@ var KEYS = [
   // fromPlugin: offered too where LG's filters leave the key out but the
   // TV's WebOS module defines it, as on a B8 (webOS 4.4), whose filters name
   // no channel key though every LG remote has them.
-  { key: 'channelup', symbol: 'WebOS.Key_webOS_ChannelUp', title: 'Channel up', blockCode: 402, fromPlugin: true },
-  { key: 'channeldown', symbol: 'WebOS.Key_webOS_ChannelDown', title: 'Channel down', blockCode: 403, fromPlugin: true },
-  { key: 'guide', symbol: 'WebOS.Key_webOS_TVGuide', title: 'Guide' },
-  { key: 'input', symbol: 'WebOS.Key_webOS_InputSource', title: 'Input' },
-  { key: 'livetv', symbol: 'WebOS.Key_webOS_InputTV', title: 'TV' },
-  { key: 'search', symbol: 'Qt.Key_Search', title: 'Search' },
-  { key: 'info', symbol: 'WebOS.Key_webOS_Info', title: 'Info' },
-  { key: 'help', symbol: 'Qt.Key_Help', title: 'Help' },
-  { key: 'red', symbol: 'WebOS.Key_webOS_Red', title: 'Red', color: true },
-  { key: 'green', symbol: 'WebOS.Key_webOS_Green', title: 'Green', color: true },
-  { key: 'yellow', symbol: 'WebOS.Key_webOS_Yellow', title: 'Yellow', color: true },
-  { key: 'blue', symbol: 'WebOS.Key_webOS_Blue', title: 'Blue', color: true }
+  { key: 'channelup', lg: 'IR_KEY_CH_UP', log: 'KEY_CHANNELUP', symbol: 'WebOS.Key_webOS_ChannelUp', title: 'Channel up', blockCode: 402, fromPlugin: true },
+  { key: 'channeldown', lg: 'IR_KEY_CH_DOWN', log: 'KEY_CHANNELDOWN', symbol: 'WebOS.Key_webOS_ChannelDown', title: 'Channel down', blockCode: 403, fromPlugin: true },
+  { key: 'guide', lg: 'IR_KEY_GUIDE', log: 'KEY_GUIDE', symbol: 'WebOS.Key_webOS_TVGuide', title: 'Guide' },
+  { key: 'input', lg: 'IR_KEY_TV_VIDEO', symbol: 'WebOS.Key_webOS_InputSource', title: 'Input' },
+  { key: 'livetv', lg: 'IR_KEY_TV', symbol: 'WebOS.Key_webOS_InputTV', title: 'TV' },
+  { key: 'search', lg: 'IR_KEY_SEARCH', symbol: 'Qt.Key_Search', title: 'Search' },
+  { key: 'info', lg: 'IR_KEY_INFO', symbol: 'WebOS.Key_webOS_Info', title: 'Info' },
+  { key: 'help', lg: 'IR_KEY_EMANUAL', symbol: 'Qt.Key_Help', title: 'Help' },
+  { key: 'red', lg: 'IR_KEY_RED', symbol: 'WebOS.Key_webOS_Red', title: 'Red', color: true },
+  { key: 'green', lg: 'IR_KEY_GREEN', symbol: 'WebOS.Key_webOS_Green', title: 'Green', color: true },
+  { key: 'yellow', lg: 'IR_KEY_YELLOW', symbol: 'WebOS.Key_webOS_Yellow', title: 'Yellow', color: true },
+  { key: 'blue', lg: 'IR_KEY_BLUE', symbol: 'WebOS.Key_webOS_Blue', title: 'Blue', color: true }
 ];
 
 var lunaFn = null;
@@ -2625,6 +2631,12 @@ module.exports = {
   KEYS: KEYS,
   readKeyTable: readKeyTable,
   qtName: qtName,
+  // For docs/development/remote-keys.md and its test.
+  NATIVE_ACTIONS: NATIVE_ACTIONS,
+  NATIVE_SETTINGS: NATIVE_SETTINGS,
+  NATIVE_SERVICE_KEYS: NATIVE_SERVICE_KEYS,
+  NATIVE_BLOCK_KEYS: NATIVE_BLOCK_KEYS,
+  COLOR_CODES: COLOR_CODES,
   CONFIG_KEY: CONFIG_KEY,
   MAP_KEY: MAP_KEY,
   HANDLER: HANDLER
