@@ -41,6 +41,29 @@ var LG = [
   '            }',
   '    }',
   '}', ''].join('\n');
+var LG_PHOTO = [
+  'Item {',
+  '    property string currentKey: ""',
+  '    PhotoSlide {',
+  '        id: photoSlide',
+  '        photoModel: noSignalPhotoModel',
+  '    }',
+  '    RandomMoveItem {',
+  '        id: element',
+  '        visible: visibleScreensaver && noSignalPhotoModel && !noSignalPhotoModel.enabled && !noSignalPhotoModel.opend',
+  '            AnimatedImage {',
+  '                visible: element.isDynamic && (headerText.text || bodyText.text)',
+  '                source: "../../Images/screensaver/screensaver12frame.gif"',
+  '            }',
+  '            ScreensaverMainText {',
+  '                id: headerText',
+  '            }',
+  '            ScreensaverSubText {',
+  '                id: bodyText',
+  '                visible: text.length > 0',
+  '            }',
+  '    }',
+  '}', ''].join('\n');
 fs.writeFileSync(file, LG);
 fs.writeFileSync(mountinfo, '');
 
@@ -84,6 +107,14 @@ assert.ok(art.indexOf('visible: element.isDynamic && (headerText.text || bodyTex
 assert.ok(art.indexOf('text: headerText.text') !== -1, 'LG\'s own words for No Signal on the label');
 assert.strictEqual(nosignal.patch(LG.replace('    RandomMoveItem {\n', '    Item {\n'), 'art'), null, 'no drifting box, no Art');
 assert.ok(nosignal.patch(LG.replace('    RandomMoveItem {\n', '    Item {\n'), 'icon'), 'while the others are still offered');
+// webOS 9+ No Signal Image photo slide and RandomMoveItem guard.
+['plain', 'icon', 'art'].forEach(function (mode) {
+  var patchedPhoto = nosignal.patch(LG_PHOTO, mode);
+  assert.ok(patchedPhoto.indexOf('photoModel: ({ enabled: false, currentIdx: 0, imgArray: [] })') !== -1, mode + ' disables LG PhotoSlide model');
+  assert.ok(patchedPhoto.indexOf('visible: visibleScreensaver && (currentKey === "noSignal" || (noSignalPhotoModel && !noSignalPhotoModel.enabled && !noSignalPhotoModel.opend))') !== -1, mode + ' shows RandomMoveItem for No Signal');
+});
+var patchedOpened = nosignal.patch(LG_PHOTO.replace('!noSignalPhotoModel.opend', '!noSignalPhotoModel.opened'), 'plain');
+assert.ok(patchedOpened.indexOf('currentKey === "noSignal" || (noSignalPhotoModel && !noSignalPhotoModel.enabled && !noSignalPhotoModel.opened)') !== -1, 'also matches opened spelling');
 assert.deepEqual(nosignal.status(), { ok: true, available: true, art: true, on: false, mode: 'lg', applied: false, restartPending: false });
 console.log('  ✓ LG\'s file is patched only where the expected lines are there once');
 

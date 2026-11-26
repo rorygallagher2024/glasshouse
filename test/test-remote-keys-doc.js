@@ -1,6 +1,6 @@
-// Tests for docs/remote-keys.md and the facts it is made from: each key's LG
-// button name against LG's key table as read on a TV, and the page being up to
-// date with the KEYS list.
+// Tests for docs/development/remote-keys.md and the facts it is made from: each
+// key's LG button name against LG's key table as read on a TV, and the page
+// being up to date with the KEYS list.
 var assert = require('assert');
 var fs = require('fs');
 var rk = require('../server/lib/remotekeys');
@@ -30,7 +30,7 @@ console.log('  ✓ each key\'s LG button name has its symbol\'s Qt key in the ke
 
 // 3. The page is made from them and up to date
 assert.strictEqual(fs.readFileSync(doc.OUT, 'utf8'), doc.render(),
-  'docs/remote-keys.md is out of date: run node scripts/gen-remote-keys-doc.js');
-console.log('  ✓ docs/remote-keys.md is up to date');
+  'docs/development/remote-keys.md is out of date: run node scripts/gen-remote-keys-doc.js');
+console.log('  ✓ docs/development/remote-keys.md is up to date');
 
 console.log('test-remote-keys-doc.js passed');

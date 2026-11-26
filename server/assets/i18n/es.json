@@ -1,4 +1,5 @@
 {
+ "apps.remoteKeys.observedColor": {"text": "Glasshouse debe estar en ejecución para usar este acceso directo. La tecla puede seguir realizando su acción original en la aplicación actual.", "from": "Glasshouse must be running for this shortcut. The key may still perform its original action in the current app."},
  "apps.remoteKeys.step": {"text": "Paso del brillo", "from": "Brightness step"},
  "apps.remoteKeys.stepDesc": {"text": "Cuántos puntos cambia la imagen cada vez que se pulsa una tecla de Subir brillo o Bajar brillo, sobre 100.", "from": "How many points one press of a Brightness up or Brightness down key moves the picture, out of 100."},
  "apps.remoteKeys.barStyle": {"text": "Estilo de la barra de nivel", "from": "Level bar style"},
@@ -2619,7 +2620,7 @@
  "home.group.search": {"text": "Buscar", "from": "Search"},
  "home.group.motion": {"text": "Animaciones", "from": "Animations"},
  "home.motion.drift": {"text": "Movimiento del fondo", "from": "Wallpaper drift"},
- "home.motion.driftDesc": {"text": "El fondo de pantalla se mueve y se acerca muy despacio, para que nunca quede quieto en la pantalla.", "from": "The wallpaper moves and zooms very slowly, so it never sits still on the screen."},
+ "home.motion.driftDesc": {"text": "El fondo de pantalla se desplaza lateralmente muy despacio, para que nunca quede quieto en la pantalla.", "from": "The wallpaper shifts sideways very slowly, so it never sits still on the screen."},
  "home.motion.crossfade": {"text": "Transición del fondo", "from": "Wallpaper cross-fade"},
  "home.motion.crossfadeDesc": {"text": "La imagen se funde con la siguiente cuando cambia la parte del día, en lugar de cambiar de golpe.", "from": "The picture fades into the next when the part of the day changes, rather than switching at once."},
  "home.motion.scroll": {"text": "Desplazamiento suave", "from": "Smooth scrolling"},

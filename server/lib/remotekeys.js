@@ -192,6 +192,12 @@ var KEY_ACTION_PREFIX = 'com.webos.keyaction.';
 var NATIVE_ACTIONS = { guide: 'tvGuide', homehub: 'inputHub' };
 // Keys whose action is one of the settings service's, by the setting's name.
 var NATIVE_SETTINGS = { multikey: 'customShortPress', multikeyhold: 'customLongPress' };
+var COLOR_CODES = { red: 398, green: 399, yellow: 400, blue: 401 };
+var colorTargets = {};
+var colorButtonsSupported = function () { return false; };
+/** @type {function(boolean): void} */
+var watchColorButtons = function () {};
+var colorLaunch = null;
 /*
  * Keys LG's own service answers, by that service's id in lib/services.js. The
  * MR25's AI button goes from lginput2 straight to voiceconductor, which reads
@@ -233,7 +239,7 @@ var MAPPING_KEY = 'mapping_info';
  * where the TV's code is the Linux input code + 8 and the comment names the Qt
  * key the filters see. log: the button_type lginput2 logs for a press, where
  * seen. keyTable: offered only where the TV's key table maps lg to the
- * symbol. docs/remote-keys.md is made from these (scripts/gen-remote-keys-doc.js).
+ * symbol. docs/development/remote-keys.md is made from these (scripts/gen-remote-keys-doc.js).
  *
  * regions: the countries (smartServiceCountryCode2) whose remotes have the
  * key. LG ships one filter set to many regions, so a UK C2 names Hulu and Sling
@@ -366,6 +372,11 @@ var detectRemotesFn = null;
 
 function init(opts) {
   opts = opts || {};
+  watchColorButtons(false);
+  colorTargets = {};
+  colorButtonsSupported = opts.colorButtonsSupported || function () { return false; };
+  watchColorButtons = opts.watchColorButtons || function () {};
+  colorLaunch = opts.lunaUrgent || opts.luna || null;
   lunaFn = opts.luna || null;
   refusedBlocks = {};
   keySetFn = typeof opts.onInputBarKey === 'function' ? opts.onInputBarKey : null;
@@ -435,18 +446,6 @@ function keyByName(name) {
  * filters only have cases for Yellow and Blue, passing Red and Green straight
  * to the app in front.
  */
-// How webOS 11's native keys set a key, for docs/remote-keys.md; '' where they do not.
-function nativeKind(def) {
-  if (def.key === 'input') return 'LG\'s key handler, changed by lib/guidepatch';
-  if (def.blockCode) return 'LG\'s key handler, changed by lib/guidepatch';
-  if (NATIVE_ACTIONS[def.key]) return 'key action `' + NATIVE_ACTIONS[def.key] + '`';
-  if (NATIVE_SETTINGS[def.key]) return 'setting `' + NATIVE_SETTINGS[def.key] + '`';
-  if (NATIVE_SERVICE_KEYS[def.key]) return 'LG\'s service (`' + NATIVE_SERVICE_KEYS[def.key] + '`)';
-  if (NATIVE_BLOCK_KEYS[def.key]) return 'blocking `' + NATIVE_BLOCK_KEYS[def.key] + '`';
-  if (def.nativeMapping || !(def.nativeOnly || def.filterOnly || def.color)) return 'LG\'s button mapping, where it lists the key';
-  return '';
-}
-
 // A filter symbol as LG's key table names its Qt key: Qt.Key_Video is Key_Video, WebOS.Key_webOS_Guide Key_webOS_Guide.
 function qtName(symbol) {
   return String(symbol || '').replace(/^(Qt|WebOS)\./, '');
@@ -1182,6 +1181,7 @@ function mappingEntry(list, name) {
  * button LG's list has switched on, as LG had it.
  */
 function nativeKeys(tv, lg) {
+  var colorsAvailable = colorButtonsSupported();
   return KEYS.filter(function (k) {
     if (k.key === 'input') return guidePatch.status().supported;
     if (k.blockCode) return guidePatch.status().channel;
@@ -1193,6 +1193,7 @@ function nativeKeys(tv, lg) {
       if (refusedBlocks[appId] && !lg.blocks[appId]) return false;
       return !!((tv.apps && tv.apps[appId]) || lg.blocks[appId]);
     }
+    if (COLOR_CODES[k.key]) return colorsAvailable;
     if (k.nativeOnly || k.filterOnly) return false;
     var entry = lg.mapping[k.key] || mappingEntry(tv.list, k.key);
     return !!(entry && typeof entry === 'object' && entry.isActive !== false);
@@ -1293,6 +1294,7 @@ function applyNext() {
   var job = applyQueue[0];
   if (!job) return;
   applyNativeNow(function (ok, wrote) {
+    if (ok) followColorButtons(job.map || readMap());
     applyQueue.shift();
     applyNext();
     job.cb(ok, !!wrote);
@@ -1368,7 +1370,7 @@ function applyNativeMap(cb, map, refresh) {
     (nextList || []).forEach(function (entry) {
       Object.keys(entry || {}).forEach(function (name) {
         var def = keyByName(name);
-        if (!def || def.nativeOnly || def.blockCode || NATIVE_ACTIONS[name] || NATIVE_SETTINGS[name]) return;
+        if (!def || def.nativeOnly || def.blockCode || COLOR_CODES[name] || NATIVE_ACTIONS[name] || NATIVE_SETTINGS[name]) return;
         var v = reconcile(name, entry[name], function (lgEntry) { return mappingWanted(map, name, lgEntry); },
           lg.mapping, lg.mappingWritten);
         if (v !== undefined) { entry[name] = v; listChanged = true; }
@@ -2074,6 +2076,33 @@ function getRemoteKeys(cb) {
   });
 }
 
+// webOS 11 has no configurable native action for the color keys. Observe the
+// physical press without taking the key away from LG or the foreground app.
+function followColorButtons(map) {
+  colorTargets = {};
+  if (nativeFilters === true && colorButtonsSupported()) {
+    Object.keys(COLOR_CODES).forEach(function (key) {
+      if (typeof map[key] === 'string' && map[key] && map[key].indexOf(':') === -1) colorTargets[key] = map[key];
+    });
+  }
+  watchColorButtons(Object.keys(colorTargets).length > 0);
+}
+
+function startColorButtons() {
+  if (!lunaFn || keysOnTv()) return;
+  hasNativeFilters(function (yes) { if (yes) followColorButtons(readMap()); });
+}
+
+function handleColorButton(key, code) {
+  var id = colorTargets[key];
+  // inputcommon repeats the same press later with a Qt code. Launch only for
+  // evdev's physical code, so a delayed copy cannot select a previous input.
+  if (!id || !COLOR_CODES[key] || code !== COLOR_CODES[key] || !colorLaunch) return;
+  colorLaunch('com.webos.applicationManager/launch', { id: id }, function (r) {
+    if (!r || !r.returnValue) console.log('remotekeys: color key ' + key + ' could not open ' + id);
+  });
+}
+
 // webOS 11's Guide key opens Glasshouse Home's guide, and its Input key the input bar, where lib/guidepatch knows the key handler.
 function nativeChoices(def, native) {
   if (!native || !guidePatch.status().supported) return [];
@@ -2128,6 +2157,7 @@ function describeKeys(keys, inChain, cb, native) {
         if (k.noNothing && native) key.noNothing = true;
         if (k.turnsOffVoice) key.turnsOffVoice = true;
         if (k.replacesVoice) key.replacesVoice = true;
+        if (native && COLOR_CODES[k.key]) { key.observedColor = true; key.noNothing = true; }
         if (native && NATIVE_BLOCK_KEYS[k.key]) key.blocksApp = true;
         if (native && !SCREEN_OFF_BUTTONS[k.key] && !k.blockCode) key.noScreenOff = true;
         if (native && k.blockCode) key.channelNative = true;
@@ -2215,7 +2245,7 @@ function setOfferedKey(def, action, id, kind, cb) {
   }
   var nativeInput = kind !== 'filter' && def.key === 'input';
   if (action === 'nothing') {
-    if ((def.noNothing && kind !== 'filter') || nativeInput) return cb({ ok: false, error: msg('srv.remoteKeys.noNothing', 'This key cannot be set to do nothing') });
+    if ((def.noNothing && kind !== 'filter') || nativeInput || (kind === 'native' && COLOR_CODES[def.key])) return cb({ ok: false, error: msg('srv.remoteKeys.noNothing', 'This key cannot be set to do nothing') });
     map[def.key] = '';
     return save(map, saved);
   }
@@ -2482,19 +2512,27 @@ function setStarting(text, cb) {
 // cannot delete the value), and the filter out of the chain and deleted. On
 // webOS 11, LG's values put back instead, and the map deleted once they are.
 function restore(done) {
+  if (lunaFn && !keysOnTv() && nativeFilters === null) {
+    return hasNativeFilters(function (yes) { restoreKeys(done, yes); });
+  }
+  restoreKeys(done, nativeFilters === true);
+}
+
+function restoreKeys(done, native) {
   // The input bar's app goes with the keys that opened it, where it is on the
   // TV. Best effort: an app left behind has no tile and nothing opens it.
   var barThere = opensInputBar() || fs.existsSync(INPUT_BAR_DIR);
   // Glasshouse Bar's app stays while it is the launcher: lib/homebar removes it then.
   var homeBarGoes = opensHomeBar() && !homeBarLauncherFn();
   function cb(ok) {
+    if (ok) followColorButtons({});
     if (!lunaFn || (!barThere && !homeBarGoes)) return done(ok);
     var left = (barThere ? 1 : 0) + (homeBarGoes ? 1 : 0);
     var one = function () { if (--left === 0) done(ok); };
     if (barThere) lunaFn('com.webos.appInstallService/dev/remove', { id: INPUT_BAR }, one);
     if (homeBarGoes) lunaFn('com.webos.appInstallService/dev/remove', { id: HOME_BAR }, one);
   }
-  if (fs.existsSync(lgFile()) || guidePatch.holdsKeys()) {
+  if (native || fs.existsSync(lgFile()) || guidePatch.holdsKeys()) {
     if (!lunaFn) return cb(false);
     return (keysOnTv() ? applyFilterTable : applyNative)(function (ok) {
       if (!ok) return cb(false);
@@ -2571,6 +2609,8 @@ module.exports = {
   availabilityChanged: availabilityChanged,
   getRemoteKeys: getRemoteKeys,
   keyTitles: keyTitles,
+  startColorButtons: startColorButtons,
+  handleColorButton: handleColorButton,
   isSupported: isSupported,
   setRemoteKey: setRemoteKey,
   setHome: setHome,
@@ -2590,9 +2630,12 @@ module.exports = {
   KEYS: KEYS,
   readKeyTable: readKeyTable,
   qtName: qtName,
-  // For docs/remote-keys.md and its test.
-  nativeKind: nativeKind,
-  reportedButtons: reportedButtons,
+  // For docs/development/remote-keys.md and its test.
+  NATIVE_ACTIONS: NATIVE_ACTIONS,
+  NATIVE_SETTINGS: NATIVE_SETTINGS,
+  NATIVE_SERVICE_KEYS: NATIVE_SERVICE_KEYS,
+  NATIVE_BLOCK_KEYS: NATIVE_BLOCK_KEYS,
+  COLOR_CODES: COLOR_CODES,
   CONFIG_KEY: CONFIG_KEY,
   MAP_KEY: MAP_KEY,
   HANDLER: HANDLER

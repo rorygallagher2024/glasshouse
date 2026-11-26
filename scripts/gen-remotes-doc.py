@@ -104,12 +104,8 @@ def render():
       ' transparent background, under 20 KB, original artwork or a picture you may share. A remote without one'
       ' shows the generic outline. The file also goes in `FILES` in `server/deploy.sh`.')
     w('')
-    w('**Finding the facts, on a rooted TV:** pair the remote, then read its reported name from the Metrics tab\'s'
-      ' remote card, or from a press: `ssh` in and `tail -f /var/log/messages`, press a button, and read the'
-      ' `remote_type` of the `NL_BUTTON_CLICK` line it prints. The same line\'s `button_type` says which button was'
-      ' pressed; press every key on the remote in turn and match each `button_type` against the Remote tab key'
-      ' whose `log` field in the `KEYS` list of `server/lib/remotekeys.js` is that same name, to fill in `keys`.'
-      ' [TV-RESEARCH.md](development/TV-RESEARCH.md) has worked examples of this for the MR25GA.')
+    w('To read a remote\'s reported name and button presses over SSH on a rooted TV, see'
+      ' [Remote keys](development/remote-keys.md#reading-keys-on-a-rooted-tv).')
     w('')
     return '\n'.join(out)
 

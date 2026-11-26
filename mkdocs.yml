@@ -81,7 +81,7 @@ nav:
   - Development:
       - Contributing: CONTRIBUTING.md
       - Internals: IMPLEMENTATION.md
-      - Remote keys: remote-keys.md
+      - Remote keys: development/remote-keys.md
       - TV hardware specifications:
           - development/tv-specs/index.md
           - LG B8 (OLED65B8SLC): development/tv-specs/b8.md
