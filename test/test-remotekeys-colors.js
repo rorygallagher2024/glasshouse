@@ -4,7 +4,8 @@ var fs = require('fs');
 var os = require('os');
 var path = require('path');
 var rk = require('../server/lib/remotekeys');
-var dir = fs.mkdtempSync(path.join(os.tmpdir(), 'glasshouse-colors-'));
+var dir = path.join(os.tmpdir(), 'glasshouse-colors-' + process.pid);
+fs.mkdirSync(dir);
 var watched = false, supported = true, launches = [], writes = [];
 var native = true;
 var colors = ['red', 'green', 'yellow', 'blue'];
@@ -42,7 +43,7 @@ function configure(index, cb) {
 }
 init();
 rk.getRemoteKeys(function (r) {
-  assert.deepStrictEqual(r.keys.map(function (k) { return k.key; }), colors);
+  assert.deepEqual(r.keys.map(function (k) { return k.key; }), colors);
   r.keys.forEach(function (k) {
     assert.strictEqual(k.observedColor, true);
     assert.strictEqual(k.noNothing, true);
@@ -56,8 +57,8 @@ rk.getRemoteKeys(function (r) {
     });
     rk.handleColorButton('netflix', 1037);
     rk.handleColorButton('red', 401);
-    assert.deepStrictEqual(launches, colors.map(function (_, i) { return 'com.webos.app.hdmi' + (i + 1); }));
-    assert.deepStrictEqual(writes, [], 'no native library, LG mapping or filter chain is changed');
+    assert.deepEqual(launches, colors.map(function (_, i) { return 'com.webos.app.hdmi' + (i + 1); }));
+    assert.deepEqual(writes, [], 'no native library, LG mapping or filter chain is changed');
     rk.setRemoteKey('red', 'nothing', '', function (r) {
       assert.strictEqual(r.ok, false, 'observation cannot suppress LG handling');
       rk.setRemoteKey('red', 'open', 'action:screenOff', function (r) {
@@ -68,7 +69,7 @@ rk.getRemoteKeys(function (r) {
         assert.strictEqual(watched, true, 'persisted assignments restart the worker');
         launches = [];
         rk.handleColorButton('yellow', 400);
-        assert.deepStrictEqual(launches, ['com.webos.app.hdmi3']);
+        assert.deepEqual(launches, ['com.webos.app.hdmi3']);
         set('red', 'open', 'youtube.leanback.v4', function () {
           rk.handleColorButton('red', 398);
           assert.strictEqual(launches[1], 'youtube.leanback.v4');
@@ -88,7 +89,8 @@ rk.getRemoteKeys(function (r) {
                 supported = true; native = false;
                 init(); rk.startColorButtons();
                 assert.strictEqual(watched, false, 'older TVs keep their existing filter strategy');
-                fs.rmSync(dir, { recursive: true, force: true });
+                fs.readdirSync(dir).forEach(function (file) { fs.unlinkSync(path.join(dir, file)); });
+                fs.rmdirSync(dir);
                 console.log('test-remotekeys-colors.js passed');
               });
             });
