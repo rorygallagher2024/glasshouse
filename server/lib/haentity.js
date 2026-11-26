@@ -70,6 +70,12 @@ function formatRequestError(e, host, isHttps, verifyTls) {
     return 'Home Assistant at ' + host + ' did not answer in time.';
   }
   if (isHttps) {
+    if (/unrecognized name/i.test(errMsg)) {
+      return 'The HTTPS server rejected the hostname ' + host + '. Use the domain name on its certificate, or http:// on the local network.';
+    }
+    if (/handshake failure|protocol version|unsupported protocol|no protocols available|no ciphers/i.test(errMsg)) {
+      return 'Could not agree on an HTTPS protocol or cipher with ' + host + '. Try http:// on the local network, or allow TLS 1.2 on the proxy.';
+    }
     if (/wrong version number|ssl3_get_record|packet length too long|http request/i.test(errMsg) || errCode === 'EPROTO') {
       return 'Home Assistant is not using HTTPS on this address. Try http:// instead.';
     }
