@@ -201,6 +201,7 @@ const RK_PICK_SVGS = {
   'action:brightnessUp': '<circle cx="12" cy="12" r="3.5" fill="currentColor"/><path d="M12 3v2.5M12 18.5V21M3 12h2.5M18.5 12H21M5.6 5.6l1.8 1.8M16.6 16.6l1.8 1.8M5.6 18.4l1.8-1.8M16.6 7.4l1.8-1.8"/>',
   'action:brightnessDown': '<circle cx="12" cy="12" r="3.5"/><path d="M12 4.5v1M12 18.5v1M4.5 12h1M18.5 12h1"/>',
   'action:powerOff': '<path d="M12 3v8"/><path d="M17.5 6.8a7.5 7.5 0 1 1-11 0"/>',
+  'action:piccap': '<path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.8 10.6c.7.6 1.3 1.5 1.3 2.4h5c0-.9.6-1.8 1.3-2.4A6 6 0 0 0 12 3z"/>',
   ha: '<path d="M4 11l8-7 8 7"/><path d="M6 10v9h12v-9"/><circle cx="12" cy="14" r="2"/>',
   'media:ok': '<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3" fill="currentColor"/>',
   'media:play': '<polygon points="7,5 19,12 7,19"/>',

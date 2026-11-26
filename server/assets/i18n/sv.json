@@ -2867,6 +2867,7 @@
  "srv.remoteKeys.home": {"from": "Home", "text": "Hem"},
  "srv.remoteKeys.homeAssistant": {"from": "Home Assistant", "text": "Home Assistant"},
  "srv.remoteKeys.homeBar": {"from": "Glasshouse Bar", "text": "Glasshouse Bar"},
+ "srv.remoteKeys.piccap": {"from": "Ambient light", "text": "Omgivningsljus"},
  "srv.remoteKeys.homeBarInstall": {"from": "Glasshouse Bar could not be put on the TV. Try again in a moment.", "text": "Glasshouse Bar kunde inte läggas på TV:n. Försök igen om en stund."},
  "srv.remoteKeys.homeGuide": {"from": "Glasshouse Home's guide", "text": "Glasshouse Homes guide"},
  "srv.remoteKeys.inputBar": {"from": "Input bar", "text": "Ingångsfält"},

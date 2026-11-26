@@ -3389,6 +3389,7 @@
  "inputs.kind.av": {"text": "AV", "from": "AV"},
  "inputs.kind.component": {"text": "Component", "from": "Component"},
  "srv.remoteKeys.ok": {"text": "OK", "from": "OK"},
+ "srv.remoteKeys.piccap": {"from": "Ambient light", "text": "Oświetlenie otoczenia"},
  "apps.remoteKeys.buttons": {"text": "Przyciski", "from": "Buttons"},
  "home.bg.video": {"text": "Wideo", "from": "Video"},
  "home.video.help": {"text": "Linki do plików wideo, po jednym w wierszu, np. https://example.com/beach.mp4, albo do ich playlisty. Telewizor odtwarza je sam, z internetu lub z Twojej sieci.", "from": "Links to video files, one per line, such as https://example.com/beach.mp4, or to a playlist of them. The TV streams them itself, from the internet or your own network."},

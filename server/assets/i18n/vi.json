@@ -2820,6 +2820,7 @@
  "srv.remoteKeys.home": {"text": "Màn hình chính", "from": "Home"},
  "srv.remoteKeys.homeAssistant": {"text": "Home Assistant", "from": "Home Assistant"},
  "srv.remoteKeys.homeBar": {"text": "Glasshouse Bar", "from": "Glasshouse Bar"},
+ "srv.remoteKeys.piccap": {"from": "Ambient light", "text": "Ánh sáng xung quanh"},
  "srv.remoteKeys.homeBarInstall": {"text": "Không thể đưa Glasshouse Bar lên TV. Hãy thử lại sau giây lát.", "from": "Glasshouse Bar could not be put on the TV. Try again in a moment."},
  "srv.remoteKeys.homeGuide": {"text": "Lịch phát sóng của Glasshouse Home", "from": "Glasshouse Home's guide"},
  "srv.remoteKeys.inputBar": {"text": "Thanh đầu vào", "from": "Input bar"},

@@ -185,6 +185,22 @@ function status(cb) {
   });
 }
 
+// Toggles PicCap capture for a remote key, bypassing the short status cache
+// so consecutive presses act on the current capture state.
+function toggle(cb) {
+  cb = cb || function () {};
+  if (!isInstalled()) return cb({ ok: false, available: false, error: msg('srv.piccap.unavailable', 'PicCap is not available') });
+  getStatus(function (state) {
+    if (!state || !state.available || typeof state.isRunning !== 'boolean') {
+      return cb({ ok: false, available: false, error: msg('srv.piccap.unavailable', 'PicCap is not available') });
+    }
+    setPower(!state.isRunning, function (result) {
+      publishState(result);
+      cb(result);
+    });
+  }, true);
+}
+
 function init(opts) {
   opts = opts || {};
   lunaFn = opts.luna;
@@ -199,8 +215,10 @@ function init(opts) {
     refreshAndPublishState: refreshAndPublishState,
     getState: getState,
     handleMqttCommand: handleMqttCommand,
+    isInstalled: isInstalled,
     status: status,
-    setPower: setPower
+    setPower: setPower,
+    toggle: toggle
   };
 }
 
@@ -210,8 +228,10 @@ function initNoop() {
     refreshAndPublishState: function () {},
     getState: function () { return null; },
     handleMqttCommand: function () { return false; },
+    isInstalled: function () { return false; },
     status: function (cb) { cb(null); },
-    setPower: function (on, cb) { cb({ ok: false, error: msg('srv.piccap.unavailable', 'PicCap is not available') }); }
+    setPower: function (on, cb) { cb({ ok: false, error: msg('srv.piccap.unavailable', 'PicCap is not available') }); },
+    toggle: function (cb) { if (cb) cb({ ok: false, available: false, error: msg('srv.piccap.unavailable', 'PicCap is not available') }); }
   };
 }
 

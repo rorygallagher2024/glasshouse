@@ -957,6 +957,7 @@
  "inputs.kind.av": {"text": "AV", "from": "AV"},
  "inputs.kind.component": {"text": "Component", "from": "Component"},
  "srv.remoteKeys.ok": {"text": "OK", "from": "OK"},
+ "srv.remoteKeys.piccap": {"from": "Ambient light", "text": "Ambient Light"},
  "apps.remoteKeys.buttons": {"text": "Tasten", "from": "Buttons"},
  "home.bg.video": {"text": "Video", "from": "Video"},
  "home.video.help": {"text": "Links zu Videodateien, einer pro Zeile, etwa https://example.com/beach.mp4, oder zu einer Playlist davon. Der Fernseher streamt sie selbst, aus dem Internet oder deinem eigenen Netzwerk.", "from": "Links to video files, one per line, such as https://example.com/beach.mp4, or to a playlist of them. The TV streams them itself, from the internet or your own network."},
