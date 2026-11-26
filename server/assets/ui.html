@@ -2455,7 +2455,7 @@
 
   <div class="ha-api-section" id="ha-api-section">
     <div class="pv-h" style="margin-top:0" data-t="ha.api">Home Assistant API</div>
-    <div class="pv-sub" data-t="ha.api.desc">Reads live Home Assistant entities for the Home Assistant screen savers (Ambient and Data Display) on the Screensaver tab, and for the values at a glance beside Glasshouse Home's clock on the Home tab. Connects straight to Home Assistant over HTTP/HTTPS without using MQTT, and saves without restarting.</div>
+    <div class="pv-sub" data-t="ha.api.desc">Reads live Home Assistant entities for the Home Assistant screen savers (Ambient and Data Display) on the Screensaver tab, values at a glance beside Glasshouse Home's clock, and the Home Assistant control bar. Connects straight to Home Assistant over HTTP/HTTPS without using MQTT, and saves without restarting.</div>
 
     <div class="cfg-cols">
       <div class="cfg-side">
@@ -2536,6 +2536,38 @@
           <span class="cfg-msg" id="cfg-ha-msg" role="status" aria-live="polite"></span>
         </div>
         <div class="err-note" id="cfg-ha-error" role="alert" hidden></div>
+      </div>
+    </div>
+
+    <div class="ha-bar-section" id="ha-bar-section" hidden>
+      <div class="pv-h" data-t="ha.bar.title">Home Assistant control bar</div>
+      <div class="pv-sub" data-t="ha.bar.desc">An overlay row of Home Assistant controls along the bottom of the TV screen. Add lights, switches, climate entities, fans, covers, locks, scenes or scripts, then assign Home Assistant bar to a button on the Remote tab.</div>
+      <div class="home-info-addbox" id="ha-bar-addbox">
+        <div class="ss-li-head">
+          <label for="ha-bar-add" data-t="ha.bar.addLabel">Add entity to bar</label>
+          <span class="ss-li-count num" id="ha-bar-count"></span>
+        </div>
+        <div class="ss-li-add">
+          <div class="ss-ent-wrap">
+            <input type="text" id="ha-bar-add" placeholder="light.living_room" translate="no" autocomplete="off" spellcheck="false"
+              aria-describedby="ha-bar-msg" aria-expanded="false"
+              oninput="haBarFilter()"
+              onkeydown="if(!haPickerKeydown(event,'ha:bar')&&event.key==='Enter'){event.preventDefault();haBarAdd();}">
+            <button type="button" class="ss-ent-btn" id="ha-bar-pick-btn" title="Choose entity" data-t-title="ss.chooseEntity" aria-label="Choose entity" data-t-aria-label="ss.chooseEntity" onclick="haBarTogglePicker()">&#9662;</button>
+            <div class="ss-pick-list ss-ha-list ha-picker" id="ha-bar-picker" hidden></div>
+          </div>
+          <button type="button" class="ss-li-add-btn" id="ha-bar-add-btn" onclick="haBarAdd()" data-t="ss.entityList.addBtn">Add</button>
+        </div>
+      </div>
+      <div class="ha-bar-list" id="ha-bar-list"></div>
+      <div class="pv-sub ha-bar-remote-hint" id="ha-bar-remote-hint" hidden>
+        <span data-t="ha.bar.remoteHint">Map Home Assistant bar to a remote or Quick Access key on the</span>
+        <a href="?tab=remote" onclick="event.preventDefault(); showTab('remote');" data-t="ha.bar.remoteLink">Remote tab</a>.
+      </div>
+      <div class="ha-bar-actions" id="ha-bar-actions" hidden>
+        <button type="button" class="pill idle" id="ha-bar-open-btn" onclick="openHaBarOnTv()" data-t="ha.bar.openOnTv">Open on TV</button>
+        <a class="pill idle ha-bar-preview" id="ha-bar-preview-link" href="/assets/habar.html" target="_blank" rel="noopener" data-t="ha.bar.preview">Preview</a>
+        <span class="cfg-msg" id="ha-bar-msg" role="status" aria-live="polite"></span>
       </div>
     </div>
   </div>
@@ -3046,6 +3078,7 @@
 <script src="/assets/ui/screensavers.js"></script>
 <script src="/assets/ui/community.js"></script>
 <script src="/assets/ui/mqtt.js"></script>
+<script src="/assets/ui/habar.js"></script>
 <script src="/assets/ui/tools.js"></script>
 <script src="/assets/ui/search-aliases.js"></script>
 <script src="/assets/ui/search.js"></script>

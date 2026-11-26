@@ -1,0 +1,435 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Home Assistant Bar</title>
+<style>
+@font-face{font-family:'Manrope';src:url('/assets/fonts/Manrope-Regular.ttf') format('truetype');font-weight:400}
+@font-face{font-family:'Manrope';src:url('/assets/fonts/Manrope-SemiBold.ttf') format('truetype');font-weight:600}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font-family:'Manrope',sans-serif;color:#fff;cursor:default}
+#shade{position:absolute;left:0;right:0;bottom:0;height:460px;opacity:0;
+  background:-webkit-linear-gradient(top,rgba(0,0,0,0),rgba(0,0,0,.82));
+  background:linear-gradient(to bottom,rgba(0,0,0,0),rgba(0,0,0,.82));
+  -webkit-transition:opacity .18s ease-out;transition:opacity .18s ease-out}
+#head{position:absolute;left:96px;right:96px;bottom:312px;opacity:0;display:-webkit-flex;display:flex;
+  -webkit-align-items:baseline;align-items:baseline;-webkit-justify-content:space-between;justify-content:space-between;
+  text-shadow:0 2px 12px rgba(0,0,0,.7)}
+.on #shade,.on #head,.on #bar{opacity:1}
+#hint{font-size:24px;color:rgba(255,255,255,.72);letter-spacing:.02em}
+#clock{font-size:40px;font-weight:400;color:#fff}
+#bar{position:absolute;left:0;right:0;bottom:64px;height:236px;opacity:0;-webkit-transform:translateY(24px);transform:translateY(24px);
+  -webkit-transition:opacity .18s ease-out,-webkit-transform .18s ease-out;transition:opacity .18s ease-out,transform .18s ease-out}
+.on #bar{-webkit-transform:none;transform:none}
+.on #shade,.on #bar{-webkit-transition:none;transition:none}
+#row{position:absolute;left:96px;top:18px;white-space:nowrap;font-size:0;will-change:transform;
+  -webkit-transition:-webkit-transform .32s cubic-bezier(.25,.25,.15,1);transition:transform .32s cubic-bezier(.25,.25,.15,1)}
+.tile{display:inline-block;vertical-align:top;position:relative;width:236px;height:200px;margin-right:22px;padding:18px 20px;border-radius:24px;
+  text-align:left;background:#1c1c1e;color:#d0d0d4;border:2px solid #2e2e32;overflow:hidden;
+  -webkit-transition:-webkit-transform .1s ease-out;transition:transform .1s ease-out}
+.tile.wide{width:440px}
+.tile.active{background:#23262c;border-color:#44505e;color:#fff}
+.tile.active.dom-light{border-color:#8a6a2a;background:#262118}
+.tile.active.dom-climate{border-color:#2e6b8e;background:#19232a}
+.tile.err{border-color:#6d3232;background:#251a1a}
+.tile.flash{border-color:#3a7d50;background:#182a1e}
+.tile.focus{background:#fff;color:#111;border-color:#fff;-webkit-transform:scale(1.06);transform:scale(1.06)}
+.tile.busy{opacity:.72}
+.top{display:-webkit-flex;display:flex;-webkit-align-items:center;align-items:center;-webkit-justify-content:space-between;justify-content:space-between}
+.ico{width:46px;height:46px;border-radius:14px;background:#2c2c30;display:-webkit-flex;display:flex;-webkit-align-items:center;align-items:center;-webkit-justify-content:center;justify-content:center;color:#9ea4b0}
+.ico svg{width:26px;height:26px;display:block}
+.tile.active .ico{background:#23442e;color:#4ae37b}
+.tile.active.dom-light .ico{background:#4b3a17;color:#ffca45}
+.tile.active.dom-climate .ico{background:#1b3e54;color:#5cc8ff}
+.tile.err .ico{background:#462222;color:#ff7b7b}
+.tile.flash .ico{background:#23442e;color:#4ae37b}
+.tile.focus .ico{background:#e9e9ec;color:#222}
+.tile.focus.active .ico{background:#dff5e6;color:#177c3c}
+.tile.focus.active.dom-light .ico{background:#fff0c8;color:#9b6500}
+.tile.focus.active.dom-climate .ico{background:#dceefa;color:#0e5f8f}
+.tile.focus.err .ico{background:#fde2e2;color:#a52828}
+.arrows{display:none;-webkit-align-items:center;align-items:center;gap:4px}
+.tile.adj.focus .arrows{display:-webkit-flex;display:flex}
+.step-btn{border:0;background:#ececef;color:#222;border-radius:10px;padding:6px 10px;font-size:18px;line-height:1;cursor:pointer;font-family:inherit}
+.step-btn:active{background:#d4d4d8}
+.nm{font-size:24px;font-weight:600;margin-top:20px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.val{font-size:21px;margin-top:6px;color:#9a9aa2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sub{font-size:17px;margin-top:4px;color:#7d7d86;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tile.active .val{color:#a8e9bc}
+.tile.active.dom-light .val{color:#ffd978}
+.tile.active.dom-climate .val{color:#8ad8ff}
+.tile.err .val{color:#ff9b9b}
+.tile.flash .val{color:#4ae37b}
+.tile.focus .val{color:#444}
+.tile.focus .sub{color:#666}
+.tile.focus.active .val{color:#177c3c}
+.tile.focus.active.dom-light .val{color:#8c5b00}
+.tile.focus.active.dom-climate .val{color:#0e5f8f}
+.tile.focus.err .val{color:#a52828}
+.meter{position:absolute;left:20px;right:20px;bottom:14px;height:5px;border-radius:3px;background:rgba(255,255,255,.12);overflow:hidden}
+.tile.focus .meter{background:rgba(0,0,0,.12)}
+.meter-fill{height:100%;background:#4ae37b}
+.dom-light .meter-fill{background:#f5b82e}
+.dom-climate .meter-fill{background:#47b6f5}
+.tile.focus .meter-fill{background:#177c3c}
+.tile.focus.dom-light .meter-fill{background:#c27d00}
+</style>
+</head>
+<body>
+<div id="shade"></div>
+<div id="head"><div id="hint">Home Assistant</div><div id="clock"></div></div>
+<div id="bar"><div id="row"></div></div>
+<script>
+/*
+ * Home Assistant control bar (lib/habar.js): shows configured Home Assistant
+ * entities along the bottom of the screen over whatever is playing.
+ * Left/Right move, OK toggles or runs, Up/Down adjusts brightness/temperature/fan/cover,
+ * Back/Escape closes. Strict ES5: the TV's own browser runs it.
+ */
+(function () {
+  var KEY = { left: 37, up: 38, right: 39, down: 40, ok: 13, back: 461, backspace: 8, esc: 27 };
+  var ROOM = 1920 - 96 * 2;
+  var tiles = [];
+  var focus = 0;
+  var shift = 0;
+  var closing = false;
+  var busyId = '';
+  var useHour12 = false;
+  var flashUntil = {};
+  var closeTimer = null;
+  var clockTimer = null;
+  var refreshTimer = null;
+  var seq = 0;
+  var keyToken = (/[?&]k=([^&]+)/.exec(location.search) || [])[1] || '';
+
+  function $(id) { return document.getElementById(id); }
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c];
+    });
+  }
+  function apiUrl(p) {
+    if (!keyToken) return p;
+    return p + (p.indexOf('?') === -1 ? '?' : '&') + 'k=' + keyToken;
+  }
+  function request(method, path, body, cb) {
+    var x = new XMLHttpRequest();
+    x.open(method, apiUrl(path), true);
+    x.timeout = 6000;
+    if (body) x.setRequestHeader('Content-Type', 'application/json');
+    x.onload = function () {
+      var j = null;
+      try { j = JSON.parse(x.responseText); } catch (e) {}
+      cb(j);
+    };
+    x.onerror = x.ontimeout = function () { cb(null); };
+    x.send(body ? JSON.stringify(body) : null);
+  }
+  function iconSvg(domain) {
+    if (domain === 'light') {
+      return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-4 10.5c.6.6 1 1.5 1 2.5h6c0-1 .4-1.9 1-2.5A6 6 0 0 0 12 3z"/></svg>';
+    }
+    if (domain === 'climate') {
+      return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 14.76V3.5a2 2 0 0 0-4 0v11.26a4 4 0 1 0 4 0z"/></svg>';
+    }
+    if (domain === 'fan') {
+      return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="2"/><path d="M12 10c0-3 2-5 4-5s3 2 1 4-3 1-5 1zM14 12c3 0 5 2 5 4s-2 3-4 1-1-3-1-5zM12 14c0 3-2 5-4 5s-3-2-1-4 3-1 5-1zM10 12c-3 0-5-2-5-4s2-3 4-1 1 3 1 5z"/></svg>';
+    }
+    if (domain === 'cover') {
+      return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="1"/><path d="M4 10h16M12 14v4"/></svg>';
+    }
+    if (domain === 'lock') {
+      return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>';
+    }
+    if (domain === 'scene' || domain === 'script' || domain === 'button' || domain === 'input_button') {
+      return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="6 4 20 12 6 20 6 4"/></svg>';
+    }
+    return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v10"/><path d="M18.36 6.64a9 9 0 1 1-12.73 0"/></svg>';
+  }
+  function pad(n) { return n < 10 ? '0' + n : String(n); }
+  function tick() {
+    var d = new Date();
+    var h = d.getHours();
+    var m = pad(d.getMinutes());
+    if (useHour12) {
+      $('clock').textContent = (h % 12 || 12) + ':' + m + ' ' + (h >= 12 ? 'PM' : 'AM');
+    } else {
+      $('clock').textContent = pad(h) + ':' + m;
+    }
+  }
+  function isOneShot(domain) {
+    return domain === 'scene' || domain === 'script' || domain === 'button' || domain === 'input_button';
+  }
+  function updateHint() {
+    if (!tiles.length || tiles[0].empty) {
+      $('hint').textContent = 'Home Assistant';
+      return;
+    }
+    var cur = tiles[focus];
+    var parts = [isOneShot(cur && cur.domain) ? 'OK run' : 'OK toggle'];
+    if (cur && cur.adjustable) {
+      parts.push(cur.domain === 'climate' ? 'Up/Down temp' : 'Up/Down adjust');
+    }
+    parts.push('Back close');
+    $('hint').textContent = parts.join('  ·  ');
+  }
+  function isFlashed(t) {
+    return !!(flashUntil[t.id] && flashUntil[t.id].until > Date.now());
+  }
+  function tileClass(t, i) {
+    return 'tile dom-' + t.domain +
+      (t.active ? ' active' : '') +
+      (t.adjustable ? ' adj' : '') +
+      (t.error ? ' err' : '') +
+      (isFlashed(t) ? ' flash' : '') +
+      (i === focus ? ' focus' : '') +
+      (busyId === t.id ? ' busy' : '');
+  }
+  function tileHtml(t, i) {
+    if (t.empty) {
+      return '<div class="tile wide focus" data-i="0"><div class="nm">' + esc(t.label) + '</div><div class="val">' + esc(t.valueText) + '</div></div>';
+    }
+    var flashed = isFlashed(t);
+    var valText = flashed ? flashUntil[t.id].text : t.valueText;
+    var meter = typeof t.pct === 'number' && t.active && !t.error
+      ? '<div class="meter"><div class="meter-fill" style="width:' + Math.max(0, Math.min(100, t.pct)) + '%"></div></div>'
+      : '';
+    var subHtml = t.subText ? '<div class="sub">' + esc(t.subText) + '</div>' : '';
+    return '<div class="' + tileClass(t, i) + '" data-i="' + i + '">' +
+      '<div class="top"><div class="ico">' + iconSvg(t.domain) + '</div>' +
+      '<div class="arrows">' +
+        '<button type="button" class="step-btn" data-step="1" aria-label="Increase">&#9650;</button>' +
+        '<button type="button" class="step-btn" data-step="-1" aria-label="Decrease">&#9660;</button>' +
+      '</div></div>' +
+      '<div class="nm">' + esc(t.label) + '</div>' +
+      '<div class="val">' + esc(valText) + '</div>' +
+      subHtml +
+      meter +
+      '</div>';
+  }
+  function applyShift() {
+    $('row').style.webkitTransform = $('row').style.transform = 'translateX(' + (-shift) + 'px)';
+  }
+  function scrollToFocus() {
+    var el = $('row').querySelector('[data-i="' + focus + '"]');
+    if (!el) return;
+    var right = el.offsetLeft + el.offsetWidth;
+    shift = right > ROOM ? right - ROOM + 24 : 0;
+    applyShift();
+  }
+  function slide(dir) {
+    var els = $('row').querySelectorAll('.tile');
+    if (!els.length) return false;
+    var step = els[1] ? els[1].offsetLeft - els[0].offsetLeft : els[0].offsetWidth;
+    var last = els[els.length - 1];
+    var most = Math.max(0, last.offsetLeft + last.offsetWidth - ROOM + 24);
+    var next = Math.max(0, Math.min(most, shift + dir * step));
+    if (next === shift) return false;
+    shift = next;
+    applyShift();
+    return true;
+  }
+  function render(skipScroll) {
+    var html = '';
+    for (var i = 0; i < tiles.length; i++) html += tileHtml(tiles[i], i);
+    $('row').innerHTML = html;
+    updateHint();
+    if (!skipScroll) scrollToFocus();
+  }
+  function setFocus(i, byPointer) {
+    if (!tiles.length || tiles[0].empty) return;
+    focus = (i + tiles.length) % tiles.length;
+    var nodes = $('row').childNodes;
+    for (var k = 0; k < nodes.length; k++) {
+      var t = tiles[k];
+      if (t) nodes[k].className = tileClass(t, k);
+    }
+    updateHint();
+    if (!byPointer) scrollToFocus();
+  }
+  function openWindow() {
+    clearTimeout(closeTimer);
+    closeTimer = null;
+    closing = false;
+    clearInterval(clockTimer);
+    tick();
+    clockTimer = setInterval(tick, 15000);
+    clearInterval(refreshTimer);
+    refreshTimer = setInterval(function () {
+      if (!busyId && !closing && document.body.className === 'on') loadState(true);
+    }, 5000);
+    document.body.className = 'on';
+  }
+  function close() {
+    if (closing) return;
+    closing = true;
+    visibleSince = 0;
+    clearInterval(clockTimer);
+    clearInterval(refreshTimer);
+    refreshTimer = null;
+    document.body.className = '';
+    closeTimer = setTimeout(function () { closeTimer = null; window.close(); }, 180);
+  }
+  function showFallback(title, sub) {
+    tiles = [{ empty: true, id: '_empty', domain: 'sensor', label: title, valueText: sub }];
+    focus = 0;
+    render();
+    if (document.body.className !== 'on') openWindow();
+  }
+  function loadState(silent) {
+    var mySeq = ++seq;
+    request('GET', '/api/ha/bar/state?t=' + Date.now(), null, function (j) {
+      if (mySeq !== seq || closing) return;
+      if (!j || !j.ok) {
+        if (!silent) showFallback('Home Assistant unavailable', 'Check the Glasshouse dashboard');
+        return;
+      }
+      useHour12 = !!j.hour12;
+      tick();
+      if (!j.configured) {
+        if (!silent) showFallback('Home Assistant is not configured', 'Set it up on the HA & MQTT tab');
+        return;
+      }
+      if (!j.tiles || !j.tiles.length) {
+        if (!silent) showFallback('No entities on bar yet', 'Add entities on the HA & MQTT tab');
+        return;
+      }
+      tiles = j.tiles;
+      if (focus >= tiles.length) focus = 0;
+      render(silent);
+      if (!silent && document.body.className !== 'on') openWindow();
+    });
+  }
+  function triggerFlash(t) {
+    flashUntil[t.id] = {
+      until: Date.now() + 1200,
+      text: t.domain === 'scene' ? 'Activated' : 'Ran'
+    };
+    setTimeout(function () {
+      if (flashUntil[t.id] && flashUntil[t.id].until <= Date.now()) {
+        delete flashUntil[t.id];
+        if (!closing && tiles.length) render(true);
+      }
+    }, 1250);
+  }
+  function sendAction(action, value) {
+    var cur = tiles[focus];
+    if (!cur || cur.empty) return close();
+    if (action === 'step' && !cur.adjustable) return;
+    if (busyId === cur.id) return;
+    var targetId = cur.id;
+    var targetDomain = cur.domain;
+    busyId = targetId;
+    render(true);
+    request('POST', '/api/ha/bar/act', { id: targetId, action: action, value: value }, function (r) {
+      if (busyId === targetId) busyId = '';
+      if (r && r.ok && r.tile) {
+        for (var i = 0; i < tiles.length; i++) {
+          if (tiles[i].id === r.tile.id) { tiles[i] = r.tile; break; }
+        }
+        if (action === 'toggle' && isOneShot(targetDomain)) triggerFlash(r.tile);
+      } else if (r && r.error) {
+        $('hint').textContent = r.error;
+      }
+      render(true);
+    });
+  }
+  function launchInfo() {
+    try { return JSON.parse((window.PalmSystem && window.PalmSystem.launchParams) || '{}') || {}; } catch (e) { return {}; }
+  }
+  function hidden() { return document.hidden === true || document.webkitHidden === true; }
+  var initial = launchInfo();
+  var seenPress = initial.press || 0;
+  var idleUntilOpened = !!(initial.preload || /[?&]preload=1/.test(location.search) || (!seenPress && hidden()));
+  var SECOND_PRESS_MS = 250;
+  var visibleSince = hidden() ? 0 : Date.now();
+  function visibilityChanged() { visibleSince = hidden() ? 0 : (visibleSince || Date.now()); }
+  document.addEventListener('visibilitychange', visibilityChanged);
+  document.addEventListener('webkitvisibilitychange', visibilityChanged);
+  var SAME_PRESS_MS = 200;
+  var lastRelaunch = 0;
+
+  function openOrRefresh() {
+    if (tiles.length) openWindow();
+    loadState(false);
+  }
+  document.addEventListener('webOSRelaunch', function (ev) {
+    var detail = (ev && ev.detail) || {};
+    if (detail.preload) return;
+    var at = Date.now();
+    if (detail.press) {
+      if (detail.press === seenPress) return;
+      seenPress = detail.press;
+    } else {
+      if (at - lastRelaunch < SAME_PRESS_MS) return;
+      var shownFor = visibleSince ? at - visibleSince : 0;
+      if (!idleUntilOpened && !closing && document.body.className === 'on' && shownFor < SECOND_PRESS_MS) {
+        lastRelaunch = at;
+        openOrRefresh();
+        return;
+      }
+    }
+    lastRelaunch = at;
+    if (idleUntilOpened || closing || document.body.className !== 'on') {
+      idleUntilOpened = false;
+      visibleSince = visibleSince || at;
+      openOrRefresh();
+    } else {
+      close();
+    }
+  });
+  document.addEventListener('keydown', function (e) {
+    var k = e.keyCode;
+    if (k === KEY.left) setFocus(focus - 1);
+    else if (k === KEY.right) setFocus(focus + 1);
+    else if (k === KEY.up) sendAction('step', 1);
+    else if (k === KEY.down) sendAction('step', -1);
+    else if (k === KEY.ok) sendAction('toggle');
+    else if (k === KEY.back || k === KEY.backspace || k === KEY.esc) close();
+    else return;
+    e.preventDefault();
+  }, true);
+  document.addEventListener('onwheel' in document ? 'wheel' : 'mousewheel', function (ev) {
+    if (document.body.className !== 'on') return;
+    var d = ev.deltaY !== undefined ? ev.deltaY : -ev.wheelDelta;
+    if (ev.deltaX && Math.abs(ev.deltaX) > Math.abs(d || 0)) d = ev.deltaX;
+    if (!d) return;
+    ev.preventDefault();
+    slide(d > 0 ? 1 : -1);
+  });
+  var lastPtrX = -1;
+  var lastPtrY = -1;
+  $('row').addEventListener('mousemove', function (e) {
+    if (e.clientX === lastPtrX && e.clientY === lastPtrY) return;
+    lastPtrX = e.clientX;
+    lastPtrY = e.clientY;
+    var el = e.target;
+    while (el && el !== this && !el.getAttribute('data-i')) el = el.parentNode;
+    if (el && el !== this) setFocus(+el.getAttribute('data-i'), true);
+  });
+  $('row').addEventListener('click', function (e) {
+    var stepEl = e.target;
+    while (stepEl && stepEl !== this && !stepEl.getAttribute('data-step')) stepEl = stepEl.parentNode;
+    if (stepEl && stepEl !== this) {
+      var tileEl = stepEl.parentNode;
+      while (tileEl && tileEl !== this && !tileEl.getAttribute('data-i')) tileEl = tileEl.parentNode;
+      if (tileEl && tileEl !== this) setFocus(+tileEl.getAttribute('data-i'), true);
+      sendAction('step', +stepEl.getAttribute('data-step'));
+      return;
+    }
+    var el = e.target;
+    while (el && el !== this && !el.getAttribute('data-i')) el = el.parentNode;
+    if (!el || el === this) return;
+    setFocus(+el.getAttribute('data-i'), true);
+    sendAction('toggle');
+  });
+  $('shade').addEventListener('click', function (e) {
+    if (e.target === this) close();
+  });
+
+  if (idleUntilOpened) loadState(true);
+  else openOrRefresh();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Home Assistant Bar</title>
+<style>html,body{margin:0;background:transparent}</style>
+</head>
+<body>
+<script>
+/*
+ * Home Assistant Bar app wrapper (lib/habar.js): loads assets/habar.html
+ * from the Glasshouse server so POST actions stay same-origin behind the
+ * CSRF guard and can use the bundled font without exposing the HA token.
+ * Strict ES5: the TV's own browser runs it.
+ */
+(function () {
+  var PORT = 8080;                // tvweb:port
+  var BASE = 'http://localhost:' + PORT;
+  var tries = 0;
+  var launch = {};
+  try { launch = JSON.parse((window.PalmSystem && window.PalmSystem.launchParams) || '{}') || {}; } catch (e) {}
+  var preloadQ = launch.preload ? '&preload=1' : '';
+
+  function probe() {
+    tries++;
+    var x = new XMLHttpRequest();
+    x.open('GET', BASE + '/api/ha/bar/state?t=' + Date.now(), true);
+    x.timeout = 2500;
+    x.onload = function () {
+      if (x.status === 200) {
+        location.replace(BASE + '/assets/habar.html?t=' + Date.now() + preloadQ);
+      } else if (tries < 6) {
+        setTimeout(probe, 400);
+      } else if (!document.hidden) {
+        window.close();
+      }
+    };
+    x.onerror = x.ontimeout = function () {
+      if (tries < 6) setTimeout(probe, 400);
+      else if (!document.hidden) window.close();
+    };
+    x.send();
+  }
+  probe();
+})();
+</script>
+</body>
+</html>

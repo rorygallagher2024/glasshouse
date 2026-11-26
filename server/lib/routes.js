@@ -110,6 +110,8 @@ var screensaversModule = null;
 var audioLevelsModule = null;
 /** @type {typeof import('./haentity')} */
 var haEntityModule = null;
+/** @type {typeof import('./habar') | null} */
+var haBarModule = null;
 /** @type {typeof import('./inputbar')} */
 var inputBarModule = null;
 /** @type {typeof import('./ask')} */
@@ -2179,6 +2181,55 @@ function handleRequest(req, res) {
     });
   }
 
+  if (pathname === '/api/ha/bar' && req.method === 'GET' && haBarModule) {
+    if (!authed(u.query, req)) return send(res, 401, JSON.stringify({ ok: false, error: 'unauthorized' }));
+    return send(res, 200, JSON.stringify({
+      ok: true,
+      configured: !!(haEntityModule && haEntityModule.configured()),
+      entities: haBarModule.listConfig().entities
+    }));
+  }
+
+  if (pathname === '/api/ha/bar' && req.method === 'POST' && haBarModule) {
+    if (!authed(u.query, req)) return send(res, 401, JSON.stringify({ ok: false, error: 'unauthorized' }));
+    if (!config.allowControl) {
+      return send(res, 403, JSON.stringify({ ok: false, error: msg('srv.controlsOff', 'controls disabled in config') }));
+    }
+    return readJsonBody(req, res, function (body) {
+      var saved = haBarModule.saveConfig(body && body.entities);
+      send(res, saved.ok ? 200 : 400, JSON.stringify(saved));
+    });
+  }
+
+  if (pathname === '/api/ha/bar/open' && req.method === 'POST' && haBarModule) {
+    if (!authed(u.query, req)) return send(res, 401, JSON.stringify({ ok: false, error: 'unauthorized' }));
+    if (!config.allowControl) {
+      return send(res, 403, JSON.stringify({ ok: false, error: msg('srv.controlsOff', 'controls disabled in config') }));
+    }
+    return haBarModule.open(function (r) {
+      send(res, r && r.ok ? 200 : 502, JSON.stringify(r || { ok: false, error: 'failed' }));
+    });
+  }
+
+  if (pathname === '/api/ha/bar/state' && req.method === 'GET' && haBarModule) {
+    if (!fromTV(req) && !authed(u.query, req)) return send(res, 401, JSON.stringify({ ok: false, error: 'unauthorized' }));
+    return haBarModule.state(function (r) {
+      send(res, 200, JSON.stringify(r || { ok: false, error: 'failed' }));
+    });
+  }
+
+  if (pathname === '/api/ha/bar/act' && req.method === 'POST' && haBarModule) {
+    if (!fromTV(req) && !authed(u.query, req)) return send(res, 401, JSON.stringify({ ok: false, error: 'unauthorized' }));
+    if (!fromTV(req) && !config.allowControl) {
+      return send(res, 403, JSON.stringify({ ok: false, error: msg('srv.controlsOff', 'controls disabled in config') }));
+    }
+    return readJsonBody(req, res, function (body) {
+      haBarModule.act(body && body.id, body && body.action, body && body.value, function (r) {
+        send(res, r && r.ok ? 200 : 502, JSON.stringify(r || { ok: false, error: 'failed' }));
+      });
+    });
+  }
+
   if (pathname === '/api/hdmi') {
     return telemetryModule.hdmiInputs(function (r) { send(res, 200, JSON.stringify(r)); });
   }
@@ -3070,6 +3121,7 @@ function init(opts) {
   if (opts.screensavers) screensaversModule = opts.screensavers;
   if (opts.audioLevels) audioLevelsModule = opts.audioLevels;
   if (opts.haEntity) haEntityModule = opts.haEntity;
+  if (opts.haBar) haBarModule = opts.haBar;
   if (opts.inputBar) inputBarModule = opts.inputBar;
   if (opts.ask) askModule = opts.ask;
   if (opts.updater) updaterModule = opts.updater;

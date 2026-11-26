@@ -768,6 +768,68 @@ async function visitHomeBarBesideHome(browser, base, problems) {
   }
 }
 
+async function visitHaBar(browser, base, problems) {
+  const fail = what => problems.push('Home Assistant bar: ' + what);
+  const page = await browser.newPage({ viewport: { width: 1920, height: 1080 } });
+  page.on('pageerror', e => fail(e.message));
+  await page.addInitScript(() => {
+    window.__closed = false;
+    window.close = function () { window.__closed = true; };
+  });
+  let pct = 50;
+  const acts = [];
+  await page.route('**/api/ha/bar/**', route => {
+    const req = route.request();
+    const pathname = new URL(req.url()).pathname;
+    if (pathname.endsWith('/state')) {
+      return route.fulfill({
+        json: {
+          ok: true,
+          configured: true,
+          hour12: false,
+          tiles: [
+            { id: 'light.desk', domain: 'light', label: 'Desk Lamp', state: 'on', active: true, adjustable: true, pct: pct, valueText: pct + '%', subText: '' },
+            { id: 'climate.living', domain: 'climate', label: 'Thermostat', state: 'heat', active: true, adjustable: true, pct: null, valueText: '22°C · heat', subText: 'Now 20.1°C' },
+            { id: 'scene.movie', domain: 'scene', label: 'Movie Time', state: 'scening', active: false, adjustable: false, pct: null, valueText: 'Activate', subText: '' }
+          ]
+        }
+      });
+    }
+    if (pathname.endsWith('/act')) {
+      const body = JSON.parse(req.postData() || '{}');
+      acts.push(body);
+      if (body.id === 'light.desk' && body.action === 'step') {
+        pct = Math.max(0, Math.min(100, pct + (body.value > 0 ? 10 : -10)));
+        return route.fulfill({ json: { ok: true, tile: { id: 'light.desk', domain: 'light', label: 'Desk Lamp', state: 'on', active: true, adjustable: true, pct: pct, valueText: pct + '%', subText: '' } } });
+      }
+      if (body.id === 'scene.movie') {
+        return route.fulfill({ json: { ok: true, tile: { id: 'scene.movie', domain: 'scene', label: 'Movie Time', state: 'scening', active: false, adjustable: false, pct: null, valueText: 'Activate', subText: '' } } });
+      }
+      return route.fulfill({ json: { ok: true, tile: { id: body.id, domain: 'climate', label: 'Thermostat', state: 'heat', active: true, adjustable: true, pct: null, valueText: '21.5°C · heat', subText: 'Now 20.1°C' } } });
+    }
+    return route.fulfill({ json: {} });
+  });
+  try {
+    await page.goto(base + '/assets/habar.html');
+    await page.waitForFunction(() => document.querySelectorAll('#row .tile').length === 3 && document.body.className === 'on');
+    await page.keyboard.press('ArrowUp');
+    await page.waitForFunction(() => document.querySelector('.tile.focus .val').textContent === '60%');
+    await page.keyboard.press('ArrowRight');
+    const climSub = await page.textContent('.tile.focus .sub');
+    if (climSub !== 'Now 20.1°C') fail('climate subText mismatch: ' + climSub);
+    await page.click('.tile.focus .step-btn[data-step="-1"]');
+    await page.waitForFunction(() => document.querySelector('.tile.focus .val').textContent.indexOf('21.5') === 0);
+    await page.keyboard.press('ArrowRight');
+    await page.keyboard.press('Enter');
+    await page.waitForFunction(() => document.querySelector('.tile.focus .val').textContent === 'Activated');
+    await page.keyboard.press('Escape');
+    await page.waitForFunction(() => window.__closed === true);
+    if (acts.length !== 3) fail('expected 3 act calls, got ' + acts.length);
+  } finally {
+    await page.close();
+  }
+}
+
 async function visitHomeWeather(browser, base, problems) {
   const page = await browser.newPage();
   page.on('pageerror', e => problems.push('Home weather: ' + e.message));
@@ -5134,7 +5196,7 @@ function groups(web, tv) {
     { job: 'tabs', tabs: web.map(t => ({ path: '/?tab=' + t, label: 'web ' + t })), visits: [visitHomeAnimations, visitHuesyncSettings, visitInputsAndRemote, visitBrightnessKeySettings, visitRemoteFolding, visitAdblockCards, visitSaverEntitySlots, visitRemoteView, visitRemoteMotion] },
     { job: 'tabs', tabs: tv.map(t => ({ path: '/assets/dashboard.html?tab=' + t, label: 'TV ' + t })),
       visits: [visitTvDashboard, visitTvAudio, visitTvPictureWrites, visitPictureUnavailable, visitTvNonOled, visitTvHuesync] },
-    { job: 'home', tabs: [], visits: [visitHomePicture, visitHomePreview, visitHomePreviewOptions, visitHomePreviewWebos4, visitHomePreviewSize, visitHomePreviewSizeDetails, visitInputBarBehindHome, visitInputBarSwitchOnOk, visitHomeBarPrewarm, visitHomeBarIconsReady, visitHomeBarTiles, visitHomeBarBesideHome, visitHomeBarScroll, visitHomeUpDown, visitHomeFolderKeys, visitHomePointerOff, visitHomeOrder, visitHomeAvailability, visitHomeSearch, visitHomeWeather, visitHomeWeatherSetting, visitHomeRemoteBattery, visitHomeRemoteBatterySetting] },
+    { job: 'home', tabs: [], visits: [visitHomePicture, visitHomePreview, visitHomePreviewOptions, visitHomePreviewWebos4, visitHomePreviewSize, visitHomePreviewSizeDetails, visitInputBarBehindHome, visitInputBarSwitchOnOk, visitHomeBarPrewarm, visitHomeBarIconsReady, visitHomeBarTiles, visitHomeBarBesideHome, visitHomeBarScroll, visitHaBar, visitHomeUpDown, visitHomeFolderKeys, visitHomePointerOff, visitHomeOrder, visitHomeAvailability, visitHomeSearch, visitHomeWeather, visitHomeWeatherSetting, visitHomeRemoteBattery, visitHomeRemoteBatterySetting] },
     { job: 'home', tabs: [], visits: [visitHomeArrangement, visitHomeVisibility, visitHomeColours, visitHomeInputsEditor, visitHomeEditor,
       visitHomeRecentsHidden, visitHomeSaverWake, visitHomeUploads, visitHomeShuffle, visitHomeLauncher, visitHomeReadiness, visitAudioOverride, visitHomeRecents, visitHomeGuide,
       visitHomeFadeAndInputs] },

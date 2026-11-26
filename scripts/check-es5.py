@@ -245,6 +245,7 @@ else:
                 assets / 'setup-phone.html', assets / 'home.html', assets / 'home-iptv.js', assets / 'home-app' / 'index.html',
                 assets / 'home-kit.js', assets / 'home-web.html', assets / 'home-minimal.html',
                 assets / 'devicons.js', assets / 'inputbar-app' / 'index.html', assets / 'homebar-app' / 'index.html', assets / 'ask-app' / 'index.html', assets / 'ask.html',
+                assets / 'habar-app' / 'index.html', assets / 'habar.html',
                 root / 'docs' / 'development' / 'example-launcher.html']
 
 sys.exit(1 if sum(check(t) for t in targets) else 0)

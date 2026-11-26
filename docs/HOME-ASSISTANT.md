@@ -136,7 +136,7 @@ Node-RED, Telegraf into InfluxDB, or scripts subscribing to that topic work the 
 
 ![Home Assistant API settings showing the toggle, address, saved token, and the Connection box with Home Assistant reachable](screenshots/ha-api.png)
 
-Once enabled and connected, the API is used in two places. While it is off or unconfigured, neither offers it.
+Once enabled and connected, the API is used in three places. While it is off or unconfigured, none of them offers it.
 
 **On Glasshouse Home**, [values at a glance](dashboard/home.md#home-assistant-values-at-a-glance) shows up to four entities beside the clock, picked on the **Home** tab: a bin collection, a parcel on its way, a share price.
 
@@ -145,7 +145,16 @@ Once enabled and connected, the API is used in two places. While it is off or un
 * [**Home Assistant: Ambient**](dashboard/screen-savers.md#home-assistant-ambient) — shows the TV clock, date, and up to three configurable entities with optional custom display labels.
 * [**Home Assistant: Data Display**](dashboard/screen-savers.md#home-assistant-data-display) — cycles sequentially through 2 to 100 entities one at a time on black.
 
+**On the TV screen over whatever is playing**, the **Home Assistant control bar** opens a single-row overlay bar of up to 16 interactive Home Assistant tiles (`light`, `switch`, `input_boolean`, `climate`, `fan`, `cover`, `lock`, `scene`, `script`, `button`, `input_button`, and read-only sensors) from a remote key or Quick Access slot.
+
 Custom QML screen savers added on the TV can read Home Assistant entities too. Each declares what it needs in `saver.json`, and Glasshouse serves only those entity IDs at local URLs, so the Home Assistant token never reaches a QML file. Those URLs carry Glasshouse's own dashboard token, where one is set, as the stats URL does. A saver that wants every value at once declares `ha-all` instead and is handed one address, `/api/homeassistant`, which answers with all of its entities in a single request. See [Screen saver design principles](development/SCREENSAVER-DESIGN.md#a-screen-savers-own-values) for the manifest and QML format.
+
+#### Home Assistant control bar
+
+1. Configure and save the **Home Assistant API** connection above so the **Home Assistant control bar** section appears underneath.
+2. Add up to 16 entities with optional custom display labels and reorder them as they should appear from left to right. The list is included in [settings backups](dashboard/server.md).
+3. Assign **Home Assistant bar** to a button on the [**Remote** tab](dashboard/remote.md) (works on both webOS 4–10 filter keys and webOS 11 streaming keys, as well as Quick Access slots 1–9), or click **Open on TV** to test it straight away.
+4. On the TV, use **Left** / **Right** (or the Magic Remote pointer and wheel) to focus a tile, **OK** (or click) to toggle a switch/light/climate/cover/lock or trigger a scene/script, **Up** / **Down** (or the on-screen step buttons) to step light brightness, climate target temperature, fan percentage or cover state, and **Back** (or pressing the mapped remote button again) to close it. Only entities explicitly listed on the bar can be controlled by its TV overlay, and the Home Assistant token never leaves the TV's server process.
 
 ---
 
