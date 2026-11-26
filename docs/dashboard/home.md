@@ -525,7 +525,13 @@ The **Layout** section configures the on-screen placement of rows and status ele
 * **Clock and date:** Displayed by default in the upper left; if switched off, its space remains reserved so rows do not jump.
 * **Clock position:** Where the clock and date sit in the top strip: **Automatic** (the default) keeps each view's own place, on the left, or on the right in Alternative View; **Left**, **Centre** and **Right** fix it there in either view. In the centre, Last watched stays on the left and the weather and the preview on the right.
 * **Centre the rows:** Off by default. Switched on, the apps and inputs of a row that fits on the screen sit in the middle of it rather than from the left, and row titles are centred too. A row with more than fits still starts at the left and scrolls as before.
+
+    ![Glasshouse Home in Alternative View with the rows along the bottom and centred, and the clock in the centre](../screenshots/home-centred.jpg)
+
 * **Icon shape:** The outline of the apps' icons: **Automatic** (Glasshouse Home's own rounded square, the default), **Square**, **Squircle**, **Circle**, **Leaf**, **Arch** or **Drop**. With **App labels** off, a tile holds only its icon and takes the same shape. Not used with **Apps as cards**, which keep their own shape.
+
+    ![The apps row with app labels off in each icon shape: Square and Squircle, Circle and Leaf, Arch and Drop](../screenshots/home-icon-shapes.jpg)
+
 * **Rows along the bottom:** Places the rows along the bottom of the screen (as on LG's launcher) rather than in the middle. The row in focus sits at the bottom and subsequent rows wait below the screen: moving down scrolls the rows up by one. Off by default.
 
     ![Glasshouse Home with the clock off and the rows along the bottom](../screenshots/home-bottom.jpg)
