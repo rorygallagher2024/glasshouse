@@ -1770,6 +1770,8 @@ function handleRequest(req, res) {
     var respondWithEntry = function (entry) {
       var etag = '"' + (displayVersionStr || '1') + '-' + entry.raw.length.toString(16) + '"';
       var assetHeaders = { 'ETag': etag, 'Cache-Control': cacheHdr };
+      // Packaged TV overlay apps (file://) load bundled fonts over loopback.
+      if (ext === '.ttf' && fromTV(req)) assetHeaders['Access-Control-Allow-Origin'] = '*';
       if (compressible) assetHeaders['Vary'] = 'Accept-Encoding';
       if (req.headers && req.headers['if-none-match'] === etag) {
         res.writeHead(304, assetHeaders);

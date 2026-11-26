@@ -19,7 +19,7 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
 .on #bar{-webkit-transform:none;transform:none}
 /* Opening is at once: only closing fades. */
 .on #shade,.on #bar{-webkit-transition:none;transition:none}
-#clock{position:absolute;right:96px;bottom:312px;font-size:40px;font-weight:300;opacity:0;text-shadow:0 2px 12px rgba(0,0,0,.6)}
+#clock{position:absolute;right:96px;bottom:312px;font-family:'Manrope',sans-serif;font-size:40px;font-weight:400;color:#fff;opacity:0;text-shadow:0 2px 12px rgba(0,0,0,.7)}
 .on #clock{opacity:1}
 /*
  * Moving is drawn by the compositor alone: the row slides, on a layer of its
@@ -95,6 +95,12 @@ img.ico{background:none;object-fit:contain}
   // Filled in with the dashboard's port when the app is installed.
   var PORT = 8080;                // tvweb:port
   var BASE = 'http://localhost:' + PORT;
+  (function () {
+    var st = document.createElement('style');
+    var fontBase = location.protocol === 'file:' ? BASE : '';
+    st.textContent = "@font-face{font-family:'Manrope';src:url('" + fontBase + "/assets/fonts/Manrope-Regular.ttf') format('truetype');font-weight:400}";
+    document.head.appendChild(st);
+  })();
   var KEY = { left: 37, right: 39, ok: 13, back: 461, backspace: 8 };
   var LG_HOME = 'com.webos.app.home';
   var LG_HOME_TILE = 'lg-home';

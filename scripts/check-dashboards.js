@@ -699,6 +699,13 @@ async function visitHomeBarTiles(browser, base, problems) {
   try {
     const air = (await tiles(page)).filter(x => x.name === 'AirPlay');
     if (air.length !== 1 || !air[0].input || !air[0].svg) fail('AirPlay as an input only: ' + JSON.stringify(air));
+    const clk = await page.evaluate(() => {
+      var cs = getComputedStyle(document.getElementById('clock'));
+      return { fontFamily: cs.fontFamily, fontWeight: cs.fontWeight, fontSize: cs.fontSize };
+    });
+    if (clk.fontFamily.indexOf('Manrope') === -1 || clk.fontWeight !== '400' || clk.fontSize !== '40px') {
+      fail('unexpected clock style: ' + JSON.stringify(clk));
+    }
   } finally {
     await page.close();
   }
