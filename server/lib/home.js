@@ -25,6 +25,7 @@
  * Strict ES5: runs on node 0.12.
  */
 var fs = require('fs');
+var crypto = require('crypto');
 var path = require('path');
 var execFile = require('child_process').execFile;
 var msg = require('./say').msg;
@@ -315,6 +316,8 @@ var lgHomeHeld = false;
 var installFn = null;
 var injectKeyFn = null;
 var hdmiInputsFn = null;
+/** @type {null | function(function(Object<string, {powered: boolean, locked: boolean}>): void): void} */
+var hdmiSignalFn = null;
 var procDir = '/proc';
 var execFn = execFile;
 var systemctlPath = '';
@@ -426,7 +429,7 @@ var wakeOpen = null;
 // Home opened over the input after a wake, until the input has had its chance to take it back.
 var wakeReopen = null;
 var wakeSettleMs = WAKE_SETTLE_MS;
-var guideCache = { at: 0, data: {} };
+var guideCache = { at: 0, data: {}, key: '' };
 var listCache = {};
 var changing = false;
 var defaultHomeBusy = false;
@@ -1366,14 +1369,36 @@ function ownSoundInfo() {
  * The lists the rows are built from, as last read, in home-lists.json. Every
  * child start waits its turn just after the server starts (lib/children), so
  * a view opened then waited on them: 7.9 s for the first catalogue on a B8
- * (webOS 4.4.3) against 0.75 s later. Until a list is read in this run, the
- * saved one is answered at once and read again behind it; a change bumps
- * layoutVersion, so the view reloads on its next heartbeat.
+ * (webOS 4.4.3) against 0.75 s later. Once a list is known, in memory or
+ * saved, it is answered at once and read again behind it when older than its
+ * time to live; a catalogue waiting on the reads was 0.5 s on a G3 (webOS
+ * 9.2.2), ten luna-send children in turn. A change bumps layoutVersion, so
+ * the view reloads on its next heartbeat.
  */
 var savedLists = null;
 var listsRevision = 0;
+// Bumped by any list changing, redrawn or not.
+var listsGeneration = 0;
 var REDRAWN_LISTS = { dev: true, lp: true };
+// The callers waiting on each list's read, while one is out.
 var listLoading = {};
+/*
+ * A read behind a reply starts this long after it: a return asks for what is
+ * on and the picture beside the catalogue, and with the reads queued ahead
+ * of them (lib/children) /api/home/now went from 18 to 68 ms on a G3 (webOS
+ * 9.2.2).
+ */
+var REVALIDATE_DELAY_MS = 1500;
+var revalidateDelayMs = REVALIDATE_DELAY_MS;
+var revalidating = {};
+function behindReply(key, read) {
+  if (revalidating[key]) return;
+  if (!revalidateDelayMs) return read();
+  revalidating[key] = setTimeout(function () {
+    delete revalidating[key];
+    read();
+  }, revalidateDelayMs);
+}
 
 function listsFile() { return path.join(stateDir, 'home-lists.json'); }
 
@@ -1400,29 +1425,39 @@ function saveList(key, value) {
 function cached(key, ttl, load, cb) {
   var hit = listCache[key];
   if (hit && nowMs() - hit.at < ttl) return cb(hit.value);
-  var saved = hit ? null : savedList(key);
-  if (saved) {
-    cb(saved);
-    if (listLoading[key]) return;
-    listLoading[key] = true;
-    return load(function (value) {
-      listLoading[key] = false;
-      if (!value) return;
-      listCache[key] = { at: nowMs(), value: value };
-      if (saveList(key, value)) listsRevision++;
-    });
-  }
+  var known = hit ? hit.value : savedList(key);
+  if (!known) return readList(key, load, cb);
+  cb(known);
+  behindReply(key, function () { readList(key, load, null, true); });
+}
+
+/*
+ * One read of a list at a time; a failed read keeps the list as it was.
+ * behind: read after a reply that answered from memory, which a view waiting
+ * on the read would have had, so any change to it reloads the view.
+ */
+function readList(key, load, cb, behind) {
+  if (listLoading[key]) { if (cb) listLoading[key].push(cb); return; }
+  listLoading[key] = cb ? [cb] : [];
+  var firstRead = !listCache[key];
   load(function (value) {
+    var waiting = listLoading[key];
+    delete listLoading[key];
     if (value) {
       var known = savedList(key) !== null;
       listCache[key] = { at: nowMs(), value: value };
-      // The inputs or apps changing after they were first read, as a port's
-      // tile when a CEC device appears on it, has the view draw its tiles
-      // again (#1462). Not the content cards or channels, whose changes would
-      // reload Home under someone browsing it.
-      if (saveList(key, value) && known && REDRAWN_LISTS[key]) listsRevision++;
+      if (saveList(key, value)) {
+        listsGeneration++;
+        // The first read of a run corrects whatever was saved, and a read
+        // behind a reply what that reply left out. Otherwise the inputs or
+        // apps changing, as a port's tile when a CEC device appears on it,
+        // has the view draw its tiles again (#1462); not the content cards or
+        // channels, whose changes would reload Home under someone browsing it.
+        if (known && (firstRead || behind || REDRAWN_LISTS[key])) listsRevision++;
+      }
     }
-    cb(value);
+    var answer = value || (listCache[key] ? listCache[key].value : savedList(key));
+    waiting.forEach(function (fn) { fn(answer || null); });
   });
 }
 
@@ -1604,6 +1639,10 @@ function extraDevices(cb) {
           address: typeof d.ipAddress === 'string' && d.ipAddress ? d.ipAddress : null
         };
       });
+      // In a stable order: the storage manager lists media servers in a new
+      // order at each read (eight Sonos speakers, a G3 on webOS 9.2.2), and a
+      // reordered list is a changed one, which reloads the view.
+      out.sort(function (x, y) { return x.id < y.id ? -1 : x.id > y.id ? 1 : 0; });
       appInfo(AIRPLAY_APP, function (ap) {
         if (ap) out.push({ id: 'airplay', name: 'AirPlay', input: 'airplay', kind: 'airplay', appId: AIRPLAY_APP, port: 0, via: null, address: null });
         firstAppInfo([HOME_HUB, 'com.webos.app.inputmgr'], function (hub) {
@@ -1744,6 +1783,51 @@ function catalogue(cb) {
   rows(cb);
 }
 
+/*
+ * The view's catalogue: the rows, and beside them what viewStatus() gives
+ * and layoutVersion. rev is a hash of all of it but layoutVersion, which
+ * moves with every IPTV programme boundary while the rows carry no
+ * programmes: a view that has this rev already has nothing to draw again.
+ */
+function catalogueReply(cb) {
+  catalogue(function (c) {
+    markNoSignal(c, function () {
+      var st = viewStatus();
+      c.ok = true;
+      c.layout = st.layout;
+      c.enabled = st.enabled;
+      c.supported = st.supported;
+      c.wallpapers = st.wallpapers;
+      c.rev = crypto.createHash('sha1').update(JSON.stringify(c)).digest('hex').slice(0, 16);
+      c.layoutVersion = layoutVersion();
+      cb(c);
+    });
+  });
+}
+
+/*
+ * The Inputs tab's state for each HDMI input agrees with the HDMI view:
+ * plugged in by the TV's input service, but with no powered source on the
+ * cable and no picture, it is no signal, not connected. On copies: the
+ * devices are the cached list itself, and a flag set on it would be saved to
+ * home-lists.json and differ from every fresh read, reloading the view each
+ * time the list was read again.
+ */
+function markNoSignal(c, done) {
+  if (!c || !isArray(c.devices) || !hdmiSignalFn) return done();
+  hdmiSignalFn(function (byInput) {
+    c.devices = c.devices.map(function (d) {
+      var sig = d && !d.unused && !d.kind && d.port ? byInput[d.port] : null;
+      if (!sig || sig.powered || sig.locked) return d;
+      var copy = {};
+      Object.keys(d).forEach(function (k) { copy[k] = d[k]; });
+      copy.noSignal = true;
+      return copy;
+    });
+    done();
+  });
+}
+
 function rows(cb) {
   var c = readConfig();
   launchPoints(function (apps) {
@@ -1825,8 +1909,7 @@ function recommendedCards(c, cb) {
  */
 function tunerTile(chans, cb) {
   if (!chans || !chans.length) return cb(null);
-  luna('com.webos.service.utp.boot/getLastChannelId', {}, function (r) {
-    var chId = r && typeof r.channelId === 'string' ? r.channelId : null;
+  lastChannelId(function (chId) {
     /** @type {any} */
     var hit = null;
     chans.forEach(function (ch) { if (ch.id === chId) hit = ch; });
@@ -1894,6 +1977,27 @@ function noteForeground(was, id) {
 }
 
 /*
+ * The channel Live TV was last on. It changes only in Live TV, so it is read
+ * afresh while Live TV is in front or as it leaves, and otherwise answered
+ * from the last read. One read at a time, shared by every caller.
+ */
+var lastChannel = null;
+var lastChannelReads = null;
+function lastChannelId(cb) {
+  if (lastChannel && foreground !== LIVE_TV) return cb(lastChannel.id);
+  if (lastChannelReads) return lastChannelReads.push(cb);
+  lastChannelReads = [cb];
+  luna('com.webos.service.utp.boot/getLastChannelId', {}, function (r) {
+    var id = r && typeof r.channelId === 'string' ? r.channelId : null;
+    // A refused read is not "no channel": it is read again next time.
+    if (r && r.returnValue !== false) lastChannel = { id: id };
+    var waiting = lastChannelReads;
+    lastChannelReads = null;
+    waiting.forEach(function (fn) { fn(id); });
+  });
+}
+
+/*
  * The channel Live TV is on, recorded as opened. A channel changed within
  * Live TV changes nothing in front, so it is read as Live TV leaves, and
  * when the view asks for its rows while Live TV is still in front: on a G3
@@ -1904,8 +2008,8 @@ function noteLiveChannel(cb) {
   var c = readConfig();
   if (!c.enabled || c.sort.ch !== 'recent') return cb();
   channelReading = [cb];
-  luna('com.webos.service.utp.boot/getLastChannelId', {}, function (r) {
-    if (r && typeof r.channelId === 'string') noteOpened('ch', r.channelId);
+  lastChannelId(function (id) {
+    if (id) noteOpened('ch', id);
     var waiting = channelReading;
     channelReading = null;
     waiting.forEach(function (fn) { fn(); });
@@ -1929,16 +2033,46 @@ function iconPath(id, cb) {
  * programme before that; a channel without one shows its number and name. The
  * guide has no "next" on that call, so none is shown.
  */
+/*
+ * A read is one luna call per picked channel in turn, 0.5 s for nine on a G3
+ * (webOS 9.2.2), and the view asks every minute. A read under a minute old is
+ * answered as it is. An older one is answered at once, and read again behind
+ * it, only while it has a programme on for every channel; otherwise the reply
+ * waits for the read. LG can answer with no programme for a channel for
+ * minutes (BBC One for about ten on a G3, webOS 9.2.2), and an answer from
+ * memory would leave it showing nothing a minute after LG has one.
+ */
+var guideReads = null;
 function guide(cb) {
-  var c = readConfig();
-  if (nowMs() - guideCache.at < GUIDE_TTL_MS) return cb(guideCache.data);
+  var ids = readConfig().channels.slice(0, MAX_CHANNELS);
+  var same = guideCache.at && guideCache.key === ids.join(',');
+  if (same && nowMs() - guideCache.at < GUIDE_TTL_MS) return cb(guideCache.data);
+  if (same && guideComplete(guideCache.data, ids)) {
+    cb(guideCache.data);
+    behindReply('guide', function () { readGuide(ids, null); });
+    return;
+  }
+  readGuide(ids, cb);
+}
+
+function guideComplete(data, ids) {
+  var now = nowMs();
+  return ids.every(function (id) {
+    return data[id] && data[id].length && data[id].every(function (p) { return p.end > now; });
+  });
+}
+
+function readGuide(ids, cb) {
+  if (guideReads) { if (cb) guideReads.push(cb); return; }
+  guideReads = cb ? [cb] : [];
   var out = {};
-  var ids = c.channels.slice(0, MAX_CHANNELS);
   var i = 0;
   (function next() {
     if (i >= ids.length) {
-      guideCache = { at: nowMs(), data: out };
-      return cb(out);
+      guideCache = { at: nowMs(), data: out, key: ids.join(',') };
+      var waiting = guideReads;
+      guideReads = null;
+      return waiting.forEach(function (fn) { fn(out); });
     }
     var id = ids[i++];
     luna('com.webos.service.apiadapter/tv/getChannelCurrentProgramInfo', { channelId: id }, function (r) {
@@ -2358,8 +2492,7 @@ function now(cb) {
   }
   if (id === LIVE_TV) {
     var behind = foreground === HOME_APP || foreground === LG_HOME;
-    return luna('com.webos.service.utp.boot/getLastChannelId', {}, function (r) {
-      var chId = r && typeof r.channelId === 'string' ? r.channelId : null;
+    return lastChannelId(function (chId) {
       channelList(function (chans) {
         /** @type {any} */
         var hit = null;
@@ -3606,6 +3739,8 @@ function foregroundChanged(id) {
   if (legacyAppPending) tryRemoveLegacyApp();
   if (appRefreshPending && id !== HOME_APP) tryRefreshApp();
   if (id !== HOME_APP && id !== LG_HOME && id) lastSource = { appId: id, at: nowMs() };
+  // Live TV left, even with Glasshouse Home off: its channel may have changed.
+  if (was === LIVE_TV && id !== LIVE_TV) lastChannel = null;
   if (!readConfig().enabled) return;
   noteForeground(was, id);
   if (id === homeId) {
@@ -4135,9 +4270,13 @@ function init(opts) {
   webosVersion = opts.webosVersion || null;
   lgHomeWatchMs = opts.lgHomeWatchMs || LG_HOME_WATCH_MS;
   wakeSettleMs = typeof opts.wakeSettleMs === 'number' ? opts.wakeSettleMs : WAKE_SETTLE_MS;
+  revalidateDelayMs = typeof opts.revalidateDelayMs === 'number' ? opts.revalidateDelayMs : REVALIDATE_DELAY_MS;
+  Object.keys(revalidating).forEach(function (k) { clearTimeout(revalidating[k]); });
+  revalidating = {};
   installFn = opts.installApp || null;
   if (opts.injectKey) injectKeyFn = opts.injectKey;
   hdmiInputsFn = opts.hdmiInputs || null;
+  hdmiSignalFn = opts.hdmiSignal || null;
   procDir = opts.procDir || '/proc';
   slowOpenMs = typeof opts.slowOpenMs === 'number' ? opts.slowOpenMs : FIRST_BEAT_GRACE_MS;
   beatGraceMs = opts.beatGraceMs || BEAT_GRACE_MS;
@@ -4193,7 +4332,10 @@ function init(opts) {
   wakeReopen = null;
   beats = 0;
   recovering = false;
-  guideCache = { at: 0, data: {} };
+  guideCache = { at: 0, data: {}, key: '' };
+  guideReads = null;
+  lastChannel = null;
+  lastChannelReads = null;
   listCache = {};
   savedLists = null;
   listsRevision = 0;
@@ -4411,6 +4553,8 @@ function watchStart(when, beatsBefore, signSince) {
 function pageAlive() { pageSeenAt = nowMs(); }
 
 function stop() {
+  Object.keys(revalidating).forEach(function (k) { clearTimeout(revalidating[k]); });
+  revalidating = {};
   if (internetTimer) clearInterval(internetTimer);
   internetTimer = null;
   if (lgHomeWatch) clearInterval(lgHomeWatch);
@@ -4463,6 +4607,7 @@ module.exports = {
   flush: recent.flush,
   status: status,
   catalogue: catalogue,
+  catalogueReply: catalogueReply,
   viewStatus: viewStatus,
   videoBackgroundActive: videoBackgroundActive,
   channelList: channelList,
