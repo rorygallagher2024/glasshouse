@@ -510,7 +510,8 @@ epoch ms) and `scenarios` (the first four in turn). Each run first prints a
 commit and whether the tree was dirty) and its load average, then the forks
 the whole system made while the keys were pressed (`/proc/stat`, threads
 included). It fails if Home sends no trace within 15 s, a key is refused,
-or `cold` receives no new page-load marks. It leaves an existing trace alone.
+or `cold` receives no new page-load marks. It refuses to start while a trace
+is already on, so two runs cannot share one.
 
 ```bash
 scripts/tv.sh 192.168.1.131 frames return

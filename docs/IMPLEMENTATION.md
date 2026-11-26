@@ -2138,7 +2138,9 @@ expired in-memory list to refresh. One read runs per list, and a failed read
 keeps it. Waiting for those reads made a catalogue take 0.5 s on a G3
 (webOS 9.2.2), ten luna-send children in turn. A changed list bumps
 `layoutVersion`. A catalogue reports the version from before it started, so
-the next heartbeat still picks up any change made during the read. The catalogue takes
+the next heartbeat still picks up any change made during the read. A tile
+that fails to open asks for the catalogue at once, as it may be for an app
+removed while Home was away. The catalogue takes
 the layout and wallpapers from `viewStatus()`, which makes no luna calls, and
 carries `rev`, a hash of everything in it but `layoutVersion`: a view that
 already has that rev applies nothing again. Inputs with no signal are marked
