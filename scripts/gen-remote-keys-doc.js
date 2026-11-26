@@ -29,6 +29,7 @@ function webos10Summary(def, none) {
 }
 
 function webos11Summary(rk, def, none) {
+  if (def.blockCode && rk.CHANNEL_EVDEV_CODES[def.key]) return 'yes (key handler patch, or observes presses)';
   if (def.key === 'input' || def.blockCode) return 'yes (key handler patch)';
   if (rk.COLOR_CODES[def.key]) return 'yes (observes presses)';
   if (rk.NATIVE_BLOCK_KEYS[def.key]) return 'yes (blocks Alexa)';
@@ -39,6 +40,7 @@ function webos11Summary(rk, def, none) {
 }
 
 function webos11Mechanism(rk, def, none) {
+  if (def.blockCode && rk.CHANNEL_EVDEV_CODES[def.key]) return 'key handler (`lib/guidepatch`), or observed evdev press';
   if (def.key === 'input' || def.blockCode) return 'key handler (`lib/guidepatch`)';
   if (rk.COLOR_CODES[def.key]) return 'observed evdev press';
   if (rk.NATIVE_ACTIONS[def.key]) return 'key action `' + rk.NATIVE_ACTIONS[def.key] + '`';
