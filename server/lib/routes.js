@@ -153,9 +153,16 @@ var powerModule = null;
 function markNoSignal(c, done) {
   if (!c || !Array.isArray(c.devices) || !telemetryModule || typeof telemetryModule.hdmiSignalByInput !== 'function') return done();
   telemetryModule.hdmiSignalByInput(function (byInput) {
-    c.devices.forEach(function (d) {
+    // Copies: the devices are home's cached list itself, and a flag set on it
+    // would be saved to home-lists.json and differ from every fresh read,
+    // reloading the view each time the list was read again.
+    c.devices = c.devices.map(function (d) {
       var sig = d && !d.unused && !d.kind && d.port ? byInput[d.port] : null;
-      if (sig && !sig.powered && !sig.locked) d.noSignal = true;
+      if (!sig || sig.powered || sig.locked) return d;
+      var copy = {};
+      Object.keys(d).forEach(function (k) { copy[k] = d[k]; });
+      copy.noSignal = true;
+      return copy;
     });
     done();
   });
