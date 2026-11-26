@@ -2619,7 +2619,7 @@
  "home.group.search": {"text": "Buscar", "from": "Search"},
  "home.group.motion": {"text": "Animaciones", "from": "Animations"},
  "home.motion.drift": {"text": "Movimiento del fondo", "from": "Wallpaper drift"},
- "home.motion.driftDesc": {"text": "El fondo de pantalla se mueve y se acerca muy despacio, para que nunca quede quieto en la pantalla.", "from": "The wallpaper moves and zooms very slowly, so it never sits still on the screen."},
+ "home.motion.driftDesc": {"text": "El fondo de pantalla se desplaza lateralmente muy despacio, para que nunca quede quieto en la pantalla.", "from": "The wallpaper shifts sideways very slowly, so it never sits still on the screen."},
  "home.motion.crossfade": {"text": "Transición del fondo", "from": "Wallpaper cross-fade"},
  "home.motion.crossfadeDesc": {"text": "La imagen se funde con la siguiente cuando cambia la parte del día, en lugar de cambiar de golpe.", "from": "The picture fades into the next when the part of the day changes, rather than switching at once."},
  "home.motion.scroll": {"text": "Desplazamiento suave", "from": "Smooth scrolling"},

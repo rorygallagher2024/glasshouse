@@ -709,7 +709,7 @@
  "home.motion.crossfade": {"from": "Wallpaper cross-fade", "text": "Fondu enchaîné du fond d'écran"},
  "home.motion.crossfadeDesc": {"from": "The picture fades into the next when the part of the day changes, rather than switching at once.", "text": "L'image se fond dans la suivante quand le moment de la journée change, plutôt que de changer d'un coup."},
  "home.motion.drift": {"from": "Wallpaper drift", "text": "Dérive du fond d'écran"},
- "home.motion.driftDesc": {"from": "The wallpaper moves and zooms very slowly, so it never sits still on the screen.", "text": "Le fond d'écran se déplace et zoome très lentement, pour ne jamais rester immobile à l'écran."},
+ "home.motion.driftDesc": {"text": "Le fond d'écran se déplace latéralement très lentement, pour ne jamais rester immobile à l'écran.", "from": "The wallpaper shifts sideways very slowly, so it never sits still on the screen."},
  "home.motion.scroll": {"from": "Smooth scrolling", "text": "Défilement fluide"},
  "home.motion.scrollDesc": {"from": "A row glides to the chosen tile, rather than jumping to it.", "text": "Une rangée glisse jusqu'à la case choisie, plutôt que d'y sauter directement."},
  "home.motion.slide": {"from": "Sliding panels", "text": "Panneaux glissants"},

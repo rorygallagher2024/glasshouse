@@ -2544,7 +2544,7 @@
  "home.motion.crossfade": {"text": "Płynne przejście tapety", "from": "Wallpaper cross-fade"},
  "home.motion.crossfadeDesc": {"text": "Obraz płynnie przechodzi w następny przy zmianie pory dnia, zamiast przełączać się od razu.", "from": "The picture fades into the next when the part of the day changes, rather than switching at once."},
  "home.motion.drift": {"text": "Dryfowanie tapety", "from": "Wallpaper drift"},
- "home.motion.driftDesc": {"text": "Tapeta porusza się i przybliża bardzo powoli, więc nigdy nie stoi nieruchomo na ekranie.", "from": "The wallpaper moves and zooms very slowly, so it never sits still on the screen."},
+ "home.motion.driftDesc": {"text": "Tapeta przesuwa się w bok bardzo powoli, więc nigdy nie stoi nieruchomo na ekranie.", "from": "The wallpaper shifts sideways very slowly, so it never sits still on the screen."},
  "home.motion.scroll": {"text": "Płynne przewijanie", "from": "Smooth scrolling"},
  "home.motion.scrollDesc": {"text": "Rząd płynnie przesuwa się do wybranego kafelka, zamiast do niego przeskakiwać.", "from": "A row glides to the chosen tile, rather than jumping to it."},
  "home.motion.slide": {"text": "Wysuwane panele", "from": "Sliding panels"},

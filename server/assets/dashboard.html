@@ -1657,7 +1657,7 @@ function homeChRows(d) { return homeRowRows('ch', d); }
 function homeMotionRows(d) {
   var lay = d.layout;
   return [homeSwitchRow(d, 'fade', t('home.fade', 'Fade in and out'), t('home.fadeDesc', 'Glasshouse Home fades in as it comes on screen, and out as an app, input or channel opens.'), 'homeFade', lay.fade === true),
-    homeSwitchRow(d, 'wallDrift', t('home.motion.drift', 'Wallpaper drift'), t('home.motion.driftDesc', 'The wallpaper moves and zooms very slowly, so it never sits still on the screen.'), 'homeFlag', lay.wallDrift !== false),
+    homeSwitchRow(d, 'wallDrift', t('home.motion.drift', 'Wallpaper drift'), t('home.motion.driftDesc', 'The wallpaper shifts sideways very slowly, so it never sits still on the screen.'), 'homeFlag', lay.wallDrift !== false),
     homeSwitchRow(d, 'wallCrossfade', t('home.motion.crossfade', 'Wallpaper cross-fade'), t('home.motion.crossfadeDesc', 'The picture fades into the next when the part of the day changes, rather than switching at once.'), 'homeFlag', lay.wallCrossfade !== false),
     homeSwitchRow(d, 'smoothScroll', t('home.motion.scroll', 'Smooth scrolling'), t('home.motion.scrollDesc', 'A row glides to the chosen tile, rather than jumping to it.'), 'homeFlag', lay.smoothScroll !== false),
     homeSwitchRow(d, 'slidePanels', t('home.motion.slide', 'Sliding panels'), t('home.motion.slideDesc', 'Recent apps, Search and More apps slide in and out, rather than appearing at once.'), 'homeFlag', lay.slidePanels !== false)];
