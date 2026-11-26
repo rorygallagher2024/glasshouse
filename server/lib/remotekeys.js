@@ -103,6 +103,7 @@ var HOME_APP = 'com.webos.app.home';
 // Glasshouse's input bar, an overlay app (assets/inputbar-app/).
 var INPUT_BAR = 'com.tvweb.inputbar';
 var HOME_BAR = 'com.tvweb.homebar';
+var HA_BAR = 'com.tvweb.habar';
 var INPUT_BAR_DIR = '/media/developer/apps/usr/palm/applications/' + INPUT_BAR;
 // The separate app earlier Glasshouse Home builds installed, now removed; a key
 // still set to it opened nothing, and is moved to HOME_APP at start.
@@ -359,6 +360,9 @@ var homeBarAppFn = null;
 var homeBarAllowedFn = function () { return false; };
 var homeBarKeySetFn = null;
 var homeBarLauncherFn = function () { return false; };
+var haBarAppFn = null;
+var haBarAllowedFn = function () { return false; };
+var haBarKeySetFn = null;
 // Whether the bar's app can be put on this TV and kept loaded, which the brightness keys' on-screen level needs.
 function barAvailable() { return !!barAppFn && barAllowedFn(); }
 var inputNames = null;
@@ -414,6 +418,9 @@ function init(opts) {
   homeBarAllowedFn = typeof opts.homeBarAllowed === 'function' ? opts.homeBarAllowed : function () { return false; };
   homeBarKeySetFn = typeof opts.onHomeBarKey === 'function' ? opts.onHomeBarKey : null;
   homeBarLauncherFn = typeof opts.homeBarLauncher === 'function' ? opts.homeBarLauncher : function () { return false; };
+  haBarAppFn = typeof opts.haBarApp === 'function' ? opts.haBarApp : null;
+  haBarAllowedFn = typeof opts.haBarAllowed === 'function' ? opts.haBarAllowed : function () { return false; };
+  haBarKeySetFn = typeof opts.onHaBarKey === 'function' ? opts.onHaBarKey : null;
   inputNames = opts.inputNames || {};
   if (opts.stateDir) stateDir = opts.stateDir;
   guidePatch.init({ stateDir: stateDir, library: opts.guideLibrary, systemUiLibrary: opts.systemUiLibrary, preProcessLibrary: opts.preProcessLibrary,
@@ -955,7 +962,7 @@ function filterSource() {
     // can be dropped without swallowing rapid open/close toggles.
     '            applicationManager.launch(id, id === ' + JSON.stringify(HOME_APP),
     '                ? JSON.stringify({ "activateType": "home", "launchType": "homeKey" })',
-    '                : (id === ' + JSON.stringify(HOME_BAR) + ' ? JSON.stringify({ "glasshouse": "bar", "press": ++glasshouseBarPress }) : "{}"));',
+    '                : ((id === ' + JSON.stringify(HOME_BAR) + ' || id === ' + JSON.stringify(HA_BAR) + ') ? JSON.stringify({ "glasshouse": "bar", "press": ++glasshouseBarPress }) : "{}"));',
     '        }',
     '        return KeyPolicy.Accepted;',
     '    } catch (e) {',
@@ -2113,6 +2120,7 @@ function barChoices(native) {
   if (!native && !!barAppFn && barAllowedFn()) out.push({ id: INPUT_BAR, title: msg('srv.remoteKeys.inputBar', 'Input bar'), kind: 'app' });
   // Opened as the Home key opens it when it is the launcher, with a press number.
   if (!native && !!homeBarAppFn && homeBarAllowedFn()) out.push({ id: HOME_BAR, title: msg('srv.remoteKeys.homeBar', 'Glasshouse Bar'), kind: 'app' });
+  if (!!haBarAppFn && (haBarAllowedFn() || opensHaBar())) out.push({ id: HA_BAR, title: msg('srv.remoteKeys.haBar', 'Home Assistant bar'), kind: 'app' });
   return out;
 }
 
@@ -2130,6 +2138,14 @@ function dropHomeBarIfUnused(hadBar) {
   if (!hadBar || opensHomeBar() || !homeBarAppFn || homeBarLauncherFn()) return;
   homeBarAppFn('remove', function (r) {
     if (!r || !r.ok) console.log('remotekeys: could not remove Glasshouse Bar\'s app: ' + ((r && r.error) || 'no answer'));
+  });
+}
+
+// Home Assistant bar's app, removed once no key opens it.
+function dropHaBarIfUnused(hadBar) {
+  if (!hadBar || opensHaBar() || !haBarAppFn) return;
+  haBarAppFn('remove', function (r) {
+    if (!r || !r.ok) console.log('remotekeys: could not remove Home Assistant bar\'s app: ' + ((r && r.error) || 'no answer'));
   });
 }
 
@@ -2367,9 +2383,9 @@ function setRemoteKey(key, action, id, cb) {
 
 function setOfferedKey(def, action, id, kind, cb) {
   var map = readMap();
-  var hadBar = needsBarApp(map[def.key]), hadHomeBar = map[def.key] === HOME_BAR;
+  var hadBar = needsBarApp(map[def.key]), hadHomeBar = map[def.key] === HOME_BAR, hadHaBar = map[def.key] === HA_BAR;
   function saved(r) {
-    if (r && r.ok) { dropBarIfUnused(hadBar); dropHomeBarIfUnused(hadHomeBar); }
+    if (r && r.ok) { dropBarIfUnused(hadBar); dropHomeBarIfUnused(hadHomeBar); dropHaBarIfUnused(hadHaBar); }
     cb(r);
   }
   if (action === 'lg') {
@@ -2411,8 +2427,10 @@ function setOfferedKey(def, action, id, kind, cb) {
         save(map, function (r) {
           if (r && r.ok && wantsBar && keySetFn) keySetFn();
           if (r && r.ok && id === HOME_BAR && homeBarKeySetFn) homeBarKeySetFn();
-          if (wantsBar) { if (r && r.ok) dropHomeBarIfUnused(hadHomeBar); return cb(r); }
-          if (id === HOME_BAR) { if (r && r.ok) dropBarIfUnused(hadBar); return cb(r); }
+          if (r && r.ok && id === HA_BAR && haBarKeySetFn) haBarKeySetFn();
+          if (wantsBar) { if (r && r.ok) { dropHomeBarIfUnused(hadHomeBar); dropHaBarIfUnused(hadHaBar); } return cb(r); }
+          if (id === HOME_BAR) { if (r && r.ok) { dropBarIfUnused(hadBar); dropHaBarIfUnused(hadHaBar); } return cb(r); }
+          if (id === HA_BAR) { if (r && r.ok) { dropBarIfUnused(hadBar); dropHomeBarIfUnused(hadHomeBar); } return cb(r); }
           saved(r);
         });
       }
@@ -2426,6 +2444,12 @@ function setOfferedKey(def, action, id, kind, cb) {
       if (id === HOME_BAR && !homeBarLauncherFn()) {
         return homeBarAppFn('install', function (r) {
           if (!r || !r.ok) return cb({ ok: false, error: msg('srv.remoteKeys.homeBarInstall', 'Glasshouse Bar could not be put on the TV. Try again in a moment.') });
+          store();
+        });
+      }
+      if (id === HA_BAR && haBarAppFn) {
+        return haBarAppFn('install', function (r) {
+          if (!r || !r.ok) return cb({ ok: false, error: msg('srv.remoteKeys.haBarInstall', 'The Home Assistant bar could not be put on the TV. Try again in a moment.') });
           store();
         });
       }
@@ -2662,16 +2686,18 @@ function restoreKeys(done, native) {
   var barThere = opensInputBar() || fs.existsSync(INPUT_BAR_DIR);
   // Glasshouse Bar's app stays while it is the launcher: lib/homebar removes it then.
   var homeBarGoes = opensHomeBar() && !homeBarLauncherFn();
+  var haBarGoes = opensHaBar();
   function cb(ok) {
     if (ok) {
       followColorButtons({});
       followChannelButtons({});
     }
-    if (!lunaFn || (!barThere && !homeBarGoes)) return done(ok);
-    var left = (barThere ? 1 : 0) + (homeBarGoes ? 1 : 0);
+    if (!lunaFn || (!barThere && !homeBarGoes && !haBarGoes)) return done(ok);
+    var left = (barThere ? 1 : 0) + (homeBarGoes ? 1 : 0) + (haBarGoes ? 1 : 0);
     var one = function () { if (--left === 0) done(ok); };
     if (barThere) lunaFn('com.webos.appInstallService/dev/remove', { id: INPUT_BAR }, one);
     if (homeBarGoes) lunaFn('com.webos.appInstallService/dev/remove', { id: HOME_BAR }, one);
+    if (haBarGoes) lunaFn('com.webos.appInstallService/dev/remove', { id: HA_BAR }, one);
   }
   if (native || fs.existsSync(lgFile()) || guidePatch.holdsKeys()) {
     if (!lunaFn) return cb(false);
@@ -2738,6 +2764,12 @@ function opensHomeBar() {
   return Object.keys(map).some(function (k) { return map[k] === HOME_BAR; });
 }
 
+// Whether a key is set to open the Home Assistant bar, which lib/habar.js keeps loaded.
+function opensHaBar() {
+  var map = readMap();
+  return Object.keys(map).some(function (k) { return map[k] === HA_BAR; });
+}
+
 module.exports = {
   init: init,
   opensInputBar: opensInputBar,
@@ -2746,6 +2778,7 @@ module.exports = {
   nativeHomeBar: function () { return guidePatch.status().bar; },
   nativeHomeBarOn: function () { return guidePatch.status().applied.bar; },
   opensHomeBar: opensHomeBar,
+  opensHaBar: opensHaBar,
   dropInputBar: dropInputBar,
   availabilityChanged: availabilityChanged,
   getRemoteKeys: getRemoteKeys,

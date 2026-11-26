@@ -34,6 +34,8 @@ var apps = null;
 var home = null;
 /** @type {typeof import('./resettime')} */
 var resettime = null;
+/** @type {typeof import('./habar') | null} */
+var haBar = null;
 /** @type {function(function(boolean): void): void} */
 var alwaysOnSupported = function (cb) { cb(false); };
 
@@ -396,6 +398,18 @@ var PARTS = [
     valid: function (v) { return typeof v === 'number' && v % 1 === 0 && v >= 0 && v <= 1440; },
     read: function (cb) { cb(config && typeof config.screensaverPowerOffMinutes === 'number' ? config.screensaverPowerOffMinutes : 0); },
     write: function (v, cb) { control('screensaverPowerOff', v || '', cb); }
+  },
+  {
+    id: 'haBar',
+    valid: function (v) {
+      return Array.isArray(v) && v.length <= 16 && v.every(function (item) {
+        return isObject(item) && typeof item.id === 'string' && /^[a-z0-9_]+\.[a-z0-9_]+$/.test(item.id) &&
+          (item.label === undefined || (typeof item.label === 'string' && item.label.length <= 40));
+      });
+    },
+    read: function (cb) { cb(haBar ? haBar.listConfig().entities : []); },
+    refuse: function () { return haBar ? null : 'absent'; },
+    write: function (v, cb) { cb(haBar.saveConfig(v)); }
   }
 ];
 
@@ -456,6 +470,7 @@ function init(opts) {
   apps = opts.apps;
   home = opts.home || null;
   if (opts.resettime) resettime = opts.resettime;
+  if (opts.habar || opts.haBar) haBar = opts.habar || opts.haBar;
   if (opts.alwaysOnSupported) alwaysOnSupported = opts.alwaysOnSupported;
 }
 

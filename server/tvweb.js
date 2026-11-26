@@ -84,6 +84,7 @@ function compatTv() {
   };
 }
 var homebar = require('./lib/homebar');
+var haBar = require('./lib/habar');
 var clockFormat = require('./lib/clock');
 var homeScreen = require('./lib/homescreen');
 /*
@@ -633,7 +634,13 @@ servicesModule.init({ stateDir: __dirname });
 preload.init({ luna: luna, stateDir: __dirname });
 doh.init({});
 appDns.init({ luna: luna, stateDir: __dirname, doh: doh });
-quickAccess.init({ luna: luna, inputNames: telemetry.inputNameMap });
+quickAccess.init({
+  luna: luna,
+  inputNames: telemetry.inputNameMap,
+  haBarAllowed: function () { return haBar.available(); },
+  haBarApp: function (action, cb) { tvApp(action, cb, 'habar-app'); },
+  onHaBarKey: function () { haBar.keySet(); }
+});
 remoteDetect.init({ pairing: telemetry.remoteInfo, stateDir: __dirname });
 // The remotes in use (paired, or seen lately, as Automatic reads them) and what was found, for the Remote tab.
 function detectRemotes(cb) {
@@ -665,7 +672,10 @@ remoteKeys.init({ detectRemotes: detectRemotes, luna: luna, subscription: lunaTr
   homeBarAllowed: function () { return inputBar.allowed(); },
   homeBarApp: function (action, cb) { tvApp(action, cb, 'homebar-app'); },
   homeBarLauncher: function () { return homebar.enabled(); },
-  onHomeBarKey: function () { homebar.keySet(); } });
+  onHomeBarKey: function () { homebar.keySet(); },
+  haBarAllowed: function () { return haBar.available(); },
+  haBarApp: function (action, cb) { tvApp(action, cb, 'habar-app'); },
+  onHaBarKey: function () { haBar.keySet(); } });
 // A question on the screen from Home Assistant; the answer goes back to MQTT
 // once the bridge is up (onAskAnswer is set in setupHomeAssistant).
 var onAskAnswer = null;
@@ -717,6 +727,15 @@ clockFormat.init({ luna: luna, onChange: function () { screensavers.restageScree
 // The reads a screen saver's own values come from: the token stays here, in
 // config.json, and the saver only ever sees this server's address.
 haEntity.init({ config: CONFIG });
+haBar.init({
+  luna: luna,
+  stateDir: __dirname,
+  haEntity: haEntity,
+  hour12: clockFormat.hour12,
+  app: function (action, cb) { tvApp(action, cb, 'habar-app'); },
+  on: function () { return !liveState || (liveState.state.snapshot().power || {}).systemOn !== false; },
+  byKey: function () { return remoteKeys.opensHaBar() || quickAccess.opensHaBar(); }
+});
 screensavers.init({
   luna: luna,
   hour12: clockFormat.hour12,
@@ -1230,6 +1249,7 @@ routes.init({
   iptv: iptv,
   screensavers: screensavers,
   haEntity: haEntity,
+  haBar: haBar,
   updater: updater,
   tvApp: tvApp,
   restartSelf: restartSelf,
@@ -1264,6 +1284,7 @@ backupParts.init({
   apps: appsModule,
   home: glasshouseHome,
   resettime: resettime,
+  haBar: haBar,
   alwaysOnSupported: telemetry.alwaysOnSupported
 });
 
@@ -1376,6 +1397,10 @@ if (CLI_MODE) {
         tvApp('refresh', function (r3) {
           if (r3 && r3.refreshed && r3.ok) console.log('ask: app refreshed to current release');
           if (r3 && r3.refreshed) askQuestion.forgetInstalled();
+          tvApp('refresh', function (r4) {
+            if (r4 && r4.refreshed && r4.ok) console.log('habar: app refreshed to current release');
+            haBar.poke();
+          }, 'habar-app');
         }, 'ask-app');
       }, 'homebar-app');
     }, 'inputbar-app');
@@ -2541,8 +2566,9 @@ if (!CLI_MODE) {
   // The input bar is preloaded while a remote key opens it and the TV is on.
   inputBar.start();
   homebar.start();
+  haBar.start();
   liveState.state.onChange(function (ev) {
-    if (ev.group === 'power' && ev.key === 'systemOn' && ev.value === true) { inputBar.poke(); homebar.poke(); }
+    if (ev.group === 'power' && ev.key === 'systemOn' && ev.value === true) { inputBar.poke(); homebar.poke(); haBar.poke(); }
   });
 
   telemetry.detectDeviceInfo(function() {

@@ -1329,6 +1329,19 @@ button.pill.flash.idle[disabled]:hover{color:var(--w60);border-color:var(--edge)
 .mqtt-net{max-width:380px;margin-top:22px;border:1px solid var(--w06);
   background:rgba(var(--fg),.02);border-radius:var(--r-md);padding:16px 16px 14px}
 .ha-api-section{border-top:1px solid var(--w12);margin-top:44px;padding-top:32px}
+.ha-bar-section{border-top:1px solid var(--w06);margin-top:28px;padding-top:14px}
+.ha-bar-list{max-width:560px;margin-top:14px}
+.ha-bar-row{display:grid;grid-template-columns:1fr minmax(120px,180px) auto;gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid var(--w06)}
+.ha-bar-ent{min-width:0}
+.ha-bar-ent .nm{font-size:14px;font-weight:600;color:var(--w90);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ha-bar-ent .id{font-size:12px;color:var(--w60);font-family:ui-monospace,SFMono-Regular,Menlo,monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ha-bar-label{width:100%;min-width:0;box-sizing:border-box;font-family:'Manrope';font-size:13px;color:var(--w100);background:transparent;border:1px solid var(--edge);padding:7px 10px;border-radius:var(--r-sm);outline:none}
+.ha-bar-label:focus{border-color:var(--w100)}
+.ha-bar-btns{display:flex;gap:4px}
+.ha-bar-remote-hint{margin-top:12px;margin-bottom:0}
+.ha-bar-actions{margin-top:14px;align-items:center}
+.ha-bar-preview{text-decoration:none;display:inline-flex;align-items:center}
+@media (max-width:560px){.ha-bar-row{grid-template-columns:1fr}}
 .mqtt-net.off .mqtt-net-node{opacity:.6}
 .mqtt-net.off .mqtt-net-link{opacity:.4}
 .mqtt-net.off .mqtt-dot{background:var(--w20)!important;border-color:var(--edge)!important;box-shadow:none!important}

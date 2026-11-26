@@ -28,10 +28,15 @@ var SERVICE = 'com.webos.settingsservice';
 var KEYS = [1, 2, 3, 4, 5, 6, 7, 8, 9];
 var LIVE_TV = 'com.webos.app.livetv';
 var APP_PREFIX = 'com.webos.app.';
+var HA_BAR = 'com.tvweb.habar';
 
 var lunaFn = null;
 var inputNames = null;
 var stateDir = path.join(__dirname, '..');
+var haBarAppFn = null;
+var haBarAllowedFn = function () { return false; };
+var haBarKeySetFn = null;
+var usesHaBar = false;
 
 function init(opts) {
   opts = opts || {};
@@ -41,6 +46,10 @@ function init(opts) {
   clearFirstMs = opts.clearFirstMs !== undefined ? opts.clearFirstMs : CLEAR_FIRST_MS;
   // telemetry's inputNameMap: hdmi1 to "Apple TV", as the TV's settings name them.
   inputNames = opts.inputNames || {};
+  haBarAppFn = typeof opts.haBarApp === 'function' ? opts.haBarApp : null;
+  haBarAllowedFn = typeof opts.haBarAllowed === 'function' ? opts.haBarAllowed : function () { return false; };
+  haBarKeySetFn = typeof opts.onHaBarKey === 'function' ? opts.onHaBarKey : null;
+  usesHaBar = false;
 }
 
 function settingKey(n) {
@@ -115,6 +124,7 @@ function readKeys(cb) {
       var v = s[settingKey(n)];
       return !!v && typeof v === 'object' && typeof v.id === 'string';
     });
+    if (whole) usesHaBar = KEYS.some(function (n) { return s[settingKey(n)].id === HA_BAR; });
     cb(whole ? s : null);
   });
 }
@@ -136,6 +146,11 @@ function isSupported(cb) {
  * choices }). A key's title is the app's or input's, with a live TV channel's
  * number; lgDefault marks an app LG put there.
  */
+function haBarChoices() {
+  if (!haBarAppFn || !haBarAllowedFn()) return [];
+  return [{ id: HA_BAR, title: msg('srv.remoteKeys.haBar', 'Home Assistant bar'), kind: 'app' }];
+}
+
 function getQuickAccess(cb) {
   if (!lunaFn) return cb({ ok: true, supported: false });
   readKeys(function (settings) {
@@ -150,6 +165,8 @@ function getQuickAccess(cb) {
       apps.forEach(function (a) { if (a && a.id) titles[a.id] = a.title || a.id; });
       var inputs = inputChoices();
       inputs.forEach(function (c) { titles[c.id] = c.title; });
+      var bar = haBarChoices();
+      titles[HA_BAR] = msg('srv.remoteKeys.haBar', 'Home Assistant bar');
       var keys = KEYS.map(function (n) {
         var v = settings[settingKey(n)] || {};
         var id = typeof v.id === 'string' ? v.id : '';
@@ -165,7 +182,7 @@ function getQuickAccess(cb) {
         return { key: n, id: id, title: title, lgDefault: v.override === true, installed: !id || !known || !!titles[id],
                  changed: Object.prototype.hasOwnProperty.call(lg, String(n)) };
       });
-      cb({ ok: true, supported: true, keys: keys, choices: inputs.concat(appChoices(apps)) });
+      cb({ ok: true, supported: true, keys: keys, choices: inputs.concat(bar, appChoices(apps)) });
     });
   });
 }
@@ -253,14 +270,30 @@ var clearFirstMs = CLEAR_FIRST_MS;
 function setTo(n, id, clearFirst, before, cb) {
   listApps(function (apps) {
     if (!apps) return cb({ ok: false, error: msg('srv.quickAccess.noApps', 'Could not read the TV\'s apps. Try again in a moment.') });
-    var allowed = inputChoices().concat(appChoices(apps)).some(function (c) { return c.id === id; });
+    var allowed = inputChoices().concat(haBarChoices(), appChoices(apps)).some(function (c) { return c.id === id; });
     if (!allowed) return cb({ ok: false, error: msg('srv.quickAccess.unknownApp', 'That app is not on this TV') });
-    keepLg(n, before);
-    if (!clearFirst) return writeKey(n, id, cb);
-    writeKey(n, '', function (r) {
-      if (!r.ok) return cb(r);
-      setTimeout(function () { writeKey(n, id, cb); }, clearFirstMs);
-    });
+    function commit() {
+      keepLg(n, before);
+      var finish = function (r) {
+        if (r && r.ok && id === HA_BAR) {
+          usesHaBar = true;
+          if (haBarKeySetFn) haBarKeySetFn();
+        }
+        cb(r);
+      };
+      if (!clearFirst) return writeKey(n, id, finish);
+      writeKey(n, '', function (r) {
+        if (!r.ok) return cb(r);
+        setTimeout(function () { writeKey(n, id, finish); }, clearFirstMs);
+      });
+    }
+    if (id === HA_BAR && haBarAppFn) {
+      return haBarAppFn('install', function (r) {
+        if (!r || !r.ok) return cb({ ok: false, error: msg('srv.remoteKeys.haBarInstall', 'The Home Assistant bar could not be put on the TV. Try again in a moment.') });
+        commit();
+      });
+    }
+    commit();
   });
 }
 
@@ -279,6 +312,7 @@ function writeValue(n, id, params, cb) {
 module.exports = {
   init: init,
   isSupported: isSupported,
+  opensHaBar: function () { return usesHaBar; },
   getQuickAccess: getQuickAccess,
   setQuickAccess: setQuickAccess,
   resetQuickAccess: resetQuickAccess,
