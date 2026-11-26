@@ -7,17 +7,17 @@ Contributions are welcome. This guide outlines how to propose changes, write com
 * **You own the glass:** The project exists to give owners direct control over their TV without vendor lock-in, cloud dependencies, or tracking. No telemetry or analytics are collected.
 * **Keep the TV lightweight:** The TV's onboard CPU and RAM are shared with video decoding and system processes. Code running on the TV must remain fast, lean, and free of unnecessary background work.
 * **Zero runtime dependencies:** The on-TV server runs with no npm packages installed on the device.
-* **Community add-ons live in the catalog:** New community screen savers and custom launchers belong in their own repositories registered with [rorygallagher2024/glasshouse-catalog](https://github.com/rorygallagher2024/glasshouse-catalog) rather than bundled into core Glasshouse. See [Contributing screen savers and launchers](#contributing-screen-savers-and-launchers).
+* **Community add-ons live in the catalog:** New community screen savers, No Signal screens, and custom launchers belong in their own repositories registered with [rorygallagher2024/glasshouse-catalog](https://github.com/rorygallagher2024/glasshouse-catalog) rather than bundled into core Glasshouse. See [Contributing add-ons to the catalog](#contributing-add-ons-to-the-catalog).
 
-## Contributing screen savers and launchers
+## Contributing add-ons to the catalog
 
-Community screen savers and custom launchers live in their authors' own GitHub repositories and appear in Glasshouse through [rorygallagher2024/glasshouse-catalog](https://github.com/rorygallagher2024/glasshouse-catalog).
+Community screen savers, No Signal screens, and custom launchers live in their authors' own GitHub repositories and appear in Glasshouse through [rorygallagher2024/glasshouse-catalog](https://github.com/rorygallagher2024/glasshouse-catalog).
 
-* **Guides:** [Writing a screen saver](development/WRITING-SCREENSAVERS.md) and [Screen saver design principles](development/SCREENSAVER-DESIGN.md) cover QML screen savers; [Writing a launcher](development/WRITING-LAUNCHERS.md) covers custom Home launchers.
+* **Guides:** [Writing a screen saver](development/WRITING-SCREENSAVERS.md) and [Screen saver design principles](development/SCREENSAVER-DESIGN.md) cover QML screen savers; [Writing a No Signal screen](development/WRITING-NOSIGNAL.md) covers No Signal screens; [Writing a launcher](development/WRITING-LAUNCHERS.md) covers custom Home launchers.
 
 To publish one:
 
-1. Check the package locally (`./scripts/check-screensavers.py` for screen savers, `python3 scripts/check-es5.py` for launchers) and test it on a TV using **Install from a GitHub link or .zip URL** under **Community screen savers** or **Home → Custom → Community launchers**.
+1. Check the package locally (`./scripts/check-screensavers.py` for screen savers or No Signal QML, `python3 scripts/check-es5.py` for launchers) and test it on a TV using **Install from a GitHub link or .zip URL** under **Community screen savers**, **Inputs → No Signal screen → Community No Signal screens**, or **Home → Custom → Community launchers**.
 2. Tag a release on GitHub with a `.zip` archive (or `.ipk` for launchers) and compute its SHA-256 (`shasum -a 256 <archive>` or `sha256sum <archive>`).
 3. Open a pull request against [rorygallagher2024/glasshouse-catalog](https://github.com/rorygallagher2024/glasshouse-catalog) adding your entry to `registry.json`.
 

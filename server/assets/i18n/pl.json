@@ -3939,7 +3939,7 @@
  "community.use": {"from": "Use", "text": "Użyj"},
  "srv.community.badCatalog": {"from": "Catalog format could not be read.", "text": "Nie można odczytać formatu katalogu."},
  "srv.community.badHash": {"from": "The downloaded package does not match the catalog checksum.", "text": "Pobrany pakiet nie zgadza się z sumą kontrolną katalogu."},
- "srv.community.badKind": {"from": "Choose screensaver or launcher.", "text": "Wybierz wygaszacz lub launcher."},
+ "srv.community.badKind": {"from": "Choose screensaver, launcher or nosignal.", "text": "Wybierz wygaszacz, launcher lub ekran Brak sygnału."},
  "srv.community.badUrl": {"from": "Give an https:// link to a GitHub repository or archive.", "text": "Podaj link https:// do repozytorium GitHub lub archiwum."},
  "srv.community.busy": {"from": "Wait for the current installation to finish.", "text": "Poczekaj na zakończenie bieżącej instalacji."},
  "srv.community.fetchMissing": {"from": "Download helper is not available", "text": "Moduł pobierania jest niedostępny"},
@@ -3948,5 +3948,14 @@
  "srv.community.saverUnavailable": {"from": "Screen saver installation is not available.", "text": "Instalacja wygaszaczy jest niedostępna."},
  "srv.community.unknown": {"from": "Unknown community item.", "text": "Nieznany element społeczności."},
  "community.ss.docs": {"from": "Writing a screen saver", "text": "Pisanie wygaszacza ekranu"},
- "community.submit": {"from": "Submit to the catalog", "text": "Zgłoś do katalogu"}
+ "community.submit": {"from": "Submit to the catalog", "text": "Zgłoś do katalogu"},
+ "srv.nosignal.badMain": {"from": "{file}: main must name a .qml file.", "text": "{file}: pole main musi wskazywać plik .qml."},
+ "srv.community.nosignalUnavailable": {"from": "No Signal screen installation is not available.", "text": "Instalacja ekranów Brak sygnału jest niedostępna."},
+ "srv.community.invalidNoSignal": {"from": "This package is not a valid No Signal screen.", "text": "Ten pakiet nie jest prawidłowym ekranem Brak sygnału."},
+ "srv.community.revoked": {"from": "This community add-on has been removed for safety reasons.", "text": "Ten dodatek społecznościowy został usunięty ze względów bezpieczeństwa."},
+ "community.ns.heading": {"from": "Community No Signal screens", "text": "Społecznościowe ekrany Brak sygnału"},
+ "community.ns.urlDesc": {"from": "For testing unlisted No Signal screens from an https:// GitHub repository or direct archive link.", "text": "Do testowania niepublicznych ekranów Brak sygnału z repozytorium GitHub https:// lub bezpośredniego archiwum."},
+ "community.ns.docs": {"from": "Writing a No Signal screen", "text": "Pisanie ekranu Brak sygnału"},
+ "community.summaryUpdates": {"from": "{total} available · {installed} installed · {updates} to update", "text": "{total} dostępnych · {installed} zainstalowanych · {updates} do aktualizacji"},
+ "community.revokedDefault": {"from": "Removed from the catalog for safety reasons. Uninstall it now.", "text": "Usunięto z katalogu ze względów bezpieczeństwa. Odinstaluj teraz."}
 }

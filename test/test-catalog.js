@@ -11,6 +11,7 @@ var os = require('os');
 var path = require('path');
 var catalog = require('../server/lib/catalog');
 var homeLauncher = require('../server/lib/home-launcher');
+var nosignal = require('../server/lib/nosignal');
 var screensavers = require('../server/lib/screensavers');
 
 console.log('Running test-catalog.js ...');
@@ -88,15 +89,27 @@ function rmTree(p) {
 var tmp = path.join(os.tmpdir(), 'tvweb-catalog-' + process.pid);
 var stateDir = path.join(tmp, 'state');
 var userSaversDir = path.join(tmp, 'savers');
+var userNoSignalsDir = path.join(tmp, 'nosignals');
 var builtinDir = path.join(tmp, 'builtin');
 var launcherDir = path.join(tmp, 'launcher');
+var nsQmlDir = path.join(tmp, 'nsqml') + '/';
+var nsQmlFile = nsQmlDir + 'UserInterfaceLayer/Containers/BgViewLayer/Screensaver.qml';
+var nsMountinfo = path.join(tmp, 'mountinfo');
 fs.mkdirSync(tmp);
 fs.mkdirSync(stateDir);
 fs.mkdirSync(userSaversDir);
+fs.mkdirSync(userNoSignalsDir);
 fs.mkdirSync(builtinDir);
 fs.mkdirSync(launcherDir);
+fs.mkdirSync(path.join(tmp, 'nsqml'));
+fs.mkdirSync(path.join(tmp, 'nsqml', 'UserInterfaceLayer'));
+fs.mkdirSync(path.join(tmp, 'nsqml', 'UserInterfaceLayer', 'Containers'));
+fs.mkdirSync(path.join(tmp, 'nsqml', 'UserInterfaceLayer', 'Containers', 'BgViewLayer'));
+fs.writeFileSync(nsQmlFile, 'Item {\n    property string currentKey: ""\n    RandomMoveItem {\n        id: element\n            AnimatedImage {\n                visible: element.isDynamic && (headerText.text || bodyText.text)\n            }\n            ScreensaverSubText {\n                visible: text.length > 0\n            }\n    }\n}\n');
+fs.writeFileSync(nsMountinfo, '');
 
 var VALID_QML = 'import QtQuick 2.4\nimport Eos.Window 0.1\nWebOSWindow { width: 1920; height: 1080; property int lvl: __TVWEB_LEVEL__ }\n';
+var VALID_NS_QML = 'import QtQuick 2.4\nItem { property bool hidesLg: true }\n';
 var BAD_QML = 'import QtQuick 2.4\nWebOSWindow { width: 1920\n';
 
 var saverV1Zip = makeStoredZip([
@@ -106,6 +119,11 @@ var saverV1Zip = makeStoredZip([
 var saverV2Zip = makeStoredZip([
   { name: 'saver.json', body: JSON.stringify({ manifest: 1, version: '1.1.0', name: 'Pigs', description: 'Flying pigs', author: 'Michael Nestrud', license: 'MIT', uses: ['level'] }) },
   { name: 'main.qml', body: VALID_QML + '// v1.1.0\n' }
+]);
+var dvdV1Zip = makeStoredZip([
+  { name: 'dvd/nosignal.json', body: JSON.stringify({ manifest: 1, version: '1.0.0', name: 'DVD style', description: 'Bouncing logo', author: 'mmmago', license: 'MIT' }) },
+  { name: 'dvd/main.qml', body: VALID_NS_QML },
+  { name: 'dvd/dvd.png', body: 'png' }
 ]);
 var badQmlZip = makeStoredZip([
   { name: 'saver.json', body: JSON.stringify({ manifest: 1, version: '1.0.0', name: 'Broken', description: 'Bad', author: 'Tester', license: 'MIT' }) },
@@ -145,14 +163,31 @@ screensavers.init({
   config: cfg,
   saverRoots: [{ dir: builtinDir, builtin: true }, { dir: userSaversDir, builtin: false }]
 });
+nosignal.init({
+  config: cfg,
+  stateDir: stateDir,
+  userNoSignalsDir: userNoSignalsDir,
+  appQml: nsQmlDir,
+  mountinfo: nsMountinfo,
+  pendingFile: path.join(tmp, 'pending'),
+  retryMs: 20,
+  exec: function (cmd, args, opts, cb) {
+    if (cmd === '/bin/mount') fs.writeFileSync(nsMountinfo, '1 2 179:59 ' + stateDir + '/nosignal/Screensaver.qml ' + args[2] + ' rw - ext4 x rw\n');
+    if (cmd === '/bin/umount') fs.writeFileSync(nsMountinfo, '');
+    process.nextTick(function () { cb(null, '', ''); });
+  },
+  luna: function (uri, params, cb) { process.nextTick(function () { cb({ returnValue: true, appId: 'com.webos.app.home' }); }); }
+});
 homeLauncher.init({ dir: launcherDir, version: '0.160.0' });
 catalog.init({
   config: cfg,
   fetch: fetchMock,
   screensavers: screensavers,
   homeLauncher: homeLauncher,
+  nosignal: nosignal,
   stateDir: stateDir,
   userSaversDir: userSaversDir,
+  userNoSignalsDir: userNoSignalsDir,
   now: function () { return nowMs; }
 });
 
@@ -160,6 +195,7 @@ var CAT_URL = catalog.DEFAULT_CATALOG;
 var PIGS_URL = 'https://example.test/pigs-1.0.0.zip';
 var PIGS_V2_URL = 'https://example.test/pigs-1.1.0.zip';
 var LAUNCHER_URL = 'https://example.test/neon-home-1.0.0.zip';
+var DVD_URL = 'https://example.test/dvd-1.0.0.zip';
 
 jsonMap[CAT_URL] = {
   catalog: 1,
@@ -177,12 +213,20 @@ jsonMap[CAT_URL] = {
       author: 'Bob', license: 'MIT', version: '1.0.0',
       sourceUrl: 'https://github.com/example/neon-home',
       downloadUrl: LAUNCHER_URL, sha256: sha256Hex(launcherZip), size: launcherZip.length
+    },
+    {
+      id: 'dvd', kind: 'nosignal',
+      name: { en: 'DVD style' }, description: { en: 'Bouncing logo' },
+      author: 'mmmago', license: 'MIT', version: '1.0.0',
+      sourceUrl: 'https://github.com/rorygallagher2024/glasshouse-catalog',
+      downloadUrl: DVD_URL, sha256: sha256Hex(dvdV1Zip), size: dvdV1Zip.length
     }
   ]
 };
 dlMap[PIGS_URL] = saverV1Zip;
 dlMap[PIGS_V2_URL] = saverV2Zip;
 dlMap[LAUNCHER_URL] = launcherZip;
+dlMap[DVD_URL] = dvdV1Zip;
 
 function run(steps, i) {
   if (i >= steps.length) {
@@ -292,6 +336,54 @@ run([
           console.log('  ✓ validates and installs unlisted GitHub repository archives');
           next();
         });
+      });
+    });
+  },
+  function (next) {
+    // Community No Signal screen installs, exposes user-<id>, activates cleanly, and removes back to lg.
+    catalog.installFromCatalog('nosignal', 'dvd', function (r) {
+      assert.strictEqual(r.ok, true, r.error);
+      assert.strictEqual(r.localId, 'user-dvd');
+      assert.ok(fs.existsSync(path.join(userNoSignalsDir, 'dvd', 'dvd.png')));
+      nosignal.set('user-dvd', function (st) {
+        assert.strictEqual(st.mode, 'user-dvd');
+        assert.strictEqual(st.custom, true);
+        catalog.list({ kind: 'nosignal' }, function (l) {
+          var found = l.items.filter(function (x) { return x.id === 'dvd'; })[0];
+          assert.ok(found && found.installed && found.active && found.localId === 'user-dvd');
+          catalog.remove('nosignal', 'dvd', function (rm) {
+            assert.strictEqual(rm.ok, true, rm.error);
+            assert.strictEqual(fs.existsSync(path.join(userNoSignalsDir, 'dvd')), false);
+            assert.strictEqual(nosignal.status().mode, 'lg');
+            console.log('  ✓ installs, activates, and removes community No Signal screen cleanly');
+            next();
+          });
+        });
+      });
+    });
+  },
+  function (next) {
+    // Revoked catalog entries refuse new installs and surface warnings for installed items.
+    jsonMap[CAT_URL].items.push({
+      id: 'bad-ns', kind: 'nosignal',
+      name: { en: 'Bad NS' }, description: { en: 'Revoked' },
+      author: 'Eve', license: 'MIT', version: '1.0.0',
+      sourceUrl: 'https://github.com/example/bad-ns',
+      downloadUrl: DVD_URL, sha256: sha256Hex(dvdV1Zip), size: dvdV1Zip.length
+    });
+    jsonMap[CAT_URL].revoked = [
+      { kind: 'nosignal', id: 'bad-ns', reason: 'Harmful content' },
+      { kind: 'screensaver', id: 'my-saver', reason: 'Malicious beacon' }
+    ];
+    catalog.list({ kind: 'screensaver', refresh: true }, function (l) {
+      var badInstalled = l.items.filter(function (x) { return x.id === 'my-saver'; })[0];
+      assert.ok(badInstalled && badInstalled.revoked && badInstalled.revokedReason === 'Malicious beacon');
+      assert.strictEqual(badInstalled.updateAvailable, false);
+      catalog.installFromCatalog('nosignal', 'bad-ns', function (r) {
+        assert.strictEqual(r.ok, false);
+        assert.ok(/safety/i.test(r.error), r.error);
+        console.log('  ✓ refuses revoked installs and surfaces revocation warnings');
+        next();
       });
     });
   }

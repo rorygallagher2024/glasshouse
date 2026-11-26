@@ -3171,6 +3171,8 @@ html[lang="vi"] .tvm-tile-logo::before {
 .comm-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:12px;margin:8px 0 14px}
 .comm-card{display:flex;flex-direction:column;background:var(--w04);border:1px solid var(--w10);border-radius:12px;overflow:hidden}
 .comm-card.installed{border-color:var(--w24)}
+.comm-card.revoked{border-color:rgba(248,113,113,.45)}
+.comm-card .pv-note.warn{margin:2px 0}
 .comm-preview{width:100%;aspect-ratio:16/9;object-fit:cover;background:#000;border-bottom:1px solid var(--w08)}
 .comm-body{display:flex;flex-direction:column;gap:8px;padding:12px 14px;flex:1}
 .comm-head{display:flex;align-items:baseline;justify-content:space-between;gap:8px}

@@ -3921,7 +3921,7 @@
  "community.use": {"from": "Use", "text": "استخدام"},
  "srv.community.badCatalog": {"from": "Catalog format could not be read.", "text": "تعذّرت قراءة تنسيق الدليل."},
  "srv.community.badHash": {"from": "The downloaded package does not match the catalog checksum.", "text": "الحزمة المنزّلة لا تطابق المجموع الاختباري في الدليل."},
- "srv.community.badKind": {"from": "Choose screensaver or launcher.", "text": "اختر شاشة توقف أو مشغّلاً."},
+ "srv.community.badKind": {"from": "Choose screensaver, launcher or nosignal.", "text": "اختر شاشة توقف أو مشغّلاً أو شاشة عدم وجود إشارة."},
  "srv.community.badUrl": {"from": "Give an https:// link to a GitHub repository or archive.", "text": "أدخل رابط https:// لمستودع GitHub أو أرشيف."},
  "srv.community.busy": {"from": "Wait for the current installation to finish.", "text": "انتظر انتهاء التثبيت الحالي."},
  "srv.community.fetchMissing": {"from": "Download helper is not available", "text": "أداة التنزيل غير متاحة"},
@@ -3930,5 +3930,14 @@
  "srv.community.saverUnavailable": {"from": "Screen saver installation is not available.", "text": "تثبيت شاشات التوقف غير متاح."},
  "srv.community.unknown": {"from": "Unknown community item.", "text": "عنصر مجتمع غير معروف."},
  "community.ss.docs": {"from": "Writing a screen saver", "text": "كتابة شاشة توقف"},
- "community.submit": {"from": "Submit to the catalog", "text": "إرسال إلى الكتالوج"}
+ "community.submit": {"from": "Submit to the catalog", "text": "إرسال إلى الكتالوج"},
+ "srv.nosignal.badMain": {"from": "{file}: main must name a .qml file.", "text": "{file}: يجب أن يشير main إلى ملف ‎.qml."},
+ "srv.community.nosignalUnavailable": {"from": "No Signal screen installation is not available.", "text": "تثبيت شاشات عدم وجود إشارة غير متاح."},
+ "srv.community.invalidNoSignal": {"from": "This package is not a valid No Signal screen.", "text": "هذه الحزمة ليست شاشة عدم وجود إشارة صالحة."},
+ "srv.community.revoked": {"from": "This community add-on has been removed for safety reasons.", "text": "تمت إزالة إضافة المجتمع هذه لأسباب أمنية."},
+ "community.ns.heading": {"from": "Community No Signal screens", "text": "شاشات عدم وجود إشارة من المجتمع"},
+ "community.ns.urlDesc": {"from": "For testing unlisted No Signal screens from an https:// GitHub repository or direct archive link.", "text": "لتجربة شاشات عدم وجود إشارة غير المدرجة من مستودع GitHub عبر https:// أو رابط أرشيف مباشر."},
+ "community.ns.docs": {"from": "Writing a No Signal screen", "text": "كتابة شاشة عدم وجود إشارة"},
+ "community.summaryUpdates": {"from": "{total} available · {installed} installed · {updates} to update", "text": "{total} متاح · {installed} مثبت · {updates} للتحديث"},
+ "community.revokedDefault": {"from": "Removed from the catalog for safety reasons. Uninstall it now.", "text": "تمت إزالته من الكتالوج لأسباب أمنية. قم بإزالته الآن."}
 }

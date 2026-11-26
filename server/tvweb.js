@@ -1148,7 +1148,7 @@ updateAsk.init({
 // Bare in the user agent: a catalog has no use for the commit.
 fetchLib.init({ config: CONFIG, version: TVWEB_VERSION });
 repo.init({ config: CONFIG, luna: luna, fetch: fetchLib });
-catalogModule.init({ config: CONFIG, fetch: fetchLib, screensavers: screensavers, homeLauncher: homeLauncher, stateDir: __dirname });
+catalogModule.init({ config: CONFIG, fetch: fetchLib, screensavers: screensavers, homeLauncher: homeLauncher, nosignal: nosignal, stateDir: __dirname });
 installer.init({
   config: CONFIG,
   luna: luna,

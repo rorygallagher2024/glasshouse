@@ -3937,7 +3937,7 @@
  "community.use": {"from": "Use", "text": "Dùng"},
  "srv.community.badCatalog": {"from": "Catalog format could not be read.", "text": "Không thể đọc định dạng danh mục."},
  "srv.community.badHash": {"from": "The downloaded package does not match the catalog checksum.", "text": "Gói đã tải về không khớp với mã kiểm tra của danh mục."},
- "srv.community.badKind": {"from": "Choose screensaver or launcher.", "text": "Chọn bảo vệ màn hình hoặc trình khởi chạy."},
+ "srv.community.badKind": {"from": "Choose screensaver, launcher or nosignal.", "text": "Chọn bảo vệ màn hình, trình khởi chạy hoặc màn hình Không có tín hiệu."},
  "srv.community.badUrl": {"from": "Give an https:// link to a GitHub repository or archive.", "text": "Nhập liên kết https:// tới kho GitHub hoặc tệp nén."},
  "srv.community.busy": {"from": "Wait for the current installation to finish.", "text": "Hãy đợi quá trình cài đặt hiện tại hoàn tất."},
  "srv.community.fetchMissing": {"from": "Download helper is not available", "text": "Trình tải xuống không khả dụng"},
@@ -3946,5 +3946,14 @@
  "srv.community.saverUnavailable": {"from": "Screen saver installation is not available.", "text": "Không thể cài đặt trình bảo vệ màn hình."},
  "srv.community.unknown": {"from": "Unknown community item.", "text": "Mục cộng đồng không xác định."},
  "community.ss.docs": {"from": "Writing a screen saver", "text": "Viết trình bảo vệ màn hình"},
- "community.submit": {"from": "Submit to the catalog", "text": "Gửi lên danh mục"}
+ "community.submit": {"from": "Submit to the catalog", "text": "Gửi lên danh mục"},
+ "srv.nosignal.badMain": {"from": "{file}: main must name a .qml file.", "text": "{file}: trường main phải chỉ tới một tệp .qml."},
+ "srv.community.nosignalUnavailable": {"from": "No Signal screen installation is not available.", "text": "Không thể cài đặt màn hình Không có tín hiệu."},
+ "srv.community.invalidNoSignal": {"from": "This package is not a valid No Signal screen.", "text": "Gói này không phải màn hình Không có tín hiệu hợp lệ."},
+ "srv.community.revoked": {"from": "This community add-on has been removed for safety reasons.", "text": "Tiện ích cộng đồng này đã bị gỡ bỏ vì lý do an toàn."},
+ "community.ns.heading": {"from": "Community No Signal screens", "text": "Màn hình Không có tín hiệu từ cộng đồng"},
+ "community.ns.urlDesc": {"from": "For testing unlisted No Signal screens from an https:// GitHub repository or direct archive link.", "text": "Dùng để thử màn hình Không có tín hiệu chưa niêm yết từ kho GitHub https:// hoặc liên kết tệp lưu trữ trực tiếp."},
+ "community.ns.docs": {"from": "Writing a No Signal screen", "text": "Viết màn hình Không có tín hiệu"},
+ "community.summaryUpdates": {"from": "{total} available · {installed} installed · {updates} to update", "text": "{total} có sẵn · {installed} đã cài · {updates} cần cập nhật"},
+ "community.revokedDefault": {"from": "Removed from the catalog for safety reasons. Uninstall it now.", "text": "Đã bị gỡ khỏi danh mục vì lý do an toàn. Hãy gỡ cài đặt ngay."}
 }

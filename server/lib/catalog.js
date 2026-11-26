@@ -20,7 +20,7 @@ var CACHE_MS = 3600000;
 var RETRY_MS = 10000;
 var ID_RE = /^[a-z0-9][a-z0-9-]{0,31}$/;
 var SHA_RE = /^[0-9a-f]{64}$/;
-var KINDS = { screensaver: true, launcher: true };
+var KINDS = { screensaver: true, launcher: true, nosignal: true };
 var MAX_SAVER_FILES = 200;
 var MAX_SAVER_BYTES = 5 * 1024 * 1024;
 var MAX_LAUNCHER_ZIP = 50 * 1024 * 1024;
@@ -32,10 +32,13 @@ var fetchLib = null;
 var screensaversModule = null;
 /** @type {typeof import('./home-launcher') | null} */
 var homeLauncherModule = null;
+/** @type {typeof import('./nosignal') | null} */
+var nosignalModule = null;
 var stateDir = '/var/lib/tvweb';
 var userSaversDir = '/var/lib/tvweb/screensavers';
+var userNoSignalsDir = '/var/lib/tvweb/nosignals';
 var clock = Date.now;
-var cache = null;   // { items: [...], fetchedAt, error }
+var cache = null;   // { items: [...], revoked: {}, fetchedAt, error }
 var attempted = 0;
 var waiting = null;
 var busy = false;
@@ -46,8 +49,10 @@ function init(opts) {
   if (opts.fetch) fetchLib = opts.fetch;
   if (opts.screensavers) screensaversModule = opts.screensavers;
   if (opts.homeLauncher) homeLauncherModule = opts.homeLauncher;
+  if (opts.nosignal) nosignalModule = opts.nosignal;
   if (opts.stateDir) stateDir = opts.stateDir;
   userSaversDir = opts.userSaversDir || (screensaversModule && screensaversModule.USER_SAVERS_DIR) || '/var/lib/tvweb/screensavers';
+  userNoSignalsDir = opts.userNoSignalsDir || (nosignalModule && nosignalModule.USER_NOSIGNALS_DIR) || '/var/lib/tvweb/nosignals';
   clock = opts.now || Date.now;
   cache = null;
   attempted = 0;
@@ -62,6 +67,7 @@ function readMeta() {
   if (!d || typeof d !== 'object') d = {};
   if (!d.screensaver || typeof d.screensaver !== 'object') d.screensaver = {};
   if (!d.launcher || typeof d.launcher !== 'object') d.launcher = {};
+  if (!d.nosignal || typeof d.nosignal !== 'object') d.nosignal = {};
   return d;
 }
 
@@ -163,22 +169,23 @@ function fetchCatalogs(force, cb) {
   }
   if (waiting) return waiting.push(cb);
   if (!fetchLib) {
-    var noFetch = { items: [], fetchedAt: 0, error: msg('srv.community.fetchMissing', 'Download helper is not available') };
+    var noFetch = { items: [], revoked: {}, fetchedAt: 0, error: msg('srv.community.fetchMissing', 'Download helper is not available') };
     return cb(null, noFetch);
   }
   waiting = [cb];
   var urls = catalogUrls();
-  var items = [], seen = {}, errors = [];
+  var items = [], revoked = {}, seen = {}, errors = [];
   (function next(i) {
     if (i >= urls.length) {
       var res = {
         items: items,
+        revoked: revoked,
         fetchedAt: items.length || !errors.length ? clock() : (cache ? cache.fetchedAt : 0),
         error: errors.length ? errors[0] : null
       };
       attempted = clock();
       if (!errors.length || !cache || !cache.items.length) cache = res;
-      else cache = { items: cache.items, fetchedAt: cache.fetchedAt, error: errors[0] };
+      else cache = { items: cache.items, revoked: cache.revoked || {}, fetchedAt: cache.fetchedAt, error: errors[0] };
       var cbs = waiting;
       waiting = null;
       for (var j = 0; j < cbs.length; j++) cbs[j](null, cache);
@@ -200,6 +207,19 @@ function fetchCatalogs(force, cb) {
         if (!parsed) continue;
         var key = parsed.kind + ':' + parsed.id;
         if (!seen[key]) { seen[key] = true; items.push(parsed); }
+      }
+      var rawRevoked = doc && Object.prototype.toString.call(doc.revoked) === '[object Array]' ? doc.revoked : [];
+      for (var r = 0; r < rawRevoked.length; r++) {
+        var rev = rawRevoked[r];
+        if (!rev || typeof rev !== 'object' || !KINDS[rev.kind] || !ID_RE.test(String(rev.id || ''))) continue;
+        var rKey = rev.kind + ':' + rev.id;
+        if (!revoked[rKey]) {
+          revoked[rKey] = {
+            kind: rev.kind,
+            id: rev.id,
+            reason: typeof rev.reason === 'string' ? rev.reason.trim() : ''
+          };
+        }
       }
       next(i + 1);
     });
@@ -232,17 +252,43 @@ function installedSaverMap() {
   return out;
 }
 
-function mergeItems(catalogItems, kindFilter) {
+function installedNoSignalMap() {
+  var out = {};
+  if (nosignalModule) {
+    var st = nosignalModule.status();
+    var list = (st && st.customScreens) || [];
+    var curMode = st && st.mode;
+    for (var i = 0; i < list.length; i++) {
+      var s = list[i];
+      if (s && s.id) {
+        out[s.id] = {
+          id: s.id,
+          label: s.label,
+          description: s.description,
+          author: s.author,
+          license: s.license,
+          version: s.version,
+          active: curMode === s.localId
+        };
+      }
+    }
+  }
+  return out;
+}
+
+function mergeItems(catalogItems, kindFilter, revokedMap) {
   var meta = readMeta();
   var savers = installedSaverMap();
   var launchers = installedLauncherMap();
+  var nosignals = installedNoSignalMap();
   var out = [], seen = {};
 
   function build(entry, unlisted) {
     var id = entry.id, kind = entry.kind;
-    var rec = meta[kind][id] || null;
+    var rec = (meta[kind] && meta[kind][id]) || null;
     var installed = false, installedVersion = '', active = false, localId = '';
-    var title = entry.title, description = entry.description, author = entry.author, sourceUrl = entry.sourceUrl || '';
+    var title = entry.title, description = entry.description, author = entry.author;
+    var license = entry.license || '', sourceUrl = entry.sourceUrl || '';
     if (kind === 'screensaver') {
       localId = 'user-' + id;
       var s = savers[id] || null;
@@ -254,6 +300,21 @@ function mergeItems(catalogItems, kindFilter) {
           title = s.label || title;
           description = s.description || description;
           author = s.author || author;
+          license = s.license || license;
+        }
+      }
+    } else if (kind === 'nosignal') {
+      localId = 'user-' + id;
+      var ns = nosignals[id] || null;
+      installed = !!ns && fs.existsSync(path.join(userNoSignalsDir, id));
+      if (installed) {
+        installedVersion = ns.version || (rec && rec.version) || '';
+        active = !!ns.active;
+        if (unlisted) {
+          title = ns.label || title;
+          description = ns.description || description;
+          author = ns.author || author;
+          license = ns.license || license;
         }
       }
     } else {
@@ -270,7 +331,8 @@ function mergeItems(catalogItems, kindFilter) {
         }
       }
     }
-    var updateAvailable = !!(installed && !unlisted && entry.version && installedVersion && cmpVer(entry.version, installedVersion) > 0);
+    var rev = (revokedMap && revokedMap[kind + ':' + id]) || null;
+    var updateAvailable = !rev && !!(installed && !unlisted && entry.version && installedVersion && cmpVer(entry.version, installedVersion) > 0);
     return {
       id: id,
       kind: kind,
@@ -278,12 +340,14 @@ function mergeItems(catalogItems, kindFilter) {
       title: title,
       description: description,
       author: author || (rec && rec.author) || '',
-      license: entry.license || (rec && rec.license) || '',
+      license: license || (rec && rec.license) || '',
       version: entry.version || installedVersion,
       installedVersion: installed ? installedVersion : '',
       installed: installed,
       active: active,
       updateAvailable: updateAvailable,
+      revoked: !!rev,
+      revokedReason: rev ? rev.reason : '',
       unlisted: !!unlisted,
       sourceUrl: sourceUrl || (rec && rec.sourceUrl) || '',
       previewUrl: entry.previewUrl || '',
@@ -303,10 +367,24 @@ function mergeItems(catalogItems, kindFilter) {
       if (!Object.prototype.hasOwnProperty.call(savers, sid) || seen['screensaver:' + sid]) continue;
       if (!fs.existsSync(path.join(userSaversDir, sid))) continue;
       var sRec = meta.screensaver[sid] || {};
-      if (sRec.unlisted || sRec.version) {
+      var sRev = revokedMap && revokedMap['screensaver:' + sid];
+      if (sRec.unlisted || sRec.version || sRev) {
         out.push(build({ id: sid, kind: 'screensaver', title: savers[sid].label, description: savers[sid].description,
           author: savers[sid].author || sRec.author || '', license: savers[sid].license || sRec.license || '',
-          version: sRec.version || savers[sid].version || '', sourceUrl: sRec.sourceUrl || '' }, true));
+          version: sRec.version || savers[sid].version || '', sourceUrl: sRec.sourceUrl || '' }, !(sRev && !sRec.unlisted)));
+      }
+    }
+  }
+  if (!kindFilter || kindFilter === 'nosignal') {
+    for (var nid in nosignals) {
+      if (!Object.prototype.hasOwnProperty.call(nosignals, nid) || seen['nosignal:' + nid]) continue;
+      if (!fs.existsSync(path.join(userNoSignalsDir, nid))) continue;
+      var nRec = meta.nosignal[nid] || {};
+      var nRev = revokedMap && revokedMap['nosignal:' + nid];
+      if (nRec.unlisted || nRec.version || nRev) {
+        out.push(build({ id: nid, kind: 'nosignal', title: nosignals[nid].label, description: nosignals[nid].description,
+          author: nosignals[nid].author || nRec.author || '', license: nosignals[nid].license || nRec.license || '',
+          version: nRec.version || nosignals[nid].version || '', sourceUrl: nRec.sourceUrl || '' }, !(nRev && !nRec.unlisted)));
       }
     }
   }
@@ -314,9 +392,10 @@ function mergeItems(catalogItems, kindFilter) {
     for (var lid in launchers) {
       if (!Object.prototype.hasOwnProperty.call(launchers, lid) || seen['launcher:' + lid]) continue;
       var lRec = meta.launcher[lid] || {};
+      var lRev = revokedMap && revokedMap['launcher:' + lid];
       out.push(build({ id: lid, kind: 'launcher', title: launchers[lid].title, description: '',
         author: launchers[lid].author || lRec.author || '', license: lRec.license || '',
-        version: lRec.version || launchers[lid].version || '', sourceUrl: launchers[lid].sourceUrl || lRec.sourceUrl || '' }, true));
+        version: lRec.version || launchers[lid].version || '', sourceUrl: launchers[lid].sourceUrl || lRec.sourceUrl || '' }, !(lRev && !lRec.unlisted)));
     }
   }
   return out;
@@ -334,7 +413,7 @@ function list(opts, cb) {
     if (err) return cb({ ok: false, error: err.message });
     cb({
       ok: true,
-      items: mergeItems(snap.items, kind),
+      items: mergeItems(snap.items, kind, snap.revoked),
       fetchedAt: snap.fetchedAt,
       installedOnly: !!(snap.error && !snap.items.length),
       error: snap.error || null,
@@ -353,10 +432,11 @@ function findSingleSubdir(root) {
   } catch (e) { return null; }
 }
 
-function installSaverArchive(id, archivePath, meta, cb) {
-  if (!homeLauncherModule || !screensaversModule) {
-    return cb({ ok: false, error: msg('srv.community.saverUnavailable', 'Screen saver installation is not available.') });
+function installQMLPackageArchive(opts, cb) {
+  if (!homeLauncherModule || !opts.available) {
+    return cb({ ok: false, error: opts.unavailableMsg });
   }
+  var id = opts.id;
   var tmpRoot = path.join(stateDir, '.community-stage');
   var unpackDir = path.join(tmpRoot, 'unpack');
   var candParent = path.join(tmpRoot, 'validate');
@@ -369,23 +449,23 @@ function installSaverArchive(id, archivePath, meta, cb) {
     cb({ ok: false, error: text });
   }
 
-  homeLauncherModule.unpackZip(archivePath, unpackDir, { maxFiles: MAX_SAVER_FILES, maxBytes: MAX_SAVER_BYTES }, function (err) {
+  homeLauncherModule.unpackZip(opts.archivePath, unpackDir, { maxFiles: MAX_SAVER_FILES, maxBytes: MAX_SAVER_BYTES }, function (err) {
     if (err) return fail(err.userMessage || err.message);
     var srcDir = unpackDir;
-    if (!fs.existsSync(path.join(srcDir, 'saver.json'))) {
+    if (!fs.existsSync(path.join(srcDir, opts.manifestName))) {
       var inner = findSingleSubdir(unpackDir);
-      if (inner && fs.existsSync(path.join(inner, 'saver.json'))) srcDir = inner;
+      if (inner && fs.existsSync(path.join(inner, opts.manifestName))) srcDir = inner;
     }
     try { fs.renameSync(srcDir, candDir); }
     catch (e2) { return fail(e2.message); }
 
-    var checked = screensaversModule.validateFolder(candDir, id);
-    if (!checked.ok) return fail(checked.error || msg('srv.community.invalidSaver', 'This package is not a valid screen saver.'));
+    var checked = opts.validateFn(candDir, id);
+    if (!checked.ok) return fail(checked.error || opts.invalidMsg);
 
-    var target = path.join(userSaversDir, id);
+    var target = path.join(opts.targetDir, id);
     var backup = target + '.old';
     try {
-      util.mkdirp(userSaversDir);
+      util.mkdirp(opts.targetDir);
       rmTree(backup);
       if (fs.existsSync(target)) fs.renameSync(target, backup);
       fs.renameSync(candDir, target);
@@ -398,24 +478,72 @@ function installSaverArchive(id, archivePath, meta, cb) {
       return fail(e3.message);
     }
 
+    var itemMeta = checked.entry || {};
     var stored = readMeta();
-    stored.screensaver[id] = {
+    stored[opts.storeKey][id] = {
       id: id,
-      version: meta.version || checked.saver.version || '',
-      author: meta.author || checked.saver.author || '',
-      license: meta.license || checked.saver.license || '',
-      sourceUrl: meta.sourceUrl || '',
-      unlisted: !!meta.unlisted,
+      version: opts.meta.version || itemMeta.version || '',
+      author: opts.meta.author || itemMeta.author || '',
+      license: opts.meta.license || itemMeta.license || '',
+      sourceUrl: opts.meta.sourceUrl || '',
+      unlisted: !!opts.meta.unlisted,
       installedAt: clock()
     };
     writeMeta(stored);
-    screensaversModule.invalidateCatalog();
     var localId = 'user-' + id;
-    if (screensaversModule.stagedScreensaver() === localId || screensaversModule.screensaverMode() === localId) {
-      screensaversModule.restageScreensaver();
-    }
-    cb({ ok: true, kind: 'screensaver', id: id, localId: localId });
+    opts.onInstalled(localId);
+    cb({ ok: true, kind: opts.kind, id: id, localId: localId });
   });
+}
+
+function installSaverArchive(id, archivePath, meta, cb) {
+  installQMLPackageArchive({
+    kind: 'screensaver',
+    id: id,
+    archivePath: archivePath,
+    meta: meta,
+    targetDir: userSaversDir,
+    manifestName: 'saver.json',
+    storeKey: 'screensaver',
+    available: !!screensaversModule,
+    unavailableMsg: msg('srv.community.saverUnavailable', 'Screen saver installation is not available.'),
+    invalidMsg: msg('srv.community.invalidSaver', 'This package is not a valid screen saver.'),
+    validateFn: function (candDir, pkgId) {
+      var res = screensaversModule.validateFolder(candDir, pkgId);
+      return { ok: res.ok, entry: res.saver, error: res.error };
+    },
+    onInstalled: function (localId) {
+      screensaversModule.invalidateCatalog();
+      if (screensaversModule.stagedScreensaver() === localId || screensaversModule.screensaverMode() === localId) {
+        screensaversModule.restageScreensaver();
+      }
+    }
+  }, cb);
+}
+
+function installNoSignalArchive(id, archivePath, meta, cb) {
+  installQMLPackageArchive({
+    kind: 'nosignal',
+    id: id,
+    archivePath: archivePath,
+    meta: meta,
+    targetDir: userNoSignalsDir,
+    manifestName: 'nosignal.json',
+    storeKey: 'nosignal',
+    available: !!nosignalModule,
+    unavailableMsg: msg('srv.community.nosignalUnavailable', 'No Signal screen installation is not available.'),
+    invalidMsg: msg('srv.community.invalidNoSignal', 'This package is not a valid No Signal screen.'),
+    validateFn: function (candDir, pkgId) {
+      var res = nosignalModule.validateFolder(candDir, pkgId);
+      return { ok: res.ok, entry: res.screen, error: res.error };
+    },
+    onInstalled: function (localId) {
+      nosignalModule.invalidateCatalog();
+      if (nosignalModule.status().mode === localId) {
+        nosignalModule.apply();
+      }
+    }
+  }, cb);
 }
 
 function installLauncherArchive(id, archivePath, meta, cb) {
@@ -457,7 +585,7 @@ function downloadAndInstall(kind, id, downloadUrl, expectedSha, meta, cb) {
     cb(r);
   }
 
-  var maxBytes = kind === 'screensaver' ? MAX_SAVER_BYTES * 2 : MAX_LAUNCHER_ZIP;
+  var maxBytes = kind === 'launcher' ? MAX_LAUNCHER_ZIP : MAX_SAVER_BYTES * 2;
   fetchLib.download(downloadUrl, tmpFile, { maxBytes: maxBytes }, function (err) {
     if (err) return done({ ok: false, error: err.message });
     hashFile(tmpFile, function (hErr, gotSha) {
@@ -466,6 +594,7 @@ function downloadAndInstall(kind, id, downloadUrl, expectedSha, meta, cb) {
         return done({ ok: false, error: msg('srv.community.badHash', 'The downloaded package does not match the catalog checksum.') });
       }
       if (kind === 'screensaver') installSaverArchive(id, tmpFile, meta, done);
+      else if (kind === 'nosignal') installNoSignalArchive(id, tmpFile, meta, done);
       else installLauncherArchive(id, tmpFile, meta, done);
     });
   });
@@ -482,6 +611,9 @@ function installFromCatalog(kind, id, cb) {
 
   fetchCatalogs(false, function (err, snap) {
     if (err) return finish({ ok: false, error: err.message });
+    if (snap.revoked && snap.revoked[kind + ':' + id]) {
+      return finish({ ok: false, error: msg('srv.community.revoked', 'This community add-on has been removed for safety reasons.') });
+    }
     var entry = null;
     for (var i = 0; i < snap.items.length; i++) {
       if (snap.items[i].kind === kind && snap.items[i].id === id) { entry = snap.items[i]; break; }
@@ -524,7 +656,7 @@ function resolveGithubDownload(repoOwner, repoName, kind, cb) {
 
 function installFromUrl(kind, rawUrl, cb) {
   if (!config || !config.allowControl) return cb({ ok: false, error: msg('srv.controlsOff', 'controls disabled in config') });
-  if (!KINDS[kind]) return cb({ ok: false, error: msg('srv.community.badKind', 'Choose screensaver or launcher.') });
+  if (!KINDS[kind]) return cb({ ok: false, error: msg('srv.community.badKind', 'Choose screensaver, launcher or nosignal.') });
   var safe = safeHttpsUrl(typeof rawUrl === 'string' ? rawUrl.trim() : '');
   if (!safe) return cb({ ok: false, error: msg('srv.community.badUrl', 'Give an https:// link to a GitHub repository or archive.') });
   if (busy) return cb({ ok: false, error: msg('srv.community.busy', 'Wait for the current installation to finish.') });
@@ -581,6 +713,24 @@ function remove(kind, id, cb) {
   }
 
   var localId = 'user-' + id;
+  if (kind === 'nosignal') {
+    var nsTarget = path.join(userNoSignalsDir, id);
+    function wipeNoSignal() {
+      try { rmTree(nsTarget); } catch (e) { return finish({ ok: false, error: e.message }); }
+      var stored = readMeta();
+      delete stored.nosignal[id];
+      writeMeta(stored);
+      if (nosignalModule) nosignalModule.invalidateCatalog();
+      finish({ ok: true, kind: 'nosignal', id: id });
+    }
+    if (nosignalModule && nosignalModule.status().mode === localId) {
+      return nosignalModule.set('lg', function () {
+        wipeNoSignal();
+      });
+    }
+    return wipeNoSignal();
+  }
+
   var target = path.join(userSaversDir, id);
   function wipeFolder() {
     try { rmTree(target); } catch (e) { return finish({ ok: false, error: e.message }); }

@@ -300,6 +300,31 @@ function renderNoSignal() {
   q('inputs-nosignal-art').hidden = !ns.art && mode !== 'art';
   setInputsCard(q('inputs-nosignal-art'), 'nsart', t('inputs.noSignal.art', 'Picture frame'),
     t('inputs.noSignal.artDesc2', 'The picture frame\u2019s pictures, with \u201cNo Signal\u201d on each picture\u2019s label.'), mode === 'art', !writable);
+  const customBox = q('inputs-nosignal-custom');
+  const customList = Array.isArray(ns.customScreens) ? ns.customScreens : [];
+  if (customBox) {
+    customBox.hidden = !customList.length;
+    customBox.innerHTML = customList.map(s => {
+      const isCur = mode === s.localId;
+      const meta = [
+        s.author ? t('ss.by', 'by {author}', { author: s.author }) : '',
+        s.version ? 'v' + s.version : '',
+        s.license || ''
+      ].filter(Boolean).join(' \u00b7 ');
+      const desc = s.problem
+        ? `<div class="pv-note warn">${esc(s.problem)}</div>`
+        : `${s.description ? `<div class="prot-desc">${esc(s.description)}</div>` : ''}${Array.isArray(s.cautions) && s.cautions.length ? `<div class="prot-desc">${esc(s.cautions.join(' '))}</div>` : ''}${meta ? `<div class="prot-desc">${esc(meta)}</div>` : ''}`;
+      const btn = isCur
+        ? `<button type="button" class="pill good" disabled>${esc(t('ss.inUse', 'In use'))}</button>`
+        : `<button type="button" class="pill idle" ${!writable || s.problem ? 'disabled' : ''} onclick="setNoSignal('${esc(s.localId)}')">${esc(t('community.use', 'Use'))}</button>`;
+      return `<div class="prot-row"><div class="prot-main"><div class="prot-title">${esc(s.label || s.id)}</div>${desc}</div><div class="prot-status">${btn}</div></div>`;
+    }).join('');
+  }
+  const commDisc = q('disc-ns-community');
+  if (commDisc) {
+    commDisc.hidden = !ns.custom && !ns.art;
+    if (!commDisc.hidden && commDisc.open && typeof loadCommunity === 'function') loadCommunity('nosignal', false);
+  }
   // Its settings, shared with the Screensaver tab; what it shows now, while it is the No Signal screen.
   const frame = q('inputs-frame');
   frame.hidden = !ns.art && mode !== 'art';
@@ -316,9 +341,15 @@ function renderNoSignal() {
 async function setNoSignal(mode) {
   const ns = (inputsData && inputsData.noSignal) || {};
   const cur = ns.mode || (ns.on ? 'plain' : 'lg');
-  const next = mode === 'icon' || mode === 'plain' || mode === 'art' ? mode : 'lg';
+  const isCustom = typeof mode === 'string' && mode.indexOf('user-') === 0;
+  const next = mode === 'icon' || mode === 'plain' || mode === 'art' || isCustom ? mode : 'lg';
   if (cur === next) return;
   q('inputs-nosignal-lg').disabled = q('inputs-nosignal-plain').disabled = q('inputs-nosignal-icon').disabled = q('inputs-nosignal-art').disabled = true;
+  const customBox = q('inputs-nosignal-custom');
+  if (customBox) customBox.querySelectorAll('button').forEach(b => { b.disabled = true; });
   await sendCommand('plainNoSignal', next);
-  loadInputs();
+  await loadInputs();
+  if (typeof commState === 'object' && commState.nosignal && commState.nosignal.loaded && typeof loadCommunity === 'function') {
+    loadCommunity('nosignal', false);
+  }
 }

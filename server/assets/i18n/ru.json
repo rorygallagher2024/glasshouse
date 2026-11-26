@@ -3935,7 +3935,7 @@
  "community.use": {"from": "Use", "text": "Использовать"},
  "srv.community.badCatalog": {"from": "Catalog format could not be read.", "text": "Не удалось прочитать формат каталога."},
  "srv.community.badHash": {"from": "The downloaded package does not match the catalog checksum.", "text": "Загруженный пакет не совпадает с контрольной суммой каталога."},
- "srv.community.badKind": {"from": "Choose screensaver or launcher.", "text": "Выберите заставку или лаунчер."},
+ "srv.community.badKind": {"from": "Choose screensaver, launcher or nosignal.", "text": "Выберите заставку, лаунчер или экран «Нет сигнала»."},
  "srv.community.badUrl": {"from": "Give an https:// link to a GitHub repository or archive.", "text": "Укажите ссылку https:// на репозиторий GitHub или архив."},
  "srv.community.busy": {"from": "Wait for the current installation to finish.", "text": "Дождитесь завершения текущей установки."},
  "srv.community.fetchMissing": {"from": "Download helper is not available", "text": "Модуль загрузки недоступен"},
@@ -3944,5 +3944,14 @@
  "srv.community.saverUnavailable": {"from": "Screen saver installation is not available.", "text": "Установка заставок недоступна."},
  "srv.community.unknown": {"from": "Unknown community item.", "text": "Неизвестный элемент сообщества."},
  "community.ss.docs": {"from": "Writing a screen saver", "text": "Как написать заставку"},
- "community.submit": {"from": "Submit to the catalog", "text": "Добавить в каталог"}
+ "community.submit": {"from": "Submit to the catalog", "text": "Добавить в каталог"},
+ "srv.nosignal.badMain": {"from": "{file}: main must name a .qml file.", "text": "{file}: поле main должно указывать на файл .qml."},
+ "srv.community.nosignalUnavailable": {"from": "No Signal screen installation is not available.", "text": "Установка экранов «Нет сигнала» недоступна."},
+ "srv.community.invalidNoSignal": {"from": "This package is not a valid No Signal screen.", "text": "Этот пакет не является корректным экраном «Нет сигнала»."},
+ "srv.community.revoked": {"from": "This community add-on has been removed for safety reasons.", "text": "Это дополнение сообщества удалено из соображений безопасности."},
+ "community.ns.heading": {"from": "Community No Signal screens", "text": "Экраны «Нет сигнала» от сообщества"},
+ "community.ns.urlDesc": {"from": "For testing unlisted No Signal screens from an https:// GitHub repository or direct archive link.", "text": "Для проверки экранов «Нет сигнала» из репозитория GitHub по https:// или прямой ссылки на архив."},
+ "community.ns.docs": {"from": "Writing a No Signal screen", "text": "Как написать экран «Нет сигнала»"},
+ "community.summaryUpdates": {"from": "{total} available · {installed} installed · {updates} to update", "text": "{total} доступно · {installed} установлено · {updates} к обновлению"},
+ "community.revokedDefault": {"from": "Removed from the catalog for safety reasons. Uninstall it now.", "text": "Удалено из каталога из соображений безопасности. Удалите сейчас."}
 }

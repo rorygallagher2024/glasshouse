@@ -115,7 +115,7 @@ assert.ok(nosignal.patch(LG.replace('    RandomMoveItem {\n', '    Item {\n'), '
 });
 var patchedOpened = nosignal.patch(LG_PHOTO.replace('!noSignalPhotoModel.opend', '!noSignalPhotoModel.opened'), 'plain');
 assert.ok(patchedOpened.indexOf('currentKey === "noSignal" || (noSignalPhotoModel && !noSignalPhotoModel.enabled && !noSignalPhotoModel.opened)') !== -1, 'also matches opened spelling');
-assert.deepEqual(nosignal.status(), { ok: true, available: true, art: true, on: false, mode: 'lg', applied: false, restartPending: false });
+assert.deepEqual(nosignal.status(), { ok: true, available: true, art: true, custom: true, customScreens: [], on: false, mode: 'lg', applied: false, restartPending: false });
 console.log('  ✓ LG\'s file is patched only where the expected lines are there once');
 
 var steps = [
@@ -223,6 +223,67 @@ var steps = [
           waitFor(function () { return execs.length === 4; }, next, 'the restart on switching off', 2000);
         });
       }, 'the restart over an empty input', 2000);
+    });
+  },
+  function (next) {
+    // Community No Signal screens: validateFolder, listCustom, resolve, patch, set, and fallback.
+    var customDir = path.join(state, 'nosignals');
+    var dvdDir = path.join(customDir, 'dvd');
+    var badDir = path.join(customDir, 'bad');
+    mkdirs(dvdDir); mkdirs(badDir);
+    fs.writeFileSync(path.join(dvdDir, 'nosignal.json'), JSON.stringify({
+      manifest: 1, version: '1.0.0', name: 'DVD style', description: 'Bouncing logo', author: 'mmmago', license: 'MIT', main: 'main.qml'
+    }));
+    fs.writeFileSync(path.join(dvdDir, 'main.qml'), 'import QtQuick 2.4\nItem { property bool hidesLg: true }\n');
+    fs.writeFileSync(path.join(dvdDir, 'dvd.png'), 'pngbytes');
+    fs.writeFileSync(path.join(badDir, 'nosignal.json'), JSON.stringify({
+      manifest: 1, version: '1.0.0', name: 'Bad', description: 'Broken', author: 'test', license: 'MIT'
+    }));
+    fs.writeFileSync(path.join(badDir, 'main.qml'), 'import QtQuick 2.4\nItem { width: 100\n');
+    nosignal.invalidateCatalog();
+
+    var valOk = nosignal.validateFolder(dvdDir, 'dvd');
+    assert.strictEqual(valOk.ok, true, valOk.error);
+    assert.strictEqual(valOk.screen.localId, 'user-dvd');
+    var listed = nosignal.listCustom();
+    assert.strictEqual(listed.length, 2);
+    assert.strictEqual(listed[0].id, 'bad');
+    assert.ok(listed[0].problem, 'invalid custom screen records problem');
+    assert.strictEqual(listed[1].id, 'dvd');
+    assert.strictEqual(listed[1].problem, null);
+    assert.ok(nosignal.resolve('dvd', 'main.qml'));
+    assert.ok(nosignal.resolve('dvd', 'dvd.png'));
+    assert.strictEqual(nosignal.resolve('dvd', '../bad/main.qml'), null);
+    assert.strictEqual(nosignal.resolve('dvd', '.hidden'), null);
+
+    var patchedDvd = nosignal.patch(LG, 'user-dvd');
+    assert.ok(patchedDvd.indexOf('id: glasshouseCustomNoSignal') !== -1);
+    assert.ok(patchedDvd.indexOf('http://127.0.0.1:8080/nosignal/dvd/main.qml') !== -1);
+    assert.ok(patchedDvd.indexOf('opacity: currentKey === "noSignal" && glasshouseCustomNoSignal.hidesLg ? 0 : 1') !== -1);
+    assert.strictEqual(nosignal.patch(LG, 'user-bad'), null, 'invalid custom screen refuses patch');
+
+    execs = [];
+    nosignal.set('user-dvd', function (r) {
+      assert.strictEqual(r.mode, 'user-dvd');
+      assert.strictEqual(r.applied, true);
+      assert.strictEqual(r.custom, true);
+      waitFor(function () { return execs.length === 2; }, function () {
+        // Removing custom folder falls back cleanly to LG's screen on next apply().
+        fs.unlinkSync(path.join(dvdDir, 'dvd.png'));
+        fs.unlinkSync(path.join(dvdDir, 'main.qml'));
+        fs.unlinkSync(path.join(dvdDir, 'nosignal.json'));
+        fs.rmdirSync(dvdDir);
+        nosignal.invalidateCatalog();
+        execs = [];
+        nosignal.apply(function (r2) {
+          assert.strictEqual(r2.mode, 'lg');
+          assert.strictEqual(r2.applied, false);
+          waitFor(function () { return execs.length === 2; }, function () {
+            console.log('  ✓ custom No Signal folder validation, resolve, Loader patch, set and fallback');
+            next();
+          }, 'fallback unmount restart', 2000);
+        });
+      }, 'custom set restart', 2000);
     });
   },
   function (next) {

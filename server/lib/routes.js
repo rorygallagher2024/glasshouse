@@ -30,6 +30,7 @@ var HA_ENTITIES = ha.HA_ENTITIES;
 
 var MIME = {
   '.html': 'text/html; charset=utf-8',
+  '.qml': 'text/plain; charset=utf-8',
   '.otf': 'font/otf', '.ttf': 'font/ttf', '.woff2': 'font/woff2',
   '.css': 'text/css; charset=utf-8', '.js': 'application/javascript',
   '.json': 'application/json; charset=utf-8',
@@ -1726,6 +1727,26 @@ function handleRequest(req, res) {
       res.writeHead(200, launcherHeaders);
       if (req.method === 'HEAD') return res.end();
       fs.createReadStream(hit.file).on('error', function () { res.end(); }).pipe(res);
+    });
+  }
+
+  // Community No Signal screens (lib/nosignal) served to com.webos.app.inputcommon over loopback (or with token).
+  if (pathname.indexOf('/nosignal/') === 0 && nosignal) {
+    if (!authed(u.query, req)) return send(res, 401, JSON.stringify({ ok: false, error: 'unauthorised' }));
+    var nsParts = pathname.slice('/nosignal/'.length).split('/');
+    var nsId = nsParts.shift() || '';
+    var nsRel = nsParts.join('/');
+    try { nsRel = decodeURIComponent(nsRel); } catch (e) { nsRel = ''; }
+    var nsHit = nosignal.resolve(nsId, nsRel);
+    if (!nsHit) return send(res, 404, JSON.stringify({ ok: false, error: 'not found' }));
+    var nsExt = path.extname(nsHit.file).toLowerCase();
+    var nsHeaders = { 'Content-Type': MIME[nsExt] || 'application/octet-stream', 'Cache-Control': 'no-store' };
+    return fs.stat(nsHit.file, function (nsErr, nsSt) {
+      if (nsErr) return send(res, 404, JSON.stringify({ ok: false, error: 'not found' }));
+      nsHeaders['Content-Length'] = nsSt.size;
+      res.writeHead(200, nsHeaders);
+      if (req.method === 'HEAD') return res.end();
+      fs.createReadStream(nsHit.file).on('error', function () { res.end(); }).pipe(res);
     });
   }
 
