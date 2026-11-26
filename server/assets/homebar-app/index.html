@@ -55,8 +55,8 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
 .ico{display:block;width:112px;height:112px;margin:0 auto 14px;border-radius:20px;background:#333 center/contain no-repeat}
 img.ico{background:none;object-fit:contain}
 .ico.letter{line-height:112px;font-size:52px;font-weight:600;color:#fff;background:#3a3a3a}
-.ico.habar{display:-webkit-flex;display:flex;-webkit-align-items:center;align-items:center;-webkit-justify-content:center;justify-content:center;background:#18bcf2;color:#fff}
-.ico.habar svg{width:64px;height:64px;display:block}
+.ico.habar{display:-webkit-flex;display:flex;-webkit-align-items:center;align-items:center;-webkit-justify-content:center;justify-content:center;background:none}
+.ico.habar svg{width:104px;height:104px;display:block}
 .nm{font-size:24px;padding:0 12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .no-app-labels .tile:not(.input){width:156px;height:156px;margin-top:22px;padding-top:20px}
 .no-app-labels .tile:not(.input) .ico{margin-bottom:0}
@@ -163,10 +163,19 @@ img.ico{background:none;object-fit:contain}
     $('clock').textContent = pad(d.getHours()) + ':' + pad(d.getMinutes());
   }
 
-  var HA_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
-    '<path d="M3 10.5L12 3l9 7.5V20a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-9.5z"/>' +
-    '<circle cx="12" cy="12" r="1.4" fill="currentColor"/><circle cx="8.5" cy="15.5" r="1.1" fill="currentColor"/><circle cx="15.5" cy="15.5" r="1.1" fill="currentColor"/>' +
-    '<path d="M12 13.4V18M9.3 14.7l2.7 1.8M14.7 14.7L12 16.5"/></svg>';
+  var HA_SVG = '<svg viewBox="0 0 100 100" aria-hidden="true">' +
+    '<defs><clipPath id="ha-house-clip"><path d="M46.5 3.5 Q50 0 53.5 3.5 L97 47 Q100 50 100 54.5 L100 93 Q100 98 95 98 L5 98 Q0 98 0 93 L0 54.5 Q0 50 3 47 Z"/></clipPath></defs>' +
+    '<g clip-path="url(#ha-house-clip)">' +
+      '<rect x="0" y="0" width="100" height="100" fill="#18bdf2"/>' +
+      '<g stroke="#f6f8fa" stroke-width="7" stroke-linecap="round" fill="none">' +
+        '<line x1="50" y1="33.1" x2="50" y2="100"/>' +
+        '<line x1="24.9" y1="74.2" x2="50" y2="99.3"/>' +
+        '<line x1="75.1" y1="59.6" x2="50" y2="84.7"/>' +
+      '</g>' +
+      '<circle cx="50" cy="33.1" r="8.3" fill="#f6f8fa"/>' +
+      '<circle cx="24.9" cy="74.2" r="8.3" fill="#f6f8fa"/>' +
+      '<circle cx="75.1" cy="59.6" r="8.3" fill="#f6f8fa"/>' +
+    '</g></svg>';
 
   /*
    * The row: the apps of Glasshouse Home's Apps row, less those hidden or in
