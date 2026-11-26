@@ -24,6 +24,9 @@ var BUTTON_CODES = {
   399: 'green',
   400: 'yellow',
   401: 'blue',
+  // KEY_CHANNELUP, KEY_CHANNELDOWN in Linux's input-event-codes.h.
+  402: 'channelup',
+  403: 'channeldown',
   // Streaming buttons, IR_KEY_* in /usr/share/X11/xkb/keycodes/lg less 8.
   1037: 'netflix',
   1038: 'amazon',

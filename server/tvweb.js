@@ -644,6 +644,8 @@ remoteKeys.init({ detectRemotes: detectRemotes, luna: luna, subscription: lunaTr
   lunaUrgent: lunaTransport.callUrgent,
   colorButtonsSupported: function () { return remotebuttons.findRcuDevices().length > 0; },
   watchColorButtons: function (on) { remotebuttons.want('remoteKeys', on); },
+  channelButtonsSupported: function () { return remotebuttons.findRcuDevices().length > 0; },
+  watchChannelButtons: function (on) { remotebuttons.want('remoteKeysChannel', on); },
   // The Guide key can open Glasshouse Home's Internet TV guide.
   homeGuide: function () { return !!(glasshouseHome && iptv && glasshouseHome.enabled() && iptv.hasPlaylists()); },
   // The compositor restarts for a change to LG's key handler: Glasshouse Home's view is opened afresh.
@@ -833,6 +835,7 @@ var onRemoteButton = function (button, code) {
 remotebuttons.init({
   onButton: function (button, code) {
     remoteKeys.handleColorButton(button, code);
+    remoteKeys.handleChannelButton(button, code);
     onRemoteButton(button, code);
   },
   onHomeKey: function (down) {
@@ -848,6 +851,7 @@ remotebuttons.init({
 });
 
 if (!CLI_MODE) remoteKeys.startColorButtons();
+if (!CLI_MODE) remoteKeys.startChannelButtons();
 
 controls.init({
   luna: luna,
