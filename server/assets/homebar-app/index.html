@@ -157,6 +157,8 @@ img.ico{background:none;object-fit:contain}
     stopEdge();
     if (closing) return;
     closing = true;
+    // Closed here, not by the TV, which the server opens again (lib/barpress.js).
+    tellClosed();
     visibleSince = 0;
     clearInterval(clockTimer);
     document.body.className = '';
@@ -597,8 +599,9 @@ img.ico{background:none;object-fit:contain}
     overHome(function (yes) {
       if (!yes) return start();
       idleUntilOpened = false;
-      // Closed unseen, as it should be: nothing to send again.
+      // Closed unseen, as it should be: nothing to send again or open again.
       if (tellPress) { tell(tellPress); tellPress = 0; }
+      tellClosed();
       window.close();
     });
   }
@@ -700,6 +703,7 @@ img.ico{background:none;object-fit:contain}
    */
   var tellPress = 0;
   function tell(press) { getJson(BASE + '/api/bar/seen?app=com.tvweb.homebar&press=' + press, function () {}); }
+  function tellClosed() { getJson(BASE + '/api/bar/closed?app=com.tvweb.homebar&press=' + seenPress, function () {}); }
   function took(press) {
     if (hidden()) { tellPress = press; return; }
     tellPress = 0;

@@ -26,6 +26,7 @@
 var fs = require('fs');
 var path = require('path');
 var luna = require('./luna');
+var barPress = require('./barpress');
 var util = require('./util');
 var msg = require('./say').msg;
 
@@ -106,6 +107,8 @@ function runningChanged(r) {
   var now = r.running.some(function (a) { return a && a.id === APP; });
   var was = running;
   running = now;
+  // Closed by the TV just as it showed: lib/barpress opens it again.
+  if (was === true && !now) barPress.exited(APP);
   if (now) {
     clearTimeout(timer);
     timer = null;

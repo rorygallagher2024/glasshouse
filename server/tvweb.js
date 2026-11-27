@@ -1241,7 +1241,10 @@ function appsChanged() {
 pointer.init({ luna: luna, hasService: lunaTransport.hasService, config: CONFIG,
   onActivity: function () { screensavers.pointerUsed(); },
   authed: function (req) { return routes.authed(url.parse(req.url || '/', true).query, req); } });
-barPress.init({ luna: luna });
+barPress.init({
+  luna: luna,
+  foreground: function () { return (liveState.state.snapshot().application || {}).app || ''; }
+});
 routes.init({
   // Where the gzipped dashboard page is kept between starts.
   stateDir: __dirname,
