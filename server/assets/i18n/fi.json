@@ -3463,7 +3463,7 @@
  "tab.system": {"from": "System", "text": "Järjestelmä"},
  "tab.tools": {"from": "Tools", "text": "Työkalut"},
  "theme": {"from": "Theme", "text": "Teema"},
- "theme.auto": {"from": "Auto", "text": "Automaattinen"},
+ "theme.auto": {"from": "Auto", "text": "Auto"},
  "theme.dark": {"from": "Dark", "text": "Tumma"},
  "theme.light": {"from": "Light", "text": "Vaalea"},
  "theme.toggle": {"from": "Theme: {setting} (click for {next})", "text": "Teema: {setting} (napsauta: {next})"},
