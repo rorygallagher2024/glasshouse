@@ -90,6 +90,22 @@ var LIBRARIES = {
           ]
         },
         picker: { at: 0x4e724, was: '7b226964223a2022636f6d2e7765626f732e6170702e717569636b696e7075747069636b6572227d00' }
+      },
+      '073cd8ac469145092b5b6513d6077343ea1c5e28d7c1cb0ccb088ab56cdddd67': {
+        tv: 'OLED65C35LA, webOS 11.2.0, firmware 43.21.71',
+        sets: {
+          guide: [
+            // The same three changes, 0x7c8 on. .rodata has no room at its end here, so the text
+            // goes in the padding after .eh_frame, still in the mapped page.
+            { at: 0x5d3c8, was: new Array(24).join('00'), now: GUIDE_PARAMS },
+            { at: 0x30264, was: 'cadc01', now: '7ed802' },
+            { at: 0x2fa6e, was: '7ff4d1ae', now: 'aff30080' },
+            // bne to handing the key to the app in front when it is an input (isInput): a nop, so an HDMI
+            // input launches Home as other apps do instead of opening LG's guide.
+            { at: 0x2fa2c, was: '40f06a81', now: 'aff30080' }
+          ]
+        },
+        picker: { at: 0x4fdec, was: '7b226964223a2022636f6d2e7765626f732e6170702e717569636b696e7075747069636b6572227d00' }
       }
     }
   },

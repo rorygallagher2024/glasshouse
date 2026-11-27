@@ -114,6 +114,7 @@ function showTab(name) {
   if (name === 'control') loadControlBluetooth();
   if (name === 'audio') loadAudio();
   audioPolling(name === 'audio');
+  soundbarViewChanged();
   if (name === 'picture') loadPicture();
   picturePolling(name === 'picture');
   gamePolling(name === 'game');

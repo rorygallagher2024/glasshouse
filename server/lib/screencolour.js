@@ -12,10 +12,13 @@
  * A capture costs the TV a moment's work, so one serves every dashboard asking
  * within MIN_GAP_MS, and requests while one runs wait for it.
  *
- * Which service the TV has is asked once, without a capture: called with no
- * path, a service that is there refuses the request ("Invalid argument" on a
- * B8, "ERROR_NOT_ENOUGH_MEMORY" on a C2), and the bus answers "Service does
- * not exist" for one that is not. A TV with neither does not offer the glow.
+ * Which service the TV has is learned from the first capture a dashboard asks
+ * for: the bus answers "Service does not exist" for one that is not there, and
+ * a TV with neither stops offering the glow. It is never asked at start-up.
+ * Even a call with no path makes a C1's captureservice (webOS 6) take the
+ * capture hardware from PicCap, which then stops until the screen is turned
+ * off and on (#1754), and a dashboard's capture waits while PicCap or Hue Sync
+ * captures (routes.js).
  */
 
 var fs = require('fs');
@@ -32,41 +35,11 @@ var nowMs = Date.now;
 var service = null;       // the one that answered, once one has
 var last = null, lastAt = 0, waiting = null;
 var available = null;     // whether the TV has a capture service: null until asked
-var probing = null;       // callbacks waiting on the question
 
 // The bus's answer for a service the TV does not have.
 function absent(r) {
   return !!(r && r.returnValue === false &&
     /service does not exist|no such service|unknown method|not registered/i.test(String(r.errorText || '')));
-}
-
-/*
- * Asks each service, with no path so nothing is captured, and keeps the
- * first that is there. cb(available). A service that does not answer at all
- * leaves the question open, to be asked again.
- */
-function probe(cb) {
-  if (available !== null) return cb && cb(available);
-  if (!lunaFn) return cb && cb(null);
-  if (probing) return cb && probing.push(cb);
-  probing = cb ? [cb] : [];
-  var tries = SERVICES.slice(), unanswered = false;
-  (function next() {
-    var uri = tries.shift();
-    if (!uri) return done(unanswered ? null : false);
-    lunaFn(uri, {}, function (r) {
-      if (!r) { unanswered = true; return next(); }
-      if (absent(r)) return next();
-      service = uri;
-      done(true);
-    });
-  })();
-  function done(v) {
-    available = v;
-    var q = probing;
-    probing = null;
-    q.forEach(function (fn) { fn(v); });
-  }
 }
 
 /**
@@ -86,7 +59,6 @@ function init(opts) {
   lastAt = 0;
   waiting = null;
   available = null;
-  probing = null;
 }
 
 /*
@@ -229,7 +201,6 @@ function read(cb) {
 module.exports = {
   init: init,
   read: read,
-  probe: probe,
   supported: supported,
   readBmp: readBmp,
   colours: colours

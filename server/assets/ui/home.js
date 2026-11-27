@@ -22,7 +22,8 @@ const HOME_ROWS = {
   dev: () => t('home.row.inputs', 'Inputs'),
   ch: () => t('home.row.channels', 'Channels'),
   rec: () => t('home.row.recommended', 'Recommended'),
-  iptv: () => t('home.row.iptv', 'Internet TV')
+  iptv: () => t('home.row.iptv', 'Internet TV'),
+  ha: () => t('home.row.ha', 'Home Assistant')
 };
 
 async function homeGet(path) {
@@ -452,6 +453,14 @@ function renderHome() {
     updateToggle(alt, { cls: on ? 'good' : 'idle', label: on ? t('common.on', 'On') : t('common.off', 'Off') });
     alt.disabled = !homeWritable();
   }
+  const barHaRow = q('home-bar-habar-row');
+  if (barHaRow) barHaRow.hidden = !homeBarOn() || !st.haBarAvailable;
+  const barHaBtn = q('home-bar-habar');
+  if (barHaBtn) {
+    const on = !!st.layout && st.layout.haBarInHomeBar === true;
+    updateToggle(barHaBtn, { cls: on ? 'good' : 'idle', label: on ? t('common.on', 'On') : t('common.off', 'Off'), on });
+    barHaBtn.disabled = !homeWritable();
+  }
   const hide = q('home-hide-lg');
   if (hide) {
     const armed = homeArmed === 'hide';
@@ -668,15 +677,23 @@ function renderHomeRows() {
   // Redrawing after each change keeps the rows that were open, and what was typed in the channel search.
   const open = box.children.length ? [...box.querySelectorAll('details[open]')].map(d => d.dataset.kind) : [];
   const filter = q('home-ch-filter') ? q('home-ch-filter').value : '';
-  box.innerHTML = homeLayout.rows.map((kind, ri) => {
+  const haAvail = !!(homeStatus && homeStatus.haBarAvailable);
+  const visibleRows = homeLayout.rows.map((kind, ri) => ({ kind, ri })).filter(x => x.kind !== 'ha' || haAvail);
+  box.innerHTML = visibleRows.map(({ kind, ri }, vi) => {
     // A hidden row leaves the view whatever its tiles; arranging on the TV still shows it.
-    const rowOff = (homeLayout.hiddenRows || []).includes(kind);
+    const rowOff = kind === 'ha' ? homeLayout.haRow !== true : (homeLayout.hiddenRows || []).includes(kind);
+    const toggleRowFn = kind === 'ha' ? 'homeToggleHaRow()' : `homeToggleRow('${kind}')`;
     const rowMove = `<span class="home-row-move">
           ${renderToggle({ cls: rowOff ? 'idle' : 'good', label: rowOff ? t('home.hidden', 'Hidden') : t('home.shown', 'Shown'),
-            on: !rowOff, disabled: !usable, onclick: `event.preventDefault(); homeToggleRow('${kind}')` })}
-          <button type="button" class="pill idle" ${usable && ri > 0 ? '' : 'disabled'} onclick="event.preventDefault(); homeMoveRow(${ri}, -1)">${esc(t('home.rowUp', 'Row up'))}</button>
-          <button type="button" class="pill idle" ${usable && ri < homeLayout.rows.length - 1 ? '' : 'disabled'} onclick="event.preventDefault(); homeMoveRow(${ri}, 1)">${esc(t('home.rowDown', 'Row down'))}</button>
+            on: !rowOff, disabled: !usable, onclick: `event.preventDefault(); ${toggleRowFn}` })}
+          <button type="button" class="pill idle" ${usable && vi > 0 ? '' : 'disabled'} onclick="event.preventDefault(); homeMoveRow(${ri}, -1)">${esc(t('home.rowUp', 'Row up'))}</button>
+          <button type="button" class="pill idle" ${usable && vi < visibleRows.length - 1 ? '' : 'disabled'} onclick="event.preventDefault(); homeMoveRow(${ri}, 1)">${esc(t('home.rowDown', 'Row down'))}</button>
         </span>`;
+    // The Home Assistant row shares habar.json; entity management lives on the HA & MQTT tab.
+    if (kind === 'ha') {
+      const haDesc = t('home.haRowDesc', 'Controls {n} entities from the Home Assistant bar.', { n: (homeStatus && homeStatus.haBarCount) || 0 });
+      return `<div class="home-row" data-kind="ha"><div class="home-row-head"><span class="prot-title">${esc(HOME_ROWS.ha())}</span>${rowMove}</div><div class="sub" style="padding:2px 0 6px">${esc(haDesc)} <a href="?tab=mqtt" onclick="event.preventDefault(); showTab('mqtt');">${esc(t('home.haRowEdit', 'Edit on HA & MQTT'))}</a></div></div>`;
+    }
     // The apps' cards come and go with their lists, so the row has its switch rather than tiles.
     if (kind === 'rec') {
       return `<details class="home-row" data-kind="rec"${open.includes('rec') ? ' open' : ''}>
@@ -756,6 +773,15 @@ function homeRecommended() {
   homeSaveLayout({ recommended: homeLayout.recommended !== true });
 }
 
+function homeToggleHaRow() {
+  homeSaveLayout({ haRow: homeLayout.haRow !== true });
+}
+
+async function homeToggleHaBarTile() {
+  await homeSaveLayout({ haBarInHomeBar: homeLayout.haBarInHomeBar !== true });
+  if (typeof loadHaBar === 'function' && typeof haBarConfigured !== 'undefined' && haBarConfigured) loadHaBar();
+}
+
 function homeSort(kind) { return homeLayout.sort && homeLayout.sort[kind] === 'recent' ? 'recent' : 'custom'; }
 
 function homeSortRow(kind, usable) {
@@ -809,7 +835,9 @@ function homeMoveTile(kind, i, d) {
 
 function homeMoveRow(i, d) {
   const rows = homeLayout.rows.slice();
-  const j = i + d;
+  const haAvail = !!(homeStatus && homeStatus.haBarAvailable);
+  let j = i + d;
+  while (j >= 0 && j < rows.length && rows[j] === 'ha' && !haAvail) j += d;
   if (j < 0 || j >= rows.length) return;
   [rows[i], rows[j]] = [rows[j], rows[i]];
   homeSaveLayout({ rows });
@@ -1049,6 +1077,10 @@ async function homeLauncherChoose(id) {
 
 function homeLauncherDesc(l) {
   if (l.kind === 'web') return t('home.launcher.nowWeb', 'Web page: {address}', { address: l.address });
+  const parts = [];
+  if (l.author) parts.push(t('ss.by', 'by {author}', { author: l.author }));
+  if (l.version) parts.push('v' + l.version);
+  if (parts.length) return parts.join(' · ');
   return l.files === 1
     ? t('home.launcher.nowAppOne', 'Uploaded: one file, {size}', { size: fmtSize(l.bytes) })
     : t('home.launcher.nowApp', 'Uploaded: {files} files, {size}', { files: l.files, size: fmtSize(l.bytes) });
@@ -1068,6 +1100,9 @@ function renderHomeLauncher() {
   q('home-launchers').innerHTML = kept.map(l => `<div class="prot-row">
       <div class="prot-main"><div class="prot-title">${esc(l.title)}</div><div class="prot-desc">${esc(homeLauncherDesc(l))}</div></div>
       <div class="prot-status">
+        ${l.id === chosen
+          ? `<span class="ss-tag">${esc(t('ss.inUse', 'In use'))}</span>`
+          : `<button type="button" class="pill idle" ${busy ? 'disabled' : ''} onclick="homeLauncherUse('${esc(l.id)}')">${esc(t('community.use', 'Use'))}</button>`}
         <button type="button" class="pill idle" ${busy ? 'disabled' : ''} onclick="homeLauncherRemove('${esc(l.id)}')">${esc(t('home.launcher.remove', 'Remove'))}</button>
       </div>
     </div>`).join('');

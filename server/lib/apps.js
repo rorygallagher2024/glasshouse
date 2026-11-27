@@ -47,6 +47,7 @@ var PROTECTED_APP_IDS = {
   'com.tvweb.homebar': true,
   'com.tvweb.inputbar': true,
   'com.tvweb.ask': true,
+  'com.tvweb.habar': true,
   'org.webosbrew.hbchannel': true,
   'com.webos.app.livetv': true,
   'com.palm.app.settings': true,

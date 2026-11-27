@@ -870,38 +870,65 @@ function sinkhole(lines, host) {
 // Heads the lines this table carries over from other tools; 50-tvweb.sh writes it too.
 var KEPT_HEADER = '# Kept from /etc/hosts, where other tools put them';
 
+// The table's own comment lines, never carried over as another tool's.
+var UPDATES_HEADER = '# TV software updates, blocked by the flag the Homebrew Channel also uses';
+function ownComment(line) {
+  return line === ADBLOCK_MARKER || line === ADBLOCK_LEGACY_MARKER || line === KEPT_HEADER || line === UPDATES_HEADER;
+}
+
 /*
  * Lines other tools put in /etc/hosts, such as AmazOff's redirect of Amazon's
  * player to a local nginx, and other blockers' sinkholes (Life's Good Without
- * Spying and LG App Update Blocker write nothing else, #1370). Rewriting the
- * table, or mounting it, would otherwise drop them. In this table's own file,
- * its sinkholes are its own until KEPT_HEADER and another tool's after it; in
- * another tool's file every sinkhole is that tool's. A line is never kept if
- * it is a comment, a localhost line, or a non-sinkhole naming a host the
- * table decides on: the Homebrew Channel points the update servers at
- * 127.0.0.1 and ::1 (a C4 on webOS 10.3.1), and those must not outlive update
- * blocking being switched off. 50-tvweb.sh carries them over at boot the same
- * way.
+ * Spying and LG App Update Blocker, #1370). Rewriting the table, or mounting
+ * it, would otherwise drop them. In this table's own file, its sinkholes are
+ * its own until KEPT_HEADER, or until another tool's comment, as a boot hook
+ * appending its section leaves one; in another tool's file every sinkhole is
+ * that tool's. A line is never kept if it is a localhost line, or a
+ * non-sinkhole naming a host the table decides on: the Homebrew Channel points
+ * the update servers at 127.0.0.1 and ::1 (a C4 on webOS 10.3.1), and those
+ * must not outlive update blocking being switched off.
+ *
+ * Another tool's comments go with the lines after them, in their order: Life's
+ * Good Without Spying looks for its marker in /etc/hosts to know its block is
+ * up (#1716). A comment followed by nothing kept, such as the Homebrew
+ * Channel's over its update lines, is left out, and the table's own never
+ * kept. 50-tvweb.sh carries them over at boot the same way.
  */
 function foreignHostsLines(text) {
   var managed = adBlockAds().concat(adBlockPlatformBase(), adBlockSdp(), HBC_UPDATE_HOSTS);
   var kept = [];
+  var comments = [];
   text = String(text || '');
   var ours = text.indexOf(ADBLOCK_MARKER) !== -1 || text.indexOf(ADBLOCK_LEGACY_MARKER) !== -1;
   var othersSinkholes = !ours;
+  var keep = function (line) {
+    comments.forEach(function (c) { if (kept.indexOf(c) === -1) kept.push(c); });
+    comments = [];
+    if (kept.indexOf(line) === -1) kept.push(line);
+  };
   var lines = text.split('\n');
   for (var i = 0; i < lines.length; i++) {
     var line = lines[i].trim();
-    if (line === KEPT_HEADER) othersSinkholes = true;
-    if (!line || line.charAt(0) === '#') continue;
-    if (/^(0\.0\.0\.0|::)\s/.test(line)) {
-      if (othersSinkholes && kept.indexOf(line) === -1) kept.push(line);
+    if (!line) continue;
+    if (line.charAt(0) === '#') {
+      if (line === KEPT_HEADER) othersSinkholes = true;
+      if (ownComment(line)) { comments = []; continue; }
+      othersSinkholes = true;
+      comments.push(line);
       continue;
     }
-    if (/localhost|ip6-/.test(line) || isLocalLookupLine(line)) continue;
+    if (/^(0\.0\.0\.0|::)\s/.test(line)) {
+      if (othersSinkholes) keep(line);
+      else comments = [];
+      continue;
+    }
     var names = line.split(/\s+/).slice(1);
-    if (names.some(function (n) { return managed.indexOf(n.toLowerCase()) !== -1; })) continue;
-    if (kept.indexOf(line) === -1) kept.push(line);
+    if (/localhost|ip6-/.test(line) || isLocalLookupLine(line) ||
+        names.some(function (n) { return managed.indexOf(n.toLowerCase()) !== -1; })) {
+      comments = [];
+      continue;
+    }
+    keep(line);
   }
   return kept;
 }
@@ -928,7 +955,7 @@ function adBlockHostsTable(mode, foreign) {
   ];
   for (var i = 0; i < list.length; i++) sinkhole(lines, list[i]);
   if (tvUpdatesBlocked()) {
-    lines.push('', '# TV software updates, blocked by the flag the Homebrew Channel also uses');
+    lines.push('', UPDATES_HEADER);
     for (var u = 0; u < HBC_UPDATE_HOSTS.length; u++) sinkhole(lines, HBC_UPDATE_HOSTS[u]);
   }
   // Kept even where the tier blocks the same name: the tool's line must
@@ -1092,20 +1119,31 @@ function topHostsLayer() {
  * Binds the table over /etc/hosts. Where /etc/hosts is itself a mount shared
  * with others, a mount on it reaches them too: on a B4 (webOS 10.3.2) the
  * table also covered Life's Good Without Spying's file, which that tool's
- * layer is bound from, so the tool copying /etc/hosts into its file failed
- * (#1571); on a C2 (webOS 9.2) it also covered /tmp/hosts, which LG's
- * /etc/hosts is. Made a slave first, that mount still takes what reaches it
- * from the others but no longer passes this one on.
+ * layer is bound from (#1571); on a C2 (webOS 9.2) it also covered /tmp/hosts.
+ * Made a slave first, /etc/hosts stops passing the bind on. The table's own
+ * new bind mount still inherits the peer group of /var/lib (shared:39), so
+ * /etc/hosts is made a slave again after binding; otherwise a mount another
+ * tool puts over /etc/hosts later propagates back onto adblock_hosts (#1712).
  */
-function mountTable(cb) {
-  var bind = function () {
-    execFn('/bin/mount', ['--bind', ADBLOCK_HOSTS_FILE, '/etc/hosts'], { timeout: 3000 }, function (err) { cb(err); });
-  };
+function isOwnHostsLayer(layer) {
+  return !!(layer && layer.root && /\/adblock_hosts$/.test(layer.root));
+}
+
+function makeHostsSlave(cb) {
   var top = topHostsLayer();
-  if (!top || !top.shared) return bind();
+  if (!top || !top.shared) return cb();
   execFn('/bin/mount', ['--make-slave', '/etc/hosts'], { timeout: 3000 }, function (err) {
     if (err) console.log('adblock: could not keep the table to /etc/hosts alone: ' + (err.message || err));
-    bind();
+    cb();
+  });
+}
+
+function mountTable(cb) {
+  makeHostsSlave(function () {
+    execFn('/bin/mount', ['--bind', ADBLOCK_HOSTS_FILE, '/etc/hosts'], { timeout: 3000 }, function (err) {
+      if (err) return cb(err);
+      makeHostsSlave(function () { cb(null); });
+    });
   });
 }
 
@@ -1134,7 +1172,11 @@ function putBackBelow(lines) {
  * at boot, under this one; with updates unblocked and nothing of ours to
  * mount, that layer is lifted too, or it would block until the next reboot.
  */
+var hostsBusy = 0;
 function applyHostsTable(cb) {
+  hostsBusy++;
+  var outer = cb;
+  cb = function (err) { hostsBusy--; outer(err); };
   var mode = flagMode();
   var mounted = isTableMounted();
   var done = function () { clearCache(); syncAppHosts(); cb(null); };
@@ -1146,7 +1188,11 @@ function applyHostsTable(cb) {
     }
     if (waitsForSdp(mode)) scheduleSdpBlock();
     else clearSdpTimer();
-    if (mounted) return done();
+    if (mounted) {
+      var top = topHostsLayer();
+      if (top && top.shared && isOwnHostsLayer(top)) return makeHostsSlave(done);
+      return done();
+    }
     return mountTable(function (err) { if (!err) return done(); clearCache(); cb('could not mount the hosts table'); });
   }
   clearSdpTimer();
@@ -1209,6 +1255,55 @@ function setAdBlock(mode, cb) {
   });
 }
 
+/*
+ * The Homebrew Channel 0.8.0 also stops LG's update check, and its nag on
+ * screen, with the undocumented support.softwareUpdateEnable setting, set by
+ * its own switch and at each boot while blocking is on, and it discards LG's
+ * cached update details then (webosbrew/webos-homebrew-channel#264). The flag
+ * alone, as this switch wrote it, stopped the nag only from the next boot, and
+ * switching blocking off never set it back (#1363). Here it is set with the
+ * flag, whatever the Homebrew Channel's version.
+ */
+var SW_UPDATE_CACHE = ['/mnt/lg/cmn_data/swupdate/Image_Update_Info.xml', '/mnt/lg/cmn_data/swupdate/Package_Update_Info.xml'];
+function setUpdateCheck(enabled, cb) {
+  cb = cb || function () {};
+  if (!enabled) SW_UPDATE_CACHE.forEach(function (f) { try { fs.unlinkSync(f); } catch (e) { /* not there */ } });
+  if (!luna) return cb(false);
+  luna('com.webos.settingsservice/setSystemSettings', { category: 'support', settings: { softwareUpdateEnable: enabled } }, function (r) {
+    if (!(r && r.returnValue)) console.log('privacy: LG\'s update check could not be ' + (enabled ? 'switched back on' : 'switched off'));
+    cb(!!(r && r.returnValue));
+  });
+}
+
+// At start: blocking on, LG's update check off too, as an older Homebrew Channel left it.
+function checkUpdateSetting() {
+  if (!luna || !tvUpdatesBlocked()) return;
+  luna('com.webos.settingsservice/getSystemSettings', { category: 'support', keys: ['softwareUpdateEnable'] }, function (r) {
+    var v = r && r.settings && r.settings.softwareUpdateEnable;
+    if (v === true || v === 'true') {
+      console.log('privacy: TV updates are blocked; LG\'s update check switched off too');
+      setUpdateCheck(false);
+    }
+  });
+}
+
+/*
+ * Another tool can take the table off /etc/hosts while the TV runs: Life's
+ * Good Without Spying unmounts /etc/hosts while it shows that tool's marker,
+ * which the table now carries (#1716). The ad blocker then stopped, and the
+ * Privacy tab said Off with the setting on, until the next start. Asked every
+ * minute: the table is put back where it is wanted and not what /etc/hosts
+ * shows, never while it is being changed here.
+ */
+function keepTable(cb) {
+  cb = cb || function () {};
+  if (hostsBusy || !tableWanted(flagMode())) return cb(false);
+  clearCache();
+  if (isTableMounted()) return cb(false);
+  console.log('adblock: the table was taken off /etc/hosts, as another tool does when it applies its own block; put back');
+  applyHostsTable(function (err) { cb(!err); });
+}
+
 function setTvUpdatesBlocked(on, cb) {
   try {
     if (on) fs.writeFileSync(HBC_BLOCK_UPDATES_FLAG, '', 'utf8');
@@ -1217,6 +1312,7 @@ function setTvUpdatesBlocked(on, cb) {
     if (cb) cb({ ok: false, error: msg('srv.tvUpdates.saveFailed', 'could not save the update setting: {error}', { error: e.message }) });
     return;
   }
+  setUpdateCheck(!on);
   applyHostsTable(function (err) {
     if (cb) cb({ ok: !err, error: err || undefined, tvUpdatesBlocked: tvUpdatesBlocked() });
   });
@@ -1242,7 +1338,11 @@ function checkBootAdBlock(cliMode) {
           console.log('adblock: restored /etc/hosts bind-mount from previous boot');
         }
       });
-    } else syncAppHosts();
+    } else {
+      var top = topHostsLayer();
+      if (top && top.shared && isOwnHostsLayer(top)) makeHostsSlave(function () { clearCache(); syncAppHosts(); });
+      else syncAppHosts();
+    }
     if (waitsForSdp(mode)) scheduleSdpBlock();
   } catch (e) {}
 }
@@ -1817,6 +1917,10 @@ function learnCountry() {
 
 module.exports = {
   init: init,
+  keepTable: keepTable,
+  // For tests: earlier tests' real mounts still running count as a change in progress.
+  _hostsIdle: function () { hostsBusy = 0; },
+  checkUpdateSetting: checkUpdateSetting,
   isAdBlockActive: isAdBlockActive,
   adBlockMode: adBlockMode,
   blockedBy: blockedBy,

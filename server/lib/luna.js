@@ -82,8 +82,8 @@ function isUnlistedLgService(service) {
 /*
  * A failure that says the service is not there: no answer at all, or the
  * hub's own refusal. An error from the service itself, such as a B8's
- * com.webos.service.tv.capture answering "Invalid argument" (#1640's check for
- * which capture service a TV has), shows it is there, though not listed.
+ * com.webos.service.tv.capture answering "Invalid argument" to a capture,
+ * shows it is there, though not listed.
  */
 var HUB_ABSENT = /Service does not exist|not (?:be )?listed|LSHUB_NOT_LSTED|no such service/i;
 
@@ -177,6 +177,21 @@ var PARALLEL = 2;
  */
 var debugCalls = false;
 
+/*
+ * Every luna-send started, by URI, since the server started: one-shot calls
+ * (retries included) and subscription spawns. Glasshouse Home's frame trace
+ * logs the change at each beat, to tell which forks a key or a return costs.
+ */
+var started = { calls: {}, subscriptions: {} };
+function countStart(kind, uri) { started[kind][uri] = (started[kind][uri] || 0) + 1; }
+function stats() {
+  var out = { calls: {}, subscriptions: {} };
+  ['calls', 'subscriptions'].forEach(function (kind) {
+    Object.keys(started[kind]).forEach(function (uri) { out[kind][uri] = started[kind][uri]; });
+  });
+  return out;
+}
+
 function setDebug(on) {
   debugCalls = !!on;
 }
@@ -253,6 +268,7 @@ function runNow(job) {
   var startedAt = monotonicMs();
   var callUri = job.args[job.args.length - 2].replace('luna://', '');
   noteCall('call ' + callUri);
+  countStart('calls', callUri);
   var wait = job.slow ? SLOW_WAIT_MS : WAIT_MS;
   execFile(LUNA_SEND, job.args, { timeout: wait + 1500, maxBuffer: job.slow ? SLOW_MAX_REPLY : MAX_REPLY }, function (err, stdout) {
     var endedAt = monotonicMs();
@@ -384,6 +400,7 @@ Subscription.prototype._spawn = function () {
   args = args.concat(['-i', 'luna://' + resolveUri(self.uri), JSON.stringify(self.payload)]);
   self.buffer = '';
   noteCall('subscribe ' + resolveUri(self.uri));
+  countStart('subscriptions', resolveUri(self.uri));
   self.child = spawn(LUNA_SEND, args);
 
   self.child.stdout.on('data', function (chunk) {
@@ -494,5 +511,6 @@ module.exports = {
   call: call,
   callUrgent: callUrgent,
   Subscription: Subscription,
+  stats: stats,
   createCache: createCache
 };

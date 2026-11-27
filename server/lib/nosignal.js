@@ -13,11 +13,17 @@
  * The file is under qml/UserInterfaceLayer/Containers/BgViewLayer on webOS 9
  * (a C2, 9.2.2) and qml/TvComponent/ScreenSaver on webOS 4 (a B8, 4.4.3), with
  * the same two lines. Each must be there exactly once, as on those two, or
- * nothing is mounted: a firmware that changed them keeps LG's screen.
+ * nothing is mounted: a firmware that changed them keeps LG's screen. On webOS
+ * 9 and later, LG's "No Signal Image" gallery photo hides RandomMoveItem via
+ * noSignalPhotoModel and paints PhotoSlide instead, so those two lines are
+ * also adjusted when present.
  *
  * The input app holds the file it loaded until it starts again, so it is
  * restarted, and only while no input with a picture is on screen, as
- * restarting it blanks the input in front for a moment. A mount does not
+ * restarting it blanks the input in front for a moment, and while no input is
+ * open behind an app: on a C9 (webOS 4.10) an HDMI input open in the background
+ * when it restarted never came back to the screen until a reboot (#1755). A
+ * B8 (webOS 4.4) closed it instead. A mount does not
  * outlive a reboot; the server mounts it again at start. A TV boots onto its
  * last input with the input app started before the server (5 s into a C2's
  * boot, 7 s into a B8's), so an input with nothing coming in does not hold the
@@ -34,6 +40,17 @@ var fs = require('fs');
 var path = require('path');
 var execFile = require('child_process').execFile;
 var util = require('./util');
+var qmlcheck = require('./qmlcheck');
+var say = require('./say');
+var msg = say.msg;
+
+var USER_NOSIGNALS_DIR = '/var/lib/tvweb/nosignals';
+var USER_PREFIX = 'user-';
+var ID_RE = /^[a-z0-9][a-z0-9-]{0,31}$/;
+var NS_MANIFEST = 'nosignal.json';
+var NS_MANIFEST_FORMAT = 1;
+var MAX_NS_FILES = 200;
+var MAX_NS_BYTES = 5 * 1024 * 1024;
 
 var INPUT_APP = 'com.webos.app.inputcommon';
 var APP_QML = '/usr/palm/applications/' + INPUT_APP + '/qml/';
@@ -48,6 +65,9 @@ var PATCHES = [
 ];
 var HEADER_START = /\n([ \t]*)ScreensaverMainText \{\s*\n[ \t]*id: headerText(?=\n)/g;
 var HEADER_ID = /(\n([ \t]*)id: headerText)(?=\n)/g;
+// webOS 9+ "No Signal Image" photo slide and RandomMoveItem guard (absent on webOS 4).
+var PHOTO_MODEL = /(\n[ \t]*photoModel:\s*)noSignalPhotoModel(?=\n)/g;
+var MOVER_PHOTO_VISIBLE = /(\n[ \t]*visible:\s*visibleScreensaver)\s*&&\s*(noSignalPhotoModel\s*&&\s*!noSignalPhotoModel\.enabled(?:\s*&&\s*!noSignalPhotoModel\.opene?d)?)(?=\n)/g;
 // Art: drawn under LG's drifting box, which fades once a picture is in.
 var MOVER_START = /\n([ \t]*)RandomMoveItem \{(?=\n)/g;
 var MOVER_ID = /(\n([ \t]*)id: element)(?=\n)/g;
@@ -307,6 +327,7 @@ var RETRY_MS = 60000;
 var luna = null;
 var execFn = execFile;
 var stateDir = '/var/lib/tvweb';
+var userNoSignalsDir = USER_NOSIGNALS_DIR;
 var appQml = APP_QML;
 var retryMs = RETRY_MS;
 var mountinfo = '/proc/self/mountinfo';
@@ -314,13 +335,238 @@ var mountinfo = '/proc/self/mountinfo';
 var pendingFile = '/var/run/tvweb-nosignal-restart';
 var retryTimer = null;
 var restartPending = false;
+// The input open behind an app that holds the restart back, or ''.
+var heldBy = '';
+var inputNames = {};   // short id (hdmi2) to the input's name, as the Inputs tab shows it
+
+// The input holding the restart back, by its name.
+function heldByName() {
+  if (!heldBy) return '';
+  var short = heldBy.replace(/^com\.webos\.app\./, '');
+  var m = /^hdmi(\d)$/.exec(short);
+  return inputNames[short] || (m ? 'HDMI ' + m[1] : short);
+}
 var lastProblem = '';
 var config = {};
+var webosMajor = 0;
+var customCache = null;
 
 // Art's next picture, as the screen saver asks for it, with the token.
 function artUrl() {
   var port = config.port || 8080;
   return 'http://127.0.0.1:' + port + '/api/art/next' + (config.token ? '?k=' + encodeURIComponent(config.token) : '');
+}
+
+function customUrl(id, mainFile) {
+  var port = config.port || 8080;
+  return 'http://127.0.0.1:' + port + '/nosignal/' + encodeURIComponent(id) + '/' + encodeURIComponent(mainFile);
+}
+
+/*
+ * Community No Signal screen wrapper: full-screen Loader inside
+ * com.webos.app.inputcommon's Screensaver.qml. LG's drifting box hides while
+ * the screen signals ready (hidesLg), and comes back after 3 s if loading stalls.
+ */
+function customNoSignalBlock(indent, loadUrl) {
+  var lines = [
+    'Item {',
+    '    id: glasshouseCustomNoSignal',
+    '    property bool active: currentKey === "noSignal" && screensaverRoot.visible',
+    '    property bool late: false',
+    '    property bool itemHides: glasshouseCustomNoSignalLoader.item && glasshouseCustomNoSignalLoader.item.hidesLg !== undefined ? !!glasshouseCustomNoSignalLoader.item.hidesLg : (glasshouseCustomNoSignalLoader.status === Loader.Ready)',
+    '    property bool hidesLg: glasshouseCustomNoSignalLoader.status === Loader.Ready ? itemHides : (!late && glasshouseCustomNoSignalLoader.status !== Loader.Error)',
+    '    visible: active',
+    '    x: -screensaverRoot.x',
+    '    y: -screensaverRoot.y',
+    '    width: screensaverRoot.parent ? screensaverRoot.parent.width : screensaverRoot.width',
+    '    height: screensaverRoot.parent ? screensaverRoot.parent.height : screensaverRoot.height',
+    '    onActiveChanged: { if (active) late = false; }',
+    '    Timer { interval: 3000; running: glasshouseCustomNoSignal.active && glasshouseCustomNoSignalLoader.status !== Loader.Ready; onTriggered: glasshouseCustomNoSignal.late = true }',
+    '    Rectangle { anchors.fill: parent; color: "black" }',
+    '    Loader {',
+    '        id: glasshouseCustomNoSignalLoader',
+    '        anchors.fill: parent',
+    '        asynchronous: true',
+    '        active: glasshouseCustomNoSignal.active',
+    '        source: active ? ' + JSON.stringify(loadUrl) + ' : ""',
+    '        onLoaded: { if (item && item.headingText !== undefined) item.headingText = Qt.binding(function () { return headerText.text; }); }',
+    '    }',
+    '}'
+  ];
+  return lines.map(function (l) { return indent + l; }).join('\n');
+}
+
+function manifestText(v) {
+  if (typeof v === 'string' && v) return { en: v };
+  if (v && typeof v === 'object' && typeof v.en === 'string' && v.en) return v;
+  return null;
+}
+
+function scanFiles(dir) {
+  var out = [];
+  (function walk(rel) {
+    var entries = fs.readdirSync(path.join(dir, rel));
+    for (var i = 0; i < entries.length; i++) {
+      var r = rel ? rel + '/' + entries[i] : entries[i];
+      var st = fs.lstatSync(path.join(dir, r));
+      if (st.isSymbolicLink()) continue;
+      if (st.isDirectory()) walk(r);
+      else if (st.isFile()) out.push({ rel: r, size: st.size });
+    }
+  })('');
+  return out;
+}
+
+function readCustomDir(dir, id) {
+  var localId = USER_PREFIX + id;
+  var entry = {
+    id: id,
+    localId: localId,
+    dir: dir,
+    label: id,
+    description: '',
+    author: '',
+    license: '',
+    homepage: '',
+    version: '',
+    main: 'main.qml',
+    cautions: []
+  };
+  function problem(text) { entry.problem = text; return entry; }
+  if (!ID_RE.test(id)) {
+    return problem(msg('srv.saver.badFolder', 'Its folder name, "{name}", can only have lowercase letters, digits and -, starting with a letter or digit, up to 32 characters.', { name: id }));
+  }
+  var m;
+  try { m = JSON.parse(fs.readFileSync(path.join(dir, NS_MANIFEST), 'utf8')); }
+  catch (err) {
+    return problem(msg('srv.saver.badManifest', '{file} could not be read: {error}', { file: NS_MANIFEST, error: err.message }));
+  }
+  if (!m || typeof m !== 'object') return problem(msg('srv.saver.notObject', '{file} is not a JSON object.', { file: NS_MANIFEST }));
+  var name_ = manifestText(m.name), desc = manifestText(m.description);
+  if (name_) entry.label = say.define('nosignal.' + localId + '.name', name_.en, name_);
+  if (desc) entry.description = say.define('nosignal.' + localId + '.desc', desc.en, desc);
+  entry.version = typeof m.version === 'string' ? m.version : '';
+  entry.author = typeof m.author === 'string' ? m.author : '';
+  entry.license = typeof m.license === 'string' ? m.license : '';
+  entry.homepage = typeof m.homepage === 'string' ? m.homepage : '';
+  if (m.manifest !== NS_MANIFEST_FORMAT) {
+    return problem(msg('srv.saver.format', '{file} is in format {format}, and this Glasshouse reads format {known}.',
+                       { file: NS_MANIFEST, format: String(m.manifest), known: String(NS_MANIFEST_FORMAT) }));
+  }
+  if (!name_ || !desc || !entry.version) {
+    return problem(msg('srv.saver.missing', '{file} needs a name, a description and a version.', { file: NS_MANIFEST }));
+  }
+  entry.main = m.main === undefined ? 'main.qml' : m.main;
+  if (typeof entry.main !== 'string' || !/^[\w.-]+\.qml$/.test(entry.main)) {
+    return problem(msg('srv.nosignal.badMain', '{file}: main must name a .qml file.', { file: NS_MANIFEST }));
+  }
+  var need = m.requires && typeof m.requires.webos === 'number' ? m.requires.webos : 0;
+  if (need && webosMajor && webosMajor < need) {
+    return problem(msg('srv.saver.needsWebos', 'It needs webOS {need} or later.', { need: String(need) }));
+  }
+  var files;
+  try { files = scanFiles(dir); }
+  catch (err2) { return problem(msg('srv.saver.unreadable', 'Its folder could not be read: {error}', { error: err2.message })); }
+  var bytes = 0, hasMain = false;
+  for (var i = 0; i < files.length; i++) {
+    bytes += files[i].size;
+    if (files[i].rel === entry.main) hasMain = true;
+  }
+  if (!hasMain) return problem(msg('srv.saver.noMain', '{main} is missing from its folder.', { main: entry.main }));
+  if (files.length > MAX_NS_FILES || bytes > MAX_NS_BYTES) {
+    return problem(msg('srv.saver.tooBig', 'Its folder is over the limit of {files} files and {mb} MB.',
+                       { files: String(MAX_NS_FILES), mb: String(MAX_NS_BYTES / 1048576) }));
+  }
+  var sources = [];
+  for (var k = 0; k < files.length; k++) {
+    if (!/\.qml$/i.test(files[k].rel)) continue;
+    var src;
+    try { src = fs.readFileSync(path.join(dir, files[k].rel), 'utf8'); }
+    catch (err3) { return problem(msg('srv.saver.unreadable', 'Its folder could not be read: {error}', { error: err3.message })); }
+    var wrong = qmlcheck.problem(src, files[k].rel, webosMajor || 0);
+    if (wrong) return problem(wrong);
+    sources.push(src);
+  }
+  entry.cautions = qmlcheck.reaches(sources.join('\n'));
+  return entry;
+}
+
+function validateFolder(dir, name) {
+  var e = readCustomDir(dir, name);
+  return { ok: !e.problem, screen: e, error: e.problem || null };
+}
+
+function scanCustom() {
+  var list = [], byId = {};
+  var entries = [];
+  try { entries = fs.readdirSync(userNoSignalsDir); } catch (e) { entries = []; }
+  entries.sort();
+  for (var i = 0; i < entries.length; i++) {
+    var name = entries[i];
+    if (name.charAt(0) === '.') continue;
+    var full = path.join(userNoSignalsDir, name);
+    var st;
+    try { st = fs.lstatSync(full); } catch (e2) { continue; }
+    if (st.isSymbolicLink() || !st.isDirectory()) continue;
+    var e = readCustomDir(full, name);
+    list.push(e);
+    byId[e.localId] = e;
+  }
+  customCache = { list: list, byId: byId };
+  return customCache;
+}
+
+function customCatalog() {
+  return customCache || scanCustom();
+}
+
+function invalidateCatalog() {
+  customCache = null;
+}
+
+function listCustom() {
+  var raw = customCatalog().list;
+  var out = [];
+  for (var i = 0; i < raw.length; i++) {
+    var s = raw[i];
+    out.push({
+      id: s.id,
+      localId: s.localId,
+      label: s.label,
+      description: s.description,
+      author: s.author,
+      license: s.license,
+      homepage: s.homepage,
+      version: s.version,
+      main: s.main,
+      cautions: s.cautions,
+      problem: s.problem || null
+    });
+  }
+  return out;
+}
+
+function resolve(id, relPath) {
+  if (!ID_RE.test(String(id || '')) || typeof relPath !== 'string' || !relPath) return null;
+  if (relPath.indexOf('\\') !== -1 || relPath.charAt(0) === '/') return null;
+  var parts = relPath.split('/');
+  for (var i = 0; i < parts.length; i++) {
+    if (!parts[i] || parts[i] === '.' || parts[i] === '..' || parts[i].charAt(0) === '.') return null;
+  }
+  var base = path.resolve(path.join(userNoSignalsDir, id));
+  var cur = base;
+  try {
+    var baseSt = fs.lstatSync(base);
+    if (baseSt.isSymbolicLink() || !baseSt.isDirectory()) return null;
+    for (var j = 0; j < parts.length; j++) {
+      cur = path.join(cur, parts[j]);
+      var st = fs.lstatSync(cur);
+      if (st.isSymbolicLink()) return null;
+      if (j < parts.length - 1 ? !st.isDirectory() : !st.isFile()) return null;
+    }
+  } catch (e) { return null; }
+  if (path.resolve(cur).indexOf(base + path.sep) !== 0) return null;
+  return { file: cur };
 }
 
 function init(opts) {
@@ -329,11 +575,16 @@ function init(opts) {
   config = opts.config || {};
   execFn = opts.exec || execFile;
   stateDir = opts.stateDir || '/var/lib/tvweb';
+  userNoSignalsDir = opts.userNoSignalsDir || (opts.stateDir && opts.stateDir !== '/var/lib/tvweb' ? path.join(stateDir, 'nosignals') : USER_NOSIGNALS_DIR);
   appQml = opts.appQml || APP_QML;
   retryMs = opts.retryMs || RETRY_MS;
   mountinfo = opts.mountinfo || '/proc/self/mountinfo';
   pendingFile = opts.pendingFile || '/var/run/tvweb-nosignal-restart';
+  webosMajor = opts.webos ? parseInt(String(opts.webos), 10) : 0;
+  customCache = null;
   restartPending = false;
+  heldBy = '';
+  inputNames = opts.inputNames || {};
   if (retryTimer) clearTimeout(retryTimer);
   retryTimer = null;
 }
@@ -346,15 +597,26 @@ function origFile() { return path.join(ownDir(), 'Screensaver.lg.qml'); }
 function normalizeMode(val) {
   if (val === 'icon') return 'icon';
   if (val === 'art') return 'art';
+  if (typeof val === 'string' && val.indexOf(USER_PREFIX) === 0 && ID_RE.test(val.slice(USER_PREFIX.length))) return val;
   if (val === 'plain' || val === true || val === 'on' || val === 'true') return 'plain';
   return 'lg';
+}
+
+function validCustomEntry(mode) {
+  if (typeof mode !== 'string' || mode.indexOf(USER_PREFIX) !== 0) return null;
+  var e = customCatalog().byId[mode];
+  return e && !e.problem ? e : null;
 }
 
 function wanted() {
   if (!fs.existsSync(flagFile())) return 'lg';
   try {
     var saved = fs.readFileSync(flagFile(), 'utf8').trim();
-    return saved === 'icon' || saved === 'art' ? saved : 'plain';
+    if (saved === 'icon' || saved === 'art') return saved;
+    if (saved.indexOf(USER_PREFIX) === 0 && ID_RE.test(saved.slice(USER_PREFIX.length))) {
+      return validCustomEntry(saved) ? saved : 'lg';
+    }
+    return 'plain';
   } catch (e) {
     return 'plain';
   }
@@ -364,6 +626,8 @@ function modeLabel(mode) {
   if (mode === 'icon') return 'disconnected-cable';
   if (mode === 'art') return 'picture frame';
   if (mode === 'plain') return 'plain';
+  var custom = validCustomEntry(mode);
+  if (custom) return custom.label || custom.id;
   return 'LG\'s';
 }
 
@@ -385,10 +649,15 @@ function mounted(file) {
   });
 }
 
+function replaceIfUnique(text, find, replacement) {
+  var found = text.match(find);
+  if (!found || found.length !== 1) return text;
+  return text.replace(find, replacement);
+}
+
 /*
- * The TV's own file patched for the requested mode ('plain', 'icon' or 'art'),
- * or null where a line this looks for is not there exactly once. artApi: the
- * address Art asks for its pictures, for 'art'.
+ * The TV's own file patched for the requested mode ('plain', 'icon', 'art'
+ * or 'user-<id>'), or null where a line this looks for is not there exactly once.
  */
 function patch(text, mode, artApi) {
   var out = String(text || '');
@@ -397,6 +666,8 @@ function patch(text, mode, artApi) {
     if (!found || found.length !== 1) return null;
     out = out.replace(PATCHES[i].find, '$1' + PATCHES[i].add);
   }
+  out = replaceIfUnique(out, PHOTO_MODEL, '$1({ enabled: false, currentIdx: 0, imgArray: [] })');
+  out = replaceIfUnique(out, MOVER_PHOTO_VISIBLE, '$1 && (currentKey === "noSignal" || ($2))');
   if (mode === 'icon') {
     var heads = out.match(HEADER_START);
     if (!heads || heads.length !== 1) return null;
@@ -409,16 +680,23 @@ function patch(text, mode, artApi) {
       return line + '\n' + indent + 'visible: currentKey !== "noSignal"';
     });
   }
-  if (mode === 'art') {
+  var custom = validCustomEntry(mode);
+  if (mode === 'art' || custom || (typeof mode === 'string' && mode.indexOf(USER_PREFIX) === 0)) {
+    if (typeof mode === 'string' && mode.indexOf(USER_PREFIX) === 0 && !custom) return null;
     var movers = out.match(MOVER_START);
     if (!movers || movers.length !== 1) return null;
     var moverIds = out.match(MOVER_ID);
     if (!moverIds || moverIds.length !== 1) return null;
+    var blockId = custom ? 'glasshouseCustomNoSignal' : 'glasshouseArt';
+    var hidesProp = custom ? 'hidesLg' : 'started';
     out = out.replace(MOVER_START, function (match, indent) {
-      return '\n' + artBlock(indent, artApi || artUrl()) + match;
+      var blk = custom
+        ? customNoSignalBlock(indent, customUrl(custom.id, custom.main))
+        : artBlock(indent, artApi || artUrl());
+      return '\n' + blk + match;
     });
     out = out.replace(MOVER_ID, function (match, line, indent) {
-      return line + '\n' + indent + 'opacity: currentKey === "noSignal" && glasshouseArt.started ? 0 : 1';
+      return line + '\n' + indent + 'opacity: currentKey === "noSignal" && ' + blockId + '.' + hidesProp + ' ? 0 : 1';
     });
   }
   return out;
@@ -443,6 +721,15 @@ function nothingComingIn(reply, appId) {
   return false;
 }
 
+// An input SAM lists as running other than the one in front, or ''.
+function inputsBehind(running, front) {
+  for (var i = 0; i < running.length; i++) {
+    var id = running[i] && running[i].id;
+    if (typeof id === 'string' && id !== INPUT_APP && id !== front && INPUT_IN_FRONT.test(id)) return id;
+  }
+  return '';
+}
+
 /*
  * Restarts the input app: now if no input is in front or the one in front has
  * nothing coming in, otherwise once that is so.
@@ -461,6 +748,7 @@ function restartWhenFree() {
   // changes nothing.
   var restart = function (reopen) {
     restartPending = false;
+    heldBy = '';
     try { fs.unlinkSync(pendingFile); } catch (e) { /* not there */ }
     execFn('/usr/bin/killall', [INPUT_APP], { timeout: 5000 }, function () {
       console.log('nosignal: the input app restarted, so its No Signal screen is ' + modeLabel(wanted()));
@@ -472,11 +760,23 @@ function restartWhenFree() {
     if (!restartPending) return;
     ask('com.webos.applicationManager/getForegroundAppInfo', {}, function (r) {
       var appId = r && typeof r.appId === 'string' ? r.appId : '';
-      if (!INPUT_IN_FRONT.test(appId)) return restart(null);
-      ask('com.webos.service.eim/getAllInputStatus', {}, function (inputs) {
+      ask('com.webos.applicationManager/running', {}, function (rr) {
         if (!restartPending) return;
-        if (nothingComingIn(inputs, appId)) restart(appId);
-        else later();
+        // Not known which apps run: asked again later, as one may be an input.
+        if (!rr || !Array.isArray(rr.running)) return later();
+        var behind = inputsBehind(rr.running, appId);
+        if (behind) {
+          if (behind !== heldBy) console.log('nosignal: the input app restarts once ' + behind + ', open behind ' + (appId || 'another app') + ', is closed');
+          heldBy = behind;
+          return later();
+        }
+        heldBy = '';
+        if (!INPUT_IN_FRONT.test(appId)) return restart(null);
+        ask('com.webos.service.eim/getAllInputStatus', {}, function (inputs) {
+          if (!restartPending) return;
+          if (nothingComingIn(inputs, appId)) restart(appId);
+          else later();
+        });
       });
     });
   };
@@ -520,7 +820,15 @@ function apply(cb) {
   cb = cb || function () {};
   var file = target();
   if (!file) return cb(status());
-  var mode = wanted(), on = mode !== 'lg', isMounted = mounted(file);
+  var mode = wanted();
+  // Clean up flag if a previously selected custom screen was deleted outside set().
+  if (mode === 'lg' && fs.existsSync(flagFile())) {
+    try {
+      var saved = fs.readFileSync(flagFile(), 'utf8').trim();
+      if (saved.indexOf(USER_PREFIX) === 0 && !validCustomEntry(saved)) fs.unlinkSync(flagFile());
+    } catch (e) {}
+  }
+  var on = mode !== 'lg', isMounted = mounted(file);
   if (on && !isMounted) {
     var text;
     try { text = fs.readFileSync(file, 'utf8'); } catch (e) {
@@ -581,6 +889,11 @@ function apply(cb) {
 
 function set(val, cb) {
   var mode = normalizeMode(val);
+  if (mode.indexOf(USER_PREFIX) === 0) {
+    var entry = customCatalog().byId[mode];
+    if (!entry) return cb({ ok: false, error: msg('srv.community.unknown', 'Unknown community item.') });
+    if (entry.problem) return cb({ ok: false, error: entry.problem });
+  }
   try {
     if (mode === 'lg') {
       if (fs.existsSync(flagFile())) fs.unlinkSync(flagFile());
@@ -594,6 +907,7 @@ function set(val, cb) {
 // What the dashboards show: offered where the TV has the screen this knows.
 function status() {
   var file = target(), mode = wanted(), available = false, art = false;
+  var customScreens = listCustom();
   if (file) {
     var isMounted = mounted(file);
     // Mounted, the TV's own is the copy kept beside ours.
@@ -601,9 +915,20 @@ function status() {
     try { lgText = fs.readFileSync(isMounted ? origFile() : file, 'utf8'); } catch (e) { lgText = null; }
     available = isMounted || (lgText !== null && !!patch(lgText, 'icon'));
     art = lgText !== null && !!patch(lgText, 'art');
-    return { ok: true, available: available, art: art, on: mode !== 'lg', mode: mode, applied: isMounted, restartPending: restartPending };
+    return { ok: true, available: available, art: art, custom: art, customScreens: customScreens, on: mode !== 'lg', mode: mode, applied: isMounted, restartPending: restartPending, heldBy: restartPending ? heldByName() : '' };
   }
-  return { ok: true, available: false, art: false, on: mode !== 'lg', mode: mode, applied: false, restartPending: false };
+  return { ok: true, available: false, art: false, custom: false, customScreens: customScreens, on: mode !== 'lg', mode: mode, applied: false, restartPending: false, heldBy: '' };
 }
 
-module.exports = { init: init, apply: apply, set: set, status: status, patch: patch };
+module.exports = {
+  init: init,
+  apply: apply,
+  set: set,
+  status: status,
+  patch: patch,
+  validateFolder: validateFolder,
+  listCustom: listCustom,
+  invalidateCatalog: invalidateCatalog,
+  resolve: resolve,
+  USER_NOSIGNALS_DIR: USER_NOSIGNALS_DIR
+};

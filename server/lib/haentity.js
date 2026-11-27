@@ -70,6 +70,12 @@ function formatRequestError(e, host, isHttps, verifyTls) {
     return 'Home Assistant at ' + host + ' did not answer in time.';
   }
   if (isHttps) {
+    if (/unrecognized name/i.test(errMsg)) {
+      return 'The HTTPS server rejected the hostname ' + host + '. Use the domain name on its certificate, or http:// on the local network.';
+    }
+    if (/handshake failure|protocol version|unsupported protocol|no protocols available|no ciphers/i.test(errMsg)) {
+      return 'Could not agree on an HTTPS protocol or cipher with ' + host + '. Try http:// on the local network, or allow TLS 1.2 on the proxy.';
+    }
     if (/wrong version number|ssl3_get_record|packet length too long|http request/i.test(errMsg) || errCode === 'EPROTO') {
       return 'Home Assistant is not using HTTPS on this address. Try http:// instead.';
     }
@@ -111,16 +117,24 @@ function requestHaJson(targetUrl, token, opts, cb) {
     cb(tooLarge ? { ok: false, error: error, tooLarge: true } : { ok: false, error: error });
   }
 
+  var method = (opts && opts.method) || 'GET';
+  var payload = (opts && opts.body !== undefined) ? JSON.stringify(opts.body) : null;
+  var headers = {
+    'Authorization': 'Bearer ' + token,
+    'Accept': 'application/json'
+  };
+  if (payload !== null) {
+    headers['Content-Type'] = 'application/json';
+    headers['Content-Length'] = Buffer.byteLength(payload, 'utf8');
+  }
+
   /** @type {https.RequestOptions} */
   var reqOpts = {
     hostname: parsed.hostname,
     port: parsed.port || (isHttps ? 443 : 80),
     path: parsed.path,
-    method: 'GET',
-    headers: {
-      'Authorization': 'Bearer ' + token,
-      'Accept': 'application/json'
-    }
+    method: method,
+    headers: headers
   };
   if (isHttps) reqOpts.rejectUnauthorized = verifyTls;
 
@@ -131,14 +145,14 @@ function requestHaJson(targetUrl, token, opts, cb) {
       bytes += chunk.length;
       if (bytes <= maxBytes) return chunks.push(chunk);
       // Stop downloading the rest of an answer that will be refused anyway.
-      if (res.statusCode === 200) {
+      if (res.statusCode >= 200 && res.statusCode < 300) {
         fail(label + ' answered more than ' + maxBytes + ' bytes', true);
         req.abort();
       }
     });
     res.on('end', function () {
       if (answered) return;
-      if (res.statusCode !== 200) {
+      if (res.statusCode < 200 || res.statusCode >= 300) {
         return fail(res.statusCode === 401
           ? 'Home Assistant refused the token (401)'
           : (res.statusCode === 404 && opts && opts.entityId)
@@ -166,6 +180,7 @@ function requestHaJson(targetUrl, token, opts, cb) {
   req.on('error', function (e) {
     fail(formatRequestError(e, parsed.hostname, isHttps, verifyTls));
   });
+  if (payload !== null) req.write(payload);
   req.end();
 }
 
@@ -343,11 +358,47 @@ function readMany(ids, cb) {
   }
 }
 
+/**
+ * Calls a Home Assistant service (POST /api/services/<domain>/<service>).
+ */
+function callService(domain, service, data, cb) {
+  cb = cb || function () {};
+  domain = String(domain || '');
+  service = String(service || '');
+  if (!/^[a-z0-9_]+$/.test(domain) || !/^[a-z0-9_]+$/.test(service)) {
+    return cb({ ok: false, error: 'not a service name: ' + domain + '.' + service });
+  }
+  if (!configured()) {
+    return cb({
+      ok: false,
+      error: 'Home Assistant is not configured: set it in the MQTT tab or config.json'
+    });
+  }
+  var label = domain + '.' + service;
+  requestHaJson(cfg.url + '/api/services/' + domain + '/' + service, cfg.token, {
+    method: 'POST',
+    body: data && typeof data === 'object' ? data : {},
+    maxBytes: MAX_LIST_BYTES,
+    timeoutMs: TIMEOUT_MS,
+    label: label
+  }, function (r) {
+    if (!r.ok) {
+      lastStatus = { ok: false, message: '', error: r.error || 'Error', checkedAt: Date.now() };
+      return cb(r);
+    }
+    lastStatus = { ok: true, message: lastStatus.message || 'Connected to Home Assistant', error: '', checkedAt: Date.now() };
+    lastLatencyMs = r.ms;
+    lastReadAt = Date.now();
+    cb({ ok: true, changed: Array.isArray(r.body) ? r.body : [] });
+  });
+}
+
 module.exports = {
   init: init,
   read: read,
   readMany: readMany,
   list: list,
+  callService: callService,
   configured: configured,
   hasCredentials: hasCredentials,
   update: update,

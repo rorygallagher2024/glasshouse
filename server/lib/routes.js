@@ -25,12 +25,16 @@ var fetchLib = require('./fetch');
 var devtools = require('./devtools');
 var names = require('./names');
 var nosignal = require('./nosignal');
+/** @type {typeof import('./soundbar')} */
+var soundbar = require('./soundbar');
+var soundbarChanging = false;
 
 var HA_CATEGORIES = ha.HA_CATEGORIES;
 var HA_ENTITIES = ha.HA_ENTITIES;
 
 var MIME = {
   '.html': 'text/html; charset=utf-8',
+  '.qml': 'text/plain; charset=utf-8',
   '.otf': 'font/otf', '.ttf': 'font/ttf', '.woff2': 'font/woff2',
   '.css': 'text/css; charset=utf-8', '.js': 'application/javascript',
   '.json': 'application/json; charset=utf-8',
@@ -110,6 +114,8 @@ var screensaversModule = null;
 var audioLevelsModule = null;
 /** @type {typeof import('./haentity')} */
 var haEntityModule = null;
+/** @type {typeof import('./habar') | null} */
+var haBarModule = null;
 /** @type {typeof import('./inputbar')} */
 var inputBarModule = null;
 /** @type {typeof import('./ask')} */
@@ -122,6 +128,8 @@ var tvAppFn = null;
 var restartSelfFn = null;
 /** @type {typeof import('./repo')} */
 var repoModule = null;
+/** @type {typeof import('./catalog') | null} */
+var catalogModule = null;
 /** @type {typeof import('./installer')} */
 var installerModule = null;
 /** @type {typeof import('./prometheus')} */
@@ -141,18 +149,6 @@ var screenColourModule = null;
 /** @type {typeof import('./power')} */
 var powerModule = null;
 
-// HDMI inputs the TV's input service calls plugged in, with no powered source
-// on the cable and no picture, as the HDMI view sees them (telemetry).
-function markNoSignal(c, done) {
-  if (!c || !Array.isArray(c.devices) || !telemetryModule || typeof telemetryModule.hdmiSignalByInput !== 'function') return done();
-  telemetryModule.hdmiSignalByInput(function (byInput) {
-    c.devices.forEach(function (d) {
-      var sig = d && !d.unused && !d.kind && d.port ? byInput[d.port] : null;
-      if (sig && !sig.powered && !sig.locked) d.noSignal = true;
-    });
-    done();
-  });
-}
 /** @type {typeof import('./sshkeys')} */
 var sshKeysModule = null;
 /** @type {typeof import('./screentime')} */
@@ -276,6 +272,100 @@ function readConfigFile() {
 
 function unreadableConfigError() {
   return new Error(msg('srv.configUnreadable', '{file} could not be read, so it was left as it is. Correct it, or remove it to start again, then restart Glasshouse.', { file: configFilePath }));
+}
+
+function soundbarSelection() {
+  var target = config.soundbar || {};
+  return { host: target.host || '', id: target.id || '', writable: !!config.allowControl };
+}
+
+function soundbarEvents(req, res) {
+  if (req.method !== 'GET') return send(res, 405, JSON.stringify({ ok: false }));
+  res.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-store',
+    'X-Accel-Buffering': 'no', 'X-Content-Type-Options': 'nosniff' });
+  var closed = false, heartbeat, unsubscribe;
+  function cleanup() {
+    if (closed) return;
+    closed = true;
+    clearInterval(heartbeat);
+    if (unsubscribe) unsubscribe();
+  }
+  function writable() {
+    if (!res.writable || res.finished) cleanup();
+    return !closed;
+  }
+  // Since Node 16, request close can mean that the GET finished reading
+  // while its response stream is still open. Older TV runtimes signal a disconnect.
+  req.on('close', function () {
+    if (parseInt(process.versions.node, 10) < 16 || !req.socket || req.socket.destroyed) cleanup();
+  });
+  res.on('close', cleanup);
+  res.on('finish', cleanup);
+  if (!writable()) return;
+  res.write('retry: 1500\n\nevent: selection\ndata: ' + JSON.stringify(soundbarSelection()) + '\n\n');
+  if (!writable()) return;
+  if (!config.soundbar || !config.soundbar.id) return res.end();
+  heartbeat = setInterval(function () { if (writable()) res.write(': keepalive\n\n'); }, 20000);
+  if (heartbeat.unref) heartbeat.unref();
+  unsubscribe = soundbar.watch(config.soundbar, function (reason, device) {
+    if (!writable()) return;
+    if (reason) {
+      cleanup();
+      return res.end('event: fault\ndata: ' + JSON.stringify(reason) + '\n\n');
+    }
+    res.write('data: ' + JSON.stringify(device) + '\n\n');
+  });
+  // watch can report a failed address before returning its unsubscribe function.
+  if (closed) unsubscribe();
+}
+
+function handleSoundbar(req, res) {
+  function reply(status, error, current) {
+    var result = soundbarSelection();
+    send(res, status, JSON.stringify({ host: result.host, id: result.id, writable: result.writable,
+      ok: !error, reason: error, device: current || null }));
+  }
+  if (req.method === 'GET') {
+    if (!config.soundbar || !config.soundbar.host) return reply(200);
+    return soundbar.request(config.soundbar, null, function (err, current) {
+      reply(err ? 502 : 200, err, current);
+    });
+  }
+  if (req.method !== 'POST') return reply(405, 'method');
+  if (!config.allowControl) return reply(403, 'disabled');
+  return readJsonBody(req, res, function (body) {
+    if (soundbarChanging) return reply(409, 'busy');
+    var target = config.soundbar || {};
+    if (body.id !== (target.id || '')) return reply(409, 'identity');
+    function save(selection, current) {
+      writeSettings({ soundbar: selection }, function (err) {
+        soundbarChanging = false;
+        if (err) return reply(500, 'save');
+        config.soundbar = selection;
+        if (target.id && (!selection || target.id !== selection.id || target.host !== selection.host)) soundbar.forget(target);
+        reply(200, null, current);
+      });
+    }
+    var forgetting = body.action === 'forget';
+    var pairing = body.action === 'connect';
+    if (!forgetting && !pairing && (body.action !== 'set' || !target.id)) return reply(400, 'invalid');
+    soundbarChanging = true;
+    if (forgetting) return save(null);
+    function done(err, current) {
+      if (!err && pairing) return save({ host: current.host, id: current.id }, current);
+      soundbarChanging = false;
+      reply(err === 'address' || err === 'invalid' ? 400 : err ? 502 : 200, err, current);
+    }
+    if (!pairing) return soundbar.request(target, body, done);
+    // Connecting again to the selected bar reads through its open session rather
+    // than opening a second socket. Another bar now at that address fails the
+    // identity check there and is then paired on its own.
+    if (!target.id || target.host !== body.host) return soundbar.request({ host: body.host }, null, done);
+    soundbar.request(target, null, function (err, current) {
+      if (err === 'identity') return soundbar.request({ host: body.host }, null, done);
+      done(err, current);
+    });
+  });
 }
 
 function trimmedString(v) { return typeof v === 'string' ? v.trim() : ''; }
@@ -972,7 +1062,7 @@ function isInstallRoute(pathname) {
 
 // A custom launcher runs as LG's Home app, so putting one in place is guarded as an install is.
 function needsAllowedHost(pathname) {
-  return isInstallRoute(pathname) || pathname.indexOf('/api/home/launcher') === 0;
+  return isInstallRoute(pathname) || pathname.indexOf('/api/home/launcher') === 0 || pathname.indexOf('/api/community') === 0;
 }
 
 function installError(res, text, status) {
@@ -1334,23 +1424,7 @@ function handleHomeRoute(req, res, u, pathname) {
         }
       });
     }
-    if (pathname === '/api/home/catalogue') {
-      return homeModule.catalogue(function (c) {
-        // The Inputs tab's state for each HDMI input agrees with the HDMI
-        // view: plugged in by the TV's input service, but with no powered
-        // source on the cable and no picture, it is no signal, not connected.
-        markNoSignal(c, function () {
-          var st = homeModule.viewStatus();
-          c.ok = true;
-          c.layout = st.layout;
-          c.enabled = st.enabled;
-          c.supported = st.supported;
-          c.wallpapers = st.wallpapers;
-          c.layoutVersion = homeModule.layoutVersion();
-          reply(c);
-        });
-      });
-    }
+    if (pathname === '/api/home/catalogue') return homeModule.catalogueReply(reply);
     if (pathname === '/api/home/channels') {
       return homeModule.channelList(function (list) { reply({ ok: true, channels: list, tuner: !!list }); });
     }
@@ -1728,6 +1802,26 @@ function handleRequest(req, res) {
     });
   }
 
+  // Community No Signal screens (lib/nosignal) served to com.webos.app.inputcommon over loopback (or with token).
+  if (pathname.indexOf('/nosignal/') === 0 && nosignal) {
+    if (!authed(u.query, req)) return send(res, 401, JSON.stringify({ ok: false, error: 'unauthorised' }));
+    var nsParts = pathname.slice('/nosignal/'.length).split('/');
+    var nsId = nsParts.shift() || '';
+    var nsRel = nsParts.join('/');
+    try { nsRel = decodeURIComponent(nsRel); } catch (e) { nsRel = ''; }
+    var nsHit = nosignal.resolve(nsId, nsRel);
+    if (!nsHit) return send(res, 404, JSON.stringify({ ok: false, error: 'not found' }));
+    var nsExt = path.extname(nsHit.file).toLowerCase();
+    var nsHeaders = { 'Content-Type': MIME[nsExt] || 'application/octet-stream', 'Cache-Control': 'no-store' };
+    return fs.stat(nsHit.file, function (nsErr, nsSt) {
+      if (nsErr) return send(res, 404, JSON.stringify({ ok: false, error: 'not found' }));
+      nsHeaders['Content-Length'] = nsSt.size;
+      res.writeHead(200, nsHeaders);
+      if (req.method === 'HEAD') return res.end();
+      fs.createReadStream(nsHit.file).on('error', function () { res.end(); }).pipe(res);
+    });
+  }
+
   if (pathname.indexOf('/assets/') === 0) {
     var file = assetPath(pathname.slice('/assets/'.length));
     if (!file) return send(res, 404, JSON.stringify({ ok: false, error: 'not found' }));
@@ -1746,6 +1840,8 @@ function handleRequest(req, res) {
     var respondWithEntry = function (entry) {
       var etag = '"' + (displayVersionStr || '1') + '-' + entry.raw.length.toString(16) + '"';
       var assetHeaders = { 'ETag': etag, 'Cache-Control': cacheHdr };
+      // Packaged TV overlay apps (file://) load bundled fonts over loopback.
+      if (ext === '.ttf' && fromTV(req)) assetHeaders['Access-Control-Allow-Origin'] = '*';
       if (compressible) assetHeaders['Vary'] = 'Accept-Encoding';
       if (req.headers && req.headers['if-none-match'] === etag) {
         res.writeHead(304, assetHeaders);
@@ -1824,6 +1920,9 @@ function handleRequest(req, res) {
       });
     });
   }
+
+  if (pathname === '/api/audio/soundbar') return handleSoundbar(req, res);
+  if (pathname === '/api/audio/soundbar/events') return soundbarEvents(req, res);
 
   if (pathname === '/api/audio' && audioModule) {
     if (req.method === 'GET') {
@@ -1979,6 +2078,37 @@ function handleRequest(req, res) {
     return send(res, 200, JSON.stringify(ssList));
   }
 
+  if (pathname === '/api/community' && req.method === 'GET' && catalogModule) {
+    if (!authed(u.query, req)) return send(res, 401, JSON.stringify({ ok: false, error: 'unauthorised' }));
+    return catalogModule.list({
+      kind: u.query && u.query.kind,
+      refresh: u.query && u.query.refresh === '1',
+      sideloadVia: sideloadVia(req)
+    }, function (r) {
+      send(res, r.ok ? 200 : 500, JSON.stringify(r));
+    });
+  }
+  if ((pathname === '/api/community/install' || pathname === '/api/community/remove') && catalogModule) {
+    if (!postGuard(req, res, 'application/json', true)) return;
+    return readJsonBody(req, res, function (body) {
+      var kind = body && body.kind;
+      if (pathname === '/api/community/install') {
+        if (body && typeof body.url === 'string' && body.url.trim()) {
+          if (!sideloadVia(req)) return sideloadRefused(res);
+          return catalogModule.installFromUrl(kind, body.url, function (r) {
+            send(res, r.ok ? 200 : 400, JSON.stringify(r));
+          });
+        }
+        return catalogModule.installFromCatalog(kind, body && body.id, function (r) {
+          send(res, r.ok ? 200 : 400, JSON.stringify(r));
+        });
+      }
+      return catalogModule.remove(kind, body && body.id, function (r) {
+        send(res, r.ok ? 200 : 400, JSON.stringify(r));
+      });
+    }, 4096);
+  }
+
   /* Everything the staged screen saver declared, in one answer. The saver is
      handed this one address instead of a URL per value, so a saver with eight
      readings makes one request. Only what that saver declared is served, and
@@ -2123,6 +2253,86 @@ function handleRequest(req, res) {
         entities: r.entities || [],
         error: r.error
       }));
+    });
+  }
+
+  if (pathname === '/api/ha/bar' && req.method === 'GET' && haBarModule) {
+    if (!authed(u.query, req)) return send(res, 401, JSON.stringify({ ok: false, error: 'unauthorized' }));
+    var haBarCfg = haBarModule.listConfig();
+    return send(res, 200, JSON.stringify({
+      ok: true,
+      configured: !!(haEntityModule && haEntityModule.configured()),
+      inHomeBar: !!(homeModule && homeModule.haBarInHomeBar()),
+      homeBarOffered: !!(homebarModule && homebarModule.status().offered),
+      entities: haBarCfg.entities,
+      showHints: haBarCfg.showHints
+    }));
+  }
+
+  if (pathname === '/api/ha/bar' && req.method === 'POST' && haBarModule) {
+    if (!authed(u.query, req)) return send(res, 401, JSON.stringify({ ok: false, error: 'unauthorized' }));
+    if (!config.allowControl) {
+      return send(res, 403, JSON.stringify({ ok: false, error: msg('srv.controlsOff', 'controls disabled in config') }));
+    }
+    return readJsonBody(req, res, function (body) {
+      var saved;
+      if (body && body.entities !== undefined) {
+        saved = haBarModule.saveConfig(body.entities, typeof body.showHints === 'boolean' ? { showHints: body.showHints } : null);
+      } else if (body && typeof body.showHints === 'boolean') {
+        saved = haBarModule.setOptions({ showHints: body.showHints });
+      } else {
+        saved = haBarModule.saveConfig(body && body.entities);
+      }
+      if (saved.ok && saved.entities && saved.entities.length && homeModule && homeModule.haBarInHomeBar() && haBarModule.sync) {
+        haBarModule.sync();
+      }
+      send(res, saved.ok ? 200 : 400, JSON.stringify(saved));
+    });
+  }
+
+  if (pathname === '/api/ha/bar/open' && req.method === 'POST' && haBarModule) {
+    if (!authed(u.query, req)) return send(res, 401, JSON.stringify({ ok: false, error: 'unauthorized' }));
+    if (!config.allowControl) {
+      return send(res, 403, JSON.stringify({ ok: false, error: msg('srv.controlsOff', 'controls disabled in config') }));
+    }
+    return haBarModule.open(function (r) {
+      send(res, r && r.ok ? 200 : 502, JSON.stringify(r || { ok: false, error: 'failed' }));
+    });
+  }
+
+  if (pathname === '/api/ha/bar/state' && req.method === 'GET' && haBarModule) {
+    if (!fromTV(req) && !authed(u.query, req)) return send(res, 401, JSON.stringify({ ok: false, error: 'unauthorized' }));
+    return haBarModule.state(function (r) {
+      send(res, 200, JSON.stringify(r || { ok: false, error: 'failed' }));
+    });
+  }
+
+  // Glasshouse Home: a Home Assistant tile that steps is in focus, so Channel
+  // up and down set to Brightness go to Home (lib/remotekeys.js). The TV's own pages only.
+  if (pathname === '/api/home/ha-keys' && remoteKeysModule) {
+    if (!fromTV(req)) return send(res, 403, JSON.stringify({ ok: false, error: 'from the TV only' }));
+    // The tile last stepped by a channel key on webOS 11, which Home shows.
+    if (req.method === 'GET') return send(res, 200, JSON.stringify({ ok: true, last: remoteKeysModule.homeAdjustLast() }));
+    if (req.method !== 'POST') return send(res, 405, JSON.stringify({ ok: false }));
+    return readJsonBody(req, res, function (body) {
+      remoteKeysModule.setHomeAdjust(!!(body && body.on === true), function (r) { send(res, 200, JSON.stringify(r)); },
+        body && typeof body.id === 'string' ? body.id : '');
+    });
+  }
+  // The key filter's Ambient light key: PicCap toggled here, as the dashboard does. The TV only.
+  if (pathname === '/api/remotekeys/piccap' && req.method === 'POST' && remoteKeysModule) {
+    if (!fromTV(req)) return send(res, 403, JSON.stringify({ ok: false, error: 'from the TV only' }));
+    return remoteKeysModule.piccapFromFilter(function (r) { send(res, 200, JSON.stringify(r)); });
+  }
+  if (pathname === '/api/ha/bar/act' && req.method === 'POST' && haBarModule) {
+    if (!fromTV(req) && !authed(u.query, req)) return send(res, 401, JSON.stringify({ ok: false, error: 'unauthorized' }));
+    if (!fromTV(req) && !config.allowControl) {
+      return send(res, 403, JSON.stringify({ ok: false, error: msg('srv.controlsOff', 'controls disabled in config') }));
+    }
+    return readJsonBody(req, res, function (body) {
+      haBarModule.act(body && body.id, body && body.action, body && body.value, function (r) {
+        send(res, r && r.ok ? 200 : 502, JSON.stringify(r || { ok: false, error: 'failed' }));
+      });
     });
   }
 
@@ -3024,6 +3234,7 @@ function init(opts) {
   if (opts.quickAccess) quickAccessModule = opts.quickAccess;
   if (opts.remoteKeys) remoteKeysModule = opts.remoteKeys;
   if (opts.remoteDetect) remoteDetectModule = opts.remoteDetect;
+  if (opts.soundbar) soundbar = opts.soundbar;
   if (opts.homeScreen) homeScreenModule = opts.homeScreen;
   if (opts.home) homeModule = opts.home;
   if (opts.news) newsModule = opts.news;
@@ -3035,6 +3246,7 @@ function init(opts) {
   if (opts.screensavers) screensaversModule = opts.screensavers;
   if (opts.audioLevels) audioLevelsModule = opts.audioLevels;
   if (opts.haEntity) haEntityModule = opts.haEntity;
+  if (opts.haBar) haBarModule = opts.haBar;
   if (opts.inputBar) inputBarModule = opts.inputBar;
   if (opts.ask) askModule = opts.ask;
   if (opts.updater) updaterModule = opts.updater;
@@ -3045,6 +3257,7 @@ function init(opts) {
   if (opts.huesyncStatus) huesyncStatusFn = opts.huesyncStatus;
   if (opts.keyboardUp) keyboardUpFn = opts.keyboardUp;
   if (opts.repo) repoModule = opts.repo;
+  if (opts.catalog) catalogModule = opts.catalog;
   if (opts.installer) installerModule = opts.installer;
   if (opts.prometheus) prometheusModule = opts.prometheus;
   if (opts.syslog) syslogModule = opts.syslog;

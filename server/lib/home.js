@@ -25,6 +25,7 @@
  * Strict ES5: runs on node 0.12.
  */
 var fs = require('fs');
+var crypto = require('crypto');
 var path = require('path');
 var execFile = require('child_process').execFile;
 var msg = require('./say').msg;
@@ -51,7 +52,8 @@ var SETTINGS = 'com.webos.service.settings/';
 // rec, the apps' recommendations, sits under the Apps row it follows and is not arranged tile by tile.
 // iptv, Internet TV (lib/iptv), holds the channels added from the owner's
 // playlists, in the order of its selection.json rather than home.json's.
-var ROWS = ['app', 'rec', 'dev', 'ch', 'iptv'];
+// ha, the optional Home Assistant row, reads lib/habar's entity list.
+var ROWS = ['app', 'rec', 'dev', 'ch', 'iptv', 'ha'];
 // How a row is ordered: as arranged ('custom'), or the tile opened last first ('recent').
 var SORTS = ['custom', 'recent'];
 var SHOW_KEYS = ['showClock', 'showLastOn', 'showAppCount', 'showAppLabels', 'showCec', 'showTvLogos', 'showPointer'];
@@ -230,6 +232,7 @@ var lifeSub = null;
  * started. A preload sends "preload" and "background", never "launch".
  */
 var lifeFront = '';
+var overlays = {};          // apps sam put in front as overlay windows
 var startingApps = {};
 var STARTING_MS = 5000;
 var SAVER_APP = 'com.webos.app.screensaver';
@@ -283,6 +286,9 @@ var LIST_TTL_MS = 30000;
 var CHANNELS_TTL_MS = 600000;
 
 var lunaFn = null;
+/** @type {null | function(): {calls: Object<string, number>, subscriptions: Object<string, number>}} */
+var lunaStatsFn = null;
+var lunaStatsAtBeat = null;
 var liveState = null;
 /** @type {typeof import('./iptv')} */
 var iptvModule = null;
@@ -310,6 +316,8 @@ var lgHomeHeld = false;
 var installFn = null;
 var injectKeyFn = null;
 var hdmiInputsFn = null;
+/** @type {null | function(function(Object<string, {powered: boolean, locked: boolean}>): void): void} */
+var hdmiSignalFn = null;
 var procDir = '/proc';
 var execFn = execFile;
 var systemctlPath = '';
@@ -421,7 +429,7 @@ var wakeOpen = null;
 // Home opened over the input after a wake, until the input has had its chance to take it back.
 var wakeReopen = null;
 var wakeSettleMs = WAKE_SETTLE_MS;
-var guideCache = { at: 0, data: {} };
+var guideCache = { at: 0, data: {}, key: '' };
 var listCache = {};
 var changing = false;
 var defaultHomeBusy = false;
@@ -451,8 +459,19 @@ var channelReading = null;
 
 function configFile() { return path.join(stateDir, 'home.json'); }
 // While this file exists, the view measures its frames and sends them with
-// each beat, and they are logged (docs/development/testing.md, scripts/home-trace.sh).
+// each beat, and they are logged (docs/development/testing.md, scripts/tv.sh frames).
 function traceFile() { return path.join(stateDir, 'home-trace'); }
+// "reload" in the trace file reloads the view once, for timing a cold start
+// (tv.sh frames cold): closing LG's Home app on webOS 9 relaunches the page
+// rather than loading it again.
+function traceReloadAsked() {
+  var file = traceFile();
+  try {
+    if (fs.readFileSync(file, 'utf8').trim() !== 'reload') return false;
+    fs.writeFileSync(file, '');
+    return true;
+  } catch (e) { return false; }
+}
 
 function luna(uri, payload, cb) {
   if (!lunaFn) return cb(null);
@@ -477,9 +496,9 @@ function defaults() {
     enabled: false,
     restorePending: false,
     rows: ROWS.slice(),
-    order: { app: [], dev: [], ch: [], rec: [], iptv: [] },
-    sort: { app: 'custom', dev: 'custom', ch: 'custom', rec: 'custom', iptv: 'custom' },
-    hidden: { app: PROMO_APPS.slice(), dev: [], ch: [], rec: [], iptv: [] },
+    order: { app: [], dev: [], ch: [], rec: [], iptv: [], ha: [] },
+    sort: { app: 'custom', dev: 'custom', ch: 'custom', rec: 'custom', iptv: 'custom', ha: 'custom' },
+    hidden: { app: PROMO_APPS.slice(), dev: [], ch: [], rec: [], iptv: [], ha: [] },
     // Whole rows left off the view, whatever their tiles. They still show
     // while arranging, so that they can be moved.
     hiddenRows: [],
@@ -559,6 +578,9 @@ function defaults() {
     // The Recommended row (lib/home-recommended): off by default, as its
     // pictures come from the apps' own servers.
     recommended: false,
+    // Opt-in Home Assistant bar integrations sharing habar.json.
+    haRow: false,
+    haBarInHomeBar: false,
     // The view fading in as it comes on screen, and out as a tile opens.
     fade: false,
     wallDrift: true,
@@ -691,10 +713,16 @@ function normalise(raw) {
   d.wallShuffleMinutes = SHUFFLE_MINUTES.indexOf(raw.wallShuffleMinutes) !== -1 ? raw.wallShuffleMinutes : d.wallShuffleMinutes;
   d.search = raw.search === true;
   d.recommended = raw.recommended === true;
+  d.haRow = raw.haRow === true;
+  d.haBarInHomeBar = raw.haBarInHomeBar === true;
   // Its cards come and go with the apps' lists, so it keeps no order of its own.
   d.order.rec = [];
   d.sort.rec = 'custom';
   d.hidden.rec = [];
+  // Entities and order come from habar.json, and haRow controls visibility.
+  d.order.ha = [];
+  d.sort.ha = 'custom';
+  d.hidden.ha = [];
   d.fade = raw.fade === true;
   MOTION_KEYS.forEach(function (k) { d[k] = raw[k] !== false; });
   d.darkening = validDarkening(raw.darkening);
@@ -932,6 +960,8 @@ function setLayout(body, cb) {
     wallShuffleMinutes: body.wallShuffleMinutes !== undefined ? body.wallShuffleMinutes : c.wallShuffleMinutes,
     search: typeof body.search === 'boolean' ? body.search : c.search,
     recommended: typeof body.recommended === 'boolean' ? body.recommended : c.recommended,
+    haRow: typeof body.haRow === 'boolean' ? body.haRow : c.haRow,
+    haBarInHomeBar: typeof body.haBarInHomeBar === 'boolean' ? body.haBarInHomeBar : c.haBarInHomeBar,
     fade: typeof body.fade === 'boolean' ? body.fade : c.fade,
     wallDrift: typeof body.wallDrift === 'boolean' ? body.wallDrift : c.wallDrift,
     wallCrossfade: typeof body.wallCrossfade === 'boolean' ? body.wallCrossfade : c.wallCrossfade,
@@ -956,6 +986,7 @@ function setLayout(body, cb) {
   });
   // A moved or emptied Internet TV row reorders, or removes from, its channels.
   if (iptvModule && body.order && isArray(body.order.iptv)) iptvModule.setOrder(stringList(body.order.iptv, 100));
+  if (body.haRow === true) next.hiddenRows = next.hiddenRows.filter(function (r) { return r !== 'ha'; });
   if (body.reset === true) {
     var d = defaults();
     next.rows = d.rows;
@@ -974,6 +1005,8 @@ function setLayout(body, cb) {
   if (JSON.stringify(c.deviceNames) !== JSON.stringify(config.deviceNames)) onDeviceNamesFn();
   if (config.weather === 'internet') setTimeout(internetWeatherTick, 0);
   if (JSON.stringify(c.infoLines) !== JSON.stringify(config.infoLines)) { entityInfo = null; entityInfoAt = 0; }
+  if (!c.haBarInHomeBar && config.haBarInHomeBar && haBarAppFn) haBarAppFn();
+  if (c.haBarInHomeBar !== config.haBarInHomeBar && haBarModule && haBarModule.sync) haBarModule.sync();
   // A row back in its own order keeps no record of what was opened.
   ROWS.forEach(function (r) { if (config.sort[r] !== 'recent') recent.forget(r); });
   cb({ ok: true, layout: layoutOf(config), layoutVersion: layoutVersion() });
@@ -1066,6 +1099,7 @@ function layoutOf(c) {
   return { rows: c.rows, order: withDevIdsNow(c.order), sort: c.sort, hidden: withDevIdsNow(c.hidden), hiddenRows: c.hiddenRows, folder: c.folder, channels: c.channels, hintSeen: c.hintSeen,
     excludedRecents: c.excludedRecents,
     searchHintSeen: c.searchHintSeen, picture: c.picture, livePreview: c.livePreview, search: c.search, recommended: c.recommended,
+    haRow: c.haRow === true, haBarInHomeBar: c.haBarInHomeBar === true,
     fade: c.fade, wallDrift: c.wallDrift, wallCrossfade: c.wallCrossfade, smoothScroll: c.smoothScroll, slidePanels: c.slidePanels,
     darkening: c.darkening, hideUnused: c.hideUnused, showMediaServers: c.showMediaServers, deviceNames: devNamesNow(c.deviceNames), appNames: c.appNames, appCards: c.appCards, focusPulse: c.focusPulse, navSound: c.navSound, pointerSound: c.pointerSound, ownSound: ownSoundInfo(), cardFade: c.cardFade, appIcons: c.appIcons, inputBarTransparent: c.inputBarTransparent, inputBarSwitchOnOk: c.inputBarSwitchOnOk, showClock: c.showClock, rowsBottom: c.rowsBottom, view: c.view,
     showLastOn: c.showLastOn, showAppCount: c.showAppCount, showAppLabels: c.showAppLabels, showCec: c.showCec, showTvLogos: c.showTvLogos, showPointer: c.showPointer, reopenAfterWake: c.reopenAfterWake, weather: c.weather, weatherPlace: c.weatherPlace, info: c.info, infoLines: c.infoLines, board: c.board, boardStrip: c.boardStrip, news: c.news, newsFeeds: c.newsFeeds, newsSpeed: c.newsSpeed, newsStyle: c.newsStyle, previewAlways: c.previewAlways, previewInTile: c.previewInTile, previewSize: c.previewSize, previewSound: c.previewSound, wallAnim: c.wallAnim,
@@ -1335,14 +1369,33 @@ function ownSoundInfo() {
  * The lists the rows are built from, as last read, in home-lists.json. Every
  * child start waits its turn just after the server starts (lib/children), so
  * a view opened then waited on them: 7.9 s for the first catalogue on a B8
- * (webOS 4.4.3) against 0.75 s later. Until a list is read in this run, the
- * saved one is answered at once and read again behind it; a change bumps
- * layoutVersion, so the view reloads on its next heartbeat.
+ * (webOS 4.4.3) against 0.75 s later. Once a list is known, in memory or
+ * saved, it is answered at once and read again behind it when older than its
+ * time to live; a catalogue waiting on the reads was 0.5 s on a G3 (webOS
+ * 9.2.2), ten luna-send children in turn. A change bumps layoutVersion, so
+ * the view reloads on its next heartbeat.
  */
 var savedLists = null;
 var listsRevision = 0;
-var REDRAWN_LISTS = { dev: true, lp: true };
+// The callers waiting on each list's read, while one is out.
 var listLoading = {};
+/*
+ * A read behind a reply starts this long after it: a return asks for what is
+ * on and the picture beside the catalogue, and with the reads queued ahead
+ * of them (lib/children) /api/home/now went from 18 to 68 ms on a G3 (webOS
+ * 9.2.2).
+ */
+var REVALIDATE_DELAY_MS = 1500;
+var revalidateDelayMs = REVALIDATE_DELAY_MS;
+var revalidating = {};
+function behindReply(key, read) {
+  if (revalidating[key]) return;
+  if (!revalidateDelayMs) return read();
+  revalidating[key] = setTimeout(function () {
+    delete revalidating[key];
+    read();
+  }, revalidateDelayMs);
+}
 
 function listsFile() { return path.join(stateDir, 'home-lists.json'); }
 
@@ -1366,32 +1419,34 @@ function saveList(key, value) {
   return true;
 }
 
-function cached(key, ttl, load, cb) {
+function cached(key, ttl, load, cb, allowStale) {
   var hit = listCache[key];
   if (hit && nowMs() - hit.at < ttl) return cb(hit.value);
-  var saved = hit ? null : savedList(key);
-  if (saved) {
-    cb(saved);
-    if (listLoading[key]) return;
-    listLoading[key] = true;
-    return load(function (value) {
-      listLoading[key] = false;
-      if (!value) return;
-      listCache[key] = { at: nowMs(), value: value };
-      if (saveList(key, value)) listsRevision++;
-    });
-  }
+  var known = hit ? hit.value : savedList(key);
+  if (!known || (hit && !allowStale)) return readList(key, load, cb);
+  cb(known);
+  behindReply(key, function () {
+    var current = listCache[key];
+    if (!current || nowMs() - current.at >= ttl) readList(key, load, null);
+  });
+}
+
+// One read of a list at a time; a failed read keeps the list as it was.
+function readList(key, load, cb) {
+  if (listLoading[key]) { if (cb) listLoading[key].push(cb); return; }
+  listLoading[key] = cb ? [cb] : [];
   load(function (value) {
+    var waiting = listLoading[key];
+    delete listLoading[key];
     if (value) {
       var known = savedList(key) !== null;
       listCache[key] = { at: nowMs(), value: value };
-      // The inputs or apps changing after they were first read, as a port's
-      // tile when a CEC device appears on it, has the view draw its tiles
-      // again (#1462). Not the content cards or channels, whose changes would
-      // reload Home under someone browsing it.
-      if (saveList(key, value) && known && REDRAWN_LISTS[key]) listsRevision++;
+      // A read of a list already known ran behind a reply that answered from
+      // memory, so a change reloads the view on its next heartbeat.
+      if (saveList(key, value) && known) listsRevision++;
     }
-    cb(value);
+    var answer = value || (listCache[key] ? listCache[key].value : savedList(key));
+    waiting.forEach(function (fn) { fn(answer || null); });
   });
 }
 
@@ -1404,7 +1459,7 @@ var isInputApp = names.isInputAppId;
  * hides has visible false in its appinfo and no launch point; one reporting
  * visible false is skipped all the same.
  */
-function launchPoints(cb) {
+function launchPoints(cb, allowStale) {
   cached('lp', LIST_TTL_MS, function (done) {
     luna('com.webos.applicationManager/listLaunchPoints', {}, function (r) {
       if (!r || !isArray(r.launchPoints)) return done(null);
@@ -1423,7 +1478,7 @@ function launchPoints(cb) {
       });
       sidebarApps(LG_SIDEBAR_APPS.slice(), out, done);
     });
-  }, cb);
+  }, cb, allowStale);
 }
 
 // Each of LG_SIDEBAR_APPS that this TV has and has no tile for, on the end of the list.
@@ -1573,6 +1628,10 @@ function extraDevices(cb) {
           address: typeof d.ipAddress === 'string' && d.ipAddress ? d.ipAddress : null
         };
       });
+      // In a stable order: the storage manager lists media servers in a new
+      // order at each read (eight Sonos speakers, a G3 on webOS 9.2.2), and a
+      // reordered list is a changed one, which reloads the view.
+      out.sort(function (x, y) { return x.id < y.id ? -1 : x.id > y.id ? 1 : 0; });
       appInfo(AIRPLAY_APP, function (ap) {
         if (ap) out.push({ id: 'airplay', name: 'AirPlay', input: 'airplay', kind: 'airplay', appId: AIRPLAY_APP, port: 0, via: null, address: null });
         firstAppInfo([HOME_HUB, 'com.webos.app.inputmgr'], function (hub) {
@@ -1609,7 +1668,7 @@ function homeHubGuide(hub, cb) {
   });
 }
 
-function devices(cb) {
+function devices(cb, allowStale) {
   cached('dev', LIST_TTL_MS, function (done) {
     luna('com.webos.service.eim/getAllInputStatus', {}, function (r) {
       if (!r || !isArray(r.devices)) return done(null);
@@ -1623,7 +1682,7 @@ function devices(cb) {
     var c = readConfig();
     if (!c.showMediaServers) list = list.filter(function (d) { return d.kind !== 'dms'; });
     cb(namedDevices(c, list));
-  });
+  }, allowStale);
 }
 
 /*
@@ -1689,7 +1748,7 @@ function listDevices(devs, portsPlugged) {
  * null where it gave none. On a G3 (webOS 9.2) the full list is the API
  * adapter's tv/getChannelList, the method behind SSAP's ssap://tv/getChannelList.
  */
-function channelList(cb) {
+function channelList(cb, allowStale) {
   cached('ch', CHANNELS_TTL_MS, function (done) {
     luna('com.webos.service.apiadapter/tv/getChannelList', {}, function (r) {
       if (!r || r.returnValue === false || !isArray(r.channelList)) return done(null);
@@ -1705,7 +1764,7 @@ function channelList(cb) {
       });
       done(out);
     });
-  }, cb);
+  }, cb, allowStale);
 }
 
 function catalogue(cb) {
@@ -1713,18 +1772,66 @@ function catalogue(cb) {
   rows(cb);
 }
 
+/*
+ * The view's catalogue: the rows, and beside them what viewStatus() gives
+ * and layoutVersion. rev is a hash of all of it but layoutVersion, which
+ * moves with every IPTV programme boundary while the rows carry no
+ * programmes: a view that has this rev already has nothing to draw again.
+ */
+function catalogueReply(cb) {
+  // A list can change while the reply is being built. Its newer version must
+  // still reach the view at the next beat if this reply used the old list.
+  var version = layoutVersion();
+  catalogue(function (c) {
+    markNoSignal(c, function () {
+      var st = viewStatus();
+      c.ok = true;
+      c.layout = st.layout;
+      c.enabled = st.enabled;
+      c.supported = st.supported;
+      c.wallpapers = st.wallpapers;
+      c.rev = crypto.createHash('sha1').update(JSON.stringify(c)).digest('hex').slice(0, 16);
+      c.layoutVersion = version;
+      cb(c);
+    });
+  });
+}
+
+/*
+ * The Inputs tab's state for each HDMI input agrees with the HDMI view:
+ * plugged in by the TV's input service, but with no powered source on the
+ * cable and no picture, it is no signal, not connected. On copies: the
+ * devices are the cached list itself, and a flag set on it would be saved to
+ * home-lists.json and differ from every fresh read, reloading the view each
+ * time the list was read again.
+ */
+function markNoSignal(c, done) {
+  if (!c || !isArray(c.devices) || !hdmiSignalFn) return done();
+  hdmiSignalFn(function (byInput) {
+    c.devices = c.devices.map(function (d) {
+      var sig = d && !d.unused && !d.kind && d.port ? byInput[d.port] : null;
+      if (!sig || sig.powered || sig.locked) return d;
+      var copy = {};
+      Object.keys(d).forEach(function (k) { copy[k] = d[k]; });
+      copy.noSignal = true;
+      return copy;
+    });
+    done();
+  });
+}
+
 function rows(cb) {
   var c = readConfig();
   launchPoints(function (apps) {
     devices(function (hdmi) {
       channelList(function (chans) {
-       tunerTile(chans, function (tuner) {
-        var devs = hdmi || tuner ? (tuner ? [tuner] : []).concat(hdmi || []) : null;
-        recommendedCards(c, function (recs) { cb(build(c, apps, devs, chans, recs, iptvModule ? iptvModule.rowItems() : null)); });
-       });
-      });
-    });
-  });
+        tunerTile(chans, function (tuner) {
+          var devs = hdmi || tuner ? (tuner ? [tuner] : []).concat(hdmi || []) : null;
+          recommendedCards(c, function (recs) { cb(build(c, apps, devs, chans, recs, iptvModule ? iptvModule.rowItems() : null)); });
+        });
+      }, true);
+    }, true);
+  }, true);
 }
 
 function build(c, apps, devs, chans, recs, tv) {
@@ -1739,7 +1846,8 @@ function build(c, apps, devs, chans, recs, tv) {
     dev: tunerFirst(c.order.dev, ordered(devIdsNow(c.order.dev, devs || []), devIds)),
     ch: picked.map(function (p) { return p.id; }),
     rec: [],
-    iptv: (tv || []).map(function (t) { return t.id; })
+    iptv: (tv || []).map(function (t) { return t.id; }),
+    ha: []
   };
   ROWS.forEach(function (r) { if (c.sort[r] === 'recent') order[r] = lastOpenedFirst(r, order[r]); });
   // Each app's cards together, in the Apps row's order; an app hidden there,
@@ -1770,6 +1878,9 @@ function build(c, apps, devs, chans, recs, tv) {
     recommended: cards,
     iptv: tv || [],
     iptvStatus: iptvModule ? iptvModule.rowStatus() : null,
+    haBarAvailable: haBarAvailable(),
+    haBarCount: haBarCount(),
+    haBar: !!(haBarAvailable() && c.haBarInHomeBar === true),
     order: order,
     // recommended: false while the row is off, null when the TV gave no list.
     sources: { apps: !!apps, devices: !!devs, channels: chans ? chans.length : null,
@@ -1781,7 +1892,7 @@ function build(c, apps, devs, chans, recs, tv) {
 // The apps' cards while the row is switched on; null when the TV gave none.
 function recommendedCards(c, cb) {
   if (!c.recommended) return cb([]);
-  cached('rec', LIST_TTL_MS, function (done) { recommended.cards(done); }, cb);
+  cached('rec', LIST_TTL_MS, function (done) { recommended.cards(done); }, cb, true);
 }
 
 /*
@@ -1790,8 +1901,7 @@ function recommendedCards(c, cb) {
  */
 function tunerTile(chans, cb) {
   if (!chans || !chans.length) return cb(null);
-  luna('com.webos.service.utp.boot/getLastChannelId', {}, function (r) {
-    var chId = r && typeof r.channelId === 'string' ? r.channelId : null;
+  lastChannelId(function (chId) {
     /** @type {any} */
     var hit = null;
     chans.forEach(function (ch) { if (ch.id === chId) hit = ch; });
@@ -1859,6 +1969,29 @@ function noteForeground(was, id) {
 }
 
 /*
+ * The channel Live TV was last on. It changes only in Live TV, so it is read
+ * afresh while Live TV is in front or as it leaves, and otherwise answered
+ * from the last read. One read at a time, shared by every caller.
+ */
+var lastChannel = null;
+var lastChannelGen = 0;
+var lastChannelReads = null;
+function lastChannelId(cb) {
+  if (lastChannel && foreground !== LIVE_TV) return cb(lastChannel.id);
+  var gen = lastChannelGen;
+  if (lastChannelReads && lastChannelReads.gen === gen) return lastChannelReads.waiting.push(cb);
+  var mine = { gen: gen, waiting: [cb] };
+  lastChannelReads = mine;
+  luna('com.webos.service.utp.boot/getLastChannelId', {}, function (r) {
+    var id = r && typeof r.channelId === 'string' ? r.channelId : null;
+    // A refused read is not "no channel", and one started before Live TV left must not stand for after.
+    if (r && r.returnValue !== false && gen === lastChannelGen) lastChannel = { id: id };
+    if (lastChannelReads === mine) lastChannelReads = null;
+    mine.waiting.forEach(function (fn) { fn(id); });
+  });
+}
+
+/*
  * The channel Live TV is on, recorded as opened. A channel changed within
  * Live TV changes nothing in front, so it is read as Live TV leaves, and
  * when the view asks for its rows while Live TV is still in front: on a G3
@@ -1869,8 +2002,8 @@ function noteLiveChannel(cb) {
   var c = readConfig();
   if (!c.enabled || c.sort.ch !== 'recent') return cb();
   channelReading = [cb];
-  luna('com.webos.service.utp.boot/getLastChannelId', {}, function (r) {
-    if (r && typeof r.channelId === 'string') noteOpened('ch', r.channelId);
+  lastChannelId(function (id) {
+    if (id) noteOpened('ch', id);
     var waiting = channelReading;
     channelReading = null;
     waiting.forEach(function (fn) { fn(); });
@@ -1894,16 +2027,58 @@ function iconPath(id, cb) {
  * programme before that; a channel without one shows its number and name. The
  * guide has no "next" on that call, so none is shown.
  */
+/*
+ * A read is one luna call per picked channel in turn, 0.5 s for nine on a G3
+ * (webOS 9.2.2), and the view asks every minute. A read under a minute old is
+ * answered as it is. An older one is answered at once, and read again behind
+ * it, only while it has a programme on for every channel; otherwise the reply
+ * waits for the read. LG can answer with no programme for a channel for
+ * minutes (BBC One for about ten on a G3, webOS 9.2.2), and an answer from
+ * memory would leave it showing nothing a minute after LG has one.
+ */
+var guideReads = null;
 function guide(cb) {
-  var c = readConfig();
-  if (nowMs() - guideCache.at < GUIDE_TTL_MS) return cb(guideCache.data);
+  var ids = readConfig().channels.slice(0, MAX_CHANNELS);
+  var key = JSON.stringify(ids);
+  var same = guideCache.at && guideCache.key === key;
+  if (same && nowMs() - guideCache.at < GUIDE_TTL_MS) return cb(guideCache.data);
+  if (same && guideComplete(guideCache.data, ids)) {
+    cb(guideCache.data);
+    behindReply('guide', function () {
+      var cur = readConfig().channels.slice(0, MAX_CHANNELS);
+      var curKey = JSON.stringify(cur);
+      if (guideCache.at && guideCache.key === curKey && nowMs() - guideCache.at < GUIDE_TTL_MS) return;
+      readGuide(cur, null);
+    });
+    return;
+  }
+  readGuide(ids, cb);
+}
+
+function guideComplete(data, ids) {
+  var now = nowMs();
+  return ids.every(function (id) {
+    return data[id] && data[id].length && data[id].every(function (p) { return p.end > now; });
+  });
+}
+
+function readGuide(ids, cb) {
+  var key = JSON.stringify(ids);
+  if (guideReads && guideReads.key === key) { if (cb) guideReads.waiting.push(cb); return; }
+  var mine = { key: key, waiting: cb ? [cb] : [] };
+  guideReads = mine;
   var out = {};
-  var ids = c.channels.slice(0, MAX_CHANNELS);
   var i = 0;
   (function next() {
     if (i >= ids.length) {
-      guideCache = { at: nowMs(), data: out };
-      return cb(out);
+      // Do not overwrite the cache if the picked channels changed during this read.
+      if (guideReads === mine) {
+        if (JSON.stringify(readConfig().channels.slice(0, MAX_CHANNELS)) === key) {
+          guideCache = { at: nowMs(), data: out, key: key };
+        }
+        guideReads = null;
+      }
+      return mine.waiting.forEach(function (fn) { fn(out); });
     }
     var id = ids[i++];
     luna('com.webos.service.apiadapter/tv/getChannelCurrentProgramInfo', { channelId: id }, function (r) {
@@ -2063,6 +2238,12 @@ var ENTITY_INFO_MS = 30000;
 var INFO_ENTITY_RE = /^[a-z0-9_]+\.[a-z0-9_]+$/;
 /** @type {typeof import('./haentity')} */
 var haEntityModule = null;
+/** @type {typeof import('./habar') | null} */
+var haBarModule = null;
+var haBarAppFn = null;
+function haBarAvailable() { return !!(haBarModule && haBarModule.available()); }
+function haBarCount() { return haBarModule ? haBarModule.listConfig().entities.length : 0; }
+function haBarInHomeBar() { return readConfig().haBarInHomeBar === true; }
 var entityInfo = null;     // [{ icon, label, before, v, unit }] as last read
 var entityInfoAt = 0;
 var entityInfoReading = false;
@@ -2294,10 +2475,10 @@ function weather(cb) {
  */
 function now(cb) {
   if (!lastSource) return cb({ kind: null });
-  var id = lastSource.appId;
+  var id = lastSource.appId, since = lastSource.at;
   var m = /^com\.webos\.app\.hdmi(\d)$/.exec(id);
   if (m) {
-    var port = +m[1], since = lastSource.at;
+    var port = +m[1];
     return devices(function (devs) {
       selectedOnPort(port, function (picked) {
         var on = (devs || []).filter(function (d) { return d.port === port; });
@@ -2313,28 +2494,27 @@ function now(cb) {
           devices: on.map(function (d) { return d.id; })
         });
       });
-    });
+    }, true);
   }
   if (id === LIVE_TV) {
     var behind = foreground === HOME_APP || foreground === LG_HOME;
-    return luna('com.webos.service.utp.boot/getLastChannelId', {}, function (r) {
-      var chId = r && typeof r.channelId === 'string' ? r.channelId : null;
+    return lastChannelId(function (chId) {
       channelList(function (chans) {
         /** @type {any} */
         var hit = null;
         (chans || []).forEach(function (c) { if (c.id === chId) hit = c; });
-        if (!hit) return cb({ kind: 'channel', appId: id, since: lastSource.at, behindHome: behind, channel: null });
+        if (!hit) return cb({ kind: 'channel', appId: id, since: since, behindHome: behind, channel: null });
         luna('com.webos.service.apiadapter/tv/getChannelCurrentProgramInfo', { channelId: hit.id }, function (p) {
-          cb({ kind: 'channel', appId: id, since: lastSource.at, behindHome: behind, channel: hit, programme: programme(p) });
+          cb({ kind: 'channel', appId: id, since: since, behindHome: behind, channel: hit, programme: programme(p) });
         });
-      });
+      }, true);
     });
   }
   launchPoints(function (apps) {
     var title = null, namesMap = readConfig().appNames || {};
     (apps || []).forEach(function (a) { if (a.id === id) title = namesMap[id] || a.title; });
-    cb({ kind: 'app', appId: id, since: lastSource.at, title: title });
-  });
+    cb({ kind: 'app', appId: id, since: since, title: title });
+  }, true);
 }
 
 // ---------------------------------------------------------------- opening things
@@ -2724,7 +2904,7 @@ function isStandalone() {
  * KeyFilters folders nor the configd key, #1222), so every Home press opens
  * LG's ribbon. The press is read from the remote instead (lib/remotebuttons),
  * and a short one opens the view over the ribbon; a held one leaves it.
- * webOS 2, untried, is taken to be the same.
+ * webOS 2 works the same way (#1725).
  */
 function homeKeyRead() {
   return /^[23]\./.test(String(webosVersion || ''));
@@ -3463,9 +3643,29 @@ function checkWallVideoOutput() {
   });
 }
 
+// The luna-send children started since the last traced beat, by URI.
+function logLunaSinceBeat() {
+  if (!lunaStatsFn) return;
+  var now = lunaStatsFn(), before = lunaStatsAtBeat;
+  lunaStatsAtBeat = now;
+  if (!before) return;
+  var out = {};
+  ['calls', 'subscriptions'].forEach(function (kind) {
+    Object.keys(now[kind]).forEach(function (uri) {
+      var n = now[kind][uri] - (before[kind][uri] || 0);
+      if (n) out[(kind === 'subscriptions' ? 'sub ' : '') + uri] = n;
+    });
+  });
+  console.log('home: luna ' + JSON.stringify(out));
+}
+
 function beat(body) {
   lastBeatAt = nowMs();
-  if (body && body.perf && typeof body.perf === 'object') console.log('home: frames ' + JSON.stringify(body.perf));
+  if (body && body.perf && typeof body.perf === 'object') {
+    console.log('home: frames ' + JSON.stringify(body.perf));
+    logLunaSinceBeat();
+  } else lunaStatsAtBeat = null;
+  if (body && body.boot && typeof body.boot === 'object') console.log('home: boot ' + JSON.stringify(body.boot));
   if (body && typeof body.focused === 'boolean') {
     viewFocus = { focused: body.focused, visible: String(body.visible || ''), at: lastBeatAt };
   }
@@ -3480,7 +3680,7 @@ function beat(body) {
   checkSaverTimer();
   return { ok: true, wallVideoOnScreen: onScreen, saverIdleMs: saverIdleMs, enabled: readConfig().enabled, standalone: isStandalone(), covered: viewCovered(saver), saver: saver,
            build: buildId, wallpapers: wallpapers.status(),
-           layoutVersion: layoutVersion(), sleeps: sleeps, trace: fs.existsSync(traceFile()),
+           layoutVersion: layoutVersion(), sleeps: sleeps, screenOff: !powerActive, trace: fs.existsSync(traceFile()), reload: traceReloadAsked() || undefined,
            // So a push shows within a heartbeat rather than at the next poll.
            weather: currentWeather(), remoteBattery: remoteBatteryBadge(), info: currentInfo(), board: currentBoard(), news: currentNews() };
 }
@@ -3545,6 +3745,8 @@ function foregroundChanged(id) {
   if (legacyAppPending) tryRemoveLegacyApp();
   if (appRefreshPending && id !== HOME_APP) tryRefreshApp();
   if (id !== HOME_APP && id !== LG_HOME && id) lastSource = { appId: id, at: nowMs() };
+  // Live TV left, even with Glasshouse Home off: its channel may have changed.
+  if (was === LIVE_TV && id !== LIVE_TV) { lastChannel = null; lastChannelGen++; }
   if (!readConfig().enabled) return;
   noteForeground(was, id);
   if (id === homeId) {
@@ -3991,6 +4193,8 @@ function status(cb) {
         // What the lines beside the clock can come from: entities through the
         // Home Assistant API, and lines sent over MQTT.
         haLines: { api: !!(haEntityModule && haEntityModule.configured()), mqtt: !!mqttOnFn() },
+        haBarAvailable: haBarAvailable(),
+        haBarCount: haBarCount(),
         // Both dashboards leave Home out where it is false, as for other features a TV lacks.
         available: sup.ok || c.enabled || c.restorePending,
         supported: sup,
@@ -4034,6 +4238,8 @@ function init(opts) {
   opts = opts || {};
   screensaversModule = opts.screensavers || null;
   lunaFn = opts.luna || null;
+  lunaStatsFn = opts.lunaStats || null;
+  lunaStatsAtBeat = null;
   liveState = opts.liveState || null;
   historyModule = opts.history || null;
   iptvModule = opts.iptv || null;
@@ -4070,9 +4276,13 @@ function init(opts) {
   webosVersion = opts.webosVersion || null;
   lgHomeWatchMs = opts.lgHomeWatchMs || LG_HOME_WATCH_MS;
   wakeSettleMs = typeof opts.wakeSettleMs === 'number' ? opts.wakeSettleMs : WAKE_SETTLE_MS;
+  revalidateDelayMs = typeof opts.revalidateDelayMs === 'number' ? opts.revalidateDelayMs : REVALIDATE_DELAY_MS;
+  Object.keys(revalidating).forEach(function (k) { clearTimeout(revalidating[k]); });
+  revalidating = {};
   installFn = opts.installApp || null;
   if (opts.injectKey) injectKeyFn = opts.injectKey;
   hdmiInputsFn = opts.hdmiInputs || null;
+  hdmiSignalFn = opts.hdmiSignal || null;
   procDir = opts.procDir || '/proc';
   slowOpenMs = typeof opts.slowOpenMs === 'number' ? opts.slowOpenMs : FIRST_BEAT_GRACE_MS;
   beatGraceMs = opts.beatGraceMs || BEAT_GRACE_MS;
@@ -4104,6 +4314,8 @@ function init(opts) {
   loadHomeInfo();
   weatherModule = opts.weather || null;
   haEntityModule = opts.haEntity || null;
+  haBarModule = opts.haBar || null;
+  haBarAppFn = typeof opts.ensureHaBarApp === 'function' ? opts.ensureHaBarApp : null;
   mqttOnFn = typeof opts.mqttOn === 'function' ? opts.mqttOn : function () { return false; };
   newsModule = opts.news || null;
   homeBoard = null;
@@ -4126,7 +4338,11 @@ function init(opts) {
   wakeReopen = null;
   beats = 0;
   recovering = false;
-  guideCache = { at: 0, data: {} };
+  guideCache = { at: 0, data: {}, key: '' };
+  guideReads = null;
+  lastChannel = null;
+  lastChannelGen = 0;
+  lastChannelReads = null;
   listCache = {};
   savedLists = null;
   listsRevision = 0;
@@ -4162,6 +4378,7 @@ function init(opts) {
   if (lifeSub) lifeSub.stop();
   lifeSub = null;
   lifeFront = '';
+  overlays = {};
   startingApps = {};
   switchingOffAt = 0;
   if (opts.Subscription && isStandalone() && lgHomeOpensOnClose()) {
@@ -4186,8 +4403,11 @@ function appLifeEvent(r) {
   var ev = r.event;
   if (ev === 'launch' || ev === 'splash') startingApps[id] = nowMs();
   else if (ev === 'foreground' || ev === 'background' || ev === 'close' || ev === 'stop') delete startingApps[id];
-  if (ev === 'foreground') lifeFront = id;
-  if (ev !== 'close' || id !== (lifeFront || foreground)) return;
+  // An overlay (a volume popup, say) is drawn over the app in front and
+  // closes back to it, so it never becomes the app in front.
+  if (ev === 'foreground' && r.windowType === '_WEBOS_WINDOW_TYPE_OVERLAY') overlays[id] = true;
+  else if (ev === 'foreground') { lifeFront = id; delete overlays[id]; }
+  if (ev !== 'close' || overlays[id] || id !== (lifeFront || foreground)) return;
   if (id === HOME_APP || isLgHome(id) || id === SAVER_APP) return;
   if (r.reason === 'powerOff' || switchingOff() || powerState === 'Screen Saver') return;
   if (escaped || !powerActive || otherStarting() || !readConfig().enabled) return;
@@ -4340,6 +4560,8 @@ function watchStart(when, beatsBefore, signSince) {
 function pageAlive() { pageSeenAt = nowMs(); }
 
 function stop() {
+  Object.keys(revalidating).forEach(function (k) { clearTimeout(revalidating[k]); });
+  revalidating = {};
   if (internetTimer) clearInterval(internetTimer);
   internetTimer = null;
   if (lgHomeWatch) clearInterval(lgHomeWatch);
@@ -4392,6 +4614,7 @@ module.exports = {
   flush: recent.flush,
   status: status,
   catalogue: catalogue,
+  catalogueReply: catalogueReply,
   viewStatus: viewStatus,
   videoBackgroundActive: videoBackgroundActive,
   channelList: channelList,
@@ -4469,6 +4692,8 @@ module.exports = {
   layout: function () { return layoutOf(readConfig()); },
   programme: programme,
   enabled: function () { return readConfig().enabled; },
+  isStandalone: isStandalone,
+  haBarInHomeBar: haBarInHomeBar,
   portName: portName,
   refreshApp: refreshApp,
   autoLaunchHeld: autoLaunchHeld,

@@ -1,617 +1,160 @@
 {
-  "home.arrange.done": {
-    "text": "Fertig",
-    "from": "Done"
-  },
-  "home.arrange.emptyRow": {
-    "text": "Diese Reihe ist leer",
-    "from": "This row is empty"
-  },
-  "home.arrange.folder": {
-    "text": "In „Weitere Apps“ oder heraus",
-    "from": "Into or out of More apps"
-  },
-  "home.arrange.folderAppsOnly": {
-    "text": "Nur Apps kommen in „Weitere Apps“",
-    "from": "Only apps go into More apps"
-  },
-  "home.arrange.hide": {
-    "text": "Aus- oder einblenden",
-    "from": "Hide or show"
-  },
-  "home.arrange.isHidden": {
-    "text": "(ausgeblendet)",
-    "from": "(hidden)"
-  },
-  "home.arrange.isInFolder": {
-    "text": "{name} (in „Weitere Apps“)",
-    "from": "{name} (in More apps)"
-  },
-  "home.arrange.keys": {
-    "text": "OK nimmt eine Kachel auf oder legt sie ab. Aufgenommen verschieben die Pfeile sie oder ihre Reihe; abgelegt erreichen Hoch oder Runter diese Leiste. Grün verschiebt eine App in „Weitere Apps“ oder heraus, Rot oder Zurück blendet aus oder entfernt. Links von einer Reihe legt OK die Reihenfolge fest.",
-    "from": "OK picks up or puts down. Held, arrows move it or its row; put down, Up or Down reaches this bar. Green moves an app in or out of More apps, and Red or Back hides or removes it. Left of a row, OK sets its order."
-  },
-  "home.arrange.moving": {
-    "text": "{name} wird verschoben",
-    "from": "Moving {name}"
-  },
-  "home.arrange.nowCustom": {
-    "text": "{row} folgen jetzt deiner Reihenfolge",
-    "from": "{row} are now in your order"
-  },
-  "home.arrange.nowCustomDesc": {
-    "text": "Die Reihenfolge links neben der ersten Kachel stellt sie wieder auf „zuletzt geöffnet“ um",
-    "from": "The row's Order, left of its first tile, puts them back in last opened order"
-  },
-  "home.arrange.orderCustom": {
-    "text": "Reihenfolge: deine",
-    "from": "Order: yours"
-  },
-  "home.arrange.orderRecent": {
-    "text": "Reihenfolge: zuletzt geöffnet",
-    "from": "Order: last opened"
-  },
-  "home.arrange.removeChannel": {
-    "text": "Sender entfernen",
-    "from": "Remove channel"
-  },
-  "home.arrange.reset": {
-    "text": "Zurücksetzen",
-    "from": "Reset"
-  },
-  "home.arrange.resetDesc": {
-    "text": "Apps, Eingänge, dann Sender, in ihrer ursprünglichen Reihenfolge",
-    "from": "Apps, Inputs, then Channels, in their first order"
-  },
-  "home.arrange.resetDone": {
-    "text": "Layout zurückgesetzt",
-    "from": "Layout reset"
-  },
-  "home.arrange.resetFailed": {
-    "text": "Layout konnte nicht zurückgesetzt werden",
-    "from": "Layout could not be reset"
-  },
-  "home.arrange.saveFailed": {
-    "text": "Layout konnte nicht gespeichert werden",
-    "from": "Layout could not be saved"
-  },
-  "home.arrange.saved": {
-    "text": "Layout gespeichert",
-    "from": "Layout saved"
-  },
-  "home.arrange.savedDesc": {
-    "text": "Der Home-Tab im Dashboard zeigt es ebenfalls",
-    "from": "The dashboard's Home tab shows it too"
-  },
-  "home.arrange.sortFocus": {
-    "text": "{row}: OK ändert die Reihenfolge",
-    "from": "{row}: OK changes the order"
-  },
-  "home.arrange.sortedCustom": {
-    "text": "{row}: in deiner Reihenfolge",
-    "from": "{row}: in your order"
-  },
-  "home.arrange.sortedCustomDesc": {
-    "text": "Kachel mit OK aufnehmen, um sie zu verschieben",
-    "from": "Pick a tile up with OK to move it"
-  },
-  "home.arrange.sortedRecent": {
-    "text": "{row}: zuletzt geöffnet zuerst",
-    "from": "{row}: last opened first"
-  },
-  "home.arrange.sortedRecentDesc": {
-    "text": "Jede Kachel rückt beim Öffnen nach vorn",
-    "from": "Each tile moves to the front when it is opened"
-  },
-  "home.arrange.title": {
-    "text": "Anordnen",
-    "from": "Arranging"
-  },
-  "home.ch.add": {
-    "text": "Hinzufügen",
-    "from": "Add"
-  },
-  "home.ch.addTitle": {
-    "text": "Sender hinzufügen",
-    "from": "Add channels"
-  },
-  "home.ch.allAdded": {
-    "text": "Alle Sender sind auf Home.",
-    "from": "Every channel is on Home."
-  },
-  "home.ch.empty": {
-    "text": "Noch keine Sender. Füge sie unten hinzu.",
-    "from": "No channels yet. Add them below."
-  },
-  "home.ch.find": {
-    "text": "Sender suchen",
-    "from": "Find a channel"
-  },
-  "home.ch.loading": {
-    "text": "Sender des TVs werden gelesen…",
-    "from": "Reading the TV’s channels…"
-  },
-  "home.ch.noMatch": {
-    "text": "Kein Sender passt dazu.",
-    "from": "No channel matches that."
-  },
-  "home.ch.none": {
-    "text": "Auf diesem TV sind keine Sender eingerichtet, daher bleibt die Reihe Sender leer.",
-    "from": "This TV has no channels tuned, so the Channels row stays empty."
-  },
-  "home.ch.onHome": {
-    "text": "Auf Home",
-    "from": "On Home"
-  },
-  "home.ch.radio": {
-    "text": "Radio",
-    "from": "Radio"
-  },
-  "home.ch.remove": {
-    "text": "Entfernen",
-    "from": "Remove"
-  },
-  "home.ch.show": {
-    "text": "Sender anzeigen",
-    "from": "Show channels"
-  },
-  "home.ch.addDesc": {
-    "text": "Aus denen, die der TV gespeichert hat.",
-    "from": "From those the TV has tuned."
-  },
-  "home.colours.accent": {
-    "text": "Akzent",
-    "from": "Accent"
-  },
-  "home.colours.custom": {
-    "text": "Eigene",
-    "from": "Custom"
-  },
-  "home.colours.desc": {"from": "The text on Glasshouse Home, the highlight behind the chosen tile, and the accent that frames it and marks what was last on. The quieter text is a shade of the text colour.", "text": "Der Text auf Glasshouse Home, die Hervorhebung hinter der gewählten Kachel sowie die Akzentfarbe für deren Rahmen und die zuletzt genutzte Quelle. Gedimmter Text ist eine Abstufung der Textfarbe."},
-  "home.colours.glasshouse": {
-    "text": "Glasshouse",
-    "from": "Glasshouse"
-  },
-  "home.colours.ice": {
-    "text": "Eis",
-    "from": "Ice"
-  },
-  "home.colours.lilac": {
-    "text": "Flieder",
-    "from": "Lilac"
-  },
-  "home.colours.reset": {
-    "text": "Standardfarben verwenden",
-    "from": "Use the default colours"
-  },
-  "home.colours.rose": {
-    "text": "Rosé",
-    "from": "Rose"
-  },
-  "home.colours.text": {
-    "text": "Text",
-    "from": "Text"
-  },
-  "home.colours.title": {
-    "text": "Farben",
-    "from": "Colours"
-  },
-  "home.colours.tvHint": {
-    "text": "Schrift und Akzent auf Glasshouse Home. Jede Farbe lässt sich im Home-Tab des Browser-Dashboards wählen.",
-    "from": "The text and accent on Glasshouse Home. Any colour can be picked on the browser dashboard’s Home tab."
-  },
-  "home.colours.warm": {
-    "text": "Warm",
-    "from": "Warm"
-  },
-  "home.colours.white": {
-    "text": "Weiß",
-    "from": "White"
-  },
-  "home.confirmOff": {
-    "text": "Noch einmal drücken, um LG Home zu verwenden",
-    "from": "Press again to use LG Home"
-  },
-  "home.confirmOn": {
-    "text": "Noch einmal drücken zum Einschalten",
-    "from": "Press again to switch on"
-  },
-  "home.date": {
-    "text": "{weekday}, {day}. {month}",
-    "from": "{weekday} {day} {month}"
-  },
-  "home.dev.cec": {
-    "text": "CEC {address}",
-    "from": "CEC {address}"
-  },
-  "home.dev.connected": {
-    "text": "Verbunden",
-    "from": "Connected"
-  },
-  "home.dev.last": {
-    "text": "Zuletzt gesehen",
-    "from": "Last watched"
-  },
-  "home.dev.port": {
-    "text": "HDMI {port}",
-    "from": "HDMI {port}"
-  },
-  "home.dev.through": {
-    "text": "HDMI {port}, über {via}",
-    "from": "HDMI {port}, through {via}"
-  },
-  "home.dev.unused": {
-    "text": "Nichts angeschlossen",
-    "from": "Nothing connected"
-  },
-  "home.earlier": {
-    "text": "Früher",
-    "from": "Earlier"
-  },
-  "home.fault.desc": {
-    "text": "Glasshouse Home kommt zurück, sobald es antwortet. Bleibt es stumm, kommt nach wenigen Minuten LGs Home zurück.",
-    "from": "Glasshouse Home comes back when it answers. Should it stay silent, LG's Home comes back in a few minutes."
-  },
-  "home.fault.title": {
-    "text": "Glasshouse antwortet nicht",
-    "from": "Glasshouse is not answering"
-  },
-  "home.folder.label": {
-    "text": "In „Weitere Apps“",
-    "from": "In More apps"
-  },
-  "home.folder.title": {
-    "text": "Weitere Apps",
-    "from": "More apps"
-  },
-  "home.hidden": {
-    "text": "Ausgeblendet",
-    "from": "Hidden"
-  },
-  "home.hideLg": {
-    "text": "LGs Home beim Start des TVs ausblenden",
-    "from": "Hide LG’s Home while the TV starts"
-  },
-  "home.hideLgConfirm": {
-    "text": "Noch einmal drücken zum Ausblenden",
-    "from": "Press again to hide it"
-  },
-  "home.hideLgDesc": {
-    "text": "Etwa 25 Sekunden nach einem Kaltstart, bis Glasshouse Home seinen Platz einnimmt, öffnet sich LGs Home als schwarzer Bildschirm statt mit eigenem Inhalt.",
-    "from": "For about 25 seconds after a cold start, until Glasshouse Home takes its place, LG’s Home opens as a black screen instead of its own."
-  },
-  "home.hint.desc": {
-    "text": "Kacheln und Reihen verschieben oder ausblenden. LG Home ist die letzte Kachel bei Apps.",
-    "from": "Move or hide tiles and rows. LG's Home is the last tile in Apps."
-  },
-  "home.hint.title": {
-    "text": "OK halten zum Anordnen",
-    "from": "Hold OK to arrange"
-  },
-  "home.historyNote": {
-    "text": "Apps stehen in LGs Reihenfolge. Mit eingeschalteter Historie unter Erweitert werden neue Apps nach Nutzung einsortiert.",
-    "from": "Apps are in LG's order. With History switched on in Advanced, new apps are placed by how much each is used."
-  },
-  "home.isOffDesc": {
-    "text": "An LGs Home wird nichts geändert: Glasshouse Home liegt darüber, solange es eingeschaltet ist; Ausschalten nimmt es wieder weg.",
-    "from": "Nothing of LG’s is changed: Glasshouse Home is laid over LG’s Home while on, and switching off takes it away."
-  },
-  "home.isOnDesc": {
-    "text": "Es öffnet sich an LGs Home statt: mit Home- und Zurück-Taste und wenn der TV auf Home aufwacht.",
-    "from": "It opens in LG’s Home’s place: with the Home and Back buttons, and when the TV wakes on Home."
-  },
-  "home.isOnLgOpen": {
-    "text": "LGs Home ist vorerst geöffnet. Glasshouse Home kommt zurück, sobald etwas anderes geöffnet oder Home gedrückt wird.",
-    "from": "LG’s Home is open for now. Glasshouse Home comes back when something else is opened, or Home is pressed."
-  },
-  "home.isOnPending": {
-    "text": "Eingeschaltet, aber LGs Home ist noch an seinem Platz. Aus- und wieder Einschalten versucht es erneut.",
-    "from": "Switched on, but LG’s Home is still in its place. Switching off and on again tries once more."
-  },
-  "home.later": {
-    "text": "Später",
-    "from": "Later"
-  },
-  "home.layout": {
-    "text": "Reihen und Kacheln",
-    "from": "Rows and tiles"
-  },
-  "home.layoutDesc": {
-    "text": "Apps und Eingänge kommen vom TV: unerwünschte ausblenden. Sender sind nur die hier hinzugefügten. OK auf Glasshouse Home halten ordnet dasselbe Layout am TV.",
-    "from": "Apps and inputs come from the TV: hide the ones not wanted. Channels are only the ones added here. Holding OK on Glasshouse Home arranges the same layout on the TV."
-  },
-  "home.lgHome": {
-    "text": "LG Home",
-    "from": "LG Home"
-  },
-  "home.now.app": {
-    "text": "App auf diesem TV",
-    "from": "App on this TV"
-  },
-  "home.now.channel": {
-    "text": "Sender {number}",
-    "from": "Channel {number}"
-  },
-  "home.now.channelShow": {
-    "text": "Sender {number}: {title}",
-    "from": "Channel {number}: {title}"
-  },
-  "home.now.lastOpened": {
-    "text": "Zuletzt geöffnet",
-    "from": "Last opened"
-  },
-  "home.now.lastWatched": {
-    "text": "Zuletzt gesehen",
-    "from": "Last watched"
-  },
-  "home.openFailed": {
-    "text": "Das ließ sich nicht öffnen",
-    "from": "That did not open"
-  },
-  "home.picture": {
-    "text": "Bilddetails",
-    "from": "Picture details"
-  },
-  "home.pictureDesc": {
-    "text": "Oben rechts auf Glasshouse Home: Auflösung, Bildwiederholrate und HDR des zuletzt Gesehenen sowie Bildmodus und Helligkeit.",
-    "from": "In the top right of Glasshouse Home: the resolution, refresh rate and HDR of what was last on, and the picture mode and brightness it gets."
-  },
-  "home.place": {
-    "text": "Wo sie erscheint",
-    "from": "Where it shows"
-  },
-  "home.plate.allm": {
-    "text": "Geringe Latenz",
-    "from": "Low latency"
-  },
-  "home.plate.backlight": {
-    "text": "Hintergrundlicht",
-    "from": "Backlight"
-  },
-  "home.plate.depth": {
-    "text": "{chroma}, {bits} Bit",
-    "from": "{chroma}, {bits}-bit"
-  },
-  "home.plate.dolby": {
-    "text": "Dolby Vision",
-    "from": "Dolby Vision"
-  },
-  "home.plate.noSignal": {
-    "text": "Kein Bildsignal",
-    "from": "No picture coming in"
-  },
-  "home.plate.oledLight": {
-    "text": "OLED-Licht",
-    "from": "OLED light"
-  },
-  "home.plate.played": {
-    "text": "Zuletzt abgespielt",
-    "from": "Last video"
-  },
-  "home.plate.size": {
-    "text": "{width} × {height} bei {hz} Hz",
-    "from": "{width} × {height} at {hz} Hz"
-  },
-  "home.plate.sizeOnly": {
-    "text": "{width} × {height}",
-    "from": "{width} × {height}"
-  },
-  "home.plate.vrr": {
-    "text": "VRR",
-    "from": "VRR"
-  },
-  "home.recents.allClosed": {
-    "text": "Zuletzt geöffnete Apps geschlossen",
-    "from": "Recent apps closed"
-  },
-  "home.recents.close": {
-    "text": "Schließen",
-    "from": "Close"
-  },
-  "home.recents.closeAll": {
-    "text": "Alle schließen",
-    "from": "Close all"
-  },
-  "home.recents.closeFailed": {
-    "text": "Das ließ sich nicht schließen",
-    "from": "That did not close"
-  },
-  "home.recents.none": {
-    "text": "Nichts ist geöffnet",
-    "from": "Nothing is open"
-  },
-  "home.recents.noneDesc": {
-    "text": "Apps bleiben hier, solange sie geöffnet sind.",
-    "from": "Apps stay here while they are open."
-  },
-  "home.recents.title": {
-    "text": "Zuletzt geöffnete Apps",
-    "from": "Recent apps"
-  },
-  "home.reset": {
-    "text": "Layout zurücksetzen",
-    "from": "Reset the layout"
-  },
-  "home.resetDesc": {
-    "text": "Reihen, Apps und Eingänge kehren in ihre ursprüngliche Reihenfolge zurück, LGs Werbekacheln sind wieder ausgeblendet. Sender bleiben, wie sie sind.",
-    "from": "The rows, apps and inputs go back to their first order, with LG’s promotions hidden again. Channels stay as they are."
-  },
-  "home.restorePending": {
-    "text": "Wiederherstellung von LG Home unvollständig",
-    "from": "LG Home restoration is incomplete"
-  },
-  "home.restoreRetry": {
-    "text": "LG Home erst wiederherstellen, bevor Glasshouse Home erneut eingeschaltet wird.",
-    "from": "Retry restoring LG Home before switching Glasshouse Home on again."
-  },
-  "home.retryRestore": {
-    "text": "LG Home erneut wiederherstellen",
-    "from": "Retry restoring LG Home"
-  },
-  "home.row.addChannels": {
-    "text": "Sender in den Home-Einstellungen von Glasshouse hinzufügen",
-    "from": "Add channels in Glasshouse’s Home settings"
-  },
-  "home.row.apps": {
-    "text": "Apps",
-    "from": "Apps"
-  },
-  "home.row.appsNote": {
-    "text": "{n} von {total} sichtbar",
-    "from": "{n} of {total} shown"
-  },
-  "home.row.appsNoteFolder": {
-    "text": "{n} von {total} sichtbar, {folder} in „Weitere Apps“",
-    "from": "{n} of {total} shown, {folder} in More apps"
-  },
-  "home.row.channels": {
-    "text": "Sender",
-    "from": "Channels"
-  },
-  "home.row.channelsNote": {
-    "text": "{n} hinzugefügt",
-    "from": "{n} added"
-  },
-  "home.row.inputs": {
-    "text": "Eingänge",
-    "from": "Inputs"
-  },
-  "home.row.inputsNote": {
-    "text": "Geräte an {n} HDMI-Eingängen",
-    "from": "Devices on {n} HDMI inputs"
-  },
-  "home.row.inputsNoteOne": {
-    "text": "Geräte an HDMI {port}",
-    "from": "Devices on HDMI {port}"
-  },
-  "home.row.noTuner": {
-    "text": "Auf diesem TV sind keine Sender eingerichtet",
-    "from": "This TV has no channels tuned"
-  },
-  "home.rowDown": {
-    "text": "Reihe nach unten",
-    "from": "Row down"
-  },
-  "home.rowEmpty": {
-    "text": "In dieser Reihe gibt es noch nichts zu zeigen.",
-    "from": "Nothing to show in this row yet."
-  },
-  "home.rowUp": {
-    "text": "Reihe nach oben",
-    "from": "Row up"
-  },
-  "home.shown": {
-    "text": "Sichtbar",
-    "from": "Shown"
-  },
-  "home.sort": {
-    "text": "Reihenfolge",
-    "from": "Order"
-  },
-  "home.sortCustom": {
-    "text": "Deine Reihenfolge",
-    "from": "Your order"
-  },
-  "home.sortCustomDesc": {
-    "text": "Wie hier angeordnet oder durch Halten von OK auf Glasshouse Home.",
-    "from": "As arranged here, or by holding OK on Glasshouse Home."
-  },
-  "home.sortRecent": {
-    "text": "Zuletzt geöffnet",
-    "from": "Last opened"
-  },
-  "home.sortRecentDesc": {
-    "text": "Die zuletzt geöffnete Kachel steht vorn, egal ob von Glasshouse Home aus geöffnet oder nicht. Noch nicht geöffnete Kacheln folgen in der Reihenfolge dieser Reihe.",
-    "from": "The tile opened last comes first, whether it was opened from Glasshouse Home or not. Tiles not yet opened follow in this row’s own order."
-  },
-  "home.title": {
-    "text": "Glasshouse Home",
-    "from": "Glasshouse Home"
-  },
-  "home.wall.chooseImage": {
-    "text": "Ein Bild als JPEG, PNG oder WebP bis 25 MB wählen.",
-    "from": "Choose a JPEG, PNG or WebP image up to 25 MB."
-  },
-  "home.wall.slotAfternoon": {
-    "text": "Nachmittag",
-    "from": "Afternoon"
-  },
-  "home.wall.slotEvening": {
-    "text": "Abend",
-    "from": "Evening"
-  },
-  "home.wall.slotMorning": {
-    "text": "Morgen",
-    "from": "Morning"
-  },
-  "home.wall.slotNight": {
-    "text": "Nacht",
-    "from": "Night"
-  },
-  "home.wall.tooLarge": {
-    "text": "Das aufbereitete Bild ist zu groß. Wähle ein kleineres.",
-    "from": "The prepared image is too large. Choose a smaller image."
-  },
-  "home.wall.unreadable": {
-    "text": "Das Bild konnte nicht geöffnet werden.",
-    "from": "The image could not be opened."
-  },
-  "home.wall.uploadDone": {
-    "text": "Bild hochgeladen. Home aktualisiert sich in wenigen Sekunden.",
-    "from": "Image uploaded. Home updates within a few seconds."
-  },
-  "home.wall.uploadFailed": {
-    "text": "Das Bild konnte nicht hochgeladen werden.",
-    "from": "The image could not be uploaded."
-  },
-  "home.wall.uploadHelp": {
-    "text": "JPEG, PNG oder WebP, bis 25 MB. Bilder werden vor dem Hochladen auf 1920 × 1080 angepasst – die Größe, in der Glasshouse Home gezeichnet wird – und füllen den Bildschirm.",
-    "from": "JPEG, PNG or WebP, up to 25 MB. Images are resized to fit 1920 × 1080, the size Glasshouse Home is drawn at, before upload, and fill the screen."
-  },
-  "home.wall.uploading": {
-    "text": "Wird hochgeladen…",
-    "from": "Uploading…"
-  },
-  "lang.partial": {
-    "text": "{name} (teilweise)",
-    "from": "{name} (partial)"
-  },
-  "home.hideLgWarn": {
-    "text": "Warnung: Läuft Glasshouse nicht mehr (etwa nach einem Firmware-Update, das Root entfernt), bleibt LGs Home schwarz, bis es per SSH zurückgesetzt wird.",
-    "from": "Warning: If Glasshouse stops running (for example after a firmware update removes root), LG’s Home will stay black until it is put back over SSH."
-  },
-  "home.wall.add": {
-    "text": "Bild hinzufügen",
-    "from": "Add a picture"
-  },
-  "home.wall.choose": {
-    "text": "Bild für {name} wählen",
-    "from": "Choose a picture for {name}"
-  },
-  "home.wall.clearAll": {
-    "text": "Alle entfernen",
-    "from": "Remove all"
-  },
-  "home.wall.now": {
-    "text": "Jetzt",
-    "from": "Now"
-  },
-  "home.wall.remove": {
-    "text": "Entfernen",
-    "from": "Remove"
-  },
-  "home.wall.replace": {
-    "text": "Ersetzen",
-    "from": "Replace"
-  },
-  "srv.home.wallSlot": {
-    "text": "unbekannte Tageszeit für das Hintergrundbild",
-    "from": "unknown wallpaper slot"
-  },
-  "home.wall.examplesBusy": {
-    "text": "Wird heruntergeladen…",
-    "from": "Downloading…"
-  },
+ "apps.remoteKeys.observedColor": {"text": "Glasshouse muss für diese Verknüpfung laufen. Die Taste kann in der aktuellen App weiterhin ihre ursprüngliche Aktion ausführen.", "from": "Glasshouse must be running for this shortcut. The key may still perform its original action in the current app."},
+ "apps.remoteKeys.observedChannel": {"text": "Glasshouse muss für diese Verknüpfung laufen. Die Taste kann weiterhin den Kanal wechseln.", "from": "Glasshouse must be running for this shortcut. The key may still change the channel."},
+ "home.arrange.done": {"text": "Fertig", "from": "Done"},
+ "home.arrange.emptyRow": {"text": "Diese Reihe ist leer", "from": "This row is empty"},
+ "home.arrange.folder": {"text": "In „Weitere Apps“ oder heraus", "from": "Into or out of More apps"},
+ "home.arrange.folderAppsOnly": {"text": "Nur Apps kommen in „Weitere Apps“", "from": "Only apps go into More apps"},
+ "home.arrange.hide": {"text": "Aus- oder einblenden", "from": "Hide or show"},
+ "home.arrange.isHidden": {"text": "(ausgeblendet)", "from": "(hidden)"},
+ "home.arrange.isInFolder": {"text": "{name} (in „Weitere Apps“)", "from": "{name} (in More apps)"},
+ "home.arrange.keys": {"text": "OK nimmt eine Kachel auf oder legt sie ab. Aufgenommen verschieben die Pfeile sie oder ihre Reihe; abgelegt erreichen Hoch oder Runter diese Leiste. Grün verschiebt eine App in „Weitere Apps“ oder heraus, Rot oder Zurück blendet aus oder entfernt. Links von einer Reihe legt OK die Reihenfolge fest.", "from": "OK picks up or puts down. Held, arrows move it or its row; put down, Up or Down reaches this bar. Green moves an app in or out of More apps, and Red or Back hides or removes it. Left of a row, OK sets its order."},
+ "home.arrange.moving": {"text": "{name} wird verschoben", "from": "Moving {name}"},
+ "home.arrange.nowCustom": {"text": "{row} folgen jetzt deiner Reihenfolge", "from": "{row} are now in your order"},
+ "home.arrange.nowCustomDesc": {"text": "Die Reihenfolge links neben der ersten Kachel stellt sie wieder auf „zuletzt geöffnet“ um", "from": "The row's Order, left of its first tile, puts them back in last opened order"},
+ "home.arrange.orderCustom": {"text": "Reihenfolge: deine", "from": "Order: yours"},
+ "home.arrange.orderRecent": {"text": "Reihenfolge: zuletzt geöffnet", "from": "Order: last opened"},
+ "home.arrange.removeChannel": {"text": "Sender entfernen", "from": "Remove channel"},
+ "home.arrange.reset": {"text": "Zurücksetzen", "from": "Reset"},
+ "home.arrange.resetDesc": {"text": "Apps, Eingänge, dann Sender, in ihrer ursprünglichen Reihenfolge", "from": "Apps, Inputs, then Channels, in their first order"},
+ "home.arrange.resetDone": {"text": "Layout zurückgesetzt", "from": "Layout reset"},
+ "home.arrange.resetFailed": {"text": "Layout konnte nicht zurückgesetzt werden", "from": "Layout could not be reset"},
+ "home.arrange.saveFailed": {"text": "Layout konnte nicht gespeichert werden", "from": "Layout could not be saved"},
+ "home.arrange.saved": {"text": "Layout gespeichert", "from": "Layout saved"},
+ "home.arrange.savedDesc": {"text": "Der Home-Tab im Dashboard zeigt es ebenfalls", "from": "The dashboard's Home tab shows it too"},
+ "home.arrange.sortFocus": {"text": "{row}: OK ändert die Reihenfolge", "from": "{row}: OK changes the order"},
+ "home.arrange.sortedCustom": {"text": "{row}: in deiner Reihenfolge", "from": "{row}: in your order"},
+ "home.arrange.sortedCustomDesc": {"text": "Kachel mit OK aufnehmen, um sie zu verschieben", "from": "Pick a tile up with OK to move it"},
+ "home.arrange.sortedRecent": {"text": "{row}: zuletzt geöffnet zuerst", "from": "{row}: last opened first"},
+ "home.arrange.sortedRecentDesc": {"text": "Jede Kachel rückt beim Öffnen nach vorn", "from": "Each tile moves to the front when it is opened"},
+ "home.arrange.title": {"text": "Anordnen", "from": "Arranging"},
+ "home.ch.add": {"text": "Hinzufügen", "from": "Add"},
+ "home.ch.addTitle": {"text": "Sender hinzufügen", "from": "Add channels"},
+ "home.ch.allAdded": {"text": "Alle Sender sind auf Home.", "from": "Every channel is on Home."},
+ "home.ch.empty": {"text": "Noch keine Sender. Füge sie unten hinzu.", "from": "No channels yet. Add them below."},
+ "home.ch.find": {"text": "Sender suchen", "from": "Find a channel"},
+ "home.ch.loading": {"text": "Sender des TVs werden gelesen…", "from": "Reading the TV’s channels…"},
+ "home.ch.noMatch": {"text": "Kein Sender passt dazu.", "from": "No channel matches that."},
+ "home.ch.none": {"text": "Auf diesem TV sind keine Sender eingerichtet, daher bleibt die Reihe Sender leer.", "from": "This TV has no channels tuned, so the Channels row stays empty."},
+ "home.ch.onHome": {"text": "Auf Home", "from": "On Home"},
+ "home.ch.radio": {"text": "Radio", "from": "Radio"},
+ "home.ch.remove": {"text": "Entfernen", "from": "Remove"},
+ "home.ch.show": {"text": "Sender anzeigen", "from": "Show channels"},
+ "home.ch.addDesc": {"text": "Aus denen, die der TV gespeichert hat.", "from": "From those the TV has tuned."},
+ "home.colours.accent": {"text": "Akzent", "from": "Accent"},
+ "home.colours.custom": {"text": "Eigene", "from": "Custom"},
+ "home.colours.desc": {"from": "The text on Glasshouse Home, the highlight behind the chosen tile, and the accent that frames it and marks what was last on. The quieter text is a shade of the text colour.", "text": "Der Text auf Glasshouse Home, die Hervorhebung hinter der gewählten Kachel sowie die Akzentfarbe für deren Rahmen und die zuletzt genutzte Quelle. Gedimmter Text ist eine Abstufung der Textfarbe."},
+ "home.colours.glasshouse": {"text": "Glasshouse", "from": "Glasshouse"},
+ "home.colours.ice": {"text": "Eis", "from": "Ice"},
+ "home.colours.lilac": {"text": "Flieder", "from": "Lilac"},
+ "home.colours.reset": {"text": "Standardfarben verwenden", "from": "Use the default colours"},
+ "home.colours.rose": {"text": "Rosé", "from": "Rose"},
+ "home.colours.text": {"text": "Text", "from": "Text"},
+ "home.colours.title": {"text": "Farben", "from": "Colours"},
+ "home.colours.tvHint": {"text": "Schrift und Akzent auf Glasshouse Home. Jede Farbe lässt sich im Home-Tab des Browser-Dashboards wählen.", "from": "The text and accent on Glasshouse Home. Any colour can be picked on the browser dashboard’s Home tab."},
+ "home.colours.warm": {"text": "Warm", "from": "Warm"},
+ "home.colours.white": {"text": "Weiß", "from": "White"},
+ "home.confirmOff": {"text": "Noch einmal drücken, um LG Home zu verwenden", "from": "Press again to use LG Home"},
+ "home.confirmOn": {"text": "Noch einmal drücken zum Einschalten", "from": "Press again to switch on"},
+ "home.date": {"text": "{weekday}, {day}. {month}", "from": "{weekday} {day} {month}"},
+ "home.dev.cec": {"text": "CEC {address}", "from": "CEC {address}"},
+ "home.dev.connected": {"text": "Verbunden", "from": "Connected"},
+ "home.dev.last": {"text": "Zuletzt gesehen", "from": "Last watched"},
+ "home.dev.port": {"text": "HDMI {port}", "from": "HDMI {port}"},
+ "home.dev.through": {"text": "HDMI {port}, über {via}", "from": "HDMI {port}, through {via}"},
+ "home.dev.unused": {"text": "Nichts angeschlossen", "from": "Nothing connected"},
+ "home.earlier": {"text": "Früher", "from": "Earlier"},
+ "home.fault.desc": {"text": "Glasshouse Home kommt zurück, sobald es antwortet. Bleibt es stumm, kommt nach wenigen Minuten LGs Home zurück.", "from": "Glasshouse Home comes back when it answers. Should it stay silent, LG's Home comes back in a few minutes."},
+ "home.fault.title": {"text": "Glasshouse antwortet nicht", "from": "Glasshouse is not answering"},
+ "home.folder.label": {"text": "In „Weitere Apps“", "from": "In More apps"},
+ "home.folder.title": {"text": "Weitere Apps", "from": "More apps"},
+ "home.hidden": {"text": "Ausgeblendet", "from": "Hidden"},
+ "home.hideLg": {"text": "LGs Home beim Start des TVs ausblenden", "from": "Hide LG’s Home while the TV starts"},
+ "home.hideLgConfirm": {"text": "Noch einmal drücken zum Ausblenden", "from": "Press again to hide it"},
+ "home.hideLgDesc": {"text": "Etwa 25 Sekunden nach einem Kaltstart, bis Glasshouse Home seinen Platz einnimmt, öffnet sich LGs Home als schwarzer Bildschirm statt mit eigenem Inhalt.", "from": "For about 25 seconds after a cold start, until Glasshouse Home takes its place, LG’s Home opens as a black screen instead of its own."},
+ "home.hint.desc": {"text": "Kacheln und Reihen verschieben oder ausblenden. LG Home ist die letzte Kachel bei Apps.", "from": "Move or hide tiles and rows. LG's Home is the last tile in Apps."},
+ "home.hint.title": {"text": "OK halten zum Anordnen", "from": "Hold OK to arrange"},
+ "home.historyNote": {"text": "Apps stehen in LGs Reihenfolge. Mit eingeschalteter Historie unter Erweitert werden neue Apps nach Nutzung einsortiert.", "from": "Apps are in LG's order. With History switched on in Advanced, new apps are placed by how much each is used."},
+ "home.isOffDesc": {"text": "An LGs Home wird nichts geändert: Glasshouse Home liegt darüber, solange es eingeschaltet ist; Ausschalten nimmt es wieder weg.", "from": "Nothing of LG’s is changed: Glasshouse Home is laid over LG’s Home while on, and switching off takes it away."},
+ "home.isOnDesc": {"text": "Es öffnet sich an LGs Home statt: mit Home- und Zurück-Taste und wenn der TV auf Home aufwacht.", "from": "It opens in LG’s Home’s place: with the Home and Back buttons, and when the TV wakes on Home."},
+ "home.isOnLgOpen": {"text": "LGs Home ist vorerst geöffnet. Glasshouse Home kommt zurück, sobald etwas anderes geöffnet oder Home gedrückt wird.", "from": "LG’s Home is open for now. Glasshouse Home comes back when something else is opened, or Home is pressed."},
+ "home.isOnPending": {"text": "Eingeschaltet, aber LGs Home ist noch an seinem Platz. Aus- und wieder Einschalten versucht es erneut.", "from": "Switched on, but LG’s Home is still in its place. Switching off and on again tries once more."},
+ "home.later": {"text": "Später", "from": "Later"},
+ "home.layout": {"text": "Reihen und Kacheln", "from": "Rows and tiles"},
+ "home.layoutDesc": {"text": "Apps und Eingänge kommen vom TV: unerwünschte ausblenden. Sender sind nur die hier hinzugefügten. OK auf Glasshouse Home halten ordnet dasselbe Layout am TV.", "from": "Apps and inputs come from the TV: hide the ones not wanted. Channels are only the ones added here. Holding OK on Glasshouse Home arranges the same layout on the TV."},
+ "home.lgHome": {"text": "LG Home", "from": "LG Home"},
+ "home.now.app": {"text": "App auf diesem TV", "from": "App on this TV"},
+ "home.now.channel": {"text": "Sender {number}", "from": "Channel {number}"},
+ "home.now.channelShow": {"text": "Sender {number}: {title}", "from": "Channel {number}: {title}"},
+ "home.now.lastOpened": {"text": "Zuletzt geöffnet", "from": "Last opened"},
+ "home.now.lastWatched": {"text": "Zuletzt gesehen", "from": "Last watched"},
+ "home.openFailed": {"text": "Das ließ sich nicht öffnen", "from": "That did not open"},
+ "home.picture": {"text": "Bilddetails", "from": "Picture details"},
+ "home.pictureDesc": {"text": "Oben rechts auf Glasshouse Home: Auflösung, Bildwiederholrate und HDR des zuletzt Gesehenen sowie Bildmodus und Helligkeit.", "from": "In the top right of Glasshouse Home: the resolution, refresh rate and HDR of what was last on, and the picture mode and brightness it gets."},
+ "home.place": {"text": "Wo sie erscheint", "from": "Where it shows"},
+ "home.plate.allm": {"text": "Geringe Latenz", "from": "Low latency"},
+ "home.plate.backlight": {"text": "Hintergrundlicht", "from": "Backlight"},
+ "home.plate.depth": {"text": "{chroma}, {bits} Bit", "from": "{chroma}, {bits}-bit"},
+ "home.plate.dolby": {"text": "Dolby Vision", "from": "Dolby Vision"},
+ "home.plate.noSignal": {"text": "Kein Bildsignal", "from": "No picture coming in"},
+ "home.plate.oledLight": {"text": "OLED-Licht", "from": "OLED light"},
+ "home.plate.played": {"text": "Zuletzt abgespielt", "from": "Last video"},
+ "home.plate.size": {"text": "{width} × {height} bei {hz} Hz", "from": "{width} × {height} at {hz} Hz"},
+ "home.plate.sizeOnly": {"text": "{width} × {height}", "from": "{width} × {height}"},
+ "home.plate.vrr": {"text": "VRR", "from": "VRR"},
+ "home.recents.allClosed": {"text": "Zuletzt geöffnete Apps geschlossen", "from": "Recent apps closed"},
+ "home.recents.close": {"text": "Schließen", "from": "Close"},
+ "home.recents.closeAll": {"text": "Alle schließen", "from": "Close all"},
+ "home.recents.closeFailed": {"text": "Das ließ sich nicht schließen", "from": "That did not close"},
+ "home.recents.none": {"text": "Nichts ist geöffnet", "from": "Nothing is open"},
+ "home.recents.noneDesc": {"text": "Apps bleiben hier, solange sie geöffnet sind.", "from": "Apps stay here while they are open."},
+ "home.recents.title": {"text": "Zuletzt geöffnete Apps", "from": "Recent apps"},
+ "home.reset": {"text": "Layout zurücksetzen", "from": "Reset the layout"},
+ "home.resetDesc": {"text": "Reihen, Apps und Eingänge kehren in ihre ursprüngliche Reihenfolge zurück, LGs Werbekacheln sind wieder ausgeblendet. Sender bleiben, wie sie sind.", "from": "The rows, apps and inputs go back to their first order, with LG’s promotions hidden again. Channels stay as they are."},
+ "home.restorePending": {"text": "Wiederherstellung von LG Home unvollständig", "from": "LG Home restoration is incomplete"},
+ "home.restoreRetry": {"text": "LG Home erst wiederherstellen, bevor Glasshouse Home erneut eingeschaltet wird.", "from": "Retry restoring LG Home before switching Glasshouse Home on again."},
+ "home.retryRestore": {"text": "LG Home erneut wiederherstellen", "from": "Retry restoring LG Home"},
+ "home.row.addChannels": {"text": "Sender in den Home-Einstellungen von Glasshouse hinzufügen", "from": "Add channels in Glasshouse’s Home settings"},
+ "home.row.apps": {"text": "Apps", "from": "Apps"},
+ "home.row.appsNote": {"text": "{n} von {total} sichtbar", "from": "{n} of {total} shown"},
+ "home.row.appsNoteFolder": {"text": "{n} von {total} sichtbar, {folder} in „Weitere Apps“", "from": "{n} of {total} shown, {folder} in More apps"},
+ "home.row.channels": {"text": "Sender", "from": "Channels"},
+ "home.row.channelsNote": {"text": "{n} hinzugefügt", "from": "{n} added"},
+ "home.row.inputs": {"text": "Eingänge", "from": "Inputs"},
+ "home.row.inputsNote": {"text": "Geräte an {n} HDMI-Eingängen", "from": "Devices on {n} HDMI inputs"},
+ "home.row.inputsNoteOne": {"text": "Geräte an HDMI {port}", "from": "Devices on HDMI {port}"},
+ "home.row.noTuner": {"text": "Auf diesem TV sind keine Sender eingerichtet", "from": "This TV has no channels tuned"},
+ "home.rowDown": {"text": "Reihe nach unten", "from": "Row down"},
+ "home.rowEmpty": {"text": "In dieser Reihe gibt es noch nichts zu zeigen.", "from": "Nothing to show in this row yet."},
+ "home.rowUp": {"text": "Reihe nach oben", "from": "Row up"},
+ "home.shown": {"text": "Sichtbar", "from": "Shown"},
+ "home.sort": {"text": "Reihenfolge", "from": "Order"},
+ "home.sortCustom": {"text": "Deine Reihenfolge", "from": "Your order"},
+ "home.sortCustomDesc": {"text": "Wie hier angeordnet oder durch Halten von OK auf Glasshouse Home.", "from": "As arranged here, or by holding OK on Glasshouse Home."},
+ "home.sortRecent": {"text": "Zuletzt geöffnet", "from": "Last opened"},
+ "home.sortRecentDesc": {"text": "Die zuletzt geöffnete Kachel steht vorn, egal ob von Glasshouse Home aus geöffnet oder nicht. Noch nicht geöffnete Kacheln folgen in der Reihenfolge dieser Reihe.", "from": "The tile opened last comes first, whether it was opened from Glasshouse Home or not. Tiles not yet opened follow in this row’s own order."},
+ "home.title": {"text": "Glasshouse Home", "from": "Glasshouse Home"},
+ "home.wall.chooseImage": {"text": "Ein Bild als JPEG, PNG oder WebP bis 25 MB wählen.", "from": "Choose a JPEG, PNG or WebP image up to 25 MB."},
+ "home.wall.slotAfternoon": {"text": "Nachmittag", "from": "Afternoon"},
+ "home.wall.slotEvening": {"text": "Abend", "from": "Evening"},
+ "home.wall.slotMorning": {"text": "Morgen", "from": "Morning"},
+ "home.wall.slotNight": {"text": "Nacht", "from": "Night"},
+ "home.wall.tooLarge": {"text": "Das aufbereitete Bild ist zu groß. Wähle ein kleineres.", "from": "The prepared image is too large. Choose a smaller image."},
+ "home.wall.unreadable": {"text": "Das Bild konnte nicht geöffnet werden.", "from": "The image could not be opened."},
+ "home.wall.uploadDone": {"text": "Bild hochgeladen. Home aktualisiert sich in wenigen Sekunden.", "from": "Image uploaded. Home updates within a few seconds."},
+ "home.wall.uploadFailed": {"text": "Das Bild konnte nicht hochgeladen werden.", "from": "The image could not be uploaded."},
+ "home.wall.uploadHelp": {"text": "JPEG, PNG oder WebP, bis 25 MB. Bilder werden vor dem Hochladen auf 1920 × 1080 angepasst – die Größe, in der Glasshouse Home gezeichnet wird – und füllen den Bildschirm.", "from": "JPEG, PNG or WebP, up to 25 MB. Images are resized to fit 1920 × 1080, the size Glasshouse Home is drawn at, before upload, and fill the screen."},
+ "home.wall.uploading": {"text": "Wird hochgeladen…", "from": "Uploading…"},
+ "lang.partial": {"text": "{name} (teilweise)", "from": "{name} (partial)"},
+ "home.hideLgWarn": {"text": "Warnung: Läuft Glasshouse nicht mehr (etwa nach einem Firmware-Update, das Root entfernt), bleibt LGs Home schwarz, bis es per SSH zurückgesetzt wird.", "from": "Warning: If Glasshouse stops running (for example after a firmware update removes root), LG’s Home will stay black until it is put back over SSH."},
+ "home.wall.add": {"text": "Bild hinzufügen", "from": "Add a picture"},
+ "home.wall.choose": {"text": "Bild für {name} wählen", "from": "Choose a picture for {name}"},
+ "home.wall.clearAll": {"text": "Alle entfernen", "from": "Remove all"},
+ "home.wall.now": {"text": "Jetzt", "from": "Now"},
+ "home.wall.remove": {"text": "Entfernen", "from": "Remove"},
+ "home.wall.replace": {"text": "Ersetzen", "from": "Replace"},
+ "srv.home.wallSlot": {"text": "unbekannte Tageszeit für das Hintergrundbild", "from": "unknown wallpaper slot"},
+ "home.wall.examplesBusy": {"text": "Wird heruntergeladen…", "from": "Downloading…"},
  "common.am": {"text": "AM", "from": "AM"},
  "common.pm": {"text": "PM", "from": "PM"},
  "ctl.liveTv": {"text": "Live-TV", "from": "Live TV"},
@@ -782,28 +325,13 @@
  "tv.saver.include": {"text": "Drücken Sie OK, um in die Zufallsrotation aufzunehmen", "from": "Press OK to include in random rotation"},
  "tv.saver.random.hint": {"text": "Wählt jedes Mal einen anderen Bildschirmschoner.", "from": "Picks a different screen saver each time."},
  "tv.saver.random.hintUpNext": {"text": "Wählt jedes Mal einen anderen Bildschirmschoner. Als Nächstes: {name}.", "from": "Picks a different screen saver each time. Up next: {name}."},
-  "adv.huesync.desc": {"text": "Startet oder stoppt die Übertragung der Bildschirmfarbdaten an den ausgewählten Entertainment-Bereich für Ambient Light.", "from": "Starts or stops streaming screen colour data to the selected entertainment area for ambient light."},
-  "adv.piccap.desc": {"text": "Startet oder stoppt die Bildschirmaufnahme für Hyperion oder HyperHDR, um Ambient Light bereitzustellen.", "from": "Starts or stops screen capture for Hyperion or HyperHDR to provide ambient light."},
-  "adv.nightlyRefresh": {
-    "text": "Nächtlicher Neustart",
-    "from": "Nightly refresh reboot"
-  },
-  "adv.nightlyRefresh.desc": {
-    "text": "Richtet den 24-stündigen Wartungsneustart des Fernsehers am nächtlichen Ausschaltfenster aus. Verhindert einen Fehler in der LG-Software, durch den ein Neustart am Tag den Fernseher vier Stunden später vollständig ausschaltet.",
-    "from": "Aligns the TV's 24-hour maintenance reboot with your nightly power-down window. Prevents a bug in LG's software where rebooting during the day causes the TV to power off completely four hours later."
-  },
-  "tv.options.nightlyRefresh.hint": {
-    "text": "Richtet den 24-stündigen Wartungsneustart des Fernsehers am nächtlichen Ausschaltfenster aus, um ein vollständiges Ausschalten nach vier Stunden zu verhindern.",
-    "from": "Aligns the TV's 24-hour maintenance reboot with your nightly power-down window, preventing a bug in LG's software that powers off the TV completely four hours after a daytime reboot."
-  },
-  "tv.flash.nightlyRefreshOn": {
-    "text": "Nächtlicher Neustart aktiviert",
-    "from": "Nightly refresh reboot turned on"
-  },
-  "tv.flash.nightlyRefreshOff": {
-    "text": "Nächtlicher Neustart deaktiviert",
-    "from": "Nightly refresh reboot turned off"
-  },
+ "adv.huesync.desc": {"text": "Startet oder stoppt die Übertragung der Bildschirmfarbdaten an den ausgewählten Entertainment-Bereich für Ambient Light.", "from": "Starts or stops streaming screen colour data to the selected entertainment area for ambient light."},
+ "adv.piccap.desc": {"text": "Startet oder stoppt die Bildschirmaufnahme für Hyperion oder HyperHDR, um Ambient Light bereitzustellen.", "from": "Starts or stops screen capture for Hyperion or HyperHDR to provide ambient light."},
+ "adv.nightlyRefresh": {"text": "Nächtlicher Neustart", "from": "Nightly refresh reboot"},
+ "adv.nightlyRefresh.desc": {"text": "Richtet den 24-stündigen Wartungsneustart des Fernsehers am nächtlichen Ausschaltfenster aus. Verhindert einen Fehler in der LG-Software, durch den ein Neustart am Tag den Fernseher vier Stunden später vollständig ausschaltet.", "from": "Aligns the TV's 24-hour maintenance reboot with your nightly power-down window. Prevents a bug in LG's software where rebooting during the day causes the TV to power off completely four hours later."},
+ "tv.options.nightlyRefresh.hint": {"text": "Richtet den 24-stündigen Wartungsneustart des Fernsehers am nächtlichen Ausschaltfenster aus, um ein vollständiges Ausschalten nach vier Stunden zu verhindern.", "from": "Aligns the TV's 24-hour maintenance reboot with your nightly power-down window, preventing a bug in LG's software that powers off the TV completely four hours after a daytime reboot."},
+ "tv.flash.nightlyRefreshOn": {"text": "Nächtlicher Neustart aktiviert", "from": "Nightly refresh reboot turned on"},
+ "tv.flash.nightlyRefreshOff": {"text": "Nächtlicher Neustart deaktiviert", "from": "Nightly refresh reboot turned off"},
  "ha.api": {"text": "Home Assistant-API", "from": "Home Assistant API"},
  "ha.connected": {"text": "Verbunden: {msg}", "from": "Connected: {msg}"},
  "ha.test": {"text": "Verbindung testen", "from": "Test connection"},
@@ -855,8 +383,8 @@
  "ss.entityList.remove": {"text": "Entfernen", "from": "Remove"},
  "ss.entityList.statusNeedMore": {"text": "Fügen Sie mindestens {min} Entitäten hinzu ({count} von {max} eingerichtet). Wechselt der Reihe nach und verschiebt Pixel bei jedem Wechsel zum OLED-Schutz.", "from": "Add at least {min} entities ({count} of {max} configured). Cycles in order and shifts pixels on every change to prevent OLED burn-in."},
  "ss.entityList.statusReady": {"text": "Wechselt der Reihe nach durch {count} von {max} Entitäten. Feld leer lassen, um den Home Assistant-Namen zu nutzen.", "from": "Cycling through {count} of {max} entities in order. Leave a label blank to use the Home Assistant name."},
- "ha.enabled.off": {"text": "Ausgeschaltet. Die Home-Assistant-Bildschirmschoner und die aus Entitäten gelesenen Werte auf einen Blick sind nicht verfügbar. Adresse und Token bleiben gespeichert.", "from": "Turned off. The Home Assistant screen savers and the values at a glance read from entities are unavailable. The saved address and token are kept."},
- "ha.enabled.on": {"text": "Glasshouse kann die Home-Assistant-Entitäten lesen, die für die Bildschirmschoner und für die Werte auf einen Blick auf Glasshouse Home gewählt sind.", "from": "Glasshouse can read the Home Assistant entities chosen for its screen savers and for the values at a glance on Glasshouse Home."},
+ "ha.enabled.off": {"from": "Turned off. The Home Assistant screen savers, control bar and entity values at a glance are unavailable. The saved address and token are kept.", "text": "Ausgeschaltet. Die Home-Assistant-Bildschirmschoner, die Steuerleiste und Entitätswerte auf einen Blick sind nicht verfügbar. Gespeicherte Adresse und Token bleiben erhalten."},
+ "ha.enabled.on": {"from": "Glasshouse can read the Home Assistant entities chosen for its screen savers, control bar and values at a glance on Glasshouse Home.", "text": "Glasshouse kann die für Bildschirmschoner, Steuerleiste und Werte auf einen Blick ausgewählten Home-Assistant-Entitäten lesen."},
  "ha.savedOff": {"text": "Gespeichert (Home Assistant-API ist ausgeschaltet).", "from": "Saved (Home Assistant API is turned off)."},
  "ha.status.checking": {"text": "Wird geprüft...", "from": "Checking..."},
  "srv.saver.color.amber": {"text": "Bernstein", "from": "Amber"},
@@ -955,6 +483,7 @@
  "inputs.kind.av": {"text": "AV", "from": "AV"},
  "inputs.kind.component": {"text": "Component", "from": "Component"},
  "srv.remoteKeys.ok": {"text": "OK", "from": "OK"},
+ "srv.remoteKeys.piccap": {"from": "Ambient light", "text": "Ambient Light"},
  "apps.remoteKeys.buttons": {"text": "Tasten", "from": "Buttons"},
  "home.bg.video": {"text": "Video", "from": "Video"},
  "home.video.help": {"text": "Links zu Videodateien, einer pro Zeile, etwa https://example.com/beach.mp4, oder zu einer Playlist davon. Der Fernseher streamt sie selbst, aus dem Internet oder deinem eigenen Netzwerk.", "from": "Links to video files, one per line, such as https://example.com/beach.mp4, or to a playlist of them. The TV streams them itself, from the internet or your own network."},
@@ -1134,143 +663,41 @@
  "home.info.today": {"from": "today", "text": "heute"},
  "home.info.tomorrow": {"from": "tomorrow", "text": "morgen"},
  "home.info.weekday": {"from": "on {weekday}", "text": "am {weekday}"},
- "ha.api.desc": {"text": "Liest Home-Assistant-Entitäten live für die Home-Assistant-Bildschirmschoner (Ambient und Data Display) im Tab Bildschirmschoner und für die Werte auf einen Blick neben der Uhr von Glasshouse Home im Tab Home. Verbindet sich direkt über HTTP/HTTPS mit Home Assistant, ohne MQTT, und speichert ohne Neustart.", "from": "Reads live Home Assistant entities for the Home Assistant screen savers (Ambient and Data Display) on the Screensaver tab, and for the values at a glance beside Glasshouse Home's clock on the Home tab. Connects straight to Home Assistant over HTTP/HTTPS without using MQTT, and saves without restarting."},
-  "ha.domain.all": {
-    "text": "Alle",
-    "from": "All"
-  },
-  "ha.domain.binarySensor": {
-    "text": "Binärsensoren",
-    "from": "Binary sensors"
-  },
-  "ha.domain.calendar": {
-    "text": "Kalender",
-    "from": "Calendars"
-  },
-  "ha.domain.climate": {
-    "text": "Klima",
-    "from": "Climate"
-  },
-  "ha.domain.counter": {
-    "text": "Zähler",
-    "from": "Counters"
-  },
-  "ha.domain.cover": {
-    "text": "Abdeckungen",
-    "from": "Covers"
-  },
-  "ha.domain.deviceTracker": {
-    "text": "Tracker",
-    "from": "Trackers"
-  },
-  "ha.domain.fan": {
-    "text": "Ventilatoren",
-    "from": "Fans"
-  },
-  "ha.domain.inputBoolean": {
-    "text": "Schalter-Helfer",
-    "from": "Input booleans"
-  },
-  "ha.domain.inputNumber": {
-    "text": "Zahlen-Helfer",
-    "from": "Input numbers"
-  },
-  "ha.domain.inputSelect": {
-    "text": "Auswahl-Helfer",
-    "from": "Input select"
-  },
-  "ha.domain.inputText": {
-    "text": "Text-Helfer",
-    "from": "Input text"
-  },
-  "ha.domain.light": {
-    "text": "Lichter",
-    "from": "Lights"
-  },
-  "ha.domain.lock": {
-    "text": "Schlösser",
-    "from": "Locks"
-  },
-  "ha.domain.mediaPlayer": {
-    "text": "Medien",
-    "from": "Media"
-  },
-  "ha.domain.number": {
-    "text": "Zahlen",
-    "from": "Numbers"
-  },
-  "ha.domain.person": {
-    "text": "Personen",
-    "from": "People"
-  },
-  "ha.domain.sensor": {
-    "text": "Sensoren",
-    "from": "Sensors"
-  },
-  "ha.domain.sun": {
-    "text": "Sonne",
-    "from": "Sun"
-  },
-  "ha.domain.switch": {
-    "text": "Schalter",
-    "from": "Switches"
-  },
-  "ha.domain.timer": {
-    "text": "Timer",
-    "from": "Timers"
-  },
-  "ha.domain.vacuum": {
-    "text": "Staubsauger",
-    "from": "Vacuums"
-  },
-  "ha.domain.weather": {
-    "text": "Wetter",
-    "from": "Weather"
-  },
-  "ha.picker.added": {
-    "text": "Hinzugefügt",
-    "from": "Added"
-  },
-  "ha.picker.countAll": {
-    "text": "{n} Entitäten",
-    "from": "{n} entities"
-  },
-  "ha.picker.countOne": {
-    "text": "1 Entität",
-    "from": "1 entity"
-  },
-  "ha.picker.filterType": {
-    "text": "Nach Typ filtern",
-    "from": "Filter by type"
-  },
-  "ha.picker.reset": {
-    "text": "Zurücksetzen",
-    "from": "Reset"
-  },
-  "ha.picker.searchLabel": {
-    "text": "Entitäten filtern",
-    "from": "Filter entities"
-  },
-  "ha.picker.searchPlaceholder": {
-    "text": "Nach Name, Entitäts-ID oder Einheit suchen…",
-    "from": "Search by name, entity ID, or unit…"
-  },
-  "ha.picker.selected": {
-    "text": "Ausgewählt",
-    "from": "Selected"
-  },
-  "ha.picker.showMore": {
-    "text": "Mehr anzeigen ({n} verbleibend)",
-    "from": "Show more ({n} remaining)"
-  },
-  "ha.picker.showingOf": {
-    "text": "{shown} von {n} Treffern ({total} gesamt)",
-    "from": "Showing {shown} of {n} matching ({total} total)"
-  },
-  "ha.picker.withUnit": {
-    "text": "Mit Einheit",
-    "from": "With unit"
-  },
+ "ha.api.desc": {"from": "Reads live Home Assistant entities for the Home Assistant screen savers (Ambient and Data Display) on the Screensaver tab, values at a glance beside Glasshouse Home's clock, and the Home Assistant control bar. Connects straight to Home Assistant over HTTP/HTTPS without using MQTT, and saves without restarting.", "text": "Liest Home-Assistant-Entitäten live für die Home-Assistant-Bildschirmschoner (Ambient und Data Display) im Tab Bildschirmschoner, für die Werte auf einen Blick neben der Uhr von Glasshouse Home und für die Home-Assistant-Steuerleiste. Verbindet sich direkt über HTTP/HTTPS ohne MQTT und speichert ohne Neustart."},
+ "ha.domain.all": {"text": "Alle", "from": "All"},
+ "ha.domain.binarySensor": {"text": "Binärsensoren", "from": "Binary sensors"},
+ "ha.domain.calendar": {"text": "Kalender", "from": "Calendars"},
+ "ha.domain.climate": {"text": "Klima", "from": "Climate"},
+ "ha.domain.counter": {"text": "Zähler", "from": "Counters"},
+ "ha.domain.cover": {"text": "Abdeckungen", "from": "Covers"},
+ "ha.domain.deviceTracker": {"text": "Tracker", "from": "Trackers"},
+ "ha.domain.fan": {"text": "Ventilatoren", "from": "Fans"},
+ "ha.domain.inputBoolean": {"text": "Schalter-Helfer", "from": "Input booleans"},
+ "ha.domain.inputNumber": {"text": "Zahlen-Helfer", "from": "Input numbers"},
+ "ha.domain.inputSelect": {"text": "Auswahl-Helfer", "from": "Input select"},
+ "ha.domain.inputText": {"text": "Text-Helfer", "from": "Input text"},
+ "ha.domain.light": {"text": "Lichter", "from": "Lights"},
+ "ha.domain.lock": {"text": "Schlösser", "from": "Locks"},
+ "ha.domain.mediaPlayer": {"text": "Medien", "from": "Media"},
+ "ha.domain.number": {"text": "Zahlen", "from": "Numbers"},
+ "ha.domain.person": {"text": "Personen", "from": "People"},
+ "ha.domain.sensor": {"text": "Sensoren", "from": "Sensors"},
+ "ha.domain.sun": {"text": "Sonne", "from": "Sun"},
+ "ha.domain.switch": {"text": "Schalter", "from": "Switches"},
+ "ha.domain.timer": {"text": "Timer", "from": "Timers"},
+ "ha.domain.vacuum": {"text": "Staubsauger", "from": "Vacuums"},
+ "ha.domain.weather": {"text": "Wetter", "from": "Weather"},
+ "ha.picker.added": {"text": "Hinzugefügt", "from": "Added"},
+ "ha.picker.countAll": {"text": "{n} Entitäten", "from": "{n} entities"},
+ "ha.picker.countOne": {"text": "1 Entität", "from": "1 entity"},
+ "ha.picker.filterType": {"text": "Nach Typ filtern", "from": "Filter by type"},
+ "ha.picker.reset": {"text": "Zurücksetzen", "from": "Reset"},
+ "ha.picker.searchLabel": {"text": "Entitäten filtern", "from": "Filter entities"},
+ "ha.picker.searchPlaceholder": {"text": "Nach Name, Entitäts-ID oder Einheit suchen…", "from": "Search by name, entity ID, or unit…"},
+ "ha.picker.selected": {"text": "Ausgewählt", "from": "Selected"},
+ "ha.picker.showMore": {"text": "Mehr anzeigen ({n} verbleibend)", "from": "Show more ({n} remaining)"},
+ "ha.picker.showingOf": {"text": "{shown} von {n} Treffern ({total} gesamt)", "from": "Showing {shown} of {n} matching ({total} total)"},
+ "ha.picker.withUnit": {"text": "Mit Einheit", "from": "With unit"},
  "apps.running.close": {"text": "Schließen", "from": "Close"},
  "apps.running.closeAll": {"text": "Alle schließen", "from": "Close all"},
  "apps.running.closeFailed": {"text": "App konnte nicht geschlossen werden: {error}", "from": "Could not close app: {error}"},
@@ -1302,5 +729,119 @@
  "oled.slots.note": {"text": "Gespeicherter Zustand, aus den Dateien auf dem Fernseher gelesen. Ein nicht gespeichertes Kalibrierschreiben bleibt im Arbeitsspeicher und erscheint hier nicht; jede Datei gehört zu dem Bildmodus, in dem eine Kalibrierung gestartet wurde, nicht zum angezeigten Modus.", "from": "Stored state, read from the files on the TV. A calibration write that is not saved stays in memory and does not show here, and each file belongs to the picture mode a calibration was started in, not the mode on screen."},
  "oled.slots.size": {"text": "{n} Bytes", "from": "{n} bytes"},
  "oled.slots.badSize": {"text": "unerwartete Größe", "from": "unexpected size"},
- "home.motion.driftDesc": {"from": "The wallpaper shifts sideways very slowly, so it never sits still on the screen.", "text": "Das Hintergrundbild verschiebt sich sehr langsam seitwärts, sodass es nie still auf dem Bildschirm steht."}
+ "home.motion.driftDesc": {"from": "The wallpaper shifts sideways very slowly, so it never sits still on the screen.", "text": "Das Hintergrundbild verschiebt sich sehr langsam seitwärts, sodass es nie still auf dem Bildschirm steht."},
+ "community.disclaimer": {"from": "Community add-ons are created and maintained by their authors, not by Glasshouse.", "text": "Community-Erweiterungen werden von ihren Autoren und nicht von Glasshouse erstellt und gepflegt."},
+ "community.empty": {"from": "No community items are available right now.", "text": "Derzeit sind keine Community-Einträge verfügbar."},
+ "community.install": {"from": "Install", "text": "Installieren"},
+ "community.installFailed": {"from": "Installation failed.", "text": "Installation fehlgeschlagen."},
+ "community.installSize": {"from": "Install ({size})", "text": "Installieren ({size})"},
+ "community.installed": {"from": "Installed", "text": "Installiert"},
+ "community.installing": {"from": "Installing…", "text": "Wird installiert…"},
+ "community.launcher.heading": {"from": "Community launchers", "text": "Community-Launcher"},
+ "community.launcher.urlDesc": {"from": "For testing unlisted web launchers from an https:// GitHub repository or direct archive link.", "text": "Zum Testen nicht gelisteter Web-Launcher aus einem https:// GitHub-Repository oder direkten Archiv-Link."},
+ "community.launcher.urlTitle": {"from": "Install from a GitHub link or .zip URL", "text": "Über GitHub-Link oder .zip-URL installieren"},
+ "community.loadFailed": {"from": "Could not load the community catalog.", "text": "Community-Katalog konnte nicht geladen werden."},
+ "community.refresh": {"from": "Refresh", "text": "Aktualisieren"},
+ "community.refreshing": {"from": "Refreshing catalog…", "text": "Katalog wird aktualisiert…"},
+ "community.removeFailed": {"from": "Could not remove item.", "text": "Eintrag konnte nicht entfernt werden."},
+ "community.source": {"from": "Source", "text": "Quelle"},
+ "community.ss.heading": {"from": "Community screen savers", "text": "Community-Bildschirmschoner"},
+ "community.summaryCount": {"from": "{total} available", "text": "{total} verfügbar"},
+ "community.summaryInstalled": {"from": "{total} available · {installed} installed", "text": "{total} verfügbar · {installed} installiert"},
+ "community.updateTo": {"from": "Update to v{version}", "text": "Auf v{version} aktualisieren"},
+ "community.urlDesc": {"from": "For testing unlisted screen savers from an https:// GitHub repository or direct archive link.", "text": "Zum Testen nicht gelisteter Bildschirmschoner aus einem https:// GitHub-Repository oder direkten Archiv-Link."},
+ "community.urlOff": {"from": "Installing from a link needs Install app from a URL or file switched on (Apps tab), a token, or the TV's browser.", "text": "Für die Installation per Link muss App über URL oder Datei installieren (Apps-Tab), ein Token oder der Browser des Fernsehers aktiviert sein."},
+ "community.urlTitle": {"from": "Install from a GitHub link or .zip URL", "text": "Über GitHub-Link oder .zip-URL installieren"},
+ "community.use": {"from": "Use", "text": "Verwenden"},
+ "srv.community.badCatalog": {"from": "Catalog format could not be read.", "text": "Katalogformat konnte nicht gelesen werden."},
+ "srv.community.badHash": {"from": "The downloaded package does not match the catalog checksum.", "text": "Das heruntergeladene Paket stimmt nicht mit der Prüfsumme des Katalogs überein."},
+ "srv.community.badKind": {"from": "Choose screensaver, launcher or nosignal.", "text": "Wähle Bildschirmschoner, Launcher oder Kein-Signal-Bildschirm."},
+ "srv.community.badUrl": {"from": "Give an https:// link to a GitHub repository or archive.", "text": "Gib einen https://-Link zu einem GitHub-Repository oder Archiv an."},
+ "srv.community.busy": {"from": "Wait for the current installation to finish.", "text": "Warte, bis die aktuelle Installation abgeschlossen ist."},
+ "srv.community.fetchMissing": {"from": "Download helper is not available", "text": "Download-Hilfsprogramm ist nicht verfügbar"},
+ "srv.community.invalidSaver": {"from": "This package is not a valid screen saver.", "text": "Dieses Paket ist kein gültiger Bildschirmschoner."},
+ "srv.community.launcherUnavailable": {"from": "Launcher installation is not available.", "text": "Launcher-Installation ist nicht verfügbar."},
+ "srv.community.saverUnavailable": {"from": "Screen saver installation is not available.", "text": "Bildschirmschoner-Installation ist nicht verfügbar."},
+ "srv.community.unknown": {"from": "Unknown community item.", "text": "Unbekannter Community-Eintrag."},
+ "community.ss.docs": {"from": "Writing a screen saver", "text": "Bildschirmschoner schreiben"},
+ "community.submit": {"from": "Submit to the catalog", "text": "Zum Katalog hinzufügen"},
+ "srv.nosignal.badMain": {"from": "{file}: main must name a .qml file.", "text": "{file}: main muss eine .qml-Datei angeben."},
+ "srv.community.nosignalUnavailable": {"from": "No Signal screen installation is not available.", "text": "Installation von Kein-Signal-Bildschirmen ist nicht verfügbar."},
+ "srv.community.invalidNoSignal": {"from": "This package is not a valid No Signal screen.", "text": "Dieses Paket ist kein gültiger Kein-Signal-Bildschirm."},
+ "srv.community.revoked": {"from": "This community add-on has been removed for safety reasons.", "text": "Diese Community-Erweiterung wurde aus Sicherheitsgründen entfernt."},
+ "community.ns.heading": {"from": "Community No Signal screens", "text": "Community-Kein-Signal-Bildschirme"},
+ "community.ns.urlDesc": {"from": "For testing unlisted No Signal screens from an https:// GitHub repository or direct archive link.", "text": "Zum Testen nicht gelisteter Kein-Signal-Bildschirme über ein https://-GitHub-Repository oder einen direkten Archivlink."},
+ "community.ns.docs": {"from": "Writing a No Signal screen", "text": "Kein-Signal-Bildschirm schreiben"},
+ "community.summaryUpdates": {"from": "{total} available · {installed} installed · {updates} to update", "text": "{total} verfügbar · {installed} installiert · {updates} Aktualisierung(en)"},
+ "community.revokedDefault": {"from": "Removed from the catalog for safety reasons. Uninstall it now.", "text": "Aus Sicherheitsgründen aus dem Katalog entfernt. Jetzt deinstallieren."},
+ "ha.bar.title": {"from": "Home Assistant control bar", "text": "Home-Assistant-Steuerleiste"},
+ "ha.bar.badEntity": {"from": "Enter an entity ID such as light.living_room.", "text": "Gib eine Entitäts-ID wie light.living_room ein."},
+ "ha.bar.duplicate": {"from": "Already on the bar.", "text": "Bereits in der Leiste."},
+ "ha.bar.labelPlaceholder": {"from": "Optional label", "text": "Optionale Bezeichnung"},
+ "ha.bar.openFailed": {"from": "Could not open on the TV.", "text": "Konnte auf dem Fernseher nicht geöffnet werden."},
+ "ha.bar.openOnTv": {"from": "Open on TV", "text": "Auf dem TV öffnen"},
+ "ha.bar.opened": {"from": "Opened on the TV.", "text": "Auf dem Fernseher geöffnet."},
+ "ha.bar.opening": {"from": "Opening on TV...", "text": "Wird auf dem TV geöffnet..."},
+ "ha.bar.preview": {"from": "Preview", "text": "Vorschau"},
+ "ha.bar.remoteLink": {"from": "Remote tab", "text": "Tab Fernbedienung"},
+ "ha.bar.saved": {"from": "Saved.", "text": "Gespeichert."},
+ "srv.habar.badEntityId": {"from": "invalid entity id: {id}", "text": "ungültige Entitäts-ID: {id}"},
+ "srv.habar.badList": {"from": "entities array expected", "text": "Entitäten-Array erwartet"},
+ "srv.habar.installFailed": {"from": "Could not install the Home Assistant bar app.", "text": "Die Home-Assistant-Leiste-App konnte nicht installiert werden."},
+ "srv.habar.noStep": {"from": "{domain} does not support stepping", "text": "{domain} unterstützt kein schrittweises Ändern"},
+ "srv.habar.notConfigured": {"from": "Home Assistant is not configured", "text": "Home Assistant ist nicht eingerichtet"},
+ "srv.habar.notListed": {"from": "entity is not on the Home Assistant bar", "text": "Entität steht nicht in der Home-Assistant-Leiste"},
+ "srv.habar.openFailed": {"from": "Could not open the Home Assistant bar.", "text": "Die Home-Assistant-Leiste konnte nicht geöffnet werden."},
+ "srv.habar.readFailed": {"from": "could not read entity", "text": "Entität konnte nicht gelesen werden"},
+ "srv.habar.readOnly": {"from": "{domain} is read-only", "text": "{domain} ist schreibgeschützt"},
+ "srv.habar.serviceFailed": {"from": "Home Assistant service call failed", "text": "Home-Assistant-Dienstaufruf fehlgeschlagen"},
+ "srv.habar.tooMany": {"from": "too many entities (max {max})", "text": "zu viele Entitäten (max. {max})"},
+ "srv.remoteKeys.haBar": {"from": "Home Assistant bar", "text": "Home-Assistant-Leiste"},
+ "srv.remoteKeys.haBarInstall": {"from": "The Home Assistant bar could not be put on the TV. Try again in a moment.", "text": "Die Home-Assistant-Leiste konnte nicht auf dem TV installiert werden. Bitte gleich erneut versuchen."},
+ "home.bar.haTile": {"from": "Home Assistant bar tile", "text": "Home-Assistant-Leiste als Kachel"},
+ "home.bar.haTileDesc": {"from": "Adds a Home Assistant tile at the end of Glasshouse Bar to open the Home Assistant control bar.", "text": "Fügt am Ende der Glasshouse Bar eine Home-Assistant-Kachel hinzu, um die Home-Assistant-Steuerleiste zu öffnen."},
+ "home.ha.activated": {"from": "Activated", "text": "Aktiviert"},
+ "home.ha.decrease": {"from": "Decrease", "text": "Verringern"},
+ "home.ha.failed": {"from": "Action failed", "text": "Aktion fehlgeschlagen"},
+ "home.ha.increase": {"from": "Increase", "text": "Erhöhen"},
+ "home.ha.ran": {"from": "Ran", "text": "Ausgeführt"},
+ "home.haRowDesc": {"from": "Controls {n} entities from the Home Assistant bar.", "text": "Steuert {n} Entitäten aus der Home-Assistant-Leiste."},
+ "home.haRowEdit": {"from": "Edit on HA & MQTT", "text": "Unter HA und MQTT bearbeiten"},
+ "home.row.ha": {"from": "Home Assistant", "text": "Home Assistant"},
+ "home.row.haArrange": {"from": "Entities from the Home Assistant bar", "text": "Entitäten aus der Home-Assistant-Leiste"},
+ "home.row.haHint": {"from": "OK to toggle, Ch +/- to adjust", "text": "OK zum Umschalten, Ch +/- zum Anpassen"},
+ "ha.bar.showHints": {"from": "Button hints", "text": "Tastenhinweise"},
+ "srv.habar.badOptions": {"from": "invalid options", "text": "ungültige Optionen"},
+ "audio.bar.title": {"from": "LG Wi-Fi soundbar", "text": "LG WLAN-Soundbar"},
+ "audio.bar.address": {"from": "Soundbar IP address", "text": "IP-Adresse der Soundbar"},
+ "audio.bar.night": {"from": "Night mode", "text": "Nachtmodus"},
+ "audio.bar.woofer": {"from": "Subwoofer", "text": "Subwoofer"},
+ "audio.bar.center": {"from": "Center level", "text": "Center-Pegel"},
+ "audio.bar.height": {"from": "Height level", "text": "Höhenkanalpegel"},
+ "audio.bar.side": {"from": "Side level", "text": "Seitenkanalpegel"},
+ "audio.bar.rear": {"from": "Rear level", "text": "Rear-Pegel"},
+ "audio.bar.dialog": {"from": "Dialogue level", "text": "Dialogpegel"},
+ "audio.bar.bass": {"from": "Bass", "text": "Bässe"},
+ "audio.bar.mid": {"from": "Midrange", "text": "Mitten"},
+ "audio.bar.treble": {"from": "Treble", "text": "Höhen"},
+ "audio.bar.drc": {"from": "Dynamic range control", "text": "Dynamikregelung"},
+ "audio.bar.autoVol": {"from": "Auto volume", "text": "Automatische Lautstärke"},
+ "audio.bar.autoPower": {"from": "Auto power", "text": "Automatisches Ein-/Ausschalten"},
+ "audio.bar.voice": {"from": "Voice feedback", "text": "Sprachrückmeldung"},
+ "audio.bar.delay": {"from": "Audio delay (ms)", "text": "Audioverzögerung (ms)"},
+ "audio.bar.modeId": {"from": "Mode {id}", "text": "Modus {id}"},
+ "audio.bar.inputId": {"from": "Input {id}", "text": "Eingang {id}"},
+ "audio.bar.dim": {"from": "Auto dim", "text": "Automatisch dimmen"},
+ "audio.bar.autoOff": {"from": "Auto off", "text": "Automatisch aus"},
+ "audio.bar.badAddress": {"from": "Enter the local IPv4 address of the soundbar.", "text": "Die lokale IPv4-Adresse der Soundbar eingeben."},
+ "audio.bar.wrong": {"from": "Check the address and reconnect the soundbar.", "text": "Adresse prüfen und die Soundbar erneut verbinden."},
+ "audio.bar.check": {"from": "The soundbar could not confirm this setting.", "text": "Die Soundbar konnte die Einstellung nicht bestätigen."},
+ "audio.bar.saveError": {"from": "Could not save the soundbar connection.", "text": "Die Soundbar-Verbindung konnte nicht gespeichert werden."},
+ "audio.bar.offline": {"from": "Could not read the soundbar. Check its power and IP address.", "text": "Die Soundbar antwortet nicht. Stromversorgung und IP-Adresse prüfen."},
+ "audio.bar.processing": {"from": "Sound processing", "text": "Klangverarbeitung"},
+ "audio.bar.levels": {"from": "Speaker levels", "text": "Lautsprecherpegel"},
+ "audio.bar.tone": {"from": "Tone controls", "text": "Klangregelung"},
+ "audio.bar.device": {"from": "Device settings", "text": "Geräteeinstellungen"},
+ "audio.bar.volume": {"from": "Soundbar volume", "text": "Soundbar-Lautstärke"},
+ "audio.bar.tvVolume": {"from": "TV-reported volume: {value}", "text": "Vom TV gemeldete Lautstärke: {value}"}
 }

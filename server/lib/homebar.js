@@ -53,6 +53,7 @@ var compatFn = function () { return {}; };
 var onFn = function () { return true; };
 // Glasshouse Home, or a launcher in its place, given back to LG's Home first.
 var homeOffFn = function (cb) { cb({ ok: true }); };
+var homeInFrontFn = function () { return false; };
 // Whether a remote key is set to open it (lib/remotekeys opensHomeBar).
 var byKeyFn = function () { return false; };
 var Subscription = luna.Subscription;
@@ -125,6 +126,7 @@ function init(opts) {
   if (typeof opts.compat === 'function') compatFn = opts.compat;
   if (typeof opts.on === 'function') onFn = opts.on;
   if (typeof opts.homeOff === 'function') homeOffFn = opts.homeOff;
+  if (typeof opts.homeInFront === 'function') homeInFrontFn = opts.homeInFront;
   if (typeof opts.byKey === 'function') byKeyFn = opts.byKey;
   if (opts.Subscription) Subscription = opts.Subscription;
   // For the tests.
@@ -158,10 +160,16 @@ function fail(error) { return { ok: false, error: error }; }
 function enable(cb) {
   cb = cb || function () {};
   if (!offered()) return cb(fail(msg('srv.homebar.notOffered', 'Glasshouse Bar is not offered on this TV.')));
-  homeOffFn(function (off) {
-    if (!off || !off.ok) return cb(fail((off && off.error) || msg('srv.homebar.homeOff', 'Could not give LG\'s Home its place back.')));
-    appFn('install', function (installed) {
-      if (!installed || !installed.ok) return cb(fail(msg('srv.homebar.install', 'Could not install Glasshouse Bar\'s app.')));
+  var showNow = homeInFrontFn();
+  // Install the Bar app before giving LG's Home back, so switching from Glasshouse Home
+  // leaves no gap waiting on installation and can open Glasshouse Bar right away.
+  appFn('install', function (installed) {
+    if (!installed || !installed.ok) return cb(fail(msg('srv.homebar.install', 'Could not install Glasshouse Bar\'s app.')));
+    homeOffFn(function (off) {
+      if (!off || !off.ok) {
+        if (!byKeyFn()) appFn('remove', function () {});
+        return cb(fail((off && off.error) || msg('srv.homebar.homeOff', 'Could not give LG\'s Home its place back.')));
+      }
       // webOS 11: the Home key's library is changed, with the choice saved first as that reads it.
       var keyHome = viaLibrary() ? function (id, done) {
         try { save(id === APP); } catch (e) { return done({ ok: false }); }
@@ -170,7 +178,7 @@ function enable(cb) {
       keyHome(APP, function (keyed) {
         if (!keyed || !keyed.ok) {
           if (viaLibrary()) { try { save(false); } catch (e) {} applyKeysFn(function () {}); }
-          appFn('remove', function () {});
+          if (!byKeyFn()) appFn('remove', function () {});
           return cb(fail(msg('srv.homebar.key', 'Could not give the Home key to Glasshouse Bar.')));
         }
         try { save(true); } catch (e) { return cb(fail(e.message)); }
@@ -178,6 +186,9 @@ function enable(cb) {
         failures = 0;
         if (!sub) start();
         else schedule(afterSwitchOnMs);
+        if (showNow && lunaFn) {
+          lunaFn('com.webos.applicationManager/launch', { id: APP, params: { press: Date.now() } }, function () {});
+        }
         cb({ ok: true, bar: status() });
       });
     });

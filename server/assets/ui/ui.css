@@ -413,6 +413,9 @@ html.remote-view .hdr-remote,html.remote-view .hdr-vol{display:none}
 .nav-pref-body{display:flex;flex-direction:column;gap:10px;padding:4px 12px 14px}
 .nav-pref-grp{display:flex;flex-direction:column;gap:5px}
 .nav-pref-lbl{font:500 12px 'Manrope';letter-spacing:.08em;text-transform:uppercase;color:var(--w40)}
+.nav-pref-note{font-size:12px;line-height:1.4;color:var(--w60);margin-top:6px}
+.nav-pref-note[hidden]{display:none}
+.glow-toggle.glow-paused{opacity:.5}
 .nav-pref .theme-seg{display:flex;gap:4px;width:100%}
 .nav-pref .pill-sel{width:100%;min-width:0}
 /* Sized to their words, then sharing what is left: Oscuro, in Spanish, does not
@@ -1253,7 +1256,7 @@ button.pill.flash.idle[disabled]:hover{color:var(--w60);border-color:var(--edge)
 #advpane .prot-table,#serverpane .prot-table,#inputspane .prot-table,#remotepane .prot-table,#audiopane .prot-table,#ambientpane .prot-table,#privpane .prot-table,#appspane .prot-table:not(.catalog-grid),#homepane .prot-table:not(#home-rows .prot-table):not(#home-recents .prot-table):not(#home-ch-list),#hw-specs,.pv-adid-rows{
   display:grid;column-gap:clamp(30px,4vw,52px);
   grid-template-columns:repeat(auto-fill,minmax(min(100%,max(340px,calc((100% - clamp(30px,4vw,52px)) / 2))),1fr))}
-.row-alone,.home-weather-place,#ssh-row,#appspane .prot-table:not(.catalog-grid)>.sub{grid-column:1/-1}
+.row-alone,.home-weather-place,#ssh-row,#appspane .prot-table:not(.catalog-grid)>.sub,#home-launchers .prot-row,.comm-disc .prot-row{grid-column:1/-1}
 #advpane .prot-row,#serverpane .prot-row,#inputspane .prot-row,#remotepane .prot-row,#audiopane .prot-row,#ambientpane .prot-row,#privpane .prot-row,#appspane .prot-table:not(.catalog-grid) .prot-row,.home-custom-table .prot-row{align-items:flex-start;padding:16px 0}
 #advpane .prot-title,#serverpane .prot-title,#inputspane .prot-title,#remotepane .prot-title,#privpane .prot-title,#homepane .prot-title{font-size:var(--h-row);font-weight:600;letter-spacing:.02em;color:var(--w90)}
 #advpane .prot-desc,#serverpane .prot-desc,#inputspane .prot-desc,#remotepane .prot-desc,#privpane .prot-desc,#homepane .prot-desc{font-size:14px;line-height:1.5;margin-top:4px;max-width:none}
@@ -1329,6 +1332,34 @@ button.pill.flash.idle[disabled]:hover{color:var(--w60);border-color:var(--edge)
 .mqtt-net{max-width:380px;margin-top:22px;border:1px solid var(--w06);
   background:rgba(var(--fg),.02);border-radius:var(--r-md);padding:16px 16px 14px}
 .ha-api-section{border-top:1px solid var(--w12);margin-top:44px;padding-top:32px}
+.ha-bar-section{border-top:1px solid var(--w06);margin-top:28px;padding-top:14px}
+.ha-bar-cols{display:grid;grid-template-columns:1fr;gap:22px;margin-top:14px}
+@media (min-width:1100px){.ha-bar-cols{grid-template-columns:minmax(280px,4fr) minmax(400px,7fr);gap:28px;align-items:start}.ha-bar-main .ha-bar-row{grid-template-columns:minmax(0,1fr) minmax(96px,130px) auto}}
+.ha-bar-side,.ha-bar-main{min-width:0}
+/* One column: the list straight under the add box, the rest after it. */
+@media (max-width:1099px){.ha-bar-cols{gap:0}.ha-bar-side{display:contents}#ha-bar-addbox{order:1}.ha-bar-main{order:2;margin-top:14px}.ha-bar-open{order:3}.ha-bar-opts{order:4}.ha-bar-home-note{order:5}}
+.ha-bar-side .home-info-addbox{margin-top:0}
+.ha-bar-side .cfg-msg{display:block;margin-top:6px;min-height:0}
+.ha-bar-open{margin-top:18px}
+.ha-bar-open[hidden]{display:none}
+.ha-bar-opts{margin-top:18px}
+.ha-bar-home-note{margin-top:14px;margin-bottom:0}
+.ha-bar-main{border:1px solid var(--w06);border-radius:var(--r-sm);padding:4px 14px 6px}
+.ha-bar-main-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding:10px 0 8px;border-bottom:1px solid var(--w06);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--w60)}
+.ha-bar-main-head .num{letter-spacing:0;text-transform:none}
+.ha-bar-list{margin:0}
+.ha-bar-list .ha-bar-row:last-child{border-bottom:0}
+.ha-bar-empty{padding:22px 0;font-size:13px;color:var(--w60);text-align:center}
+.ha-bar-row{display:grid;grid-template-columns:1fr minmax(120px,180px) auto;gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid var(--w06)}
+.ha-bar-ent{min-width:0}
+.ha-bar-ent .nm{font-size:14px;font-weight:600;color:var(--w90);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ha-bar-ent .id{font-size:12px;color:var(--w60);font-family:ui-monospace,SFMono-Regular,Menlo,monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ha-bar-label{width:100%;min-width:0;box-sizing:border-box;height:34px;font-family:'Manrope';font-size:13px;color:var(--w100);background:transparent;border:1px solid var(--edge);padding:0 10px;border-radius:var(--r-sm);outline:none}
+.ha-bar-label:focus{border-color:var(--w100)}
+.ha-bar-remote-hint{margin:0}
+.ha-bar-actions{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:10px}
+.ha-bar-preview{text-decoration:none}
+@media (max-width:560px){.ha-bar-row{grid-template-columns:1fr}}
 .mqtt-net.off .mqtt-net-node{opacity:.6}
 .mqtt-net.off .mqtt-net-link{opacity:.4}
 .mqtt-net.off .mqtt-dot{background:var(--w20)!important;border-color:var(--edge)!important;box-shadow:none!important}
@@ -2089,6 +2120,27 @@ button.tools-jump:active{background:var(--w80)}
 .audio-fold .pv-sub{font-family:'Manrope';font-weight:400;margin:0}
 .audio-more{margin-top:clamp(34px,4.5vw,48px)}
 .audio-more[open]>summary{margin-bottom:6px}
+#audio-bar > summary{justify-content:space-between}
+.soundbar-head,.soundbar-actions{display:flex;align-items:center;flex-wrap:wrap;gap:10px}
+.soundbar-head{justify-content:space-between;margin:12px 0 16px}
+#audio-bar-status{margin:0;flex:1;overflow-wrap:anywhere}
+.soundbar-grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(min(100%,286px),1fr))}
+#audio-bar-rows{display:contents}
+.soundbar-group{min-width:0;padding:16px 18px;border:1px solid var(--w12);border-radius:var(--r-md);background:rgba(var(--fg),.025)}
+.soundbar-group h3{font:500 20px/1.25 'Outfit','Onest',sans-serif;letter-spacing:.01em;color:var(--w100);margin:0 0 6px}
+.soundbar-row{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:46px;padding:5px 0}
+.soundbar-row+.soundbar-row{border-top:1px solid var(--w10)}
+.soundbar-row label,.soundbar-connect label{font-size:14px;font-weight:500;color:var(--w90);overflow-wrap:anywhere}
+.soundbar-row small:not([hidden]){display:block;color:var(--w70);font-size:12px}
+.soundbar-row .pill-sel{max-width:58%;min-width:0}
+.soundbar-row .pill-toggle{min-width:76px}
+.soundbar-range{gap:8px;flex:0 1 46%;min-width:84px}
+.soundbar-range input{width:100%;min-width:0;margin:0;height:28px}
+.soundbar-range .num{min-width:3ch;font-variant-numeric:tabular-nums}
+.soundbar-connect{display:grid;gap:8px;max-width:24rem;padding:8px 0 2px}
+#audio-bar-host{min-width:0;width:100%;padding:9px 12px;font:inherit;color:var(--w100);background:var(--bg);border:1px solid var(--edge);border-radius:var(--r-sm)}
+.soundbar-actions{margin-top:4px}
+.soundbar-actions .pill,.soundbar-head .pill{min-width:0;padding-inline:16px;min-height:36px}
 .audio-head{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;margin:0 0 18px}
 .audio-head .pill{flex-shrink:0;min-height:36px}
 .audio-bt-btns{display:flex;gap:8px;flex-shrink:0}
@@ -3164,3 +3216,20 @@ html[lang="vi"] .tvm-c-in,
 html[lang="vi"] .tvm-tile-logo::before {
   font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
+
+.comm-disc{margin-top:24px}
+.comm-head-bar{display:flex;justify-content:flex-end;margin:10px 0 8px}
+.comm-disc .toast-form input{flex:1;max-width:440px}
+.comm-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:12px;margin:8px 0 14px}
+.comm-card{display:flex;flex-direction:column;background:var(--w04);border:1px solid var(--w10);border-radius:12px;overflow:hidden}
+.comm-card.installed{border-color:var(--w24)}
+.comm-card.revoked{border-color:rgba(248,113,113,.45)}
+.comm-card .pv-note.warn{margin:2px 0}
+.comm-preview{width:100%;aspect-ratio:16/9;object-fit:cover;background:#000;border-bottom:1px solid var(--w08)}
+.comm-body{display:flex;flex-direction:column;gap:8px;padding:12px 14px;flex:1}
+.comm-head{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
+.comm-title{font-weight:600;color:var(--w92);font-size:15px}
+.comm-desc{font-size:13px;color:var(--w70);line-height:1.4}
+.comm-meta{font-size:12px;color:var(--w55);margin-top:auto}
+.comm-src{color:var(--w75);text-decoration:underline}
+.comm-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}
