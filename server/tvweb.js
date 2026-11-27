@@ -675,6 +675,10 @@ remoteKeys.init({ detectRemotes: detectRemotes, luna: luna, subscription: lunaTr
   onHomeBarKey: function () { homebar.keySet(); },
   haBarAllowed: function () { return haBar.available(); },
   haBarApp: function (action, cb) { tvApp(action, cb, 'habar-app'); },
+  haBarKept: function () {
+    return quickAccess.opensHaBar() ||
+      !!(glasshouseHome && glasshouseHome.haBarInHomeBar() && (homebar.enabled() || remoteKeys.opensHomeBar()));
+  },
   onHaBarKey: function () { haBar.keySet(); },
   // A channel key set to Brightness, on webOS 11, while Glasshouse Home has a Home Assistant tile that steps in focus.
   homeAdjustStep: function (id, dir, cb) {

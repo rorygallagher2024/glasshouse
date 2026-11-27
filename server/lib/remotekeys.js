@@ -389,6 +389,7 @@ var homeBarLauncherFn = function () { return false; };
 var haBarAppFn = null;
 var haBarAllowedFn = function () { return false; };
 var haBarKeySetFn = null;
+var haBarKeptFn = function () { return false; };
 // Whether the bar's app can be put on this TV and kept loaded, which the brightness keys' on-screen level needs.
 function barAvailable() { return !!barAppFn && barAllowedFn(); }
 var inputNames = null;
@@ -454,6 +455,7 @@ function init(opts) {
   haBarAppFn = typeof opts.haBarApp === 'function' ? opts.haBarApp : null;
   haBarAllowedFn = typeof opts.haBarAllowed === 'function' ? opts.haBarAllowed : function () { return false; };
   haBarKeySetFn = typeof opts.onHaBarKey === 'function' ? opts.onHaBarKey : null;
+  haBarKeptFn = typeof opts.haBarKept === 'function' ? opts.haBarKept : function () { return false; };
   inputNames = opts.inputNames || {};
   if (opts.stateDir) stateDir = opts.stateDir;
   guidePatch.init({ stateDir: stateDir, library: opts.guideLibrary, systemUiLibrary: opts.systemUiLibrary, preProcessLibrary: opts.preProcessLibrary,
@@ -2240,9 +2242,9 @@ function dropHomeBarIfUnused(hadBar) {
   });
 }
 
-// Home Assistant bar's app, removed once no key opens it.
+// Home Assistant bar's app, removed once no key or Glasshouse Bar shortcut opens it.
 function dropHaBarIfUnused(hadBar) {
-  if (!hadBar || opensHaBar() || !haBarAppFn) return;
+  if (!hadBar || opensHaBar() || !haBarAppFn || haBarKeptFn()) return;
   haBarAppFn('remove', function (r) {
     if (!r || !r.ok) console.log('remotekeys: could not remove Home Assistant bar\'s app: ' + ((r && r.error) || 'no answer'));
   });
@@ -2253,7 +2255,7 @@ function appChoices(apps) {
   var seen = {};
   return (apps || []).filter(function (a) {
     if (!a || !a.id || seen[a.id] || a.visible === false) return false;
-    if (a.id === LIVE_TV || /^com\.webos\.app\.(hdmi|container)/.test(a.id)) return false;
+    if (a.id === LIVE_TV || a.id === HA_BAR || /^com\.webos\.app\.(hdmi|container)/.test(a.id)) return false;
     seen[a.id] = true;
     return true;
   }).map(function (a) {
@@ -2834,7 +2836,7 @@ function restoreKeys(done, native) {
   var barThere = opensInputBar() || fs.existsSync(INPUT_BAR_DIR);
   // Glasshouse Bar's app stays while it is the launcher: lib/homebar removes it then.
   var homeBarGoes = opensHomeBar() && !homeBarLauncherFn();
-  var haBarGoes = opensHaBar();
+  var haBarGoes = opensHaBar() && !haBarKeptFn();
   function cb(ok) {
     if (ok) {
       followColorButtons({});

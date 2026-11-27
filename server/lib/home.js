@@ -43,6 +43,7 @@ var screensaversModule = null;
 
 // The separate app earlier builds installed: removed, and its settings undone.
 var HOME_APP = 'com.tvweb.home';
+var HA_BAR_APP = 'com.tvweb.habar';
 var LG_HOME = takeover.LG_HOME;
 var LIVE_TV = 'com.webos.app.livetv';
 // What a CX (webOS 5.6.2) has as defaultApps.home, so the Home key opens it.
@@ -1473,7 +1474,7 @@ function launchPoints(cb, allowStale) {
                      icon: p.largeIcon || p.icon || '', page: target });
           return;
         }
-        if (p.id === HOME_APP || p.id === LG_HOME || isInputApp(p.id)) return;
+        if (p.id === HOME_APP || p.id === LG_HOME || p.id === HA_BAR_APP || isInputApp(p.id)) return;
         out.push({ id: p.id, title: String(p.title || p.id), icon: p.largeIcon || p.icon || '' });
       });
       sidebarApps(LG_SIDEBAR_APPS.slice(), out, done);
