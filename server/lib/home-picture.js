@@ -286,7 +286,9 @@ function pictureMode(input, range, cb) {
   if (!range) return cb(null);
   luna(SETTINGS, { category: 'picture', keys: ['pictureMode'], dimension: { input: input, dynamicRange: range } }, function (r) {
     var raw = r && r.settings ? r.settings.pictureMode : null;
-    cb(raw ? { raw: raw, display: names.pictureMode(raw).display } : null);
+    // name is the same as display, in a field the dashboards translate.
+    var display = raw ? names.pictureMode(raw).display : null;
+    cb(raw ? { raw: raw, display: display, name: display } : null);
   });
 }
 

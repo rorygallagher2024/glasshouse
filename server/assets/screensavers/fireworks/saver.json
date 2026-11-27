@@ -4,6 +4,7 @@
   "name": {
     "en": "Fireworks",
     "es": "Fuegos artificiales",
+    "fi": "Ilotulitus",
     "hu": "Tűzijáték",
     "it": "Fuochi d'artificio",
     "pl": "Fajerwerki",
@@ -16,6 +17,7 @@
   "description": {
     "en": "Bursts of colour on black, a few seconds apart.",
     "es": "Estallidos de color sobre negro, cada pocos segundos.",
+    "fi": "Väriräjähdyksiä mustalla taustalla muutaman sekunnin välein.",
     "hu": "Színes robbanások fekete háttéren, néhány másodpercenként.",
     "it": "Esplosioni di colore sul nero, a pochi secondi di distanza.",
     "pl": "Wybuchy kolorów na czerni co kilka sekund.",

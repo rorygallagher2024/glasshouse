@@ -14,7 +14,7 @@ The top of every tab shows what the TV is doing: its state (On, Screen off, Scre
 
 ## Languages
 
-The dashboard and the TV app come in English, Arabic, French, German (partly), Hungarian, Italian, Polish, Portuguese, Brazilian Portuguese, Russian, Spanish, Swedish and Vietnamese, all translated by the community. It follows the browser's language until one is chosen under **Preferences**. [Translating the dashboards](../STRINGS.md) explains how to add or improve one.
+The dashboard and the TV app come in English, Arabic, Finnish, French, German (partly), Hungarian, Italian, Polish, Portuguese, Brazilian Portuguese, Russian, Spanish, Swedish and Vietnamese, all translated by the community. It follows the browser's language until one is chosen under **Preferences**. [Translating the dashboards](../STRINGS.md) explains how to add or improve one.
 
 ## The tabs
 

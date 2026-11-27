@@ -4,6 +4,7 @@
   "name": {
     "en": "Veils",
     "es": "Velos",
+    "fi": "Hunnut",
     "hu": "Fátylak",
     "it": "Veli",
     "pl": "Welony",
@@ -16,6 +17,7 @@
   "description": {
     "en": "Translucent ribbons of light rippling slowly across black.",
     "es": "Cintas de luz translúcidas que ondulan despacio sobre negro.",
+    "fi": "Läpikuultavia valonauhoja, jotka aaltoilevat hitaasti mustan taustan halki.",
     "hu": "Áttetsző fényszalagok hullámzanak lassan a fekete háttéren.",
     "it": "Nastri di luce traslucidi che ondeggiano lentamente sul nero.",
     "pl": "Półprzezroczyste wstęgi światła powoli falujące na czerni.",
