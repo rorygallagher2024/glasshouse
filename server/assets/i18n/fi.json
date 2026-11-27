@@ -2231,7 +2231,7 @@
  "search.kind.section": {"from": "Section", "text": "Osio"},
  "search.kind.setting": {"from": "Setting", "text": "Asetus"},
  "search.kind.tab": {"from": "Tab", "text": "Välilehti"},
- "search.label": {"from": "Search settings, sections, apps and controls", "text": "Hae asetuksia, osioita, sovelluksia ja ohjaimia"},
+ "search.label": {"from": "Search settings, sections, apps and controls", "text": "Hae asetuksia, sovelluksia ja ohjaimia"},
  "search.open": {"from": "Search", "text": "Haku"},
  "search.pin": {"from": "Pin shortcut", "text": "Kiinnitä pikakuvake"},
  "search.pinned": {"from": "Pinned", "text": "Kiinnitetty"},
