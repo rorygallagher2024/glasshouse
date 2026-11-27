@@ -14,13 +14,19 @@ var os = require('os');
 var path = require('path');
 var zlib = require('zlib');
 var routes = require('../server/lib/routes');
+// Buffer.from where this node has its own, as node 0.10 and 0.12 do not.
+function buf(text) { return Buffer.from && Buffer.from !== Uint8Array.from ? Buffer.from(text) : new Buffer(text); }
 
 console.log('Running test-ui-etag.js ...');
 
 var dir = path.join(os.tmpdir(), 'tvweb-ui-etag-' + process.pid);
 fs.mkdirSync(dir);
 fs.mkdirSync(path.join(dir, 'ui'));
+var stateDir = path.join(dir, 'state');
+fs.mkdirSync(stateDir);
 process.on('exit', function () {
+  fs.readdirSync(stateDir).forEach(function (f) { fs.unlinkSync(path.join(stateDir, f)); });
+  fs.rmdirSync(stateDir);
   fs.readdirSync(path.join(dir, 'ui')).forEach(function (f) { fs.unlinkSync(path.join(dir, 'ui', f)); });
   fs.rmdirSync(path.join(dir, 'ui'));
   fs.readdirSync(dir).forEach(function (f) { fs.unlinkSync(path.join(dir, f)); });
@@ -40,7 +46,7 @@ function request(headers) {
   req.connection = { remoteAddress: '127.0.0.1' };
   routes.handleRequest(req, {
     writeHead: function (code, hdrs) { out = { code: code, headers: hdrs, body: '' }; },
-    end: function (chunk) { if (chunk) out.body += chunk.toString(); }
+    end: function (chunk) { if (chunk) { out.raw = chunk; out.body += chunk.toString(); } }
   });
   return out;
 }
@@ -93,6 +99,47 @@ assert.strictEqual(changed.code, 200);
 assert.notStrictEqual(changed.headers.ETag, etag);
 assert.ok(/two/.test(changed.body));
 console.log('  ✓ a changed page of the same version and size gets a new ETag');
+
+// The gzipped page is kept between starts, for the files it was made from.
+if (canGzip) {
+  fs.writeFileSync(path.join(dir, 'ui.html'), '<!doctype html>\n<link rel="stylesheet" href="/assets/ui/ui.css">\n' +
+    '<script src="/assets/ui/a.js"></script>\n<script src="/assets/ui/b.js"></script>\n<p>three</p>');
+  fs.writeFileSync(path.join(dir, 'ui', 'ui.css'), 'p{color:red}\n');
+  fs.writeFileSync(path.join(dir, 'ui', 'a.js'), 'var a = 1;\n');
+  fs.writeFileSync(path.join(dir, 'ui', 'b.js'), 'var b = "\u00e9t\u00e9";\n');
+  routes.init({ stateDir: stateDir });
+  routes.loadUI();
+  var made = request({ 'accept-encoding': 'gzip' });
+  var madeText = zlib.gunzipSync(made.raw).toString('utf8');
+  assert.ok(fs.existsSync(path.join(stateDir, 'ui-page.gz')) && fs.existsSync(path.join(stateDir, 'ui-page.json')), 'kept on disk');
+  assert.deepEqual(JSON.parse(fs.readFileSync(path.join(stateDir, 'ui-page.json'), 'utf8')).parts, ['ui/ui.css', 'ui/a.js', 'ui/b.js']);
+  // Stand in another page under the same record: a start that reads it serves it.
+  fs.writeFileSync(path.join(stateDir, 'ui-page.gz'), zlib.gzipSync(buf('<p>kept</p>')));
+  routes.loadUI();
+  assert.strictEqual(request().body, '<p>kept</p>', 'read from disk, and unzipped for a client without gzip');
+  var keptGz = request({ 'accept-encoding': 'gzip' });
+  assert.strictEqual(keptGz.headers.ETag, made.headers.ETag, 'with the ETag it was made with');
+  assert.strictEqual(keptGz.headers['Content-Encoding'], 'gzip');
+  console.log('  ✓ a start finds the gzipped page kept from the last');
+
+  function rebuiltAfter(change) {
+    fs.writeFileSync(path.join(stateDir, 'ui-page.gz'), zlib.gzipSync(buf('<p>kept</p>')));
+    change();
+    routes.loadUI();
+    return request().body;
+  }
+  var page = rebuiltAfter(function () { fs.writeFileSync(path.join(dir, 'ui', 'b.js'), 'var b = 2;\n'); });
+  assert.ok(/var a = 1;\nvar b = 2;/.test(page) && /<style>\np\{color:red\}/.test(page), 'a script changed: made again');
+  assert.ok(/<p>three<\/p>/.test(page));
+  page = rebuiltAfter(function () { fs.writeFileSync(path.join(dir, 'ui', 'ui.css'), 'p{color:blue}\n'); });
+  assert.ok(/color:blue/.test(page), 'the stylesheet changed: made again');
+  page = rebuiltAfter(function () { routes.init({ version: '0.138.0' }); });
+  assert.ok(/three/.test(page), 'a new version: made again');
+  page = rebuiltAfter(function () { fs.writeFileSync(path.join(stateDir, 'ui-page.json'), '{ cut short'); });
+  assert.ok(/three/.test(page), 'an unreadable record: made again');
+  assert.ok(madeText.indexOf('\u00e9t\u00e9') !== -1, 'the page is sent as UTF-8');
+  console.log('  ✓ the page is made again when a file it is made from, or the version, changes');
+}
 
 // Text assets under /assets/ (such as translation files) are gzipped when
 // cached and served compressed to clients that accept gzip; binary assets are

@@ -40,7 +40,13 @@ var filledCount = 0;
 // es, or pt-br where a region's language differs enough to have its own file.
 var LANG_CODE = /^[a-z]{2}(-[a-z]{2})?$/;
 
-var dicts = {};              // lang -> { key: { text, from } }
+/*
+ * The language files are read when a language is first asked for, not at
+ * start: all 13 took 1.2 s to parse and 16 MB on a B8 (node 0.12), on a TV
+ * whose dashboards may never ask for any of them. One read is kept.
+ */
+var dicts = {};              // lang -> { key: { text, from } }, or null where it did not parse
+var langFiles = {};          // lang -> its file, for each language there is one for
 var langDir = null;
 // Strings that bring their own translations instead of being in the language
 // files, such as a screen saver's name in its saver.json. Kept apart so that
@@ -91,29 +97,42 @@ function list(items) {
   return msg('srv.list', '{items} and {last}', { items: items.slice(0, -1).join(', '), last: items[items.length - 1] });
 }
 
-// The language files beside the pages. Read once; a new release restarts the
-// server, which is when they change.
+// The language files beside the pages. Listed here and read on first use; a
+// new release restarts the server, which is when they change.
 function init(dir) {
   langDir = dir;
   dicts = {};
+  langFiles = {};
   var files = [];
   try { files = fs.readdirSync(dir); } catch (e) { return; }
   for (var i = 0; i < files.length; i++) {
     var m = /^(.+)\.json$/.exec(files[i]);
     if (!m || !LANG_CODE.test(m[1])) continue;
-    try { dicts[m[1]] = JSON.parse(fs.readFileSync(path.join(dir, files[i]), 'utf8')); }
-    catch (e) { console.error('strings: ' + files[i] + ' did not parse: ' + e.message); }
+    langFiles[m[1]] = path.join(dir, files[i]);
   }
-  for (var lang in given) {
-    if (!dicts[lang]) continue;
-    for (var key in given[lang]) dicts[lang][key] = given[lang][key];
+}
+
+// A language's translations, read the first time, or null without a file
+// that parses.
+function dictFor(lang) {
+  if (!lang || !Object.prototype.hasOwnProperty.call(langFiles, lang)) return null;
+  if (Object.prototype.hasOwnProperty.call(dicts, lang)) return dicts[lang];
+  var dict = null;
+  try { dict = JSON.parse(fs.readFileSync(langFiles[lang], 'utf8')); }
+  catch (e) { console.error('strings: ' + lang + '.json did not parse: ' + e.message); }
+  if (dict && typeof dict === 'object') {
+    for (var key in given[lang]) dict[key] = given[lang][key];
+  } else {
+    dict = null;
   }
+  dicts[lang] = dict;
+  return dict;
 }
 
 // The language a page asked for, if there is a file for it.
 function langOf(req) {
   var want = String((req && req.headers && req.headers['x-glasshouse-lang']) || '').toLowerCase();
-  return LANG_CODE.test(want) && want !== 'en' && dicts[want] ? want : null;
+  return LANG_CODE.test(want) && want !== 'en' && dictFor(want) ? want : null;
 }
 
 // The language file for a locale as Qt or LG names it (sv_SE, pt-BR), or
@@ -122,7 +141,7 @@ function langOfLocale(locale) {
   var parts = String(locale || '').toLowerCase().replace(/_/g, '-').split('-');
   var tries = parts.length > 1 ? [parts[0] + '-' + parts[1], parts[0]] : [parts[0]];
   for (var i = 0; i < tries.length; i++) {
-    if (tries[i] !== 'en' && LANG_CODE.test(tries[i]) && dicts[tries[i]]) return tries[i];
+    if (tries[i] !== 'en' && LANG_CODE.test(tries[i]) && dictFor(tries[i])) return tries[i];
   }
   return null;
 }
@@ -164,16 +183,17 @@ function walk(v, dict, field) {
 // page to translate it, such as a toast. English without a file for it.
 function forLocale(text, locale) {
   var lang = langOfLocale(locale);
-  return lang ? translateText(text, dicts[lang]) : text;
+  return lang ? translateText(text, dictFor(lang)) : text;
 }
 
 // A JSON body for a response, translated in place where a page asked for a
 // language. Anything that is not JSON goes out as it came.
 function translateBody(body, lang) {
-  if (!lang || typeof body !== 'string' || !dicts[lang]) return body;
+  var dict = typeof body === 'string' ? dictFor(lang) : null;
+  if (!dict) return body;
   var obj;
   try { obj = JSON.parse(body); } catch (e) { return body; }
-  return JSON.stringify(walk(obj, dicts[lang], null));
+  return JSON.stringify(walk(obj, dict, null));
 }
 
 module.exports = {
