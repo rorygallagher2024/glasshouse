@@ -3232,7 +3232,7 @@
  "ha.url": {"text": "Home Assistant címe", "from": "Home Assistant address"},
  "ha.url.hint": {"text": "A Home Assistant példány címe és portja.", "from": "Address and port of your Home Assistant instance."},
  "ha.updateMode": {"text": "Kapcsolat típusa", "from": "Connection type"},
- "ha.updateMode.desc": {"text": "Hogyan tudja meg a Glasshouse egy entitás jelenlegi állapotát: minden alkalommal újra megkérdezi a Home Assistantot, vagy élő kapcsolatot tart fenn, amely a változást abban a pillanatban elküldi, amikor megtörténik.", "from": "How Glasshouse learns an entity's current state: ask Home Assistant fresh each time, or keep a live connection open that pushes a change the moment it happens."},
+ "ha.updateMode.desc": {"text": "Kapcsolat típusa a Home Assistanttal: valós idejű, nyitott WebSocket-kapcsolatot tart fenn, vagy beállított időközönként HTTP-n kérdez le.", "from": "Connection type to Home Assistant: keeps a WebSocket connection open in real time, or polls over HTTP at a set interval."},
  "ha.updateMode.polling": {"text": "HTTP lekérdezés", "from": "HTTP polling"},
  "ha.updateMode.websocket": {"text": "WebSocket", "from": "WebSocket"},
  "ha.pollIntervalMs": {"text": "Háttérfrissítés (ms)", "from": "Background refresh (ms)"},

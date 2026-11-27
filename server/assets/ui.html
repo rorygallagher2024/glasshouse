@@ -2569,7 +2569,7 @@
           <div class="pv-row">
             <div>
               <div class="n" data-t="ha.updateMode">Connection type</div>
-              <div class="d" data-t="ha.updateMode.desc">How Glasshouse learns an entity's current state: ask Home Assistant fresh each time, or keep a live connection open that pushes a change the moment it happens.</div>
+              <div class="d" data-t="ha.updateMode.desc">Connection type to Home Assistant: keeps a WebSocket connection open in real time, or polls over HTTP at a set interval.</div>
             </div>
             <select class="pill-sel" id="cfg-ha-mode" onchange="onHaModeChange()">
               <option value="polling" data-t="ha.updateMode.polling">HTTP polling</option>

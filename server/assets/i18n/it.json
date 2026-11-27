@@ -3232,7 +3232,7 @@
  "ha.url": {"text": "Indirizzo di Home Assistant", "from": "Home Assistant address"},
  "ha.url.hint": {"text": "Indirizzo e porta della tua istanza di Home Assistant.", "from": "Address and port of your Home Assistant instance."},
  "ha.updateMode": {"text": "Tipo di connessione", "from": "Connection type"},
- "ha.updateMode.desc": {"text": "Come Glasshouse apprende lo stato attuale di un'entità: chiede di nuovo a Home Assistant ogni volta, oppure mantiene una connessione attiva che invia un cambiamento nel momento in cui avviene.", "from": "How Glasshouse learns an entity's current state: ask Home Assistant fresh each time, or keep a live connection open that pushes a change the moment it happens."},
+ "ha.updateMode.desc": {"text": "Tipo di connessione con Home Assistant: mantiene aperta una connessione WebSocket in tempo reale oppure interroga via HTTP a un intervallo impostato.", "from": "Connection type to Home Assistant: keeps a WebSocket connection open in real time, or polls over HTTP at a set interval."},
  "ha.updateMode.polling": {"text": "Interrogazione HTTP", "from": "HTTP polling"},
  "ha.updateMode.websocket": {"text": "WebSocket", "from": "WebSocket"},
  "ha.pollIntervalMs": {"text": "Aggiornamento in background (ms)", "from": "Background refresh (ms)"},

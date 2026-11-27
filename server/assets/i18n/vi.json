@@ -589,7 +589,7 @@
  "ha.url": {"text": "Địa chỉ Home Assistant", "from": "Home Assistant address"},
  "ha.url.hint": {"text": "Địa chỉ và cổng của máy chủ Home Assistant.", "from": "Address and port of your Home Assistant instance."},
  "ha.updateMode": {"text": "Loại kết nối", "from": "Connection type"},
- "ha.updateMode.desc": {"text": "Cách Glasshouse biết trạng thái hiện tại của một thực thể: hỏi lại Home Assistant mỗi lần, hoặc giữ một kết nối mở để thay đổi được gửi ngay khi nó xảy ra.", "from": "How Glasshouse learns an entity's current state: ask Home Assistant fresh each time, or keep a live connection open that pushes a change the moment it happens."},
+ "ha.updateMode.desc": {"text": "Loại kết nối với Home Assistant: giữ kết nối WebSocket mở theo thời gian thực, hoặc hỏi qua HTTP theo khoảng thời gian đặt sẵn.", "from": "Connection type to Home Assistant: keeps a WebSocket connection open in real time, or polls over HTTP at a set interval."},
  "ha.updateMode.polling": {"text": "Thăm dò HTTP", "from": "HTTP polling"},
  "ha.updateMode.websocket": {"text": "WebSocket", "from": "WebSocket"},
  "ha.pollIntervalMs": {"text": "Làm mới trong nền (ms)", "from": "Background refresh (ms)"},
