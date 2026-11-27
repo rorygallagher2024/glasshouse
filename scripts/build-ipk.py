@@ -78,6 +78,38 @@ def read(path):
 # only in a phone's or computer's, so it would mark the app unable to run on
 # webOS 4 when it does.
 UI_SCRIPT = re.compile(r'^assets/ui/[\w-]+\.js$')
+
+# The translations, each with the English it was made from. The package
+# carries a hash of that English instead, "h", which is a third of a file,
+# compared as englishHash in assets/i18n.js and lib/say.js: FNV-1a over the
+# UTF-16 code units, in base 36.
+I18N_FILE = re.compile(r'^assets/i18n/[\w-]+\.json$')
+
+
+def english_hash(s):
+    h = 0x811c9dc5
+    b = s.encode('utf-16-le')
+    for i in range(0, len(b), 2):
+        h ^= b[i] | (b[i + 1] << 8)
+        h = (h * 0x01000193) & 0xffffffff
+    digits = '0123456789abcdefghijklmnopqrstuvwxyz'
+    out = ''
+    while True:
+        h, r = divmod(h, 36)
+        out = digits[r] + out
+        if not h:
+            return out
+
+
+def compact_i18n(data):
+    entries = json.loads(data.decode('utf-8'))
+    out = {}
+    for key, entry in entries.items():
+        if isinstance(entry, dict) and isinstance(entry.get('from'), str):
+            entry = dict((k, v) for k, v in entry.items() if k != 'from')
+            entry['h'] = english_hash(entries[key]['from'])
+        out[key] = entry
+    return json.dumps(out, ensure_ascii=False, separators=(',', ':')).encode('utf-8')
 UI_SCRIPTS_RUN = re.compile(r'(?:<script src="/assets/ui/[\w-]+\.js"></script>\n)+')
 
 
@@ -119,7 +151,11 @@ def stage(app, ver):
         src = os.path.join(SERVER, rel)
         if not os.path.isfile(src):
             sys.exit('deploy.sh lists %s, which does not exist' % rel)
-        data = inline_ui_scripts(read(src)) if rel == 'assets/ui.html' else read(src)
+        data = read(src)
+        if rel == 'assets/ui.html':
+            data = inline_ui_scripts(data)
+        elif I18N_FILE.match(rel):
+            data = compact_i18n(data)
         put(os.path.join(app, 'payload', 'server', rel), data,
             0o755 if EXECUTABLE.search(rel) else 0o644)
     return len(payload)

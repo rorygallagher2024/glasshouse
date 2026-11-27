@@ -127,13 +127,32 @@ function langOfLocale(locale) {
   return null;
 }
 
+// A released package's files carry a hash of the English, "h", in place of
+// "from" (scripts/build-ipk.py, and englishHash in assets/i18n.js).
+var hashes = {};
+function englishHash(s) {
+  if (Object.prototype.hasOwnProperty.call(hashes, s)) return hashes[s];
+  var h = 0x811c9dc5;
+  for (var i = 0; i < s.length; i++) {
+    h ^= s.charCodeAt(i);
+    h = (h + (h << 1) + (h << 4) + (h << 7) + (h << 8) + (h << 24)) >>> 0;
+  }
+  return (hashes[s] = h.toString(36));
+}
+
+function madeFrom(entry, english) {
+  if (!entry) return false;
+  if (typeof entry.from === 'string') return entry.from === english;
+  return typeof entry.h === 'string' && entry.h === englishHash(String(english));
+}
+
 function translateText(text, dict) {
   var has = Object.prototype.hasOwnProperty;
   var m = has.call(fixed, text) ? fixed[text] : has.call(filled, text) ? filled[text] : null;
   if (!m) return text;
   var entry = Object.prototype.hasOwnProperty.call(dict, m.key) ? dict[m.key] : null;
   // Made from different English: show the English until it is redone.
-  if (!entry || entry.from !== m.en || typeof entry.text !== 'string' || !entry.text) return text;
+  if (!madeFrom(entry, m.en) || typeof entry.text !== 'string' || !entry.text) return text;
   // A value can be a message itself, such as a service's name.
   var vars = null;
   if (m.vars) {
@@ -185,5 +204,6 @@ module.exports = {
   langOfLocale: langOfLocale,
   forLocale: forLocale,
   translateBody: translateBody,
-  DISPLAY_FIELDS: DISPLAY_FIELDS
+  DISPLAY_FIELDS: DISPLAY_FIELDS,
+  englishHash: englishHash
 };
