@@ -3450,7 +3450,7 @@
  "tab.audio": {"from": "Audio", "text": "Ääni"},
  "tab.control": {"from": "Control", "text": "Ohjaus"},
  "tab.game": {"from": "Game", "text": "Peli"},
- "tab.home": {"from": "Home", "text": "Home"},
+ "tab.home": {"from": "Home", "text": "Koti"},
  "tab.inputs": {"from": "Inputs", "text": "Tulot"},
  "tab.metrics": {"from": "Metrics", "text": "Mittarit"},
  "tab.oledCare": {"from": "OLED Care", "text": "OLED Care"},
