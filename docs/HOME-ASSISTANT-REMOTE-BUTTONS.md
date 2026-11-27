@@ -43,6 +43,12 @@ When a button is pressed, the server publishes a JSON payload to the event topic
 
 ## Setting Up Automations
 
+### Toggle something with a button, without YAML
+
+For a button that toggles, switches on or switches off lights, switches, fans, covers or input booleans, there is a blueprint: [![Open the blueprint in Home Assistant](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fraw.githubusercontent.com%2Frorygallagher2024%2Fglasshouse%2Fmain%2Fblueprints%2Fautomation%2Fglasshouse%2Fremote-button-toggle.yaml)
+
+Its form asks for the TV's Remote Button entity, the button, what it controls and whether to toggle, switch on or switch off. To have the button do nothing on the TV itself, set it to **Home Assistant** on the [Remote](dashboard/remote.md#remote-keys) tab. Without the button, import `https://raw.githubusercontent.com/rorygallagher2024/glasshouse/main/blueprints/automation/glasshouse/remote-button-toggle.yaml` under **Settings → Automations & scenes → Blueprints**. For anything more, such as a different action by time of day, write the automation as below.
+
 ### Using the Home Assistant Automation UI
 
 1. Go to **Settings** → **Automations & Scenes** → **Create Automation**.
