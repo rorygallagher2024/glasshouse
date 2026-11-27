@@ -191,9 +191,12 @@ var SETUP_PENDING = '/var/lib/tvweb/.setup-pending';
 var HANDOFF = { server: null, code: null, timer: null };
 var HANDOFF_MS = 10 * 60 * 1000;
 
+// The page as sent: gzipped where node can, with the text kept only where it cannot.
 var UI_HTML = null;
 var UI_HTML_GZ = null;
 var UI_ETAG = null;
+// Where the gzipped page is kept between starts (loadUI), or null for none.
+var uiCacheDir = null;
 var UI_MISSING = 'ui.html';   // the file named by the missing-assets page
 var ASSET_CACHE = {};
 
@@ -797,9 +800,10 @@ function preloadWithIcons(cb) {
  * its scripts left as files, which a browser keeps from before an update, so
  * the dashboard showed new controls driven by old script.
  */
-function inlineUI(html) {
+function inlineUI(html, used) {
   var missing = null;
   function part(rel) {
+    if (used) used.push(rel);
     var f = assetPath(rel);
     if (f) {
       try { return fs.readFileSync(f, 'utf8'); } catch (e) {}
@@ -818,6 +822,60 @@ function inlineUI(html) {
   return html;
 }
 
+/*
+ * The page put together is 1.35 million characters, kept by V8 at two bytes
+ * each, and gzipping it took 0.4 s on a B8 (node 0.12) at every start, with
+ * 3.7 MB more held for good: node 0.12 keeps its heap at its peak. So the
+ * gzipped page is kept on disk, made once for each set of files it is made
+ * from, and a start that finds it reads 340 KB and makes nothing.
+ *
+ * The files are told apart by their bytes, read as buffers and never as text,
+ * with where each was found, the version and how they are put together.
+ */
+var UI_CACHE_GZ = 'ui-page.gz';
+var UI_CACHE_META = 'ui-page.json';
+
+function uiSources(parts) {
+  var hash = crypto.createHash('sha1');
+  hash.update(versionStr + '\n' + inlineUI.toString() + '\n');
+  var files = ['ui.html'].concat(parts);
+  for (var i = 0; i < files.length; i++) {
+    var f = assetPath(files[i]);
+    if (!f) return null;
+    try { hash.update(f + '\n'); hash.update(fs.readFileSync(f)); } catch (e) { return null; }
+  }
+  return hash.digest('hex');
+}
+
+function readUiCache() {
+  if (!uiCacheDir || typeof zlib.gzipSync !== 'function') return null;
+  var meta = readJsonSafe(path.join(uiCacheDir, UI_CACHE_META));
+  if (!meta || typeof meta.sources !== 'string' || typeof meta.etag !== 'string' || !Array.isArray(meta.parts)) return null;
+  if (uiSources(meta.parts) !== meta.sources) return null;
+  try { return { gz: fs.readFileSync(path.join(uiCacheDir, UI_CACHE_GZ)), etag: meta.etag }; } catch (e) { return null; }
+}
+
+function writeUiCache(gz, etag, parts) {
+  if (!uiCacheDir) return;
+  var sources = uiSources(parts);
+  if (!sources) return;
+  var gzFile = path.join(uiCacheDir, UI_CACHE_GZ), metaFile = path.join(uiCacheDir, UI_CACHE_META);
+  try {
+    // The page first, then what it was made from: a start between the two finds no match.
+    try { fs.unlinkSync(metaFile); } catch (e) {}
+    fs.writeFileSync(gzFile + '.tmp', gz);
+    fs.renameSync(gzFile + '.tmp', gzFile);
+    fs.writeFileSync(metaFile + '.tmp', JSON.stringify({ sources: sources, etag: etag, parts: parts }));
+    fs.renameSync(metaFile + '.tmp', metaFile);
+  } catch (e) {
+    console.error('assets: could not keep the gzipped page: ' + e.message);
+  }
+}
+
+function readJsonSafe(f) {
+  try { return JSON.parse(fs.readFileSync(f, 'utf8')); } catch (e) { return null; }
+}
+
 // Called only where something will serve it: not with the web dashboard off,
 // nor for a one-shot run such as --update.
 function loadUI() {
@@ -827,14 +885,24 @@ function loadUI() {
                   ' - the dashboard will report it is missing');
     return;
   }
+  var kept = readUiCache();
+  if (kept) {
+    UI_HTML = null;
+    UI_HTML_GZ = kept.gz;
+    UI_ETAG = kept.etag;
+    console.log('assets: serving ui.html from ' + f + ' (' + Math.round(UI_HTML_GZ.length / 1024) + ' KB compressed, kept from an earlier start)');
+    return;
+  }
   try {
-    var page = inlineUI(fs.readFileSync(f, 'utf8'));
+    var parts = [];
+    var page = inlineUI(fs.readFileSync(f, 'utf8'), parts);
     if (!page) {
       console.error('assets: ' + UI_MISSING + ' not found in ' + assetDirsList.join(', ') +
                     ' - the dashboard will report it is missing');
       return;
     }
     UI_HTML = page;
+    UI_HTML_GZ = null;
     // From the content, not the version: a deploy of uncommitted changes keeps
     // the version, and browsers would go on showing the page before them.
     UI_ETAG = '"' + crypto.createHash('sha1').update(page, 'utf8').digest('hex').slice(0, 16) + '"';
@@ -847,6 +915,9 @@ function loadUI() {
      */
     try {
       UI_HTML_GZ = zlib.gzipSync(UI_HTML);
+      // Sent gzipped from here on, and unzipped for the rare client that will not take it.
+      UI_HTML = null;
+      writeUiCache(UI_HTML_GZ, UI_ETAG, parts);
       console.log('assets: serving ui.html from ' + f + ' (' + Math.round(UI_HTML_GZ.length / 1024) + ' KB compressed)');
     } catch (ze) {
       console.log('assets: serving ui.html from ' + f);
@@ -1744,7 +1815,7 @@ function handleRequest(req, res) {
   /** @type {any} */ (res).glasshouseLang = say.langOf(req);
 
   if (pathname === '/' || pathname === '/index.html') {
-    if (UI_HTML) {
+    if (UI_HTML || UI_HTML_GZ) {
       var gzip = !!UI_HTML_GZ && acceptsGzip(req.headers && req.headers['accept-encoding']);
       // no-cache, not no-store: the browser keeps the page and asks each
       // time, and an unchanged one comes back as a 304 with no body.
@@ -1757,9 +1828,9 @@ function handleRequest(req, res) {
         res.writeHead(304, uiHeaders);
         return res.end();
       }
-      var uiBody = gzip ? UI_HTML_GZ : UI_HTML;
+      var uiBody = gzip ? UI_HTML_GZ : (UI_HTML !== null ? UI_HTML : zlib.gunzipSync(UI_HTML_GZ));
       uiHeaders['Content-Type'] = 'text/html; charset=utf-8';
-      uiHeaders['Content-Length'] = gzip ? UI_HTML_GZ.length : Buffer.byteLength(UI_HTML);
+      uiHeaders['Content-Length'] = typeof uiBody === 'string' ? Buffer.byteLength(uiBody) : uiBody.length;
       if (gzip) uiHeaders['Content-Encoding'] = 'gzip';
       uiHeaders['X-Content-Type-Options'] = 'nosniff';
       uiHeaders['Referrer-Policy'] = 'no-referrer';
@@ -3267,6 +3338,7 @@ function init(opts) {
   if (opts.tileHidingOff) tileHidingOffMsg = opts.tileHidingOff;
   if (opts.assetPath) assetPathFn = opts.assetPath;
   if (opts.assetDirs) assetDirsList = opts.assetDirs;
+  if (opts.stateDir) uiCacheDir = opts.stateDir;
   if (opts.luna) lunaFn = opts.luna;
   if (opts.getMqttStatus) getMqttStatusFn = opts.getMqttStatus;
   if (opts.appsChanged) appsChangedFn = opts.appsChanged;
