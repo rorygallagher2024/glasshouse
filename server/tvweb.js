@@ -630,7 +630,7 @@ btAudio.init({ luna: luna, clearLunaCache: clearLunaCache });
 game.init({ lunaCached: lunaCached, inputKey: telemetry.inputKey });
 appHosts.init({});
 privacy.init({ luna: luna, lunaCached: lunaCached, config: CONFIG, lgSettings: lgSettings, services: servicesModule, appHosts: CLI_MODE ? null : appHosts });
-oled.init({ luna: luna, config: CONFIG });
+oled.init({ luna: luna, lunaFirst: lunaTransport.callFirst, config: CONFIG });
 screenColour.init({ luna: luna });
 samrescan.init({ luna: luna });
 appsModule.init({ luna: luna, config: CONFIG });
@@ -810,6 +810,7 @@ nosignal.init({ luna: luna, config: CONFIG, inputNames: telemetry.inputNameMap }
 nosignal.apply();
 telemetry.init({
   luna: luna,
+  lunaFirst: lunaTransport.callFirst,
   lunaCached: lunaCached,
   config: CONFIG,
   oled: oled,
@@ -2043,17 +2044,19 @@ function setupHomeAssistant() {
     // first connect it would otherwise still be undetermined.
     // The app select's options come from listApps, which on a first connect
     // has not been scanned yet - without this it publishes the fallback list.
+    // Each read through the luna queue's first lane: behind the start's other
+    // calls, the first discovery came 6 s after the connection on a B8.
     oled.detectOled(function (isOled) {
       var afterOled = function () {
         telemetry.detectLogoLight(function () {
           telemetry.refreshInstalledApps(function () {
             // The Input Source select's options are the names the TV gives its
             // HDMI inputs, so read them before publishing its discovery.
-            telemetry.refreshInputNames(function () { publishDiscovery(); });
-          });
-        });
+            telemetry.refreshInputNames(function () { publishDiscovery(); }, true);
+          }, true);
+        }, true);
       };
-      if (isOled && oled.hasGsrStressCount() === null) oled.readOledProtections(afterOled);
+      if (isOled && oled.hasGsrStressCount() === null) oled.readOledProtections(afterOled, true);
       else afterOled();
     });
     mqttClient.subscribe(mqttTopics.commands + '#');

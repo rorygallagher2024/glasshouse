@@ -20,6 +20,18 @@ var GAP_MS = 50;
 // Not wider: a stats read makes about a dozen calls, and at 400ms apart it ran
 // past its 4.5s limit and came back incomplete during start-up.
 var STARTUP_GAP_MS = 150;
+/*
+ * Both hazards are of the node LG shipped with webOS 4 to 6: 0.12's inherited
+ * lock and 8.12's fork handler (below). Neither has been seen on a later node,
+ * where the gaps only held the start back: a C2 (webOS 9.2, node 16) answered
+ * its start-up calls in 27 ms each, started 150 ms apart, 131 of them. There a
+ * start waits only a little, so starts still come from a timer, one by one.
+ */
+var OLD_NODE = /^v(0|[1-9])\./.test(process.version);
+if (!OLD_NODE) {
+  GAP_MS = 10;
+  STARTUP_GAP_MS = 25;
+}
 var STARTUP_MS = 30000;
 /*
  * Monotonic, not Date.now(): the wall clock can step back, and a start due
@@ -28,9 +40,9 @@ var STARTUP_MS = 30000;
  */
 var monotonicMs = require('./util').monotonicMs;
 var bornAt = monotonicMs();
+// { fn, level }: urgent starts (a remote key press, 2) wait at the front, then
+// the first ones (what the start needs soonest, 1), then the rest, each in turn.
 var launches = [];
-// Urgent starts, a remote key press, wait at the front of launches, in turn.
-var urgentCount = 0;
 var launchTimer = null;
 var nextLaunchAt = 0;
 
@@ -44,7 +56,6 @@ function drainLaunches() {
     return;
   }
   nextLaunchAt = now + gap;
-  if (urgentCount) urgentCount--;
   /*
    * Always from a timer. LG's node 8.12.0 (webOS 5 and 6) runs a fork handler
    * in the child that calls uv_close on the default loop's handles, and aborts
@@ -55,20 +66,23 @@ function drainLaunches() {
    * Of 900 starts, three at a time, on an OLED55CX3LA: 9 aborted started at
    * once, 8 from setImmediate, none from setTimeout.
    */
-  setTimeout(launches.shift(), 0);
+  setTimeout(launches.shift().fn, 0);
   drainLaunches();
 }
 
 /**
  * Calls fn once it is this start's turn, from a timer of its own. An
- * urgent start goes ahead of the others waiting, behind earlier urgent ones;
- * the gap still applies.
+ * urgent start goes ahead of the others waiting, behind earlier urgent ones,
+ * and a first one ahead of the rest; the gap still applies.
  * @param {function(): void} fn starts the child
  * @param {boolean} [urgent]
+ * @param {boolean} [first]
  */
-function launch(fn, urgent) {
-  if (urgent) launches.splice(urgentCount++, 0, fn);
-  else launches.push(fn);
+function launch(fn, urgent, first) {
+  var level = urgent ? 2 : first ? 1 : 0;
+  var at = launches.length;
+  while (at > 0 && launches[at - 1].level < level) at--;
+  launches.splice(at, 0, { fn: fn, level: level });
   drainLaunches();
 }
 
@@ -95,6 +109,7 @@ function setGaps(gap, startupGap) {
 }
 
 module.exports = {
+  OLD_NODE: OLD_NODE,
   launch: launch,
   diedEarly: diedEarly,
   setGaps: setGaps
