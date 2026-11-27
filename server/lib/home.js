@@ -2769,13 +2769,13 @@ function switchTo(on, cb) {
     }
     if (isStandalone()) {
       if (want) {
-        if (homeKeyRead() && !readsHomeKeyFn()) return finish({ ok: false, error: 'the remote\'s Home button cannot be read on this TV' });
+        if (homeKeyRead() && !readsHomeKeyFn()) return finish({ ok: false, error: msg('srv.home.keyUnreadable', 'the remote\'s Home button cannot be read on this TV') });
         return ensureApp(function (ok) {
-          if (!ok) return finish({ ok: false, error: 'could not install Glasshouse Home app' });
+          if (!ok) return finish({ ok: false, error: msg('srv.home.installFailed', 'could not install Glasshouse Home app') });
           setHomeKey(HOME_APP, function (k) {
             if (!k || !k.ok) {
               return removeStandaloneApp(function () {
-                finish({ ok: false, error: 'could not set Home key target' });
+                finish({ ok: false, error: msg('srv.home.keyTargetFailed', 'could not set Home key target') });
               });
             }
             startingNotice(true, function () {

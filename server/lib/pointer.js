@@ -3,6 +3,7 @@
  * The socket carries the same text commands as LG's phone remote, framed by
  * its transport: WebSocket messages or a 32-bit big-endian length on Unix.
  */
+var msg = require('./say').msg;
 var net = require('net');
 var http = require('http');
 var crypto = require('crypto');
@@ -193,7 +194,7 @@ function writeCommands(commands, cb) {
 function send(body, cb) {
   var checked = commandsFor(body);
   if (checked.error) return cb({ ok: false, error: checked.error });
-  if (!isEnabled()) return cb({ ok: false, error: 'pointer input is unavailable' });
+  if (!isEnabled()) return cb({ ok: false, error: msg('srv.pointer.unavailable', 'pointer input is unavailable') });
   if (socket) return writeCommands(checked.commands, function (err) {
     if (err) {
       console.error('pointer: socket write failed: ' + err.message);

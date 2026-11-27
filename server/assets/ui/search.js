@@ -17,19 +17,33 @@
   // reviewed independently from indexing and rendering behavior.
   const TAB_ALIASES = window.GLASSHOUSE_SEARCH_ALIASES || {};
 
-  const TAB_NAMES = {
-    control: 'Control', metrics: 'Metrics', apps: 'Apps', home: 'Home', inputs: 'Inputs', remote: 'Remote', ambient: 'Ambient Light',
-    oledcare: 'OLED Care', game: 'Game',
-    screensaver: 'Screensaver', privacy: 'Privacy', advanced: 'System',
-    mqtt: 'MQTT', server: 'Server', tools: 'Tools'
-  };
+  // Read when indexing, once the page's language has loaded.
+  function tabName(tab) {
+    switch (tab) {
+      case 'control': return t('tab.control', 'Control');
+      case 'metrics': return t('tab.metrics', 'Metrics');
+      case 'apps': return t('tab.apps', 'Apps');
+      case 'home': return t('tab.home', 'Home');
+      case 'inputs': return t('tab.inputs', 'Inputs');
+      case 'remote': return t('tab.remote', 'Remote');
+      case 'ambient': return t('adv.ambient', 'Ambient Light');
+      case 'oledcare': return t('tab.oledCare', 'OLED Care');
+      case 'game': return t('tab.game', 'Game');
+      case 'screensaver': return t('tab.screensaver', 'Screensaver');
+      case 'privacy': return t('tab.privacy', 'Privacy');
+      case 'advanced': return t('tab.system', 'System');
+      case 'server': return t('tab.server', 'Server');
+      case 'tools': return t('tab.tools', 'Tools');
+      default: return tab === 'mqtt' ? 'MQTT' : '';
+    }
+  }
 
   // Curated OLED protection entries ensure instant discovery regardless of fetch state.
   const CURATED_ITEMS = [
     {
       // A dialog, opened from the Screensaver and Inputs tabs: opened from here too.
       key: 'frame:settings',
-      title: 'Picture frame settings',
+      title: () => t('ss.art.settings', 'Picture frame settings'),
       tab: 'screensaver',
       kind: 'setting',
       aliases: ['picture frame', 'photo frame', 'digital frame', 'photos', 'pictures', 'slideshow', 'art', 'art mode', 'gallery', 'paintings', 'museum', 'space', 'hubble', 'webb', 'nasa', 'wikimedia', 'nas', 'dlna', 'network folder', 'upload pictures'],
@@ -40,7 +54,7 @@
     },
     {
       key: 'oled:gsr',
-      title: 'Global Stress Reduction (GSR)',
+      title: () => t('search.oled.gsr', 'Global Stress Reduction (GSR)'),
       tab: 'oledcare',
       kind: 'setting',
       aliases: ['gsr', 'burn-in', 'burn in', 'image retention', 'dimming', 'static image', 'stationary', 'hud', 'heads up display', 'global stress reduction', 'panel protection'],
@@ -50,7 +64,7 @@
     },
     {
       key: 'oled:tpc',
-      title: 'Temporal Peak Control (TPC / ASBL)',
+      title: () => t('search.oled.tpc', 'Temporal Peak Control (TPC / ASBL)'),
       tab: 'oledcare',
       kind: 'setting',
       aliases: ['tpc', 'asbl', 'abl', 'burn-in', 'burn in', 'dimming', 'brightness', 'peak brightness', 'automatic brightness', 'temporal peak control', 'auto static brightness limiter'],
@@ -60,7 +74,7 @@
     },
     {
       key: 'oled:screenShift',
-      title: 'Screen Shift',
+      title: () => t('oled.shift', 'Screen Shift'),
       tab: 'oledcare',
       kind: 'setting',
       aliases: ['pixel orbiting', 'orbiting', 'pixel shift', 'burn-in', 'burn in', 'shift', 'screen shift', 'screen movement'],
@@ -70,7 +84,7 @@
     },
     {
       key: 'oled:logoDimming',
-      title: 'Logo Dimming',
+      title: () => t('oled.logo', 'Logo Dimming'),
       tab: 'oledcare',
       kind: 'setting',
       aliases: ['logo dimming', 'local dimming', 'static logo', 'logo', 'banner', 'burn-in', 'burn in', 'logo protection'],
@@ -80,7 +94,7 @@
     },
     {
       key: 'svc:inStart',
-      title: 'In Start',
+      title: () => 'In Start',
       tab: 'advanced',
       kind: 'action',
       aliases: ['instart', 'in start', 'service menu', 'utt', 'power-on hours', 'tpc', 'gsr'],
@@ -90,7 +104,7 @@
     },
     {
       key: 'svc:ezAdjust',
-      title: 'EZ Adjust',
+      title: () => 'EZ Adjust',
       tab: 'advanced',
       kind: 'action',
       aliases: ['ezadjust', 'ez adjust', 'service menu', 'tool options', 'area option', 'white balance'],
@@ -135,7 +149,7 @@
 
   function tabLabel(tab) {
     const btn = document.querySelector(`#tabs [data-tab="${tab}"]`);
-    return (btn ? textFor(btn) : '') || TAB_NAMES[tab] || tab;
+    return (btn ? textFor(btn) : '') || tabName(tab) || tab;
   }
 
   function kindLabel(kind) {
@@ -215,7 +229,7 @@
       if (btn.hidden || btn.disabled || btn.getAttribute('aria-disabled') === 'true') return;
       const tab = btn.dataset.tab;
       if (!tabAvailable(tab)) return;
-      const title = textFor(btn) || TAB_NAMES[tab] || tab;
+      const title = textFor(btn) || tabName(tab) || tab;
       const key = 'tab:' + tab;
       seen[key] = true;
       index.push({
@@ -238,14 +252,15 @@
       const liveTarget = c.selector ? document.querySelector(c.selector) : null;
       const fallbackTarget = c.fallbackId ? q(c.fallbackId) : null;
       const target = liveTarget || fallbackTarget || document.querySelector(`#tabs [data-tab="${c.tab}"]`);
+      const title = c.title();
       seen[c.key] = true;
       index.push({
         key: c.key,
-        title: c.title,
+        title,
         kind: c.kind,
         tab: c.tab,
         tabTitle: tabLabel(c.tab),
-        searchText: c.searchText,
+        searchText: title + ' ' + c.searchText,
         aliases: c.aliases,
         target,
         detail: target ? target.closest('details') : null,

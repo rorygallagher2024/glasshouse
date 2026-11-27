@@ -9,6 +9,7 @@
  * subfolders and items as DIDL-Lite. Only servers on the local network are
  * spoken to, over plain HTTP, as DLNA has no other.
  */
+var msg = require('./say').msg;
 var dgram = require('dgram');
 var http = require('http');
 var url = require('url');
@@ -58,24 +59,24 @@ function localUrl(u) {
  */
 function fetchText(u, opts, cb) {
   var p = localUrl(u);
-  if (!p) return setTimeout(function () { cb(new Error('not an address on the local network')); }, 0);
+  if (!p) return setTimeout(function () { cb(new Error(msg('srv.dlna.notLocal', 'not an address on the local network'))); }, 0);
   var done = false;
   function finish(err, body) { if (!done) { done = true; cb(err, body); } }
   var req = requestFn({
     hostname: p.hostname, port: p.port || 80, path: p.path, method: opts.body ? 'POST' : 'GET',
     headers: opts.headers || {}
   }, function (res) {
-    if (res.statusCode !== 200) { res.resume(); return finish(new Error('the server answered ' + res.statusCode)); }
+    if (res.statusCode !== 200) { res.resume(); return finish(new Error(msg('srv.dlna.status', 'the server answered {status}', { status: res.statusCode }))); }
     var chunks = [], got = 0, max = opts.max || MAX_XML;
     res.on('data', function (c) {
       got += c.length;
-      if (got > max) { req.abort(); return finish(new Error('the answer was too large')); }
+      if (got > max) { req.abort(); return finish(new Error(msg('srv.dlna.tooLarge', 'the answer was too large'))); }
       chunks.push(c);
     });
     res.on('end', function () { finish(null, Buffer.concat(chunks)); });
     res.on('error', function (e) { finish(e); });
   });
-  req.setTimeout(opts.timeout || HTTP_MS, function () { req.abort(); finish(new Error('timed out')); });
+  req.setTimeout(opts.timeout || HTTP_MS, function () { req.abort(); finish(new Error(msg('srv.dlna.timedOut', 'timed out'))); });
   req.on('error', function (e) { finish(e); });
   if (opts.body) req.write(opts.body);
   req.end();
@@ -165,8 +166,8 @@ function discover(cb) {
       });
     });
   }
-  sock.on('message', function (msg) {
-    var m = /^location:\s*(\S+)/im.exec(String(msg));
+  sock.on('message', function (packet) {
+    var m = /^location:\s*(\S+)/im.exec(String(packet));
     if (!m || found[m[1]] || !localUrl(m[1])) return;
     found[m[1]] = true;
     order.push(m[1]);
@@ -191,7 +192,7 @@ function describe(location, cb) {
   fetchText(location, {}, function (err, body) {
     if (err) return cb(err);
     var d = readDescription(body.toString('utf8'), location);
-    if (!d) return cb(new Error('not a media server'));
+    if (!d) return cb(new Error(msg('srv.dlna.notServer', 'not a media server')));
     cb(null, d);
   });
 }
@@ -276,7 +277,7 @@ function browse(control, objectId, maxSide, cb) {
     if (err) return cb(err);
     var xml = buf.toString('utf8');
     var result = tag(xml, 'Result');
-    if (!result) return cb(new Error('the server did not list the folder'));
+    if (!result) return cb(new Error(msg('srv.dlna.noList', 'the server did not list the folder')));
     var out = readDidl(result, maxSide);
     out.total = +tag(xml, 'TotalMatches') || out.folders.length + out.pictures.length;
     cb(null, out);

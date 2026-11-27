@@ -8,6 +8,7 @@
  *
  * Strict ES5 for node 0.12 on webOS 4.
  */
+var msg = require('./say').msg;
 var toInt = require('./util').toInt;
 
 var LIVE_TV = 'com.webos.app.livetv';
@@ -67,7 +68,7 @@ function set(luna, value, cb) {
     var h = hm ? parseInt(hm[1], 10) : -1;
     var m = hm ? parseInt(hm[2], 10) : -1;
     if (!(h >= 0 && h <= 23 && m >= 0 && m <= 59)) {
-      return cb({ ok: false, error: 'the time must be HH:MM, from 00:00 to 23:59' });
+      return cb({ ok: false, error: msg('srv.timers.badTime', 'the time must be HH:MM, from 00:00 to 23:59') });
     }
     settings[prefix + 'Hour'] = String(h);
     settings[prefix + 'Minute'] = String(m);
@@ -77,7 +78,7 @@ function set(luna, value, cb) {
     for (var i = 0; ok && i < value.days.length; i++) {
       ok = typeof value.days[i] === 'number' && value.days[i] % 1 === 0 && value.days[i] >= 0 && value.days[i] <= 6;
     }
-    if (!ok) return cb({ ok: false, error: 'days must be a list of 0 (Sunday) to 6 (Saturday)' });
+    if (!ok) return cb({ ok: false, error: msg('srv.timers.badDays', 'days must be a list of 0 (Sunday) to 6 (Saturday)') });
     settings[prefix + 'Weekday'] = String(maskFromDays(value.days));
   }
   var enableKey = prefix + 'Enable';

@@ -174,7 +174,7 @@ function checkForUpdate(force, cb) {
     try { parsed = JSON.parse(body); } catch (e) {}
     var found = readReleases(parsed, currentVersion);
     if (!found) {
-      var why = (parsed && parsed.message) ? parsed.message : 'GitHub did not return a release';
+      var why = (parsed && parsed.message) ? parsed.message : msg('srv.update.noRelease', 'GitHub did not return a release');
       setUpdateState('error', why);
       return cb(new Error(why), updateSummary());
     }

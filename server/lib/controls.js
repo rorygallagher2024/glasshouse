@@ -613,7 +613,7 @@ function doControl(action, value, cb) {
       if (!pMode) return cb({ ok: false, error: 'missing picture mode' });
       return luna('com.webos.service.settings/getSystemSettings', { category: 'picture', keys: ['pictureMode'] }, function (cur) {
         if (cur && cur.dimension && cur.dimension.input === 'gallery') {
-          return cb({ ok: false, error: 'picture mode is locked while in Gallery' });
+          return cb({ ok: false, error: msg('srv.picture.galleryLocked', 'picture mode is locked while in Gallery') });
         }
         var pPayload = { category: 'picture', settings: { pictureMode: pMode } };
         if (cur && cur.dimension) pPayload.dimension = cur.dimension;
@@ -961,7 +961,7 @@ function doControl(action, value, cb) {
     case 'nightlyRefresh':
       var nrOn = (value === true || value === 'on' || value === 'ON' || value === 'true');
       if (!resettimeModule || !resettimeModule.supported()) {
-        return cb({ ok: false, error: 'nightly refresh reboot is not supported on this TV' });
+        return cb({ ok: false, error: msg('srv.nightlyRefresh.unsupported', 'nightly refresh reboot is not supported on this TV') });
       }
       if (!writeSettingsFn) return cb({ ok: false, error: 'no writeSettings handler configured' });
       return writeSettingsFn({ nightlyRefresh: nrOn }, function (err) {
@@ -986,7 +986,7 @@ function doControl(action, value, cb) {
 
     case 'piccap':
       // PicCap's screen capture, which feeds an ambient light.
-      if (!piccap) return cb({ ok: false, error: 'PicCap is not available' });
+      if (!piccap) return cb({ ok: false, error: msg('srv.piccap.unavailable', 'PicCap is not available') });
       var capOn = (value === true || value === 'on' || value === 'ON' || value === 'true');
       return piccap.setPower(capOn, function (r) {
         cb({ ok: !!(r && r.ok), error: r && !r.ok ? r.error : undefined });
@@ -998,7 +998,7 @@ function doControl(action, value, cb) {
 
     case 'huesync':
       // Hue Sync's streaming to a Philips Ambience light.
-      if (!huesync) return cb({ ok: false, error: 'Hue Sync is not available' });
+      if (!huesync) return cb({ ok: false, error: msg('srv.huesync.unavailable', 'Hue Sync is not available') });
       var streamOn = (value === true || value === 'on' || value === 'ON' || value === 'true');
       return huesync.setPower(streamOn, function (r) {
         cb({ ok: !!(r && r.ok), error: r && !r.ok ? r.error : undefined });

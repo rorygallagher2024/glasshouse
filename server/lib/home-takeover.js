@@ -41,6 +41,9 @@ var path = require('path');
 var execFile = require('child_process').execFile;
 var mkdirp = require('./util').mkdirp;
 var toBuffer = require('./util').toBuffer;
+var say = require('./say');
+var msg = say.msg;
+var clock = require('./clock');
 
 var LG_HOME = 'com.webos.app.home';
 var APP_DIR = '/usr/palm/applications/' + LG_HOME;
@@ -59,6 +62,7 @@ var sourceDir = path.join(__dirname, '..', 'assets', 'home-app');
 // The dashboard's port, filled into the page when it is staged.
 var serverPort = 8080;
 var PORT_LINE = /(var PORT = )\d+(;\s*\/\/ tvweb:port)/;
+var SLOW_LINE = /(var SLOW_TEXT = ).*(;\s*\/\/ tvweb:slow)/;
 var appDir = APP_DIR;
 var procDir = '/proc';
 var layoutDir = '/mnt/lg/cmn_data/manifest';
@@ -138,9 +142,13 @@ function copyFile(from, to, transform) {
 function stage() {
   try {
     mkdirp(path.join(stageDir, 'assets'));
-    // The page cannot read config.json, so it carries the port the server is on.
+    // The page cannot read config.json, so it carries the port the server is on,
+    // and the line it shows while the server is silent, in the TV's menu language.
+    var slow = say.forLocale(msg('srv.home.notAnswering', 'Glasshouse is not answering yet. LG\u2019s Home comes back if it stays silent.'), clock.qtLocale());
     var changed = copyFile(path.join(sourceDir, 'index.html'), path.join(stageDir, 'index.html'), function (html) {
-      return html.replace(PORT_LINE, '$1' + serverPort + '$2');
+      return html.replace(PORT_LINE, '$1' + serverPort + '$2').replace(SLOW_LINE, function (line, head, tail) {
+        return head + JSON.stringify(slow).replace(/</g, '\\u003c') + tail;
+      });
     });
     fs.readdirSync(path.join(sourceDir, 'assets')).forEach(function (f) {
       if (copyFile(path.join(sourceDir, 'assets', f), path.join(stageDir, 'assets', f))) changed = true;
@@ -217,7 +225,7 @@ function restoreLayout() {
     });
     try { fs.rmdirSync(layoutDir); } catch (e) {} // only goes if empty
   } catch (e) {
-    return { ok: false, error: 'LG\'s Home layout could not be put back: ' + e.message };
+    return { ok: false, error: msg('srv.home.layoutNotBack', 'LG\'s Home layout could not be put back: {error}', { error: e.message }) };
   }
   LAYOUT_FILES.forEach(function (f) {
     try { fs.unlinkSync(path.join(keptDir, f)); } catch (e) {}
@@ -385,7 +393,7 @@ function take(cb) {
         var stopped = stopLgHome();
         return cb({ ok: true, stoppedLg: stopped > 0 });
       }
-      giveBack('sam did not take Glasshouse Home as Home');
+      giveBack(msg('srv.home.samRefused', 'sam did not take Glasshouse Home as Home'));
     }, samHasManifest);
   }
   function giveBack(error) {
@@ -424,14 +432,14 @@ function release(cb) {
   var restored = restoreLayout();
   if (!restored.ok) return cb(restored);
   unmount(function () {
-    if (mounted()) return cb({ ok: false, error: 'LG\'s Home could not be put back: the mount is held' });
+    if (mounted()) return cb({ ok: false, error: msg('srv.home.mountHeld', 'LG\'s Home could not be put back: the mount is held') });
     samType(function (type) {
       function closePage() {
         luna('com.palm.webappmanager/killApp', { appId: LG_HOME }, function () { cb({ ok: true }); });
       }
       if (type !== 'web') return closePage();
       reread(false, function (ok) {
-        if (!ok) return cb({ ok: false, error: 'sam did not take LG\'s Home back' });
+        if (!ok) return cb({ ok: false, error: msg('srv.home.samNoBack', 'sam did not take LG\'s Home back') });
         closePage();
       });
     });

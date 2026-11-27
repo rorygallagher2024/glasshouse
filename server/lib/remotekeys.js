@@ -1953,7 +1953,7 @@ function buttonPressed(button) {
 // The filter's Ambient light key, asked of the server (routes.js). cb({ ok }).
 function piccapFromFilter(cb) {
   cb = cb || function () {};
-  if (!piccapToggleFn) return cb({ ok: false, error: 'PicCap is not available' });
+  if (!piccapToggleFn) return cb({ ok: false, error: msg('srv.piccap.unavailable', 'PicCap is not available') });
   console.log('remotekeys: a key toggles PicCap');
   piccapToggleFn(function (r) {
     if (!r || !r.ok) console.log('remotekeys: could not toggle PicCap' + (r && r.error ? ': ' + r.error : ''));
@@ -1971,7 +1971,7 @@ function togglePiccapFromPress() {
   if (piccapToggleFn) return piccapToggleFn(done);
   lunaFn('org.webosbrew.piccap.service/status', {}, function (r) {
     if (!r || r.returnValue === false || typeof r.isRunning !== 'boolean') {
-      return done({ ok: false, error: 'PicCap did not answer' });
+      return done({ ok: false, error: msg('srv.piccap.noAnswer', 'PicCap did not answer') });
     }
     lunaFn('org.webosbrew.piccap.service/' + (r.isRunning ? 'stop' : 'start'), {}, function (w) {
       done({ ok: !!(w && w.returnValue !== false) });

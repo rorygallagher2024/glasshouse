@@ -709,7 +709,7 @@ function handoffRequest(req, res) {
 
 function startHandoff(cb) {
   if (HANDOFF.server) return cb(null, handoffUrl());
-  if (!localAddress4()) return cb(new Error('this TV has no network address'));
+  if (!localAddress4()) return cb(new Error(msg('srv.setup.noAddress', 'this TV has no network address')));
   var code = crypto.randomBytes(8).toString('hex');
   var srv = http.createServer(handoffRequest);
   // IPv4-only if the dashboard is; dual-stack otherwise, even when the

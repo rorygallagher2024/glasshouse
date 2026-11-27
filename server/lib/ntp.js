@@ -9,6 +9,7 @@
  * and timeValid as LG's own sync does. Setting the kernel clock directly
  * leaves the source and timeValid unchanged.
  */
+var msg = require('./say').msg;
 var dgram = require('dgram');
 var dns = require('dns');
 var monotonicMs = require('./util').monotonicMs;
@@ -214,10 +215,10 @@ function parseReply(reply, t1, t4, t4Mono) {
   var serverMs = t4 + offsetMs;
 
   if (roundTripMs > MAX_ROUND_TRIP_MS) {
-    return { error: 'round trip too long (' + Math.round(roundTripMs) + ' ms)' };
+    return { error: msg('srv.ntp.slow', 'round trip too long ({ms} ms)', { ms: Math.round(roundTripMs) }) };
   }
   if (serverMs < CLOCK_FLOOR_MS) {
-    return { error: 'server time ' + new Date(serverMs).toISOString() + ' is before 2026' };
+    return { error: msg('srv.ntp.tooEarly', 'server time {time} is before 2026', { time: new Date(serverMs).toISOString() }) };
   }
   return {
     answer: {
@@ -246,7 +247,7 @@ function setError(text) {
  */
 function query(cb) {
   dns.lookup(settings.server, function (err, address, family) {
-    if (err) return cb({ error: 'could not resolve ' + settings.server + ': ' + err.message });
+    if (err) return cb({ error: msg('srv.ntp.resolve', 'could not resolve {server}: {error}', { server: settings.server, error: err.message }) });
     exchange(address, family, cb);
   });
 }
@@ -273,22 +274,22 @@ function exchange(address, family, cb) {
   sock.on('error', onError);
   sock.send(request, 0, request.length, settings.port, address, onSent);
 
-  function onMessage(msg, rinfo) {
-    if (rinfo.port !== settings.port || !answersRequest(msg, request)) return;
+  function onMessage(packet, rinfo) {
+    if (rinfo.port !== settings.port || !answersRequest(packet, request)) return;
     var mono = monotonicMs();
-    finish(parseReply(msg, sentAt, sentAt + (mono - sentMono), mono));
+    finish(parseReply(packet, sentAt, sentAt + (mono - sentMono), mono));
   }
 
   function onSent(err) {
-    if (err) finish({ error: 'could not send to ' + settings.server + ': ' + err.message });
+    if (err) finish({ error: msg('srv.ntp.send', 'could not send to {server}: {error}', { server: settings.server, error: err.message }) });
   }
 
   function onError(err) {
-    finish({ error: 'socket error: ' + err.message });
+    finish({ error: msg('srv.ntp.socket', 'socket error: {error}', { error: err.message }) });
   }
 
   function onTimeout() {
-    finish({ error: 'no answer from ' + settings.server + ' in ' + REPLY_TIMEOUT_MS + ' ms' });
+    finish({ error: msg('srv.ntp.noAnswer', 'no answer from {server} in {ms} ms', { server: settings.server, ms: REPLY_TIMEOUT_MS }) });
   }
 
   function finish(result) {
