@@ -33,7 +33,7 @@ Home, Back, volume, mute and power cannot be changed.
 | **As LG has it** | What the button does on a TV without Glasshouse. |
 | **Nothing** | The button does nothing. |
 | **An app, an HDMI input or Live TV** | Opens it. |
-| **Glasshouse** | Opens one of Glasshouse's own: Glasshouse Home or its [Internet TV guide](home.md#internet-tv), [Glasshouse Bar](home.md#glasshouse-bar), the [Home Assistant control bar](../HOME-ASSISTANT.md#home-assistant-control-bar), the [input bar](inputs.md#glasshouse-input-bar) or the dashboard. |
+| **Glasshouse** | Opens one of Glasshouse's own: Glasshouse Home or its [Internet TV guide](internet-tv.md#electronic-programme-guide-epg), [Glasshouse Bar](launchers.md#glasshouse-bar), the [Home Assistant control bar](../HOME-ASSISTANT.md#home-assistant-control-bar), the [input bar](inputs.md#glasshouse-input-bar) or the dashboard. |
 | **Home** | Opens Glasshouse Home where it has taken LG's Home's place, and LG's Home otherwise. |
 | **Screen off** | Turns the picture off while the sound plays on. Any button turns it back on. |
 | **Brightness up** / **Brightness down** | Steps the panel brightness, and shows a level bar. See [Brightness keys](#brightness-keys). |

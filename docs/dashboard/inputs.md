@@ -40,7 +40,7 @@ Each tile shows its name, subtitle (such as HDMI port or source type), and an au
 
 ## Your inputs
 
-Shows when **Glasshouse Input bar** or a Glasshouse launcher ([Glasshouse Home](home.md), [Glasshouse Bar](home.md#glasshouse-bar), [Glasshouse Minimal](home.md#glasshouse-minimal), or [Custom](home.md#custom-launcher)) is active. Any change here updates both the Input bar and the TV launcher, even when Glasshouse Home itself is switched off.
+Shows when **Glasshouse Input bar** or a Glasshouse launcher ([Glasshouse Home](home.md), [Glasshouse Bar](launchers.md#glasshouse-bar), [Glasshouse Minimal](launchers.md#glasshouse-minimal), or [Custom](launchers.md#custom-launcher)) is active. Any change here updates both the Input bar and the TV launcher, even when Glasshouse Home itself is switched off.
 
 * **Order:** Choose **Your order** to keep your manual arrangement, or **Last opened** to automatically bubble recently used inputs to the front.
 * **Hide inputs with nothing connected:** Completely omits disconnected HDMI ports instead of showing them dimmed (labelled **Left out**). They still show dimmed in arrange mode on Glasshouse Home and reappear automatically when a cable or device is connected.
@@ -71,6 +71,6 @@ Switching modes takes effect immediately when an idle input is already on screen
 On TVs where **Glasshouse Input bar** cannot be offered (for example, **webOS 3**, or a **webOS 11** TV whose key handler Glasshouse does not know):
 
 * **When you press Input on the remote** is hidden automatically.
-* **Your inputs** still appears if you have enabled [Glasshouse Home](home.md), [Glasshouse Minimal](home.md#glasshouse-minimal), or a [Custom](home.md#custom-launcher) launcher on the **Home** tab, so you can rename, reorder, and hide inputs there.
+* **Your inputs** still appears if you have enabled [Glasshouse Home](home.md), [Glasshouse Minimal](launchers.md#glasshouse-minimal), or a [Custom](launchers.md#custom-launcher) launcher on the **Home** tab, so you can rename, reorder, and hide inputs there.
 * **No Signal screen** appears if supported on your webOS version.
 * If none of those sections apply (for instance, **LG Home** is active on webOS 11), the tab simply states: *"Nothing about this TV’s inputs can be changed from here."*

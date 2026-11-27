@@ -43,6 +43,8 @@ nav:
       - Control: dashboard/control.md
       - Metrics: dashboard/metrics.md
       - Home: dashboard/home.md
+      - Launchers: dashboard/launchers.md
+      - Internet TV: dashboard/internet-tv.md
       - Inputs: dashboard/inputs.md
       - Remote: dashboard/remote.md
       - Apps: dashboard/apps.md
