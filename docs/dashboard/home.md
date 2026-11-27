@@ -296,7 +296,7 @@ rows are labelled **Hidden**.
 
 === "Web dashboard"
 
-    ![The Home tab in the browser dashboard: the Channels row with its added channels, and Add channels below them](../screenshots/home-dashboard.png)
+    ![Rows and tiles on the Home tab in the browser dashboard: each row with its Shown or Hidden switch, Row up and Row down, and + to open its tiles, with the Home Assistant row's entities edited on HA & MQTT](../screenshots/home-dashboard.png)
 
 === "TV app"
 
