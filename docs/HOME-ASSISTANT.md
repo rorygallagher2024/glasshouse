@@ -2,13 +2,13 @@
 
 [Home Assistant](https://www.home-assistant.io/) is a popular, open-source home automation platform designed with a local-first philosophy, prioritizing privacy, reliability, and full control over your smart home ecosystem.
 
-Glasshouse bridges your rooted LG webOS TV directly into Home Assistant, transforming the TV into a fully integrated smart home device:
+Glasshouse connects a rooted LG webOS TV to Home Assistant both ways:
 
-* **Comprehensive Telemetry & Readings**: Exposes real-time system metrics (SoC temperature, CPU and memory load), HDMI link and video signal diagnostics (resolution, frame rate, HDR/Dolby Vision, VRR, ALLM), OLED panel health (cumulative hours, pixel refresher countdowns, cycle history), and active apps.
-* **Bi-directional Control**: Provides complete local control from your Home Assistant dashboard and automations — power states, input switching, volume and mute, playback controls, picture presets, screen blanking, and launching apps.
-* **Remote & Cloud Control**: With [Home Assistant Cloud](https://www.nabucasa.com/) (Nabu Casa) or your own secure remote connection (WireGuard, Cloudflare Tunnel), you can securely monitor and control your TV from anywhere in the world, without exposing the TV's web dashboard or root shell directly to the internet.
+* **The TV in Home Assistant:** readings (temperatures, processor and memory, HDMI signal, picture mode, OLED panel wear, what is playing) and controls (power, inputs, volume, playback, picture presets, screen off, apps), over MQTT. [Entities](HOME-ASSISTANT-ENTITIES.md) lists every one.
+* **The remote in Home Assistant:** the colour keys, streaming buttons, channel keys and voice buttons arrive as [remote button events](HOME-ASSISTANT-REMOTE-BUTTONS.md) for automations, whatever they do on the TV.
+* **Home Assistant on the TV:** a [control bar](#home-assistant-control-bar) of your lights, heating and blinds over whatever is playing, the same on [Glasshouse Home](dashboard/home.md#home-assistant-row), [questions on screen](#8-ask-a-question-on-the-tv) answered with the remote, [notifications](#3-a-doorbell-notification-on-the-tv), and on Glasshouse Home the [weather](#6-the-weather-on-glasshouse-home), [values at a glance](dashboard/home.md#home-assistant-values-at-a-glance) and a [board](#9-a-board-on-glasshouse-home), plus [screen savers](dashboard/screen-savers.md#home-assistant-ambient) showing your readings.
 
-Every entity published by the bridge is detailed in [Entities](HOME-ASSISTANT-ENTITIES.md), and triggering automations from Magic Remote button presses is covered in [Remote Button Events](HOME-ASSISTANT-REMOTE-BUTTONS.md).
+Everything stays on your network. With [Home Assistant Cloud](https://www.nabucasa.com/) or your own remote access, the TV can be watched and controlled from anywhere without exposing the TV itself to the internet.
 
 ---
 
@@ -19,7 +19,7 @@ Home Assistant connects to local devices and bridges using standard communicatio
 In this setup:
 
 1. **The TV as Publisher & Subscriber**: The TV publishes state updates (such as power state, active input, or volume) whenever they change, and subscribes to command topics to receive actions from Home Assistant.
-2. **The MQTT Broker**: Communication flows through an **MQTT broker** — a lightweight server on your local network that relays messages between devices. The standard choice for Home Assistant is the official [Mosquitto broker add-on](https://github.com/home-assistant/addons/tree/master/mosquitto), which can be installed with a single click.
+2. **The MQTT Broker**: Communication flows through an **MQTT broker**, a lightweight server on your local network that relays messages between devices. The standard choice for Home Assistant is the official [Mosquitto broker add-on](https://github.com/home-assistant/addons/tree/master/mosquitto), which can be installed with a single click.
 3. **Automatic MQTT Discovery**: Glasshouse follows Home Assistant's **MQTT Discovery** standard. As soon as the TV connects to the broker, it publishes configuration payloads that automatically register the TV and all its sensors, switches, buttons, and select menus. No manual YAML configuration is required.
 
 ---
@@ -94,17 +94,11 @@ Edit those in `config.json` and redeploy, or edit `/var/lib/tvweb/config.json` o
 
 With the dashboard disabled, the server acts purely as an MQTT bridge with no web interface, which is the safer shape if everything is driven from Home Assistant (the dashboard is an unauthenticated control endpoint unless `token` is set). Note that this also removes the settings UI, so an MQTT-only install is configured by file. With both disabled, the server exits rather than idling.
 
-### PicCap ambient lighting
+### PicCap and Hue Sync
 
-[PicCap](https://github.com/TBSniller/piccap) captures the TV's screen for a Hyperion server, which drives an ambient light behind the TV. Where PicCap is installed, the System tab has a **PicCap capture** switch that starts and stops capture, and Home Assistant receives a **PicCap Capture** switch under Controls & Media. Nothing is asked of PicCap on a TV without it. Its Home Assistant entity can be switched off like any other, which also stops the server polling PicCap's state every 30 seconds.
+Where [PicCap](piccap.md) or the [Hue Sync](huesync.md) app is installed, Home Assistant gets a **PicCap Capture** or **Hue Sync** switch under Controls & Media, which starts and stops its capture or streaming, as the [Ambient Light](dashboard/ambient-light.md) tab does. Each is discovered while its app answers on the TV and removed when it stops answering or is uninstalled, and nothing is asked of either on a TV without it. Switching its entity off in Home Assistant also stops Glasshouse checking its state every 30 seconds.
 
-The retained state topic `<topicPrefix>/state/piccap/power` carries `ON` or `OFF`, and the command topic `<topicPrefix>/command/piccap/power` accepts `ON` or `OFF` (commands require `allowControl`). Telemetry includes the boolean `piccap.power` while PicCap answers.
-
-### Hue Sync
-
-Where the Hue Sync app is installed, the System tab has a **Hue Sync streaming** switch and Home Assistant receives a **Hue Sync** switch under Controls & Media, which starts and stops its streaming to Philips Hue and Ambience lights. Nothing is asked of Hue Sync on a TV without it. Its Home Assistant entity can be switched off like any other, which also stops the server polling Hue Sync's state every 30 seconds.
-
-The retained state topic `<topicPrefix>/state/huesync/power` carries `ON` or `OFF`, and the command topic `<topicPrefix>/command/huesync/power` accepts `ON` or `OFF` (commands require `allowControl`). Telemetry includes the boolean `huesync.streaming` while Hue Sync answers. See [Hue Sync](huesync.md) for setup and automation examples.
+Over MQTT they are the retained state topics `<topicPrefix>/state/piccap/power` and `<topicPrefix>/state/huesync/power`, and the command topics `<topicPrefix>/command/piccap/power` and `<topicPrefix>/command/huesync/power`, each `ON` or `OFF` (commands need `allowControl`). Telemetry carries `piccap.power` and `huesync.streaming` while each answers. Their own pages have setup and automation examples.
 
 ### Using MQTT without Home Assistant
 
@@ -142,8 +136,8 @@ Once enabled and connected, the API is used in three places. While it is off or 
 
 **On the Screensaver tab**, two Home Assistant screen savers appear:
 
-* [**Home Assistant: Ambient**](dashboard/screen-savers.md#home-assistant-ambient) — shows the TV clock, date, and up to three configurable entities with optional custom display labels.
-* [**Home Assistant: Data Display**](dashboard/screen-savers.md#home-assistant-data-display) — cycles sequentially through 2 to 100 entities one at a time on black.
+* [**Home Assistant: Ambient**](dashboard/screen-savers.md#home-assistant-ambient): shows the TV clock, date, and up to three configurable entities with optional custom display labels.
+* [**Home Assistant: Data Display**](dashboard/screen-savers.md#home-assistant-data-display): cycles sequentially through 2 to 100 entities one at a time on black.
 
 **On the TV screen over whatever is playing**, the **Home Assistant control bar** opens a single-row overlay bar of up to 16 interactive Home Assistant tiles (`light`, `switch`, `input_boolean`, `climate`, `fan`, `cover`, `lock`, `scene`, `script`, `button`, `input_button`, and read-only sensors) from a remote key or Quick Access slot.
 
@@ -177,26 +171,6 @@ Categories:
 * **Video & HDMI Signal** (`video`): Active picture mode, dynamic range, refresh rate, VRR, ALLM, and link mode.
 * **System & Telemetry** (`system`): CPU, RAM, swap, SoC temperature, network rates, and storage health.
 * **Diagnostics & Settings** (`diagnostics`): Standby light, logo light, sleep timer, ad blocker, and update status.
-
----
-
-## PicCap
-
-Where PicCap is installed, a **PicCap Capture** switch is discovered while PicCap answers on the TV, and removed when it stops answering or is uninstalled. It is in Controls & Media and can be switched off there. It uses `<topicPrefix>/state/piccap/power` for state and `<topicPrefix>/command/piccap/power` for control, both `ON` or `OFF`. See [PicCap and ambient light](piccap.md) for full setup instructions, Hyperion configuration, and automation examples.
-
----
-
-## Hue Sync
-
-Where the Hue Sync app is installed, a **Hue Sync** switch is discovered while its service answers on the TV, and removed when it stops answering or the app goes. It is in Controls & Media and can be switched off there. It uses `<topicPrefix>/state/huesync/power` for state and `<topicPrefix>/command/huesync/power` for control, both `ON` or `OFF`. See [Hue Sync](huesync.md) for setup and automation examples.
-
----
-
-## Multiple TVs
-
-Each TV on the same broker needs a unique `topicPrefix` and `device.id` in its
-config, otherwise they overwrite each other's state and disconnect each other.
-See the README for a config example and the `deploy.sh` per-IP config lookup.
 
 ---
 
@@ -267,7 +241,7 @@ The icons are plain `http`. A browser showing Home Assistant over `https`, as th
 
 ## Example automations
 
-### 1. Automatically Blank Screen When Playing Music (Spotify / AirPlay)
+### 1. Screen off while music plays (Spotify, AirPlay)
 Save OLED panel hours and eliminate burn-in risk when streaming audio:
 
 ```yaml
@@ -288,7 +262,7 @@ action:
       entity_id: switch.lg_tv_display_panel
 ```
 
-### 2. Dim Cinema Lighting on Dolby Vision Playback
+### 2. Dim the lights for Dolby Vision
 Trigger an ambient lighting scene whenever 4K Dolby Vision playback begins:
 
 ```yaml
@@ -303,7 +277,7 @@ action:
       entity_id: scene.movie_night
 ```
 
-### 3. Display Doorbell / Security Toast on TV Screen
+### 3. A doorbell notification on the TV
 Display a notification directly on the TV when a doorbell rings:
 
 ```yaml
@@ -497,7 +471,7 @@ Home Assistant's own MQTT discovery has no `media_player` platform, so Glasshous
 
 ### Through a separate integration
 
-With [grzegorz914/homeassistant-mqtt-media-player](https://github.com/grzegorz914/homeassistant-mqtt-media-player) (v0.10.3 or newer) installed through HACS, turning on **Media player** under **Published TV entities** on the dashboard's MQTT tab (`universalMediaPlayer` under `mqtt` in `config.json`) publishes one real `media_player` entity: power, volume, mute, sound output, play/pause/stop/skip, the current app or input's icon as the card's cover (through the icon server, so `iconServer` needs to be on too), and a media browser of the TV's inputs and installed apps with the same icons. **Save & restart** applies it, and a change made in `config.json` needs the server restarted.
+With [grzegorz914/homeassistant-mqtt-media-player](https://github.com/grzegorz914/homeassistant-mqtt-media-player) (v0.10.3 or newer) installed through HACS, turning on **Media player** under **Published TV entities** on the dashboard's HA & MQTT tab (`universalMediaPlayer` under `mqtt` in `config.json`) publishes one real `media_player` entity: power, volume, mute, sound output, play/pause/stop/skip, the current app or input's icon as the card's cover (through the icon server, so `iconServer` needs to be on too), and a media browser of the TV's inputs and installed apps with the same icons. **Save & restart** applies it, and a change made in `config.json` needs the server restarted.
 
 Where Internet TV has a lineup, **IPTV** is one of the card's sources, and picking it opens Internet TV's guide on Glasshouse Home. A channel is picked in the media browser.
 
