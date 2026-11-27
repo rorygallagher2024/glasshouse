@@ -1241,7 +1241,7 @@ button.pill.flash.idle[disabled]:hover{color:var(--w60);border-color:var(--edge)
 #inputspane .pv-g{margin:20px 0 10px}
 #inputs-nosignal-cards{margin-top:16px}
 #inputs-bar-choice-note,#inputs-nosignal-desc{margin:12px 0 0}
-.apps-grp-h{font-family:'Outfit';font-weight:300;font-size:var(--h-sec);letter-spacing:.005em;color:var(--w100);
+.apps-grp-h{font-family:'Outfit','Onest',sans-serif;font-weight:300;font-size:var(--h-sec);letter-spacing:.005em;color:var(--w100);
   margin:0 0 14px;padding-bottom:12px;border-bottom:1px solid var(--w25)}
 .apps-grp-d{margin-bottom:2px}
 /* As on Home: each group a section, its folding parts the rows within it. */
@@ -2635,7 +2635,7 @@ button.home-look:active{background:none}
 .set-modal-head{flex:none;display:flex;align-items:flex-start;justify-content:space-between;gap:16px;
   padding:22px 28px 18px;border-bottom:1px solid var(--w12)}
 .set-modal-heading{min-width:0}
-.set-modal-title{font-family:'Outfit',sans-serif;font-weight:300;font-size:var(--h-sec);line-height:1.2;color:var(--w100);margin:0}
+.set-modal-title{font-family:'Outfit','Onest',sans-serif;font-weight:300;font-size:var(--h-sec);line-height:1.2;color:var(--w100);margin:0}
 .set-modal-sub{font-size:14px;line-height:1.45;color:var(--w60);margin:6px 0 0}
 .set-modal-sub:empty{display:none}
 .set-modal-body{flex:1;min-height:0;overflow-y:auto;padding:0 28px 28px}
