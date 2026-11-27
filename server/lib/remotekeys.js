@@ -909,6 +909,17 @@ function filterSource() {
     '        glasshouseTogglePiccapHere();',
     '    }',
     '}',
+    // A bar's page loading again after a close loses a press made meanwhile,
+    // though the launch is accepted: the server launches it again where the
+    // page does not say it had it (lib/barpress.js).
+    'function glasshouseTellBarPress(id, press) {',
+    '    try {',
+    '        var x = new XMLHttpRequest();',
+    '        x.open("POST", "http://127.0.0.1:' + serverPort + '/api/bar/press");',
+    '        x.setRequestHeader("Content-Type", "application/json");',
+    '        x.send(JSON.stringify({ "app": id, "press": press }));',
+    '    } catch (e) {}',
+    '}',
     'function glasshouseTogglePiccapHere() {',
     '    lunaCall.send("org.webosbrew.piccap.service", "/status", "{}", function (payload) {',
     '        try {',
@@ -1039,9 +1050,11 @@ function filterSource() {
     // Home opened as the Home key opens it, so Glasshouse Home opens as Home;
     // Glasshouse Bar carries a per-press sequence number so duplicate relaunches
     // can be dropped without swallowing rapid open/close toggles.
+    '            var glasshouseBar = id === ' + JSON.stringify(HOME_BAR) + ' || id === ' + JSON.stringify(HA_BAR) + ';',
     '            applicationManager.launch(id, id === ' + JSON.stringify(HOME_APP),
     '                ? JSON.stringify({ "activateType": "home", "launchType": "homeKey" })',
-    '                : ((id === ' + JSON.stringify(HOME_BAR) + ' || id === ' + JSON.stringify(HA_BAR) + ') ? JSON.stringify({ "glasshouse": "bar", "press": ++glasshouseBarPress }) : "{}"));',
+    '                : (glasshouseBar ? JSON.stringify({ "glasshouse": "bar", "press": ++glasshouseBarPress }) : "{}"));',
+    '            if (glasshouseBar) glasshouseTellBarPress(id, glasshouseBarPress);',
     '        }',
     '        return KeyPolicy.Accepted;',
     '    } catch (e) {',

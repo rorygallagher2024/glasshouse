@@ -84,6 +84,7 @@ function compatTv() {
   };
 }
 var homebar = require('./lib/homebar');
+var barPress = require('./lib/barpress');
 var haBar = require('./lib/habar');
 var clockFormat = require('./lib/clock');
 var homeScreen = require('./lib/homescreen');
@@ -1240,9 +1241,11 @@ function appsChanged() {
 pointer.init({ luna: luna, hasService: lunaTransport.hasService, config: CONFIG,
   onActivity: function () { screensavers.pointerUsed(); },
   authed: function (req) { return routes.authed(url.parse(req.url || '/', true).query, req); } });
+barPress.init({ luna: luna });
 routes.init({
   // Where the gzipped dashboard page is kept between starts.
   stateDir: __dirname,
+  barPress: barPress,
   config: CONFIG,
   audioLevels: audioLevels,
   pointer: pointer,

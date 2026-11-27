@@ -597,6 +597,8 @@ img.ico{background:none;object-fit:contain}
     overHome(function (yes) {
       if (!yes) return start();
       idleUntilOpened = false;
+      // Closed unseen, as it should be: nothing to send again.
+      if (tellPress) { tell(tellPress); tellPress = 0; }
       window.close();
     });
   }
@@ -690,6 +692,21 @@ img.ico{background:none;object-fit:contain}
   var initial = launchInfo();
   var seenPress = initial.press || 0;
   /*
+   * Each press, for the server, once the window is up for it: a press made
+   * while this page was loading again after a close never reaches it, or
+   * reaches it with no window shown, and the server launches it again, with
+   * the same number, until it hears (lib/barpress.js). tellPress is one taken
+   * while hidden, told once the window shows.
+   */
+  var tellPress = 0;
+  function tell(press) { getJson(BASE + '/api/bar/seen?app=com.tvweb.homebar&press=' + press, function () {}); }
+  function took(press) {
+    if (hidden()) { tellPress = press; return; }
+    tellPress = 0;
+    tell(press);
+  }
+  if (seenPress) took(seenPress);
+  /*
    * Preloaded, the page starts with no window, so hidden. On a B8 (webOS
    * 4.4.3) a preload's launch parameters did not always say so: without a
    * keyfilter press marker, a hidden launch still waits for the first press.
@@ -701,7 +718,10 @@ img.ico{background:none;object-fit:contain}
    */
   var SECOND_PRESS_MS = 250;
   var visibleSince = hidden() ? 0 : Date.now();
-  function visibilityChanged() { visibleSince = hidden() ? 0 : (visibleSince || Date.now()); }
+  function visibilityChanged() {
+    visibleSince = hidden() ? 0 : (visibleSince || Date.now());
+    if (!hidden() && tellPress) { var press = tellPress; tellPress = 0; tell(press); }
+  }
   document.addEventListener('visibilitychange', visibilityChanged);
   document.addEventListener('webkitvisibilitychange', visibilityChanged);
   var SAME_PRESS_MS = 200;
@@ -711,8 +731,15 @@ img.ico{background:none;object-fit:contain}
     if (detail.preload) return;
     var at = Date.now();
     if (detail.press) {
-      if (detail.press === seenPress) return;
-      seenPress = detail.press;
+      if (detail.press === seenPress) {
+        // The same press sent again by the server: taken only where it never
+        // brought the bar up, the page hidden with nothing drawn. A repeat of
+        // one that opened or closed it is dropped.
+        if (closing || !hidden() || document.body.className === 'on') return;
+      } else {
+        seenPress = detail.press;
+      }
+      took(seenPress);
     } else {
       if (at - lastRelaunch < SAME_PRESS_MS) return;
       var shownFor = visibleSince ? at - visibleSince : 0;
