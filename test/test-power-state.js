@@ -159,8 +159,26 @@ scoped.groups.audio.subscription.handlers.message({ returnValue: true, volume: 1
 scoped.groups.application.subscription.handlers.message({ returnValue: true, appId: 'netflix' });
 scoped.groups.picture.subscription.handlers.message({ returnValue: true, settings: { backlight: '80' } });
 scoped.groups.power.subscription.handlers.message({ returnValue: true, state: 'Active' });
-assert.deepEqual(stale, ['audio', 'application', 'picture']);
+assert.deepEqual(stale, ['audio', 'application', 'picture', 'power']);
 console.log('  ✓ a live event names the group that changed');
+
+// A group is live once started and answered, and not after its luna-send
+// closes until it answers again: only then may its reads be kept longer.
+var lively = stateModule.init({});
+var powerSub = lively.groups.power.subscription;
+powerSub.start = powerSub.stop = function () {};
+assert.strictEqual(lively.isLive('power'), false);
+lively.startGroup('power');
+assert.strictEqual(lively.isLive('power'), false);
+powerSub.handlers.message({ returnValue: true, state: 'Active' });
+assert.strictEqual(lively.isLive('power'), true);
+powerSub.handlers.close(0, null);
+assert.strictEqual(lively.isLive('power'), false);
+powerSub.handlers.message({ returnValue: true, state: 'Active' });
+lively.stopGroup('power');
+assert.strictEqual(lively.isLive('power'), false);
+assert.strictEqual(lively.isLive('nonesuch'), false);
+console.log('  ✓ a group is live only while it runs and has answered');
 
 // The power group runs for the power module and the MQTT bridge alike, and
 // stops only when both have stopped it.

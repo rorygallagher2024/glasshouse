@@ -700,9 +700,13 @@ function foregroundApp(ttl, cb) {
 // Every row in a section the TV has, with its value now, and the dimension LG
 // reports for each category: the game input and genre the game rows belong to,
 // and the input, picture mode and dynamic range the picture rows belong to.
-// ttl: how long a reading may be reused, 30 seconds unless given.
-function collect(section, cb, ttl) {
+// ttl: how long a reading may be reused, 30 seconds unless given. descTtl:
+// how long the descriptions may be, ttl unless given. They change with the
+// input, the picture mode or the sound output, whose live events clear them
+// (LIVE_STALE in tvweb.js), and a perApp one is asked for by app.
+function collect(section, cb, ttl, descTtl) {
   if (!ttl) ttl = 30000;
+  if (!descTtl || descTtl < ttl) descTtl = ttl;
   var sections = [].concat(section);
   var rows = ROWS.filter(function (r) { return sections.indexOf(r.section) !== -1; });
   var stores = [];
@@ -773,7 +777,7 @@ function collect(section, cb, ttl) {
   function describeStore(store, cat, perApp, keys) {
     var describeAsk = { category: cat, keys: keys };
     if (perApp) describeAsk.app_id = appId;
-    lunaCached('com.webos.service.settings/getSystemSettingDesc', describeAsk, ttl, function (d) {
+    lunaCached('com.webos.service.settings/getSystemSettingDesc', describeAsk, descTtl, function (d) {
       descs[store] = {};
       ((d && d.results) || []).forEach(function (x) { descs[store][x.key] = describe(x); });
       next();

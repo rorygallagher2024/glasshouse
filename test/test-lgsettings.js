@@ -378,4 +378,31 @@ lgs.reapply(function () {
   });
 });
 
+// Descriptions may be kept longer than the values, never shorter.
+(function () {
+  delete require.cache[require.resolve('../server/lib/lgsettings')];
+  var fresh = require('../server/lib/lgsettings');
+  var ttls = {};
+  fresh.init({
+    lunaCached: function (uri, payload, ttl, cb) {
+      var kind = /Desc$/.test(uri) ? 'desc' : 'value';
+      (ttls[kind] = ttls[kind] || []).push(ttl);
+      if (kind === 'desc') return cb({ returnValue: true, results: [{ key: 'homePromotion', ui: { active: true, visible: true } }] });
+      cb({ returnValue: true, settings: { homePromotion: 'on' } });
+    },
+    luna: function (uri, payload, cb) { cb({ returnValue: true }); },
+    clearLunaCache: function () {}
+  });
+  fresh.collect('promotions', function () {}, 0, 600000);
+  assert.ok(ttls.value.every(function (t) { return t === 30000; }));
+  assert.ok(ttls.desc.length && ttls.desc.every(function (t) { return t === 600000; }));
+  ttls = {};
+  fresh.collect('promotions', function () {}, 45000, 10000);
+  assert.ok(ttls.desc.every(function (t) { return t === 45000; }));
+  ttls = {};
+  fresh.collect('promotions', function () {});
+  assert.ok(ttls.desc.every(function (t) { return t === 30000; }));
+  console.log('  ✓ descriptions are kept as long as asked, and never less than the values');
+})();
+
 console.log('ALL test-lgsettings.js assertions passed!\n');
