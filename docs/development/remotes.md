@@ -9,7 +9,7 @@ The LG remotes Glasshouse knows, with the Remote tab keys each is known to have.
 | [Magic Remote MR25GA](#mr25ga) | not known | `LGE MR25GA` | 15 | yes |
 | [Magic Remote MR23](#mr23) | not known | `LGE MR23` | 17 | yes |
 | [Magic Remote MR20](#mr20) | not known | `LGE MR20` | 13 | yes |
-| [Magic Remote MR18](#mr18) | not known | `LGE MR18` | 11 | yes |
+| [Magic Remote MR18](#mr18) | not known | `LGE MR18` | 15 | yes |
 
 How sure each fact is:
 
@@ -136,6 +136,10 @@ Reported by the TV as `LGE MR18` (measured). Has number keys. The list of keys b
 | Green (`green`) | assumed |
 | Yellow (`yellow`) | assumed |
 | Blue (`blue`) | assumed |
+| 123 button (`screenremote`) | measured |
+| Text (`teletext`) | measured |
+| T.Opt (`textoption`) | measured |
+| Live Zoom (`livezoom`) | measured |
 
 Netflix, Prime Video and the microphone were read as button_type lines; Guide, Input and the number keys were confirmed by what they opened instead, since webOS 4.4.3 does not log them as streaming-button clicks. Channel up and down were confirmed by the owner rather than read. Colour keys are assumed present and already configurable on this webOS version regardless of the remote's catalogue entry.
 
@@ -146,6 +150,7 @@ Where this comes from:
 * The owner confirmed channel up and down are handled; not read from the log, since this TV has no tuned channels and Live TV opens LG Channels instead
 * The owner confirmed the remote has List, Guide, AD, Netflix, Prime Video, Text, T.Opt, Live Zoom, colour keys, Input and a microphone, and that it has no Home Hub (house in a circle), ? button, Movies, Info or Apps key; List, AD, Text, T.Opt and Live Zoom are not keys the Remote tab offers
 * Colour keys are offered on this webOS version through the existing filter-based Remote tab mechanism (action 'lg' by default), independent of this entry; not pressed individually
+* OLED65B8SLC (webOS 4.4.3), 27 November 2026: the owner pressed, by faded labels, the two buttons at the bottom (LG answered each with 'This function is not available'), AD and Live Zoom, read as Linux key codes from the TV's input devices: 779 and 780 (IR_KEY_TELETEXT and IR_KEY_TEXTOPTION in LG's key table, Text and T.Opt), 994 (IR_KEY_SCREEN_REMOTE), pressed as AD, and 1027 (IR_KEY_LIVE_ZOOM). Whether AD sends 994 or another button was pressed is not settled, so AD is not listed
 
 ## Adding a remote
 

@@ -36,7 +36,21 @@ The **Remotes** column lists entries in the [remote catalogue](remotes.md) known
 | AI | – | yes (turns off voice) | – | MR25GA, MR23 |
 | ? button | yes | yes | – | MR25GA |
 | ? button, held | – | yes | – | MR25GA |
-| 123 button | yes | – | – | MR25GA, MR23, MR20 |
+| 123 button | yes (incl. webOS 4) | – | – | MR25GA, MR23, MR20, MR18 |
+| Text | yes (incl. webOS 4) | – | – | MR18 |
+| T.Opt | yes (incl. webOS 4) | – | – | MR18 |
+| Live Zoom | yes (incl. webOS 4) | – | – | MR18 |
+| AD | yes (incl. webOS 4) | – | – | – |
+| 1 | yes | – | – | MR23, MR20, MR18 |
+| 2 | yes | – | – | MR23, MR20, MR18 |
+| 3 | yes | – | – | MR23, MR20, MR18 |
+| 4 | yes | – | – | MR23, MR20, MR18 |
+| 5 | yes | – | – | MR23, MR20, MR18 |
+| 6 | yes | – | – | MR23, MR20, MR18 |
+| 7 | yes | – | – | MR23, MR20, MR18 |
+| 8 | yes | – | – | MR23, MR20, MR18 |
+| 9 | yes | – | – | MR23, MR20, MR18 |
+| 0 | yes | – | – | MR23, MR20, MR18 |
 | Channel up | yes (incl. webOS 4) | yes (key handler patch, or observes presses) | yes | MR25GA, MR23, MR20, MR18 |
 | Channel down | yes (incl. webOS 4) | yes (key handler patch, or observes presses) | yes | MR25GA, MR23, MR20, MR18 |
 | Guide | yes | yes | – | MR25GA, MR23, MR20, MR18 |
@@ -96,6 +110,20 @@ LG's codes and Qt keys below are as read on an OLED48C56LB (webOS 10.3.0). "–"
 | `multikey` | `IR_KEY_MULTIKEY` | 1132 (1124) | `Key_webOS_Multikey` | `KEY_MULTIKEY` | setting `customShortPress` |
 | `multikeyhold` | – | – | – | – | setting `customLongPress` |
 | `screenremote` | `IR_KEY_SCREEN_REMOTE` | 1002 (994) | `Key_webOS_ScreenRemote` | `KEY_SCREEN_REMOTE` | – |
+| `teletext` | `IR_KEY_TELETEXT` | 787 (779) | `Key_webOS_Teletext` | – | – |
+| `textoption` | `IR_KEY_TEXTOPTION` | 788 (780) | `Key_webOS_TextOption` | – | – |
+| `livezoom` | `IR_KEY_LIVE_ZOOM` | 1035 (1027) | `Key_webOS_LiveZoom` | – | – |
+| `ad` | `IR_KEY_AD` | 837 (829) | `Key_webOS_AudioDescription` | – | – |
+| `num1` | – | – | `Key_1` | – | – |
+| `num2` | – | – | `Key_2` | – | – |
+| `num3` | – | – | `Key_3` | – | – |
+| `num4` | – | – | `Key_4` | – | – |
+| `num5` | – | – | `Key_5` | – | – |
+| `num6` | – | – | `Key_6` | – | – |
+| `num7` | – | – | `Key_7` | – | – |
+| `num8` | – | – | `Key_8` | – | – |
+| `num9` | – | – | `Key_9` | – | – |
+| `num0` | – | – | `Key_0` | – | – |
 | `channelup` | `IR_KEY_CH_UP` | 410 (402) | `Key_webOS_ChannelUp` | `KEY_CHANNELUP` | key handler (`lib/guidepatch`), or observed evdev press |
 | `channeldown` | `IR_KEY_CH_DOWN` | 411 (403) | `Key_webOS_ChannelDown` | `KEY_CHANNELDOWN` | key handler (`lib/guidepatch`), or observed evdev press |
 | `guide` | `IR_KEY_GUIDE` | 370 (362) | `Key_webOS_TVGuide` | `KEY_GUIDE` | key action `tvGuide` |
