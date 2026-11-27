@@ -746,7 +746,8 @@ async function tick() {
         for (let b of box.querySelectorAll('button')) {
           const isCur = b.id.replace('pm_', '') === curPm;
           b.classList.toggle('on', isCur);
-          if (isCur && pmLeased && q('picmode-lbl')) q('picmode-lbl').textContent = b.textContent.toUpperCase();
+          // The button carries the mode's name in the page's language.
+          if (isCur && q('picmode-lbl')) q('picmode-lbl').textContent = b.textContent.toUpperCase();
         }
       }
 
