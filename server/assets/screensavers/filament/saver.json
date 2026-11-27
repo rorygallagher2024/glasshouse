@@ -4,6 +4,7 @@
   "name": {
     "en": "Filament",
     "es": "Filamento",
+    "fi": "Filamentti",
     "hu": "Izzószál",
     "it": "Filamenti",
     "pl": "Włókna",
@@ -16,6 +17,7 @@
   "description": {
     "en": "Swarms of light circling and trailing across black, slowly changing color.",
     "es": "Enjambres de luz que giran y dejan estelas sobre negro, cambiando de color poco a poco.",
+    "fi": "Valoparvia, jotka kiertävät ja jättävät vanan mustalle taustalle hitaasti väriä vaihtaen.",
     "hu": "Fényrajok köröznek és húznak csíkot a fekete háttéren, lassan változó színnel.",
     "it": "Sciami di luce che girano e lasciano scie sul nero, cambiando lentamente colore.",
     "pl": "Roje światła krążące i ciągnące smugi po czerni, powoli zmieniające kolor.",

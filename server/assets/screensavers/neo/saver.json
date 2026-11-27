@@ -4,6 +4,7 @@
   "name": {
     "en": "Neo",
     "es": "Neo",
+    "fi": "Neo",
     "hu": "Neo",
     "it": "Neo",
     "pl": "Neo",
@@ -16,6 +17,7 @@
   "description": {
     "en": "Columns of falling glyphs, their colors turning round the wheel every minute.",
     "es": "Columnas de glifos que caen, con colores que dan la vuelta a la rueda cada minuto.",
+    "fi": "Putoavien merkkien sarakkeita, joiden värit kiertävät väriympyrän joka minuutti.",
     "hu": "Hulló jelek oszlopai, amelyek színe percenként körbejár a színkörön.",
     "it": "Colonne di glifi che cadono, con i colori che fanno il giro della ruota ogni minuto.",
     "pl": "Kolumny spadających znaków, których kolory co minutę obracają się po kole barw.",

@@ -4,6 +4,7 @@
   "name": {
     "en": "Incense",
     "es": "Incienso",
+    "fi": "Suitsuke",
     "hu": "Füstölő",
     "it": "Incenso",
     "pl": "Kadzidło",
@@ -16,6 +17,7 @@
   "description": {
     "en": "Thin streams of colored smoke rising and curling on black.",
     "es": "Finas columnas de humo de colores que suben y se enroscan sobre negro.",
+    "fi": "Ohuita värillisiä savuvanoja, jotka nousevat ja kiemurtelevat mustalla taustalla.",
     "hu": "Vékony színes füstcsíkok szállnak fel és kunkorodnak fekete háttéren.",
     "it": "Sottili fili di fumo colorato che salgono e si arricciano sul nero.",
     "pl": "Cienkie strużki kolorowego dymu wznoszące się i skręcające na czerni.",
