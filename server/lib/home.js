@@ -379,6 +379,12 @@ var otherOpenedAt = 0;
 var LAUNCH_GRACE_MS = 30000;
 var launchedAt = 0;
 var lastSource = null;
+var SKIP_CARD_APPS = {
+  'com.webos.app.home': true, 'com.tvweb.home': true, 'com.tvweb.homebar': true,
+  'com.tvweb.inputbar': true, 'com.tvweb.habar': true, 'com.tvweb.ask': true,
+  'com.webos.app.screensaver': true
+};
+var lastCard = '';
 // What ha.js's 'weather' text entity last received over MQTT (setWeather
 // below), kept in home-weather.json so a restart does not hide it.
 var weatherPush = null;
@@ -3745,6 +3751,7 @@ function foregroundChanged(id) {
   }
   if (legacyAppPending) tryRemoveLegacyApp();
   if (appRefreshPending && id !== HOME_APP) tryRefreshApp();
+  if (id && !SKIP_CARD_APPS[id]) lastCard = id;
   if (id !== HOME_APP && id !== LG_HOME && id) lastSource = { appId: id, at: nowMs() };
   // Live TV left, even with Glasshouse Home off: its channel may have changed.
   if (was === LIVE_TV && id !== LIVE_TV) { lastChannel = null; lastChannelGen++; }
@@ -4330,6 +4337,7 @@ function init(opts) {
   escaped = false;
   foreground = '';
   lastSource = null;
+  lastCard = '';
   powerActive = true;
   powerState = null;
   launchedAt = 0;
@@ -4694,6 +4702,7 @@ module.exports = {
   programme: programme,
   enabled: function () { return readConfig().enabled; },
   isStandalone: isStandalone,
+  lastCardApp: function () { return lastCard; },
   haBarInHomeBar: haBarInHomeBar,
   portName: portName,
   refreshApp: refreshApp,
