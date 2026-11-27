@@ -10,11 +10,11 @@ The **Remotes** column lists entries in the [remote catalogue](remotes.md) known
 
 | Remote tab key | webOS 4–10 | webOS 11 | Home Assistant | Remotes |
 | :------------- | :--------- | :------- | :------------- | :------ |
-| Netflix | yes | yes (where listed) | yes | MR25GA, MR23, MR20, MR18 |
-| Prime Video | yes | yes (where listed) | yes | MR25GA, MR23, MR20, MR18 |
-| Disney+ | yes | yes (where listed) | yes | MR25GA, MR23 |
+| Netflix | yes | yes (where listed) | yes | MR25GA, MR23, MR22N, MR20, MR18 |
+| Prime Video | yes | yes (where listed) | yes | MR25GA, MR23, MR22N, MR20, MR18 |
+| Disney+ | yes | yes (where listed) | yes | MR25GA, MR23, MR22N |
 | LG Channels | yes | yes (where listed) | yes | MR25GA, MR23 |
-| Rakuten TV | yes | yes (where listed) | yes | MR25GA, MR23 |
+| Rakuten TV | yes | yes (where listed) | yes | MR25GA, MR23, MR22N |
 | Movies | yes | yes (where listed) | yes | MR20 |
 | Hulu | yes | yes (where listed) | – | – |
 | BBC iPlayer | yes | yes (where listed) | – | – |
@@ -28,41 +28,41 @@ The **Remotes** column lists entries in the [remote catalogue](remotes.md) known
 | LG Shop | – | yes (where listed) | – | – |
 | Stan | – | yes (where listed) | – | – |
 | YouTube | – | yes (where listed) | – | – |
-| Alexa | yes | yes (blocks Alexa) | yes | MR25GA, MR23 |
-| Google Assistant | yes | yes (where listed) | yes | – |
-| Microphone | yes | yes (where listed) | yes | MR25GA, MR23, MR20, MR18 |
+| Alexa | yes | yes (blocks Alexa) | yes | MR25GA, MR23, MR22N |
+| Google Assistant | yes | yes (where listed) | yes | MR22N |
+| Microphone | yes | yes (where listed) | yes | MR25GA, MR23, MR22N, MR20, MR18 |
 | Apps | yes | yes (where listed) | – | – |
 | Home Hub | yes (key table checked) | yes | – | MR25GA |
 | AI | – | yes (turns off voice) | – | MR25GA, MR23 |
 | ? button | yes | yes | – | MR25GA |
 | ? button, held | – | yes | – | MR25GA |
-| 123 button | yes (incl. webOS 4) | – | – | MR25GA, MR23, MR20, MR18 |
+| 123 button | yes (incl. webOS 4) | – | – | MR25GA, MR23, MR22N, MR20, MR18 |
 | Text | yes (incl. webOS 4) | – | – | MR18 |
 | T.Opt | yes (incl. webOS 4) | – | – | MR18 |
 | Live Zoom | yes (incl. webOS 4) | – | – | MR18 |
 | AD | yes (incl. webOS 4) | – | – | – |
-| 1 | yes | – | – | MR23, MR20, MR18 |
-| 2 | yes | – | – | MR23, MR20, MR18 |
-| 3 | yes | – | – | MR23, MR20, MR18 |
-| 4 | yes | – | – | MR23, MR20, MR18 |
-| 5 | yes | – | – | MR23, MR20, MR18 |
-| 6 | yes | – | – | MR23, MR20, MR18 |
-| 7 | yes | – | – | MR23, MR20, MR18 |
-| 8 | yes | – | – | MR23, MR20, MR18 |
-| 9 | yes | – | – | MR23, MR20, MR18 |
-| 0 | yes | – | – | MR23, MR20, MR18 |
-| Channel up | yes (incl. webOS 4) | yes (key handler patch, or observes presses) | yes | MR25GA, MR23, MR20, MR18 |
-| Channel down | yes (incl. webOS 4) | yes (key handler patch, or observes presses) | yes | MR25GA, MR23, MR20, MR18 |
-| Guide | yes | yes | – | MR25GA, MR23, MR20, MR18 |
-| Input | yes | yes (key handler patch) | – | MR23, MR20, MR18 |
+| 1 | yes | – | – | MR23, MR22N, MR20, MR18 |
+| 2 | yes | – | – | MR23, MR22N, MR20, MR18 |
+| 3 | yes | – | – | MR23, MR22N, MR20, MR18 |
+| 4 | yes | – | – | MR23, MR22N, MR20, MR18 |
+| 5 | yes | – | – | MR23, MR22N, MR20, MR18 |
+| 6 | yes | – | – | MR23, MR22N, MR20, MR18 |
+| 7 | yes | – | – | MR23, MR22N, MR20, MR18 |
+| 8 | yes | – | – | MR23, MR22N, MR20, MR18 |
+| 9 | yes | – | – | MR23, MR22N, MR20, MR18 |
+| 0 | yes | – | – | MR23, MR22N, MR20, MR18 |
+| Channel up | yes (incl. webOS 4) | yes (key handler patch, or observes presses) | yes | MR25GA, MR23, MR22N, MR20, MR18 |
+| Channel down | yes (incl. webOS 4) | yes (key handler patch, or observes presses) | yes | MR25GA, MR23, MR22N, MR20, MR18 |
+| Guide | yes | yes | – | MR25GA, MR23, MR22N, MR20, MR18 |
+| Input | yes | yes (key handler patch) | – | MR23, MR22N, MR20, MR18 |
 | TV | yes | yes (where listed) | – | – |
 | Search | yes | yes (where listed) | – | – |
 | Info | yes | yes (where listed) | – | – |
 | Help | yes | yes (where listed) | – | – |
-| Red | yes | yes (observes presses) | yes | MR23, MR20, MR18 |
-| Green | yes | yes (observes presses) | yes | MR23, MR20, MR18 |
-| Yellow | yes | yes (observes presses) | yes | MR23, MR20, MR18 |
-| Blue | yes | yes (observes presses) | yes | MR23, MR20, MR18 |
+| Red | yes | yes (observes presses) | yes | MR23, MR22N, MR20, MR18 |
+| Green | yes | yes (observes presses) | yes | MR23, MR22N, MR20, MR18 |
+| Yellow | yes | yes (observes presses) | yes | MR23, MR22N, MR20, MR18 |
+| Blue | yes | yes (observes presses) | yes | MR23, MR22N, MR20, MR18 |
 
 ## Technical reference
 
