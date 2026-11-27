@@ -294,6 +294,8 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
   function close() {
     if (closing) return;
     closing = true;
+    // Closed here, not by the TV, which the server opens again (lib/barpress.js).
+    tellClosed();
     visibleSince = 0;
     clearInterval(clockTimer);
     clearInterval(refreshTimer);
@@ -379,6 +381,7 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
   // tellPress is one taken while hidden, told once the window shows.
   var tellPress = 0;
   function tell(press) { request('GET', '/api/bar/seen?app=com.tvweb.habar&press=' + press, null, function () {}); }
+  function tellClosed() { request('GET', '/api/bar/closed?app=com.tvweb.habar&press=' + seenPress, null, function () {}); }
   function took(press) {
     if (hidden()) { tellPress = press; return; }
     tellPress = 0;

@@ -2414,6 +2414,11 @@ function handleRequest(req, res) {
     barPressModule.seen(String(u.query.app || ''), Number(u.query.press));
     return send(res, 200, JSON.stringify({ ok: true }));
   }
+  if (pathname === '/api/bar/closed' && req.method === 'GET' && barPressModule) {
+    if (!fromTV(req)) return send(res, 403, JSON.stringify({ ok: false, error: 'from the TV only' }));
+    barPressModule.closed(String(u.query.app || ''), Number(u.query.press));
+    return send(res, 200, JSON.stringify({ ok: true }));
+  }
   // The key filter's Ambient light key: PicCap toggled here, as the dashboard does. The TV only.
   if (pathname === '/api/remotekeys/piccap' && req.method === 'POST' && remoteKeysModule) {
     if (!fromTV(req)) return send(res, 403, JSON.stringify({ ok: false, error: 'from the TV only' }));
