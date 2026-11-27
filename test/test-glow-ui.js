@@ -28,7 +28,7 @@ if (Number(process.versions.node.split('.')[0]) < 8) {
     setTimeout: function () { return 1; }, clearTimeout: function () {},
     fetch: function () { return Promise.resolve({ json: function () { return Promise.resolve(answer); } }); },
     Promise: Promise,
-    URLSearchParams: URLSearchParams
+    URLSearchParams: require('url').URLSearchParams
   };
   vm.createContext(context);
   vm.runInContext(fs.readFileSync(path.join(__dirname, '../server/assets/ui/glow.js'), 'utf8'), context);
