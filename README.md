@@ -32,7 +32,7 @@ Use it for remote control, app installation and removal, OLED panel care, privac
 * **webOS**: 2.2 through 11 (LG's webOS 26) confirmed; tested across 2015–2026 models. Other versions likely work as well. LG names its versions two ways: [webOS version numbers](https://rorygallagher2024.github.io/glasshouse/tested-tvs/#webos-version-numbers) gives both
 * **Panels**: OLED (full panel wear telemetry and burn-in controls) and LCD (core dashboard, controls, and telemetry; OLED Care tab hides automatically)
 * **Access**: Rooted via [Homebrew Channel](https://github.com/webosbrew/webos-homebrew-channel). Telnet or SSH. No external dependencies or internet access needed on the TV
-* **Tested hardware**: 95 TVs across 61 series verified so far (LF632V, UF850T, EG910V, UH600V, UH6030, UH610V, UH635V, B6, B7, SJ80, UJ63, UJ65, UJ75, B8, C8, LK61, UK63, LM57, UM71, UM73, C9, CX, GX, UN70, UN73, A1, C1, G1, NANO75, NANO85, UP80, UP81, A2, B2, C2, G2, QNED82, UQ80, LX3, SQ700S, CS, B3, C3, G3, UR80, QNED80, B4, C4, G4, QNED86, UT73, UT81, C5, G5, UA73, UA75, C6, G6, MRGB87, NU80, QNED84). Other rooted models should work; [see full table](https://rorygallagher2024.github.io/glasshouse/tested-tvs/)
+* **Tested hardware**: 92 TVs across 58 series verified so far (LF632V, UF850T, UH600V, UH6030, UH610V, UH635V, B6, B7, SJ80, UJ63, UJ65, UJ75, B8, C8, LK61, UK63, LM57, UM71, UM73, C9, CX, GX, UN70, UN73, A1, C1, G1, NANO75, NANO85, UP80, UP81, A2, B2, C2, G2, QNED82, UQ80, LX3, SQ700S, CS, B3, C3, G3, UR80, QNED80, B4, C4, G4, QNED86, UT73, UT81, C5, G5, UA73, UA75, C6, NU80, QNED84). Other rooted models should work; [see full table](https://rorygallagher2024.github.io/glasshouse/tested-tvs/)
 
 **[Read the documentation](https://rorygallagher2024.github.io/glasshouse/)** for the features, installation, Home Assistant and security.
 
@@ -57,7 +57,7 @@ https://github.com/user-attachments/assets/a1efd451-681d-4c3b-87d7-8358ff3d19f3
 
 This project is intended to give a rooted webOS TV a useful local control surface instead of requiring the owner to work around the TV's built-in menus, vendor services and cloud dependencies.
 
-1. **[Cleaner Home screens](https://rorygallagher2024.github.io/glasshouse/dashboard/home/).** A choice of replacement home screens to choose from, all with full control, and no ads. Features include using your own pictures or videos as the background, Internet TV channels (from your own IPTV playlist or satellite tuner) and control of your home via Home Assistant.
+1. **[A cleaner Home screen](https://rorygallagher2024.github.io/glasshouse/dashboard/home/).** A replacement Home app with full control over what displays, and no ads: your own pictures or videos as the background, the remote's battery after the date, and a row of Internet TV channels from your own IPTV playlist or satellite tuner. Or choose Glasshouse Minimal, Glasshouse Bar along the bottom of the picture, a launcher of your own, or a web page such as a Home Assistant dashboard. Reported working on webOS 3 to 7 and 9 to 11, and offered with a note on other versions.
 
 2. **[Controlling the TV without the cloud](https://rorygallagher2024.github.io/glasshouse/dashboard/control/).** A remote that comes up over any tab or sits on a phone's Home Screen, with a D-pad, touchpad and keyboard, plus volume, inputs, power, sleep timer, comprehensive picture and sound settings, Game Optimizer, and much more.
 
@@ -65,31 +65,23 @@ This project is intended to give a rooted webOS TV a useful local control surfac
 
 4. **[App management and debloating](https://rorygallagher2024.github.io/glasshouse/dashboard/apps/).** Install apps from the Homebrew Channel catalog, uninstall apps, disable unnecessary background system services to free up RAM and CPU cycles, stop LG keeping apps loaded in the background that are never used, and hide non-removable built-in LG system apps from LG's Home.
 
-5. **[Remapping the remote's buttons](https://rorygallagher2024.github.io/glasshouse/dashboard/remote/).** Point Netflix, Prime Video, Guide, the color keys and the TV's other shortcut buttons at any installed app, an HDMI input or Live TV, or turn them off. A key can also step the screen's brightness, or open [a strip of the HDMI inputs](https://rorygallagher2024.github.io/glasshouse/dashboard/inputs/#glasshouse-input-bar) or [Glasshouse Bar](https://rorygallagher2024.github.io/glasshouse/dashboard/launchers/#glasshouse-bar) over the picture.
+5. **[Remapping the remote's buttons](https://rorygallagher2024.github.io/glasshouse/dashboard/remote/).** Point Netflix, Prime Video, Guide, the color keys and the TV's other shortcut buttons at any installed app, an HDMI input or Live TV, or turn them off, or have a key open [a strip of the HDMI inputs](https://rorygallagher2024.github.io/glasshouse/dashboard/inputs/#glasshouse-input-bar) or [Glasshouse Bar](https://rorygallagher2024.github.io/glasshouse/dashboard/home/#glasshouse-bar) over the picture.
 
-6. **[Replacing the screen saver](https://rorygallagher2024.github.io/glasshouse/dashboard/screen-savers/).** Over a dozen screensavers to choose from, community screensavers to download, and customisable settings including brightness control. The picture frame turns the TV into a frame for your own photos, a folder on your NAS, or openly licensed paintings and space photography.
+6. **[Replacing the screen saver](https://rorygallagher2024.github.io/glasshouse/dashboard/screen-savers/).** Over a dozen screensavers to choose from, and customisable brightness settings.
 
 7. **[Integrating the TV with a smart home](https://rorygallagher2024.github.io/glasshouse/HOME-ASSISTANT/).** The MQTT bridge exposes the TV as a single device with its controls and telemetry, with Home Assistant support through MQTT Discovery and the same underlying interface available to other MQTT clients. An optional media player card brings power, volume, sources, apps and Internet TV channels together, and button press events let your TV remote control your smart home.
 
-8. **[Controlling your home from the TV](https://rorygallagher2024.github.io/glasshouse/HOME-ASSISTANT/#home-assistant-control-bar).** A remote button brings up a bar of your Home Assistant lights, thermostats, fans, blinds, locks and scenes over whatever is playing, and Glasshouse Home can show them as a row. Home Assistant can also put a question on the screen, such as "Dim the lights for the film?", answered with the remote, and show the values you care about, such as the next bin day, beside the clock.
+8. **[Seeing what the TV is actually doing](https://rorygallagher2024.github.io/glasshouse/dashboard/metrics/).** SoC temperature, CPU load, memory, Wi-Fi signal and throughput, storage health, watch time and much more.
 
-9. **[Seeing what the TV is actually doing](https://rorygallagher2024.github.io/glasshouse/dashboard/metrics/).** SoC temperature, CPU load, memory, Wi-Fi signal and throughput, storage health, watch time and much more.
+9. **[Observing OLED panel wear](https://rorygallagher2024.github.io/glasshouse/dashboard/oled-care/).** Track the lifetime use of your TV with cumulative panel hours, compensation cycle progress, Pixel Refresher countdown with scheduling, completed cycle counters and refresher failure alerts.
 
-10. **[Observing OLED panel wear](https://rorygallagher2024.github.io/glasshouse/dashboard/oled-care/).** Track the lifetime use of your TV with cumulative panel hours, compensation cycle progress, Pixel Refresher countdown with scheduling, completed cycle counters and refresher failure alerts.
+10. **[Controlling the OLED burn-in protections](https://rorygallagher2024.github.io/glasshouse/dashboard/oled-care/).** Surfaces all the burn-in protections, explains what each one does and allows you to switch them off. This includes ASBL and Global Stress Reduction which is normally reachable only from a TV's service menu with a service remote and a PIN.
 
-11. **[Controlling the OLED burn-in protections](https://rorygallagher2024.github.io/glasshouse/dashboard/oled-care/).** Surfaces all the burn-in protections, explains what each one does and allows you to switch them off. This includes ASBL and Global Stress Reduction which is normally reachable only from a TV's service menu with a service remote and a PIN.
+11. **[Opening the service menu, and unlocking it where it is locked](https://rorygallagher2024.github.io/glasshouse/dashboard/service-menu/).** LG's own engineering menu, put on the TV screen from a browser which means no service remote is needed. Newer firmware shows a cut-down version of it until it is unlocked, which the dashboard can do as well.
 
-12. **[Opening the service menu, and unlocking it where it is locked](https://rorygallagher2024.github.io/glasshouse/dashboard/service-menu/).** LG's own engineering menu, put on the TV screen from a browser which means no service remote is needed. Newer firmware shows a cut-down version of it until it is unlocked, which the dashboard can do as well.
+12. **[Reading all of it on the TV itself](https://rorygallagher2024.github.io/glasshouse/apps/tv-app/).** An optional app on the home screen puts the same readings and controls on the TV, driven by the remote, for when there is no phone or laptop to hand.
 
-13. **[Keeping LG's updates, and root, under your control](https://rorygallagher2024.github.io/glasshouse/dashboard/advanced/#system-updates).** Block the TV's own software updates, which can take root away, while apps keep updating. Glasshouse updates itself in one click, from the dashboard or from Home Assistant.
-
-14. **[Screen time limits](https://rorygallagher2024.github.io/glasshouse/dashboard/advanced/#screen-time).** A daily limit, a bedtime, and limits for single apps or inputs, with a warning on screen before time runs out.
-
-15. **[Ambient lighting](https://rorygallagher2024.github.io/glasshouse/dashboard/ambient-light/).** Switch [Hue Sync](https://rorygallagher2024.github.io/glasshouse/huesync/) and [PicCap](https://rorygallagher2024.github.io/glasshouse/piccap/) on and off from the dashboard or Home Assistant, and PicCap from a button on the remote too.
-
-16. **[Reading all of it on the TV itself](https://rorygallagher2024.github.io/glasshouse/apps/tv-app/).** An optional app on the home screen puts the same readings and controls on the TV, driven by the remote, for when there is no phone or laptop to hand.
-
-17. **[Managing TVs from Android](https://rorygallagher2024.github.io/glasshouse/apps/android/).** A phone app that keeps a list of TVs, shows which are online, wakes them over Wake-on-LAN, and opens each one's dashboard or remote full screen, with the phone's volume keys stepping the TV's volume while the remote shows.
+13. **[Managing TVs from Android](https://rorygallagher2024.github.io/glasshouse/apps/android/).** A phone app that keeps a list of TVs, shows which are online, wakes them over Wake-on-LAN, and opens each one's dashboard or remote full screen, with the phone's volume keys stepping the TV's volume while the remote shows.
 
 ---
 

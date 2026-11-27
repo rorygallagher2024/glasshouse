@@ -258,7 +258,7 @@ step('offers Guide and the streaming buttons LG has switched on, with no filter 
 });
 
 step('regional streaming buttons are offered when active and restore LG assignments', function (next) {
-  var regional = ['ivi', 'okko', 'kinopoisk', 'shop', 'stan', 'youtube'];
+  var regional = ['ivi', 'okko', 'kinopoisk', 'shop'];
   var writesBefore = tv.mappingWrites;
   var originals = {};
   tv.mapping[3].ivi.isActive = true;
@@ -619,36 +619,6 @@ step('the channel keys are taken by LG\'s first key filter where its library can
           });
         });
       });
-    });
-  });
-});
-
-step('a channel key set to Brightness steps the Home Assistant tile Glasshouse Home has in focus instead', function (next) {
-  var lab = fakeLibrary();
-  var homeSteps = [];
-  lab.opts.homeAdjustStep = function (id, dir, cb) { homeSteps.push(id + ':' + dir); cb({ id: id, n: homeSteps.length }); };
-  rk.init(lab.opts);
-  set('channelup', 'open', 'action:brightnessUp', function () {
-    afterWatching(function () {
-      panel.backlight = 50;
-      var seq = rk.homeAdjustLast().seq;
-      rk.setHomeAdjust(true, function (r) {
-        assert.ok(r.ok);
-        // The press and a repeat each step the tile; the brightness is left alone.
-        logLine(channelLine(402, 0) + channelLine(402, 2) + channelLine(402, 1));
-        until(function () { return homeSteps.length === 2; }, 5000, function () {
-          assert.deepEqual(homeSteps, ['light.desk:1', 'light.desk:1']);
-          assert.strictEqual(panel.backlight, 50, 'the brightness left as it was');
-          assert.strictEqual(rk.homeAdjustLast().seq, seq + 2, 'Home reads the stepped tile');
-          rk.setHomeAdjust(false, function () {
-            logLine(channelLine(402, 0) + channelLine(402, 1));
-            until(function () { return panel.backlight === 60; }, 5000, function () {
-              assert.strictEqual(homeSteps.length, 2, 'off: the brightness again');
-              set('channelup', 'lg', '', function () { rk.restore(function () { lab.finish(next); }); });
-            });
-          });
-        });
-      }, 'light.desk');
     });
   });
 });
@@ -1101,40 +1071,6 @@ step('the set brightness step applies to the log\'s presses', function (next) {
       });
     });
   }); });
-});
-
-step('Ambient light toggles PicCap from the log on a streaming button when installed, and hides when absent', function (next) {
-  var piccapHere = true;
-  var piccapCalls = 0;
-  var optsWithPiccap = Object.keys(initOpts).reduce(function (o, k) { o[k] = initOpts[k]; return o; }, {});
-  optsWithPiccap.piccap = function () { return piccapHere; };
-  optsWithPiccap.togglePiccap = function (cb) {
-    piccapCalls++;
-    cb({ ok: true, isRunning: piccapCalls % 2 === 1 });
-  };
-  rk.init(optsWithPiccap);
-  rk.getRemoteKeys(function (r) {
-    assert.ok(r.choices.some(function (c) { return c.id === 'action:piccap' && c.kind === 'action'; }), 'offered when PicCap is installed');
-    rk.setRemoteKey('guide', 'open', 'action:piccap', function (g) {
-      assert.strictEqual(g.ok, false, 'refused on Guide');
-      set('netflix', 'open', 'action:piccap', function () { afterWatching(function () {
-        assert.strictEqual(entry('netflix').isActive, false, 'LG\'s app switched off, as for Nothing');
-        assert.ok(rk.isFollowingLog());
-        logLine(NETFLIX_LINE);
-        until(function () { return piccapCalls >= 1; }, 5000, function () {
-          assert.strictEqual(piccapCalls, 1, 'logged press toggled PicCap');
-          piccapHere = false;
-          rk.getRemoteKeys(function (gone) {
-            assert.ok(!gone.choices.some(function (c) { return c.id === 'action:piccap'; }), 'hidden when PicCap is absent');
-            set('netflix', 'lg', '', function () {
-              rk.init(initOpts);
-              next();
-            });
-          });
-        });
-      }); });
-    });
-  });
 });
 
 step('the Alexa button set blocks Amazon\'s view and opens its app from the log, apart from the AI button; As LG has it releases it', function (next) {

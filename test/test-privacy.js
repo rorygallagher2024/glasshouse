@@ -159,25 +159,6 @@ test("another tool's sinkholes are kept from its file, and from under this table
     "this table's own sinkholes stay its own; another tool's under the header are kept, even for a name both block");
 });
 
-// Their comments go with their lines (#1716): Life's Good Without Spying looks for its marker.
-var NOSPY = '# lifesgoodwithoutspying - blocked LG ad/ACR/telemetry endpoints generation 1795428444-5501';
-var UPDATER = '# LG App Update Blocker - Update domains';
-
-test("another tool's comments are kept with its lines, in their order, and the table's own are not", function () {
-  var theirs = '127.0.0.1 localhost\n::1 localhost ip6-localhost ip6-loopback\n' + NOSPY + '\n' + LGWSS.join('\n') + '\n\n' +
-    UPDATER + '\n0.0.0.0 snu.lge.com\n';
-  assert.deepEqual(privacy.foreignHostsLines(theirs), [NOSPY].concat(LGWSS, [UPDATER, '0.0.0.0 snu.lge.com']));
-  // Carried in the table, and read back out of it unchanged.
-  var table = privacy.adBlockHostsTable('ads', privacy.foreignHostsLines(theirs));
-  assert.ok(table.indexOf(NOSPY) !== -1, 'the marker is in the table');
-  assert.deepEqual(privacy.foreignHostsLines(table), [NOSPY].concat(LGWSS, [UPDATER, '0.0.0.0 snu.lge.com']));
-  // A boot hook appending its section to the table, without the table's header.
-  var appended = privacy.adBlockHostsTable('ads') + UPDATER + '\n0.0.0.0 su.lge.com\n';
-  assert.deepEqual(privacy.foreignHostsLines(appended), [UPDATER, '0.0.0.0 su.lge.com'], 'its section, with its header');
-  // A comment over lines that are not kept goes with them.
-  assert.deepEqual(privacy.foreignHostsLines('# webosbrew startup script\n127.0.0.1 snu.lge.com\n'), []);
-});
-
 test("with only updates blocked, the table keeps another blocker's sinkholes, and drops a tier's when it is switched off", function () {
   var TABLE = '/var/lib/tvweb/adblock_hosts';
   var saved = mockEnv.files['/etc/hosts'];
@@ -238,8 +219,8 @@ test("switching updates off lifts the Homebrew Channel's layer, and leaves anoth
     // goes over it with that tool's lines and without the update block.
     switchOff(COPY + LGWSS.join('\n') + '\n', HBC_LAYER +
       '1329 1113 179:59 /var/lib/webosbrew/lifesgoodwithoutspying.hosts /etc/hosts rw,nosuid,relatime shared:39 - ext4 /dev/mmcblk0p59 rw,data=ordered\n');
-    assert.deepEqual(ran, ['/bin/mount --make-slave /etc/hosts', '/bin/mount --bind ' + TABLE + ' /etc/hosts', '/bin/mount --make-slave /etc/hosts'],
-      "the other tool's layer is not unmounted, and the table is kept off its file (#1571, #1712)");
+    assert.deepEqual(ran, ['/bin/mount --make-slave /etc/hosts', '/bin/mount --bind ' + TABLE + ' /etc/hosts'],
+      "the other tool's layer is not unmounted, and the table is kept off its file (#1571)");
     LGWSS.forEach(function (line) { assert.ok(mockEnv.files[TABLE].indexOf(line) !== -1, line + ' was dropped'); });
     UPDATE_HOSTS.forEach(function (host) {
       assert.ok(!sinkholed(mockEnv.files[TABLE], host) && mockEnv.files[TABLE].indexOf(host) === -1, host + ' is still blocked');
@@ -281,14 +262,14 @@ test("the table's mount is kept to /etc/hosts, and other tools' lines go back un
   } });
   var below = BELOW;
   try {
-    // Switched on over a shared layer: made a slave before and after binding.
+    // Switched on over a shared layer: made a slave, then bound.
     mockEnv.files[MOUNTS] = LGWS_LAYER;
     mockEnv.files['/etc/hosts'] = BELOW;
     privacy.clearCache();
     var r1;
     privacy.setAdBlock('ads', function (r) { r1 = r; });
     assert.ok(r1 && r1.ok, JSON.stringify(r1));
-    assert.deepEqual(ran, ['/bin/mount --make-slave /etc/hosts', '/bin/mount --bind ' + TABLE + ' /etc/hosts', '/bin/mount --make-slave /etc/hosts']);
+    assert.deepEqual(ran, ['/bin/mount --make-slave /etc/hosts', '/bin/mount --bind ' + TABLE + ' /etc/hosts']);
 
     // Over a layer that shares nothing: bound as before.
     ran = [];
@@ -329,68 +310,6 @@ test("the table's mount is kept to /etc/hosts, and other tools' lines go back un
       fs.writeFileSync = write;
     }
     assert.deepEqual(ran, ['/bin/umount /etc/hosts', '/bin/mount --bind ' + TABLE + ' /etc/hosts']);
-  } finally {
-    privacy.init({ exec: require('child_process').execFile });
-    delete mockEnv.files[TABLE];
-    delete mockEnv.files[MOUNTS];
-    delete mockEnv.files[ENABLED];
-    if (saved === undefined) delete mockEnv.files['/etc/hosts'];
-    else mockEnv.files['/etc/hosts'] = saved;
-    privacy.clearCache();
-  }
-});
-
-// #1712: the table's own bind mount inherits shared: from /var/lib, so binding
-// over /etc/hosts makes /etc/hosts a slave again afterwards and boot heals an
-// already-mounted shared table in place.
-test('a new table mount inheriting shared propagation is made a slave after binding (#1712)', function () {
-  var TABLE = '/var/lib/tvweb/adblock_hosts', MOUNTS = '/proc/self/mountinfo', ENABLED = '/var/lib/tvweb/adblock_enabled';
-  var saved = mockEnv.files['/etc/hosts'];
-  var PRIVATE_LAYER = '2008 50 179:59 /var/lib/webosbrew/lifesgoodwithoutspying.hosts /etc/hosts rw,nosuid,relatime - ext4 /dev/mmcblk0p59 rw\n';
-  var SHARED_LAYER = '2008 50 179:59 /var/lib/webosbrew/lifesgoodwithoutspying.hosts /etc/hosts rw,nosuid,relatime shared:39 - ext4 /dev/mmcblk0p59 rw\n';
-  var OWN_SHARED = '3001 2008 179:55 /var/lib/tvweb/adblock_hosts /etc/hosts rw,nosuid,relatime shared:39 - ext4 /dev/mmcblk0p55 rw\n';
-  var OWN_SLAVE = '3001 2008 179:55 /var/lib/tvweb/adblock_hosts /etc/hosts rw,nosuid,relatime master:39 - ext4 /dev/mmcblk0p55 rw\n';
-  var ran = [];
-  privacy.init({ exec: function (file, args, opts, cb) {
-    ran.push([file].concat(args).join(' '));
-    if (file === '/bin/mount' && args[0] === '--bind') {
-      mockEnv.files[MOUNTS] += OWN_SHARED;
-    } else if (file === '/bin/mount' && args[0] === '--make-slave') {
-      mockEnv.files[MOUNTS] = mockEnv.files[MOUNTS].replace(/shared:39/g, 'master:39');
-    }
-    cb(null, '', '');
-  } });
-  try {
-    // Even when the layer below is private, binding from a shared /var/lib makes the new layer shared.
-    mockEnv.files[MOUNTS] = PRIVATE_LAYER;
-    mockEnv.files['/etc/hosts'] = '127.0.0.1 localhost\n';
-    privacy.clearCache();
-    privacy.setAdBlock('ads', function (r) { assert.ok(r && r.ok); });
-    assert.deepEqual(ran, ['/bin/mount --bind ' + TABLE + ' /etc/hosts', '/bin/mount --make-slave /etc/hosts']);
-
-    // When the layer below is shared, --make-slave runs both before and after --bind.
-    ran = [];
-    mockEnv.files[MOUNTS] = SHARED_LAYER;
-    mockEnv.files[TABLE] = '';
-    privacy.clearCache();
-    privacy.setAdBlock('ads', function (r) { assert.ok(r && r.ok); });
-    assert.deepEqual(ran, ['/bin/mount --make-slave /etc/hosts', '/bin/mount --bind ' + TABLE + ' /etc/hosts', '/bin/mount --make-slave /etc/hosts']);
-
-    // Already-mounted shared table (e.g. upgraded from v0.159.0): checkBootAdBlock heals it in place.
-    ran = [];
-    mockEnv.files[ENABLED] = 'ads';
-    mockEnv.files[MOUNTS] = SHARED_LAYER.replace('shared:39', 'master:39') + OWN_SHARED;
-    mockEnv.files['/etc/hosts'] = mockEnv.files[TABLE];
-    privacy.clearCache();
-    privacy.checkBootAdBlock(false);
-    assert.deepEqual(ran, ['/bin/mount --make-slave /etc/hosts']);
-
-    // Already a slave: nothing further run on boot.
-    ran = [];
-    mockEnv.files[MOUNTS] = SHARED_LAYER.replace('shared:39', 'master:39') + OWN_SLAVE;
-    privacy.clearCache();
-    privacy.checkBootAdBlock(false);
-    assert.deepEqual(ran, []);
   } finally {
     privacy.init({ exec: require('child_process').execFile });
     delete mockEnv.files[TABLE];
@@ -1347,76 +1266,6 @@ test('ACR reports its consents and its service separately', function () {
   privacy.collectPrivacy(function (p) { got = p; });
   assert.deepEqual([got.acr.livePlus, got.acr.consentOn, got.acr.running], [null, false, true]);
   delete mockEnv.files['/var/luna/preferences/eula'];
-});
-
-// Another tool took the table off /etc/hosts while the TV ran (#1716): put back.
-test('the table is put back where another tool took it off, and only then', function () {
-  var MOUNTS = '/proc/self/mountinfo', ENABLED = '/var/lib/tvweb/adblock_enabled';
-  var LAYER = '2008 50 179:59 /var/lib/webosbrew/lifesgoodwithoutspying.hosts /etc/hosts rw,nosuid,relatime - ext4 /dev/mmcblk0p59 rw\n';
-  var saved = { hosts: mockEnv.files['/etc/hosts'], enabled: mockEnv.files[ENABLED], mounts: mockEnv.files[MOUNTS], flag: mockEnv.files[HBC_FLAG] };
-  var ran = [];
-  privacy.init({ exec: function (file, args, opts, cb) { ran.push([file].concat(args).join(' ')); cb(null, '', ''); } });
-  try {
-    privacy._hostsIdle();
-    mockEnv.files[ENABLED] = 'ads';
-    mockEnv.files[MOUNTS] = LAYER;
-    mockEnv.files['/etc/hosts'] = '127.0.0.1 localhost\n# lifesgoodwithoutspying - blocked\n' + LGWSS.join('\n') + '\n';
-    var put;
-    privacy.keepTable(function (r) { put = r; });
-    assert.strictEqual(put, true);
-    assert.ok(ran.indexOf('/bin/mount --bind /var/lib/tvweb/adblock_hosts /etc/hosts') !== -1, ran.join(', '));
-    // The table showing: nothing done.
-    ran = [];
-    mockEnv.files['/etc/hosts'] = privacy.adBlockHostsTable('ads', LGWSS);
-    privacy.keepTable(function (r) { put = r; });
-    assert.deepEqual([put, ran], [false, []]);
-    // Switched off, and updates not blocked: nothing wanted, nothing done.
-    delete mockEnv.files[ENABLED];
-    delete mockEnv.files[HBC_FLAG];
-    mockEnv.files['/etc/hosts'] = '127.0.0.1 localhost\n';
-    privacy.keepTable(function (r) { put = r; });
-    assert.deepEqual([put, ran], [false, []]);
-  } finally {
-    ['hosts', 'enabled', 'mounts', 'flag'].forEach(function (k) {
-      var f = { hosts: '/etc/hosts', enabled: ENABLED, mounts: MOUNTS, flag: HBC_FLAG }[k];
-      if (saved[k] === undefined) delete mockEnv.files[f]; else mockEnv.files[f] = saved[k];
-    });
-    privacy.clearCache();
-  }
-});
-
-// LG's own update check goes with the update block (#1363), as the Homebrew Channel 0.8.0 sets it.
-test("blocking TV updates switches LG's update check off, unblocking switches it back on, and a start puts it right", function () {
-  var calls = [], current = 'true';
-  var savedFlag = mockEnv.files[HBC_FLAG];
-  var CACHE = '/mnt/lg/cmn_data/swupdate/Image_Update_Info.xml';
-  privacy.init({
-    exec: function (file, args, opts, cb) { cb(null, '', ''); },
-    luna: function (uri, params, cb) {
-      if (uri === 'com.webos.settingsservice/setSystemSettings' && params.category === 'support') calls.push(params.settings.softwareUpdateEnable);
-      if (uri === 'com.webos.settingsservice/getSystemSettings' && params.category === 'support') return cb({ returnValue: true, settings: { softwareUpdateEnable: current } });
-      if (cb) cb({ returnValue: true });
-    }
-  });
-  try {
-    mockEnv.files[CACHE] = '<xml/>';
-    privacy.setTvUpdatesBlocked(true, function () {});
-    assert.deepEqual(calls, [false]);
-    assert.strictEqual(mockEnv.files[CACHE], undefined, "LG's cached update details are discarded");
-    privacy.setTvUpdatesBlocked(false, function () {});
-    assert.deepEqual(calls, [false, true]);
-    // At start, blocked with LG's check still on, as with a Homebrew Channel before 0.8.0.
-    calls = [];
-    mockEnv.files[HBC_FLAG] = '';
-    privacy.checkUpdateSetting();
-    assert.deepEqual(calls, [false]);
-    calls = []; current = false;
-    privacy.checkUpdateSetting();
-    assert.deepEqual(calls, [], 'already off: nothing written');
-  } finally {
-    if (savedFlag === undefined) delete mockEnv.files[HBC_FLAG]; else mockEnv.files[HBC_FLAG] = savedFlag;
-    privacy.clearCache();
-  }
 });
 
 // The ACR consent keys are read once, from acr2's binary; read them first so

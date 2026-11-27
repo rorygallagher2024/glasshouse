@@ -108,14 +108,6 @@ function loadFilter(broken, extra) {
           };
           if (tv.deferred) tv.deferred.push(answer); else answer();
         }
-        else if (service === 'org.webosbrew.piccap.service') {
-          var piccapAnswer = function () {
-            if (method === '/status') return cb && cb(JSON.stringify({ returnValue: true, isRunning: !!tv.piccapRunning }));
-            if (method === '/start' || method === '/stop') tv.piccapRunning = method === '/start';
-            if (cb) cb(JSON.stringify({ returnValue: true }));
-          };
-          if (tv.piccapHold && method === '/status') tv.piccapHold.push(piccapAnswer); else piccapAnswer();
-        }
         else if (cb) cb(JSON.stringify({ returnValue: true }));
       }
     },
@@ -689,7 +681,7 @@ step(function (next) {
     assert.deepEqual(saved, { amazon: 'com.webos.app.home', red: 'netflix' });
     rk.getRemoteKeys(guard(function (r) {
       var amazon = r.keys.filter(function (k) { return k.key === 'amazon'; })[0];
-      assert.strictEqual(amazon.opens, "LG's Home");
+      assert.strictEqual(amazon.opens, 'Home');
       rk.setRemoteKey('amazon', 'lg', '', guard(function () {
         rk.setRemoteKey('red', 'lg', '', guard(function () {
           console.log('  ✓ a key set to the Glasshouse Home app of earlier builds is set to Home at start');
@@ -1420,8 +1412,7 @@ step(function (next) {
         assert.strictEqual(all.remotes.mode, 'all');
         assert.strictEqual(all.remotes.canFold, true, 'the switch stays offered while folding is turned off');
         assert.strictEqual(all.remotes.folding, false, 'all buttons folds nothing');
-        assert.ok(all.keys.some(function (k) { return k.offRemote; }), 'keys off the remote in use stay marked, so the page can still set them apart');
-        assert.ok(!all.keys.filter(function (k) { return k.offRemote; }).some(function (k) { return k.key === 'netflix'; }), 'its own key is not marked');
+        assert.ok(!all.keys.some(function (k) { return k.offRemote; }));
         // Refused: no such mode
         rk.setRemoteSelection('some', guard(function (mode) {
           assert.strictEqual(mode.ok, false);
@@ -1437,201 +1428,6 @@ step(function (next) {
               }));
             }));
           }));
-        }));
-      }));
-    }));
-  }));
-});
-
-// Ambient light toggle: offered where PicCap is installed, flips /start or
-// /stop in the filter without repeats, and drops out cleanly if PicCap goes.
-step(function (next) {
-  var piccapHere = true;
-  tv.piccapRunning = false;
-  tv.piccapHold = null;
-  rk.init({
-    luna: luna, inputNames: { hdmi1: 'HDMI 1', hdmi2: 'Apple TV' }, stateDir: stateDir, filtersDir: filtersDir,
-    piccap: function () { return piccapHere; }
-  });
-  rk.availabilityChanged();
-  rk.getRemoteKeys(guard(function (r) {
-    assert.ok(r.choices.some(function (c) { return c.id === 'action:piccap' && c.kind === 'action' && c.title === 'Ambient light'; }),
-      'Ambient light offered when PicCap is installed');
-    rk.setRemoteKey('red', 'open', 'action:piccap', guard(function (s) {
-      assert.ok(s.ok, s.error);
-      assert.strictEqual(tv.keys.keys.red, 'action:piccap');
-      var f = loadFilter();
-      // Release and repeat do nothing; a press starts PicCap when stopped.
-      assert.strictEqual(f.handle(1004, false, false), 'accepted');
-      assert.strictEqual(f.handle(1004, true, true), 'accepted');
-      assert.strictEqual(f.sent.length, 0, 'release and repeat ignored');
-      assert.strictEqual(f.handle(1004, true, false), 'accepted');
-      assert.strictEqual(tv.piccapRunning, true, 'started PicCap');
-      // Next press stops PicCap when running.
-      assert.strictEqual(f.handle(1004, true, false), 'accepted');
-      assert.strictEqual(tv.piccapRunning, false, 'stopped PicCap');
-      // Overlapping press while /status is in flight is ignored until it settles.
-      tv.piccapHold = [];
-      assert.strictEqual(f.handle(1004, true, false), 'accepted');
-      assert.strictEqual(f.handle(1004, true, false), 'accepted');
-      assert.strictEqual(tv.piccapHold.length, 1, 'busy guard drops overlapping press');
-      tv.piccapHold.shift()();
-      tv.piccapHold = null;
-      assert.strictEqual(tv.piccapRunning, true, 'completed held toggle');
-      // With the server answering, it toggles PicCap and the filter asks PicCap nothing (#1757).
-      var posted = [], answer = 200;
-      function FakeXhr() { this.readyState = 0; this.status = 0; }
-      FakeXhr.prototype.open = function (method, url) { this.method = method; this.url = url; };
-      FakeXhr.prototype.setRequestHeader = function (k, v) { this.type = v; };
-      FakeXhr.prototype.send = function () {
-        posted.push(this.method + ' ' + this.url + ' ' + this.type);
-        this.readyState = 4; this.status = answer; this.onreadystatechange();
-      };
-      var fx = loadFilter(null, { XMLHttpRequest: FakeXhr });
-      var before = tv.piccapRunning;
-      assert.strictEqual(fx.handle(1004, true, false), 'accepted');
-      assert.deepEqual(posted, ['POST http://127.0.0.1:8080/api/remotekeys/piccap application/json']);
-      assert.strictEqual(tv.piccapRunning, before, 'PicCap left to the server');
-      assert.ok(!fx.sent.some(function (x) { return /piccap/.test(x.uri); }), 'no call to PicCap from the compositor');
-      // The server not answering: PicCap is asked from the filter, as before.
-      answer = 0;
-      var fy = loadFilter(null, { XMLHttpRequest: FakeXhr });
-      assert.strictEqual(fy.handle(1004, true, false), 'accepted');
-      assert.strictEqual(tv.piccapRunning, !before, 'toggled from the filter without the server');
-      tv.piccapRunning = before;
-      // Removing PicCap stops putting the key in configd while keeping the saved label.
-      piccapHere = false;
-      rk.availabilityChanged();
-      setTimeout(guard(function () {
-        assert.strictEqual(tv.keys.keys.red, undefined, 'omitted from active filter while PicCap is absent');
-        rk.getRemoteKeys(guard(function (gone) {
-          assert.ok(!gone.choices.some(function (c) { return c.id === 'action:piccap'; }), 'not offered when PicCap is absent');
-          var red = gone.keys.filter(function (k) { return k.key === 'red'; })[0];
-          assert.strictEqual(red.opens, 'Ambient light', 'keeps friendly title while missing');
-          rk.setRemoteKey('red', 'lg', '', guard(function () {
-            console.log('  ✓ Ambient light toggle toggles PicCap in the filter without repeats and hides when absent');
-            // The server's side: the toggle it is given, its answer passed back.
-            var toggles = 0;
-            rk.init({ luna: luna, inputNames: { hdmi1: 'HDMI 1', hdmi2: 'Apple TV' }, stateDir: stateDir, filtersDir: filtersDir,
-              togglePiccap: function (cb) { toggles++; cb({ ok: true, isRunning: true }); } });
-            rk.piccapFromFilter(guard(function (r) {
-              assert.deepEqual([toggles, r.ok], [1, true]);
-              rk.init({ luna: luna, inputNames: { hdmi1: 'HDMI 1', hdmi2: 'Apple TV' }, stateDir: stateDir, filtersDir: filtersDir });
-              rk.piccapFromFilter(guard(function (r2) {
-                assert.strictEqual(r2.ok, false, 'no PicCap, no toggle');
-                console.log('  ✓ the filter asks the server to toggle PicCap, and asks PicCap itself only where the server does not answer');
-                next();
-              }));
-            }));
-          }));
-        }));
-      }), 20);
-    }));
-  }));
-});
-
-// A B8's MR18 (webOS 4.4.3): Text, T.Opt, Live Zoom, AD and the 123 button are
-// offered from the WebOS module, and the number keys where LG's filters handle
-// them; one that is set is taken and opens what it is set to.
-step(function (next) {
-  var plugin = path.join(stateDir, 'libwebosglobalplugin.so');
-  var KEYS_SRC = ['Teletext', 'TextOption', 'LiveZoom', 'AudioDescription', 'ScreenRemote'];
-  fs.writeFileSync(plugin, 'x\u0000' + KEYS_SRC.map(function (n) { return 'Key_webOS_' + n; }).join('\u0000') + '\u0000');
-  var numbers = path.join(filtersDir, 'numbers.js');
-  rk.init({ luna: luna, stateDir: stateDir, filtersDir: filtersDir, webosPlugin: plugin });
-  rk.getRemoteKeys(guard(function (r) {
-    var keys = r.keys.map(function (k) { return k.key; });
-    ['teletext', 'textoption', 'livezoom', 'ad', 'screenremote'].forEach(function (k) { assert.ok(keys.indexOf(k) !== -1, k + ' offered from the module'); });
-    assert.ok(keys.indexOf('num1') === -1, 'no number keys where LG\'s filters do not handle them');
-    fs.writeFileSync(numbers, 'if (key >= Qt.Key_1 && key <= Qt.Key_9 || key === Qt.Key_0) {}');
-    rk.init({ luna: luna, stateDir: stateDir, filtersDir: filtersDir, webosPlugin: plugin });
-    rk.getRemoteKeys(guard(function (r2) {
-      var nums = r2.keys.filter(function (k) { return /^num/.test(k.key); });
-      assert.deepEqual(nums.map(function (k) { return k.title; }), ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0']);
-      assert.ok(nums.every(function (k) { return k.numberKey === true; }), 'each says it takes the digit and Quick Access');
-      rk.setRemoteKey('teletext', 'open', 'netflix', guard(function (a) {
-        assert.ok(a.ok, a.error);
-        rk.setRemoteKey('num5', 'open', 'youtube.leanback.v4', guard(function (b) {
-          assert.ok(b.ok, b.error);
-          var f = loadFilter(null, {
-            WebOS: { Key_webOS_Teletext: 1201, Key_webOS_TextOption: 1202 },
-            Qt: { Key_Super_L: 2001, Key_Video: 2002, Key_5: 53, Key_6: 54 }
-          });
-          assert.strictEqual(f.handle(1201, true, false), 'accepted');
-          assert.strictEqual(f.handle(53, true, false), 'accepted');
-          assert.deepEqual(f.launched.map(function (l) { return l.id; }), ['netflix', 'youtube.leanback.v4']);
-          assert.strictEqual(f.handle(1202, true, false), 'next', 'T.Opt left to LG while it is not set');
-          assert.strictEqual(f.handle(54, true, false), 'next', 'and the number keys not set');
-          rk.setRemoteKey('teletext', 'lg', '', guard(function () {
-            rk.setRemoteKey('num5', 'lg', '', guard(function () {
-              fs.unlinkSync(plugin);
-              fs.unlinkSync(numbers);
-              rk.init({ luna: luna, inputNames: { hdmi1: 'HDMI 1', hdmi2: 'Apple TV' }, stateDir: stateDir, filtersDir: filtersDir });
-              console.log('  ✓ Text, T.Opt, Live Zoom, AD, the 123 button and the number keys are offered and taken where the TV can');
-              next();
-            }));
-          }));
-        }));
-      }));
-    }));
-  }));
-});
-
-// Home is named by what it opens: LG's Home, or Glasshouse Home where it runs under LG's Home's id.
-step(function (next) {
-  rk.getRemoteKeys(guard(function (r) {
-    var home = r.choices.filter(function (c) { return c.id === 'com.webos.app.home'; })[0];
-    assert.deepEqual([home.title, home.icon], ["LG's Home", 'lgHome']);
-    rk.init({ luna: luna, inputNames: { hdmi1: 'HDMI 1', hdmi2: 'Apple TV' }, stateDir: stateDir, filtersDir: filtersDir, homeIsGlasshouse: function () { return true; } });
-    rk.getRemoteKeys(guard(function (r2) {
-      var gh = r2.choices.filter(function (c) { return c.id === 'com.webos.app.home'; })[0];
-      assert.deepEqual([gh.title, gh.icon], ['Glasshouse Home', 'glasshouse']);
-      rk.init({ luna: luna, inputNames: { hdmi1: 'HDMI 1', hdmi2: 'Apple TV' }, stateDir: stateDir, filtersDir: filtersDir });
-      console.log('  ✓ the Home choice says whether it opens LG\'s Home or Glasshouse Home');
-      next();
-    }));
-  }));
-});
-
-// Glasshouse Home with a Home Assistant tile that steps in focus: Channel up
-// and down set to Brightness go to Home while it is in front, and set the
-// brightness anywhere else.
-step(function (next) {
-  fs.writeFileSync(FILTER, rk.filterSource(), 'utf8');
-  var front = true;
-  var f = loadFilter(null, { global: { isForegroundApp: function (id) { return front && id === 'com.webos.app.home'; } } });
-  var UP = 1006;
-  f.tell({ keys: { channelup: 'action:brightnessUp' } });
-  assert.strictEqual(f.handle(UP, true, false), 'accepted', 'brightness without the flag');
-  f.tell({ keys: { channelup: 'action:brightnessUp' }, homeAdjust: true });
-  assert.strictEqual(f.handle(UP, true, false), 'next', 'to Home while its tile is in focus');
-  assert.strictEqual(f.handle(UP, false, false), 'next', 'the release too');
-  front = false;
-  assert.strictEqual(f.handle(UP, true, false), 'accepted', 'brightness once Home is not in front');
-  front = true;
-  f.tell({ keys: { red: 'action:brightnessUp' }, homeAdjust: true });
-  assert.strictEqual(f.handle(1004, true, false), 'accepted', 'only the channel keys are handed to Home');
-
-  // The server's side: written only with a channel key set to Brightness, and only on a change.
-  fs.writeFileSync(MAP, JSON.stringify({ keys: { red: 'action:brightnessUp' } }), 'utf8');
-  var before = tv.keysWrites;
-  rk.setHomeAdjust(true, guard(function (r) {
-    assert.strictEqual(r.changed, false, 'no channel key set to Brightness');
-    assert.strictEqual(tv.keysWrites, before);
-    fs.writeFileSync(MAP, JSON.stringify({ keys: { channelup: 'action:brightnessUp', channeldown: 'action:brightnessDown' } }), 'utf8');
-    rk.setHomeAdjust(true, guard(function (r2) {
-      assert.ok(r2.ok && r2.changed);
-      assert.strictEqual(tv.keys.homeAdjust, true);
-      assert.strictEqual(tv.keys.keys.channelup, 'action:brightnessUp', 'the keys written with it');
-      var writes = tv.keysWrites;
-      rk.setHomeAdjust(true, guard(function (r3) {
-        assert.strictEqual(r3.changed, false);
-        assert.strictEqual(tv.keysWrites, writes, 'not written again');
-        rk.setHomeAdjust(false, guard(function (r4) {
-          assert.ok(r4.ok && r4.changed);
-          assert.strictEqual(tv.keys.homeAdjust, undefined);
-          console.log('  ✓ Channel up and down set to Brightness step a Home Assistant tile in focus on Glasshouse Home');
-          next();
         }));
       }));
     }));

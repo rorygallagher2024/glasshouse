@@ -1,18 +1,17 @@
 # Tested TVs
 
-Confirmed on **95 TVs across 61 series** running **webOS 2.2 through 11** (LG's webOS 26). Any other rooted webOS model should work as well.
+Confirmed on **92 TVs across 58 series** running **webOS 2.2 through 11** (LG's webOS 26). Any other rooted webOS model should work as well.
 
 * **Series & sizes:** Screen sizes and regional variants of a series run the same software, so the summary table groups them into one row per series. Years are LG's model years; many TVs have since been updated to a later webOS.
 * **Version numbers:** Versions here are what the TV reports itself, as the dashboard shows them; see [webOS version numbers](#webos-version-numbers) below for LG's marketing names (webOS 22–26).
 * **Older firmware:** webOS 2 and 3 have fewer of LG's services, so readings and controls that rely on them are automatically omitted there.
 
-=== "By series (61)"
+=== "By series (58)"
 
     | Series        | Year | Panel | webOS seen        | Reports |
     | :------------ | :--- | :---- | :---------------- | :------ |
     | LF632V        | 2015 | LCD   | 2.2               | 1       |
     | UF850T        | 2015 | LCD   | 2.2               | 1       |
-    | EG910V        | 2015 | OLED  | 2.2               | 1       |
     | UH600V        | 2016 | LCD   | 2.2               | 1       |
     | UH6030        | 2016 | LCD   | 3.4               | 1       |
     | UH610V        | 2016 | LCD   | 3.4               | 1       |
@@ -67,19 +66,16 @@ Confirmed on **95 TVs across 61 series** running **webOS 2.2 through 11** (LG's 
     | UA73          | 2025 | LCD   | 10.3.1            | 1       |
     | UA75          | 2025 | LCD   | 10.3              | 2       |
     | C6            | 2026 | OLED  | 11.2              | 1       |
-    | G6            | 2026 | OLED  | 11.1              | 1       |
-    | MRGB87        | 2026 | LCD   | 11.2              | 1       |
     | NU80          | 2026 | LCD   | 11                | 1       |
     | QNED84        | 2026 | LCD   | 11.0              | 1       |
 
-=== "All reports (95)"
+=== "All reports (92)"
 
     | Model       | webOS        | Firmware | Panel | Notes                                                          |
     | :---------- | :----------- | :------- | :---- | :------------------------------------------------------------- |
     | 49LF632V-ZC | 2.2.3        | —        | LCD   | Settings service under its older name; server on Node 0.10     |
     | 55UF850T-TB | 2.2.1        | 04.05.60 | LCD   | Remote button events needed a fix for Node 0.10 ([#1256](https://github.com/rorygallagher2024/glasshouse/issues/1256)) |
     | 55UH600V-ZA | 2.2.3        | 04.26.35 | LCD   | PicCap withheld on webOS 2 to prevent watchdog reboot ([#746](https://github.com/rorygallagher2024/glasshouse/issues/746)); runs cleanly |
-    | 55EG910V-ZB | 2.2.3        | 04.06.75 | OLED  | Glasshouse Home confirmed ([#1725](https://github.com/rorygallagher2024/glasshouse/issues/1725)) |
     | 43UH610V-ZB | 3.4.3        | 05.70.50 | LCD   | No SoC temp, eMMC wear, or OLED metrics by hardware design     |
     | 55UH6030-UC | 3.4.3        | —        | LCD   |                                                                |
     | 58UH635V    | 3.x          | 05.70.40 | LCD   | no eMMC wear reported                                          |
@@ -164,13 +160,11 @@ Confirmed on **95 TVs across 61 series** running **webOS 2.2 through 11** (LG's 
     | 43UT73006LA | —            | —        | LCD   | Reported working                                               |
     | 43NU800BPSC | 11.0.0       | 43.02.50 | LCD   | Rooted with slopbro; privacy controls confirmed                |
     | 85QNED84BUA | 11.0.1       | 43.11.76 | LCD   | Dashboard, telemetry disabling and privacy controls confirmed |
-    | OLED65G6WUA | 11.1.0       | 43.10.69 | OLED  | Rooted with slopbro; dashboard, telemetry, privacy, ad blocker, background services, Glasshouse Home, Clock screen saver, No Signal screen, remote keys, Picture/Audio, NTP, in-app update and MQTT bridge confirmed ([#1752](https://github.com/rorygallagher2024/glasshouse/issues/1752)) |
     | OLED77C5PUA | 11.2.0       | 43.21.31 | OLED  | Installed over SSH; dashboard, telemetry, privacy and log upload switches, ad blocker, preload (from the preload manager) and custom screen savers confirmed |
     | OLED65G36LA | 11.2.0       | 43.21.71 | OLED  | Rooted with DualBro; privacy, app installs and custom screen savers confirmed |
     | OLED83G5WUA | 11.2.0       | 43.21.71 | OLED  | Rooted with DualBro; runs with internet access blocked         |
     | OLED42C35LA | 11.2.0       | 43.21.71 | OLED  | Working                                                        |
     | OLED55C61LA | 11.2.0       | 43.21.79 | OLED  | Rooted with Dualbro; screen saver and remote keys confirmed    |
-    | 65MRGB87B6B | 11.2.0       | 43.21.88 | LCD   | Rooted with slopbro; SSH install; dashboard, privacy, ad blocker, background services, Glasshouse Home, Clock screen saver, remote keys and NTP confirmed; kernel has no firewall ([#1721](https://github.com/rorygallagher2024/glasshouse/issues/1721)) |
 
 > [!TIP]
 > **Tested on another model?** Please [open an issue](https://github.com/rorygallagher2024/glasshouse/issues/new) with the TV model, webOS version, and the contents of `/var/lib/tvweb/tvweb.log` — whether everything worked or something broke — and we will add a row.
@@ -181,7 +175,7 @@ Glasshouse Home and the launchers in its place, and the overlay bars the remote 
 
 | Feature | Reported working | Offered, with a warning | Not offered |
 | :------ | :--------------- | :---------------------- | :---------- |
-| Glasshouse Home, Minimal and custom launchers | 2, 3, 4, 5, 6, 7, 9, 10, 11 | 1 and earlier, 8, 12 and later | None |
+| Glasshouse Home, Minimal and custom launchers | 3, 4, 5, 6, 7, 9, 10, 11 | 2 and earlier, 8, 12 and later | None |
 | Glasshouse Bar and the input bar | 4, 5, 6, 7, 9, 10 | 8 | 3 and earlier, 11 and later |
 
 On webOS 2 and 3, Glasshouse Home runs as an app beside LG's Home, and reads the Home press from the remote itself. Tile hiding, and custom screen savers on webOS 12 and later, can leave a TV needing a restart when they go wrong, so they stay [experimental](experimental.md) with their own switches.
@@ -196,7 +190,7 @@ Only Glasshouse Bar and the input bar are refused anywhere, and each refusal com
 **webOS 3: LG's ribbon before Glasshouse Home.** Glasshouse Home works on webOS 3, but because it reads the Home press alongside LG's compositor rather than before it, LG's ribbon shows for about a second first, each time Home is pressed. Taking the press first would mean holding the remote's input devices exclusively and passing every other key back through `/dev/uinput`. On a 60UJ6519 the compositor has every input device open, `/dev/uinput` is there, and the TV's Python has no `fcntl`, so it would take a small native program ([details](development/TV-RESEARCH.md#no-remote-key-filters-on-webos-3-60uj6519-za-webos-393)). It is left for a contributor with a webOS 3 TV, who can try it on their own; see [the help-wanted issue](https://github.com/rorygallagher2024/glasshouse/issues?q=is%3Aissue+label%3A%22help+wanted%22+webOS+3).
 
 **webOS 11 and later: the keys are LG's own.** The key filters became native libraries with no file to add to. On a C5 (webOS 11.2.0) Home always launched LG's Home app, and Input always opened LG's input picker, whatever the settings held ([details](development/TV-RESEARCH.md#native-key-filters-c5-webos-1120)). Glasshouse Home still works there because it takes the place of LG's Home app itself. webOS 12 and later are taken to be the same, but no one has looked.
-*Since then:* Glasshouse changes a few bytes of LG's key handler library, in a copy mounted over it, on a TV whose build it lists, so the Guide key opens Glasshouse Home's guide and the Input key opens the input bar there (an OLED48C31LA, firmware 44.00.92, and an OLED65C35LA, firmware 43.21.71, so far). The Home key of such a build opens Glasshouse Bar in the same way, through LG's `libsystemUI.so`, and the bars on other builds are not offered ([details](development/TV-RESEARCH.md#the-input-keys-launch-native-key-filters-oled48c31la-webos-1120-firmware-440092)).
+*Since then:* Glasshouse changes a few bytes of LG's key handler library, in a copy mounted over it, on a TV whose build it lists, so the Guide key opens Glasshouse Home's guide and the Input key opens the input bar there (an OLED48C31LA, firmware 44.00.92, so far). The Home key of such a build opens Glasshouse Bar in the same way, through LG's `libsystemUI.so`, and the bars on other builds are not offered ([details](development/TV-RESEARCH.md#the-input-keys-launch-native-key-filters-oled48c31la-webos-1120-firmware-440092)).
 *The lead:* the TV logs every button press by name as it happens, and Glasshouse already acts on that log for the Netflix and AI buttons, with an app in front 0.6 to 1 second after the press. A bar opened that way would follow LG's picker or Home rather than replace it.
 
 ## webOS version numbers

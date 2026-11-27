@@ -2,7 +2,7 @@
 
 How to make a home screen of your own and use it in Glasshouse Home's place,
 without changing Glasshouse. Setting one up is on the
-[Home tab](../dashboard/launchers.md#custom-launcher); this page is for writing one.
+[Home tab](../dashboard/home.md#custom-launcher); this page is for writing one.
 
 A launcher is a web page. Glasshouse puts it where LG's Home was, so the Home
 button, Back out of an app and waking on Home all open it, and it handles the
@@ -202,14 +202,6 @@ try it in a computer's browser first: open
 `http://<tv address>:<port>/home/launcher/`. `window.Glasshouse` works there
 too, and opening an app opens it on the TV. Where the dashboard has a token,
 the launcher and Glasshouse's calls answer only the TV itself.
-
-## Sharing it
-
-To publish a custom launcher in **Community launchers**:
-
-1. Keep your web launcher in a GitHub repository (`index.html` at the root or inside one wrapper folder, pure HTML/JS/CSS without native services or binaries) and test it on a TV via **Home → Custom → Community launchers → Install from a GitHub link or .zip URL**.
-2. Tag a GitHub release attaching a `.zip` archive or web-app `.ipk` package and compute its SHA-256 checksum (`shasum -a 256 my-launcher.zip` or `sha256sum my-launcher.zip`).
-3. Open a pull request against [rorygallagher2024/glasshouse-catalog](https://github.com/rorygallagher2024/glasshouse-catalog) adding your entry to `registry.json`.
 
 ## Troubleshooting
 

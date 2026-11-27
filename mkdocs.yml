@@ -43,10 +43,9 @@ nav:
       - Control: dashboard/control.md
       - Metrics: dashboard/metrics.md
       - Home: dashboard/home.md
-      - Launchers: dashboard/launchers.md
-      - Internet TV: dashboard/internet-tv.md
       - Inputs: dashboard/inputs.md
       - Remote: dashboard/remote.md
+      - Remotes: remotes.md
       - Apps: dashboard/apps.md
       - Ambient Light: dashboard/ambient-light.md
       - Privacy: dashboard/privacy.md
@@ -55,7 +54,6 @@ nav:
       - Picture: dashboard/picture.md
       - Audio: dashboard/audio.md
       - Screen savers: dashboard/screen-savers.md
-      - Community add-ons: dashboard/community.md
       - System: dashboard/advanced.md
       - Service menu: dashboard/service-menu.md
       - Server: dashboard/server.md
@@ -83,8 +81,6 @@ nav:
   - Development:
       - Contributing: CONTRIBUTING.md
       - Internals: IMPLEMENTATION.md
-      - Remote keys: development/remote-keys.md
-      - Remotes: development/remotes.md
       - TV hardware specifications:
           - development/tv-specs/index.md
           - LG B8 (OLED65B8SLC): development/tv-specs/b8.md
@@ -98,7 +94,6 @@ nav:
       - TV research: development/TV-RESEARCH.md
       - Screen saver design: development/SCREENSAVER-DESIGN.md
       - Writing a screen saver: development/WRITING-SCREENSAVERS.md
-      - Writing a No Signal screen: development/WRITING-NOSIGNAL.md
       - Writing a launcher: development/WRITING-LAUNCHERS.md
       - Translating the dashboards: STRINGS.md
 

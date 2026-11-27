@@ -1,99 +1,72 @@
 # Remote
 
-The **Remote** tab, `/?tab=remote`, sets what the remote's buttons do. It has two parts:
+The **Remote** tab, `/?tab=remote`, sets what the remote's keys do: the number keys held down, under **Quick Access**, and the other buttons, under **Remote keys**. It appears when the dashboard opens, and is left out on a TV with neither.
 
-* **Quick Access:** what holding a number key opens.
-* **Remote keys:** what the other buttons do, such as the streaming buttons, the color keys and the channel keys.
-
-The tab is left out on a TV that has neither.
-
-## Quick Access
+# Quick Access
 
 ![Quick Access, number keys 1 to 9, each with what it opens](../screenshots/apps-quick-access.png)
 
-Holding a number key from 1 to 9 opens what it is set to: an app, an HDMI input or Live TV. Holding 0 shows the list on the TV. The keys are laid out like the remote's number pad; choose one to see its choices. A change applies straight away, and the TV's own Quick Access list shows it too.
+Sets what each number key on the remote opens when it is held: an installed app, an HDMI input or Live TV, for keys 1 to 9. The keys are tiles laid out as the remote's number pad, each showing what it opens; choosing one opens the choices under its row, as for Remote keys. Holding 0 shows the list on the TV. A change applies straight away, the same as changing it in the TV's own Quick Access list, which shows it too.
 
-* **As LG has it** puts the key back as it was before Glasshouse changed it.
-* **None** makes the key open nothing, including one LG set itself, such as its help on 9.
-* **App not installed** shows for a key LG set for an app that is not on the TV, as it does for some regions' channel apps.
-* A key set to a live TV channel on the TV shows the channel. It can be changed here, but not set to another channel.
+**As LG has it** puts a key back as it was before Glasshouse first changed it, or, for a key changed by an earlier release, LG's own default for it, such as Quick Help on 9. **None** leaves a key opening nothing, including one LG set itself, such as its help on 9. Uninstalling, or `tvwebctl restore-keys`, puts every key Glasshouse changed back as it was. A streaming button set to None is still reported to Home Assistant as a [remote button event](../HOME-ASSISTANT-REMOTE-BUTTONS.md). A key LG set for an app that is not installed, as it does for some regions' channel apps, shows as **App not installed**, with the app's id beneath. A key set to a live TV channel on the TV shows the channel, and can be changed here but not set to another channel. The TV app lists the keys without changing them.
 
-## Remote keys
+# Remote keys
 
 ![Remote keys as tiles in streaming buttons, voice assistant buttons, color keys and other keys, each showing what the key does, with buttons on remotes sold elsewhere folded at the end](../screenshots/apps-remote-keys.png)
 
-Each button is a tile showing what it does now, grouped as **Streaming buttons**, **Voice assistant buttons**, **Channel keys**, **Color keys** and **Other keys**. Choose a tile to see its choices beneath the row. A change applies straight away, on every screen, and lasts across restarts.
+Configures what individual remote buttons do when pressed. Each key appears as a tile showing its active assignment, grouped under **Streaming buttons**, **Voice assistant buttons**, **Channel keys**, **Color keys**, and **Other keys**. Selecting a tile opens its available choices beneath the row.
 
-Home, Back, volume, mute and power cannot be changed.
+On webOS 11, **Ivi**, **Okko**, **Kinopoisk** and **LG Shop** are also offered under Streaming buttons when LG enables their assignments. They can open an app or input, do nothing, or return to **As LG has it**. A listed button may be absent from the physical remote.
 
-### What a key can do {#available-actions}
+Core keys (**Home**, **Back**, volume, mute, and power) are reserved and cannot be reassigned. **Channel up** and **Channel down** can be reassigned where Glasshouse can take them: on webOS 4 to 10, and on some webOS 11 TVs (see below); a channel key that is set no longer changes the channel, so **As LG has it** brings that back. The microphone button can be reassigned; setting it to another action overrides both press and hold, replacing LG's voice control until returned to **As LG has it**. Where the TV's key filters name them, as on webOS 10, three more buttons of the MR25 remotes can be reassigned the same way: the **?** button (as LG has it, a press opens the accessibility menu and a hold its overlay), the **123 button** (a press shows LG's on-screen remote, with the user manual, Sport, Quick Help and the color keys, or an app's own menu in apps that handle the key, such as YouTube and the web browser; a hold switches audio description on or off) and **Home Hub** (it opens LG's Home Hub or the input picker), the last only where the TV's key table gives that key to the Home Hub button. Set, a key takes both press and hold.
 
-| Choice | What it does |
-| :----- | :----------- |
-| **As LG has it** | What the button does on a TV without Glasshouse. |
-| **Nothing** | The button does nothing. |
-| **An app, an HDMI input or Live TV** | Opens it. |
-| **Glasshouse** | Opens one of Glasshouse's own: Glasshouse Home or its [Internet TV guide](internet-tv.md#electronic-programme-guide-epg), [Glasshouse Bar](launchers.md#glasshouse-bar), the [Home Assistant control bar](../HOME-ASSISTANT.md#home-assistant-control-bar), the [input bar](inputs.md#glasshouse-input-bar) or the dashboard. |
-| **Home** | Opens Glasshouse Home where it has taken LG's Home's place, and LG's Home otherwise. |
-| **Screen off** | Turns the picture off while the sound plays on. Any button turns it back on. |
-| **Brightness up** / **Brightness down** | Steps the panel brightness, and shows a level bar. See [Brightness keys](#brightness-keys). |
-| **Power off** | Puts the TV in standby when the button is let go. On a Magic Remote's radio buttons, this turns one TV off without the infrared reaching another beside it. |
-| **Ambient light** | Turns [PicCap](../piccap.md)'s capture on or off. Offered where PicCap is installed. |
-| **Buttons** | Acts as **OK**, or sends **Play**, **Pause**, **Stop**, **Rewind**, **Fast forward**, **Volume up**, **Volume down** or **Mute**. Volume repeats while held, and works a soundbar on HDMI ARC. |
-| **Home Assistant** | Does nothing on the TV, and leaves the button to your [Home Assistant automations](../HOME-ASSISTANT-REMOTE-BUTTONS.md). |
-| **Input switcher** | Opens LG's quick input picker, where the TV has one (such as a C5 on webOS 11). |
+## Available actions
 
-Home Assistant hears the streaming buttons, the color keys, the microphone and Google Assistant as [remote button events](../HOME-ASSISTANT-REMOTE-BUTTONS.md) whatever they are set to, while MQTT is on.
+* **As LG has it:** Keeps the TV's default behavior for that key.
+* **Open an app, an HDMI input, or Live TV:** Launches the selected target directly.
+* **Input bar:** Opens Glasshouse's [input bar](inputs.md#glasshouse-input-bar) overlay instead of LG's inputs list.
+* **Glasshouse Bar:** Opens [Glasshouse Bar](home.md#glasshouse-bar) over whatever is playing, while Glasshouse Home or LG's Home keeps the Home button. Offered on webOS 4 to 10, as the Bar is.
+* **Input switcher:** Opens LG's quick input picker on TVs that support it (such as a C5 on webOS 11).
+* **Screen off:** Blanks the display while audio continues playing; pressing any key turns the screen back on. A streaming button set to anything but LG's does only that while the screen is off: it wakes the screen, and opens the app it is set to, or nothing for **Nothing** or an action (on webOS 4 to 10, where the TV keeps LG's list of streaming buttons).
+* **Brightness up** and **Brightness down:** Raises or lowers the panel brightness (OLED Light, or Backlight on an LCD) by the **Brightness step** per press, 10 points unless changed (5 to 25 on the Remote tab, out of 100), for the current picture mode and input, within 0 to 100. A held key repeats. Each press also shows the level in a bar laid out like the TV's own volume bar: vertical, at the right edge, with a sun above and below the track and the level beside it. It fades out about 1.6 s after the last change. **Level bar style**, in the same section, can change it to a horizontal bar low on the screen, to the same bar vertical at the right edge, or to **No bar**: the key then changes the brightness and shows nothing, and the input bar's app is taken off the TV unless an Input bar key needs it. It is Glasshouse's own bar, so it comes from the input bar's app (webOS 4 to 10), and the TV's own volume bar is not replaced. Set one key to each. The Brightness step is in the **Brightness key settings** section at the bottom of the Remote tab, which shows once a key is set to one of them.
+* **Power off:** Puts the TV into standby on key release. When using TVs side by side, assigning this to a Magic Remote's RF button allows putting one TV into standby without an IR signal affecting the other. (The dedicated Power button is unchanged, and power actions are not offered in Quick Access).
+* **Buttons:** Acts as **OK**, or sends **Play**, **Pause**, **Stop**, **Rewind**, **Fast forward**, **Volume up**, **Volume down**, or **Mute** to on-screen media. **OK** puts the Magic Remote's OK, the scroll wheel's press, on a flat button too. Volume commands repeat while held and control connected HDMI ARC soundbars.
+* **Home & Guide:** Opens Glasshouse Home (or LG's Home if disabled), or opens Glasshouse Home's [IPTV guide](home.md#internet-tv).
+* **Home Assistant:** Silences TV handling while keeping the key labelled for Home Assistant automations. When MQTT is enabled, Home Assistant receives [Remote Button](../HOME-ASSISTANT-REMOTE-BUTTONS.md) events for streaming buttons, color keys, Google Assistant, and the microphone regardless of what they are set to on the TV.
+* **Nothing:** Disables the key completely on the TV.
 
-On webOS 11 fewer choices are offered: see [webOS 11](#webos-11).
+## Remote models and regional buttons
 
-### Which buttons are listed
+The [Remotes](../remotes.md) page lists the LG remotes Glasshouse knows and the keys each is known to have.
 
-The tab lists the buttons the TV's software knows, which can be more than your remote has: a Magic Remote has no color or Guide keys, and a standard remote has no streaming buttons. Setting a button your remote lacks does nothing and does no harm.
+The available keys reflect what the TV's software supports, not necessarily what is present on a specific physical remote. A Magic Remote lacks color, Guide, and Info keys, while a standard IR remote lacks dedicated streaming buttons, but the TV can receive both.
 
-* **Display only buttons for your remote** (on by default) hides the buttons none of your remotes have. It shows where every remote paired with the TV, or used in the last 30 days, is one Glasshouse knows fully ([Remotes](../development/remotes.md)). Off, those buttons come back under **Buttons on other remotes**. A button you have changed always shows.
-* **Buttons on remotes sold elsewhere** holds buttons only sold on remotes in other countries, such as Hulu in the US or BBC iPlayer in the UK.
-* A button goes by the name printed on your remote: with an MR25GA, the microphone key is listed as **AI**.
-* Where none of your remotes has number keys, **Quick Access** starts closed.
+Where every remote paired with the TV or seen in use in the last 30 days has a finished button list on [Remotes](../remotes.md), **Remote keys** shows a **Display only buttons for your remote** switch (on by default), folding keys none of those remotes has into **Buttons on other remotes**, closed until opened. A key that has been changed is never folded away, and switching the setting off shows every button again. The choice is kept with the key settings, nothing on the TV changes with it, and a [settings backup](server.md) carries it. Where no remote is detected, or any detected remote is missing from [Remotes](../remotes.md) or has an unfinished button list, the switch stays hidden and every key stays in view.
 
-### Brightness keys
+Where folding applies and none of the remotes in use has number keys, the **Quick Access** section, which is set by holding a number key, also starts closed; it can still be opened. A key whose button is printed differently on the remote in use goes by that name: with the MR25GA, the microphone key is listed as **AI**, the button that sends it.
 
-**Brightness up** and **Brightness down** change the OLED Light (or Backlight on an LCD) for the current picture mode and input, by the **Brightness step**: 10 out of 100 unless changed, from 5 to 25. Holding the button repeats. Set one button to each.
+The list names buttons supported by the TV's model generation (e.g. a C5 lists its Disney+ button while a CX does not; 2020 remotes add a Movies button, and recent Magic Remotes add Alexa and Google Assistant buttons).
 
-Each press shows the level in Glasshouse's own bar. **Level bar style** chooses its look: vertical at the right edge like the TV's volume bar, horizontal low on the screen, or **No bar**. Both settings are under **Brightness key settings**, at the bottom of the tab, once a button is set to Brightness.
+LG uses identical key definitions across countries. Once the TV reports its country, keys only sold on remotes elsewhere (such as Hulu and Sling TV in the US, BBC iPlayer and Freeview Play in the UK, Globoplay in Brazil, or Shahid in the United Arab Emirates) are grouped under **Buttons on remotes sold elsewhere**. Assigning a key not present on the physical remote does nothing and causes no harm.
 
-On Glasshouse Home, a channel key set to Brightness steps the [Home Assistant tile](home.md) in focus instead, where that tile can step.
+## Interception and persistence
 
-### Channel keys
+Changes take effect immediately across all screens and persist across reboots, working before the Glasshouse server starts. Setting every key back to **As LG has it** (or running `tvwebctl restore-keys` on the TV) removes Glasshouse's filter from the TV's key handling.
 
-**Channel up** and **Channel down** can be changed on webOS 4 to 10, and on some webOS 11 TVs. While set, the key no longer changes the channel anywhere, Live TV included; **As LG has it** brings that back.
-
-### Microphone and other buttons
-
-* **Microphone:** set to anything else, it no longer starts voice control, for a press or a hold.
-* **?**, **123** and **Home Hub** on MR25 remotes can be changed where the TV's software names them, as on webOS 10. Set, a button takes both its press and its hold.
-* **Text**, **T.Opt**, **Live Zoom** and **AD**, on remotes sold with a TV tuner such as the MR18, can be changed on webOS 4 to 10. Text and T.Opt are teletext's: outside Live TV, LG only says "This function is not available" for them, so they are good buttons to give a job. The **123** button can be changed on webOS 4 too.
-
-### Number keys
-
-**1** to **9** and **0** can each be set like any other button, under **Number keys**. A number key set here no longer types its number, in Live TV or when entering a PIN, and holding it no longer opens what [Quick Access](#quick-access) sets for it. **As LG has it** brings both back. The group shows only where your remote has number keys.
-
-### How it works
-
-Glasshouse puts its own filter first in the TV's key handling, so a button it has changed never reaches the app on screen: a color key set here no longer works teletext on Live TV, for example. The filter works from the moment the TV starts, before Glasshouse itself. Setting every button back to **As LG has it**, or running `tvwebctl restore-keys` on the TV, takes the filter out. See [Remote keys through the compositor's filter chain](../IMPLEMENTATION.md#remote-keys-through-the-compositors-filter-chain).
+Glasshouse intercepts keys in the compositor filter chain before apps see them. An assigned key overrides an app's internal use of that key (such as **Guide** in YouTube, or color keys in Live TV teletext). See [Remote keys through the compositor's filter chain](../IMPLEMENTATION.md#remote-keys-through-the-compositors-filter-chain).
 
 > [!WARNING]
-> **LG Input Hook:** if [LG Input Hook](https://repo.webosbrew.org/apps/org.webosbrew.inputhook/) is installed from the Homebrew Channel, it takes the streaming buttons first, and Glasshouse cannot change them. Uninstall it and restart the TV.
+> **Conflict with LG Input Hook:** If [LG Input Hook](https://repo.webosbrew.org/apps/org.webosbrew.inputhook/) is installed from the Homebrew Channel, it captures streaming buttons before the TV's key handling sees them, preventing Glasshouse from reassigning them. Uninstall LG Input Hook and restart the TV for Glasshouse remote keys to work.
 
-## webOS 11
+## webOS 11 behaviour
 
-On webOS 11 (LG's webOS 26), LG keeps the button settings itself, and allows less:
+On webOS 11 (LG's webOS 26), LG manages button assignments natively:
 
-* **Can be changed:** the streaming buttons, Apps, Guide, Home Hub (MR25 remotes), AI, Alexa and **?** (press and hold separately). On some TVs also **Input**, **Channel up** and **Channel down**. Search, Info, Home and 123 cannot.
-* **Choices:** mostly opening an app or an input. **Screen off**, **Brightness** and **Ambient light** are offered on Netflix, Prime Video, Home Hub and, where they can be changed, the channel keys. **Nothing** shows LG's "This function is not supported" notice. **OK**, the media buttons, **Power off** and **Home Assistant** are not offered.
-* **Color keys** can open an app, an input or the input switcher while Glasshouse runs. The key still reaches the app on screen too, so **Nothing** is not offered.
-* **Guide**, **Input** and the **channel keys** need a small change to LG's key handling on the TVs Glasshouse knows. Setting one restarts the TV's screen once, about 35 seconds, and again each time the TV starts.
-* **AI:** changing it turns off LG's voice assistant until it is **As LG has it** again.
-* **Alexa:** changing it stops Alexa opening. Some TVs refuse; the button is then no longer offered.
-
-The details for each button and TV are in [webOS 11 remote keys in detail](../IMPLEMENTATION.md#webos-11-remote-keys-in-detail).
+* **Supported keys:** Streaming buttons, Apps, Guide, Home Hub (on MR25 remotes), **AI**, **Alexa**, and the **?** button (configurable separately for press and hold). Color keys, Search, Info, Home, and **123** cannot be reassigned, and **Input** only as below.
+* **Action limits:** LG only permits opening apps on webOS 11. **OK** and the media controls, **Power off**, **Home Assistant**, are unavailable. **Glasshouse Home's guide** is offered on the **Guide** key alone, on TVs whose key handler Glasshouse knows how to change (an OLED48C31LA on firmware 44.00.92 so far): setting it changes a few bytes of LG's `libappLaunch.so.1` in a copy mounted over it and restarts the TV's screen once, which takes about 35 s, and again each time the TV starts. The **Input** key is offered on the same TVs and can open an app, an HDMI input, **Live TV** or the **Glasshouse Input bar**, or stay as LG has it, with the same change to LG's library and the same restart of the screen. It cannot do nothing, and no media key or action can be set on it, and an app whose id is longer than 30 characters is not offered. Where the TV's build is not known, neither choice is offered. A streaming button set to **Nothing** displays LG's "This function is not supported" notice, and the **?** button cannot be set to **Nothing**.
+* **Guide on Live TV and the HDMI inputs:** There, LG hands the **Guide** key to the input before Glasshouse's setting is read, so it opens the input's own guide whatever the key is set to, as on a C3 with webOS 11.2. The setting applies on Home and in apps ([#1615](https://github.com/rorygallagher2024/glasshouse/issues/1615)).
+* **Screen off:** Available on Netflix, Prime Video, and Home Hub buttons. A streaming button displays LG's "This function is not supported" notice, and Glasshouse turns the screen off ~0.5 s after press. LG restores its streaming button assignments when the screen goes off, and Glasshouse reapplies them moments later.
+* **Brightness up and Brightness down:** Offered on the same buttons as Screen off, and answered from the system log in the same way, so a press changes the brightness by one step. Holding the button does not repeat, and two presses less than half a second apart count as one.
+* **Channel up and Channel down:** Offered where Glasshouse can take the keys: on webOS 4 to 10 (tried on a B8 with webOS 4.4 and an OLED48C56LB with webOS 10.3.0), and on some webOS 11 TVs (an OLED48C54LA on firmware 43.21.77 so far). Each can do **Nothing**, **Screen off**, **Brightness up** or **Brightness down**, or open an app or an input, and while set it no longer changes the channel anywhere, Live TV included. On webOS 11, setting one (or back to **As LG has it**) restarts the TV's screen once, about 35 s, and is reapplied at each start; a Brightness key then steps while held, about five a second after the first half second.
+* **AI button:** Reassigning the AI button disables LG's voice assistant entirely (voice search, the AI assistant, and the microphone stop working until restored to **As LG has it**). Glasshouse opens the chosen target ~1 s after press.
+* **Alexa button:** Reassigning the Alexa button prevents Alexa from launching and suppresses all on-screen notices for 4 seconds to hide Amazon's "Alexa is loading" prompt. Some TVs will not let Alexa be stopped from launching (seen on a C3 with webOS 11.2); there, once the TV has refused, the Alexa button is no longer offered and stays as LG has it. See [webOS 11: LG's own values](../IMPLEMENTATION.md#webos-11-lgs-own-values).

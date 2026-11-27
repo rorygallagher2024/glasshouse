@@ -5,62 +5,40 @@ This server has **no authentication by default**, and binds dual-stack to
 your network. Anyone who can reach the port can use every enabled control. On a home LAN that is usually the point; understand
 it before exposing it more widely.
 
-## The basics
-
 - **Set a token.** Put `"token": "something-long"` in `config.json` and every
   `/api/` request must carry `?k=something-long` or an
   `Authorization: Bearer something-long` header. Open the dashboard once with
   the token in the URL; the browser remembers it and the page takes it out of
-  the address bar, so it stays out of history and shared links. This gates the HTTP API only: **MQTT and the Home
+  the address bar, so it stays out of history and shared links. This gates the HTTP API only &mdash; **MQTT and the Home
   Assistant integration are unaffected**, since they use a separate channel.
-- **Never port-forward this.** It is designed for a trusted LAN.
-- **Bind to `127.0.0.1` to keep the on-TV app but close the port.** With
-  `"host": "127.0.0.1"` nothing on the network can connect to port 8080, while
-  the on-TV app, which connects over the TV's own loopback, keeps working. The
-  app's QR codes are hidden in this mode, since they would point a phone at an
-  address the server no longer answers on.
-- No CORS headers are sent, so other websites cannot read your telemetry from
-  your browser. Cross-origin `POST`s are refused, and `/api/control` requires
-  `Content-Type: application/json`.
-- Remember the wider context: rooted webOS exposes an **unauthenticated root
-  telnet on port 23**. That is a far bigger exposure than this server, and it
-  is worth closing off if you have not already.
+- **The Tools tab shows the TV's logs** - its system log, Glasshouse's own and,
+  if asked, the kernel's - to whoever can reach the dashboard, as `/api/logs`.
+  They name the apps in use, the network and the broker the TV talks to. A
+  token gates them with the rest of the API.
+- **Music highway listens to what the TV plays.** While that screen saver is
+  on screen, the server records the TV's sound output (the mix it plays, not
+  a microphone) with `arecord` and turns it into levels and beats as it
+  arrives, keeping only the last fraction of a second; nothing is saved or
+  sent anywhere, and recording stops 3 seconds after the screen saver
+  closes. Whoever can reach the dashboard can read those levels at
+  `/api/audio/levels`, which a token gates with the rest of the API.
+- **Syslog forwarding is off by default.** With `syslog.server` set in
+  `config.json` the same logs go to that server as plain UDP: unencrypted,
+  unauthenticated, and readable by anything on the path. Addresses,
+  credentials and postcodes are redacted unless `"redact": false` is set.
+- **Setting the clock from NTP is off by default.** With a time server set,
+  from the Server tab or as `ntp.server`, the TV takes its time from that
+  server over plain UDP, unauthenticated, and anything that can answer in its
+  place can set the TV's clock. The Server tab can change it only where
+  controls are allowed, and with the token where one is set.
+- **`"allowPower": false`** hides and refuses power off, power on and reboot,
+  in the dashboard and in Home Assistant, for a TV that should never be
+  switched off over the network. The other controls stay.
 - **Turn the dashboard off if you do not use it.** `"web": { "enabled": false }`
   removes the HTTP endpoint altogether, which is stronger than gating it with a
   token. An MQTT-only install has no reason to expose one. The on-TV app runs on
   the same server, so it stops working too; a first install in this state does
   not add it.
-- **`"allowPower": false`** hides and refuses power off, power on and reboot,
-  in the dashboard and in Home Assistant, for a TV that should never be
-  switched off over the network. The other controls stay.
-- **The web app debugger is closed to the network.** Developer Mode, which a
-  rooted TV keeps on, opens WebAppMgr's DevTools on port 9998 to anyone on the
-  network, with no login. Every Homebrew app is inspectable, so that is code
-  running inside the Homebrew Channel, whose service runs as root, or inside
-  the on-TV app, which needs no token. The server drops the port at its firewall
-  on every interface but loopback when it starts. The rule is in memory only:
-  it goes at a reboot and comes back when the server starts. DevTools remains
-  reachable over ssh with `ssh -L 9998:localhost:9998 root@<tv-ip>` and
-  `http://localhost:9998`. Where the kernel has no `ip6_tables` (a C1, webOS 6)
-  the rule covers IPv4 only, which leaves the port open on any IPv6 address the
-  TV has. Some kernels have no firewall at all (a 50QNED80A6A, webOS 10): there
-  the port stays open, and the Server tab says so in place of its switch.
-  WebAppMgr has no setting to listen only on the TV itself, so on such a TV
-  keep it on a network untrusted devices cannot reach, such as its own VLAN or
-  a guest network that keeps devices apart. Turning Developer Mode off
-  closes it, but on a rooted TV it also stops the Homebrew Channel starting. `{ "allowNetworkDebugger": true }` in `config.json` (or toggled
-  from the Server tab) leaves the port open for `ares-inspect`, and the server
-  takes out a rule left by an earlier start. Uninstalling from the Homebrew
-  Channel removes the rule too.
-
----
-
----
-
-## Installing code
-
-Anything that installs code on the TV, from a Glasshouse update to an app, a launcher or a community add-on, is limited as follows.
-
 - **The upgrade and install endpoints install code.** `allowControl` gates
   them along with everything else, so on a default install anyone who can reach
   the port can move the TV to the current release, and can install any app in
@@ -117,41 +95,43 @@ Anything that installs code on the TV, from a Glasshouse update to an app, a lau
   is allowed (`apps.sideload`, a token, or the TV itself), since a catalog
   added there is trusted as a URL install is, and the server logs each one
   added.
-- **Community catalog add-ons follow the same rules as sideloads and launchers.**
-  Catalog packages are downloaded over HTTPS and verified against the SHA-256
-  checksum in `glasshouse-catalog` (refusing any item listed in `revoked` and
-  surfacing a removal warning if already installed). Installing an unlisted
-  add-on from a GitHub or archive URL requires `apps.sideload`, a token, or the
-  TV itself, and passes the same `Host` header check. Community screen savers
-  cannot declare `stats`, `art`, or `news` in `uses` (since those expose
-  dashboard tokens), community No Signal screens run inside
-  `com.webos.app.inputcommon` with files served from `/nosignal/<id>/` over
-  authenticated routes, and community launchers run inside the Home app with
-  the same access as an uploaded custom launcher.
 - **An upload disconnected while space is being reserved is cancelled before its staging file opens.** Its reservation is released, as for a connection dropped during streaming.
+- **Never port-forward this.** It is designed for a trusted LAN.
+- **Bind to `127.0.0.1` to keep the on-TV app but close the port.** With
+  `"host": "127.0.0.1"` nothing on the network can connect to port 8080, while
+  the on-TV app, which connects over the TV's own loopback, keeps working. The
+  app's QR codes are hidden in this mode, since they would point a phone at an
+  address the server no longer answers on.
+- No CORS headers are sent, so other websites cannot read your telemetry from
+  your browser. Cross-origin `POST`s are refused, and `/api/control` requires
+  `Content-Type: application/json`.
+- Remember the wider context: rooted webOS exposes an **unauthenticated root
+  telnet on port 23**. That is a far bigger exposure than this server, and it
+  is worth closing off if you have not already.
+- **The web app debugger is closed to the network.** Developer Mode, which a
+  rooted TV keeps on, opens WebAppMgr's DevTools on port 9998 to anyone on the
+  network, with no login. Every Homebrew app is inspectable, so that is code
+  running inside the Homebrew Channel, whose service runs as root, or inside
+  the on-TV app, which needs no token. The server drops the port at its firewall
+  on every interface but loopback when it starts. The rule is in memory only:
+  it goes at a reboot and comes back when the server starts. DevTools remains
+  reachable over ssh with `ssh -L 9998:localhost:9998 root@<tv-ip>` and
+  `http://localhost:9998`. Where the kernel has no `ip6_tables` (a C1, webOS 6)
+  the rule covers IPv4 only, which leaves the port open on any IPv6 address the
+  TV has. Some kernels have no firewall at all (a 50QNED80A6A, webOS 10): there
+  the port stays open, and the Server tab says so in place of its switch.
+  WebAppMgr has no setting to listen only on the TV itself, so on such a TV
+  keep it on a network untrusted devices cannot reach, such as its own VLAN or
+  a guest network that keeps devices apart. Turning Developer Mode off
+  closes it, but on a rooted TV it also stops the Homebrew Channel starting. `{ "allowNetworkDebugger": true }` in `config.json` (or toggled
+  from the Server tab) leaves the port open for `ares-inspect`, and the server
+  takes out a rule left by an earlier start. Uninstalling from the Homebrew
+  Channel removes the rule too.
 
-## What leaves the TV
+---
 
-- **The Tools tab shows the TV's logs** - its system log, Glasshouse's own and,
-  if asked, the kernel's - to whoever can reach the dashboard, as `/api/logs`.
-  They name the apps in use, the network and the broker the TV talks to. A
-  token gates them with the rest of the API.
-- **Syslog forwarding is off by default.** With `syslog.server` set in
-  `config.json` the same logs go to that server as plain UDP: unencrypted,
-  unauthenticated, and readable by anything on the path. Addresses,
-  credentials and postcodes are redacted unless `"redact": false` is set.
-- **Setting the clock from NTP is off by default.** With a time server set,
-  from the Server tab or as `ntp.server`, the TV takes its time from that
-  server over plain UDP, unauthenticated, and anything that can answer in its
-  place can set the TV's clock. The Server tab can change it only where
-  controls are allowed, and with the token where one is set.
-- **Music highway listens to what the TV plays.** While that screen saver is
-  on screen, the server records the TV's sound output (the mix it plays, not
-  a microphone) with `arecord` and turns it into levels and beats as it
-  arrives, keeping only the last fraction of a second; nothing is saved or
-  sent anywhere, and recording stops 3 seconds after the screen saver
-  closes. Whoever can reach the dashboard can read those levels at
-  `/api/audio/levels`, which a token gates with the rest of the API.
+---
+
 
 ## Internet TV
 
@@ -192,18 +172,18 @@ Removing a playlist on the Home tab deletes its folder at once.
 | :----------------------------- | :----------------------------------------------------------------------- | :------------ | :---- |
 | `"token": "your-secret-token"` | with `?k=your-secret-token` or `Authorization: Bearer your-secret-token` | works         | works |
 | `"host": "0.0.0.0"`            | over IPv4 only                                                           | works         | works |
-| `"host": "127.0.0.1"`          | no: port 8080 is closed to the network                                  | works         | works |
+| `"host": "127.0.0.1"`          | no — port 8080 is closed to the network                                  | works         | works |
 | `"web": { "enabled": false }`  | no                                                                       | does not work | works |
 
 `"host": "127.0.0.1"` is the one to use to keep the on-TV app while closing the port to everything else.
 
-The app runs on the same server, so switching the web server off entirely leaves its tile with nothing to open, so remove it from the **Server** tab first; a first install with the web server off does not add it.
+The app runs on the same server, so switching the web server off entirely leaves its tile with nothing to open — remove it from the **Server** tab first; a first install with the web server off does not add it.
 
 ## Moving from telnet to SSH
 
 A rooted webOS TV exposes an **unauthenticated root shell on port 23**. Anyone
 on your network gets root with no credentials, which makes every other measure
-here mitigation rather than a fix: nothing stored on the TV is secret
+here mitigation rather than a fix &mdash; nothing stored on the TV is secret
 while it is open.
 
 The Homebrew Channel ships dropbear, so this needs no extra software. If you
@@ -213,7 +193,7 @@ nothing here for you.
 **The order matters.** The Homebrew Channel sets a placeholder root password
 (`alpine`, a publicly known default) *unless* `/home/root/.ssh/authorized_keys`
 already exists. Enabling SSH without a key installed therefore gets you
-password login as root with a password everybody knows: no safer than
+password login as root with a password everybody knows &mdash; no safer than
 telnet.
 
 1. In the Homebrew Channel, turn **SSH** on.
@@ -253,7 +233,7 @@ working throughout. `--telnet` forces the old path if you need it.
 
 Worth doing properly, because this is the part that reaches beyond the TV. The
 broker credentials live in `config.json` **on the TV**, and a rooted webOS set
-has an unauthenticated root shell on port 23: so treat anything stored
+has an unauthenticated root shell on port 23 &mdash; so treat anything stored
 there as readable by anyone on your network. `tvweb` tightens the file to `0600`
 at startup, but that is mitigation, not a fix.
 
@@ -269,7 +249,7 @@ and revoke it from that user's profile page if the TV is ever compromised.
 
 The question that matters is not whether the bridge is authenticated (it is),
 but **what that credential is allowed to do**. Reuse your main Home Assistant
-MQTT user and a compromised TV can publish to any topic on the broker,
+MQTT user and a compromised TV can publish to any topic on the broker &mdash;
 including the ones driving your lights, locks or alarms.
 
 **1. Give the TV its own broker user with a restricted ACL.** With this in
@@ -304,7 +284,7 @@ against that file instead of the built-in list. The same file works for a
 broker with a self-signed certificate or a private CA.
 
 Set `"tlsRejectUnauthorized": false` only if your broker uses a self-signed
-certificate and the TV cannot be given its CA: the traffic stays
+certificate and the TV cannot be given its CA &mdash; the traffic stays
 encrypted, but the broker is no longer authenticated, so only do it on a
 network you trust.
 

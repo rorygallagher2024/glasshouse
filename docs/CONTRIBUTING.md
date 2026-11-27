@@ -7,19 +7,6 @@ Contributions are welcome. This guide outlines how to propose changes, write com
 * **You own the glass:** The project exists to give owners direct control over their TV without vendor lock-in, cloud dependencies, or tracking. No telemetry or analytics are collected.
 * **Keep the TV lightweight:** The TV's onboard CPU and RAM are shared with video decoding and system processes. Code running on the TV must remain fast, lean, and free of unnecessary background work.
 * **Zero runtime dependencies:** The on-TV server runs with no npm packages installed on the device.
-* **Community add-ons live in the catalog:** New community screen savers, No Signal screens, and custom launchers belong in their own repositories registered with [rorygallagher2024/glasshouse-catalog](https://github.com/rorygallagher2024/glasshouse-catalog) rather than bundled into core Glasshouse. See [Contributing add-ons to the catalog](#contributing-add-ons-to-the-catalog).
-
-## Contributing add-ons to the catalog
-
-Community screen savers, No Signal screens, and custom launchers live in their authors' own GitHub repositories and appear in Glasshouse through [rorygallagher2024/glasshouse-catalog](https://github.com/rorygallagher2024/glasshouse-catalog).
-
-* **Guides:** [Writing a screen saver](development/WRITING-SCREENSAVERS.md) and [Screen saver design principles](development/SCREENSAVER-DESIGN.md) cover QML screen savers; [Writing a No Signal screen](development/WRITING-NOSIGNAL.md) covers No Signal screens; [Writing a launcher](development/WRITING-LAUNCHERS.md) covers custom Home launchers.
-
-To publish one:
-
-1. Check the package locally (`./scripts/check-screensavers.py` for screen savers or No Signal QML, `python3 scripts/check-es5.py` for launchers) and test it on a TV using **Install from a GitHub link or .zip URL** under **Community screen savers**, **Inputs → No Signal screen → Community No Signal screens**, or **Home → Custom → Community launchers**.
-2. Tag a release on GitHub with a `.zip` archive (or `.ipk` for launchers) and compute its SHA-256 (`shasum -a 256 <archive>` or `sha256sum <archive>`).
-3. Open a pull request against [rorygallagher2024/glasshouse-catalog](https://github.com/rorygallagher2024/glasshouse-catalog) adding your entry to `registry.json`.
 
 ## Working conventions
 
@@ -140,10 +127,6 @@ covers.
   owner, in a sentence or two, without how it works.
 * Findings about LG's software go in `docs/development/TV-RESEARCH.md`, and
   anything the server changes on the TV in `docs/TV-CHANGES.md`.
-* [Remote keys](development/remote-keys.md) is made from the `KEYS` list in
-  `server/lib/remotekeys.js` by `scripts/gen-remote-keys-doc.js`: a key's LG
-  button name (`lg`) and logged name (`log`) go there, and the page is
-  regenerated.
 
 ## Code reviews
 
@@ -180,7 +163,7 @@ The deploy script (`server/deploy.sh`) maintains an explicit list of files copie
 
 ### Documenting a remote
 
-The LG remotes Glasshouse knows are in `server/lib/remotes.json`, and [Remotes](development/remotes.md) is made from it with `scripts/gen-remotes-doc.py`. A remote that is missing, or a button a list lacks, is added there: see [Adding a remote](development/remotes.md#adding-a-remote).
+The LG remotes Glasshouse knows are in `server/lib/remotes.json`, and [Remotes](remotes.md) is made from it with `scripts/gen-remotes-doc.py`. A remote that is missing, or a button a list lacks, is added there: see [Adding a remote](remotes.md#adding-a-remote).
 
 ### Localized strings
 

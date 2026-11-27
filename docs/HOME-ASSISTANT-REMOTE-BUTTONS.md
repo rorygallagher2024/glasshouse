@@ -1,6 +1,6 @@
 # Remote Button Events
 
-Capture presses of the four colored buttons (**Red**, **Green**, **Yellow**, and **Blue**), the streaming buttons (**Netflix**, **Prime Video**, **Disney+**, **LG Channels**, **Rakuten TV**, **Movies** and **Alexa**), the **Google Assistant** button, the **microphone** and **Channel up** / **Channel down** on an LG Magic Remote or IR remote to trigger automations in Home Assistant.
+Capture presses of the four colored buttons (**Red**, **Green**, **Yellow**, and **Blue**), the streaming buttons (**Netflix**, **Prime Video**, **Disney+**, **LG Channels**, **Rakuten TV**, **Movies** and **Alexa**), the **Google Assistant** button and the **microphone** on an LG Magic Remote or IR remote to trigger automations in Home Assistant.
 
 ---
 
@@ -28,7 +28,7 @@ Presses always reach Home Assistant, whatever the button is set to under [Remote
 
 | Entity | Type | Event Types | Topic |
 |---|---|---|---|
-| `event.lg_tv_remote_button` | `event` | `red`, `green`, `yellow`, `blue`, `channelup`, `channeldown`, `netflix`, `amazon` (Prime Video), `disneyplus`, `lgchannels`, `rakutentv`, `movies`, `alexa`, `googleassistant`, `voice` (the microphone) | `lgtv/events/button` |
+| `event.lg_tv_remote_button` | `event` | `red`, `green`, `yellow`, `blue`, `netflix`, `amazon` (Prime Video), `disneyplus`, `lgchannels`, `rakutentv`, `movies`, `alexa`, `googleassistant`, `voice` (the microphone) | `lgtv/events/button` |
 
 When a button is pressed, the server publishes a JSON payload to the event topic:
 
@@ -43,17 +43,11 @@ When a button is pressed, the server publishes a JSON payload to the event topic
 
 ## Setting Up Automations
 
-### Toggle something with a button, without YAML
-
-For a button that toggles, switches on or switches off lights, switches, fans, covers or input booleans, there is a blueprint: [![Open the blueprint in Home Assistant](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fraw.githubusercontent.com%2Frorygallagher2024%2Fglasshouse%2Fmain%2Fblueprints%2Fautomation%2Fglasshouse%2Fremote-button-toggle.yaml)
-
-Its form asks for the TV's Remote Button entity, the button, what it controls and whether to toggle, switch on or switch off. To have the button do nothing on the TV itself, set it to **Home Assistant** on the [Remote](dashboard/remote.md#remote-keys) tab. Without the button, import `https://raw.githubusercontent.com/rorygallagher2024/glasshouse/main/blueprints/automation/glasshouse/remote-button-toggle.yaml` under **Settings → Automations & scenes → Blueprints**. For anything more, such as a different action by time of day, write the automation as below.
-
 ### Using the Home Assistant Automation UI
 
 1. Go to **Settings** → **Automations & Scenes** → **Create Automation**.
 2. Under **When** (Triggers), choose **Entity** → **State**, select entity **Remote Button** (`event.lg_tv_remote_button`), and leave the attribute and the from and to states empty, so every press triggers it.
-3. Under **And if** (Conditions), add **Template** with `{{ trigger.to_state.attributes.event_type == 'red' }}`, using the button wanted: a color (`red`, `green`, `yellow`, `blue`), a channel key (`channelup`, `channeldown`), a streaming button (`netflix`, `amazon`, `disneyplus`, `lgchannels`, `rakutentv`, `movies`, `alexa`), `googleassistant` or the microphone, `voice`.
+3. Under **And if** (Conditions), add **Template** with `{{ trigger.to_state.attributes.event_type == 'red' }}`, using the button wanted: a color (`red`, `green`, `yellow`, `blue`), a streaming button (`netflix`, `amazon`, `disneyplus`, `lgchannels`, `rakutentv`, `movies`, `alexa`), `googleassistant` or the microphone, `voice`.
 4. Under **Then do** (Actions), add any action you want (e.g. toggle lights, run a script, set a scene).
 
 The button is checked in a condition rather than in the trigger's **Attribute** and **To** fields: a trigger on the attribute fires only when it changes, so pressing the same button twice in a row would run the automation once.

@@ -145,6 +145,26 @@ async function loadOledCare() {
   q('oc-counts').hidden = !counts.length;
   q('oled-warn').hidden = !d.serviceControls;
   q('oled-rows').querySelectorAll('button.pill').forEach(b => { b.disabled = !d.writable; });
+  loadSlots();
+}
+
+// Size and checksum of each stored calibration file; the section stays hidden
+// on a TV that does not have the folder.
+async function loadSlots() {
+  const box = q('oled-slots');
+  if (!box) return;
+  let d;
+  try {
+    d = await (await fetch(api('/api/lutslots'), { cache: 'no-store' })).json();
+  } catch (e) { box.hidden = true; return; }
+  if (!d || !d.ok || !d.available || !d.slots.length) { box.hidden = true; return; }
+  q('oled-slot-rows').innerHTML = d.slots.map(s => `<div class="oled-row">
+      <div class="oled-main">
+        <div class="oled-name">${esc(s.mode)} ${esc(s.profile)}<span class="oled-sub">${esc(s.kind)}</span></div>
+        <div class="oled-desc">${esc(t('oled.slots.size', '{n} bytes', { n: Number(s.bytes).toLocaleString() }))}${s.sizeMatches === false ? ' \u2014 ' + esc(t('oled.slots.badSize', 'unexpected size')) : ''}<br><code>${esc(String(s.sha256 || '').substr(0, 16))}</code></div>
+      </div>
+    </div>`).join('');
+  box.hidden = false;
 }
 
 document.addEventListener('click', async ev => {

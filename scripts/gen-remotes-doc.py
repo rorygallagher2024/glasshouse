@@ -1,19 +1,19 @@
 #!/usr/bin/env python3
 """
-Make docs/development/remotes.md from the remote catalogue, server/lib/remotes.json.
+Make docs/remotes.md from the remote catalogue, server/lib/remotes.json.
 
 The page is written from the data so the two cannot drift. scripts/check-drift.py
 runs this with --check, which fails when the page is not what the catalogue
 makes.
 
-    ./scripts/gen-remotes-doc.py          write docs/development/remotes.md
+    ./scripts/gen-remotes-doc.py          write docs/remotes.md
     ./scripts/gen-remotes-doc.py --check  fail if it would change
 """
 import json, pathlib, subprocess, sys
 
 root = pathlib.Path(__file__).resolve().parent.parent
 catalogue = root / 'server' / 'lib' / 'remotes.json'
-page = root / 'docs' / 'development' / 'remotes.md'
+page = root / 'docs' / 'remotes.md'
 
 EVIDENCE = [
     ('measured', 'seen on a TV: a press read from the remote, or a filter that received it'),
@@ -104,9 +104,6 @@ def render():
       ' transparent background, under 20 KB, original artwork or a picture you may share. A remote without one'
       ' shows the generic outline. The file also goes in `FILES` in `server/deploy.sh`.')
     w('')
-    w('To read a remote\'s reported name and button presses over SSH on a rooted TV, see'
-      ' [Remote keys](remote-keys.md#reading-keys-on-a-rooted-tv).')
-    w('')
     return '\n'.join(out)
 
 
@@ -115,7 +112,7 @@ def main():
     if '--check' in sys.argv:
         have = page.read_text(encoding='utf-8') if page.exists() else ''
         if have != text:
-            print('docs/development/remotes.md is not what server/lib/remotes.json makes: run scripts/gen-remotes-doc.py')
+            print('docs/remotes.md is not what server/lib/remotes.json makes: run scripts/gen-remotes-doc.py')
             return 1
         return 0
     page.write_text(text, encoding='utf-8')

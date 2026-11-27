@@ -32,8 +32,3 @@
     <IR_KEY_USP>               = 1091; // Qt::Key_webOS_USP=0x0120002d
     <RF_KEY_VOICE>             =  436; // Qt::Key_webOS_Voice=0x01200034
     <IR_KEY_YELLOW>            =  408; // Qt::Key_webOS_Yellow=0x01200013
-# Read on an OLED65B8SLC (webOS 4.4.3, firmware 05.50.70) on 27 November 2026: Text, T.Opt, Live Zoom and AD, which the OLED48C56LB's table was not read for.
-    <IR_KEY_LIVE_ZOOM>        = 1035; // Qt::Key_webOS_LiveZoom=0x01200017
-    <IR_KEY_AD>               =  837; // Qt::Key_webOS_AudioDescription=0x01200040
-    <IR_KEY_TELETEXT>         =  787; // Qt::Key_webOS_Teletext=0x01200042
-    <IR_KEY_TEXTOPTION>       =  788; // Qt::Key_webOS_TextOption=0x01200043
