@@ -912,7 +912,10 @@ bind-mounted over `/usr/palm/applications/com.webos.app.home`, its
   instance (kill LG's process, or `killApp` the page). Where that instance was
   in front, `last_input_handler` launched Home again 1.0 to 1.2 s later, as
   the new app. Each direction took 2.1 to 2.2 s, nearly all of it the nudge's
-  wait. Killed in the background, LG's Home was not started again.
+  wait. Killed in the background, LG's Home was not started again (so
+  switching from Glasshouse Home to Glasshouse Bar while Home is in front
+  first brings back the previous card app/input so `last_input_handler` leaves
+  LG's Home closed).
 - **LG's Home started fresh** took about 3 s to draw: its window was visible
   1.2 s after the switch and it logged `NL_HOME_SHOWN` 1.9 s after that.
   Restored from its snapshot it drew in 0.2 to 0.3 s.

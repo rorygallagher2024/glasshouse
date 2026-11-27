@@ -721,6 +721,7 @@ homebar.init({
   on: function () { return !liveState || (liveState.state.snapshot().power || {}).systemOn !== false; },
   byKey: remoteKeys.opensHomeBar,
   homeInFront: function () { return !!(glasshouseHome && glasshouseHome.viewInFront()); },
+  lastCardApp: function () { return glasshouseHome ? glasshouseHome.lastCardApp() : ''; },
   // Glasshouse Home, or a launcher in its place, off first: LG's Home keeps its place.
   homeOff: function (cb) {
     if (!glasshouseHome || !glasshouseHome.enabled()) return cb({ ok: true });

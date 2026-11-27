@@ -34,6 +34,13 @@ var AFTER_CLOSE_MS = 1200;
 var AFTER_START_MS = 5000;
 var AFTER_SWITCH_ON_MS = 5000;
 var afterCloseMs = AFTER_CLOSE_MS, afterStartMs = AFTER_START_MS, afterSwitchOnMs = AFTER_SWITCH_ON_MS;
+var LEAVE_POLL_MS = 100, LEAVE_WAIT_MS = 1500;
+var leavePollMs = LEAVE_POLL_MS, leaveWaitMs = LEAVE_WAIT_MS;
+var SKIP_CARD_APPS = {
+  'com.webos.app.home': true, 'com.tvweb.home': true, 'com.tvweb.homebar': true,
+  'com.tvweb.inputbar': true, 'com.tvweb.habar': true, 'com.tvweb.ask': true,
+  'com.webos.app.screensaver': true
+};
 var MAX_FAILURES = 5;
 
 var lunaFn = null;
@@ -54,6 +61,7 @@ var onFn = function () { return true; };
 // Glasshouse Home, or a launcher in its place, given back to LG's Home first.
 var homeOffFn = function (cb) { cb({ ok: true }); };
 var homeInFrontFn = function () { return false; };
+var lastCardAppFn = function () { return ''; };
 // Whether a remote key is set to open it (lib/remotekeys opensHomeBar).
 var byKeyFn = function () { return false; };
 var Subscription = luna.Subscription;
@@ -127,10 +135,17 @@ function init(opts) {
   if (typeof opts.on === 'function') onFn = opts.on;
   if (typeof opts.homeOff === 'function') homeOffFn = opts.homeOff;
   if (typeof opts.homeInFront === 'function') homeInFrontFn = opts.homeInFront;
+  if (typeof opts.lastCardApp === 'function') lastCardAppFn = opts.lastCardApp;
   if (typeof opts.byKey === 'function') byKeyFn = opts.byKey;
   if (opts.Subscription) Subscription = opts.Subscription;
   // For the tests.
-  if (opts.delaysMs) afterCloseMs = afterStartMs = afterSwitchOnMs = opts.delaysMs;
+  if (opts.delaysMs) {
+    afterCloseMs = afterStartMs = afterSwitchOnMs = opts.delaysMs;
+    leavePollMs = opts.delaysMs;
+    leaveWaitMs = opts.delaysMs * 10;
+  }
+  if (typeof opts.leavePollMs === 'number') leavePollMs = opts.leavePollMs;
+  if (typeof opts.leaveWaitMs === 'number') leaveWaitMs = opts.leaveWaitMs;
 }
 
 // Whether Glasshouse Bar is offered: where the remote key filter can open it, and on webOS 11 where the Home key can be changed.
@@ -153,6 +168,38 @@ function status() {
 
 function fail(error) { return { ok: false, error: error }; }
 
+function usableCard(id) {
+  return typeof id === 'string' && id && !SKIP_CARD_APPS[id] ? id : '';
+}
+
+function pickUnderlay(cb) {
+  var id = usableCard(lastCardAppFn());
+  if (id) return cb(id);
+  if (!lunaFn) return cb('');
+  lunaFn('com.webos.service.settings/getSystemSettings', {
+    category: 'general',
+    keys: ['lastInputApp', 'physicalLastInputApp']
+  }, function (r) {
+    var s = r && r.settings;
+    cb(usableCard(s && s.lastInputApp) || usableCard(s && s.physicalLastInputApp));
+  });
+}
+
+function leaveHome(cb) {
+  if (!lunaFn) return cb();
+  pickUnderlay(function (id) {
+    if (!id) return cb();
+    lunaFn('com.webos.applicationManager/launch', { id: id }, function (r) {
+      if (!r || r.returnValue === false || !homeInFrontFn()) return cb();
+      var deadline = Date.now() + leaveWaitMs;
+      (function waitLeft() {
+        if (!homeInFrontFn() || Date.now() >= deadline) return cb();
+        setTimeout(waitLeft, leavePollMs);
+      })();
+    });
+  });
+}
+
 /*
  * Chosen: LG's Home given its place back, the app installed and the Home key
  * pointed at it. Undone where a step fails, so the TV is left as it was.
@@ -165,33 +212,39 @@ function enable(cb) {
   // leaves no gap waiting on installation and can open Glasshouse Bar right away.
   appFn('install', function (installed) {
     if (!installed || !installed.ok) return cb(fail(msg('srv.homebar.install', 'Could not install Glasshouse Bar\'s app.')));
-    homeOffFn(function (off) {
-      if (!off || !off.ok) {
-        if (!byKeyFn()) appFn('remove', function () {});
-        return cb(fail((off && off.error) || msg('srv.homebar.homeOff', 'Could not give LG\'s Home its place back.')));
-      }
-      // webOS 11: the Home key's library is changed, with the choice saved first as that reads it.
-      var keyHome = viaLibrary() ? function (id, done) {
-        try { save(id === APP); } catch (e) { return done({ ok: false }); }
-        applyKeysFn(function () { done({ ok: nativeOnFn() === (id === APP) }); });
-      } : setHomeKeyFn;
-      keyHome(APP, function (keyed) {
-        if (!keyed || !keyed.ok) {
-          if (viaLibrary()) { try { save(false); } catch (e) {} applyKeysFn(function () {}); }
+    function switchOver() {
+      homeOffFn(function (off) {
+        if (!off || !off.ok) {
           if (!byKeyFn()) appFn('remove', function () {});
-          return cb(fail(msg('srv.homebar.key', 'Could not give the Home key to Glasshouse Bar.')));
+          return cb(fail((off && off.error) || msg('srv.homebar.homeOff', 'Could not give LG\'s Home its place back.')));
         }
-        try { save(true); } catch (e) { return cb(fail(e.message)); }
-        console.log('homebar: chosen; the Home key opens Glasshouse Bar');
-        failures = 0;
-        if (!sub) start();
-        else schedule(afterSwitchOnMs);
-        if (showNow && lunaFn) {
-          lunaFn('com.webos.applicationManager/launch', { id: APP, params: { press: Date.now() } }, function () {});
-        }
-        cb({ ok: true, bar: status() });
+        // webOS 11: the Home key's library is changed, with the choice saved first as that reads it.
+        var keyHome = viaLibrary() ? function (id, done) {
+          try { save(id === APP); } catch (e) { return done({ ok: false }); }
+          applyKeysFn(function () { done({ ok: nativeOnFn() === (id === APP) }); });
+        } : setHomeKeyFn;
+        keyHome(APP, function (keyed) {
+          if (!keyed || !keyed.ok) {
+            if (viaLibrary()) { try { save(false); } catch (e) {} applyKeysFn(function () {}); }
+            if (!byKeyFn()) appFn('remove', function () {});
+            return cb(fail(msg('srv.homebar.key', 'Could not give the Home key to Glasshouse Bar.')));
+          }
+          try { save(true); } catch (e) { return cb(fail(e.message)); }
+          console.log('homebar: chosen; the Home key opens Glasshouse Bar');
+          failures = 0;
+          if (!sub) start();
+          else schedule(afterSwitchOnMs);
+          if (showNow && lunaFn) {
+            lunaFn('com.webos.applicationManager/launch', { id: APP, params: { press: Date.now() } }, function () {});
+          }
+          cb({ ok: true, bar: status() });
+        });
       });
-    });
+    }
+    // Move Home out of the foreground before releasing takeover calls killApp,
+    // so sam's last_input_handler sees the previous app/input instead of opening LG's Home.
+    if (showNow && lunaFn) return leaveHome(switchOver);
+    switchOver();
   });
 }
 

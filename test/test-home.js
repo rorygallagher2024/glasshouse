@@ -4601,6 +4601,13 @@ step('Home Assistant bar shortcut and Home row stay opt-in and follow HA bar ava
     ensureHaBarApp: function () { haAppInstalls++; }
   });
   tv.haBarApp = true;
+  assert.strictEqual(home.lastCardApp(), '');
+  foreground('com.webos.app.hdmi2');
+  foreground('com.tvweb.homebar');
+  foreground('com.tvweb.habar');
+  foreground('com.webos.app.screensaver');
+  foreground('com.webos.app.home');
+  assert.strictEqual(home.lastCardApp(), 'com.webos.app.hdmi2', 'lastCardApp keeps the last real card app and skips Home/overlays');
   assert.strictEqual(home.layout().haRow, false);
   assert.strictEqual(home.layout().haBarInHomeBar, false);
   assert.strictEqual(home.haBarInHomeBar(), false);
