@@ -286,7 +286,7 @@ var PICTURE_MODES = {
   hdrVivid: { display: msg('pic.mode.hdrVivid', 'HDR Vivid'), label: 'vivid' },
   dolbyHdrVivid: { display: msg('pic.mode.dolbyHdrVivid', 'Dolby Vision Vivid'), label: 'vivid' },
   standard: { display: msg('pic.mode.standard', 'Standard') },
-  normal: { display: msg('pic.mode.normal', 'Standard'), label: 'standard' },
+  normal: { display: msg('pic.mode.standard', 'Standard'), label: 'standard' },
   hdrStandard: { display: msg('pic.mode.hdrStandard', 'HDR Standard'), label: 'standard' },
   dolbyHdrStandard: { display: msg('pic.mode.dolbyHdrStandard', 'Dolby Vision Standard'), label: 'standard' },
   hdrExternal: { label: 'standard' },
