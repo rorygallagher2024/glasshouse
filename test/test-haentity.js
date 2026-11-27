@@ -182,6 +182,12 @@ function testWebSocket(done) {
         } else if (message.type === 'subscribe_events') {
           wsSubId = message.id;
           socket.write(wsServerFrame({ id: message.id, type: 'result', success: true, result: null }));
+        } else if (message.type === 'ping') {
+          // Slower than the local REST seed read, so the response time shown
+          // is seen to come from the ping.
+          (function (id) {
+            setTimeout(function () { socket.write(wsServerFrame({ id: id, type: 'pong' })); }, 40);
+          })(message.id);
         }
       }
     });
@@ -206,6 +212,8 @@ function testWebSocket(done) {
       assert.strictEqual(r1.state, 'on');
       waitFor(function () { return haEntity.status().wsConnected === true; }, function () {
         assert.strictEqual(haEntity.status().updateMode, 'websocket');
+        waitFor(function () { return haEntity.status().latencyMs >= 40; }, function () {
+        console.log('  ✓ websocket mode takes the response time from Home Assistant\'s ping');
         var beforeEvent = wsRestHits;
         pushEvent('light.pushed', 'off');
         (function checkPushed() {
@@ -234,6 +242,7 @@ function testWebSocket(done) {
             });
           });
         })();
+        });
       });
     });
   });

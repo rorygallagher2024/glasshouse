@@ -54,6 +54,13 @@ var wsAuthed = false;
 var wsReconnectTimer = null;
 var wsNextId = 1;
 var wsSubscribeId = 0;
+// Home Assistant's own ping, for the Connection box's response time where
+// reads come from the push and no longer measure it, and to notice a
+// connection that died without closing.
+var WS_PING_MS = 30000;
+var wsPingTimer = null;
+var wsPingSentAt = 0;
+var wsPingId = 0;
 
 function init(opts) {
   opts = opts || {};
@@ -288,7 +295,10 @@ function read(entityId, cb) {
   watchedAt[entityId] = Date.now();
   if (cacheIsLive()) {
     var hit = fromCache(entityId);
-    if (hit) return cb(hit);
+    if (hit) {
+      lastReadAt = Date.now();
+      return cb(hit);
+    }
   }
   fetchAndCache(entityId, cb);
 }
@@ -432,9 +442,21 @@ function wsSend(socket, message) {
   try { socket.write(encodeWsFrame(bufferFromString(JSON.stringify(message)))); } catch (e) { /* closing anyway */ }
 }
 
+// A ping still unanswered when the next is due means the connection is gone.
+function wsPing() {
+  if (!ws || !wsAuthed) return;
+  if (wsPingSentAt) return wsScheduleReconnect();
+  wsPingId = wsNextId++;
+  wsPingSentAt = Date.now();
+  wsSend(ws, { id: wsPingId, type: 'ping' });
+}
+
 function wsStop() {
   clearTimeout(wsReconnectTimer);
   wsReconnectTimer = null;
+  clearInterval(wsPingTimer);
+  wsPingTimer = null;
+  wsPingSentAt = 0;
   wsAuthed = false;
   if (ws) {
     var socket = ws;
@@ -498,7 +520,9 @@ function wsConnect() {
     if (cfg.updateMode !== 'websocket' || cfg.url !== openedUrl) return socket.destroy();
     ws = socket;
     var reader = new WsFrameReader(function (opcode, payload) {
-      if (opcode === 9) { wsSend(ws, { pong: true }); return true; } // a text ping of our own protocol is harmless either way
+      // A protocol ping is answered with a pong frame carrying its payload,
+      // or the server's heartbeat closes the connection.
+      if (opcode === 9) { try { ws.write(encodeWsFrame(payload, 10)); } catch (e) {} return true; }
       if (opcode === 8) { wsScheduleReconnect(); return false; }
       if (opcode !== 1) return true;
       var message = null;
@@ -510,6 +534,14 @@ function wsConnect() {
         wsBackoffMs = WS_BACKOFF_MS;
         wsSubscribeId = wsNextId++;
         wsSend(ws, { id: wsSubscribeId, type: 'subscribe_events', event_type: 'state_changed' });
+        wsPing();
+        clearInterval(wsPingTimer);
+        wsPingTimer = setInterval(wsPing, WS_PING_MS);
+        if (wsPingTimer.unref) wsPingTimer.unref();
+      } else if (message.type === 'pong' && message.id === wsPingId && wsPingSentAt) {
+        lastLatencyMs = Date.now() - wsPingSentAt;
+        wsPingSentAt = 0;
+        lastStatus = { ok: true, message: lastStatus.message || 'Connected to Home Assistant', error: '', checkedAt: Date.now() };
       } else if (message.type === 'auth_invalid') {
         console.error('haentity: Home Assistant refused the websocket token');
         wsScheduleReconnect();
@@ -702,9 +734,10 @@ function callService(domain, service, data, cb) {
       lastStatus = { ok: false, message: '', error: r.error || 'Error', checkedAt: Date.now() };
       return cb(r);
     }
+    // Not the link's response time: a service call answers once the device
+    // has acted, about a second for a light behind a PLC against 10 to 20 ms
+    // for a read, so it would read as a slow connection.
     lastStatus = { ok: true, message: lastStatus.message || 'Connected to Home Assistant', error: '', checkedAt: Date.now() };
-    lastLatencyMs = r.ms;
-    lastReadAt = Date.now();
     cb({ ok: true, changed: Array.isArray(r.body) ? r.body : [] });
   });
 }
