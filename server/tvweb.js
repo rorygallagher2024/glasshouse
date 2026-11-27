@@ -1677,9 +1677,10 @@ function setupHomeAssistant() {
     entities = ha.filterWithholds(entities, {
       discPfx: discPfx,
       devId: devId,
-      publishFn: function (topic, payload, retain) {
+      // Withheld entities are cleared only once the TV's capabilities are known.
+      publishFn: capsSettled ? function (topic, payload, retain) {
         mqttClient.publish(topic, payload, retain);
-      },
+      } : null,
       capabilities: telemetry.getCapabilities({
         updateCheck: !!(CONFIG.update && CONFIG.update.check),
         isOled: oled.getIsOled(),
@@ -1691,7 +1692,7 @@ function setupHomeAssistant() {
 
     // Settings unsupported after an upgrade/removal must not leave retained controls.
     ha.HA_ENTITIES.forEach(function (entry) {
-      if (entry.id.indexOf('huesync_') !== 0) return;
+      if (!capsSettled || entry.id.indexOf('huesync_') !== 0) return;
       if (!entities.some(function (entity) { return entity.id === entry.id; })) {
         mqttClient.publish(discPfx + '/' + entry.type + '/' + devId + '/' + entry.id + '/config', '', true);
       }
@@ -1800,6 +1801,14 @@ function setupHomeAssistant() {
   var lastPub = null;
   var lastInputSig = '';
   var lastCapSig = '';
+  /*
+   * Whether a telemetry read has finished since the connection, so that what
+   * the TV can do is known. Until then nothing is cleared from Home Assistant:
+   * its entities from before the restart are retained on the broker, and an
+   * entity withheld only because its capability had not been read yet, such
+   * as Sound Format on a C2 (webOS 9.2), was taken away and put back 2 s later.
+   */
+  var capsSettled = false;
 
   /*
    * Switched off is a state of the TV, not a loss of it. While the TV is off
@@ -2029,8 +2038,9 @@ function setupHomeAssistant() {
         requestDiscoveryRepublish('network address');
       }
       var cap = telemetry.getCapabilitySignature();
-      if (cap !== lastCapSig) {
+      if (cap !== lastCapSig || !capsSettled) {
         lastCapSig = cap;
+        capsSettled = true;
         requestDiscoveryRepublish('capabilities');
       }
     });
