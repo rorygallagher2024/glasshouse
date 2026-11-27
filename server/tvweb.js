@@ -577,7 +577,37 @@ var BROWSER_APP = 'com.webos.app.browser';
  */
 var lunaCacheObj = lunaTransport.createCache(luna);
 
-function lunaCached(uri, payload, ttlMs, cb) { lunaCacheObj.get(uri, payload, ttlMs, cb); }
+function lunaCached(uri, payload, ttlMs, cb) { lunaCacheObj.get(uri, payload, liveTtl(uri, payload, ttlMs), cb); }
+
+/*
+ * Reads a live subscription reports in full, by cache key. While each named
+ * subscription is up, a change it reports clears the read (LIVE_STALE), so
+ * the read is kept a minute rather than asked again every few seconds. With
+ * MQTT on, telemetry asked these every 10 s: most of the 80 to 100 luna-send
+ * processes a minute an idle TV started (a B8 and a C2). The minute bounds
+ * what an event the TV never sends costs.
+ */
+var LIVE_KEPT_MS = 60000;
+var LIVE_COVERS = [
+  { key: 'com.webos.service.tvpower/power/getPowerState|{}', groups: ['power'] },
+  { key: 'com.webos.applicationManager/getForegroundAppInfo|{}', groups: ['application'] },
+  { key: 'com.webos.service.settings/getSystemSettings|{"category":"picture","keys":["backlight","pictureMode","energySaving","screenShift","logoLuminanceAdjust"]}', groups: ['picture'] },
+  // The modes on offer follow the source and its dynamic range, which moves
+  // the picture mode the picture subscription reports.
+  { key: 'com.webos.service.settings/getSystemSettingValues|{"category":"picture","key":"pictureMode"}', groups: ['picture', 'application'] },
+  { key: 'com.webos.audio/getSoundOut|{}', groups: ['audio'] },
+  { key: 'com.webos.service.audio/master/getVolume|{}', groups: ['audio'] }
+];
+
+function liveTtl(uri, payload, ttlMs) {
+  if (ttlMs >= LIVE_KEPT_MS || typeof liveState === 'undefined') return ttlMs;
+  var key = uri + '|' + JSON.stringify(payload || {});
+  for (var i = 0; i < LIVE_COVERS.length; i++) {
+    if (LIVE_COVERS[i].key !== key) continue;
+    return LIVE_COVERS[i].groups.every(liveState.isLive) ? LIVE_KEPT_MS : ttlMs;
+  }
+  return ttlMs;
+}
 
 function clearLunaCache(match) { lunaCacheObj.forget(match); }
 
@@ -588,6 +618,7 @@ function clearLunaCache(match) { lunaCacheObj.forget(match); }
  * and the source's frame rate, whose pipeline id can come back the same.
  */
 var LIVE_STALE = {
+  power: ['com.webos.service.tvpower/power/getPowerState'],
   audio: ['com.webos.audio/', 'com.webos.service.audio/', '"category":"sound"'],
   application: ['getForegroundAppInfo', '"category":"picture"', 'getVRRInfo'],
   picture: ['"category":"picture"']
@@ -1847,6 +1878,8 @@ function setupHomeAssistant() {
      * the on (an OLED48CX8LC, a second of off on waking).
      */
     if (!statusOnReconnect.pending()) mqttClient.publish(mqttTopics.status, statusPayload(), true);
+    // The descriptions for ten minutes: re-read with the values, they were
+    // a fifth of the luna-send processes an idle TV with MQTT started.
     lgSettings.collect(LGS_SECTIONS, function (ls) {
     telemetry.collectStats(function(s) {
       // No collection has finished yet, as when the first after a cold boot
@@ -1992,7 +2025,7 @@ function setupHomeAssistant() {
         requestDiscoveryRepublish('capabilities');
       }
     });
-    });
+    }, 0, 600000);
   }
 
   mqttClient.on('connect', function() {

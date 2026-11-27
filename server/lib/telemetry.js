@@ -2131,7 +2131,8 @@ function alwaysReadyShowing(next) {
 
 function readPowerStats(out, done) {
   alwaysReadyShowing(function (showing) {
-    lunaFn('com.webos.service.tvpower/power/getPowerState', {}, function (pw) {
+    // Kept while the power subscription runs, which clears it on a change.
+    lunaCachedFn('com.webos.service.tvpower/power/getPowerState', {}, 2000, function (pw) {
       var rawPower = pw ? (pw.state || pw.processing) : null;
       if (showing && rawPower === 'Active') rawPower = 'Always Ready';
       /*

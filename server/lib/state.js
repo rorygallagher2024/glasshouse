@@ -88,6 +88,12 @@ StateGroup.prototype.stop = function () {
   return this;
 };
 
+// Running and answered since it last started: a change it reports clears
+// the reads it bears on, so those can be kept longer (lunaCached in tvweb.js).
+StateGroup.prototype.live = function () {
+  return this.users > 0 && !this.snapshotPending;
+};
+
 StateGroup.prototype._message = function (response) {
   var values, key, sourceTime, event, i;
   if (response && response.returnValue === false && this.onRefused) this.onRefused(response);
@@ -186,6 +192,7 @@ function init(opts) {
     if (!rawState && response.processing) rawState = response.processing;
     // A reply without a state is a failed read, not a TV switched off.
     if (!rawState) return null;
+    clearCache('power');
     var mapped = powerModule.mapState(rawState);
     var screenOn = !!(mapped.systemOn && mapped.screenOn);
     return { state: mapped.raw, screenOn: screenOn, systemOn: mapped.systemOn };
@@ -324,9 +331,14 @@ function init(opts) {
     })(groupName);
   }
 
+  function isLive(name) {
+    return !!groups[name] && groups[name].live();
+  }
+
   return {
     state: state,
     groups: groups,
+    isLive: isLive,
     reconcile: reconcile,
     start: start,
     stop: stop,
