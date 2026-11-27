@@ -1334,6 +1334,12 @@ if (!CLI_MODE && !webEnabled && !mqttEnabled) {
 
 privacy.checkBootAdBlock(CLI_MODE);
 if (!CLI_MODE) {
+  // Put back the table where another tool took it off (#1716), and keep LG's
+  // update check off while TV updates are blocked (#1363).
+  setInterval(function () { privacy.keepTable(); }, 60000);
+  privacy.checkUpdateSetting();
+}
+if (!CLI_MODE) {
   if (CONFIG.allowNetworkDebugger) devtools.leaveOpen();
   else devtools.blockFromNetwork();
 }
