@@ -50,6 +50,24 @@ class WorkerTests(unittest.TestCase):
         self.assertEqual(watches, [[10, 20], [10, 20]])
         close.assert_called_once_with(10)
 
+    def test_nodes_without_a_device_in_sysfs_are_not_opened(self):
+        present = {"/sys/class/input", "/sys/class/input/event0", "/sys/class/input/event2",
+                   "/dev/input/event0", "/dev/input/event2", "/dev/input/event8", "/dev/input/event9"}
+        devs = {}
+        with patch.object(worker.os.path, "exists", side_effect=lambda p: p in present), \
+             patch.object(worker.os, "open", side_effect=[10, 11]) as op:
+            worker.open_devices(devs)
+        self.assertEqual([c.args[0] for c in op.call_args_list], ["/dev/input/event0", "/dev/input/event2"])
+        self.assertEqual(devs, {10: "/dev/input/event0", 11: "/dev/input/event2"})
+
+    def test_every_node_is_tried_where_sysfs_is_missing(self):
+        present = {"/dev/input/event0", "/dev/input/event8"}
+        devs = {}
+        with patch.object(worker.os.path, "exists", side_effect=lambda p: p in present), \
+             patch.object(worker.os, "open", side_effect=[10, 11]) as op:
+            worker.open_devices(devs)
+        self.assertEqual([c.args[0] for c in op.call_args_list], ["/dev/input/event0", "/dev/input/event8"])
+
     def test_disconnected_remote_reopens_after_backoff_and_emits_buttons(self):
         worker.running = True
         watches = []
