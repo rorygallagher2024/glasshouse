@@ -769,6 +769,7 @@ function doControl(action, value, cb) {
           }, next);
         } : function (next) { next(null); };
         setLive(function (r) {
+          if (hasLive && r && r.returnValue) privacy.rememberHeld('livePlus', '', !acrOn);
           /* Whichever consent flags this firmware's ACR client reads. A flag
              withdrawn takes its agreements with it, and with them any other
              flag resting on them, counted in alsoChanged. */

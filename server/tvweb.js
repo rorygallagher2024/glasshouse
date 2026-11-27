@@ -598,7 +598,7 @@ audioCapabilities.init({ luna: luna, lunaCached: lunaCached, clearLunaCache: cle
 btAudio.init({ luna: luna, clearLunaCache: clearLunaCache });
 game.init({ lunaCached: lunaCached, inputKey: telemetry.inputKey });
 appHosts.init({});
-privacy.init({ luna: luna, lunaCached: lunaCached, config: CONFIG, lgSettings: lgSettings, services: servicesModule, appHosts: CLI_MODE ? null : appHosts });
+privacy.init({ stateDir: __dirname, luna: luna, lunaCached: lunaCached, config: CONFIG, lgSettings: lgSettings, services: servicesModule, appHosts: CLI_MODE ? null : appHosts });
 oled.init({ luna: luna, config: CONFIG });
 screenColour.init({ luna: luna });
 samrescan.init({ luna: luna });
@@ -1355,9 +1355,9 @@ if (!CLI_MODE) {
   if (preloadTimer.unref) preloadTimer.unref();
   var keysTimer = setTimeout(function () { remoteKeys.ensure(); }, 60000);
   if (keysTimer.unref) keysTimer.unref();
-  var heldTimer = setTimeout(function () { lgSettings.reapply(); }, 60000);
+  var heldTimer = setTimeout(function () { lgSettings.reapply(); privacy.reapplyHeld(); }, 60000);
   if (heldTimer.unref) heldTimer.unref();
-  var heldRecheck = setInterval(function () { lgSettings.reapply(); resettime.apply(); }, 60 * 60000);
+  var heldRecheck = setInterval(function () { lgSettings.reapply(); privacy.reapplyHeld(); resettime.apply(); }, 60 * 60000);
   if (heldRecheck.unref) heldRecheck.unref();
   var keysRecheck = setInterval(function () { remoteKeys.recheckNative(); }, remoteKeys.RECHECK_MS);
   if (keysRecheck.unref) keysRecheck.unref();
@@ -2579,6 +2579,7 @@ if (!CLI_MODE) {
     if (ev.group === 'power' && ev.key === 'systemOn' && ev.value === true) {
       preload.resend();
       lgSettings.reapply();
+      privacy.reapplyHeld();
     }
   });
   // The input bar is preloaded while a remote key opens it and the TV is on.

@@ -3,7 +3,8 @@ var say = require('./say');
 var msg = say.msg;
 var list = say.list;
 var fs = require('fs');
-var readTrimmed = require('./util').readTrimmed;
+var util = require('./util');
+var readTrimmed = util.readTrimmed;
 var execFile = require('child_process').execFile;
 var execFn = execFile;
 
@@ -1877,6 +1878,7 @@ function setConsent(ckey, cOn, cb) {
         luna('com.webos.settingsservice/getSystemSettings', { keys: ['eulaStatus'] }, function (v) {
           var now = v && v.settings && v.settings.eulaStatus;
           var applied = !!(now && now[ckey] === cOn);
+          if (applied) plan.changed.forEach(function (k) { rememberHeld('consent', k, !cOn); });
           console.log('consent: ' + ckey + ' ' + cur[ckey] + ' -> ' + cOn +
                       (plan.changed.length > 1 ? ' (with ' + (plan.changed.length - 1) + ' sharing the agreement)' : '') +
                       (applied ? '' : ' (accepted but not applied)'));
@@ -1889,8 +1891,61 @@ function setConsent(ckey, cOn, cb) {
   });
 }
 
+/*
+ * What was switched off here is switched off again when the TV has turned it
+ * back on, as LG's settings held off are (lgsettings.js): the consent flags,
+ * and Live Plus. A flag switched on here is dropped from the record.
+ */
+var HELD_FILE = '/var/lib/tvweb/privacy-held.json';
+
+function readHeld() {
+  var h = util.readJson(HELD_FILE, null);
+  return h && typeof h === 'object' && !Array.isArray(h) ? h : {};
+}
+
+// kind: 'consent' (name: the flag) or 'livePlus' (name ignored).
+function rememberHeld(kind, name, off) {
+  var held = readHeld();
+  var id = kind === 'livePlus' ? 'livePlus' : 'consent:' + name;
+  if (off) held[id] = true; else delete held[id];
+  try { util.writeJsonAtomic(HELD_FILE, held); } catch (e) {
+    console.log('privacy: could not record ' + id + ': ' + e.message);
+  }
+}
+
+function reapplyHeld(cb) {
+  cb = cb || function () {};
+  var ids = Object.keys(readHeld());
+  if (!ids.length || !luna) return cb();
+  (function next(i) {
+    if (i >= ids.length) return cb();
+    var id = ids[i];
+    if (id === 'livePlus') {
+      return luna('com.webos.settingsservice/getSystemSettings', { category: 'option', keys: ['livePlus'] }, function (r) {
+        var v = r && r.settings && r.settings.livePlus;
+        if (v === undefined || v === null || String(v).toLowerCase() !== 'on') return next(i + 1);
+        luna('com.webos.settingsservice/setSystemSettings', { category: 'option', settings: { livePlus: 'off' } }, function (w) {
+          clearCache();
+          console.log('privacy: livePlus ' + (w && w.returnValue ? 'put back off' : 'could not be put back off'));
+          next(i + 1);
+        });
+      });
+    }
+    var key = id.slice('consent:'.length);
+    luna('com.webos.settingsservice/getSystemSettings', { keys: ['eulaStatus'] }, function (r) {
+      var cur = r && r.settings && r.settings.eulaStatus;
+      if (!cur || cur[key] !== true) return next(i + 1);
+      setConsent(key, false, function (c) {
+        console.log('privacy: ' + key + (c && c.ok ? ' put back off' : ' could not be put back off'));
+        next(i + 1);
+      });
+    });
+  })(0);
+}
+
 function init(opts) {
   opts = opts || {};
+  if (opts.stateDir) HELD_FILE = require('path').join(opts.stateDir, 'privacy-held.json');
   if (opts.lgSettings) lgSettingsModule = opts.lgSettings;
   if (opts.services) servicesModule = opts.services;
   if (opts.appHosts !== undefined) appHostsModule = opts.appHosts;
@@ -1945,6 +2000,8 @@ module.exports = {
   _setPs: function (fn) { psArgs = fn; },
   simpleSummary: simpleSummary,
   setConsent: setConsent,
+  rememberHeld: rememberHeld,
+  reapplyHeld: reapplyHeld,
   acrConsentKeys: acrConsentKeys,
   _setAcrBinary: function (file) { ACR_BINARY = file; acrConsentFound = null; },
   readConsentFlags: readConsentFlags,
