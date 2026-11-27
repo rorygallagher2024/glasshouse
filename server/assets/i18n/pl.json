@@ -3216,7 +3216,7 @@
  "ha.token.set": {"text": "Token jest ustawiony. Pozostaw puste, aby go zachować.", "from": "A token is set. Leave blank to keep it."},
  "ha.url": {"text": "Adres Home Assistant", "from": "Home Assistant address"},
  "ha.url.hint": {"text": "Adres i port Twojej instancji Home Assistant.", "from": "Address and port of your Home Assistant instance."},
- "ha.updateMode": {"text": "Tryb aktualizacji", "from": "Update mode"},
+ "ha.updateMode": {"text": "Typ połączenia", "from": "Connection type"},
  "ha.updateMode.desc": {"text": "Jak Glasshouse poznaje aktualny stan encji: pyta Home Assistant na nowo każdym razem, albo utrzymuje otwarte połączenie, które wysyła zmianę w chwili, gdy nastąpi.", "from": "How Glasshouse learns an entity's current state: ask Home Assistant fresh each time, or keep a live connection open that pushes a change the moment it happens."},
  "ha.updateMode.polling": {"text": "Odpytywanie HTTP", "from": "HTTP polling"},
  "ha.updateMode.websocket": {"text": "WebSocket", "from": "WebSocket"},

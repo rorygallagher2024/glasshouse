@@ -588,7 +588,7 @@
  "ha.token.set": {"text": "Đã đặt mã truy cập. Để trống nếu muốn giữ nguyên.", "from": "A token is set. Leave blank to keep it."},
  "ha.url": {"text": "Địa chỉ Home Assistant", "from": "Home Assistant address"},
  "ha.url.hint": {"text": "Địa chỉ và cổng của máy chủ Home Assistant.", "from": "Address and port of your Home Assistant instance."},
- "ha.updateMode": {"text": "Chế độ cập nhật", "from": "Update mode"},
+ "ha.updateMode": {"text": "Loại kết nối", "from": "Connection type"},
  "ha.updateMode.desc": {"text": "Cách Glasshouse biết trạng thái hiện tại của một thực thể: hỏi lại Home Assistant mỗi lần, hoặc giữ một kết nối mở để thay đổi được gửi ngay khi nó xảy ra.", "from": "How Glasshouse learns an entity's current state: ask Home Assistant fresh each time, or keep a live connection open that pushes a change the moment it happens."},
  "ha.updateMode.polling": {"text": "Thăm dò HTTP", "from": "HTTP polling"},
  "ha.updateMode.websocket": {"text": "WebSocket", "from": "WebSocket"},

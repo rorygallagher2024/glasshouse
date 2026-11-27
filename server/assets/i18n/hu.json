@@ -3231,7 +3231,7 @@
  "ha.token.set": {"text": "A token be van állítva. Hagyja üresen a megtartásához.", "from": "A token is set. Leave blank to keep it."},
  "ha.url": {"text": "Home Assistant címe", "from": "Home Assistant address"},
  "ha.url.hint": {"text": "A Home Assistant példány címe és portja.", "from": "Address and port of your Home Assistant instance."},
- "ha.updateMode": {"text": "Frissítési mód", "from": "Update mode"},
+ "ha.updateMode": {"text": "Kapcsolat típusa", "from": "Connection type"},
  "ha.updateMode.desc": {"text": "Hogyan tudja meg a Glasshouse egy entitás jelenlegi állapotát: minden alkalommal újra megkérdezi a Home Assistantot, vagy élő kapcsolatot tart fenn, amely a változást abban a pillanatban elküldi, amikor megtörténik.", "from": "How Glasshouse learns an entity's current state: ask Home Assistant fresh each time, or keep a live connection open that pushes a change the moment it happens."},
  "ha.updateMode.polling": {"text": "HTTP lekérdezés", "from": "HTTP polling"},
  "ha.updateMode.websocket": {"text": "WebSocket", "from": "WebSocket"},
