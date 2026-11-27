@@ -147,6 +147,17 @@ function runningChanged(r) {
   var now = r.running.some(function (a) { return a && a.id === APP; });
   var was = running;
   running = now;
+  /*
+   * The app loads assets/habar.html from this server once, as it starts, and
+   * a preloaded copy outlives a server restart. Found running when this
+   * server starts, it may be the page an earlier version served, so it is
+   * closed and preloaded again, rather than run old code until the TV
+   * restarts. Closing is what makes the next message see it gone.
+   */
+  if (was === null && now && lunaFn) {
+    lunaFn('com.webos.applicationManager/closeByAppId', { id: APP }, function () {});
+    return;
+  }
   if (now) {
     clearTimeout(timer);
     timer = null;
