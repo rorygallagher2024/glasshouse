@@ -55,6 +55,7 @@ nav:
       - Picture: dashboard/picture.md
       - Audio: dashboard/audio.md
       - Screen savers: dashboard/screen-savers.md
+      - Community add-ons: dashboard/community.md
       - System: dashboard/advanced.md
       - Service menu: dashboard/service-menu.md
       - Server: dashboard/server.md
