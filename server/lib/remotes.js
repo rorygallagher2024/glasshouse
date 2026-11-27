@@ -62,6 +62,8 @@ function keysOf(remote) {
 }
 
 function hasKey(remote, key) {
+  // The number keys go with numberKeys rather than ten entries each.
+  if (/^num[0-9]$/.test(key)) return !!(remote && remote.numberKeys === true);
   return !!(remote && remote.keys && Object.prototype.hasOwnProperty.call(remote.keys, key));
 }
 

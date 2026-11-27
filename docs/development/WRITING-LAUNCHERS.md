@@ -2,7 +2,7 @@
 
 How to make a home screen of your own and use it in Glasshouse Home's place,
 without changing Glasshouse. Setting one up is on the
-[Home tab](../dashboard/home.md#custom-launcher); this page is for writing one.
+[Home tab](../dashboard/launchers.md#custom-launcher); this page is for writing one.
 
 A launcher is a web page. Glasshouse puts it where LG's Home was, so the Home
 button, Back out of an app and waking on Home all open it, and it handles the

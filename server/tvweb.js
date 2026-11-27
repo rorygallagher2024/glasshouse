@@ -675,6 +675,10 @@ remoteKeys.init({ detectRemotes: detectRemotes, luna: luna, subscription: lunaTr
   onHomeBarKey: function () { homebar.keySet(); },
   haBarAllowed: function () { return haBar.available(); },
   haBarApp: function (action, cb) { tvApp(action, cb, 'habar-app'); },
+  haBarKept: function () {
+    return quickAccess.opensHaBar() ||
+      !!(glasshouseHome && glasshouseHome.haBarInHomeBar() && (homebar.enabled() || remoteKeys.opensHomeBar()));
+  },
   onHaBarKey: function () { haBar.keySet(); },
   // A channel key set to Brightness, on webOS 11, while Glasshouse Home has a Home Assistant tile that steps in focus.
   homeAdjustStep: function (id, dir, cb) {
@@ -717,6 +721,7 @@ homebar.init({
   on: function () { return !liveState || (liveState.state.snapshot().power || {}).systemOn !== false; },
   byKey: remoteKeys.opensHomeBar,
   homeInFront: function () { return !!(glasshouseHome && glasshouseHome.viewInFront()); },
+  lastCardApp: function () { return glasshouseHome ? glasshouseHome.lastCardApp() : ''; },
   // Glasshouse Home, or a launcher in its place, off first: LG's Home keeps its place.
   homeOff: function (cb) {
     if (!glasshouseHome || !glasshouseHome.enabled()) return cb({ ok: true });
@@ -1333,6 +1338,12 @@ if (!CLI_MODE && !webEnabled && !mqttEnabled) {
 }
 
 privacy.checkBootAdBlock(CLI_MODE);
+if (!CLI_MODE) {
+  // Put back the table where another tool took it off (#1716), and keep LG's
+  // update check off while TV updates are blocked (#1363).
+  setInterval(function () { privacy.keepTable(); }, 60000);
+  privacy.checkUpdateSetting();
+}
 if (!CLI_MODE) {
   if (CONFIG.allowNetworkDebugger) devtools.leaveOpen();
   else devtools.blockFromNetwork();

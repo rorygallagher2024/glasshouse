@@ -1172,7 +1172,11 @@ function putBackBelow(lines) {
  * at boot, under this one; with updates unblocked and nothing of ours to
  * mount, that layer is lifted too, or it would block until the next reboot.
  */
+var hostsBusy = 0;
 function applyHostsTable(cb) {
+  hostsBusy++;
+  var outer = cb;
+  cb = function (err) { hostsBusy--; outer(err); };
   var mode = flagMode();
   var mounted = isTableMounted();
   var done = function () { clearCache(); syncAppHosts(); cb(null); };
@@ -1251,6 +1255,55 @@ function setAdBlock(mode, cb) {
   });
 }
 
+/*
+ * The Homebrew Channel 0.8.0 also stops LG's update check, and its nag on
+ * screen, with the undocumented support.softwareUpdateEnable setting, set by
+ * its own switch and at each boot while blocking is on, and it discards LG's
+ * cached update details then (webosbrew/webos-homebrew-channel#264). The flag
+ * alone, as this switch wrote it, stopped the nag only from the next boot, and
+ * switching blocking off never set it back (#1363). Here it is set with the
+ * flag, whatever the Homebrew Channel's version.
+ */
+var SW_UPDATE_CACHE = ['/mnt/lg/cmn_data/swupdate/Image_Update_Info.xml', '/mnt/lg/cmn_data/swupdate/Package_Update_Info.xml'];
+function setUpdateCheck(enabled, cb) {
+  cb = cb || function () {};
+  if (!enabled) SW_UPDATE_CACHE.forEach(function (f) { try { fs.unlinkSync(f); } catch (e) { /* not there */ } });
+  if (!luna) return cb(false);
+  luna('com.webos.settingsservice/setSystemSettings', { category: 'support', settings: { softwareUpdateEnable: enabled } }, function (r) {
+    if (!(r && r.returnValue)) console.log('privacy: LG\'s update check could not be ' + (enabled ? 'switched back on' : 'switched off'));
+    cb(!!(r && r.returnValue));
+  });
+}
+
+// At start: blocking on, LG's update check off too, as an older Homebrew Channel left it.
+function checkUpdateSetting() {
+  if (!luna || !tvUpdatesBlocked()) return;
+  luna('com.webos.settingsservice/getSystemSettings', { category: 'support', keys: ['softwareUpdateEnable'] }, function (r) {
+    var v = r && r.settings && r.settings.softwareUpdateEnable;
+    if (v === true || v === 'true') {
+      console.log('privacy: TV updates are blocked; LG\'s update check switched off too');
+      setUpdateCheck(false);
+    }
+  });
+}
+
+/*
+ * Another tool can take the table off /etc/hosts while the TV runs: Life's
+ * Good Without Spying unmounts /etc/hosts while it shows that tool's marker,
+ * which the table now carries (#1716). The ad blocker then stopped, and the
+ * Privacy tab said Off with the setting on, until the next start. Asked every
+ * minute: the table is put back where it is wanted and not what /etc/hosts
+ * shows, never while it is being changed here.
+ */
+function keepTable(cb) {
+  cb = cb || function () {};
+  if (hostsBusy || !tableWanted(flagMode())) return cb(false);
+  clearCache();
+  if (isTableMounted()) return cb(false);
+  console.log('adblock: the table was taken off /etc/hosts, as another tool does when it applies its own block; put back');
+  applyHostsTable(function (err) { cb(!err); });
+}
+
 function setTvUpdatesBlocked(on, cb) {
   try {
     if (on) fs.writeFileSync(HBC_BLOCK_UPDATES_FLAG, '', 'utf8');
@@ -1259,6 +1312,7 @@ function setTvUpdatesBlocked(on, cb) {
     if (cb) cb({ ok: false, error: msg('srv.tvUpdates.saveFailed', 'could not save the update setting: {error}', { error: e.message }) });
     return;
   }
+  setUpdateCheck(!on);
   applyHostsTable(function (err) {
     if (cb) cb({ ok: !err, error: err || undefined, tvUpdatesBlocked: tvUpdatesBlocked() });
   });
@@ -1863,6 +1917,10 @@ function learnCountry() {
 
 module.exports = {
   init: init,
+  keepTable: keepTable,
+  // For tests: earlier tests' real mounts still running count as a change in progress.
+  _hostsIdle: function () { hostsBusy = 0; },
+  checkUpdateSetting: checkUpdateSetting,
   isAdBlockActive: isAdBlockActive,
   adBlockMode: adBlockMode,
   blockedBy: blockedBy,

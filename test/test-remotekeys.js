@@ -1530,6 +1530,53 @@ step(function (next) {
   }));
 });
 
+// A B8's MR18 (webOS 4.4.3): Text, T.Opt, Live Zoom, AD and the 123 button are
+// offered from the WebOS module, and the number keys where LG's filters handle
+// them; one that is set is taken and opens what it is set to.
+step(function (next) {
+  var plugin = path.join(stateDir, 'libwebosglobalplugin.so');
+  var KEYS_SRC = ['Teletext', 'TextOption', 'LiveZoom', 'AudioDescription', 'ScreenRemote'];
+  fs.writeFileSync(plugin, 'x\u0000' + KEYS_SRC.map(function (n) { return 'Key_webOS_' + n; }).join('\u0000') + '\u0000');
+  var numbers = path.join(filtersDir, 'numbers.js');
+  rk.init({ luna: luna, stateDir: stateDir, filtersDir: filtersDir, webosPlugin: plugin });
+  rk.getRemoteKeys(guard(function (r) {
+    var keys = r.keys.map(function (k) { return k.key; });
+    ['teletext', 'textoption', 'livezoom', 'ad', 'screenremote'].forEach(function (k) { assert.ok(keys.indexOf(k) !== -1, k + ' offered from the module'); });
+    assert.ok(keys.indexOf('num1') === -1, 'no number keys where LG\'s filters do not handle them');
+    fs.writeFileSync(numbers, 'if (key >= Qt.Key_1 && key <= Qt.Key_9 || key === Qt.Key_0) {}');
+    rk.init({ luna: luna, stateDir: stateDir, filtersDir: filtersDir, webosPlugin: plugin });
+    rk.getRemoteKeys(guard(function (r2) {
+      var nums = r2.keys.filter(function (k) { return /^num/.test(k.key); });
+      assert.deepEqual(nums.map(function (k) { return k.title; }), ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0']);
+      assert.ok(nums.every(function (k) { return k.numberKey === true; }), 'each says it takes the digit and Quick Access');
+      rk.setRemoteKey('teletext', 'open', 'netflix', guard(function (a) {
+        assert.ok(a.ok, a.error);
+        rk.setRemoteKey('num5', 'open', 'youtube.leanback.v4', guard(function (b) {
+          assert.ok(b.ok, b.error);
+          var f = loadFilter(null, {
+            WebOS: { Key_webOS_Teletext: 1201, Key_webOS_TextOption: 1202 },
+            Qt: { Key_Super_L: 2001, Key_Video: 2002, Key_5: 53, Key_6: 54 }
+          });
+          assert.strictEqual(f.handle(1201, true, false), 'accepted');
+          assert.strictEqual(f.handle(53, true, false), 'accepted');
+          assert.deepEqual(f.launched.map(function (l) { return l.id; }), ['netflix', 'youtube.leanback.v4']);
+          assert.strictEqual(f.handle(1202, true, false), 'next', 'T.Opt left to LG while it is not set');
+          assert.strictEqual(f.handle(54, true, false), 'next', 'and the number keys not set');
+          rk.setRemoteKey('teletext', 'lg', '', guard(function () {
+            rk.setRemoteKey('num5', 'lg', '', guard(function () {
+              fs.unlinkSync(plugin);
+              fs.unlinkSync(numbers);
+              rk.init({ luna: luna, inputNames: { hdmi1: 'HDMI 1', hdmi2: 'Apple TV' }, stateDir: stateDir, filtersDir: filtersDir });
+              console.log('  ✓ Text, T.Opt, Live Zoom, AD, the 123 button and the number keys are offered and taken where the TV can');
+              next();
+            }));
+          }));
+        }));
+      }));
+    }));
+  }));
+});
+
 // Home is named by what it opens: LG's Home, or Glasshouse Home where it runs under LG's Home's id.
 step(function (next) {
   rk.getRemoteKeys(guard(function (r) {
@@ -1585,6 +1632,48 @@ step(function (next) {
           assert.strictEqual(tv.keys.homeAdjust, undefined);
           console.log('  ✓ Channel up and down set to Brightness step a Home Assistant tile in focus on Glasshouse Home');
           next();
+        }));
+      }));
+    }));
+  }));
+});
+
+step(function (next) {
+  var ha = { calls: [], kept: true };
+  rk.init({ luna: function (uri, payload, cb) {
+    if (uri === 'com.webos.applicationManager/listApps') {
+      return luna(uri, payload, function (r) {
+        r.apps = r.apps.concat([{ id: 'com.tvweb.habar', title: 'Home Assistant Bar' }]);
+        cb(r);
+      });
+    }
+    luna(uri, payload, cb);
+  }, inputNames: { hdmi1: 'HDMI 1', hdmi2: 'Apple TV' }, stateDir: stateDir, filtersDir: filtersDir,
+    haBarAllowed: function () { return true; },
+    haBarKept: function () { return ha.kept; },
+    haBarApp: function (action, cb) {
+      ha.calls.push(action);
+      process.nextTick(function () { cb({ ok: true }); });
+    } });
+  rk.getRemoteKeys(guard(function (r) {
+    assert.strictEqual(r.choices.filter(function (c) { return c.id === 'com.tvweb.habar'; }).length, 1,
+      'Home Assistant bar offered once even when listed by listApps');
+    rk.setRemoteKey('red', 'open', 'com.tvweb.habar', guard(function (s) {
+      assert.ok(s.ok, s.error);
+      rk.setRemoteKey('red', 'lg', '', guard(function (s2) {
+        assert.ok(s2.ok, s2.error);
+        setImmediate(guard(function () {
+          assert.deepEqual(ha.calls, ['install'], 'kept when another trigger (Quick Access / Bar) uses Home Assistant bar');
+          ha.kept = false;
+          rk.setRemoteKey('red', 'open', 'com.tvweb.habar', guard(function () {
+            rk.setRemoteKey('red', 'lg', '', guard(function () {
+              setImmediate(guard(function () {
+                assert.deepEqual(ha.calls, ['install', 'install', 'remove'], 'removed once nothing else uses Home Assistant bar');
+                console.log('  ✓ Home Assistant bar is offered once in Remote keys and kept until nothing else uses it');
+                next();
+              }));
+            }));
+          }));
         }));
       }));
     }));

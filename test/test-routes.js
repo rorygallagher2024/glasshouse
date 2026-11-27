@@ -1657,5 +1657,52 @@ function createMockRes(cb) {
   console.log('  ✓ the question app reads with its token and answers with a JSON POST, from the TV only');
 })();
 
+// Switching from Glasshouse Bar to Glasshouse Home: on takeover TVs, Glasshouse
+// Home takes com.webos.app.home's place before the Home key returns to it.
+(function testHomeEnableFromBarOrder() {
+  var seq = [], barEnabled = true, standalone = false, barDisableOk = true;
+  routes.init({
+    config: { allowControl: true, token: '', web: { enabled: true } },
+    homebar: {
+      enabled: function () { return barEnabled; },
+      disable: function (cb) {
+        seq.push('bar.disable');
+        if (barDisableOk) barEnabled = false;
+        cb(barDisableOk ? { ok: true } : { ok: false, error: 'key stuck' });
+      }
+    },
+    home: {
+      isStandalone: function () { return standalone; },
+      enable: function (cb) { seq.push('home.enable'); cb({ ok: true }); },
+      disable: function (cb) { seq.push('home.disable'); cb({ ok: true }); }
+    }
+  });
+  function postEnable(cb) {
+    var post = createMockReq({ url: '/api/home/enable', method: 'POST', headers: { 'content-type': 'application/json' } });
+    var got = null;
+    routes.handleRequest(post, createMockRes(function (r) { got = JSON.parse(r.body); cb(r.statusCode, got); }));
+    post.emit('data', '{}');
+    post.emit('end');
+  }
+  postEnable(function (code, body) {
+    assert.strictEqual(code, 200);
+    assert.strictEqual(body.ok, true);
+    assert.deepEqual(seq, ['home.enable', 'bar.disable'], 'takeover enables Glasshouse Home before handing back the Home key');
+    seq = []; barEnabled = true; barDisableOk = false;
+    postEnable(function (code2, body2) {
+      assert.strictEqual(code2, 400);
+      assert.strictEqual(body2.ok, false);
+      assert.deepEqual(seq, ['home.enable', 'bar.disable', 'home.disable'], 'rolls back Glasshouse Home if Bar key restore fails');
+      seq = []; barEnabled = true; barDisableOk = true; standalone = true;
+      postEnable(function (code3, body3) {
+        assert.strictEqual(code3, 200);
+        assert.strictEqual(body3.ok, true);
+        assert.deepEqual(seq, ['bar.disable', 'home.enable'], 'standalone disables Bar before setting standalone Home key');
+        console.log('  ✓ /api/home/enable swaps launcher order cleanly for takeover vs standalone');
+      });
+    });
+  });
+})();
+
 console.log('ALL test-routes.js assertions passed!');
 process.exit(0);

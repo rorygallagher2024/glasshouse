@@ -1,4 +1,4 @@
-# Apps and home screen launcher
+# Apps
 
 The **Apps** tab, `/?tab=apps`, has two groups: **Apps**, for installing and removing apps and the web pages saved to the Home screen; and **Background**, for the memory LG's background apps and services take up. What the remote's keys do is on the [Remote](remote.md) tab.
 

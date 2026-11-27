@@ -15,7 +15,7 @@ console.log('Running test-homebar.js ...');
 
 var dir = path.join(os.tmpdir(), 'homebar-' + process.pid);
 fs.mkdirSync(dir);
-var events = [], launches = [], homeKey = '', allowed = true, keyRefused = false, homeOn = true, homeFront = false, preloads = 0, byKey = false;
+var events = [], launches = [], homeKey = '', allowed = true, keyRefused = false, homeOn = true, homeFront = false, preloads = 0, byKey = false, lastCard = '', systemLastInput = '';
 // webOS 11: the Home key's library changed by lib/guidepatch, which applyKeys does as the choice stands.
 var native = false, libraryOn = false, libraryRefused = false;
 function FakeSub() { this.handlers = {}; }
@@ -23,8 +23,15 @@ FakeSub.prototype.start = function () { events.push('watch running'); sub = this
 var sub = null;
 homebar.init({
   luna: function (uri, params, cb) {
+    if (uri === 'com.webos.service.settings/getSystemSettings') {
+      return setImmediate(function () { cb({ returnValue: true, settings: systemLastInput ? { lastInputApp: systemLastInput } : {} }); });
+    }
     if (uri === 'com.webos.applicationManager/launch' && params.preload === 'full') preloads++;
-    else if (uri === 'com.webos.applicationManager/launch') launches.push(params);
+    else if (uri === 'com.webos.applicationManager/launch') {
+      launches.push(params);
+      events.push('launch ' + params.id);
+      if (params.id === lastCard || params.id === systemLastInput) setTimeout(function () { homeFront = false; }, 10);
+    }
     setImmediate(function () { cb({ returnValue: true }); });
   },
   stateDir: dir,
@@ -47,6 +54,7 @@ homebar.init({
   },
   standing: function () { return 'tried'; },
   homeInFront: function () { return homeFront; },
+  lastCardApp: function () { return lastCard; },
   homeOff: function (cb) { events.push(homeOn ? 'Glasshouse Home off' : 'LG Home already'); homeOn = false; setImmediate(function () { cb({ ok: true }); }); },
   byKey: function () { return byKey; }
 });
@@ -166,18 +174,46 @@ var steps = [
             console.log('  ✓ opened by a remote key, it is kept loaded, and its app stays when it stops being the launcher');
             homeOn = true;
             homeFront = true;
+            lastCard = 'com.webos.app.hdmi2';
             launches = [];
             events = [];
             homebar.enable(function (r3) {
               assert.strictEqual(r3.ok, true, r3.error);
-              assert.deepEqual(events, ['install app', 'Glasshouse Home off', 'Home key com.tvweb.homebar']);
-              assert.strictEqual(launches.length, 1);
-              assert.strictEqual(launches[0].id, 'com.tvweb.homebar');
-              assert.strictEqual(typeof launches[0].params.press, 'number');
-              homeFront = false;
+              assert.strictEqual(homeFront, false, 'waited for Home to move behind the previous app before release');
+              assert.deepEqual(events, [
+                'install app',
+                'launch com.webos.app.hdmi2',
+                'Glasshouse Home off',
+                'Home key com.tvweb.homebar',
+                'launch com.tvweb.homebar'
+              ]);
+              assert.strictEqual(launches.length, 2);
+              assert.strictEqual(launches[0].id, 'com.webos.app.hdmi2');
+              assert.strictEqual(launches[1].id, 'com.tvweb.homebar');
+              assert.strictEqual(typeof launches[1].params.press, 'number');
               homebar.disable(function () {
-                console.log('  ✓ switching while Glasshouse Home is in front installs first and launches Glasshouse Bar immediately');
-                next();
+                lastCard = '';
+                systemLastInput = 'com.webos.app.livetv';
+                homeOn = true;
+                homeFront = true;
+                launches = [];
+                events = [];
+                homebar.enable(function (r4) {
+                  assert.strictEqual(r4.ok, true, r4.error);
+                  assert.deepEqual(events, [
+                    'install app',
+                    'launch com.webos.app.livetv',
+                    'Glasshouse Home off',
+                    'Home key com.tvweb.homebar',
+                    'launch com.tvweb.homebar'
+                  ]);
+                  systemLastInput = '';
+                  homeFront = false;
+                  homebar.disable(function () {
+                    console.log('  ✓ switching while Glasshouse Home is in front leaves Home for the previous card app before release and launches Glasshouse Bar');
+                    next();
+                  });
+                });
               });
             });
           }, 'a preload for the key after the launcher is switched off', 3000);

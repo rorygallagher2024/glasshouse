@@ -912,7 +912,10 @@ bind-mounted over `/usr/palm/applications/com.webos.app.home`, its
   instance (kill LG's process, or `killApp` the page). Where that instance was
   in front, `last_input_handler` launched Home again 1.0 to 1.2 s later, as
   the new app. Each direction took 2.1 to 2.2 s, nearly all of it the nudge's
-  wait. Killed in the background, LG's Home was not started again.
+  wait. Killed in the background, LG's Home was not started again (so
+  switching from Glasshouse Home to Glasshouse Bar while Home is in front
+  first brings back the previous card app/input so `last_input_handler` leaves
+  LG's Home closed).
 - **LG's Home started fresh** took about 3 s to draw: its window was visible
   1.2 s after the switch and it logged `NL_HOME_SHOWN` 1.9 s after that.
   Restored from its snapshot it drew in 0.2 to 0.3 s.
@@ -4134,6 +4137,15 @@ Quick Help: `magicNum9` holds `{ "override": true, "id":
 written empty, as Glasshouse's None does, nothing offered puts it back (#1539).
 `settingsservice/resetSystemSettings` with `{ "category": "option", "keys":
 ["magicNum9"] }` does: the key read back as that same value at once.
+
+LG's compositor handler
+(`/usr/lib/qt5/qml/WebOSCompositor/controllers/base/StarfishMagicNumber.qml`,
+checked on the same C2) resolves Quick Access apps through
+`launchPointsModel.appList`, `externalInputAppList`, `livetv`, `self-diagnosis`
+and a four-app fallback list (`livetv`, `homeconnect`, `scheduler`, `recordings`).
+An installed app with `"visible": false` has no launch point, so setting a key
+to it raises no confirmation toast, leaves it greyed out in the `hold 0` Quick
+Access list, and does not launch it when held (`#1786`).
 
 ## Holding down LG's account client (C2, webOS 9.2.2; B4, webOS 10.3.2)
 

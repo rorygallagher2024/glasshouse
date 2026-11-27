@@ -1349,6 +1349,76 @@ test('ACR reports its consents and its service separately', function () {
   delete mockEnv.files['/var/luna/preferences/eula'];
 });
 
+// Another tool took the table off /etc/hosts while the TV ran (#1716): put back.
+test('the table is put back where another tool took it off, and only then', function () {
+  var MOUNTS = '/proc/self/mountinfo', ENABLED = '/var/lib/tvweb/adblock_enabled';
+  var LAYER = '2008 50 179:59 /var/lib/webosbrew/lifesgoodwithoutspying.hosts /etc/hosts rw,nosuid,relatime - ext4 /dev/mmcblk0p59 rw\n';
+  var saved = { hosts: mockEnv.files['/etc/hosts'], enabled: mockEnv.files[ENABLED], mounts: mockEnv.files[MOUNTS], flag: mockEnv.files[HBC_FLAG] };
+  var ran = [];
+  privacy.init({ exec: function (file, args, opts, cb) { ran.push([file].concat(args).join(' ')); cb(null, '', ''); } });
+  try {
+    privacy._hostsIdle();
+    mockEnv.files[ENABLED] = 'ads';
+    mockEnv.files[MOUNTS] = LAYER;
+    mockEnv.files['/etc/hosts'] = '127.0.0.1 localhost\n# lifesgoodwithoutspying - blocked\n' + LGWSS.join('\n') + '\n';
+    var put;
+    privacy.keepTable(function (r) { put = r; });
+    assert.strictEqual(put, true);
+    assert.ok(ran.indexOf('/bin/mount --bind /var/lib/tvweb/adblock_hosts /etc/hosts') !== -1, ran.join(', '));
+    // The table showing: nothing done.
+    ran = [];
+    mockEnv.files['/etc/hosts'] = privacy.adBlockHostsTable('ads', LGWSS);
+    privacy.keepTable(function (r) { put = r; });
+    assert.deepEqual([put, ran], [false, []]);
+    // Switched off, and updates not blocked: nothing wanted, nothing done.
+    delete mockEnv.files[ENABLED];
+    delete mockEnv.files[HBC_FLAG];
+    mockEnv.files['/etc/hosts'] = '127.0.0.1 localhost\n';
+    privacy.keepTable(function (r) { put = r; });
+    assert.deepEqual([put, ran], [false, []]);
+  } finally {
+    ['hosts', 'enabled', 'mounts', 'flag'].forEach(function (k) {
+      var f = { hosts: '/etc/hosts', enabled: ENABLED, mounts: MOUNTS, flag: HBC_FLAG }[k];
+      if (saved[k] === undefined) delete mockEnv.files[f]; else mockEnv.files[f] = saved[k];
+    });
+    privacy.clearCache();
+  }
+});
+
+// LG's own update check goes with the update block (#1363), as the Homebrew Channel 0.8.0 sets it.
+test("blocking TV updates switches LG's update check off, unblocking switches it back on, and a start puts it right", function () {
+  var calls = [], current = 'true';
+  var savedFlag = mockEnv.files[HBC_FLAG];
+  var CACHE = '/mnt/lg/cmn_data/swupdate/Image_Update_Info.xml';
+  privacy.init({
+    exec: function (file, args, opts, cb) { cb(null, '', ''); },
+    luna: function (uri, params, cb) {
+      if (uri === 'com.webos.settingsservice/setSystemSettings' && params.category === 'support') calls.push(params.settings.softwareUpdateEnable);
+      if (uri === 'com.webos.settingsservice/getSystemSettings' && params.category === 'support') return cb({ returnValue: true, settings: { softwareUpdateEnable: current } });
+      if (cb) cb({ returnValue: true });
+    }
+  });
+  try {
+    mockEnv.files[CACHE] = '<xml/>';
+    privacy.setTvUpdatesBlocked(true, function () {});
+    assert.deepEqual(calls, [false]);
+    assert.strictEqual(mockEnv.files[CACHE], undefined, "LG's cached update details are discarded");
+    privacy.setTvUpdatesBlocked(false, function () {});
+    assert.deepEqual(calls, [false, true]);
+    // At start, blocked with LG's check still on, as with a Homebrew Channel before 0.8.0.
+    calls = [];
+    mockEnv.files[HBC_FLAG] = '';
+    privacy.checkUpdateSetting();
+    assert.deepEqual(calls, [false]);
+    calls = []; current = false;
+    privacy.checkUpdateSetting();
+    assert.deepEqual(calls, [], 'already off: nothing written');
+  } finally {
+    if (savedFlag === undefined) delete mockEnv.files[HBC_FLAG]; else mockEnv.files[HBC_FLAG] = savedFlag;
+    privacy.clearCache();
+  }
+});
+
 // The ACR consent keys are read once, from acr2's binary; read them first so
 // the panel's collection completes in step.
 privacy._setAcrBinary(pathMod.join(__dirname, 'fixtures', 'no-acr2'));

@@ -413,6 +413,9 @@ html.remote-view .hdr-remote,html.remote-view .hdr-vol{display:none}
 .nav-pref-body{display:flex;flex-direction:column;gap:10px;padding:4px 12px 14px}
 .nav-pref-grp{display:flex;flex-direction:column;gap:5px}
 .nav-pref-lbl{font:500 12px 'Manrope';letter-spacing:.08em;text-transform:uppercase;color:var(--w40)}
+.nav-pref-note{font-size:12px;line-height:1.4;color:var(--w60);margin-top:6px}
+.nav-pref-note[hidden]{display:none}
+.glow-toggle.glow-paused{opacity:.5}
 .nav-pref .theme-seg{display:flex;gap:4px;width:100%}
 .nav-pref .pill-sel{width:100%;min-width:0}
 /* Sized to their words, then sharing what is left: Oscuro, in Spanish, does not

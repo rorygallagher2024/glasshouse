@@ -12,6 +12,5 @@
   "transparent": true,
   "disableBackHistoryAPI": true,
   "noSplashOnLaunch": true,
-  "spinnerOnLaunch": false,
-  "visible": false
+  "spinnerOnLaunch": false
 }

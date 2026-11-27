@@ -225,6 +225,7 @@ function luna(uri, p, cb) {
       { id: 'com.webos.app.hdmi1', title: 'HDMI 1', lptype: 'bookmark' }
     ];
     if (tv.newApp) r.launchPoints.push({ id: 'new.app', title: 'New', icon: '/x/new.png' });
+    if (tv.haBarApp) r.launchPoints.push({ id: 'com.tvweb.habar', title: 'Home Assistant Bar', icon: '/x/habar.png' });
     // As a B8 (webOS 4.4.3) lists AirPlay's tile: a bookmark of its app.
     if (tv.airplayBookmark) r.launchPoints.push({ id: 'airplay', launchPointId: '1001', lptype: 'bookmark', title: 'AirPlay', icon: '/x/airplay.png' });
     // Saved web pages as a C2 (webOS 9.2.2) lists them: bookmarks of the browser.
@@ -4599,6 +4600,14 @@ step('Home Assistant bar shortcut and Home row stay opt-in and follow HA bar ava
     haBar: mockHaBar,
     ensureHaBarApp: function () { haAppInstalls++; }
   });
+  tv.haBarApp = true;
+  assert.strictEqual(home.lastCardApp(), '');
+  foreground('com.webos.app.hdmi2');
+  foreground('com.tvweb.homebar');
+  foreground('com.tvweb.habar');
+  foreground('com.webos.app.screensaver');
+  foreground('com.webos.app.home');
+  assert.strictEqual(home.lastCardApp(), 'com.webos.app.hdmi2', 'lastCardApp keeps the last real card app and skips Home/overlays');
   assert.strictEqual(home.layout().haRow, false);
   assert.strictEqual(home.layout().haBarInHomeBar, false);
   assert.strictEqual(home.haBarInHomeBar(), false);
@@ -4606,6 +4615,8 @@ step('Home Assistant bar shortcut and Home row stay opt-in and follow HA bar ava
     assert.strictEqual(stOff.haBarAvailable, false);
     assert.strictEqual(stOff.haBarCount, 0);
     home.catalogue(function (cOff) {
+      assert.strictEqual(cOff.apps.some(function (a) { return a.id === 'com.tvweb.habar'; }), false,
+        'Home Assistant bar app is excluded from Home Apps catalogue');
       assert.strictEqual(cOff.haBarAvailable, false);
       assert.strictEqual(cOff.haBarCount, 0);
       assert.strictEqual(cOff.haBar, false);

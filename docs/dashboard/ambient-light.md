@@ -1,30 +1,16 @@
 # Ambient Light
 
-The **Ambient Light** page (`/?tab=ambient`) follows **Home** in the sidebar.
-The TV app places this top-level menu between **Audio** and **Screen Saver**.
-Available integrations have separate
-categories, **Hue Sync** first and **PicCap** second. Categories and Control
-shortcuts are hidden when an integration is unavailable, as with other optional
-Glasshouse controls. The Ambient Light tab is hidden when neither integration
-is available, including when an unavailable tab is opened from a saved link.
+The **Ambient Light** tab, `/?tab=ambient`, switches and sets up the lights that follow the TV's picture: [Hue Sync](../huesync.md), for Philips Hue lights, and [PicCap](../piccap.md), which feeds Hyperion or HyperHDR. It shows where at least one of them is installed, with a section for each.
 
-* **[Hue Sync Enabled](../huesync.md):** Starts or stops streaming screen colour
-  data to the selected entertainment area for ambient light. Brightness,
-  intensity, Video/Game mode, entertainment area, background light for each mode,
-  automatic start and its notification are shown directly.
-* **[PicCap Enabled](../piccap.md):** Starts or stops screen capture for
-  Hyperion or HyperHDR to provide ambient light.
+* **Hue Sync:** starts or stops streaming the picture's colours to the chosen entertainment area, and sets its brightness, intensity, Video or Game mode, the background light for each mode, and whether it starts by itself, with or without a notification.
+* **PicCap:** starts or stops capturing the screen for Hyperion or HyperHDR.
 
-Background light and automatic start settings use the same On/Off pill buttons
-as the integration switches. Their state follows the confirmed setting value.
+The two are independent, so either or both can run. The [Control](control.md) tab has a switch for each too, below Playback, and Home Assistant gets one for each as well ([PicCap and Hue Sync](../HOME-ASSISTANT.md#piccap-and-hue-sync)). A remote button can toggle PicCap: set it to **Ambient light** on the [Remote](remote.md#available-actions) tab.
 
-The switches are independent, so either or both integrations can run. The
-[Control](control.md) page has quick toggles labelled **Hue Sync** and
-**PicCap** immediately below Playback, with Hue Sync first.
+While either one is capturing, the dashboard's [screen glow](index.md#screen-glow) pauses and says so, so the two captures never run at once.
 
 ![Ambient Light page with PicCap and Hue Sync, simulated data](../screenshots/huesync-settings.png)
 
-In the TV app, press OK to toggle a switch or cycle a choice. Brightness uses
-OK to begin, arrows to adjust, and OK or Back to finish.
+In the TV app, OK switches a setting or steps through its choices. For brightness, OK starts, the arrows adjust, and OK or Back finishes.
 
 ![Ambient Light menu in the TV app, simulated data](../screenshots/huesync-tv-controls.png)

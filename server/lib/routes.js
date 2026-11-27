@@ -1553,9 +1553,20 @@ function handleHomeRoute(req, res, u, pathname) {
     return readJsonBody(req, res, function (body) {
       if (pathname === '/api/home/layout') return homeModule.setLayout(body, reply);
       if (pathname === '/api/home/start-layout') return homeModule.setHideLgHomeAtStart(body, reply);
-      // Glasshouse Bar leaves LG's Home its place, so it is switched off first.
+      // Glasshouse Bar leaves LG's Home its place, so it is switched off. On
+      // takeover TVs, enable Glasshouse Home first so the Home key is not
+      // briefly handed back to LG's Home before takeover mounts it.
       if (pathname === '/api/home/enable') {
         if (!homebarModule || !homebarModule.enabled()) return homeModule.enable(reply);
+        if (typeof homeModule.isStandalone === 'function' && !homeModule.isStandalone()) {
+          return homeModule.enable(function (r) {
+            if (!r.ok) return reply(r);
+            homebarModule.disable(function (br) {
+              if (!br.ok) return homeModule.disable(function () { reply(br); });
+              reply(r);
+            });
+          });
+        }
         return homebarModule.disable(function (r) { if (!r.ok) return reply(r); homeModule.enable(reply); });
       }
       if (pathname === '/api/home/bar' && homebarModule) {
