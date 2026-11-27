@@ -494,7 +494,7 @@
  "audio.overrideUnknown": {"from": "No validated DTS forwarding helper is available for this TV.", "text": "Tälle TV:lle ei ole saatavilla vahvistettua DTS-välitysapuohjelmaa."},
  "audio.overrideWaiting": {"from": "Running and waiting for a matching DTS input on HDMI 3 over eARC.", "text": "Käynnissä ja odottaa sopivaa DTS-tuloa HDMI 3 -tulossa eARC:n kautta."},
  "audio.pathDesc": {"from": "Whether a soundbar or receiver is connected over HDMI ARC or eARC, and which audio formats the TV and the receiver say they support. Useful when Dolby Atmos or DTS doesn’t come through.", "text": "Onko soundbar tai vastaanotin kytketty HDMI ARC- tai eARC-yhteydellä, ja mitä äänimuotoja TV ja vastaanotin ilmoittavat tukevansa. Hyödyllinen, kun Dolby Atmos tai DTS ei välity."},
- "audio.pathTitle": {"from": "Soundbar and receiver", "text": "Soundbar ja vastaanotin"},
+ "audio.pathTitle": {"from": "Soundbar and receiver", "text": "Soundbar ja AV-vastaanotin"},
  "audio.playbackDesc": {"from": "Formats listed by LG’s media configuration, with their declared channel limits. These describe playback resources, not what reaches an amp.", "text": "LG:n mediakokoonpanon luettelemat muodot ja niiden ilmoitetut kanavarajat. Ne kuvaavat toistoresursseja, eivät sitä, mitä vahvistimelle päätyy."},
  "audio.playbackTitle": {"from": "TV playback declarations", "text": "TV:n toistoilmoitukset"},
  "audio.playbackUnknown": {"from": "The TV did not expose a playback declaration list.", "text": "TV ei antanut toistoilmoitusten luetteloa."},
