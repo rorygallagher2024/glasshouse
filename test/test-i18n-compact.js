@@ -9,7 +9,7 @@ var fs = require('fs');
 var os = require('os');
 var path = require('path');
 var vm = require('vm');
-var execFileSync = require('child_process').execFileSync;
+var spawn = require('child_process').spawn;
 
 console.log('Running test-i18n-compact.js ...');
 
@@ -17,12 +17,21 @@ var ROOT = path.join(__dirname, '..');
 var I18N_DIR = path.join(ROOT, 'server', 'assets', 'i18n');
 var SRC = fs.readFileSync(path.join(ROOT, 'server', 'assets', 'i18n.js'), 'utf8');
 
-// build-ipk.py's own functions, run on the strings or files given.
-function python(code, input) {
+// build-ipk.py's own functions, run on the input given; cb(stdout). Through
+// spawn, which Node 0.10 has, unlike execFileSync.
+function python(code, input, cb) {
   var prog = 'import importlib.util, json, sys\n' +
     'spec = importlib.util.spec_from_file_location("b", ' + JSON.stringify(path.join(ROOT, 'scripts', 'build-ipk.py')) + ')\n' +
     'b = importlib.util.module_from_spec(spec); spec.loader.exec_module(b)\n' + code;
-  return execFileSync('python3', ['-c', prog], { input: input, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });
+  var child = spawn('python3', ['-c', prog]);
+  var out = [], err = [];
+  child.stdout.on('data', function (d) { out.push(d); });
+  child.stderr.on('data', function (d) { err.push(d); });
+  child.on('close', function (status) {
+    assert.strictEqual(status, 0, 'python3: ' + Buffer.concat(err).toString());
+    cb(Buffer.concat(out).toString('utf8'));
+  });
+  child.stdin.end(input);
 }
 
 // The page's I18N, in the language given, with the file given.
@@ -51,7 +60,8 @@ function page(lang, text) {
 // page's copy is checked against the packaged files below.
 var say = require('../server/lib/say');
 var samples = ['', 'On', 'Écran éteint', 'Ελληνικά', 'العربية', 'Tiếng Việt', 'Emoji 📺 and 🏠', '{name} is running'];
-var py = JSON.parse(python('print(json.dumps([b.english_hash(s) for s in json.load(sys.stdin)]))', JSON.stringify(samples)));
+python('print(json.dumps([b.english_hash(s) for s in json.load(sys.stdin)]))', JSON.stringify(samples), function (pyOut) {
+var py = JSON.parse(pyOut);
 samples.forEach(function (s, i) {
   assert.strictEqual(say.englishHash(s), py[i], 'server and package agree on ' + JSON.stringify(s));
 });
@@ -59,11 +69,12 @@ console.log('  ✓ the package and the server hash the English alike');
 
 // 2. Every language's packaged file gives each page string as its own does.
 var langs = fs.readdirSync(I18N_DIR).filter(function (f) { return /\.json$/.test(f); });
-var compacted = JSON.parse(python(
+python(
   'out = {}\n' +
   'for f in json.load(sys.stdin):\n' +
   '    out[f] = b.compact_i18n(open(' + JSON.stringify(I18N_DIR) + ' + "/" + f, "rb").read()).decode("utf-8")\n' +
-  'print(json.dumps(out))', JSON.stringify(langs)));
+  'print(json.dumps(out))', JSON.stringify(langs), function (compactOut) {
+var compacted = JSON.parse(compactOut);
 var before = 0, after = 0, checked = 0;
 langs.forEach(function (f) {
   var lang = f.replace(/\.json$/, '');
@@ -88,7 +99,8 @@ console.log('  ✓ ' + checked + ' strings read the same from the packaged files
   Math.round(before / 1024) + ' KB down to ' + Math.round(after / 1024) + ' KB');
 
 // 3. The server's messages read the same, and fall back to English for new words.
-var dir = fs.mkdtempSync(path.join(os.tmpdir(), 'i18n-compact-'));
+var dir = path.join(os.tmpdir(), 'i18n-compact-' + process.pid);
+if (!fs.existsSync(dir)) fs.mkdirSync(dir);
 var es = JSON.parse(fs.readFileSync(path.join(I18N_DIR, 'es.json'), 'utf8'));
 var srvKey = Object.keys(es).filter(function (k) { return /^srv\./.test(k) && es[k].from && es[k].from.indexOf('{') === -1; })[0];
 fs.writeFileSync(path.join(dir, 'es.json'), compacted['es.json']);
@@ -101,3 +113,5 @@ assert.strictEqual(say.translateBody(JSON.stringify({ message: changed }), 'es')
 console.log('  ✓ server messages are translated from the packaged file, and new English stays English');
 
 console.log('ALL test-i18n-compact.js assertions passed!');
+});
+});
