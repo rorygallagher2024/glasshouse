@@ -2340,7 +2340,7 @@ function handleRequest(req, res) {
       return send(res, 403, JSON.stringify({ ok: false, error: msg('srv.controlsOff', 'controls disabled in config') }));
     }
     return readJsonBody(req, res, function (body) {
-      haBarModule.act(body && body.id, body && body.action, body && body.value, function (r) {
+      haBarModule.act(body && body.id, body && body.action, body && body.value, body && body.prevState, function (r) {
         send(res, r && r.ok ? 200 : 502, JSON.stringify(r || { ok: false, error: 'failed' }));
       });
     });

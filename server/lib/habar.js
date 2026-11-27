@@ -26,7 +26,15 @@ var AFTER_CLOSE_MS = 1200;
 var AFTER_START_MS = 5000;
 var AFTER_SWITCH_ON_MS = 5000;
 var MAX_FAILURES = 5;
+// A toggle's service call can return before Home Assistant's own state
+// catches up with the device (an MQTT round trip, a HomeKit bridge poll),
+// so a light already off on the TV screen can still read back as "on" for a
+// moment. Re-reading a few times, rather than once, waits for the state to
+// actually move away from what it was before acting, up to this cap.
+var CONFIRM_RETRY_MS = 400;
+var CONFIRM_RETRIES = 5;
 var afterCloseMs = AFTER_CLOSE_MS, afterStartMs = AFTER_START_MS, afterSwitchOnMs = AFTER_SWITCH_ON_MS;
+var confirmRetryMs = CONFIRM_RETRY_MS;
 
 var lunaFn = null;
 var stateDir = '/var/lib/tvweb';
@@ -163,7 +171,7 @@ function init(opts) {
   if (typeof opts.byKey === 'function') byKeyFn = opts.byKey;
   if (typeof opts.hour12 === 'function') hour12Fn = opts.hour12;
   if (opts.Subscription) Subscription = opts.Subscription;
-  if (opts.delaysMs) afterCloseMs = afterStartMs = afterSwitchOnMs = opts.delaysMs;
+  if (opts.delaysMs) afterCloseMs = afterStartMs = afterSwitchOnMs = confirmRetryMs = opts.delaysMs;
 }
 
 function lightSupportsBrightness(attrs) {
@@ -322,17 +330,28 @@ function findConfigured(entityId) {
   return null;
 }
 
-function finishAction(item, r, cb) {
+function finishAction(item, r, prevState, cb) {
   if (!r || !r.ok) {
     return cb({ ok: false, error: (r && r.error) || msg('srv.habar.serviceFailed', 'Home Assistant service call failed') });
   }
-  haEntityFn.read(item.id, function (cur) {
-    cb({ ok: true, tile: formatTile(item, cur.ok ? cur : null, cur.ok ? '' : (cur.error || '')) });
-  });
+  var left = (typeof prevState === 'string' && prevState) ? CONFIRM_RETRIES : 0;
+  (function attempt() {
+    haEntityFn.read(item.id, function (cur) {
+      if (cur.ok && cur.state === prevState && left > 0) {
+        left--;
+        var t = setTimeout(attempt, confirmRetryMs);
+        if (t.unref) t.unref();
+        return;
+      }
+      cb({ ok: true, tile: formatTile(item, cur.ok ? cur : null, cur.ok ? '' : (cur.error || '')) });
+    });
+  })();
 }
 
-function act(entityId, action, value, cb) {
+function act(entityId, action, value, prevState, cb) {
+  if (typeof prevState === 'function') { cb = prevState; prevState = ''; }
   cb = cb || function () {};
+  prevState = typeof prevState === 'string' ? prevState : '';
   if (!haEntityFn || !haEntityFn.configured()) {
     return cb({ ok: false, error: msg('srv.habar.notConfigured', 'Home Assistant is not configured') });
   }
@@ -345,13 +364,13 @@ function act(entityId, action, value, cb) {
 
   if (mode === 'toggle') {
     if (domain === 'light' || domain === 'switch' || domain === 'input_boolean' || domain === 'fan') {
-      return haEntityFn.callService(domain, 'toggle', { entity_id: item.id }, function (r) { finishAction(item, r, cb); });
+      return haEntityFn.callService(domain, 'toggle', { entity_id: item.id }, function (r) { finishAction(item, r, prevState, cb); });
     }
     if (domain === 'scene' || domain === 'script') {
-      return haEntityFn.callService(domain, 'turn_on', { entity_id: item.id }, function (r) { finishAction(item, r, cb); });
+      return haEntityFn.callService(domain, 'turn_on', { entity_id: item.id }, function (r) { finishAction(item, r, '', cb); });
     }
     if (domain === 'button' || domain === 'input_button') {
-      return haEntityFn.callService(domain, 'press', { entity_id: item.id }, function (r) { finishAction(item, r, cb); });
+      return haEntityFn.callService(domain, 'press', { entity_id: item.id }, function (r) { finishAction(item, r, '', cb); });
     }
     if (domain === 'lock' || domain === 'cover' || domain === 'climate') {
       return haEntityFn.read(item.id, function (cur) {
@@ -361,11 +380,11 @@ function act(entityId, action, value, cb) {
         var attrs = cur.attributes || {};
         if (domain === 'lock') {
           var svc = cur.state === 'locked' ? 'unlock' : 'lock';
-          return haEntityFn.callService('lock', svc, { entity_id: item.id }, function (r) { finishAction(item, r, cb); });
+          return haEntityFn.callService('lock', svc, { entity_id: item.id }, function (r) { finishAction(item, r, cur.state, cb); });
         }
         if (domain === 'cover') {
           var cSvc = (cur.state === 'open' || cur.state === 'opening') ? 'close_cover' : 'open_cover';
-          return haEntityFn.callService('cover', cSvc, { entity_id: item.id }, function (r) { finishAction(item, r, cb); });
+          return haEntityFn.callService('cover', cSvc, { entity_id: item.id }, function (r) { finishAction(item, r, cur.state, cb); });
         }
         if (cur.state === 'off') {
           var modes = Array.isArray(attrs.hvac_modes) ? attrs.hvac_modes : [];
@@ -373,9 +392,9 @@ function act(entityId, action, value, cb) {
           for (var i = 0; i < modes.length; i++) {
             if (modes[i] && modes[i] !== 'off') { pick = modes[i]; break; }
           }
-          return haEntityFn.callService('climate', 'set_hvac_mode', { entity_id: item.id, hvac_mode: pick }, function (r) { finishAction(item, r, cb); });
+          return haEntityFn.callService('climate', 'set_hvac_mode', { entity_id: item.id, hvac_mode: pick }, function (r) { finishAction(item, r, cur.state, cb); });
         }
-        return haEntityFn.callService('climate', 'turn_off', { entity_id: item.id }, function (r) { finishAction(item, r, cb); });
+        return haEntityFn.callService('climate', 'turn_off', { entity_id: item.id }, function (r) { finishAction(item, r, cur.state, cb); });
       });
     }
     return cb({ ok: false, error: msg('srv.habar.readOnly', '{domain} is read-only', { domain: domain }) });
@@ -385,7 +404,7 @@ function act(entityId, action, value, cb) {
     var delta = Number(value) < 0 ? -1 : 1;
     if (domain === 'cover') {
       return haEntityFn.callService('cover', delta > 0 ? 'open_cover' : 'close_cover', { entity_id: item.id }, function (r) {
-        finishAction(item, r, cb);
+        finishAction(item, r, prevState, cb);
       });
     }
     if (domain === 'light' || domain === 'climate' || domain === 'fan') {
@@ -400,9 +419,9 @@ function act(entityId, action, value, cb) {
             : 0;
           var nextPct = Math.max(0, Math.min(100, Math.round(curPct / 10) * 10 + delta * 10));
           if (nextPct <= 0) {
-            return haEntityFn.callService('light', 'turn_off', { entity_id: item.id }, function (r) { finishAction(item, r, cb); });
+            return haEntityFn.callService('light', 'turn_off', { entity_id: item.id }, function (r) { finishAction(item, r, cur.state, cb); });
           }
-          return haEntityFn.callService('light', 'turn_on', { entity_id: item.id, brightness_pct: nextPct }, function (r) { finishAction(item, r, cb); });
+          return haEntityFn.callService('light', 'turn_on', { entity_id: item.id, brightness_pct: nextPct }, function (r) { finishAction(item, r, '', cb); });
         }
         if (domain === 'fan') {
           var fanPct = cur.state === 'on'
@@ -410,9 +429,9 @@ function act(entityId, action, value, cb) {
             : 0;
           var nextFan = Math.max(0, Math.min(100, fanPct + delta * 25));
           if (nextFan <= 0) {
-            return haEntityFn.callService('fan', 'turn_off', { entity_id: item.id }, function (r) { finishAction(item, r, cb); });
+            return haEntityFn.callService('fan', 'turn_off', { entity_id: item.id }, function (r) { finishAction(item, r, cur.state, cb); });
           }
-          return haEntityFn.callService('fan', 'set_percentage', { entity_id: item.id, percentage: nextFan }, function (r) { finishAction(item, r, cb); });
+          return haEntityFn.callService('fan', 'set_percentage', { entity_id: item.id, percentage: nextFan }, function (r) { finishAction(item, r, '', cb); });
         }
         var step = typeof attrs.target_temp_step === 'number' && attrs.target_temp_step > 0 ? attrs.target_temp_step : 0.5;
         var minT = typeof attrs.min_temp === 'number' ? attrs.min_temp : 15;
@@ -422,7 +441,7 @@ function act(entityId, action, value, cb) {
           : (typeof attrs.current_temperature === 'number' ? attrs.current_temperature : 20);
         var nextTemp = Math.round(Math.max(minT, Math.min(maxT, base + delta * step)) * 10) / 10;
         return haEntityFn.callService('climate', 'set_temperature', { entity_id: item.id, temperature: nextTemp }, function (r) {
-          finishAction(item, r, cb);
+          finishAction(item, r, '', cb);
         });
       });
     }
