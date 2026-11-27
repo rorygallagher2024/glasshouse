@@ -2158,7 +2158,6 @@
  "audio.inputDeclaration": {"text": "Столбец телевизора относится к HDMI {port}.", "from": "The TV column describes HDMI {port}."},
  "audio.inputNow": {"text": "Входящий звук", "from": "Incoming audio"},
  "audio.linkInactive": {"text": "Нет активного соединения ARC", "from": "No active ARC link"},
- "audio.linkUnknown": {"text": "Соединение неизвестно", "from": "Link unknown"},
  "audio.loading": {"text": "Чтение аудиовозможностей…", "from": "Reading audio capabilities…"},
  "audio.noInput": {"text": "Звук не обнаружен", "from": "No audio reported"},
  "audio.notAdvertised": {"text": "Не заявлен", "from": "Not advertised"},

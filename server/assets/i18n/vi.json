@@ -417,7 +417,6 @@
  "audio.inputNow": {"text": "Âm thanh đầu vào", "from": "Incoming audio"},
  "audio.inputUnavailable": {"text": "Không có trạng thái", "from": "Live audio status unavailable"},
  "audio.linkInactive": {"text": "Chưa có kết nối ARC", "from": "No active ARC link"},
- "audio.linkUnknown": {"text": "Không rõ kết nối", "from": "Link unknown"},
  "audio.loading": {"text": "Đang đọc khả năng âm thanh…", "from": "Reading audio capabilities…"},
  "audio.nativeHdActive": {"text": "Chuyển tiếp DTS-HD đang hoạt động. Các khung DTS-HD MA hoặc DTS:X hoàn chỉnh đang được gửi qua eARC. Hãy kiểm tra định dạng đầu vào trên bộ thu để xác nhận tín hiệu.", "from": "DTS-HD forwarding is active. Complete DTS-HD MA or DTS:X frames are being sent over eARC. Check the receiver’s incoming format to confirm reception."},
  "audio.nativeHdCore": {"text": "Luồng hiện tại chỉ đang chuyển tiếp phần lõi DTS.", "from": "The current stream is forwarding DTS core only."},

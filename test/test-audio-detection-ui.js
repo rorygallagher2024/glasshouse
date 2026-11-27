@@ -34,7 +34,16 @@ if (Number(process.versions.node.split('.')[0]) < 8) {
   state.receiver.link = 'inactive'; render();
   assert(q('audio-path').innerHTML.indexOf('No active ARC link') !== -1);
   state.receiver.detected = null; state.receiver.name = null; state.receiver.port = null; state.receiver.link = 'unknown'; render();
-  assert(q('audio-path').innerHTML.indexOf('Link unknown') !== -1);
+  assert(q('audio-path').innerHTML.indexOf('Not reported by this TV') !== -1, 'a link the TV does not report is its limit, not a fault');
   assert(q('audio-path').innerHTML.indexOf('HDMI audio device detected') === -1);
+  // Sound going elsewhere: the return channel is not in use, as on a B8 with Headphone / AUX.
+  state.settings = { soundOutput: 'headphone' }; state.outputName = 'Headphone / AUX'; render();
+  assert(q('audio-path').innerHTML.indexOf('Not in use') !== -1);
+  assert(q('audio-path').innerHTML.indexOf('Sound goes to Headphone / AUX') !== -1);
+  assert(q('audio-link-note').textContent.indexOf('when the sound goes to one over HDMI ARC') !== -1, 'the note says why no receiver formats show');
+  state.receiver.link = 'inactive'; render();
+  assert(q('audio-path').innerHTML.indexOf('Not in use') !== -1, 'an inactive link with the sound elsewhere is not in use');
+  state.settings = { soundOutput: 'external_arc' }; state.outputName = 'HDMI ARC'; render();
+  assert(q('audio-path').innerHTML.indexOf('No active ARC link') !== -1, 'with the sound on ARC, an inactive link says so');
   console.log('test-audio-detection-ui.js passed');
 }

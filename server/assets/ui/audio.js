@@ -97,9 +97,20 @@ function renderAudio() {
   const noInput = st.live.inputReadable === false ? t('audio.inputUnavailable', 'Live audio status unavailable') : t('audio.noInput', 'No audio reported');
   const source = st.live.input;
   const sourceText = source ? [source.codec, source.sampleRate ? (source.sampleRate / 1000) + ' kHz' : null].filter(Boolean).join(' · ') : noInput;
-  const linkText = receiver.link === 'inactive' ? t('audio.linkInactive', 'No active ARC link') :
+  /*
+   * Where the sound goes somewhere other than HDMI ARC, the return channel is
+   * not in use, whatever the TV says of the link. Where it goes to ARC and the
+   * TV does not report the link, as webOS 4 does not, that is the TV's limit,
+   * not a fault, and is said so.
+   */
+  const soundKey = st.settings && st.settings.soundOutput;
+  const notArc = !!soundKey && !/arc/.test(soundKey);
+  const linkText = notArc && receiver.link !== 'eARC' && receiver.link !== 'ARC' ? t('audio.linkNotInUse', 'Not in use') :
+    receiver.link === 'inactive' ? t('audio.linkInactive', 'No active ARC link') :
     receiver.link === 'unknown' ? receiver.detected ? t('audio.deviceDetected', 'HDMI audio device detected')
-      : t('audio.linkUnknown', 'Link unknown') : receiver.link;
+      : t('audio.linkNotReported', 'Not reported by this TV') : receiver.link;
+  const linkDetail = notArc && receiver.link !== 'eARC' && receiver.link !== 'ARC'
+    ? t('audio.soundGoesTo', 'Sound goes to {output}', { output: st.outputName || soundKey }) : '';
   const item = (label, value, detail) => '<li><div class="audio-label">' + esc(label) + '</div><div class="audio-value">' + esc(value) + '</div>' +
     (detail ? '<div class="prot-desc">' + esc(detail) + '</div>' : '') + '</li>';
   const metadata = st.live.hdmi;
@@ -110,13 +121,14 @@ function renderAudio() {
     (metadata ? item(t('audio.hdmiChannels', 'HDMI channel information'), metadataText,
       t('audio.hdmiMetadataHint', 'Channel metadata reported by the HDMI source. It can remain during a pause and does not confirm playback at the receiver.')) : '') +
     item(t('audio.outputNow', 'Sound output'), st.outputName || t('audio.unknown', 'Unknown'), st.live.output || '') +
-    item(t('audio.receiverNow', 'Return channel'), linkText, [receiver.name, receiver.port
+    item(t('audio.receiverNow', 'Return channel'), linkText, [linkDetail, receiver.name, receiver.port
       ? t('audio.receiverPort', 'HDMI {port}', { port: receiver.port }) : null].filter(Boolean).join(' · '));
   q('audio-formats').innerHTML = tv.formats.map(f => '<tr><th scope="row">' + esc(f.name) + '</th>' +
     '<td class="' + (f.advertised === true ? 'audio-yes' : '') + '">' + esc(audioDeclaration(f.advertised)) + '</td>' +
     '<td class="' + (f.receiver === true ? 'audio-yes' : '') + '">' + esc(audioDeclaration(f.receiver)) + '</td></tr>').join('');
   q('audio-link-note').textContent = !receiver.formatsKnown
-    ? receiver.detected && receiver.link === 'unknown'
+    ? linkDetail ? t('audio.receiverNotInUse', 'A receiver\u2019s formats show here when the sound goes to one over HDMI ARC or eARC.')
+    : receiver.detected && receiver.link === 'unknown'
       ? t('audio.receiverDetectedUnknown', 'The TV identifies this HDMI audio device, but does not report its ARC/eARC link type or receiver formats. Check the receiver’s Audio In display to confirm reception.')
       : t('audio.receiverUnknown', 'Receiver formats are unknown until an ARC/eARC receiver reports them. A connected HDMI device alone does not establish a working audio link.')
     : t('audio.receiverKnown', 'These are the receiver’s declarations. DTS-HD needs eARC; DTS:X is not established by a DTS-HD entry. Receiver lock still needs a playback check.');
