@@ -319,7 +319,33 @@ var KEYS = [
   // com.webos.app.screenremote: user manual, Sport, Quick Help and the colour
   // keys), hands it to YouTube and apps that ask for it, and a hold toggles
   // audio description. Set, the filter takes all of that.
-  { key: 'screenremote', lg: 'IR_KEY_SCREEN_REMOTE', log: 'KEY_SCREEN_REMOTE', symbol: 'WebOS.Key_webOS_ScreenRemote', title: '123 button', filterOnly: true },
+  // fromPlugin: also where LG's filters leave it out, as on a B8 (webOS 4.4),
+  // whose MR18 sends it (Linux code 994) to no filter of LG's.
+  { key: 'screenremote', lg: 'IR_KEY_SCREEN_REMOTE', log: 'KEY_SCREEN_REMOTE', symbol: 'WebOS.Key_webOS_ScreenRemote', title: '123 button', filterOnly: true, fromPlugin: true },
+  // Buttons of remotes sold with a tuner, read on a B8 (webOS 4.4.3) with an
+  // MR18: Text and T.Opt are teletext's (Linux 779 and 780), which LG answers
+  // with "This function is not available" outside Live TV with teletext, and
+  // Live Zoom (1027) and AD, audio description. Offered where the TV's WebOS
+  // module defines the key, as LG's filters name only some of them.
+  { key: 'teletext', lg: 'IR_KEY_TELETEXT', symbol: 'WebOS.Key_webOS_Teletext', title: 'Text', filterOnly: true, fromPlugin: true },
+  { key: 'textoption', lg: 'IR_KEY_TEXTOPTION', symbol: 'WebOS.Key_webOS_TextOption', title: 'T.Opt', filterOnly: true, fromPlugin: true },
+  { key: 'livezoom', lg: 'IR_KEY_LIVE_ZOOM', symbol: 'WebOS.Key_webOS_LiveZoom', title: 'Live Zoom', filterOnly: true, fromPlugin: true },
+  { key: 'ad', lg: 'IR_KEY_AD', symbol: 'WebOS.Key_webOS_AudioDescription', title: 'AD', filterOnly: true, fromPlugin: true },
+  // The number keys. LG's own filter (systemUi.js handleMagicNumber) times
+  // each: a press is passed on as the digit, and a 1 s hold opens what Quick
+  // Access sets for it. Set here, the filter takes the key before LG's, so it
+  // no longer types its digit or opens its Quick Access. Offered where LG's
+  // filters handle number keys at all.
+  { key: 'num1', symbol: 'Qt.Key_1', title: '1', filterOnly: true, number: true },
+  { key: 'num2', symbol: 'Qt.Key_2', title: '2', filterOnly: true, number: true },
+  { key: 'num3', symbol: 'Qt.Key_3', title: '3', filterOnly: true, number: true },
+  { key: 'num4', symbol: 'Qt.Key_4', title: '4', filterOnly: true, number: true },
+  { key: 'num5', symbol: 'Qt.Key_5', title: '5', filterOnly: true, number: true },
+  { key: 'num6', symbol: 'Qt.Key_6', title: '6', filterOnly: true, number: true },
+  { key: 'num7', symbol: 'Qt.Key_7', title: '7', filterOnly: true, number: true },
+  { key: 'num8', symbol: 'Qt.Key_8', title: '8', filterOnly: true, number: true },
+  { key: 'num9', symbol: 'Qt.Key_9', title: '9', filterOnly: true, number: true },
+  { key: 'num0', symbol: 'Qt.Key_0', title: '0', filterOnly: true, number: true },
   // The channel rocker. On webOS 10 and below the JavaScript key filter names
   // it (symbol), where a key that is set is accepted and so no longer changes
   // the channel. On webOS 11 the filter does not carry it; lib/guidepatch has
@@ -542,6 +568,8 @@ function keysOnTv() {
       if (!table) table = readKeyTable();
       return !!(table[k.lg] && table[k.lg].qt === qtName(k.symbol));
     }
+    // Number keys: where LG's filters handle them (Qt.Key_1 to Qt.Key_9 as a range).
+    if (k.number) return src.indexOf('Qt.Key_1') !== -1;
     if ((k.color && hasColor) || src.indexOf(k.symbol) !== -1) return true;
     return !!k.fromPlugin && inPlugin(k.symbol);
   });
@@ -2376,6 +2404,8 @@ function describeKeys(keys, inChain, cb, native) {
         };
         if (k.noNothing && native) key.noNothing = true;
         if (k.turnsOffVoice) key.turnsOffVoice = true;
+        // Set, a number key no longer types its digit or opens its Quick Access.
+        if (k.number) key.numberKey = true;
         if (k.replacesVoice) key.replacesVoice = true;
         if (native && COLOR_CODES[k.key]) { key.observedColor = true; key.noNothing = true; }
         if (native && NATIVE_BLOCK_KEYS[k.key]) key.blocksApp = true;

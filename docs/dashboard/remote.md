@@ -72,6 +72,11 @@ On Glasshouse Home, a channel key set to Brightness steps the [Home Assistant ti
 
 * **Microphone:** set to anything else, it no longer starts voice control, for a press or a hold.
 * **?**, **123** and **Home Hub** on MR25 remotes can be changed where the TV's software names them, as on webOS 10. Set, a button takes both its press and its hold.
+* **Text**, **T.Opt**, **Live Zoom** and **AD**, on remotes sold with a TV tuner such as the MR18, can be changed on webOS 4 to 10. Text and T.Opt are teletext's: outside Live TV, LG only says "This function is not available" for them, so they are good buttons to give a job. The **123** button can be changed on webOS 4 too.
+
+### Number keys
+
+**1** to **9** and **0** can each be set like any other button, under **Number keys**. A number key set here no longer types its number, in Live TV or when entering a PIN, and holding it no longer opens what [Quick Access](#quick-access) sets for it. **As LG has it** brings both back. The group shows only where your remote has number keys.
 
 ### How it works
 

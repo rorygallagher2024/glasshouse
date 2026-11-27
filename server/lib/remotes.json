@@ -80,6 +80,43 @@
       "notes": "Every Remote tab key the owner could identify was pressed and read from the log; green, yellow and blue were not pressed individually, assumed from Red and the owner's own account of the remote's layout."
     },
     {
+      "id": "MR22N",
+      "title": "Magic Remote MR22N",
+      "names": [
+        "LGE MR22N"
+      ],
+      "nameEvidence": "measured",
+      "year": null,
+      "numberKeys": true,
+      "complete": true,
+      "keys": {
+        "netflix": "measured",
+        "amazon": "measured",
+        "disneyplus": "measured",
+        "rakutentv": "measured",
+        "googleassistant": "measured",
+        "alexa": "measured",
+        "channelup": "measured",
+        "channeldown": "measured",
+        "guide": "measured",
+        "screenremote": "measured",
+        "voice": "documented",
+        "input": "documented",
+        "red": "measured",
+        "green": "measured",
+        "yellow": "measured",
+        "blue": "measured"
+      },
+      "labels": {
+        "screenremote": "…"
+      },
+      "sources": [
+        "OLED42C24LA, webOS 9.2.2, 27 November 2026: the remote paired with the TV, reported by the TV as LGE MR22N, every button but Power pressed one at a time by the owner and read both as Linux key codes from the TV's input devices and from lginput2's button_type lines in /var/log/messages: the number keys 1 to 9 and 0 (KEY_1 to KEY_0), Guide (KEY_GUIDE, Linux 362), the … button (KEY_SCREEN_REMOTE, 994), volume up and down and mute, channel up and down (KEY_CHANNELUP, KEY_CHANNELDOWN), the arrows, Back (KEY_PREVIOUS), Settings (KEY_SETTINGS), Red, Green, Yellow and Blue, Netflix (KEY_NETFLIX), Prime Video (KEY_AMAZON), Disney+ (KEY_DISNEY), Rakuten TV (KEY_RAKUTEN), Google Assistant (KEY_GOOGLEVOICE) and Alexa (KEY_ALEXAVOICE)",
+        "The owner confirmed the remote also has Home, Input, the microphone and OK on the wheel, which were not read; Home, Back, Settings and OK are not keys the Remote tab offers"
+      ],
+      "notes": "Every button was pressed and read except Power, Home, Input, the microphone and OK; Input and the microphone are listed from the owner's account."
+    },
+    {
       "id": "MR20",
       "title": "Magic Remote MR20",
       "names": [
@@ -136,14 +173,19 @@
         "red": "assumed",
         "green": "assumed",
         "yellow": "assumed",
-        "blue": "assumed"
+        "blue": "assumed",
+        "screenremote": "measured",
+        "teletext": "measured",
+        "textoption": "measured",
+        "livezoom": "measured"
       },
       "sources": [
         "49SK8500PLA, webOS 4.4.3, 26 November 2026: the remote already paired with the TV, reported by the TV as LGE MR18, read from lginput2's NL_BUTTON_CLICK lines in /var/log/messages, pressed one at a time: Netflix (KEY_NETFLIX), Prime Video (KEY_AMAZON) and the microphone (KEY_VOICE)",
         "Guide opened Glasshouse Home's guide and Input opened com.tvweb.inputbar, read from the SAM launch lines, not a button_type line; a number key opened LG's own remoteUserList (Quick Access) overlay, read the same way",
         "The owner confirmed channel up and down are handled; not read from the log, since this TV has no tuned channels and Live TV opens LG Channels instead",
         "The owner confirmed the remote has List, Guide, AD, Netflix, Prime Video, Text, T.Opt, Live Zoom, colour keys, Input and a microphone, and that it has no Home Hub (house in a circle), ? button, Movies, Info or Apps key; List, AD, Text, T.Opt and Live Zoom are not keys the Remote tab offers",
-        "Colour keys are offered on this webOS version through the existing filter-based Remote tab mechanism (action 'lg' by default), independent of this entry; not pressed individually"
+        "Colour keys are offered on this webOS version through the existing filter-based Remote tab mechanism (action 'lg' by default), independent of this entry; not pressed individually",
+        "OLED65B8SLC (webOS 4.4.3), 27 November 2026: the owner pressed, by faded labels, the two buttons at the bottom (LG answered each with 'This function is not available'), AD and Live Zoom, read as Linux key codes from the TV's input devices: 779 and 780 (IR_KEY_TELETEXT and IR_KEY_TEXTOPTION in LG's key table, Text and T.Opt), 994 (IR_KEY_SCREEN_REMOTE), pressed as AD, and 1027 (IR_KEY_LIVE_ZOOM). Whether AD sends 994 or another button was pressed is not settled, so AD is not listed. On the MR23 the … button, which sends the same key, has AD/SAP printed under it, so the MR18's AD button may well be that key"
       ],
       "notes": "Netflix, Prime Video and the microphone were read as button_type lines; Guide, Input and the number keys were confirmed by what they opened instead, since webOS 4.4.3 does not log them as streaming-button clicks. Channel up and down were confirmed by the owner rather than read. Colour keys are assumed present and already configurable on this webOS version regardless of the remote's catalogue entry."
     }

@@ -460,6 +460,7 @@ const RK_GROUPS = [
   { id: 'assistant', title: () => t('apps.remoteKeys.assistant', 'Voice assistant buttons'), keys: ['voice', 'alexa', 'googleassistant'] },
   { id: 'channel', title: () => t('apps.remoteKeys.channel', 'Channel keys'), keys: ['channelup', 'channeldown'] },
   { id: 'colour', title: () => t('apps.remoteKeys.colour', 'Color keys'), keys: ['red', 'green', 'yellow', 'blue'] },
+  { id: 'number', title: () => t('apps.remoteKeys.numbers', 'Number keys'), keys: ['num1', 'num2', 'num3', 'num4', 'num5', 'num6', 'num7', 'num8', 'num9', 'num0'] },
   // Anything else, including keys a later server offers.
   { id: 'other', title: () => t('apps.remoteKeys.other', 'Other keys'), keys: null }
 ];
@@ -707,6 +708,7 @@ function toggleRemoteKey(tile) {
     ${k.nativeInput ? `<div class="pv-note">${esc(t('apps.remoteKeys.inputNative', 'On this TV the Input key needs a change to LG’s key handler. Setting it, or setting it back to LG’s list, restarts the TV’s screen once, and the change is made again each time the TV starts.'))}</div>` : ''}
     ${k.channelNative ? `<div class="pv-note">${esc(t('apps.remoteKeys.channelNative', 'On this TV the channel keys need a change to LG’s key handler. Setting one, or setting one back to As LG has it, restarts the TV’s screen once, and the change is made again each time the TV starts. While set, the key no longer changes the channel.'))}</div>` : ''}
     ${k.observedChannel ? `<div class="pv-note">${esc(t('apps.remoteKeys.observedChannel', 'Glasshouse must be running for this shortcut. The key may still change the channel.'))}</div>` : ''}
+    ${k.numberKey ? `<div class="pv-note">${esc(t('apps.remoteKeys.numberKey', 'Set to anything else, this key no longer types its number, in Live TV or a PIN, and holding it no longer opens what Quick Access sets for it. As LG has it brings both back.'))}</div>` : ''}
     ${k.turnsOffVoice ? `<div class="pv-note">${esc(t('apps.remoteKeys.turnsOffVoice', 'Setting this key switches off LG\'s voice assistant, so voice search, the AI assistant and the microphone stop working until it is As LG has it again.'))}</div>` : ''}
     <div class="rk-opts">${opt('lg', esc(t('apps.remoteKeys.lg', 'As LG has it')))}${k.noNothing ? '' : opt('nothing', `<span aria-hidden="true">⦸</span> ${esc(t('apps.remoteKeys.nothing', 'Nothing'))}`)}${switchers}${barChoice}${gone}</div>
     ${media.length ? `<div class="rk-sub">${esc(t('apps.remoteKeys.buttons', 'Buttons'))}</div>
