@@ -133,7 +133,7 @@ Node-RED, Telegraf into InfluxDB, or scripts subscribing to that topic work the 
 * **HTTP polling** (the default) asks Home Assistant each time. With **Background refresh** at `0`, every ask is a fresh request, as before. Set it to 250 ms or more (`homeAssistant.pollIntervalMs`) and Glasshouse refreshes the entities it uses on that interval in the background, and answers from what it last read.
 * **WebSocket** (`homeAssistant.updateMode: "websocket"`) keeps a connection open to Home Assistant's `/api/websocket` and receives each state change as it happens. Until it connects, and while it reconnects after a drop, Glasshouse asks over HTTP instead. The Connection box adds **pushing changes** or **reconnecting…**.
 
-With either a background refresh or WebSocket, the open control bar asks Glasshouse every second rather than every five, since the answer costs Home Assistant nothing.
+With either a background refresh or WebSocket, the open control bar and Glasshouse Home's Home Assistant row ask Glasshouse every second, rather than every five and every ten seconds, since the answer costs Home Assistant nothing.
 
 ![Home Assistant API settings showing the toggle, address, saved token, and the Connection box with Home Assistant reachable](screenshots/ha-api.png)
 

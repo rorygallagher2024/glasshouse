@@ -309,16 +309,19 @@ function formatTile(item, ent, err) {
 }
 
 /*
- * How often the open bar asks again. Where lib/haentity serves a cache kept
- * current by Home Assistant's push or its own background refresh, an ask
- * costs Home Assistant nothing, so the bar asks every second and a change
- * made elsewhere shows within about that; otherwise every ask is a request
- * per tile to Home Assistant, and the bar keeps to five seconds.
+ * Whether lib/haentity answers from a cache kept current by Home Assistant's
+ * push or its own background refresh. Then an ask costs Home Assistant
+ * nothing, so the open bar and Glasshouse Home's row ask every second and a
+ * change made elsewhere shows within about that. Otherwise every ask is a
+ * request per tile to Home Assistant, and they keep to their own pace.
  */
-function refreshMs() {
+function cached() {
   var st = haEntityFn && typeof haEntityFn.status === 'function' ? haEntityFn.status() : null;
-  if (st && (st.updateMode === 'websocket' || st.pollIntervalMs > 0)) return CACHED_REFRESH_MS;
-  return REFRESH_MS;
+  return !!(st && (st.updateMode === 'websocket' || st.pollIntervalMs > 0));
+}
+
+function refreshMs() {
+  return cached() ? CACHED_REFRESH_MS : REFRESH_MS;
 }
 
 function state(cb) {
@@ -336,7 +339,7 @@ function state(cb) {
     var tiles = list.map(function (it) {
       return formatTile(it, ents[it.id] || null, errs[it.id] || '');
     });
-    cb({ ok: true, configured: true, hour12: !!hour12Fn(), showHints: cfg.showHints, refreshMs: refreshMs(), tiles: tiles });
+    cb({ ok: true, configured: true, hour12: !!hour12Fn(), showHints: cfg.showHints, cached: cached(), refreshMs: refreshMs(), tiles: tiles });
   });
 }
 
