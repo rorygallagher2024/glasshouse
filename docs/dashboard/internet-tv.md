@@ -95,13 +95,13 @@ When opening a channel from the Internet TV row or live preview, playback opens 
 * **Playback:** An MPEG-TS channel plays in Glasshouse Home's own player, which reads the stream through the Glasshouse server on the TV. When the provider closes the stream or sends nothing for 15 seconds, the server asks for it again and joins it up, so the picture plays on from what is buffered. A picture that freezes with video still buffered is stepped on after a second and a half and reopened after four seconds, and when the stream itself falls behind, the picture pauses before the buffer runs out and waits until a few seconds are buffered, rather than stuttering. A channel starts once a couple of seconds are buffered, and one that keeps running dry waits for more each time; Home remembers that for the channel, and how often the provider's channels run dry, so the next time it starts with what it needed. A stream that stops arriving, or arrives slower than it plays, is opened again, with the last picture held on screen meanwhile. Where the provider offers a channel as both HLS and MPEG-TS, one that keeps dropping or freezing switches to the other and starts that way next time. A channel that has played keeps being retried for 20 minutes, and a network outage is waited out. A stretch missing from the stream is jumped over as soon as the picture reaches it. When a channel has both AAC and Dolby (AC-3 or E-AC-3) sound, Home's player plays the AAC track. A channel the provider refuses on opening is tried again before Home gives up on it. HLS channels, paused live TV, satellite tuner channels, a channel whose video is neither H.264 nor HEVC, and one Home's player fails to decode twice in a row play in the TV's own player.
 * **Preview in the tile:** With **Preview in the tile** enabled under Live preview settings, channels play directly inside their Home tile. Pressing **OK** smoothly expands the video to full screen, and pressing **Back** returns it to the tile without opening a new stream.
 
-![An IPTV channel previewing in its tile on a G3](../screenshots/iptv-preview-in-tile.jpg)
+![The Internet TV row on a C2 in the Alternative View: BBC One previewing in its tile, then BBC Two, ITV1, STV, BBC Alba, BBC Four and BBC Scotland with their logos, what is on now and next, and the guide at the end](../screenshots/iptv-preview-in-tile.jpg)
 
 ## Electronic Programme Guide (EPG)
 
 Whenever the lineup contains channels, an **IPTV Guide** tile remains accessible on the Internet TV row (even if no channels are currently starred):
 
-![The guide on a G3](../screenshots/iptv-home-guide.jpg)
+![The guide on a C2: BBC News on BBC Two in focus and previewing at the top, and the lineup's channels with their logos down the left over two and a half hours](../screenshots/iptv-home-guide.jpg)
 
 * **EPG grid view:** Selecting **IPTV Guide** (or pressing **Info** while on the Internet TV row) displays a 2.5-hour programme timeline starting 30 minutes before the current time, marked with an amber vertical line at the current time.
 * **Navigation:**
