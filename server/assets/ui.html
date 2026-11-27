@@ -2565,6 +2565,23 @@
             <button type="button" class="pill idle" id="cfg-ha-verify" onclick="toggleHaVerify()">&mdash;</button>
           </div>
         </div>
+        <div class="pv-table" style="margin-top:8px">
+          <div class="pv-row">
+            <div>
+              <div class="n" data-t="ha.updateMode">Update mode</div>
+              <div class="d" data-t="ha.updateMode.desc">How Glasshouse learns an entity's current state: ask Home Assistant fresh each time, or keep a live connection open that pushes a change the moment it happens.</div>
+            </div>
+            <select class="pill-sel" id="cfg-ha-mode" onchange="onHaModeChange()">
+              <option value="polling" data-t="ha.updateMode.polling">HTTP polling</option>
+              <option value="websocket" data-t="ha.updateMode.websocket">WebSocket</option>
+            </select>
+          </div>
+        </div>
+        <div class="cfg-f" id="cfg-ha-poll-row" style="margin-top:8px">
+          <label for="cfg-ha-poll" data-t="ha.pollIntervalMs">Background refresh (ms)</label>
+          <input type="number" id="cfg-ha-poll" min="0" step="50" placeholder="0">
+          <div class="hint" data-t="ha.pollIntervalMs.hint">0 asks Home Assistant fresh every time. 250 or more keeps entities Glasshouse uses refreshed in the background at that interval, so a change made elsewhere — a wall switch, another app — shows up without waiting on the next request.</div>
+        </div>
         <div class="cfg-save" style="margin-top:14px">
           <button type="button" id="cfg-ha-save-btn" onclick="saveHaSettings()" data-t="ha.save">Save</button>
           <button type="button" id="cfg-ha-test-btn" onclick="testHaConnection()" data-t="ha.test">Test connection</button>

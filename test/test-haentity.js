@@ -6,7 +6,9 @@
 var assert = require('assert');
 var http = require('http');
 var https = require('https');
+var crypto = require('crypto');
 var EventEmitter = require('events').EventEmitter;
+var waitFor = require('./wait-for').waitFor;
 
 var haEntity = require('../server/lib/haentity');
 
@@ -61,6 +63,181 @@ var server = http.createServer(function (req, res) {
   res.writeHead(404);
   res.end('{}');
 });
+
+// 10. Polling cache (#1795): with pollIntervalMs set, a background tick keeps
+// a watched entity's state current, so read() need not wait on a fresh
+// request every time the TV app asks again.
+function testPollingCache(done) {
+  // lib/haentity.js's own floor (MIN_POLL_MS): below it pollIntervalMs is
+  // treated as unset and the background tick never starts.
+  var pollIntervalMs = 250;
+  var pollState = { state: 'on' };
+  var pollHits = 0;
+  var pollServer = http.createServer(function (req, res) {
+    if (req.url === '/api/states/light.cached') {
+      pollHits++;
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify({ entity_id: 'light.cached', state: pollState.state, attributes: {} }));
+    }
+    res.writeHead(404);
+    res.end('{}');
+  });
+  pollServer.listen(0, '127.0.0.1', function () {
+    var base = 'http://127.0.0.1:' + pollServer.address().port;
+    haEntity.init({ config: { homeAssistant: { url: base, token: 'tok', pollIntervalMs: pollIntervalMs } } });
+    haEntity.read('light.cached', function (r1) {
+      assert.strictEqual(r1.ok, true);
+      assert.strictEqual(r1.state, 'on');
+      var afterFirst = pollHits;
+      pollState.state = 'off';
+      // The background tick, not this read, has to notice the change.
+      setTimeout(function () {
+        assert.ok(pollHits > afterFirst, 'the background tick polled the watched entity on its own');
+        var beforeRead = pollHits;
+        haEntity.read('light.cached', function (r2) {
+          assert.strictEqual(r2.ok, true);
+          assert.strictEqual(r2.state, 'off', 'served the state the background tick already fetched');
+          assert.strictEqual(pollHits, beforeRead, 'read() served the cache rather than asking Home Assistant again');
+          console.log('  ✓ polling with pollIntervalMs set keeps a watched entity current in the background');
+          haEntity.init({ config: {} });
+          pollServer.close();
+          done();
+        });
+      }, pollIntervalMs * 3);
+    });
+  });
+}
+
+// One JSON message as a Home Assistant frame: unmasked, as a real server's.
+function wsServerFrame(obj) {
+  var body = new Buffer(JSON.stringify(obj), 'utf8');
+  var headerLength = body.length < 126 ? 2 : 4;
+  var frame = new Buffer(headerLength + body.length);
+  frame[0] = 0x81;
+  if (body.length < 126) frame[1] = body.length;
+  else { frame[1] = 126; frame.writeUInt16BE(body.length, 2); }
+  body.copy(frame, headerLength);
+  return frame;
+}
+
+// One masked client frame off the front of buffer, as lib/haentity.js sends
+// its small, unfragmented JSON messages; null while there is not a whole one yet.
+function wsServerDecodeNext(buffer) {
+  if (buffer.length < 2) return null;
+  var masked = (buffer[1] & 0x80) !== 0;
+  var length = buffer[1] & 0x7f;
+  var offset = 2;
+  if (length === 126) {
+    if (buffer.length < 4) return null;
+    length = buffer.readUInt16BE(2);
+    offset = 4;
+  }
+  var maskOffset = offset;
+  if (masked) offset += 4;
+  if (buffer.length < offset + length) return null;
+  var payload = new Buffer(length);
+  buffer.copy(payload, 0, offset, offset + length);
+  if (masked) for (var i = 0; i < length; i++) payload[i] ^= buffer[maskOffset + (i % 4)];
+  var message = null;
+  try { message = JSON.parse(payload.toString('utf8')); } catch (e) { /* ignored below */ }
+  return { message: message, rest: buffer.slice(offset + length) };
+}
+
+// 11 & 12. Websocket mode (#1795): a pushed state_changed is cached without a
+// fresh request, and a dropped connection reconnects while read() falls back
+// to a direct request meanwhile.
+function testWebSocket(done) {
+  var wsRestState = { state: 'on' };
+  var wsRestHits = 0;
+  var clientSocket = null;
+  var wsSubId = null;
+
+  var httpServer = http.createServer(function (req, res) {
+    if (req.url === '/api/states/light.pushed') {
+      wsRestHits++;
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify({ entity_id: 'light.pushed', state: wsRestState.state, attributes: {} }));
+    }
+    res.writeHead(404);
+    res.end('{}');
+  });
+  httpServer.on('upgrade', function (req, socket) {
+    var key = req.headers['sec-websocket-key'];
+    var accept = crypto.createHash('sha1').update(key + '258EAFA5-E914-47DA-95CA-C5AB0DC85B11').digest('base64');
+    socket.write('HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: ' + accept + '\r\n\r\n');
+    clientSocket = socket;
+    wsSubId = null;
+    var buffer = new Buffer(0);
+    socket.write(wsServerFrame({ type: 'auth_required' }));
+    socket.on('data', function (chunk) {
+      buffer = Buffer.concat([buffer, chunk]);
+      for (;;) {
+        var decoded = wsServerDecodeNext(buffer);
+        if (!decoded) break;
+        buffer = decoded.rest;
+        var message = decoded.message;
+        if (!message) continue;
+        if (message.type === 'auth') {
+          socket.write(wsServerFrame(message.access_token === 'tok' ? { type: 'auth_ok' } : { type: 'auth_invalid' }));
+        } else if (message.type === 'subscribe_events') {
+          wsSubId = message.id;
+          socket.write(wsServerFrame({ id: message.id, type: 'result', success: true, result: null }));
+        }
+      }
+    });
+    socket.on('error', function () {});
+  });
+
+  function pushEvent(entityId, state) {
+    clientSocket.write(wsServerFrame({
+      id: wsSubId,
+      type: 'event',
+      event: { event_type: 'state_changed', data: { entity_id: entityId, new_state: { state: state, attributes: {}, last_updated: '2026-11-27T00:00:00Z' } } }
+    }));
+  }
+
+  httpServer.listen(0, '127.0.0.1', function () {
+    var base = 'http://127.0.0.1:' + httpServer.address().port;
+    haEntity.init({ config: { homeAssistant: { url: base, token: 'tok', updateMode: 'websocket' } }, wsBackoffMs: 20 });
+
+    // Before the socket has authenticated, read() falls back to a direct request.
+    haEntity.read('light.pushed', function (r1) {
+      assert.strictEqual(r1.ok, true);
+      assert.strictEqual(r1.state, 'on');
+      waitFor(function () { return haEntity.status().wsConnected === true; }, function () {
+        assert.strictEqual(haEntity.status().updateMode, 'websocket');
+        var beforeEvent = wsRestHits;
+        pushEvent('light.pushed', 'off');
+        (function checkPushed() {
+          haEntity.read('light.pushed', function (r2) {
+            if (r2.state !== 'off') return setTimeout(checkPushed, 5);
+            assert.strictEqual(wsRestHits, beforeEvent, 'the pushed state came from the socket, not a fresh request');
+            console.log('  ✓ websocket mode serves a pushed state_changed without a fresh request');
+
+            // A dropped connection reconnects, with read() falling back meanwhile.
+            clientSocket.destroy();
+            waitFor(function () { return haEntity.status().wsConnected === false; }, function () {
+              var duringDrop = wsRestHits;
+              haEntity.read('light.pushed', function (r3) {
+                assert.strictEqual(r3.ok, true, 'a direct request still answers while the socket is down');
+                assert.ok(wsRestHits > duringDrop, 'read() asked Home Assistant directly while disconnected');
+                waitFor(function () { return haEntity.status().wsConnected === true; }, function () {
+                  console.log('  ✓ a dropped websocket reconnects, with a direct request answering meanwhile');
+                  haEntity.init({ config: {} });
+                  // close() would wait on the server's side of the socket
+                  // init() just dropped, which need not end before the
+                  // loop drains.
+                  httpServer.close();
+                  done();
+                });
+              });
+            });
+          });
+        })();
+      });
+    });
+  });
+}
 
 server.listen(0, '127.0.0.1', function () {
   var base = 'http://127.0.0.1:' + server.address().port;
@@ -305,8 +482,13 @@ server.listen(0, '127.0.0.1', function () {
 
                                                         https.request = realHttpsRequest;
                                                         console.log('  \u2713 HTTPS passes rejectUnauthorized and turns socket/TLS errors into readable messages');
-                                                        server.close();
-                                                        console.log('ALL test-haentity.js assertions passed!');
+                                                        server.close(function () {
+                                                          testPollingCache(function () {
+                                                            testWebSocket(function () {
+                                                              console.log('ALL test-haentity.js assertions passed!');
+                                                            });
+                                                          });
+                                                        });
                                                       });
                                                     });
                                                   });

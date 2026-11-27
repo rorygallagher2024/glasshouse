@@ -466,6 +466,15 @@ function validateHaSettings(haObj) {
     if (haTok || haObj.clearToken) out.token = haTok;
   }
   if (typeof haObj.tlsRejectUnauthorized === 'boolean') out.tlsRejectUnauthorized = haObj.tlsRejectUnauthorized;
+  if (haObj.updateMode === 'websocket' || haObj.updateMode === 'polling') out.updateMode = haObj.updateMode;
+  if (haObj.pollIntervalMs !== undefined) {
+    var pollMs = parseInt(haObj.pollIntervalMs, 10);
+    var minPoll = (haEntityModule && haEntityModule.MIN_POLL_MS) || 250;
+    var maxPoll = (haEntityModule && haEntityModule.MAX_POLL_MS) || 60000;
+    if (pollMs === 0) out.pollIntervalMs = 0;
+    else if (pollMs >= minPoll && pollMs <= maxPoll) out.pollIntervalMs = pollMs;
+    else errors.push('the poll interval must be 0 (off) or ' + minPoll + ' to ' + maxPoll + ' ms');
+  }
   return { errors: errors, value: out };
 }
 
@@ -476,6 +485,8 @@ function applyHaConfig(haPatch) {
   if (haPatch.url !== undefined) config.homeAssistant.url = haPatch.url;
   if (haPatch.token !== undefined) config.homeAssistant.token = haPatch.token;
   if (haPatch.tlsRejectUnauthorized !== undefined) config.homeAssistant.tlsRejectUnauthorized = haPatch.tlsRejectUnauthorized;
+  if (haPatch.updateMode !== undefined) config.homeAssistant.updateMode = haPatch.updateMode;
+  if (haPatch.pollIntervalMs !== undefined) config.homeAssistant.pollIntervalMs = haPatch.pollIntervalMs;
   if (haEntityModule) haEntityModule.update(config.homeAssistant);
 }
 
@@ -1301,6 +1312,8 @@ function getSettingsPayload() {
       url: haCfg.url || '',
       tokenSet: !!haCfg.token,
       tlsRejectUnauthorized: haCfg.tlsRejectUnauthorized !== false,
+      updateMode: haCfg.updateMode === 'websocket' ? 'websocket' : 'polling',
+      pollIntervalMs: haCfg.pollIntervalMs || 0,
       configured: !!(haEntityModule && haEntityModule.configured()),
       status: (haEntityModule && typeof haEntityModule.status === 'function') ? haEntityModule.status() : null
     },
@@ -2244,6 +2257,8 @@ function handleRequest(req, res) {
           url: config.homeAssistant.url || '',
           tokenSet: !!(config.homeAssistant.token),
           tlsRejectUnauthorized: config.homeAssistant.tlsRejectUnauthorized !== false,
+          updateMode: config.homeAssistant.updateMode === 'websocket' ? 'websocket' : 'polling',
+          pollIntervalMs: config.homeAssistant.pollIntervalMs || 0,
           configured: haEntityModule.configured(),
           status: (typeof haEntityModule.status === 'function') ? haEntityModule.status() : null
         }));

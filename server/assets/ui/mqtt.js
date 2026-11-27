@@ -10,6 +10,8 @@ let cfgHaTokenSet = false;
 let cfgHaWritable = true;
 let cfgHaVerify = true;
 let cfgHaSavedVerify = true;
+let cfgHaUpdateMode = 'polling';
+let cfgHaPollMs = 0;
 
 function toggleMqtt() { showTab(activeTab === 'mqtt' ? 'control' : 'mqtt'); }
 
@@ -371,6 +373,9 @@ async function loadSettings(keepMsg) {
     cfgHaWritable = !!j.writable;
     cfgHaVerify = ha.tlsRejectUnauthorized !== false;
     cfgHaSavedVerify = cfgHaVerify;
+    cfgHaUpdateMode = ha.updateMode === 'websocket' ? 'websocket' : 'polling';
+    cfgHaPollMs = ha.pollIntervalMs || 0;
+    renderHaModeFields();
     const haUrlInput = q('cfg-ha-url');
     if (haUrlInput) {
       haUrlInput.value = cfgHaUrl;
@@ -529,6 +534,27 @@ function toggleHaVerify() {
   renderHaVerifyToggle();
 }
 
+function renderHaModeFields() {
+  const modeSel = q('cfg-ha-mode');
+  if (modeSel) {
+    modeSel.value = cfgHaUpdateMode;
+    modeSel.disabled = !cfgHaWritable;
+  }
+  const pollRow = q('cfg-ha-poll-row');
+  if (pollRow) pollRow.hidden = cfgHaUpdateMode === 'websocket';
+  const pollInput = q('cfg-ha-poll');
+  if (pollInput) {
+    pollInput.value = cfgHaPollMs || '';
+    pollInput.disabled = !cfgHaWritable;
+  }
+}
+
+function onHaModeChange() {
+  const modeSel = q('cfg-ha-mode');
+  if (modeSel) cfgHaUpdateMode = modeSel.value === 'websocket' ? 'websocket' : 'polling';
+  renderHaModeFields();
+}
+
 function setHaFeedback(text, kind, title) {
   const msgEl = q('cfg-ha-msg');
   const errEl = q('cfg-ha-error');
@@ -612,6 +638,13 @@ function formatHaLinkMetric(st, statusObj) {
     let metric = t('mqtt.net.reachable', 'Reachable');
     if (statusObj && statusObj.latencyMs != null) metric += ' · ' + t('mqtt.net.latency', '{ms} ms', { ms: statusObj.latencyMs });
     if (statusObj && statusObj.lastReadMs != null) metric += ' · ' + t('ha.net.readAge', 'read {age}', { age: cfgAge(statusObj.lastReadMs) });
+    if (statusObj && statusObj.updateMode === 'websocket') {
+      metric += ' · ' + (statusObj.wsConnected
+        ? t('ha.updateMode.wsPushing', 'pushing changes')
+        : t('ha.updateMode.wsReconnecting', 'reconnecting…'));
+    } else if (statusObj && statusObj.pollIntervalMs > 0) {
+      metric += ' · ' + t('ha.updateMode.pollingEvery', 'refreshing every {ms} ms', { ms: statusObj.pollIntervalMs });
+    }
     return { text: metric, title: '' };
   }
   if (st === 'error') {
@@ -705,7 +738,12 @@ async function saveHaSettings() {
   if (!btn) return;
   const url = q('cfg-ha-url') ? q('cfg-ha-url').value.trim() : '';
   const token = q('cfg-ha-token') ? q('cfg-ha-token').value.trim() : '';
-  const payload = { enabled: cfgHaEnabled, url: url, tlsRejectUnauthorized: cfgHaVerify };
+  const pollInput = q('cfg-ha-poll');
+  const pollMs = pollInput && pollInput.value !== '' ? parseInt(pollInput.value, 10) : 0;
+  const payload = {
+    enabled: cfgHaEnabled, url: url, tlsRejectUnauthorized: cfgHaVerify,
+    updateMode: cfgHaUpdateMode, pollIntervalMs: isNaN(pollMs) ? 0 : pollMs
+  };
   if (token !== '') payload.token = token;
   else if (url === '') payload.clearToken = true;
 
@@ -729,8 +767,11 @@ async function saveHaSettings() {
     cfgHaTokenSet = !!j.tokenSet;
     cfgHaVerify = j.tlsRejectUnauthorized !== false;
     cfgHaSavedVerify = cfgHaVerify;
+    cfgHaUpdateMode = j.updateMode === 'websocket' ? 'websocket' : 'polling';
+    cfgHaPollMs = j.pollIntervalMs || 0;
     renderHaEnabledToggle();
     renderHaVerifyToggle();
+    renderHaModeFields();
     const tokenInput = q('cfg-ha-token');
     if (tokenInput) tokenInput.value = '';
     const tokenHint = q('cfg-ha-token-hint');

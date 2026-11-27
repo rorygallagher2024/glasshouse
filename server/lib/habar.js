@@ -26,6 +26,8 @@ var AFTER_CLOSE_MS = 1200;
 var AFTER_START_MS = 5000;
 var AFTER_SWITCH_ON_MS = 5000;
 var MAX_FAILURES = 5;
+var REFRESH_MS = 5000;
+var CACHED_REFRESH_MS = 1000;
 var afterCloseMs = AFTER_CLOSE_MS, afterStartMs = AFTER_START_MS, afterSwitchOnMs = AFTER_SWITCH_ON_MS;
 
 var lunaFn = null;
@@ -295,13 +297,26 @@ function formatTile(item, ent, err) {
   return tile;
 }
 
+/*
+ * How often the open bar asks again. Where lib/haentity serves a cache kept
+ * current by Home Assistant's push or its own background refresh, an ask
+ * costs Home Assistant nothing, so the bar asks every second and a change
+ * made elsewhere shows within about that; otherwise every ask is a request
+ * per tile to Home Assistant, and the bar keeps to five seconds.
+ */
+function refreshMs() {
+  var st = haEntityFn && typeof haEntityFn.status === 'function' ? haEntityFn.status() : null;
+  if (st && (st.updateMode === 'websocket' || st.pollIntervalMs > 0)) return CACHED_REFRESH_MS;
+  return REFRESH_MS;
+}
+
 function state(cb) {
   cb = cb || function () {};
   var cfg = listConfig();
   var list = cfg.entities;
   var configured = !!(haEntityFn && haEntityFn.configured());
   if (!configured || !list.length) {
-    return cb({ ok: true, configured: configured, hour12: !!hour12Fn(), showHints: cfg.showHints, tiles: [] });
+    return cb({ ok: true, configured: configured, hour12: !!hour12Fn(), showHints: cfg.showHints, refreshMs: REFRESH_MS, tiles: [] });
   }
   var ids = list.map(function (it) { return it.id; });
   haEntityFn.readMany(ids, function (r) {
@@ -310,7 +325,7 @@ function state(cb) {
     var tiles = list.map(function (it) {
       return formatTile(it, ents[it.id] || null, errs[it.id] || '');
     });
-    cb({ ok: true, configured: true, hour12: !!hour12Fn(), showHints: cfg.showHints, tiles: tiles });
+    cb({ ok: true, configured: true, hour12: !!hour12Fn(), showHints: cfg.showHints, refreshMs: refreshMs(), tiles: tiles });
   });
 }
 

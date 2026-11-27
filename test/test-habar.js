@@ -188,6 +188,7 @@ server.listen(0, '127.0.0.1', function () {
         assert.strictEqual(st.configured, true);
         assert.strictEqual(st.hour12, true);
         assert.strictEqual(st.showHints, true);
+        assert.strictEqual(st.refreshMs, 5000, 'every ask reaches Home Assistant without a cache, so the bar keeps to 5 s');
         assert.strictEqual(st.tiles.length, 7);
         assert.strictEqual(st.tiles[0].label, 'Desk');
         assert.strictEqual(st.tiles[0].pct, 50);
