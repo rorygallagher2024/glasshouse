@@ -67,7 +67,7 @@ var asked = setUp(FILES);
 homePicture.picture('input', 4, function (r) {
   assert.deepEqual(r.signal, { width: 3840, height: 2160, hz: 24, chroma: 'YCbCr 4:4:4', bits: 10, hdr: 'hdr10', vrr: false, allm: false });
   assert.equal(r.range, 'hdr');
-  assert.deepEqual(r.mode, { raw: 'hdrFilmMaker', display: 'HDR Filmmaker' });
+  assert.deepEqual(r.mode, { raw: 'hdrFilmMaker', display: 'HDR Filmmaker', name: 'HDR Filmmaker' });
   assert.equal(r.light, 100, 'the OLED light of the mode the signal is in');
   assert.deepEqual(asked.map(function (a) { return a.keys[0] + ':' + (a.dimension.dynamicRange || a.dimension.pictureMode); }),
     ['pictureMode:hdr', 'backlight:hdrFilmMaker'], 'only the range coming in is asked for');

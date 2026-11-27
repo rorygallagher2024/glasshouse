@@ -24,6 +24,13 @@ const FLAT = Object.fromEntries(ROWS.map(r => [r.k, !!r.flat]));
  * use, so amber means "worth a look" rather than "business as usual".
  */
 var TEMP_WARN = 75, TEMP_CRIT = 85;
+// The picture mode's name in the page's language. mode is the server's
+// English; the list of modes carries the translated label.
+function picModeName(pic) {
+  const m = (pic.modes || []).find(x => x.value === pic.mode_raw);
+  return (m && m.label) || pic.mode || '';
+}
+
 function thermal(deg) {
   if (deg >= TEMP_CRIT) return 'var(--red)';
   if (deg >= TEMP_WARN) return 'var(--cand)';
@@ -438,7 +445,7 @@ async function tick() {
         q('tl-cur').textContent = st === 'off' ? t('common.off', 'Off') : t('ctl.sleep.minutes', '{n} min', { n: st });
       }
 
-      q('ds-cur').textContent = pic.mode || '';
+      q('ds-cur').textContent = picModeName(pic);
       if (q('snd-cur')) q('snd-cur').textContent = d.audio_output || '';
     }
 
@@ -461,7 +468,8 @@ async function tick() {
       drClass = /dolby/i.test(dr) ? 'dv' : /hdr/i.test(dr) ? 'hdr' : 'sdr';
     }
     const drBadge = dr ? `<span class="stream-tag ${drClass}">${esc(dr)}</span>` : '';
-    const modeBadge = pic.mode ? `<span class="stream-mode">${esc(pic.mode)}</span>` : '';
+    const modeName = picModeName(pic);
+    const modeBadge = modeName ? `<span class="stream-mode">${esc(modeName)}</span>` : '';
     const resStr = d.signal ? esc(d.signal) : '';
     lastInputNames = d.inputs || {};
 

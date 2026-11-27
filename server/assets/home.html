@@ -2263,7 +2263,7 @@ html[lang="vi"] #srcTitle,html[lang="vi"] #plMode,html[lang="vi"] #pvMode,html[l
       sig.push(t('home.plate.noSignal', 'No picture coming in'));
     }
     $('plSig').innerHTML = spans(sig);
-    $('plMode').textContent = p.mode ? p.mode.display : '';
+    $('plMode').textContent = p.mode ? (p.mode.name || p.mode.display) : '';
     $('plStrip').innerHTML = lightHtml(p);
     $('plate').className = '';
   }
@@ -3286,7 +3286,7 @@ html[lang="vi"] #srcTitle,html[lang="vi"] #plMode,html[lang="vi"] #pvMode,html[l
     var p = tilePreview.info;
     if (!layout || layout.picture !== true || !p) return setPreviewState('on');
     var sig = p.signal ? signalParts(p.signal) : [];
-    $('pvMode').textContent = p.mode ? p.mode.display : '';
+    $('pvMode').textContent = p.mode ? (p.mode.name || p.mode.display) : '';
     $('pvLight').innerHTML = lightHtml(p);
     $('pvSig').innerHTML = spans(sig);
     setPreviewState('on' + (p.mode || sig.length ? ' info' : ''));
