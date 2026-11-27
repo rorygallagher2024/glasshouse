@@ -13,6 +13,7 @@ var nosignal = require('./nosignal');
 var clock = require('./clock');
 var names = require('./names');
 var typing = require('./typing');
+var barPress = require('./barpress');
 
 /*
  * Measured on a B8 against the built-in player, watching playStateNow move:
@@ -1067,9 +1068,12 @@ function doControl(action, value, cb) {
          * filter that gives Home to the Bar (#1537). The press needs an id of
          * its own, as the filter's do, for the Bar to tell it from a repeat.
          */
+        var barPressNo = Date.now();
         return lunaUrgent('com.webos.applicationManager/launch',
-          { id: homeBarModule.APP, params: { glasshouse: 'bar', press: Date.now() } }, function (r, raw, timing) {
+          { id: homeBarModule.APP, params: { glasshouse: 'bar', press: barPressNo } }, function (r, raw, timing) {
             logRcu(rcuName, rcuAt, timing, r && r.returnValue);
+            // Sent again if the Bar's page, loading again after a close, never has it (lib/barpress).
+            if (r && r.returnValue) barPress.pressed(homeBarModule.APP, barPressNo);
             cb({ ok: !!(r && r.returnValue) });
           });
       }

@@ -140,6 +140,7 @@ var ntpModule = null;
 /** @type {typeof import('./history')} */
 var historyModule = null;
 var perfHistoryModule = null;
+var barPressModule = null;
 var storageScanModule = null;
 /** @type {typeof import('./sysinfo')} */
 var sysinfoModule = null;
@@ -2400,6 +2401,19 @@ function handleRequest(req, res) {
         body && typeof body.id === 'string' ? body.id : '');
     });
   }
+  // A press the key filter launched a bar for, and a bar's page taking one (lib/barpress). The TV only.
+  if (pathname === '/api/bar/press' && req.method === 'POST' && barPressModule) {
+    if (!fromTV(req)) return send(res, 403, JSON.stringify({ ok: false, error: 'from the TV only' }));
+    return readJsonBody(req, res, function (body) {
+      var ok = barPressModule.pressed(body && body.app, body && body.press);
+      send(res, ok ? 200 : 400, JSON.stringify({ ok: ok }));
+    });
+  }
+  if (pathname === '/api/bar/seen' && req.method === 'GET' && barPressModule) {
+    if (!fromTV(req)) return send(res, 403, JSON.stringify({ ok: false, error: 'from the TV only' }));
+    barPressModule.seen(String(u.query.app || ''), Number(u.query.press));
+    return send(res, 200, JSON.stringify({ ok: true }));
+  }
   // The key filter's Ambient light key: PicCap toggled here, as the dashboard does. The TV only.
   if (pathname === '/api/remotekeys/piccap' && req.method === 'POST' && remoteKeysModule) {
     if (!fromTV(req)) return send(res, 403, JSON.stringify({ ok: false, error: 'from the TV only' }));
@@ -3327,6 +3341,7 @@ function init(opts) {
   if (opts.ntp) ntpModule = opts.ntp;
   if (opts.history) historyModule = opts.history;
   if (opts.perfHistory) perfHistoryModule = opts.perfHistory;
+  if (opts.barPress) barPressModule = opts.barPress;
   if (opts.storageScan) storageScanModule = opts.storageScan;
   if (opts.sysinfo) sysinfoModule = opts.sysinfo;
   if (opts.screenColour) screenColourModule = opts.screenColour;
