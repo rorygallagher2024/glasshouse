@@ -1638,6 +1638,48 @@ step(function (next) {
   }));
 });
 
+step(function (next) {
+  var ha = { calls: [], kept: true };
+  rk.init({ luna: function (uri, payload, cb) {
+    if (uri === 'com.webos.applicationManager/listApps') {
+      return luna(uri, payload, function (r) {
+        r.apps = r.apps.concat([{ id: 'com.tvweb.habar', title: 'Home Assistant Bar' }]);
+        cb(r);
+      });
+    }
+    luna(uri, payload, cb);
+  }, inputNames: { hdmi1: 'HDMI 1', hdmi2: 'Apple TV' }, stateDir: stateDir, filtersDir: filtersDir,
+    haBarAllowed: function () { return true; },
+    haBarKept: function () { return ha.kept; },
+    haBarApp: function (action, cb) {
+      ha.calls.push(action);
+      process.nextTick(function () { cb({ ok: true }); });
+    } });
+  rk.getRemoteKeys(guard(function (r) {
+    assert.strictEqual(r.choices.filter(function (c) { return c.id === 'com.tvweb.habar'; }).length, 1,
+      'Home Assistant bar offered once even when listed by listApps');
+    rk.setRemoteKey('red', 'open', 'com.tvweb.habar', guard(function (s) {
+      assert.ok(s.ok, s.error);
+      rk.setRemoteKey('red', 'lg', '', guard(function (s2) {
+        assert.ok(s2.ok, s2.error);
+        setImmediate(guard(function () {
+          assert.deepEqual(ha.calls, ['install'], 'kept when another trigger (Quick Access / Bar) uses Home Assistant bar');
+          ha.kept = false;
+          rk.setRemoteKey('red', 'open', 'com.tvweb.habar', guard(function () {
+            rk.setRemoteKey('red', 'lg', '', guard(function () {
+              setImmediate(guard(function () {
+                assert.deepEqual(ha.calls, ['install', 'install', 'remove'], 'removed once nothing else uses Home Assistant bar');
+                console.log('  ✓ Home Assistant bar is offered once in Remote keys and kept until nothing else uses it');
+                next();
+              }));
+            }));
+          }));
+        }));
+      }));
+    }));
+  }));
+});
+
 function done() {
   fs.readdirSync(filtersDir).forEach(function (f) { fs.unlinkSync(path.join(filtersDir, f)); });
   fs.rmdirSync(filtersDir);

@@ -98,10 +98,8 @@ if [ "$ACTION" = status ]; then
   exit 0
 fi
 
-if [ "$ACTION" = remove ]; then
-  command -v luna-send >/dev/null 2>&1 || { echo '{"ok":false,"error":"not supported on this TV"}'; exit 0; }
-  installed || { echo '{"ok":true,"installed":false}'; exit 0; }
-  RLOG=$(mktemp /tmp/tvweb-rm.XXXXXX) || exit 0
+remove_app() {
+  RLOG=$(mktemp /tmp/tvweb-rm.XXXXXX) || return 0
   luna-send -i -w 60000 luna://com.webos.appInstallService/dev/remove \
     "{\"id\":\"$ID\",\"subscribe\":true}" > "$RLOG" 2>&1 &
   rpid=$!
@@ -116,6 +114,12 @@ if [ "$ACTION" = remove ]; then
   # leaves no tile either way, and sam drops the registration at the next boot.
   rm -rf "$APPDIR" "$PKGDIR" 2>/dev/null
   rm -f "$RLOG"
+}
+
+if [ "$ACTION" = remove ]; then
+  command -v luna-send >/dev/null 2>&1 || { echo '{"ok":false,"error":"not supported on this TV"}'; exit 0; }
+  installed || { echo '{"ok":true,"installed":false}'; exit 0; }
+  remove_app
   if installed; then echo '{"ok":false,"error":"the TV would not remove it"}'
   else echo '{"ok":true,"installed":false}'; fi
   exit 0
@@ -160,6 +164,13 @@ fi
 
 [ -f "$SRC/appinfo.json" ] || { echo "$WHAT app files not found in $SRC"; exit 0; }
 command -v luna-send >/dev/null 2>&1 || { echo "no luna-send; skipping the home-screen app"; exit 0; }
+
+# An app changed from visible: false to visible keeps no launch point if
+# upgraded in place (checked on a C2, webOS 9.2): remove it first so sam creates one.
+if installed && grep -q '"visible"[[:space:]]*:[[:space:]]*false' "$APPDIR/appinfo.json" 2>/dev/null &&
+   ! grep -q '"visible"[[:space:]]*:[[:space:]]*false' "$SRC/appinfo.json" 2>/dev/null; then
+  remove_app
+fi
 
 WORK=$(mktemp -d /tmp/tvweb-app.XXXXXX) || exit 0
 trap 'rm -rf "$WORK"' EXIT

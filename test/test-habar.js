@@ -261,6 +261,8 @@ server.listen(0, '127.0.0.1', function () {
                             console.log('  \u2713 backup part reads and restores haBar entities');
 
                             // 9. Quick Access integration
+                            var haAppInfo = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'server', 'assets', 'habar-app', 'appinfo.json'), 'utf8'));
+                            assert.notStrictEqual(haAppInfo.visible, false, 'habar-app stays visible so Quick Access resolves its launch point (#1786)');
                             var qaMagic = {};
                             for (var n = 1; n <= 9; n++) qaMagic['magicNum' + n] = { id: '', params: {} };
                             var qaInstalled = 0, qaKeySet = 0;
@@ -283,27 +285,34 @@ server.listen(0, '127.0.0.1', function () {
                                   return setImmediate(function () { cb({ returnValue: true }); });
                                 }
                                 if (uri === 'com.webos.applicationManager/listApps') {
-                                  return setImmediate(function () { cb({ apps: [{ id: 'netflix', title: 'Netflix' }] }); });
+                                  return setImmediate(function () {
+                                    cb({ apps: [{ id: 'netflix', title: 'Netflix' }, { id: 'com.tvweb.habar', title: 'Home Assistant Bar' }] });
+                                  });
                                 }
                                 setImmediate(function () { cb({ returnValue: true }); });
                               }
                             });
                             quickAccess.getQuickAccess(function (qa) {
-                              assert.strictEqual(qa.choices.some(function (c) { return c.id === 'com.tvweb.habar'; }), true);
+                              assert.strictEqual(qa.choices.filter(function (c) { return c.id === 'com.tvweb.habar'; }).length, 1,
+                                'Home Assistant bar is offered once in Quick Access choices');
                               quickAccess.setQuickAccess(1, 'com.tvweb.habar', function (rQa) {
                                 assert.strictEqual(rQa.ok, true);
                                 assert.strictEqual(qaInstalled, 1);
                                 assert.strictEqual(qaKeySet, 1);
                                 assert.strictEqual(quickAccess.opensHaBar(), true);
-                                console.log('  \u2713 Quick Access offers and installs Home Assistant bar');
+                                quickAccess.setQuickAccess(1, '', function (rClear) {
+                                  assert.strictEqual(rClear.ok, true);
+                                  assert.strictEqual(quickAccess.opensHaBar(), false, 'clearing the key clears opensHaBar()');
+                                  console.log('  \u2713 Quick Access offers and installs Home Assistant bar');
 
-                                // Clearing entities removes habar.json
-                                var cleared = haBar.saveConfig([]);
-                                assert.strictEqual(cleared.ok, true);
-                                assert.strictEqual(fs.existsSync(path.join(dir, 'habar.json')), false);
-                                server.close(function () {
-                                  cleanup();
-                                  console.log('ALL test-habar.js assertions passed!');
+                                  // Clearing entities removes habar.json
+                                  var cleared = haBar.saveConfig([]);
+                                  assert.strictEqual(cleared.ok, true);
+                                  assert.strictEqual(fs.existsSync(path.join(dir, 'habar.json')), false);
+                                  server.close(function () {
+                                    cleanup();
+                                    console.log('ALL test-habar.js assertions passed!');
+                                  });
                                 });
                               });
                             });

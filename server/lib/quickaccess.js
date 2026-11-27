@@ -105,11 +105,15 @@ function appChoices(apps) {
   var seen = {};
   return (apps || []).filter(function (a) {
     if (!a || !a.id || seen[a.id] || a.visible === false) return false;
-    if (a.id === LIVE_TV || /^com\.webos\.app\.(hdmi|container)/.test(a.id)) return false;
+    if (a.id === LIVE_TV || a.id === HA_BAR || /^com\.webos\.app\.(hdmi|container)/.test(a.id)) return false;
     seen[a.id] = true;
     return true;
   }).map(function (a) { return { id: a.id, title: a.title || a.id, kind: 'app' }; })
     .sort(function (x, y) { return x.title.toLowerCase() < y.title.toLowerCase() ? -1 : 1; });
+}
+
+function hasOtherHaBar(settings, skipKey) {
+  return KEYS.some(function (k) { return k !== skipKey && settings[settingKey(k)].id === HA_BAR; });
 }
 
 /*
@@ -199,9 +203,16 @@ function setQuickAccess(n, id, cb) {
   readKeys(function (settings) {
     if (!settings) return cb({ ok: false, error: msg('srv.quickAccess.unsupported', 'This TV\'s Quick Access cannot be changed from here') });
     var before = settings[settingKey(n)];
+    var otherHaBar = hasOtherHaBar(settings, n);
     // LG's value is kept only when a change is written.
-    if (!id) { keepLg(n, before); return writeKey(n, '', cb); }
-    setTo(n, id, before.id && before.id !== id, before, cb);
+    if (!id) {
+      keepLg(n, before);
+      return writeKey(n, '', function (r) {
+        if (r && r.ok) usesHaBar = otherHaBar;
+        cb(r);
+      });
+    }
+    setTo(n, id, before.id && before.id !== id, before, otherHaBar, cb);
   });
 }
 
@@ -218,8 +229,11 @@ function resetQuickAccess(n, cb) {
     var lg = readLg();
     var kept = lg[n];
     var current = settings[settingKey(n)].id;
+    var otherHaBar = hasOtherHaBar(settings, n);
+    var keptHaBar = !kept || kept.override ? false : kept.id === HA_BAR;
     var done = function (r) {
       if (r.ok) {
+        usesHaBar = keptHaBar || otherHaBar;
         var now = readLg();
         delete now[n];
         writeLg(now);
@@ -234,6 +248,7 @@ function resetQuickAccess(n, cb) {
     if (!current) return put(done);
     writeKey(n, '', function (r) {
       if (!r.ok) return cb(r);
+      usesHaBar = otherHaBar;
       setTimeout(function () { put(done); }, clearFirstMs);
     });
   });
@@ -267,7 +282,7 @@ function restore(cb) {
 var CLEAR_FIRST_MS = 500;
 var clearFirstMs = CLEAR_FIRST_MS;
 
-function setTo(n, id, clearFirst, before, cb) {
+function setTo(n, id, clearFirst, before, otherHaBar, cb) {
   listApps(function (apps) {
     if (!apps) return cb({ ok: false, error: msg('srv.quickAccess.noApps', 'Could not read the TV\'s apps. Try again in a moment.') });
     var allowed = inputChoices().concat(haBarChoices(), appChoices(apps)).some(function (c) { return c.id === id; });
@@ -275,15 +290,16 @@ function setTo(n, id, clearFirst, before, cb) {
     function commit() {
       keepLg(n, before);
       var finish = function (r) {
-        if (r && r.ok && id === HA_BAR) {
-          usesHaBar = true;
-          if (haBarKeySetFn) haBarKeySetFn();
+        if (r && r.ok) {
+          usesHaBar = id === HA_BAR || otherHaBar;
+          if (id === HA_BAR && haBarKeySetFn) haBarKeySetFn();
         }
         cb(r);
       };
       if (!clearFirst) return writeKey(n, id, finish);
       writeKey(n, '', function (r) {
         if (!r.ok) return cb(r);
+        usesHaBar = otherHaBar;
         setTimeout(function () { writeKey(n, id, finish); }, clearFirstMs);
       });
     }
