@@ -16,6 +16,9 @@ child.execFile = function (file, args, opts, cb) {
 };
 
 var luna = require('../server/lib/luna');
+// Pinned to the gaps and limit of node 0.12 and 8.12, which this checks the order by.
+require('../server/lib/children').setGaps(50, 150);
+luna.setParallel(2);
 
 console.log('Running test-luna-urgent.js ...');
 var errors = [];

@@ -33,6 +33,8 @@ var THERMAL_PRESENT = !!THERMAL_SOURCE;
 var EMMC_WEAR_PRESENT = fs.existsSync('/sys/block/mmcblk0/device/life_time');
 
 var lunaFn = null;
+// The luna queue's first lane, for the device detection the start waits on.
+var lunaFirstFn = null;
 var lunaCachedFn = null;
 var configObj = null;
 /** @type {typeof import('./oled')} */
@@ -231,6 +233,7 @@ var SOC_ARCH = {
 function init(opts) {
   opts = opts || {};
   lunaFn = opts.luna;
+  lunaFirstFn = opts.lunaFirst || null;
   lunaCachedFn = opts.lunaCached;
   if (lunaFn) alwaysOnSupported();
   configObj = opts.config;
@@ -1301,7 +1304,7 @@ function pictureModes(cb) {
     });
 }
 
-function refreshInputNames(cb) {
+function refreshInputNames(cb, first) {
   if (Date.now() - lastInputScan < 60000 && Object.keys(inputNameMap).length > 0) {
     if (cb) cb(inputNameMap);
     return;
@@ -1310,7 +1313,7 @@ function refreshInputNames(cb) {
     if (cb) cb(inputNameMap);
     return;
   }
-  lunaFn('com.webos.service.eim/getAllInputStatus', {}, function (res) {
+  ((first && lunaFirstFn) || lunaFn)('com.webos.service.eim/getAllInputStatus', {}, function (res) {
     if (res && res.devices && res.devices.length) {
       for (var i = 0; i < res.devices.length; i++) {
         var d = res.devices[i];
@@ -1361,7 +1364,8 @@ function parseAppList(raw) {
  */
 var APPS_SCAN_MS = 60000;
 
-function refreshInstalledApps(cb) {
+function refreshInstalledApps(cb, first) {
+  var via = (first && lunaFirstFn) || lunaFn;
   var now = Date.now();
   if (installedApps.length > 0 && now >= lastAppsScan && now - lastAppsScan < APPS_SCAN_MS) {
     if (cb) cb(installedApps);
@@ -1371,7 +1375,7 @@ function refreshInstalledApps(cb) {
     if (cb) cb(installedApps);
     return;
   }
-  lunaFn('com.webos.applicationManager/listApps', {}, function (res) {
+  via('com.webos.applicationManager/listApps', {}, function (res) {
     var raw = (res && (res.launchPoints || res.apps)) || null;
     if (Array.isArray(raw) && raw.length > 0) {
       installedApps = parseAppList(raw);
@@ -1379,7 +1383,7 @@ function refreshInstalledApps(cb) {
       if (cb) cb(installedApps);
       return;
     }
-    lunaFn('com.webos.applicationManager/listLaunchPoints', {}, function (lp) {
+    via('com.webos.applicationManager/listLaunchPoints', {}, function (lp) {
       var rawLp = (lp && (lp.launchPoints || lp.apps)) || null;
       if (Array.isArray(rawLp)) {
         installedApps = parseAppList(rawLp);
@@ -1784,11 +1788,11 @@ function detectHardwareInfo(sdkVersion, cb) {
   }
 
   function readSiliconInfo() {
-    lunaFn('com.webos.service.panelcontroller/getOledCellInfo', {}, function (cellRes) {
+    (lunaFirstFn || lunaFn)('com.webos.service.panelcontroller/getOledCellInfo', {}, function (cellRes) {
       if (cellRes && cellRes.cellInfo && !isDummyCell(cellRes.cellInfo)) {
         HARDWARE_INFO.cell = cellRes.cellInfo;
       }
-      lunaFn('com.webos.service.panelcontroller/getOledTconInfo', {}, function (tconRes) {
+      (lunaFirstFn || lunaFn)('com.webos.service.panelcontroller/getOledTconInfo', {}, function (tconRes) {
         if (HARDWARE_INFO.cell && tconRes && tconRes.tconParamForInstart) {
           HARDWARE_INFO.tconFirmware = tconRes.tconParamForInstart.tconFpgaFirmwareVer || null;
           HARDWARE_INFO.tconModule = tconRes.tconParamForInstart.tconModuleInfo || null;
@@ -1822,7 +1826,7 @@ function detectDeviceInfo(cb, triesLeft) {
     return;
   }
   if (triesLeft === undefined) triesLeft = DEVICE_INFO_TRIES - 1;
-  lunaFn('com.webos.service.tv.systemproperty/getSystemProperties',
+  (lunaFirstFn || lunaFn)('com.webos.service.tv.systemproperty/getSystemProperties',
     { keys: ['modelName', 'firmwareVersion', 'boardType', 'sdkVersion'] },
     function (res) {
       if (!(res && res.modelName) && triesLeft > 0) {
@@ -1855,7 +1859,9 @@ function detectDeviceInfo(cb, triesLeft) {
 
 var frontLightsWaiters = null;
 
-function detectFrontLights(cb) {
+// first, here and in the two below: through the luna queue's first lane, for
+// the discovery a start waits on.
+function detectFrontLights(cb, first) {
   if (hasLogoLight !== null) {
     if (cb) cb(hasLogoLight);
     return;
@@ -1869,7 +1875,7 @@ function detectFrontLights(cb) {
     return;
   }
   frontLightsWaiters = cb ? [cb] : [];
-  lunaFn('com.webos.service.tv.systemproperty/getSystemProperties',
+  ((first && lunaFirstFn) || lunaFn)('com.webos.service.tv.systemproperty/getSystemProperties',
        { keys: ['tv.model.logoLight'] }, function (res) {
     var v = res && res['tv.model.logoLight'];
     hasLogoLight = (v === true);

@@ -24,6 +24,8 @@ global.setTimeout = function (fn, ms) {
   return realSetTimeout(function () { fn(decidedAt); }, ms);
 };
 var children = require('../server/lib/children');
+// Pinned to the gaps of node 0.12 and 8.12, which this checks the order by.
+children.setGaps(50, 150);
 
 console.log('Running test-children.js ...');
 

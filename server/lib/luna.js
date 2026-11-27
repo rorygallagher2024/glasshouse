@@ -165,9 +165,10 @@ function isServiceNotFound(uri, parsed) {
  * stuck between fork and exec on a lock it inherited held, the server waiting
  * on it, and every later child the same. Start fires off a burst of these
  * calls at once, which is when it happened. Subscriptions start once and stay
- * open, so they are not counted.
+ * open, so they are not counted. Four on a later node, which has not shown
+ * it (children.OLD_NODE).
  */
-var PARALLEL = 2;
+var PARALLEL = children.OLD_NODE ? 2 : 4;
 
 /*
  * At the debug log level each call is logged as it starts and ends, and each
@@ -190,6 +191,11 @@ function stats() {
     Object.keys(started[kind]).forEach(function (uri) { out[kind][uri] = started[kind][uri]; });
   });
   return out;
+}
+
+// The old limit, for the tests that check the queue's order by it.
+function setParallel(n) {
+  PARALLEL = n;
 }
 
 function setDebug(on) {
@@ -220,8 +226,15 @@ function firstNormal() {
   return i;
 }
 
+// After the urgent calls and the first ones: where a first call goes.
+function firstOrdinary() {
+  var i = 0;
+  while (i < waiting.length && (waiting[i].urgent || waiting[i].first)) i++;
+  return i;
+}
+
 function enqueue(job) {
-  waiting.splice(job.urgent ? firstNormal() : waiting.length, 0, job);
+  waiting.splice(job.urgent ? firstNormal() : job.first ? firstOrdinary() : waiting.length, 0, job);
 }
 
 // A call run again goes first among its kind: it was started before the rest.
@@ -261,7 +274,7 @@ var SLOW_WAIT_MS = 15000;
 var SLOW_MAX_REPLY = 32 * 1024 * 1024;
 
 function run(job) {
-  children.launch(function () { runNow(job); }, job.urgent);
+  children.launch(function () { runNow(job); }, job.urgent, job.first);
 }
 
 function runNow(job) {
@@ -314,7 +327,7 @@ function runNow(job) {
   });
 }
 
-function queueCall(uri, payload, cb, appId, urgent) {
+function queueCall(uri, payload, cb, appId, urgent, first) {
   uri = resolveUri(uri);
   var service = uri.split('/')[0];
   if (absentUntil[service] > monotonicMs()) {
@@ -335,7 +348,7 @@ function queueCall(uri, payload, cb, appId, urgent) {
   var slow = SLOW_CALLS[uri] === true;
   args = args.concat(['-n', '1', '-w', String(slow ? SLOW_WAIT_MS : WAIT_MS)], slow ? [] : ['-f'],
                      ['luna://' + uri, JSON.stringify(payload || {})]);
-  enqueue({ args: args, cb: cb, urgent: urgent, slow: slow });
+  enqueue({ args: args, cb: cb, urgent: urgent, first: !urgent && !!first, slow: slow });
   startWaiting();
 }
 
@@ -346,6 +359,16 @@ function call(uri, payload, cb, appId) {
 // The same, ahead of the queue: for a remote key press, which someone is waiting on.
 function callUrgent(uri, payload, cb, appId) {
   queueCall(uri, payload, cb, appId, true);
+}
+
+/*
+ * The same, ahead of every normal call but behind a key press: for what the
+ * start waits on, the TV's model and panel, which Home Assistant's connection
+ * waits for. Behind the start's dozens of other calls it came 9 s after the
+ * server did on a B8 (webOS 4.4.3).
+ */
+function callFirst(uri, payload, cb, appId) {
+  queueCall(uri, payload, cb, appId, false, true);
 }
 
 function Subscription(uri, payload, appId, handlers) {
@@ -507,9 +530,11 @@ function createCache(callFn) {
 
 module.exports = {
   setDebug: setDebug,
+  setParallel: setParallel,
   hasService: hasService,
   call: call,
   callUrgent: callUrgent,
+  callFirst: callFirst,
   Subscription: Subscription,
   stats: stats,
   createCache: createCache
