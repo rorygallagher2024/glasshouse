@@ -1,0 +1,115 @@
+blueprint:
+  name: Toggle with a TV remote button (Glasshouse)
+  description: >-
+    Toggles, switches on or switches off lights, switches and the like when a
+    button is pressed on the remote of an LG TV running Glasshouse: a colour
+    key, a streaming button, a channel key or a voice button.
+
+
+    Needs Glasshouse's MQTT connection to Home Assistant, which gives the TV's
+    Remote Button event entity. The button reaches Home Assistant whatever it
+    is set to on Glasshouse's Remote tab; set it to Home Assistant there to
+    have it do nothing on the TV itself.
+  domain: automation
+  source_url: https://github.com/rorygallagher2024/glasshouse/blob/main/blueprints/automation/glasshouse/remote-button-toggle.yaml
+  homeassistant:
+    min_version: 2024.10.0
+  input:
+    button_entity:
+      name: TV
+      description: The TV's Remote Button event entity, such as event.lg_tv_remote_button.
+      selector:
+        entity:
+          filter:
+            - integration: mqtt
+              domain: event
+    button:
+      name: Button
+      description: The remote's button. One your remote lacks is never pressed.
+      selector:
+        select:
+          options:
+            - label: Red
+              value: red
+            - label: Green
+              value: green
+            - label: Yellow
+              value: yellow
+            - label: Blue
+              value: blue
+            - label: Netflix
+              value: netflix
+            - label: Prime Video
+              value: amazon
+            - label: Disney+
+              value: disneyplus
+            - label: LG Channels
+              value: lgchannels
+            - label: Rakuten TV
+              value: rakutentv
+            - label: Movies
+              value: movies
+            - label: Alexa
+              value: alexa
+            - label: Google Assistant
+              value: googleassistant
+            - label: Microphone
+              value: voice
+            - label: Channel up
+              value: channelup
+            - label: Channel down
+              value: channeldown
+    targets:
+      name: What it controls
+      description: The lights, switches, fans, covers or input booleans the button acts on.
+      selector:
+        entity:
+          multiple: true
+          filter:
+            - domain:
+                - light
+                - switch
+                - fan
+                - cover
+                - input_boolean
+    action_kind:
+      name: Action
+      default: toggle
+      selector:
+        select:
+          options:
+            - label: Toggle
+              value: toggle
+            - label: Switch on
+              value: turn_on
+            - label: Switch off
+              value: turn_off
+
+mode: queued
+max_exceeded: silent
+
+triggers:
+  # Each press sets the event entity's state to its time, with the button as
+  # event_type. Going to or from unavailable, as when the TV is switched off
+  # or on, is not a press.
+  - trigger: state
+    entity_id: !input button_entity
+    not_from:
+      - unknown
+      - unavailable
+    not_to:
+      - unknown
+      - unavailable
+
+variables:
+  button: !input button
+  action_kind: !input action_kind
+
+conditions:
+  - condition: template
+    value_template: "{{ trigger.to_state.attributes.event_type == button }}"
+
+actions:
+  - action: "homeassistant.{{ action_kind }}"
+    target:
+      entity_id: !input targets
