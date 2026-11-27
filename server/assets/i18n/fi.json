@@ -1119,7 +1119,7 @@
  "home.row.haArrange": {"from": "Entities from the Home Assistant bar", "text": "Home Assistant -palkin entiteetit"},
  "home.row.haHint": {"from": "OK to toggle, Ch +/- to adjust", "text": "OK vaihtaa tilaa, Ch +/- säätää"},
  "home.row.inputs": {"from": "Inputs", "text": "Tulot"},
- "home.row.inputsNote": {"from": "Devices on {n} HDMI inputs", "text": "Laitteet {n} HDMI-tulossa"},
+ "home.row.inputsNote": {"from": "Devices on {n} HDMI inputs", "text": "Laitteita {n} HDMI-tulossa"},
  "home.row.inputsNoteOne": {"from": "Devices on HDMI {port}", "text": "Laitteet HDMI {port} -tulossa"},
  "home.row.iptv": {"from": "Internet TV", "text": "Internet-TV"},
  "home.row.noTuner": {"from": "This TV has no channels tuned", "text": "Tähän TV:hen ei ole viritetty kanavia"},
