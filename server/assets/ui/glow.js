@@ -20,6 +20,8 @@ let glowTimer = null;
 let glowFails = 0;
 let glowGame = false;
 let glowReady = false;
+// What is capturing the screen in the glow's place, 'piccap' or 'huesync', or ''.
+let glowBusy = '';
 
 try {
   // ?glow=1 and ?glow=0 still switch it, for a link or a kiosk.
@@ -52,13 +54,22 @@ function glowRender() {
   if (btn) {
     btn.hidden = !glowAllowedHere || !(window.CSS && CSS.registerProperty);
     btn.setAttribute('aria-pressed', glowWanted ? 'true' : 'false');
-    const label = glowWanted ? t('glow.toggleOff', 'Screen glow: on (click to switch off)') : t('glow.toggleOn', 'Screen glow: off (click to light the page from the TV’s screen)');
+    const label = glowWanted && glowBusy ? (glowBusy === 'huesync'
+      ? t('glow.toggleOffHueSync', 'Screen glow: paused while Hue Sync is capturing the screen (click to switch off)')
+      : t('glow.toggleOffPiccap', 'Screen glow: paused while PicCap is capturing the screen (click to switch off)'))
+      : glowWanted ? t('glow.toggleOff', 'Screen glow: on (click to switch off)') : t('glow.toggleOn', 'Screen glow: off (click to light the page from the TV’s screen)');
+    btn.classList.toggle('glow-paused', !!(glowWanted && glowBusy));
     btn.title = label;
     btn.setAttribute('aria-label', label);
   }
   // Preferences' Off and On, the same choice as the footer's button.
   const pref = q('nav-pref-glow');
   if (pref) pref.hidden = !glowAllowedHere || !(window.CSS && CSS.registerProperty);
+  const note = q('nav-pref-glow-note');
+  if (note) {
+    note.hidden = !(glowWanted && glowBusy);
+    note.textContent = glowWanted && glowBusy ? glowPausedText() : '';
+  }
   document.querySelectorAll('[data-glow-set]').forEach(b => {
     const on = (b.dataset.glowSet === 'on') === glowWanted;
     b.classList.toggle('on', on);
@@ -66,6 +77,20 @@ function glowRender() {
   });
   if (glowActive() && glowSetup()) document.documentElement.classList.add('glow');
   else glowFade();
+}
+
+// Why the glow is paused, where PicCap or Hue Sync is capturing the screen.
+function glowPausedText() {
+  return glowBusy === 'huesync' ? t('glow.pausedHueSync', 'Paused while Hue Sync is capturing the screen.')
+    : t('glow.pausedPiccap', 'Paused while PicCap is capturing the screen.');
+}
+
+// The capture in the glow's place, said beside its switches when it changes.
+function glowNoteBusy(busy) {
+  busy = busy === 'piccap' || busy === 'huesync' ? busy : '';
+  if (busy === glowBusy) return;
+  glowBusy = busy;
+  glowRender();
 }
 
 // From the Server tab's summary (update.js renderUpdate).
@@ -135,6 +160,7 @@ async function glowTick() {
     // Switched off on the Server tab, or the TV has no capture service: the switches go.
     if (d && (d.off || d.unsupported)) { glowAllowed(false); return; }
     // PicCap or Hue Sync is capturing: no glow until it stops, and no failure.
+    glowNoteBusy(d && d.busy);
     if (d && d.busy) glowFade();
     else if (!d || !d.ok) glowFails++;
     else {
