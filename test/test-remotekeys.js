@@ -53,12 +53,16 @@ function luna(uri, params, cb) {
     r.configs[rk.CONFIG_KEY] = tv.chain.slice();
   } else if (uri === 'com.webos.service.config/setConfigs') {
     if (tv.keysWriteFails && params.configs[rk.MAP_KEY]) return process.nextTick(function () { cb({ returnValue: false }); });
+    // tv.chainStops: the server stops as it writes the chain, so no answer comes.
+    if (tv.chainStops && params.configs[rk.CONFIG_KEY]) return;
     if (params.configs[rk.CONFIG_KEY]) { tv.chain = params.configs[rk.CONFIG_KEY].slice(); tv.chainWrites++; }
     if (params.configs[rk.MAP_KEY]) { tv.keys = JSON.parse(JSON.stringify(params.configs[rk.MAP_KEY])); tv.keysWrites++; }
   } else if (uri === 'com.webos.applicationManager/listApps') {
     r.apps = APPS;
   } else if (uri === 'com.webos.service.settings/getSystemSettings') {
     r.settings = { backlight: String(tv.backlight) };
+  } else if (uri === 'com.webos.service.settings/setSystemSettings' && params.settings && params.settings.backlight !== undefined) {
+    tv.backlight = Number(params.settings.backlight);
   } else if (uri === 'com.webos.applicationManager/getAppInfo') {
     // A CX has no quick input picker, so no input switcher choice.
     r.returnValue = false;
@@ -429,6 +433,71 @@ step(function (next) {
   }));
 });
 
+// On webOS 4 the compositor's lunaCall.send cancels its request at once and
+// never calls back (#1815): the filter asks the server to step the brightness,
+// and uses its own calls only where the server does not answer.
+step(function (next) {
+  rk.setRemoteKey('red', 'open', 'action:brightnessUp', guard(function () {
+    var posts = [];
+    function ServerXhr() {}
+    ServerXhr.down = false;
+    ServerXhr.prototype.open = function (method, url) { this.method = method; this.url = url; };
+    ServerXhr.prototype.setRequestHeader = function () {};
+    ServerXhr.prototype.send = function (body) {
+      var x = this, b = JSON.parse(body);
+      posts.push({ url: x.url, body: b });
+      if (ServerXhr.down) { x.readyState = 4; x.status = 0; x.responseText = ''; return x.onreadystatechange(); }
+      rk.brightnessFromFilter(b.delta, b.from, function (r) {
+        x.readyState = 4;
+        x.status = r && r.ok ? 200 : 502;
+        x.responseText = JSON.stringify(r);
+        x.onreadystatechange();
+      });
+    };
+    var f = loadFilter(null, { XMLHttpRequest: ServerXhr });
+    var here = function () { return f.sent.filter(function (m) { return /^com\.webos\.service\.settings\//.test(m.uri); }).length; };
+    var tick = function () { var n = f.timers.length; f.expire(); f.timers.splice(0, n); };
+    f.timers.length = 0;
+    tv.backlight = 50;
+    f.handle(1004, true, false);
+    setTimeout(guard(function () {
+      assert.strictEqual(tv.backlight, 60, 'stepped by the server');
+      assert.ok(/:\d+\/api\/remotekeys\/brightness$/.test(posts[0].url));
+      assert.deepEqual(posts[0].body, { delta: 10, from: null }, 'the press asks it to read the level');
+      assert.strictEqual(here(), 0, 'the compositor made no settings call of its own');
+      tick();
+      setTimeout(guard(function () {
+        assert.strictEqual(tv.backlight, 70, 'a held key steps again');
+        assert.strictEqual(posts[1].body.from, 60, 'from the level the server gave');
+        f.handle(1004, false, false);
+        tv.backlight = 95;
+        f.handle(1004, true, false);
+        setTimeout(guard(function () {
+          assert.strictEqual(tv.backlight, 100);
+          var asked = posts.length;
+          tick();
+          setTimeout(guard(function () {
+            assert.strictEqual(posts.length, asked, 'at the top, the held key stops');
+            f.handle(1004, false, false);
+            // The server not answering: the compositor's own calls, as before.
+            ServerXhr.down = true;
+            f.timers.length = 0;
+            tv.backlight = 50;
+            f.handle(1004, true, false);
+            f.handle(1004, false, false);
+            assert.strictEqual(tv.backlight, 60, 'stepped by the compositor itself');
+            assert.ok(here() > 0);
+            rk.setRemoteKey('red', 'lg', '', guard(function () {
+              console.log('  ✓ Brightness keys are stepped by the server, the filter\'s own calls only where it does not answer (#1815)');
+              next();
+            }));
+          }), 30);
+        }), 30);
+      }), 30);
+    }), 30);
+  }));
+});
+
 step(function (next) {
   rk.setRemoteKey('red', 'open', 'action:brightnessUp', guard(function () {
     rk.getRemoteKeys(guard(function (before) {
@@ -630,8 +699,25 @@ step(function (next) {
         assert.strictEqual(tv.chainWrites, writes + 3);
         assert.strictEqual(fs.readFileSync(FILTER, 'utf8'), source);
         assert.deepEqual(tv.chain[0], { file: FILTER, handler: rk.HANDLER });
-        console.log('  ✓ ensure() at start leaves an intact chain alone, puts a lost entry back, and reloads an outdated filter');
-        next();
+        // An update the server stopped in the middle of: the old file stays
+        // until the filter is out of the chain, so the next start still sees
+        // it outdated and reloads it.
+        fs.writeFileSync(FILTER, '/* an older filter */', 'utf8');
+        tv.chainStops = true;
+        rk.ensure(function () { throw new Error('the chain write never answered'); });
+        setTimeout(function () {
+          assert.strictEqual(fs.readFileSync(FILTER, 'utf8'), '/* an older filter */');
+          tv.chainStops = false;
+          var before = tv.chainWrites;
+          rk.ensure(guard(function (ok4) {
+            assert.strictEqual(ok4, true);
+            assert.strictEqual(tv.chainWrites, before + 2);
+            assert.strictEqual(fs.readFileSync(FILTER, 'utf8'), source);
+            assert.deepEqual(tv.chain[0], { file: FILTER, handler: rk.HANDLER });
+            console.log('  ✓ ensure() at start leaves an intact chain alone, puts a lost entry back, and reloads an outdated filter, even after a start that stopped part way');
+            next();
+          }));
+        }, 50);
       }));
     }));
   }));
