@@ -104,6 +104,16 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
   // shorter where it serves a cache kept by Home Assistant's push or its own
   // background refresh, so asking costs Home Assistant nothing.
   var refreshMs = 5000;
+  /*
+   * The server's hash of this page (lib/habar.js pageVersion). This page is
+   * loaded once and a preloaded copy outlives a server update, so where the
+   * server comes to serve another, this one loads itself again, only while
+   * out of sight: at once if hidden, else once closed. Checked each minute
+   * while hidden, without asking Home Assistant.
+   */
+  var pageVer = null;
+  var pageStale = false;
+  var PAGE_CHECK_MS = 60000;
   var seq = 0;
   var keyToken = (/[?&]k=([^&]+)/.exec(location.search) || [])[1] || '';
 
@@ -308,8 +318,32 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
     clearInterval(refreshTimer);
     refreshTimer = null;
     document.body.className = '';
-    closeTimer = setTimeout(function () { closeTimer = null; window.close(); }, 180);
+    closeTimer = setTimeout(function () {
+      closeTimer = null;
+      window.close();
+      if (pageStale) setTimeout(reloadIfHidden, 1000);
+    }, 180);
   }
+  // closing stays set from a close to the next open, so it is no sign of being on screen.
+  function onScreen() { return !!closeTimer || document.body.className === 'on'; }
+  function reloadIfHidden() {
+    if (onScreen()) return;
+    // Loaded again as preloaded, so it stays out of sight until opened.
+    location.replace(location.pathname + '?t=' + Date.now() + '&preload=1');
+  }
+  function notePage(v) {
+    if (!v) return;
+    if (pageVer === null) { pageVer = v; return; }
+    if (v === pageVer) return;
+    pageStale = true;
+    reloadIfHidden();
+  }
+  setInterval(function () {
+    if (onScreen()) return;
+    request('GET', '/api/ha/bar/page?t=' + Date.now(), null, function (j) {
+      if (j && j.ok) notePage(j.page);
+    });
+  }, PAGE_CHECK_MS);
   function showFallback(title, sub) {
     tiles = [{ empty: true, id: '_empty', domain: 'sensor', label: title, valueText: sub }];
     focus = 0;
@@ -326,6 +360,7 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
       }
       useHour12 = !!j.hour12;
       showHints = j.showHints !== false;
+      notePage(j.page);
       var nextRefresh = j.refreshMs >= 500 ? j.refreshMs : 5000;
       if (nextRefresh !== refreshMs) {
         refreshMs = nextRefresh;
