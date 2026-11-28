@@ -1013,6 +1013,13 @@ function tokenMatches(given) {
   return diff === 0;
 }
 
+function cookieToken(req) {
+  var h = req && req.headers && req.headers.cookie;
+  if (!h) return '';
+  var m = /(?:^|;\s*)tvweb_k=([^;]+)/.exec(h);
+  return m ? decodeURIComponent(m[1]) : '';
+}
+
 function authed(q, req) {
   if (!config.token) return true;
   // RFC 7235 makes the scheme case-insensitive. Any other Authorization
@@ -1020,6 +1027,7 @@ function authed(q, req) {
   var bearer = /^Bearer\s+(\S+)$/i.exec((req && req.headers && req.headers.authorization) || '');
   if (bearer && tokenMatches(bearer[1])) return true;
   if (q && tokenMatches(q.k)) return true;
+  if (tokenMatches(cookieToken(req))) return true;
   // The on-TV dashboard app fetches from localhost and has no way to carry a
   // token (there is no login prompt on a TV remote).  A process on the TV
   // already has root, so the token adds nothing for local requests.
@@ -1825,6 +1833,12 @@ function handleRequest(req, res) {
         'ETag': UI_ETAG,
         'Vary': 'Accept-Encoding'
       };
+      // Set a cookie when ?k= carries the token, so standalone/PWA contexts
+      // that do not share localStorage still authenticate on later visits.
+      var qk = u.query && u.query.k;
+      if (qk && config.token && tokenMatches(qk)) {
+        uiHeaders['Set-Cookie'] = 'tvweb_k=' + encodeURIComponent(qk) + '; Path=/; HttpOnly; SameSite=Strict; Max-Age=31536000';
+      }
       if (req.headers['if-none-match'] === UI_ETAG) {
         res.writeHead(304, uiHeaders);
         return res.end();

@@ -11,7 +11,11 @@ it before exposing it more widely.
   `/api/` request must carry `?k=something-long` or an
   `Authorization: Bearer something-long` header. Open the dashboard once with
   the token in the URL; the browser remembers it and the page takes it out of
-  the address bar, so it stays out of history and shared links. This gates the HTTP API only: **MQTT and the Home
+  the address bar, so it stays out of history and shared links. The server
+  also sets an `HttpOnly` cookie on that first visit, so a bookmark or an
+  Add to Home Screen shortcut keeps working even where the browser's
+  `localStorage` is not shared (a standalone web app on iOS, for instance).
+  This gates the HTTP API only: **MQTT and the Home
   Assistant integration are unaffected**, since they use a separate channel.
 - **Never port-forward this.** It is designed for a trusted LAN.
 - **Bind to `127.0.0.1` to keep the on-TV app but close the port.** With
@@ -190,7 +194,7 @@ Removing a playlist on the Home tab deletes its folder at once.
 
 | Setting                        | Browser on the network                                                   | App on the TV | MQTT  |
 | :----------------------------- | :----------------------------------------------------------------------- | :------------ | :---- |
-| `"token": "your-secret-token"` | with `?k=your-secret-token` or `Authorization: Bearer your-secret-token` | works         | works |
+| `"token": "your-secret-token"` | with `?k=your-secret-token`, `Authorization: Bearer your-secret-token`, or the `tvweb_k` cookie | works         | works |
 | `"host": "0.0.0.0"`            | over IPv4 only                                                           | works         | works |
 | `"host": "127.0.0.1"`          | no: port 8080 is closed to the network                                  | works         | works |
 | `"web": { "enabled": false }`  | no                                                                       | does not work | works |
