@@ -404,7 +404,8 @@ var PARTS = [
     valid: function (v) {
       return Array.isArray(v) && v.length <= 16 && v.every(function (item) {
         return isObject(item) && typeof item.id === 'string' && /^[a-z0-9_]+\.[a-z0-9_]+$/.test(item.id) &&
-          (item.label === undefined || (typeof item.label === 'string' && item.label.length <= 40));
+          (item.label === undefined || (typeof item.label === 'string' && item.label.length <= 40)) &&
+          (item.control === undefined || typeof item.control === 'boolean');
       });
     },
     read: function (cb) { cb(haBar ? haBar.listConfig().entities : []); },
