@@ -117,6 +117,31 @@ test('a start that failed is not tried again until the wait is over', function (
   audiolevels.stop();
 });
 
+test('a TV whose devices are named only by number reads the first lg115x capture device (#1804)', function () {
+  // /proc/asound/pcm on an OLED65C49LA, webOS 25 (an OLED42C24LA, webOS 9.2, lists the same).
+  var list = [
+    '00-09: lg115x.9 lg115x-codec-dai.9-9 :  : playback 1',
+    '00-10: lg115x.10 lg115x-codec-dai.10-10 :  : capture 1',
+    '00-11: lg115x.11 lg115x-codec-dai.11-11 :  : capture 1',
+    '01-00: WoV PDM Mic snd-soc-dummy-dai-0 :  : capture 1',
+    '01-03: SoundEngineCapture snd-soc-dummy-dai-3 :  : capture 1'
+  ].join('\n') + '\n';
+  audiolevels.init({ readPcmList: function () { return list; } });
+  clock += 20000;
+  var before = spawned.length;
+  audiolevels.read();
+  assert.strictEqual(spawned.length, before + 1);
+  assert.ok(spawned[before].indexOf('hw:0,10') !== -1, 'reads hw:0,10: ' + spawned[before].join(' '));
+  audiolevels.stop();
+  // Only the microphone card's devices: nothing is taken.
+  audiolevels.init({ readPcmList: function () { return '01-00: WoV PDM Mic snd-soc-dummy-dai-0 :  : capture 1\n'; } });
+  clock += 20000;
+  var s = audiolevels.read();
+  assert.strictEqual(s.ok, false);
+  assert.ok(/no capture device/.test(s.error), s.error);
+  audiolevels.stop();
+});
+
 test('a TV without the capture device says so and starts nothing', function () {
   audiolevels.init({ readPcmList: function () { return '00-08: Audio1 playback Game audio1-8 :  : playback 1\n'; } });
   clock += 20000;
