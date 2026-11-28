@@ -9,6 +9,8 @@ var execFile = childProcess.execFile;
 var spawn = childProcess.spawn;
 var children = require('./children');
 var monotonicMs = require('./util').monotonicMs;
+var palmbus = require('./palmbus');
+var path = require('path');
 
 // Overridable so the start-up test can run the whole server against a stand-in.
 var LUNA_SEND = process.env.TVWEB_LUNA_SEND || '/usr/bin/luna-send';
@@ -183,11 +185,11 @@ var debugCalls = false;
  * (retries included) and subscription spawns. Glasshouse Home's frame trace
  * logs the change at each beat, to tell which forks a key or a return costs.
  */
-var started = { calls: {}, subscriptions: {} };
+var started = { calls: {}, subscriptions: {}, palmbus: {} };
 function countStart(kind, uri) { started[kind][uri] = (started[kind][uri] || 0) + 1; }
 function stats() {
-  var out = { calls: {}, subscriptions: {} };
-  ['calls', 'subscriptions'].forEach(function (kind) {
+  var out = { calls: {}, subscriptions: {}, palmbus: {} };
+  ['calls', 'subscriptions', 'palmbus'].forEach(function (kind) {
     Object.keys(started[kind]).forEach(function (uri) { out[kind][uri] = started[kind][uri]; });
   });
   return out;
@@ -304,26 +306,195 @@ function runNow(job) {
     if (!err && stdout) {
       try { parsed = JSON.parse(stdout); } catch (e) {}
     }
-
-    // Service fallback: the first call that gets "Service does not exist"
-    // switches to the legacy name and retries transparently.
-    var rawUri = job.args[job.args.length - 2].replace('luna://', '');
-    if ((isServiceNotFound(rawUri, parsed) || legacyOnlyListed(rawUri, parsed)) && !job.serviceRetried) {
-      var serviceMap = findServiceMapping(rawUri);
-      _serviceName[serviceMap.newer] = serviceMap.legacy;
-      var oldUri = serviceMap.legacy + rawUri.slice(serviceMap.newer.length);
-      job.args[job.args.length - 2] = 'luna://' + oldUri;
-      job.serviceRetried = true;
+    settle(job, parsed, stdout, startedAt, endedAt, function (again) {
       running++;
-      if (job.urgent) urgentRunning++;
-      return run(job);
-    }
-    handleServiceResult(rawUri, parsed);
-    noteFailure(rawUri, parsed);
-    noteMissingMethod(rawUri, parsed, stdout);
+      if (again.urgent) urgentRunning++;
+      run(again);
+    });
+  });
+}
 
-    // When the child that answered started and ended, on the monotonic clock.
-    if (job.cb) job.cb(parsed, String(stdout || ''), { startedAt: startedAt, endedAt: endedAt });
+/*
+ * What every answer goes through, whichever way the call went: the legacy
+ * service name tried where the newer one is not on the TV, what is absent
+ * noted, then the caller. again(job) makes the call once more, the same way.
+ */
+function settle(job, parsed, stdout, startedAt, endedAt, again) {
+  // Service fallback: the first call that gets "Service does not exist"
+  // switches to the legacy name and retries transparently.
+  var rawUri = job.args[job.args.length - 2].replace('luna://', '');
+  if ((isServiceNotFound(rawUri, parsed) || legacyOnlyListed(rawUri, parsed)) && !job.serviceRetried) {
+    var serviceMap = findServiceMapping(rawUri);
+    _serviceName[serviceMap.newer] = serviceMap.legacy;
+    var oldUri = serviceMap.legacy + rawUri.slice(serviceMap.newer.length);
+    job.args[job.args.length - 2] = 'luna://' + oldUri;
+    job.serviceRetried = true;
+    return again(job);
+  }
+  handleServiceResult(rawUri, parsed);
+  noteFailure(rawUri, parsed);
+  noteMissingMethod(rawUri, parsed, stdout);
+
+  // When the child that answered started and ended, on the monotonic clock.
+  if (job.cb) job.cb(parsed, String(stdout || ''), { startedAt: startedAt, endedAt: endedAt });
+}
+
+/*
+ * Calls through palmbus (lib/palmbus.js), where the owner has switched it on
+ * ("lunaViaPalmbus" in config.json). Not for a call made as another app (-a),
+ * which needs luna-send's own identity, nor the slow channel list. A call the
+ * bus refuses, answers with something that does not parse, or leaves
+ * unanswered goes through luna-send at once and from then on, and is kept
+ * in the state folder, so the next start sends it there straight away: an
+ * unanswered call also costs the binding CPU until its handle is renewed
+ * (lib/palmbus.js).
+ */
+var viaPalmbus = false;
+var lunaSendOnly = {};
+var lunaSendOnlyFile = null;
+var BUS_REFUSED = /denied|not allowed|permission|was not handled/i;
+/*
+ * A refusal is not always worded as one: the OLED42C24LA's panel controller
+ * answered the bus 'Method "getOledCellInfo" for category "/" was not
+ * handled' and luna-send its cell type. So the first time the bus answers a
+ * method with returnValue false, luna-send is asked too: where it answers, the
+ * method goes through luna-send from then on; where it fails too, the bus's
+ * answer stands for that method from then on.
+ */
+var busChecked = {};
+
+function usePalmbus(on, stateDir) {
+  viaPalmbus = !!on && palmbus.available();
+  lunaSendOnly = {};
+  busChecked = {};
+  busAlias = {};
+  lunaSendOnlyFile = stateDir ? path.join(stateDir, 'luna-send-only.json') : null;
+  if (lunaSendOnlyFile) {
+    try {
+      var kept = JSON.parse(fs.readFileSync(lunaSendOnlyFile, 'utf8'));
+      if (kept && typeof kept === 'object') for (var k in kept) if (Object.prototype.hasOwnProperty.call(kept, k)) lunaSendOnly[k] = kept[k];
+    } catch (e) {}
+  }
+  if (on && !viaPalmbus) console.log('luna: palmbus is switched on but cannot be used (' + palmbus.unavailableReason() + '); calls stay with luna-send');
+  return viaPalmbus;
+}
+
+function busRefused(parsed) {
+  return !!(parsed && parsed.returnValue === false && BUS_REFUSED.test(String(parsed.errorText || '')));
+}
+
+function sendWithLunaSend(uri, why, keep) {
+  if (Object.prototype.hasOwnProperty.call(lunaSendOnly, uri)) return;
+  lunaSendOnly[uri] = why;
+  console.log('luna: ' + uri + ' goes through luna-send (' + why + ')');
+  if (!keep || !lunaSendOnlyFile) return;
+  var kept = {};
+  for (var k in lunaSendOnly) if (Object.prototype.hasOwnProperty.call(lunaSendOnly, k)) kept[k] = lunaSendOnly[k];
+  try { fs.writeFileSync(lunaSendOnlyFile, JSON.stringify(kept)); } catch (e) {}
+}
+
+function busFor(job) {
+  if (!viaPalmbus || job.appId || job.slow) return false;
+  var uri = job.args[job.args.length - 2].replace('luna://', '');
+  return !Object.prototype.hasOwnProperty.call(lunaSendOnly, uri);
+}
+
+/*
+ * The other name of a renamed service (SERVICE_MAP), where the TV answers to
+ * both: the OLED65B8SLC's settings daemon refused the bus as
+ * com.webos.service.settings and answered it as com.webos.settingsservice,
+ * the same settings, so its reads need no process. Learned per method.
+ */
+var busAlias = {};
+
+function otherName(uri) {
+  for (var i = 0; i < SERVICE_MAP.length; i++) {
+    var m = SERVICE_MAP[i];
+    if (uri.indexOf(m.newer) === 0) return m.legacy + uri.slice(m.newer.length);
+    if (uri.indexOf(m.legacy) === 0) return m.newer + uri.slice(m.legacy.length);
+  }
+  return null;
+}
+
+// Key presses one at a time, in the order made, as through luna-send.
+var busUrgentBusy = false;
+var busUrgentWaiting = [];
+
+function dispatch(job) {
+  if (!busFor(job)) {
+    enqueue(job);
+    return startWaiting();
+  }
+  if (job.urgent) {
+    if (busUrgentBusy) return busUrgentWaiting.push(job);
+    busUrgentBusy = true;
+  }
+  runBus(job);
+}
+
+function busUrgentDone() {
+  busUrgentBusy = false;
+  var next = busUrgentWaiting.shift();
+  if (next) dispatch(next);
+}
+
+function runBus(job, alias) {
+  var uri = job.args[job.args.length - 2].replace('luna://', '');
+  var payload = job.args[job.args.length - 1];
+  var onBus = alias || (Object.prototype.hasOwnProperty.call(busAlias, uri) ? busAlias[uri] : uri);
+  var startedAt = monotonicMs();
+  noteCall('call ' + onBus + ' (palmbus)');
+  countStart('palmbus', onBus);
+  palmbus.call(onBus, payload, WAIT_MS, function (err, raw) {
+    var endedAt = monotonicMs();
+    // Cut short by another call's timeout: made again on the new handle, twice at most.
+    if (err && /** @type {any} */ (err).retry && (job.busRetries || 0) < 2) {
+      job.busRetries = (job.busRetries || 0) + 1;
+      return runBus(job, alias);
+    }
+    var parsed = null;
+    if (!err) { try { parsed = JSON.parse(raw); } catch (e) {} }
+    noteCall('done ' + uri + ' in ' + Math.round(endedAt - startedAt) + 'ms (palmbus' + (err ? ', ' + err.message : '') + ')');
+    // Refused under one name: the other, where the service has one, before luna-send.
+    if (!err && busRefused(parsed) && !alias && onBus === uri) {
+      var other = otherName(uri);
+      if (other && !Object.prototype.hasOwnProperty.call(lunaSendOnly, other)) return runBus(job, other);
+    }
+    if (!err && parsed && !busRefused(parsed) && onBus !== uri && !Object.prototype.hasOwnProperty.call(busAlias, uri)) {
+      busAlias[uri] = onBus;
+      console.log('luna: ' + uri + ' goes through palmbus as ' + onBus);
+    }
+    if (!err && parsed && parsed.returnValue === false && !busRefused(parsed) &&
+        !Object.prototype.hasOwnProperty.call(busChecked, uri)) {
+      var busSaid = parsed.errorText || ('error ' + parsed.errorCode);
+      var givenCb = job.cb;
+      job.cb = function (lsParsed) {
+        if (lsParsed && lsParsed.returnValue !== false) sendWithLunaSend(uri, 'refused: ' + busSaid, true);
+        else busChecked[uri] = true;
+        if (givenCb) givenCb.apply(null, arguments);
+      };
+      if (job.urgent) {
+        var checked = job.cb;
+        job.cb = function () { try { checked.apply(null, arguments); } finally { busUrgentDone(); } };
+      }
+      enqueue(job);
+      return startWaiting();
+    }
+    if (err || !parsed || busRefused(parsed)) {
+      sendWithLunaSend(uri, err ? 'no answer through palmbus' : parsed ? 'refused: ' + parsed.errorText : 'unreadable answer', true);
+      if (job.urgent) {
+        // The press goes on through luna-send, still ahead of the others
+        // waiting, and the next press waits for its answer, as it would there.
+        var answered = job.cb;
+        job.cb = function () {
+          try { if (answered) answered.apply(null, arguments); } finally { busUrgentDone(); }
+        };
+      }
+      enqueue(job);
+      return startWaiting();
+    }
+    if (job.urgent) busUrgentDone();
+    settle(job, parsed, raw, startedAt, endedAt, dispatch);
   });
 }
 
@@ -348,8 +519,7 @@ function queueCall(uri, payload, cb, appId, urgent, first) {
   var slow = SLOW_CALLS[uri] === true;
   args = args.concat(['-n', '1', '-w', String(slow ? SLOW_WAIT_MS : WAIT_MS)], slow ? [] : ['-f'],
                      ['luna://' + uri, JSON.stringify(payload || {})]);
-  enqueue({ args: args, cb: cb, urgent: urgent, first: !urgent && !!first, slow: slow });
-  startWaiting();
+  dispatch({ args: args, cb: cb, urgent: urgent, first: !urgent && !!first, slow: slow, appId: appId || null });
 }
 
 function call(uri, payload, cb, appId) {
@@ -530,6 +700,7 @@ function createCache(callFn) {
 
 module.exports = {
   setDebug: setDebug,
+  usePalmbus: usePalmbus,
   setParallel: setParallel,
   hasService: hasService,
   call: call,

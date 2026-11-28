@@ -252,6 +252,9 @@ var CONFIG = {
   // untried (#366, #768). Set here or from the Server tab. It was named
   // allowOnWebos10 until 0.105, and migrateConfigFile() renames that.
   allowExperimentalScreensavers: false,
+  // One-shot luna calls through LG's palmbus binding rather than a luna-send
+  // process each (lib/palmbus.js). Experimental; set in config.json.
+  lunaViaPalmbus: false,
   pointer: { enabled: true, transport: 'websocket', updatesPerSecond: 120 },
 
   // Hiding built-in system tiles is experimental: restarting the app manager
@@ -545,6 +548,9 @@ loadConfig();
 // At the debug level each luna call is logged as it starts and ends, flushed
 // to disk, for a TV that restarts itself (#746).
 lunaTransport.setDebug(getActiveLogLevel() === 'debug');
+if (CONFIG.lunaViaPalmbus === true && lunaTransport.usePalmbus(true, __dirname)) {
+  console.log('luna: one-shot calls through palmbus (lunaViaPalmbus in config.json)');
+}
 
 /*
  * One-shot modes, behind `tvwebctl update` and `tvwebctl rollback`. They run

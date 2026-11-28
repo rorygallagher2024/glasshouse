@@ -1,6 +1,6 @@
 # Experimental features
 
-Three features are experimental and off by default, turned on under **Server** → **Advanced** → **Experimental features**: each can leave a TV needing a restart when it goes wrong. Glasshouse Home, its launchers and the overlay bars are not among them: they are offered on every webOS version they can work on, with a warning where no one has reported them working yet; see [Launchers and overlays by webOS version](tested-tvs.md#launchers-and-overlays-by-webos-version).
+Three features are experimental and off by default, turned on under **Server** → **Advanced** → **Experimental features**: each can leave a TV needing a restart when it goes wrong. A fourth, [luna calls through palmbus](#luna-calls-through-palmbus), is set in `config.json`. Glasshouse Home, its launchers and the overlay bars are not among them: they are offered on every webOS version they can work on, with a warning where no one has reported them working yet; see [Launchers and overlays by webOS version](tested-tvs.md#launchers-and-overlays-by-webos-version).
 
 ## Hiding home screen system apps
 
@@ -17,6 +17,14 @@ On webOS 10 and 11 they were experimental too, until TVs had run them. Switching
 Switches off parts of LG's Home screen, chosen on the **Home** tab under **Home screen layout**, which also has the switch, with its warning. On webOS 9 it works without turning anything on. It is not offered on other versions.
 
 webOS 10's home app keeps its layout on the TV's read-only system and looks nowhere else for it, so Glasshouse lays its own over LG's with an overlay mount and restarts the home app to read it. The mount does not survive a restart of the TV, so it is put back when Glasshouse starts, and LG's Home screen can show for a moment before that. It has been tried through Glasshouse on a C2 with webOS 10.3.1, and on a few other webOS 10 TVs outside it. **Put back LG's Home screen**, or switching it off, takes the overlay away and brings LG's Home screen back. It does not restart the app manager, so the problem below does not apply to it.
+
+## Luna calls through palmbus
+
+Glasshouse talks to the TV's services over its luna bus, and each call has started a `luna-send` process. With this on, one-shot calls go through palmbus, the bus binding LG's own Node services use, which starts no process. On an OLED65B8SLC (webOS 4.4.3) the calls Glasshouse made while idle started 5 processes in 2 minutes instead of 87, the server's own CPU fell from 1.65% to 1.1% of a core, and Home Assistant's full discovery came 6 s after a start instead of 15 s. Subscriptions still use `luna-send`.
+
+It has no switch on the dashboard yet. To try it, add `"lunaViaPalmbus": true` to `/var/lib/tvweb/config.json` and restart Glasshouse (`/var/lib/tvweb/tvwebctl restart`); remove it to go back.
+
+LG refuses some calls to palmbus that it answers for `luna-send`, and leaves others unanswered. Glasshouse sends such a call through `luna-send` from then on, logs it (`luna: ... goes through luna-send`) and keeps the list in `/var/lib/tvweb/luna-send-only.json`, so the next start does the same; deleting that file has them tried again. A call left unanswered also costs the binding CPU on webOS 9 until its connection to the bus is closed, so Glasshouse closes it and opens another.
 
 ## Why tile hiding is experimental
 
