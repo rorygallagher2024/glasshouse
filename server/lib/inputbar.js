@@ -24,6 +24,7 @@
  */
 var luna = require('./luna');
 var compat = require('./compat');
+var runningApps = require('./running');
 
 var APP = 'com.tvweb.inputbar';
 // After a close. Short: a press 1.5 s after a close found it not yet loaded
@@ -121,9 +122,8 @@ function summary() {
 
 function start() {
   if (sub || !lunaFn) return;
-  sub = new luna.Subscription('com.webos.applicationManager/running', { subscribe: true }, null, {});
-  sub.handlers.message = runningChanged;
-  sub.start();
+  // One subscription shared with the other bars (lib/running.js).
+  sub = runningApps.watch(runningChanged);
   schedule(AFTER_START_MS);
 }
 
