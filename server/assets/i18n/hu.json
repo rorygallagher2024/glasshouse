@@ -4021,5 +4021,8 @@
  "audio.bar.tone": {"from": "Tone controls", "text": "Hangszínszabályozás"},
  "audio.bar.device": {"from": "Device settings", "text": "Eszközbeállítások"},
  "audio.bar.volume": {"from": "Soundbar volume", "text": "Hangprojektor hangereje"},
- "audio.bar.tvVolume": {"from": "TV-reported volume: {value}", "text": "A tévé által jelzett hangerő: {value}"}
+ "audio.bar.tvVolume": {"from": "TV-reported volume: {value}", "text": "A tévé által jelzett hangerő: {value}"},
+ "inputs.banner": {"from": "Input banner", "text": "Bemeneti sáv"},
+ "inputs.banner.close": {"from": "Close the input banner at once", "text": "A bemeneti sáv azonnali bezárása"},
+ "inputs.banner.closeDesc": {"from": "Switching to an HDMI input shows LG’s banner with its name for 5 seconds, and until it goes the remote does not reach the device. With this on, Glasshouse closes it 2 seconds in, so the remote works on the device straight away. Only for inputs with a device that the TV controls over HDMI-CEC (SIMPLINK).", "text": "HDMI-bemenetre váltáskor az LG 5 másodpercig sávot mutat a nevével, és amíg el nem tűnik, a távirányító nem éri el az eszközt. Bekapcsolva a Glasshouse 2 másodperc után bezárja, így a távirányító azonnal vezérli az eszközt. Csak olyan bemeneteknél, amelyeken a tévé HDMI-CEC-en (SIMPLINK) vezérelt eszköz van."}
 }

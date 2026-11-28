@@ -4081,5 +4081,8 @@
  "audio.bar.tone": {"from": "Tone controls", "text": "Regulacja barwy dźwięku"},
  "audio.bar.device": {"from": "Device settings", "text": "Ustawienia urządzenia"},
  "audio.bar.volume": {"from": "Soundbar volume", "text": "Głośność soundbara"},
- "audio.bar.tvVolume": {"from": "TV-reported volume: {value}", "text": "Głośność podawana przez telewizor: {value}"}
+ "audio.bar.tvVolume": {"from": "TV-reported volume: {value}", "text": "Głośność podawana przez telewizor: {value}"},
+ "inputs.banner": {"from": "Input banner", "text": "Baner wejścia"},
+ "inputs.banner.close": {"from": "Close the input banner at once", "text": "Zamykaj baner wejścia od razu"},
+ "inputs.banner.closeDesc": {"from": "Switching to an HDMI input shows LG’s banner with its name for 5 seconds, and until it goes the remote does not reach the device. With this on, Glasshouse closes it 2 seconds in, so the remote works on the device straight away. Only for inputs with a device that the TV controls over HDMI-CEC (SIMPLINK).", "text": "Po przełączeniu na wejście HDMI LG przez 5 sekund pokazuje baner z jego nazwą i dopóki nie zniknie, pilot nie steruje urządzeniem. Po włączeniu Glasshouse zamyka go po 2 sekundach, więc pilot od razu steruje urządzeniem. Tylko dla wejść z urządzeniem sterowanym przez telewizor przez HDMI-CEC (SIMPLINK)."}
 }
