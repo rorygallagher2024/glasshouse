@@ -1721,7 +1721,9 @@ html[lang="vi"] #srcTitle,html[lang="vi"] #plMode,html[lang="vi"] #pvMode,html[l
     if (!item || !item.id || haBusy[item.id]) return;
     haBusy[item.id] = true;
     updateHaTilesInPlace();
-    postJson('/api/ha/bar/act', { id: item.id, action: action, value: value }, function (r) {
+    // The state shown before acting, so the server waits for Home Assistant
+    // to report it changed rather than answering with the old one.
+    postJson('/api/ha/bar/act', { id: item.id, action: action, value: value, prevState: item.state }, function (r) {
       delete haBusy[item.id];
       if (!r || !r.ok) {
         toast(item.label || item.id, (r && r.error) || t('home.ha.failed', 'Action failed'));

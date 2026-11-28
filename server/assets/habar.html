@@ -367,9 +367,10 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
     if (busyId === cur.id) return;
     var targetId = cur.id;
     var targetDomain = cur.domain;
+    var targetState = cur.state;
     busyId = targetId;
     render(true);
-    request('POST', '/api/ha/bar/act', { id: targetId, action: action, value: value }, function (r) {
+    request('POST', '/api/ha/bar/act', { id: targetId, action: action, value: value, prevState: targetState }, function (r) {
       if (busyId === targetId) busyId = '';
       if (r && r.ok && r.tile) {
         for (var i = 0; i < tiles.length; i++) {

@@ -252,6 +252,10 @@ var CONFIG = {
   // untried (#366, #768). Set here or from the Server tab. It was named
   // allowOnWebos10 until 0.105, and migrateConfigFile() renames that.
   allowExperimentalScreensavers: false,
+  // One-shot luna calls through LG's palmbus binding rather than a luna-send
+  // process each (lib/palmbus.js): true or false, or null for the default,
+  // on where lib/compat lists the TV's webOS version as tried.
+  lunaViaPalmbus: null,
   pointer: { enabled: true, transport: 'websocket', updatesPerSecond: 120 },
 
   // Hiding built-in system tiles is experimental: restarting the app manager
@@ -545,6 +549,18 @@ loadConfig();
 // At the debug level each luna call is logged as it starts and ends, flushed
 // to disk, for a TV that restarts itself (#746).
 lunaTransport.setDebug(getActiveLogLevel() === 'debug');
+// What the Server tab shows of it, with the links to report how it went where it is untried.
+function palmbusInfo() {
+  var st = lunaTransport.palmbusStatus();
+  var tv = compatTv();
+  tv.extra = 'Through luna-send instead: ' + (st.lunaSend.length ? st.lunaSend.map(function (e) { return e.method + ' (' + e.why + ')'; }).join('; ') : 'none') +
+             (st.off ? '\nSwitched off: ' + st.off : '');
+  var c = compat.info('palmbus', tv);
+  st.standing = c.standing;
+  st.webos = c.webos;
+  if (c.report) st.report = c.report;
+  return st;
+}
 
 /*
  * One-shot modes, behind `tvwebctl update` and `tvwebctl rollback`. They run
@@ -566,6 +582,27 @@ var CLI_FORCE = false;
 })();
 
 updater.init({ config: CONFIG, version: TVWEB_VERSION, displayVersion: TVWEB_DISPLAY_VERSION, installDir: __dirname });
+
+/*
+ * Not for a one-shot run such as --update, which exits 3 when there is nothing
+ * newer and would be taken for a server that stopped without exiting.
+ */
+if (!CLI_MODE) {
+  var palmbusBoot = '';
+  try { palmbusBoot = fs.readFileSync('/proc/sys/kernel/random/boot_id', 'utf8').trim(); } catch (e) {}
+  var palmbusOn = lunaTransport.configurePalmbus({
+    setting: typeof CONFIG.lunaViaPalmbus === 'boolean' ? CONFIG.lunaViaPalmbus : null,
+    tried: compat.standing('palmbus', telemetry.detectWebosVersion()) === 'tried',
+    stateDir: __dirname,
+    version: TVWEB_DISPLAY_VERSION,
+    boot: palmbusBoot
+  });
+  if (palmbusOn) {
+    console.log('luna: one-shot calls through palmbus (' +
+                (typeof CONFIG.lunaViaPalmbus === 'boolean' ? 'switched on' : 'on by default on this webOS version') + ')');
+  }
+}
+
 
 // ---------------------------------------------------------------- helpers
 var TOAST_SOURCE = 'com.webos.app.home';
@@ -1249,6 +1286,7 @@ routes.init({
   // Where the gzipped dashboard page is kept between starts.
   stateDir: __dirname,
   barPress: barPress,
+  palmbus: palmbusInfo,
   config: CONFIG,
   audioLevels: audioLevels,
   pointer: pointer,

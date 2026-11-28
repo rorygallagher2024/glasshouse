@@ -45,6 +45,13 @@ var FEATURES = {
     tooNew: function () {
       return msg('srv.compat.bar.new', 'From webOS 11 the remote\'s keys are LG\'s own, and cannot open an app of Glasshouse\'s.');
     }
+  },
+  // One-shot luna calls through LG's palmbus binding (lib/palmbus.js): on by
+  // default where tried, offered with a switch elsewhere. Never refused: where
+  // the binding is not there, calls stay with luna-send.
+  palmbus: {
+    title: 'Faster communication with the TV (palmbus)',
+    tried: [4, 9]
   }
 };
 
@@ -84,13 +91,16 @@ function issueUrl(id, works, tv, part) {
 // the dashboard copies it for someone without a GitHub account.
 function details(id, tv, part) {
   tv = tv || {};
-  return [
+  var lines = [
     'Feature: ' + (part || FEATURES[id].title),
     'webOS: ' + (tv.webos || '?'),
     'Model: ' + (tv.model || '?'),
     'Firmware: ' + (tv.firmware || '?'),
     'Glasshouse: ' + (tv.glasshouse || '?')
-  ].join('\n');
+  ];
+  // What the feature itself found on the TV, where it has something to add.
+  if (tv.extra) lines.push(String(tv.extra));
+  return lines.join('\n');
 }
 
 /*

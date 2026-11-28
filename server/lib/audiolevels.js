@@ -259,17 +259,27 @@ function onData(chunk) {
   leftover = usable < buf.length ? buf.slice(usable) : null;
 }
 
-// The "App" capture device in LG's mixer, from /proc/asound/pcm lines such as
-// "00-10: Pcm8 capture App pcm1-10 :  : capture 1".
+// The capture device carrying the mix, from /proc/asound/pcm: LG's "App"
+// device where the mixer names it ("00-10: Pcm8 capture App pcm1-10 :  :
+// capture 1", an OLED55A19LA on webOS 6.5.3), or else the first capture
+// device of the lg115x card, where they are named only by number
+// ("00-10: lg115x.10 lg115x-codec-dai.10-10 :  : capture 1"). On an
+// OLED65C49LA (webOS 25) that first one, hw:0,10, carried both the TV's apps
+// (Spotify) and an HDMI source; an OLED42C24LA (webOS 9.2) lists the same.
+// The other card's capture devices (a microphone, speaker feedback) are
+// never taken.
 function findDevice() {
   var text;
   try { text = opts.readPcmList(); } catch (e) { return null; }
   var lines = text.split('\n');
+  var first = null;
   for (var i = 0; i < lines.length; i++) {
     var m = /^(\d+)-(\d+): .*capture App/.exec(lines[i]);
     if (m) return 'hw:' + parseInt(m[1], 10) + ',' + parseInt(m[2], 10);
+    var n = /^(\d+)-(\d+): lg115x\.\d+ .*: capture \d/.exec(lines[i]);
+    if (n && first === null) first = 'hw:' + parseInt(n[1], 10) + ',' + parseInt(n[2], 10);
   }
-  return null;
+  return first;
 }
 
 function stop() {
