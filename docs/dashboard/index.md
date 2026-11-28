@@ -16,6 +16,8 @@ The top of every tab shows what the TV is doing: its state (On, Screen off, Scre
 
 The dashboard and the TV app come in English, Arabic, Finnish, French, German (partly), Hungarian, Italian, Polish, Portuguese, Brazilian Portuguese, Russian, Spanish, Swedish and Vietnamese, all translated by the community. It follows the browser's language until one is chosen under **Preferences**. [Translating the dashboards](../STRINGS.md) explains how to add or improve one.
 
+The web dashboard serves its fonts locally, including Onest for Cyrillic headings in tabs and settings dialogs; see the [Apps headings](../screenshots/ru-apps-headings.png) and [Picture frame dialog](../screenshots/ru-picture-frame.png) in Russian.
+
 ## The tabs
 
 Each tab has a link of its own, such as `/?tab=remote`. A tab whose feature the TV does not have is left out: OLED Care on an LCD, Ambient Light without PicCap or Hue Sync.

@@ -71,7 +71,7 @@ function Broker(cb) {
           digit = buf[idx++]; len += (digit & 127) * mult; mult *= 128;
         } while (digit & 128);
         if (buf.length < idx + len) return;
-        var type = buf[0] >> 4, body = buf.slice(idx, idx + len);
+        var type = buf[0] >> 4, qos = (buf[0] >> 1) & 3, body = buf.slice(idx, idx + len);
         buf = buf.slice(idx + len);
         if (type === 1) sock.write(bufFrom([0x20, 2, 0, 0]));
         else if (type === 8) sock.write(bufFrom([0x90, 3, body[0], body[1], 0]));
@@ -79,7 +79,8 @@ function Broker(cb) {
         else if (type === 14) self.disconnects++;
         else if (type === 3) {
           var tl = (body[0] << 8) | body[1];
-          self.published.push({ topic: body.slice(2, 2 + tl).toString(), at: Date.now() });
+          self.published.push({ topic: body.slice(2, 2 + tl).toString(), at: Date.now(),
+                                empty: body.length === 2 + tl + (qos ? 2 : 0) });
         }
       }
     });
@@ -186,6 +187,25 @@ function phase(name, chaos, next, mqttDisabled, missingModule) {
           // 40 s on CI's node 0.12 runner.
           waitFor('telemetry at the broker', function () { return mqttDisabled ? out.indexOf('mqtt: disabled') !== -1 : broker.last(/^boot\/telemetry$/); }, chaos ? 90000 : 20000, function () {
             waitFor('discovery at the broker', function () { return mqttDisabled || broker.last(/^homeassistant\/.*\/config$/); }, 20000, function () {
+
+            /*
+             * Nothing Home Assistant had is cleared before a telemetry read has
+             * said what the TV can do: an entity withheld only for want of that
+             * was taken away and put back a moment later at every start. The
+             * retired entities, gone for good, are cleared from the start.
+             */
+            if (!mqttDisabled) {
+              var retired = {};
+              require('../server/lib/ha').RETIRED_ENTITIES.forEach(function (e) { retired[e.type + '/' + e.id] = true; });
+              var firstTelemetry = null;
+              broker.published.forEach(function (m) { if (!firstTelemetry && /^boot\/telemetry$/.test(m.topic)) firstTelemetry = m; });
+              var early = broker.published.filter(function (m) {
+                var t = m.topic.split('/');
+                return m.empty && t.length === 5 && t[0] === 'homeassistant' && !retired[t[1] + '/' + t[3]] &&
+                  firstTelemetry && m.at < firstTelemetry.at;
+              });
+              if (early.length) return fail('discovery cleared before the first telemetry: ' + early.map(function (m) { return m.topic; }).join(', '));
+            }
 
             /*
              * Steady use: the dashboard asked once a second, telemetry every 2s.

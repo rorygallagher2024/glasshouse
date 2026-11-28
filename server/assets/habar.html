@@ -301,6 +301,8 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
   function close() {
     if (closing) return;
     closing = true;
+    // Closed here, not by the TV, which the server opens again (lib/barpress.js).
+    tellClosed();
     visibleSince = 0;
     clearInterval(clockTimer);
     clearInterval(refreshTimer);
@@ -386,10 +388,25 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
   function hidden() { return document.hidden === true || document.webkitHidden === true; }
   var initial = launchInfo();
   var seenPress = initial.press || 0;
+  // Each press, for the server, once the window is up for it: it launches a
+  // lost one again, with the same number, until it hears (lib/barpress.js).
+  // tellPress is one taken while hidden, told once the window shows.
+  var tellPress = 0;
+  function tell(press) { request('GET', '/api/bar/seen?app=com.tvweb.habar&press=' + press, null, function () {}); }
+  function tellClosed() { request('GET', '/api/bar/closed?app=com.tvweb.habar&press=' + seenPress, null, function () {}); }
+  function took(press) {
+    if (hidden()) { tellPress = press; return; }
+    tellPress = 0;
+    tell(press);
+  }
+  if (seenPress) took(seenPress);
   var idleUntilOpened = !!(initial.preload || /[?&]preload=1/.test(location.search) || (!seenPress && hidden()));
   var SECOND_PRESS_MS = 250;
   var visibleSince = hidden() ? 0 : Date.now();
-  function visibilityChanged() { visibleSince = hidden() ? 0 : (visibleSince || Date.now()); }
+  function visibilityChanged() {
+    visibleSince = hidden() ? 0 : (visibleSince || Date.now());
+    if (!hidden() && tellPress) { var press = tellPress; tellPress = 0; tell(press); }
+  }
   document.addEventListener('visibilitychange', visibilityChanged);
   document.addEventListener('webkitvisibilitychange', visibilityChanged);
   var SAME_PRESS_MS = 200;
@@ -404,8 +421,15 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
     if (detail.preload) return;
     var at = Date.now();
     if (detail.press) {
-      if (detail.press === seenPress) return;
-      seenPress = detail.press;
+      if (detail.press === seenPress) {
+        // The same press sent again by the server: taken only where it never
+        // brought the bar up, the page hidden with nothing drawn. A repeat of
+        // one that opened or closed it is dropped.
+        if (closing || !hidden() || document.body.className === 'on') return;
+      } else {
+        seenPress = detail.press;
+      }
+      took(seenPress);
     } else {
       if (at - lastRelaunch < SAME_PRESS_MS) return;
       var shownFor = visibleSince ? at - visibleSince : 0;

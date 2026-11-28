@@ -26,6 +26,8 @@
 var fs = require('fs');
 var path = require('path');
 var luna = require('./luna');
+var runningApps = require('./running');
+var barPress = require('./barpress');
 var util = require('./util');
 var msg = require('./say').msg;
 
@@ -106,6 +108,8 @@ function runningChanged(r) {
   var now = r.running.some(function (a) { return a && a.id === APP; });
   var was = running;
   running = now;
+  // Closed by the TV just as it showed: lib/barpress opens it again.
+  if (was === true && !now) barPress.exited(APP);
   if (now) {
     clearTimeout(timer);
     timer = null;
@@ -273,9 +277,8 @@ function disable(cb) {
 
 function start() {
   if (sub || !lunaFn || !wanted()) return;
-  sub = new Subscription('com.webos.applicationManager/running', { subscribe: true }, null, {});
-  sub.handlers.message = runningChanged;
-  sub.start();
+  // One subscription shared with the other bars (lib/running.js).
+  sub = runningApps.watch(runningChanged, Subscription);
   schedule(afterStartMs);
 }
 

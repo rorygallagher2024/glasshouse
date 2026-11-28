@@ -1137,11 +1137,17 @@ step(function (next) {
 });
 
 step(function (next) {
+  var told = [];
+  function TellXhr() {}
+  TellXhr.prototype.open = function (method, url) { this.method = method; this.url = url; };
+  TellXhr.prototype.setRequestHeader = function () {};
+  TellXhr.prototype.send = function (body) { told.push({ method: this.method, url: this.url, body: JSON.parse(body) }); };
   var f = loadFilter(null, {
     WebOS: { Key_webOS_Netflix: 1001, Key_webOS_Amazon: 1002, Key_webOS_TVGuide: 1003, Key_webOS_Red: 1004,
              Key_webOS_USP: 1005, Key_webOS_InputSource: 1006 },
     Qt: { Key_Super_L: 2001, Key_Right: 3001 },
-    global: { isForegroundApp: function () { return false; }, sendKeyToFocusWindow: function () {} }
+    global: { isForegroundApp: function () { return false; }, sendKeyToFocusWindow: function () {} },
+    XMLHttpRequest: TellXhr
   });
   f.handle(1006, true, false);
   f.handle(1006, false, false);
@@ -1151,6 +1157,10 @@ step(function (next) {
   assert.strictEqual(p1.glasshouse, 'bar');
   assert.ok(p2.press > p1.press, 'each press numbered, as the Home key opens it, so a second press closes it');
   console.log('  ✓ the key opens Glasshouse Bar as the Home key does, a number for each press');
+  assert.deepEqual(told.map(function (t) { return [t.method, t.url.replace(/:\d+\//, ':PORT/'), t.body.app, t.body.press]; }),
+    [['POST', 'http://127.0.0.1:PORT/api/bar/press', 'com.tvweb.homebar', p1.press],
+     ['POST', 'http://127.0.0.1:PORT/api/bar/press', 'com.tvweb.homebar', p2.press]]);
+  console.log('  ✓ the server is told each press, with its number, to send again one the bar never had');
   next();
 });
 

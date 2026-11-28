@@ -45,6 +45,9 @@ child.spawn = function () {
 };
 
 var luna = require('../server/lib/luna');
+// Pinned to the gaps and limit of node 0.12 and 8.12, which this checks the order by.
+require('../server/lib/children').setGaps(50, 150);
+luna.setParallel(2);
 var aborted = function () { var e = new Error('Command failed'); e.signal = 'SIGABRT'; e.killed = false; return e; };
 var timedOut = function () { var e = new Error('Command failed'); e.signal = 'SIGTERM'; e.killed = true; return e; };
 

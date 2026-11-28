@@ -16,6 +16,8 @@
 var fs = require('fs');
 var path = require('path');
 var luna = require('./luna');
+var runningApps = require('./running');
+var barPress = require('./barpress');
 var util = require('./util');
 var msg = require('./say').msg;
 
@@ -152,12 +154,15 @@ function runningChanged(r) {
    * a preloaded copy outlives a server restart. Found running when this
    * server starts, it may be the page an earlier version served, so it is
    * closed and preloaded again, rather than run old code until the TV
-   * restarts. Closing is what makes the next message see it gone.
+   * restarts. Closing is what makes the next message see it gone, and
+   * lib/barpress leaves that close alone, as no press has shown the bar.
    */
   if (was === null && now && lunaFn) {
     lunaFn('com.webos.applicationManager/closeByAppId', { id: APP }, function () {});
     return;
   }
+  // Closed by the TV just as it showed: lib/barpress opens it again.
+  if (was === true && !now) barPress.exited(APP);
   if (now) {
     clearTimeout(timer);
     timer = null;
@@ -479,9 +484,8 @@ function open(cb) {
 
 function start() {
   if (sub || !lunaFn || !wanted()) return;
-  sub = new Subscription('com.webos.applicationManager/running', { subscribe: true }, null, {});
-  sub.handlers.message = runningChanged;
-  sub.start();
+  // One subscription shared with the other bars (lib/running.js).
+  sub = runningApps.watch(runningChanged, Subscription);
   schedule(afterStartMs);
 }
 

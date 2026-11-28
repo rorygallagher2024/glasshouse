@@ -11,6 +11,8 @@ var OLED_EPL = 'com.webos.service.oledepl';
 var OLED_SYSPROP = 'com.webos.service.tv.systemproperty';
 
 var luna = null;
+// The luna queue's first lane: the panel type is part of what the start waits on.
+var lunaFirst = null;
 var config = {};
 var isOled = null;   // null = not yet determined
 var cachedOled = null;
@@ -153,9 +155,10 @@ function oledProtControllable() {
   return oledProtVia === 'epl' || oledProtVia === 'sysprop';
 }
 
-function readViaSysprop(cb) {
+function readViaSysprop(cb, first) {
   if (!luna) return cb(null);
-  luna(OLED_SYSPROP + '/getProperties', { keys: ['OledTPC', 'OledGSR'] }, function (r) {
+  var via = (first && lunaFirst) || luna;
+  via(OLED_SYSPROP + '/getProperties', { keys: ['OledTPC', 'OledGSR'] }, function (r) {
     gsrStressCountSupported = false;
     if (!r || r.returnValue !== true || typeof r.OledTPC === 'undefined') {
       oledProtVia = false;
@@ -170,14 +173,16 @@ function readViaSysprop(cb) {
   });
 }
 
-function readOledProtections(cb) {
-  if (oledProtVia === 'sysprop') return readViaSysprop(cb);
+// first: through the luna queue's first lane, for the discovery a start waits on.
+function readOledProtections(cb, first) {
+  if (oledProtVia === 'sysprop') return readViaSysprop(cb, first);
   if (!luna) return cb(null);
-  luna(OLED_EPL + '/getGlobalStressReduction', {}, function (gsr) {
-    if (!gsr || gsr.returnValue !== true) return readViaSysprop(cb);
+  var via = (first && lunaFirst) || luna;
+  via(OLED_EPL + '/getGlobalStressReduction', {}, function (gsr) {
+    if (!gsr || gsr.returnValue !== true) return readViaSysprop(cb, first);
     var stressCount = (typeof gsr.stressCount === 'number') ? gsr.stressCount : null;
     gsrStressCountSupported = stressCount !== null;
-    luna(OLED_EPL + '/getTemporalPeakControl', {}, function (tpc) {
+    via(OLED_EPL + '/getTemporalPeakControl', {}, function (tpc) {
       oledProtVia = 'epl';
       cb({
         gsr: gsr.enable === true,
@@ -433,6 +438,7 @@ function init(opts) {
     oledProtVia = null;
     gsrStressCountSupported = null;
   }
+  if (opts.lunaFirst) lunaFirst = opts.lunaFirst;
   if (opts.config) config = opts.config;
 }
 
