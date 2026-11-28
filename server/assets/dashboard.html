@@ -1093,8 +1093,9 @@ function homeItemTitle(kind, id) {
   for (i = 0; i < list.length; i++) {
     if (list[i].id !== id) continue;
     if (kind === 'app') return list[i].title;
-    // The server names the All Inputs tile in English.
+    // The server names the All Inputs and Screen Share tiles in English.
     if (kind === 'dev' && list[i].kind === 'allinputs') return t('inputs.kind.allinputs', 'All inputs');
+    if (kind === 'dev' && list[i].kind === 'screenshare') return t('inputs.kind.screenshare', 'Screen Share');
     if (kind === 'dev' || kind === 'iptv') return list[i].name;
     return list[i].number + ' ' + list[i].name;
   }

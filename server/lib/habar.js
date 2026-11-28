@@ -202,7 +202,7 @@ function formatTile(item, ent, err) {
     error: err || '',
     active: false,
     adjustable: false,
-    valueText: err ? 'Unavailable' : (rawState || 'Unknown'),
+    valueText: err ? msg('srv.habar.unavailable', 'Unavailable') : (rawState || msg('srv.habar.unknown', 'Unknown')),
     subText: err ? err : '',
     pct: null,
     currentTemp: null,
@@ -227,13 +227,13 @@ function formatTile(item, ent, err) {
     tile.pct = typeof attrs.brightness === 'number'
       ? Math.max(0, Math.min(100, Math.round(attrs.brightness * 100 / 255)))
       : (tile.active ? 100 : 0);
-    tile.valueText = tile.active ? (hasBri ? tile.pct + '%' : 'On') : 'Off';
+    tile.valueText = tile.active ? (hasBri ? tile.pct + '%' : msg('srv.habar.on', 'On')) : msg('srv.habar.off', 'Off');
     return tile;
   }
 
   if (domain === 'switch' || domain === 'input_boolean') {
     tile.active = rawState === 'on';
-    tile.valueText = tile.active ? 'On' : 'Off';
+    tile.valueText = tile.active ? msg('srv.habar.on', 'On') : msg('srv.habar.off', 'Off');
     return tile;
   }
 
@@ -241,7 +241,7 @@ function formatTile(item, ent, err) {
     tile.active = rawState === 'on';
     tile.adjustable = typeof attrs.percentage === 'number' || (typeof attrs.percentage_step === 'number' && attrs.percentage_step > 0);
     tile.pct = typeof attrs.percentage === 'number' ? Math.max(0, Math.min(100, Math.round(attrs.percentage))) : (tile.active ? 100 : 0);
-    tile.valueText = tile.active ? (typeof attrs.percentage === 'number' ? tile.pct + '%' : 'On') : 'Off';
+    tile.valueText = tile.active ? (typeof attrs.percentage === 'number' ? tile.pct + '%' : msg('srv.habar.on', 'On')) : msg('srv.habar.off', 'Off');
     return tile;
   }
 
@@ -256,7 +256,7 @@ function formatTile(item, ent, err) {
     if (tempText && rawState) tile.valueText = tempText + ' · ' + rawState;
     else tile.valueText = tempText || rawState;
     if (tile.targetTemp !== null && tile.currentTemp !== null) {
-      tile.subText = 'Now ' + formatTemp(tile.currentTemp, tile.tempUnit);
+      tile.subText = msg('srv.habar.now', 'Now {temp}', { temp: formatTemp(tile.currentTemp, tile.tempUnit) });
     }
     return tile;
   }
@@ -271,17 +271,17 @@ function formatTile(item, ent, err) {
 
   if (domain === 'lock') {
     tile.active = rawState === 'locked';
-    tile.valueText = rawState === 'locked' ? 'Locked' : rawState === 'unlocked' ? 'Unlocked' : rawState;
+    tile.valueText = rawState === 'locked' ? msg('srv.habar.locked', 'Locked') : rawState === 'unlocked' ? msg('srv.habar.unlocked', 'Unlocked') : rawState;
     return tile;
   }
 
   if (domain === 'scene') {
-    tile.valueText = 'Activate';
+    tile.valueText = msg('srv.habar.activate', 'Activate');
     return tile;
   }
 
   if (domain === 'script' || domain === 'button' || domain === 'input_button') {
-    tile.valueText = 'Run';
+    tile.valueText = msg('srv.habar.run', 'Run');
     return tile;
   }
 

@@ -28,7 +28,9 @@ var fs = require('fs');
 var crypto = require('crypto');
 var path = require('path');
 var execFile = require('child_process').execFile;
-var msg = require('./say').msg;
+var say = require('./say');
+var msg = say.msg;
+var clock = require('./clock');
 var names = require('./names');
 var writeJsonAtomic = require('./util').writeJsonAtomic;
 var wallpapers = require('./home-wallpapers');
@@ -1797,11 +1799,29 @@ function catalogueReply(cb) {
       c.enabled = st.enabled;
       c.supported = st.supported;
       c.wallpapers = st.wallpapers;
+      c.text = catalogueText();
       c.rev = crypto.createHash('sha1').update(JSON.stringify(c)).digest('hex').slice(0, 16);
       c.layoutVersion = version;
       cb(c);
     });
   });
+}
+
+/*
+ * Names the catalogue's devices carry in English, and the device kinds the
+ * bars name, in the TV's menu language: Glasshouse Bar, the input bar and the
+ * launchers are files on the TV, or pages opened from them, that load no
+ * translation of their own. Glasshouse Home translates them itself.
+ */
+function catalogueText() {
+  var locale = clock.qtLocale();
+  return {
+    allInputs: say.textForLocale('inputs.kind.allinputs', 'All inputs', locale),
+    screenShare: say.textForLocale('inputs.kind.screenshare', 'Screen Share', locale),
+    component: say.textForLocale('inputs.kind.component', 'Component', locale),
+    mediaServer: say.textForLocale('inputs.kind.dms', 'Media server', locale),
+    lgHome: say.textForLocale('home.lgHome', 'LG Home', locale)
+  };
 }
 
 /*

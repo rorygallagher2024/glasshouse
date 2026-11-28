@@ -1443,10 +1443,15 @@ html[lang="vi"] #srcTitle,html[lang="vi"] #plMode,html[lang="vi"] #pvMode,html[l
   // Input tile icons, shared with the input bar (devicons.js).
   var devIcon = window.glasshouseDevIcon;
 
+  // The server names the All Inputs and Screen Share tiles in English; they
+  // are the names here that are not the TV's own or the user's.
+  function itemName(it) {
+    return it.kind === 'allinputs' ? t('inputs.kind.allinputs', 'All inputs')
+      : it.kind === 'screenshare' ? t('inputs.kind.screenshare', 'Screen Share') : (it.title || it.name);
+  }
+
   function devTileHtml(d, i, cls, path, status, cec) {
-    // The server names the All Inputs tile in English; it is the one name here
-    // that is not the TV's own or the user's.
-    var name = d.kind === 'allinputs' ? t('inputs.kind.allinputs', 'All inputs') : d.name;
+    var name = itemName(d);
     return '<div class="' + cls + '" data-c="' + i + '"><div class="dhead">' + devIcon(d) + '<div class="dtx"><div class="nm">' + esc(name) + '</div>' +
       '<div class="path">' + esc(path) + '</div></div></div>' +
       '<div class="st"><em>' + esc(status) + '</em><span>' + (cec ? esc(cec) : '') + '</span></div>' +
@@ -1475,7 +1480,7 @@ html[lang="vi"] #srcTitle,html[lang="vi"] #plMode,html[lang="vi"] #pvMode,html[l
       var path = d.unused ? ''
         : d.kind === 'av' ? t('inputs.kind.av', 'AV')
         : d.kind === 'component' ? t('inputs.kind.component', 'Component')
-        : d.kind === 'dms' ? (d.address || 'Media Server')
+        : d.kind === 'dms' ? (d.address || t('inputs.kind.dms', 'Media server'))
         : d.kind === 'usb' ? 'USB'
         : isExtra ? ''
         : d.via ? t('home.dev.through', 'HDMI {port}, through {via}', { port: d.port, via: d.via })
@@ -1781,10 +1786,10 @@ html[lang="vi"] #srcTitle,html[lang="vi"] #plMode,html[lang="vi"] #pvMode,html[l
           ? t('home.arrange.sortFocus', '{row}: OK changes the order', { row: ROW_TITLES[rowKey()] })
         : !it ? t('home.arrange.emptyRow', 'This row is empty')
         : it.add ? t('home.tv.addArrange', 'Add channels: OK opens the list')
-        : state.held ? t('home.arrange.moving', 'Moving {name}', { name: it.title || it.name })
-        : hidden(rowKey(), it.id) ? (it.title || it.name) + ' ' + t('home.arrange.isHidden', '(hidden)')
+        : state.held ? t('home.arrange.moving', 'Moving {name}', { name: itemName(it) })
+        : hidden(rowKey(), it.id) ? itemName(it) + ' ' + t('home.arrange.isHidden', '(hidden)')
         : inFolder(rowKey(), it.id) ? t('home.arrange.isInFolder', '{name} (in More apps)', { name: it.title })
-        : (it.title || it.name);
+        : itemName(it);
     }
     followPreview();
   }

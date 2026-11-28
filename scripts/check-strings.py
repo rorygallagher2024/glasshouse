@@ -43,7 +43,7 @@ import html, html.parser, json, pathlib, re, sys
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 ASSETS = ROOT / 'server' / 'assets'
-PAGES = ['ui.html', 'dashboard.html', 'setup.html', 'setup-phone.html', 'home.html']
+PAGES = ['ui.html', 'dashboard.html', 'setup.html', 'setup-phone.html', 'home.html', 'home-minimal.html', 'habar.html']
 I18N_JS = ASSETS / 'i18n.js'
 LANG_DIR = ASSETS / 'i18n'
 
@@ -57,6 +57,8 @@ CONVERTED = {
     'setup.html': ['<body>'],
     'setup-phone.html': ['<body>'],
     'home.html': ['<body>'],
+    'home-minimal.html': ['<body>'],
+    'habar.html': ['<body>'],
 }
 
 KEY_RE = re.compile(r'^[a-z][a-zA-Z0-9]*(\.[a-zA-Z0-9]+)*$')
@@ -299,7 +301,8 @@ for path in SERVER:
         continue
     name = str(path.relative_to(ROOT))
     code = strip_code(src)
-    for m in re.finditer(r'(?<![\w$.])msg\(', code):
+    # say.textForLocale() takes a key and its English as msg() does.
+    for m in re.finditer(r'(?<![\w$.])(?:msg|say\.textForLocale)\(', code):
         if code[:m.start()].endswith('function '):
             continue   # say.js's definition of msg()
         where = '%s:%d' % (name, 1 + src.count('\n', 0, m.start()))
