@@ -22,6 +22,8 @@ var path = require('path');
 var DISPLAY_FIELDS = {
   error: 1, note: 1, label: 1, name: 1, detail: 1, desc: 1, description: 1,
   title: 1, badge: 1, message: 1, hint: 1, limitTrackingLabel: 1, limitTrackingDetail: 1,
+  // A Home Assistant tile's reading and the line under it (lib/habar.js).
+  valueText: 1, subText: 1,
   // Lists of the names above, which a page joins into a sentence.
   sharesWith: 1, agreements: 1, kept: 1, cautions: 1,
   // [id, title, note] rows: only the strings msg() made are changed, never an id.
@@ -205,6 +207,17 @@ function forLocale(text, locale) {
   return lang ? translateText(text, dictFor(lang)) : text;
 }
 
+// A string by its key in the language of a locale, for words a page on the TV
+// that loads no translation shows, such as a kind of input. Unlike msg(), the
+// English is not marked as a message, so a name the TV gives that reads the
+// same, such as an app called Screen Share, is never changed.
+function textForLocale(key, en, locale) {
+  var lang = langOfLocale(locale);
+  var dict = lang ? dictFor(lang) : null;
+  var entry = dict && Object.prototype.hasOwnProperty.call(dict, key) ? dict[key] : null;
+  return madeFrom(entry, en) && typeof entry.text === 'string' && entry.text ? entry.text : en;
+}
+
 // A JSON body for a response, translated in place where a page asked for a
 // language. Anything that is not JSON goes out as it came.
 function translateBody(body, lang) {
@@ -223,6 +236,7 @@ module.exports = {
   langOf: langOf,
   langOfLocale: langOfLocale,
   forLocale: forLocale,
+  textForLocale: textForLocale,
   translateBody: translateBody,
   DISPLAY_FIELDS: DISPLAY_FIELDS,
   englishHash: englishHash

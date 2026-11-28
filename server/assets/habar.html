@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <title>Home Assistant Bar</title>
+<script src="/assets/i18n.js"></script>
 <style>
 @font-face{font-family:'Manrope';src:url('/assets/fonts/Manrope-Regular.ttf') format('truetype');font-weight:400}
 @font-face{font-family:'Manrope';src:url('/assets/fonts/Manrope-SemiBold.ttf') format('truetype');font-weight:600}
@@ -77,7 +78,7 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
 </head>
 <body>
 <div id="shade"></div>
-<div id="head"><div id="hint">Home Assistant</div><div id="clock"></div></div>
+<div id="head"><div id="hint" translate="no">Home Assistant</div><div id="clock"></div></div>
 <div id="bar"><div id="row"></div></div>
 <script>
 /*
@@ -201,42 +202,42 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
       return;
     }
     var cur = tiles[focus];
-    var parts = cur && cur.readOnly ? [] : [isOneShot(cur && cur.domain) ? 'OK run' : 'OK toggle'];
+    var parts = cur && cur.readOnly ? [] : [isOneShot(cur && cur.domain) ? t('habar.hint.run', 'OK run') : t('habar.hint.toggle', 'OK toggle')];
     if (cur && cur.adjustable) {
-      parts.push(cur.domain === 'climate' ? 'Up/Down temp' : 'Up/Down adjust');
+      parts.push(cur.domain === 'climate' ? t('habar.hint.temp', 'Up/Down temp') : t('habar.hint.adjust', 'Up/Down adjust'));
     }
-    parts.push('Back close');
+    parts.push(t('habar.hint.close', 'Back close'));
     $('hint').textContent = parts.join('  ·  ');
   }
-  function isFlashed(t) {
-    return !!(flashUntil[t.id] && flashUntil[t.id].until > Date.now());
+  function isFlashed(tile) {
+    return !!(flashUntil[tile.id] && flashUntil[tile.id].until > Date.now());
   }
-  function tileClass(t, i) {
-    return 'tile dom-' + t.domain +
-      (t.active ? ' active' : '') +
-      (t.adjustable ? ' adj' : '') +
-      (t.error ? ' err' : '') +
-      (isFlashed(t) ? ' flash' : '') +
+  function tileClass(tile, i) {
+    return 'tile dom-' + tile.domain +
+      (tile.active ? ' active' : '') +
+      (tile.adjustable ? ' adj' : '') +
+      (tile.error ? ' err' : '') +
+      (isFlashed(tile) ? ' flash' : '') +
       (i === focus ? ' focus' : '') +
-      (busyId === t.id ? ' busy' : '');
+      (busyId === tile.id ? ' busy' : '');
   }
-  function tileHtml(t, i) {
-    if (t.empty) {
-      return '<div class="tile wide focus" data-i="0"><div class="nm">' + esc(t.label) + '</div><div class="val">' + esc(t.valueText) + '</div></div>';
+  function tileHtml(tile, i) {
+    if (tile.empty) {
+      return '<div class="tile wide focus" data-i="0"><div class="nm">' + esc(tile.label) + '</div><div class="val">' + esc(tile.valueText) + '</div></div>';
     }
-    var flashed = isFlashed(t);
-    var valText = flashed ? flashUntil[t.id].text : t.valueText;
-    var meter = typeof t.pct === 'number' && t.active && !t.error
-      ? '<div class="meter"><div class="meter-fill" style="width:' + Math.max(0, Math.min(100, t.pct)) + '%"></div></div>'
+    var flashed = isFlashed(tile);
+    var valText = flashed ? flashUntil[tile.id].text : tile.valueText;
+    var meter = typeof tile.pct === 'number' && tile.active && !tile.error
+      ? '<div class="meter"><div class="meter-fill" style="width:' + Math.max(0, Math.min(100, tile.pct)) + '%"></div></div>'
       : '';
-    var subHtml = t.subText ? '<div class="sub">' + esc(t.subText) + '</div>' : '';
-    return '<div class="' + tileClass(t, i) + '" data-i="' + i + '">' +
-      '<div class="top"><div class="ico">' + iconSvg(t.domain, t.deviceClass) + '</div>' +
+    var subHtml = tile.subText ? '<div class="sub">' + esc(tile.subText) + '</div>' : '';
+    return '<div class="' + tileClass(tile, i) + '" data-i="' + i + '">' +
+      '<div class="top"><div class="ico">' + iconSvg(tile.domain, tile.deviceClass) + '</div>' +
       '<div class="arrows">' +
-        '<button type="button" class="step-btn" data-step="1" aria-label="Increase">&#9650;</button>' +
-        '<button type="button" class="step-btn" data-step="-1" aria-label="Decrease">&#9660;</button>' +
+        '<button type="button" class="step-btn" data-step="1" aria-label="' + esc(t('home.ha.increase', 'Increase')) + '">&#9650;</button>' +
+        '<button type="button" class="step-btn" data-step="-1" aria-label="' + esc(t('home.ha.decrease', 'Decrease')) + '">&#9660;</button>' +
       '</div></div>' +
-      '<div class="nm">' + esc(t.label) + '</div>' +
+      '<div class="nm">' + esc(tile.label) + '</div>' +
       '<div class="val">' + esc(valText) + '</div>' +
       subHtml +
       meter +
@@ -276,8 +277,8 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
     focus = (i + tiles.length) % tiles.length;
     var nodes = $('row').childNodes;
     for (var k = 0; k < nodes.length; k++) {
-      var t = tiles[k];
-      if (t) nodes[k].className = tileClass(t, k);
+      var tile = tiles[k];
+      if (tile) nodes[k].className = tileClass(tile, k);
     }
     updateHint();
     if (!byPointer) scrollToFocus();
@@ -321,7 +322,7 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
     request('GET', '/api/ha/bar/state?t=' + Date.now(), null, function (j) {
       if (mySeq !== seq || closing) return;
       if (!j || !j.ok) {
-        if (!silent) showFallback('Home Assistant unavailable', 'Check the Glasshouse dashboard');
+        if (!silent) showFallback(t('habar.unavailable', 'Home Assistant unavailable'), t('habar.unavailableHint', 'Check the Glasshouse dashboard'));
         return;
       }
       useHour12 = !!j.hour12;
@@ -333,11 +334,11 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
       }
       tick();
       if (!j.configured) {
-        if (!silent) showFallback('Home Assistant is not configured', 'Set it up on the HA & MQTT tab');
+        if (!silent) showFallback(t('srv.habar.notConfigured', 'Home Assistant is not configured'), t('habar.setUp', 'Set it up on the HA & MQTT tab'));
         return;
       }
       if (!j.tiles || !j.tiles.length) {
-        if (!silent) showFallback('No entities on bar yet', 'Add entities on the HA & MQTT tab');
+        if (!silent) showFallback(t('habar.empty', 'No entities on bar yet'), t('habar.emptyHint', 'Add entities on the HA & MQTT tab'));
         return;
       }
       tiles = j.tiles;
@@ -346,14 +347,14 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
       if (!silent && document.body.className !== 'on') openWindow();
     });
   }
-  function triggerFlash(t) {
-    flashUntil[t.id] = {
+  function triggerFlash(tile) {
+    flashUntil[tile.id] = {
       until: Date.now() + 1200,
-      text: t.domain === 'scene' ? 'Activated' : 'Ran'
+      text: tile.domain === 'scene' ? t('home.ha.activated', 'Activated') : t('home.ha.ran', 'Ran')
     };
     setTimeout(function () {
-      if (flashUntil[t.id] && flashUntil[t.id].until <= Date.now()) {
-        delete flashUntil[t.id];
+      if (flashUntil[tile.id] && flashUntil[tile.id].until <= Date.now()) {
+        delete flashUntil[tile.id];
         if (!closing && tiles.length) render(true);
       }
     }, 1250);

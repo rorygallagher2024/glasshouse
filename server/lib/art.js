@@ -529,7 +529,7 @@ function pickCleveland(collection, cb) {
     var skip = total ? Math.floor(Math.random() * total) : 0;
     getJsonFn(clevelandUrl(dept, skip, 1), function (err, doc) {
       if (err) return cb(err);
-      if (!doc || !doc.info || !Array.isArray(doc.data)) return cb(new Error('the museum sent something unexpected'));
+      if (!doc || !doc.info || !Array.isArray(doc.data)) return cb(new Error(msg('srv.art.museumOdd', 'the museum sent something unexpected')));
       if (typeof doc.info.total === 'number') {
         var first = !total;
         totals[dept] = doc.info.total;
@@ -905,7 +905,7 @@ function pickCommons(collection, cb) {
       if (err) return cb(err);
       if (!total) {
         var hits = doc && doc.query && doc.query.searchinfo && doc.query.searchinfo.totalhits;
-        if (!hits) return cb(new Error('the topic has no pictures'));
+        if (!hits) return cb(new Error(msg('srv.art.topicEmpty', 'the topic has no pictures')));
         totals[collection.id] = hits;
         return attempt();
       }
@@ -980,7 +980,7 @@ function fill() {
       fetchTo(pick, part, function (err2) {
         if (err2 || !readJpegFile(part)) {
           util.unlinkQuiet(part);
-          return done(err2 || new Error('the picture was not a JPEG the TV can show'));
+          return done(err2 || new Error(msg('srv.art.notJpeg', 'the picture was not a JPEG the TV can show')));
         }
         try { fs.renameSync(part, file); }
         catch (e) { util.unlinkQuiet(part); return done(e); }

@@ -79,7 +79,16 @@ changed - `error`, `label`, `detail` and the rest of `DISPLAY_FIELDS` in
 a message is left alone.
 
 What reaches the TV without a page, such as a toast, is put in the TV's menu
-language with `say.forLocale(text, clock.qtLocale())` before it is sent.
+language with `say.forLocale(text, clock.qtLocale())` before it is sent. So is
+what the server writes into a page it stages on the TV, such as the Video screen
+saver's messages.
+
+Glasshouse Bar and the input bar are files on the TV that load no translation,
+so the words they show come with the catalogue they read, as `text`, in the TV's
+menu language. These are words a name from the TV can also be, such as Screen
+Share, so they are looked up by key with `say.textForLocale(key, english,
+locale)`, which takes a key and its English as `msg()` does but leaves them
+unmarked, and a TV app called Screen Share keeps its name everywhere else.
 
 Errors a page cannot cause, such as a malformed request, stay in English
 without `msg()`. Names that come from the TV itself, such as its inputs, are

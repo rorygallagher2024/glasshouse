@@ -8,6 +8,7 @@
  *
  * Strict ES5: runs on node 0.12.
  */
+var msg = require('./say').msg;
 var http = require('http');
 var https = require('https');
 var url = require('url');
@@ -302,7 +303,7 @@ function read(entityId, cb) {
   if (!configured()) {
     return cb({
       ok: false,
-      error: 'Home Assistant is not configured: set it in the MQTT tab or config.json'
+      error: msg('srv.ha.notConfiguredWhere', 'Home Assistant is not configured: set it in the MQTT tab or config.json')
     });
   }
   var known = Object.prototype.hasOwnProperty.call(watchedAt, entityId);
@@ -699,21 +700,22 @@ function status() {
 function list(cb) {
   cb = cb || function () {};
   if (!configured()) {
-    return cb({ ok: false, error: 'Home Assistant is not configured' });
+    return cb({ ok: false, error: msg('srv.ha.notConfigured', 'Home Assistant is not configured') });
   }
   requestHaJson(cfg.url + '/api/states', cfg.token, { maxBytes: MAX_LIST_BYTES, timeoutMs: LIST_TIMEOUT_MS, label: 'Home Assistant' }, function (r) {
     if (r.tooLarge) {
       // Home Assistant answered, so the connection is fine: only the picker is lost.
-      return cb({ ok: false, error: 'Home Assistant has more entities than the TV can list (over ' +
-        (MAX_LIST_BYTES / 1024 / 1024) + ' MB): type entity IDs instead, such as sensor.outdoor_temperature' });
+      return cb({ ok: false, error: msg('srv.ha.tooManyEntities',
+        'Home Assistant has more entities than the TV can list (over {mb} MB): type entity IDs instead, such as sensor.outdoor_temperature',
+        { mb: MAX_LIST_BYTES / 1024 / 1024 }) });
     }
     if (!r.ok) {
       lastStatus = { ok: false, message: '', error: r.error || 'Error', checkedAt: Date.now() };
       return cb(r);
     }
     if (!Array.isArray(r.body)) {
-      lastStatus = { ok: false, message: '', error: 'Home Assistant did not return an entity list', checkedAt: Date.now() };
-      return cb({ ok: false, error: 'Home Assistant did not return an entity list' });
+      lastStatus = { ok: false, message: '', error: msg('srv.ha.noEntityList', 'Home Assistant did not return an entity list'), checkedAt: Date.now() };
+      return cb({ ok: false, error: msg('srv.ha.noEntityList', 'Home Assistant did not return an entity list') });
     }
     lastStatus = { ok: true, message: lastStatus.message || 'API running.', error: '', checkedAt: Date.now() };
     lastLatencyMs = r.ms;
@@ -772,7 +774,7 @@ function callService(domain, service, data, cb) {
   if (!configured()) {
     return cb({
       ok: false,
-      error: 'Home Assistant is not configured: set it in the MQTT tab or config.json'
+      error: msg('srv.ha.notConfiguredWhere', 'Home Assistant is not configured: set it in the MQTT tab or config.json')
     });
   }
   var label = domain + '.' + service;

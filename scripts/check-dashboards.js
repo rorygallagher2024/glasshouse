@@ -439,7 +439,7 @@ async function visitInputBarBehindHome(browser, base, problems) {
       dmsSub: document.querySelectorAll('.tile')[3].querySelector('.path').textContent
     }));
     if (!rowState.tworow || rowState.breaks !== 1) problems.push('Input bar: 6 inputs did not switch to two-row layout (' + JSON.stringify(rowState) + ')');
-    if (rowState.dmsSub !== 'Media Server') problems.push('Input bar: media server subtitle was ' + rowState.dmsSub);
+    if (rowState.dmsSub !== 'Media server') problems.push('Input bar: media server subtitle was ' + rowState.dmsSub);
     // Focus starts on HDMI 1 (index 1); Down jumps to AirPlay (index 4), Right moves to All Inputs (index 5).
     await page.keyboard.press('ArrowDown');
     const afterDown = await page.textContent('.tile.focus .nm');

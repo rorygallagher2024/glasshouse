@@ -124,10 +124,13 @@
             hidden: appsOff || hiddenApps.indexOf(a.id) !== -1, folder: folder.indexOf(a.id) !== -1 });
         }
         var devList = inOrder(c.devices || [], order.dev);
+        // The names the server gives in English, in the TV's language.
+        var words = c.text || {};
         for (i = 0; i < devList.length; i++) {
           var d = devList[i];
           var unused = d.unused === true;
-          inputs.push({ id: d.id, title: d.name, port: d.port || 0, tuner: d.tuner === true, unused: unused,
+          var title = d.kind === 'allinputs' && words.allInputs || d.kind === 'screenshare' && words.screenShare || d.name;
+          inputs.push({ id: d.id, title: title, port: d.port || 0, tuner: d.tuner === true, unused: unused,
             hidden: inputsOff || hiddenInputs.indexOf(d.id) !== -1 || (unused && layout.hideUnused === true) });
         }
         cb(null, { apps: apps, inputs: inputs });

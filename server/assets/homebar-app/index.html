@@ -193,6 +193,8 @@ img.ico{background:none;object-fit:contain}
    */
   function tilesFrom(cat) {
     var out = [], byId = {}, layout = cat.layout || {};
+    // The catalogue's text, in the TV's language (lib/home.js catalogueText).
+    var words = cat.text || {};
     var hidden = layout.hidden || {}, folder = layout.folder || [];
     var hiddenApps = hidden.app || [], hiddenDevs = hidden.dev || [];
     (cat.apps || []).forEach(function (a) { byId[a.id] = a; });
@@ -203,7 +205,7 @@ img.ico{background:none;object-fit:contain}
         // Beside Glasshouse Home (opened by a remote key, #1499), Home opens it
         // and a held Home LG's, and launching LG's Home would open Glasshouse Home.
         if (cat.enabled) return;
-        var lgName = (layout.appNames && layout.appNames[id]) || 'LG Home';
+        var lgName = (layout.appNames && layout.appNames[id]) || words.lgHome || 'LG Home';
         return out.push({ kind: 'lg', id: id, name: lgName, letter: lgName.slice(0, 2).toUpperCase() || 'LG' });
       }
       var a = byId[id];
@@ -224,7 +226,10 @@ img.ico{background:none;object-fit:contain}
       // as well, whichever way it was set (#1500, #1502).
       if (!d || hiddenDevs.indexOf(id) !== -1 || byId[id]) return;
       if (d.unused && layout.hideUnused === true) return;
-      out.push({ dev: true, kind: d.tuner ? 'tuner' : (d.kind || 'input'), id: d.id, name: d.name, port: d.port, input: d.input,
+      var kindText = d.kind === 'dms' ? words.mediaServer || 'Media server'
+        : d.kind === 'component' ? words.component || 'Component' : '';
+      var name = d.kind === 'allinputs' && words.allInputs || d.kind === 'screenshare' && words.screenShare || d.name;
+      out.push({ dev: true, kind: d.tuner ? 'tuner' : (d.kind || 'input'), id: d.id, name: name, kindText: kindText, port: d.port, input: d.input,
                  uniqueId: d.uniqueId, appId: d.appId || null, params: d.params || null, deviceId: d.deviceId || null,
                  dicon: window.glasshouseDevIcon ? window.glasshouseDevIcon(d) : '' });
     });
@@ -244,8 +249,7 @@ img.ico{background:none;object-fit:contain}
     }
     if (isDev) {
       var sub = e.kind === 'input' ? 'HDMI ' + e.port
-        : e.kind === 'av' ? 'AV' : e.kind === 'component' ? 'Component'
-        : e.kind === 'dms' ? 'Media Server'
+        : e.kind === 'av' ? 'AV' : e.kind === 'component' || e.kind === 'dms' ? e.kindText
         : e.kind === 'usb' ? 'USB' : '';
       return '<div class="' + cls + '" data-i="' + i + '"><div class="head">' + (e.dicon || '') +
         '<div class="txt"><div class="nm">' + esc(e.name) + '</div>' +

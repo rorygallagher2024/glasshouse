@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <title>Minimal</title>
+<script src="/assets/i18n.js"></script>
 <!--
   Minimal: a Glasshouse launcher with as little on screen as will do. The
   TV's apps and inputs as two lists of names, the time, and nothing else.
@@ -39,7 +40,7 @@ html,body{height:100%;background:#000;color:#fff;overflow:hidden;cursor:default;
 <body>
 <div id="frame">
   <div id="time"></div>
-  <div id="tabs"><span id="tab-apps">Apps</span><span id="tab-inputs">Inputs</span></div>
+  <div id="tabs"><span id="tab-apps" data-t="home.row.apps">Apps</span><span id="tab-inputs" data-t="home.row.inputs">Inputs</span></div>
   <div id="list"><div id="items"></div></div>
 </div>
 <script>
@@ -62,7 +63,7 @@ html,body{height:100%;background:#000;color:#fff;overflow:hidden;cursor:default;
     if (!list.length) {
       var none = document.createElement('div');
       none.id = 'empty';
-      none.textContent = tab === 'apps' ? 'No apps yet' : 'Nothing plugged in';
+      none.textContent = tab === 'apps' ? t('home.minimal.noApps', 'No apps yet') : t('home.minimal.noInputs', 'Nothing plugged in');
       box.appendChild(none);
       box.style.webkitTransform = box.style.transform = '';
       return;
@@ -123,7 +124,7 @@ html,body{height:100%;background:#000;color:#fff;overflow:hidden;cursor:default;
         if (!a.hidden) (a.folder ? later : apps).push({ id: a.id, title: a.title, open: opener('app', a.id) });
       }
       apps = apps.concat(later);
-      apps.push({ id: 'lg-home', title: 'LG Home', open: function () { Glasshouse.lgHome(); } });
+      apps.push({ id: 'lg-home', title: t('home.lgHome', 'LG Home'), open: function () { Glasshouse.lgHome(); } });
       for (i = 0; i < cat.inputs.length; i++) {
         var d = cat.inputs[i];
         if (!d.hidden) inputs.push({ id: d.id, title: d.title, open: opener('input', d.id) });
@@ -149,8 +150,8 @@ html,body{height:100%;background:#000;color:#fff;overflow:hidden;cursor:default;
   setInterval(function () {
     drift = (drift + 1) % 4;
     var x = [0, 10, 10, 0][drift], y = [0, 0, 8, 8][drift];
-    var t = 'translate(' + x + 'px,' + y + 'px)';
-    $('frame').style.webkitTransform = $('frame').style.transform = t;
+    var offset = 'translate(' + x + 'px,' + y + 'px)';
+    $('frame').style.webkitTransform = $('frame').style.transform = offset;
   }, 180000);
 
   document.addEventListener('keydown', function (e) {

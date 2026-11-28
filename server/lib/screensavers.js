@@ -1696,6 +1696,14 @@ function fillSaverWeb(e, html, level) {
   html = html.replace(/__TVWEB_HOME_WEATHER__/g, function () { return weather; });
   html = html.replace(/__TVWEB_VIDEO_BUSY__/g, function () { return busy; });
   html = html.replace(/__TVWEB_LAYER_OPACITY__/g, String(layerOpacity(e, level)));
+  // The saver has no page to translate it, so its messages go in the TV's menu language.
+  var locale = qtLocaleFn();
+  var text = JSON.stringify({
+    noVideos: say.forLocale(msg('srv.saver.video.none', 'No videos are configured.'), locale),
+    playFailed: say.forLocale(msg('srv.saver.video.playFailed', 'Video playback failed: {error}'), locale),
+    loadFailed: say.forLocale(msg('srv.saver.video.loadFailed', 'The browser could not load this video (media error {code}).'), locale)
+  }).replace(/</g, '\\u003c').replace(/\u2028/g, '\\u2028').replace(/\u2029/g, '\\u2029');
+  html = html.replace(/__TVWEB_TEXT__/g, function () { return text; });
   return html;
 }
 

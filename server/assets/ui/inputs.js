@@ -191,7 +191,7 @@ function renderInputsPreview(kind) {
   }
   if (kind === 'nslg') {
     return `<span class="hm-s hm-s-nslg">
-      <span class="hm-nslg-box"><b>No Signal</b><i></i><i></i></span>
+      <span class="hm-nslg-box"><b>${esc(t('inputs.noSignal.screen', 'No Signal'))}</b><i></i><i></i></span>
     </span>`;
   }
   if (kind === 'nsicon') {
@@ -208,7 +208,7 @@ function renderInputsPreview(kind) {
   if (kind === 'nsart') {
     return `<span class="hm-s hm-s-nsart"><span class="hm-nsart-pic"><i></i></span></span>`;
   }
-  return `<span class="hm-s hm-s-nsplain"><span class="hm-nsplain-txt">No Signal</span></span>`;
+  return `<span class="hm-s hm-s-nsplain"><span class="hm-nsplain-txt">${esc(t('inputs.noSignal.screen', 'No Signal'))}</span></span>`;
 }
 
 function setInputsCard(btn, kind, title, sub, active, disabled) {

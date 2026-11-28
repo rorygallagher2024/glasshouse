@@ -34,6 +34,8 @@ html,body{height:100%;background:#000;color:#ece7df;overflow:hidden;font-family:
   var PORT = 8080;                // tvweb:port
   var BASE = 'http://localhost:' + PORT;
   var SLOW_MS = 30000;
+  // Put in the TV's menu language when the server stages this page.
+  var SLOW_TEXT = 'Glasshouse is not answering yet. LG\u2019s Home comes back if it stays silent.'; // tvweb:slow
   var started = Date.now();
   var done = false;
 
@@ -56,7 +58,7 @@ html,body{height:100%;background:#000;color:#ece7df;overflow:hidden;font-family:
 
   function retry() {
     if (Date.now() - started >= SLOW_MS) {
-      document.getElementById('status').textContent = 'Glasshouse is not answering yet. LG\'s Home comes back if it stays silent.';
+      document.getElementById('status').textContent = SLOW_TEXT;
     }
     setTimeout(probe, 600);
   }

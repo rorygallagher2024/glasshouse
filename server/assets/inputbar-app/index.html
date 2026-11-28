@@ -325,8 +325,12 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
 
   // A tile as drawn: kept with the input, so the last bar can be drawn again
   // at once on the next open, before the server has answered.
-  function entry(d) {
-    return { id: d.id, name: d.name, tuner: !!d.tuner, port: d.port, input: d.input, uniqueId: d.uniqueId,
+  // words: the catalogue's text, in the TV's language (lib/home.js catalogueText).
+  function entry(d, words) {
+    var name = d.kind === 'allinputs' && words.allInputs || d.kind === 'screenshare' && words.screenShare || d.name;
+    var kindText = d.kind === 'dms' ? words.mediaServer || 'Media server'
+      : d.kind === 'component' ? words.component || 'Component' : '';
+    return { id: d.id, name: name, kindText: kindText, tuner: !!d.tuner, port: d.port, input: d.input, uniqueId: d.uniqueId,
              kind: d.kind || null, appId: d.appId || null, deviceId: d.deviceId || null,
              icon: window.glasshouseDevIcon(d) };
   }
@@ -338,9 +342,9 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
     list.forEach(function (e, i) {
       if (twoRow && i === cols) html += '<br>';
       var cls = 'tile' + (i === focus ? ' focus' : '') + (isOn(e) ? ' now' : '');
-      var sub = e.kind === 'dms' ? 'Media Server'
+      var sub = e.kind === 'dms' || e.kind === 'component' ? e.kindText
         : e.kind === 'usb' ? 'USB'
-        : e.kind === 'av' ? 'AV' : e.kind === 'component' ? 'Component'
+        : e.kind === 'av' ? 'AV'
         : (e.tuner || e.kind) ? ''
         : 'HDMI ' + e.port;
       html += '<div class="' + cls + '" data-i="' + i + '"' + style + '><div class="head">' + e.icon +
@@ -430,7 +434,8 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
   function ready() {
     if (--waiting > 0 || closing) return;
     if (!cat || !window.glasshouseDevIcon) { if (!list.length) close(); return; }
-    var fresh = inputsFrom(cat).map(entry);
+    var words = cat.text || {};
+    var fresh = inputsFrom(cat).map(function (d) { return entry(d, words); });
     if (!fresh.length) return close();
     var port = now && now.kind === 'input' ? now.port : (now && now.kind === 'channel' ? 'tuner' : null);
     var devs = now && now.kind === 'input' && Array.isArray(now.devices) ? now.devices : null;

@@ -2,6 +2,7 @@
  * MiniMQTT - minimal zero-dependency MQTT 3.1.1 client for Node 0.12+.
  * ES5 only: runs on webOS TV Node runtime.
  */
+var msg = require('./say').msg;
 var fs = require('fs');
 var net = require('net');
 var path = require('path');
@@ -354,7 +355,7 @@ MiniMQTT.testConnection = function(opts, cb) {
   cb = typeof cb === 'function' ? cb : function() {};
   opts = opts || {};
   if (!opts.host || typeof opts.host !== 'string' || !opts.host.trim()) {
-    return cb(null, { ok: false, error: 'broker host is required' });
+    return cb(null, { ok: false, error: msg('srv.mqtt.noHost', 'broker host is required') });
   }
   var host = opts.host.trim();
   var port = opts.port ? parseInt(opts.port, 10) : (opts.tls ? 8883 : 1883);
@@ -379,7 +380,7 @@ MiniMQTT.testConnection = function(opts, cb) {
   }
 
   timer = setTimeout(function() {
-    finish({ ok: false, latencyMs: Date.now() - startTime, error: 'connection timed out' });
+    finish({ ok: false, latencyMs: Date.now() - startTime, error: msg('srv.mqtt.timedOut', 'connection timed out') });
   }, timeoutMs);
 
   try {
@@ -449,7 +450,7 @@ MiniMQTT.testConnection = function(opts, cb) {
   });
 
   socket.on('close', function() {
-    finish({ ok: false, latencyMs: Date.now() - startTime, error: 'connection closed by broker' });
+    finish({ ok: false, latencyMs: Date.now() - startTime, error: msg('srv.mqtt.closed', 'connection closed by broker') });
   });
 };
 

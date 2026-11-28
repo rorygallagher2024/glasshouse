@@ -243,7 +243,7 @@ function setSetting(key, value, cb) {
     : key === 'current_ec' ? typeof value === 'string' : decodeSetting(key, value) === value;
   if (!valid || value === undefined) return cb({ ok: false, error: 'Invalid Hue Sync value' });
   if (!isInstalled()) return cb({ ok: false, error: msg('srv.huesync.unavailable', 'Hue Sync is not available') });
-  if (settingBusy) return cb({ ok: false, error: 'Hue Sync setting change is busy' });
+  if (settingBusy) return cb({ ok: false, error: msg('srv.huesync.settingBusy', 'Hue Sync setting change is busy') });
   settingBusy = true;
   var done = cb;
   cb = function (result) { settingBusy = false; done(result); };
@@ -253,7 +253,7 @@ function setSetting(key, value, cb) {
       if (blocked()) return cb({ ok: false, error: msg('srv.huesync.notReady', 'Hue Sync is busy or not ready') });
       if (stale[key] || !Object.prototype.hasOwnProperty.call(snapshot, key) ||
           (key === 'current_ec' && (stale.ec_list || !snapshot.ec_list || !snapshot.ec_list.some(function (a) { return a.id === value; })))) {
-        return cb({ ok: false, error: 'Hue Sync setting is unavailable' });
+        return cb({ ok: false, error: msg('srv.huesync.settingUnavailable', 'Hue Sync setting is unavailable') });
       }
       lunaFn(SERVICE + 'set', { key: key, data: value }, function (r) {
         // Invalidate an overlapping read; never publish its pre-write snapshot.
