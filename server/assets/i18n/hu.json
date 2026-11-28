@@ -4021,5 +4021,12 @@
  "audio.bar.tone": {"from": "Tone controls", "text": "Hangszínszabályozás"},
  "audio.bar.device": {"from": "Device settings", "text": "Eszközbeállítások"},
  "audio.bar.volume": {"from": "Soundbar volume", "text": "Hangprojektor hangereje"},
- "audio.bar.tvVolume": {"from": "TV-reported volume: {value}", "text": "A tévé által jelzett hangerő: {value}"}
+ "audio.bar.tvVolume": {"from": "TV-reported volume: {value}", "text": "A tévé által jelzett hangerő: {value}"},
+ "srv.updateAsk.progressTitle": {"from": "Updating Glasshouse to {version}", "text": "A Glasshouse frissítése erre: {version}"},
+ "srv.updateAsk.checking": {"from": "Checking the release", "text": "A verzió ellenőrzése"},
+ "srv.updateAsk.downloading": {"from": "Downloading the release", "text": "A verzió letöltése"},
+ "srv.updateAsk.unpacking": {"from": "Installing the files", "text": "A fájlok telepítése"},
+ "srv.updateAsk.restarting": {"from": "Restarting Glasshouse", "text": "A Glasshouse újraindul"},
+ "srv.updateAsk.done": {"from": "Glasshouse {version} is installed", "text": "A Glasshouse {version} telepítve"},
+ "srv.updateAsk.current": {"from": "Glasshouse is already up to date", "text": "A Glasshouse már naprakész"}
 }

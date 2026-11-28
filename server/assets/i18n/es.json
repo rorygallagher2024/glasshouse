@@ -4007,5 +4007,12 @@
  "audio.bar.tone": {"from": "Tone controls", "text": "Controles de tono"},
  "audio.bar.device": {"from": "Device settings", "text": "Ajustes del dispositivo"},
  "audio.bar.volume": {"from": "Soundbar volume", "text": "Volumen de la barra de sonido"},
- "audio.bar.tvVolume": {"from": "TV-reported volume: {value}", "text": "Volumen indicado por el televisor: {value}"}
+ "audio.bar.tvVolume": {"from": "TV-reported volume: {value}", "text": "Volumen indicado por el televisor: {value}"},
+ "srv.updateAsk.progressTitle": {"from": "Updating Glasshouse to {version}", "text": "Actualizando Glasshouse a {version}"},
+ "srv.updateAsk.checking": {"from": "Checking the release", "text": "Comprobando la versión"},
+ "srv.updateAsk.downloading": {"from": "Downloading the release", "text": "Descargando la versión"},
+ "srv.updateAsk.unpacking": {"from": "Installing the files", "text": "Instalando los archivos"},
+ "srv.updateAsk.restarting": {"from": "Restarting Glasshouse", "text": "Reiniciando Glasshouse"},
+ "srv.updateAsk.done": {"from": "Glasshouse {version} is installed", "text": "Glasshouse {version} está instalado"},
+ "srv.updateAsk.current": {"from": "Glasshouse is already up to date", "text": "Glasshouse ya está actualizado"}
 }

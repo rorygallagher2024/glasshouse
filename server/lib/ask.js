@@ -22,6 +22,11 @@
  * in its launch parameters: reading the question and answering it need it, so
  * nothing else on the TV, such as a page counting through seq, can answer.
  *
+ * A question asked from the server itself can follow an answer with what
+ * that answer set going: progress(id, ...) right after the answer turns the
+ * card into a progress card, read from /api/ask/progress with the same token,
+ * as the update question does while a release installs.
+ *
  * Strict ES5: runs on node 0.12.
  */
 var crypto = require('crypto');
@@ -45,6 +50,11 @@ var installed = null;   // whether the app is on the TV, once looked at
 var pending = null;     // { id, title, message, options, timeout, seq, token }
 var backstop = null;
 var seq = 0;
+var answered = null;    // { id, token } of the question last answered
+var shown = null;       // the progress card: { token, title, message, step, steps, state, doneText }
+var shownTimer = null;
+// A progress card left alone this long after its last change is dropped.
+var PROGRESS_KEEP_MS = 5 * 60 * 1000;
 
 function trimmed(v, max) {
   return String(v == null ? '' : v).replace(/\s+/g, ' ').trim().substring(0, max);
@@ -191,9 +201,42 @@ function answer(token, choice, how) {
   if (choice) {
     var picked = pending.options.filter(function (o) { return o.id === choice; })[0];
     if (!picked) return false;
+    answered = { id: pending.id, token: pending.token };
     return finish('answer', picked);
   }
   return finish(how === 'timeout' ? 'timeout' : 'dismissed');
+}
+
+/*
+ * What the answer to question id set going, shown on its card in place of
+ * the buttons: { title, message, step, steps, state ('working', 'restarting',
+ * 'done' or 'failed'), doneText }. True when the card is still there to show
+ * it, that is when id was the question last answered.
+ */
+function progress(id, p) {
+  if (!answered || answered.id !== id || !p) return false;
+  shown = {
+    token: answered.token,
+    title: trimmed(p.title, MAX_TEXT),
+    message: trimmed(p.message, MAX_TEXT),
+    step: Math.max(0, Number(p.step) || 0),
+    steps: Math.max(1, Number(p.steps) || 1),
+    state: /^(working|restarting|done|failed)$/.test(p.state) ? p.state : 'working',
+    doneText: trimmed(p.doneText, MAX_TEXT)
+  };
+  clearTimeout(shownTimer);
+  shownTimer = setTimeout(function () { shown = null; }, PROGRESS_KEEP_MS);
+  if (shownTimer.unref) shownTimer.unref();
+  return true;
+}
+
+// The progress card for the page holding token, or null.
+function progressFor(token) {
+  if (!shown || !token || token !== shown.token) return null;
+  return {
+    title: shown.title, message: shown.message, step: shown.step, steps: shown.steps,
+    state: shown.state, doneText: shown.doneText
+  };
 }
 
 /*
@@ -221,6 +264,8 @@ module.exports = {
   current: current,
   busy: busy,
   answer: answer,
+  progress: progress,
+  progressFor: progressFor,
   close: close,
   forgetInstalled: forgetInstalled
 };

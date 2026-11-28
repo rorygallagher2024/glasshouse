@@ -125,4 +125,19 @@ assert.deepEqual(events, [{ event_type: 'failed', id: 'nope' }]);
 assert.strictEqual(ask.current(tok()), null);
 console.log('  ✓ a launch the TV refuses is published as failed');
 
+// An answer followed on the card: progress reaches only that card's page.
+refuseLaunch = false;
+ask.ask({ id: 'upd', title: 'Update?', options: [{ id: 'go', label: 'Go' }, { id: 'no', label: 'No' }] });
+var updToken = tok();
+assert.strictEqual(ask.progress('upd', { title: 'Updating', step: 1, steps: 4 }), false, 'nothing to follow before an answer');
+assert.strictEqual(ask.answer(updToken, 'go'), true);
+assert.strictEqual(ask.progress('other', { title: 'x' }), false, 'another question\'s id shows nothing');
+assert.strictEqual(ask.progress('upd', { title: 'Updating', message: 'Downloading', step: 2, steps: 4, state: 'working', doneText: 'Done' }), true);
+assert.deepEqual(ask.progressFor(updToken), { title: 'Updating', message: 'Downloading', step: 2, steps: 4, state: 'working', doneText: 'Done' });
+assert.strictEqual(ask.progressFor('0000'), null, 'another token reads nothing');
+assert.strictEqual(ask.progressFor(''), null);
+ask.progress('upd', { title: 'Updating', step: 9, steps: 4, state: 'bogus' });
+assert.strictEqual(ask.progressFor(updToken).state, 'working', 'an unknown state is shown as working');
+console.log('  ✓ an answer can be followed on its card, by that card only');
+
 console.log('\nALL test-ask.js assertions passed!\n');

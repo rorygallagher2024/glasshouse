@@ -4007,5 +4007,12 @@
  "audio.bar.tone": {"from": "Tone controls", "text": "ضبط النغمة"},
  "audio.bar.device": {"from": "Device settings", "text": "إعدادات الجهاز"},
  "audio.bar.volume": {"from": "Soundbar volume", "text": "مستوى صوت مكبر الصوت"},
- "audio.bar.tvVolume": {"from": "TV-reported volume: {value}", "text": "مستوى الصوت الذي يعرضه التلفزيون: {value}"}
+ "audio.bar.tvVolume": {"from": "TV-reported volume: {value}", "text": "مستوى الصوت الذي يعرضه التلفزيون: {value}"},
+ "srv.updateAsk.progressTitle": {"from": "Updating Glasshouse to {version}", "text": "جارٍ تحديث Glasshouse إلى {version}"},
+ "srv.updateAsk.checking": {"from": "Checking the release", "text": "جارٍ التحقق من الإصدار"},
+ "srv.updateAsk.downloading": {"from": "Downloading the release", "text": "جارٍ تنزيل الإصدار"},
+ "srv.updateAsk.unpacking": {"from": "Installing the files", "text": "جارٍ تثبيت الملفات"},
+ "srv.updateAsk.restarting": {"from": "Restarting Glasshouse", "text": "جارٍ إعادة تشغيل Glasshouse"},
+ "srv.updateAsk.done": {"from": "Glasshouse {version} is installed", "text": "تم تثبيت Glasshouse {version}"},
+ "srv.updateAsk.current": {"from": "Glasshouse is already up to date", "text": "Glasshouse محدَّث بالفعل"}
 }

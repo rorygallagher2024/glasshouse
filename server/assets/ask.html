@@ -28,6 +28,14 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
 .btn.focus{background:#fff;color:#111;border-color:#fff;-webkit-transform:scale(1.08);transform:scale(1.08)}
 #bar{position:absolute;left:28px;right:28px;bottom:14px;height:6px;border-radius:3px;background:#333;overflow:hidden}
 #left{height:100%;width:100%;background:#8e8e93}
+/* After an answer that set something going, such as an update: its steps. */
+#progress{display:none;margin-top:34px;height:14px;border-radius:7px;background:#333;overflow:hidden}
+#fill{height:100%;width:0;border-radius:7px;background:#fff;-webkit-transition:width .4s ease-out;transition:width .4s ease-out}
+.following #buttons,.following #bar{display:none}
+.following #progress{display:block}
+.waiting #fill{-webkit-animation:pulse 1.2s ease-in-out infinite alternate;animation:pulse 1.2s ease-in-out infinite alternate}
+@-webkit-keyframes pulse{from{opacity:1}to{opacity:.35}}
+@keyframes pulse{from{opacity:1}to{opacity:.35}}
 </style>
 </head>
 <body>
@@ -36,6 +44,7 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
   <div id="title"></div>
   <div id="message"></div>
   <div id="buttons"></div>
+  <div id="progress"><div id="fill"></div></div>
   <div id="bar"><div id="left"></div></div>
 </div>
 <script>
@@ -47,6 +56,11 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
  * was answered elsewhere or replaced by another. Strict ES5: the TV's own
  * browser runs it.
  *
+ * An answer that set something going, as Update now does, is followed on the
+ * card from /api/ask/progress: a bar a step at a time, then what came of it.
+ * The server restarting after an update is waited out; it answering again
+ * without the card means the restart is done.
+ *
  * The question app (assets/ask-app/) opens this page from the server with
  * the question's token, and a newer question reaches it as a relaunch with
  * that question's token. Nothing is read or answered without it.
@@ -54,6 +68,10 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
 (function () {
   var KEY = { left: 37, up: 38, right: 39, down: 40, ok: 13, back: 461, backspace: 8 };
   var CHECK_MS = 1000;
+  // Following an answer: how long a server that went away to restart may
+  // take, and how long the last word stays up.
+  var RESTART_MAX_MS = 180000, SHOW_DONE_MS = 4000, SHOW_FAILED_MS = 8000;
+  var following = null;   // { timer, restarting, since, doneText, ending }
   var q = null, focus = 0, deadline = 0, tick = null, check = null, closing = false, answered = false, closeTimer = null;
   var token = (/[?&]token=([0-9a-f]+)/.exec(location.search) || [])[1] || '';
 
@@ -81,6 +99,7 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
     closing = true;
     clearInterval(tick);
     clearInterval(check);
+    if (following) clearInterval(following.timer);
     document.body.className = '';
     // Left open a moment longer than the fade: a newer question's relaunch
     // can come just after this one's end was seen.
@@ -91,9 +110,50 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
     if (answered || !q) return close();
     answered = true;
     clearInterval(tick);
-    request('POST', '/api/ask/answer', { token: token, choice: choice || '', how: choice ? '' : how }, close);
     // Closed whether or not the answer's reply gets back.
-    setTimeout(close, 1500);
+    var closer = setTimeout(close, 1500);
+    request('POST', '/api/ask/answer', { token: token, choice: choice || '', how: choice ? '' : how }, function (j) {
+      clearTimeout(closer);
+      if (j && j.progress) follow(); else close();
+    });
+  }
+
+  function endWith(text, ms) {
+    if (!following || following.ending) return;
+    following.ending = true;
+    clearInterval(following.timer);
+    document.body.className = 'on following';
+    if (text) $('message').textContent = text;
+    setTimeout(close, ms);
+  }
+  function showStep(p) {
+    $('title').textContent = p.title || '';
+    $('message').textContent = p.message || '';
+    following.doneText = p.doneText || following.doneText;
+    following.restarting = p.state === 'restarting';
+    $('fill').style.width = (p.state === 'failed' ? 0 : Math.min(100, p.step / p.steps * 100)) + '%';
+    document.body.className = 'on following' + (following.restarting ? ' waiting' : '');
+    if (p.state === 'failed') endWith('', SHOW_FAILED_MS);
+    else if (p.state === 'done') endWith('', SHOW_DONE_MS);
+  }
+  function follow() {
+    clearInterval(check);
+    following = { timer: null, restarting: false, since: Date.now(), doneText: '', ending: false };
+    document.body.className = 'on following';
+    function poll() {
+      request('GET', '/api/ask/progress?token=' + encodeURIComponent(token) + '&t=' + Date.now(), null, function (j) {
+        if (!following || following.ending) return;
+        if (j && j.progress) { following.since = Date.now(); return showStep(j.progress); }
+        if (j) {
+          // A server that knows nothing of the card: the new one, after the restart.
+          return following.restarting ? endWith(following.doneText, SHOW_DONE_MS) : close();
+        }
+        // No answer: restarting, or gone for longer than a restart takes.
+        if (Date.now() - following.since > (following.restarting ? RESTART_MAX_MS : 20000)) close();
+      });
+    }
+    following.timer = setInterval(poll, CHECK_MS);
+    poll();
   }
 
   function setFocus(i) {
@@ -110,6 +170,7 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
     if (left <= 0) report('', 'timeout');
   }
   function show(j) {
+    if (following) { clearInterval(following.timer); following = null; }
     q = j;
     answered = false;
     closing = false;
@@ -150,6 +211,12 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
 
   document.addEventListener('keydown', function (e) {
     var k = e.keyCode;
+    // Following an answer: Back leaves it to carry on without the card.
+    if (following) {
+      if (k === KEY.back || k === KEY.backspace) close();
+      e.preventDefault();
+      return;
+    }
     if (!q) {
       if (k === KEY.back || k === KEY.backspace) { close(); e.preventDefault(); }
       return;

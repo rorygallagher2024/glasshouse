@@ -4023,5 +4023,12 @@
  "audio.bar.tone": {"from": "Tone controls", "text": "Điều chỉnh âm sắc"},
  "audio.bar.device": {"from": "Device settings", "text": "Cài đặt thiết bị"},
  "audio.bar.volume": {"from": "Soundbar volume", "text": "Âm lượng loa thanh"},
- "audio.bar.tvVolume": {"from": "TV-reported volume: {value}", "text": "Âm lượng TV báo: {value}"}
+ "audio.bar.tvVolume": {"from": "TV-reported volume: {value}", "text": "Âm lượng TV báo: {value}"},
+ "srv.updateAsk.progressTitle": {"from": "Updating Glasshouse to {version}", "text": "Đang cập nhật Glasshouse lên {version}"},
+ "srv.updateAsk.checking": {"from": "Checking the release", "text": "Đang kiểm tra phiên bản"},
+ "srv.updateAsk.downloading": {"from": "Downloading the release", "text": "Đang tải phiên bản"},
+ "srv.updateAsk.unpacking": {"from": "Installing the files", "text": "Đang cài đặt tệp"},
+ "srv.updateAsk.restarting": {"from": "Restarting Glasshouse", "text": "Đang khởi động lại Glasshouse"},
+ "srv.updateAsk.done": {"from": "Glasshouse {version} is installed", "text": "Đã cài Glasshouse {version}"},
+ "srv.updateAsk.current": {"from": "Glasshouse is already up to date", "text": "Glasshouse đã là bản mới nhất"}
 }
