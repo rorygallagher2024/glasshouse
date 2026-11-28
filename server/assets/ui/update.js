@@ -185,6 +185,43 @@ function renderUpdate(d) {
     }
   }
 
+  const pbRow = q('exp-palmbus-row');
+  if (pbRow) {
+    const pb = d.palmbus;
+    pbRow.hidden = !(pb && pb.available);
+    if (pb && pb.available) {
+      updateToggle('exp-palmbus', {
+        cls: pb.on ? 'good' : 'idle',
+        label: pb.on ? t('common.on', 'On') : t('common.off', 'Off'),
+        on: pb.on,
+        disabled: !d.writable
+      });
+      const parts = [];
+      if (pb.off) parts.push(t('server.experimental.palmbus.off', 'It switched itself off: {reason}. Switch it on to try again.', { reason: pb.off }));
+      else if (pb.setting === null) parts.push(pb.byDefault
+        ? t('server.experimental.palmbus.defaultOn', 'On by default on this TV\u2019s webOS version.')
+        : t('server.experimental.palmbus.defaultOff', 'Off by default on this TV\u2019s webOS version.'));
+      else parts.push(pb.setting
+        ? t('server.experimental.palmbus.switchedOn', 'Switched on.')
+        : t('server.experimental.palmbus.switchedOff', 'Switched off.'));
+      if (pb.on && pb.lunaSend && pb.lunaSend.length) parts.push(t('server.experimental.palmbus.lunaSend', '{n} kinds of call go the usual way on this TV.', { n: pb.lunaSend.length }));
+      const note = q('exp-palmbus-note');
+      note.textContent = parts.join(' ');
+      if (pb.setting !== null && d.writable) {
+        const back = document.createElement('button');
+        back.type = 'button';
+        back.className = 'link-btn';
+        back.textContent = t('server.experimental.palmbus.useDefault', 'Use the default');
+        back.onclick = () => setExpPalmbus('default');
+        note.appendChild(document.createTextNode(' '));
+        note.appendChild(back);
+      }
+      q('exp-palmbus-compat').innerHTML = pb.standing === 'untried' && pb.report
+        ? homeCompatNote(t('server.experimental.palmbus.untried', 'Not yet reported working on webOS {version}. If something stops working while it is on, switch it off.', { version: pb.webos || '?' }), pb.report)
+        : '';
+    }
+  }
+
   const pointerRow = q('exp-pointer-row');
   if (pointerRow && d.pointer) {
     pointerRow.hidden = !d.pointer.supported;
@@ -923,6 +960,15 @@ async function toggleExpScreensaver() {
   const r = await sendCommand('setWebos10ScreensaversAllowed', !b.dataset.on);
   if (r && r.ok) renderUpdate(r); else loadUpdate();
 }
+
+async function setExpPalmbus(value) {
+  const b = q('exp-palmbus');
+  b.disabled = true;
+  const r = await sendCommand('setLunaViaPalmbus', value);
+  if (r && r.ok) renderUpdate(r); else loadUpdate();
+}
+
+function toggleExpPalmbus() { setExpPalmbus(!q('exp-palmbus').dataset.on); }
 
 async function toggleExpPointer() {
   const b = q('exp-pointer');

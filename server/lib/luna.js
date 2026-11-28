@@ -9,7 +9,7 @@ var execFile = childProcess.execFile;
 var spawn = childProcess.spawn;
 var children = require('./children');
 var monotonicMs = require('./util').monotonicMs;
-var palmbus = require('./palmbus');
+var busBinding = require('./palmbus');
 var path = require('path');
 
 // Overridable so the start-up test can run the whole server against a stand-in.
@@ -340,63 +340,201 @@ function settle(job, parsed, stdout, startedAt, endedAt, again) {
 }
 
 /*
- * Calls through palmbus (lib/palmbus.js), where the owner has switched it on
- * ("lunaViaPalmbus" in config.json). Not for a call made as another app (-a),
- * which needs luna-send's own identity, nor the slow channel list. A call the
- * bus refuses, answers with something that does not parse, or leaves
- * unanswered goes through luna-send at once and from then on, and is kept
- * in the state folder, so the next start sends it there straight away: an
- * unanswered call also costs the binding CPU until its handle is renewed
- * (lib/palmbus.js).
+ * Calls through palmbus (lib/palmbus.js): on by default on the webOS versions
+ * it has been tried on (lib/compat), and where the owner switches it on. Not
+ * for a call made as another app (-a), which needs luna-send's own identity,
+ * nor the slow channel list.
+ *
+ * Node has no role on the bus of its own, so LG refuses some calls to it that
+ * luna-send may make, and leaves others unanswered. Such a method goes
+ * through luna-send from then on, and is kept in the state folder
+ * (palmbus.json) so the next start does the same:
+ *   - refused, in whatever words: the first returnValue false a method gets
+ *     on the bus is checked with luna-send once (BUS_REFUSED are known
+ *     refusals, needing no check);
+ *   - answered differently: the first answer each read method gets on the
+ *     bus is compared with luna-send's, by its shape, once;
+ *   - unanswered, or unreadable.
+ * A refused call to a renamed service (SERVICE_MAP) is tried under its other
+ * name first.
+ *
+ * Only a read is ever made twice. A call the bus leaves unanswered may still
+ * have been carried out, so anything else, a key press or a launch, gets no
+ * answer, as a luna-send call that times out does, and is not sent again.
+ *
+ * palmbus is switched off for this TV, until Glasshouse's next version, when
+ * five calls in a row get no answer on the bus, or when the server stops
+ * without exiting twice in one boot while it is on: LG's binding is native
+ * code, and one that crashes or hangs the server on a TV nobody has tried
+ * would otherwise do so at every start.
  */
-var viaPalmbus = false;
-var lunaSendOnly = {};
-var lunaSendOnlyFile = null;
 var BUS_REFUSED = /denied|not allowed|permission|was not handled/i;
-/*
- * A refusal is not always worded as one: the OLED42C24LA's panel controller
- * answered the bus 'Method "getOledCellInfo" for category "/" was not
- * handled' and luna-send its cell type. So the first time the bus answers a
- * method with returnValue false, luna-send is asked too: where it answers, the
- * method goes through luna-send from then on; where it fails too, the bus's
- * answer stands for that method from then on.
- */
-var busChecked = {};
+var READ_METHOD = /^(get|list|is|has|query|read|search|check|find|status|describe|count)/i;
+var SILENT_LIMIT = 5;
+var UNCLEAN_LIMIT = 2;
+var SETTLED_MS = 6 * 60 * 60 * 1000;
 
-function usePalmbus(on, stateDir) {
-  viaPalmbus = !!on && palmbus.available();
-  lunaSendOnly = {};
+var viaPalmbus = false;
+var busState = { lunaSend: {}, checked: {} };
+var busStateFile = null;
+var busSetting = null;
+var busTried = false;
+var busVersion = '';
+var busBoot = '';
+var busChecked = {};
+var busComparing = {};
+var busAlias = {};
+var busSilent = 0;
+var busCalls = 0;
+var settledTimer = null;
+
+function own(o, k) { return Object.prototype.hasOwnProperty.call(o, k); }
+
+function saveBusState() {
+  if (!busStateFile) return;
+  try { fs.writeFileSync(busStateFile, JSON.stringify(busState)); } catch (e) {}
+}
+
+function isRead(uri) {
+  return READ_METHOD.test(uri.slice(uri.lastIndexOf('/') + 1));
+}
+
+// Running with palmbus, for the next start to tell an exit from a crash.
+function markRunning() {
+  busState.running = { boot: busBoot, version: busVersion };
+  saveBusState();
+  if (!settledTimer) {
+    settledTimer = setTimeout(function () {
+      busState.uncleanEnds = 0;
+      saveBusState();
+    }, SETTLED_MS);
+    if (settledTimer.unref) settledTimer.unref();
+  }
+}
+
+function markStopped() {
+  if (!busState.running) return;
+  delete busState.running;
+  saveBusState();
+}
+
+function switchBusOff(reason) {
+  viaPalmbus = false;
+  busState.off = { reason: reason, version: busVersion };
+  delete busState.running;
+  saveBusState();
+  console.log('luna: palmbus switched off for this TV (' + reason + '); every call goes through luna-send until Glasshouse is updated or it is switched on again');
+}
+
+function decideBus() {
+  var wanted = busSetting === true || (busSetting === null && busTried);
+  var off = busState.off && busState.off.version === busVersion ? busState.off : null;
+  viaPalmbus = wanted && !off && busBinding.available();
+  if (viaPalmbus) markRunning(); else markStopped();
+  return viaPalmbus;
+}
+
+var exitHooked = false;
+
+/*
+ * opts: setting (true, false, or null for the default), tried (whether this
+ * webOS version has been tried, lib/compat), stateDir, version, boot (the
+ * kernel's boot id). Returns whether calls go through palmbus.
+ */
+function configurePalmbus(opts) {
+  opts = opts || {};
+  busSetting = opts.setting === true || opts.setting === false ? opts.setting : null;
+  busTried = !!opts.tried;
+  busVersion = String(opts.version || '');
+  busBoot = String(opts.boot || '');
+  busStateFile = opts.stateDir ? path.join(opts.stateDir, 'palmbus.json') : null;
+  busState = { lunaSend: {}, checked: {} };
   busChecked = {};
+  busComparing = {};
   busAlias = {};
-  lunaSendOnlyFile = stateDir ? path.join(stateDir, 'luna-send-only.json') : null;
-  if (lunaSendOnlyFile) {
+  busSilent = 0;
+  if (busStateFile) {
     try {
-      var kept = JSON.parse(fs.readFileSync(lunaSendOnlyFile, 'utf8'));
-      if (kept && typeof kept === 'object') for (var k in kept) if (Object.prototype.hasOwnProperty.call(kept, k)) lunaSendOnly[k] = kept[k];
+      var kept = JSON.parse(fs.readFileSync(busStateFile, 'utf8'));
+      if (kept && typeof kept === 'object') {
+        busState.lunaSend = kept.lunaSend && typeof kept.lunaSend === 'object' ? kept.lunaSend : {};
+        busState.checked = kept.checked && typeof kept.checked === 'object' ? kept.checked : {};
+        busState.uncleanEnds = typeof kept.uncleanEnds === 'number' ? kept.uncleanEnds : 0;
+        if (kept.off && kept.off.version === busVersion) busState.off = kept.off;
+        // Still marked running in this boot, by this version: it did not exit.
+        if (kept.running && kept.running.boot === busBoot && busBoot && kept.running.version === busVersion) {
+          busState.uncleanEnds++;
+          console.log('luna: the server stopped without exiting while it used palmbus (' + busState.uncleanEnds + ' of ' + UNCLEAN_LIMIT + ')');
+        }
+        // A new version tries again from the start.
+        if (!kept.off || kept.off.version !== busVersion) {
+          if (kept.running && kept.running.version !== busVersion) busState.uncleanEnds = 0;
+        }
+      }
     } catch (e) {}
   }
-  if (on && !viaPalmbus) console.log('luna: palmbus is switched on but cannot be used (' + palmbus.unavailableReason() + '); calls stay with luna-send');
-  return viaPalmbus;
+  if ((busState.uncleanEnds || 0) >= UNCLEAN_LIMIT && !busState.off) {
+    switchBusOff('the server stopped without exiting ' + UNCLEAN_LIMIT + ' times while it used palmbus');
+    busState.uncleanEnds = 0;
+    saveBusState();
+  }
+  if (!exitHooked) {
+    exitHooked = true;
+    process.on('exit', function (code) { if (code === 0) markStopped(); });
+  }
+  var on = decideBus();
+  if (!on && (busSetting === true || (busSetting === null && busTried)) && !busState.off) {
+    console.log('luna: palmbus cannot be used (' + busBinding.unavailableReason() + '); calls stay with luna-send');
+  }
+  return on;
+}
+
+// The owner's switch on the dashboard: true, false, or null for the default.
+function setPalmbus(setting) {
+  busSetting = setting === true || setting === false ? setting : null;
+  // Switched on by hand after it switched itself off: tried again.
+  if (busSetting === true && busState.off) {
+    delete busState.off;
+    busState.uncleanEnds = 0;
+    busSilent = 0;
+    saveBusState();
+  }
+  return decideBus();
+}
+
+function palmbusStatus() {
+  var lunaSend = Object.keys(busState.lunaSend || {});
+  return {
+    on: viaPalmbus,
+    setting: busSetting,
+    byDefault: busTried,
+    available: busBinding.available(),
+    off: busState.off ? busState.off.reason : null,
+    calls: busCalls,
+    lunaSend: lunaSend.map(function (u) { return { method: u, why: busState.lunaSend[u] }; })
+  };
+}
+
+// Back compatible with the first form: usePalmbus(on, stateDir).
+function usePalmbus(on, stateDir) {
+  return configurePalmbus({ setting: !!on, stateDir: stateDir, version: busVersion, boot: busBoot });
 }
 
 function busRefused(parsed) {
   return !!(parsed && parsed.returnValue === false && BUS_REFUSED.test(String(parsed.errorText || '')));
 }
 
-function sendWithLunaSend(uri, why, keep) {
-  if (Object.prototype.hasOwnProperty.call(lunaSendOnly, uri)) return;
-  lunaSendOnly[uri] = why;
+function sendWithLunaSend(uri, why) {
+  if (own(busState.lunaSend, uri)) return;
+  busState.lunaSend[uri] = why;
   console.log('luna: ' + uri + ' goes through luna-send (' + why + ')');
-  if (!keep || !lunaSendOnlyFile) return;
-  var kept = {};
-  for (var k in lunaSendOnly) if (Object.prototype.hasOwnProperty.call(lunaSendOnly, k)) kept[k] = lunaSendOnly[k];
-  try { fs.writeFileSync(lunaSendOnlyFile, JSON.stringify(kept)); } catch (e) {}
+  saveBusState();
 }
 
 function busFor(job) {
   if (!viaPalmbus || job.appId || job.slow) return false;
   var uri = job.args[job.args.length - 2].replace('luna://', '');
-  return !Object.prototype.hasOwnProperty.call(lunaSendOnly, uri);
+  return !own(busState.lunaSend, uri);
 }
 
 /*
@@ -405,8 +543,6 @@ function busFor(job) {
  * com.webos.service.settings and answered it as com.webos.settingsservice,
  * the same settings, so its reads need no process. Learned per method.
  */
-var busAlias = {};
-
 function otherName(uri) {
   for (var i = 0; i < SERVICE_MAP.length; i++) {
     var m = SERVICE_MAP[i];
@@ -414,6 +550,35 @@ function otherName(uri) {
     if (uri.indexOf(m.legacy) === 0) return m.newer + uri.slice(m.legacy.length);
   }
   return null;
+}
+
+// What an answer is made of, two levels down: its keys and the lengths of its lists.
+function shape(v, depth) {
+  if (v === null || v === undefined) return 'null';
+  if (Array.isArray(v)) return '[' + v.length + (depth > 0 && v.length ? ':' + shape(v[0], depth - 1) : '') + ']';
+  if (typeof v === 'object') {
+    return '{' + Object.keys(v).filter(function (k) { return k !== 'subscribed'; }).sort().map(function (k) {
+      return depth > 0 ? k + '=' + shape(v[k], depth - 1) : k;
+    }).join(',') + '}';
+  }
+  return typeof v;
+}
+
+// The first answer a read method gets on the bus, checked against luna-send's.
+function compareOnce(job, uri, busParsed) {
+  if (own(busState.checked, uri) || own(busComparing, uri) || !isRead(uri)) return;
+  busComparing[uri] = true;
+  enqueue({ args: job.args.slice(), urgent: false, first: false, slow: false, appId: null, cb: function (lsParsed) {
+    delete busComparing[uri];
+    if (!lsParsed) return;
+    var a = shape(busParsed, 2), b = shape(lsParsed, 2);
+    if (a === b) {
+      busState.checked[uri] = true;
+      return saveBusState();
+    }
+    sendWithLunaSend(uri, 'answered differently: ' + a.slice(0, 120) + ' against ' + b.slice(0, 120));
+  } });
+  startWaiting();
 }
 
 // Key presses one at a time, in the order made, as through luna-send.
@@ -438,62 +603,86 @@ function busUrgentDone() {
   if (next) dispatch(next);
 }
 
+// The call made through luna-send instead; a key press holds the others until it is answered.
+function viaLunaSend(job) {
+  if (job.urgent) {
+    var answered = job.cb;
+    job.cb = function () {
+      try { if (answered) answered.apply(null, arguments); } finally { busUrgentDone(); }
+    };
+  }
+  enqueue(job);
+  startWaiting();
+}
+
+// No answer, as a luna-send call that times out has: for a call that may have been carried out.
+function unanswered(job, raw, startedAt, endedAt) {
+  if (job.urgent) busUrgentDone();
+  if (job.cb) job.cb(null, String(raw || ''), { startedAt: startedAt, endedAt: endedAt });
+}
+
 function runBus(job, alias) {
   var uri = job.args[job.args.length - 2].replace('luna://', '');
   var payload = job.args[job.args.length - 1];
-  var onBus = alias || (Object.prototype.hasOwnProperty.call(busAlias, uri) ? busAlias[uri] : uri);
+  var onBus = alias || (own(busAlias, uri) ? busAlias[uri] : uri);
+  var read = isRead(uri);
   var startedAt = monotonicMs();
   noteCall('call ' + onBus + ' (palmbus)');
   countStart('palmbus', onBus);
-  palmbus.call(onBus, payload, WAIT_MS, function (err, raw) {
+  busCalls++;
+  busBinding.call(onBus, payload, WAIT_MS, function (err, raw) {
     var endedAt = monotonicMs();
-    // Cut short by another call's timeout: made again on the new handle, twice at most.
-    if (err && /** @type {any} */ (err).retry && (job.busRetries || 0) < 2) {
-      job.busRetries = (job.busRetries || 0) + 1;
-      return runBus(job, alias);
+    var cutShort = !!(err && /** @type {any} */ (err).retry);
+    // Cut short by another call's timeout, so not this method's fault: a read
+    // is made again on the new handle, twice at most; anything else may have
+    // been carried out, and has no answer.
+    if (cutShort) {
+      if (read && (job.busRetries || 0) < 2) {
+        job.busRetries = (job.busRetries || 0) + 1;
+        return runBus(job, alias);
+      }
+      if (read) return viaLunaSend(job);
+      return unanswered(job, '', startedAt, endedAt);
     }
     var parsed = null;
     if (!err) { try { parsed = JSON.parse(raw); } catch (e) {} }
     noteCall('done ' + uri + ' in ' + Math.round(endedAt - startedAt) + 'ms (palmbus' + (err ? ', ' + err.message : '') + ')');
-    // Refused under one name: the other, where the service has one, before luna-send.
-    if (!err && busRefused(parsed) && !alias && onBus === uri) {
-      var other = otherName(uri);
-      if (other && !Object.prototype.hasOwnProperty.call(lunaSendOnly, other)) return runBus(job, other);
+    if (err) {
+      sendWithLunaSend(uri, 'no answer through palmbus');
+      if (++busSilent >= SILENT_LIMIT) switchBusOff(SILENT_LIMIT + ' calls in a row got no answer through palmbus');
+      return read ? viaLunaSend(job) : unanswered(job, '', startedAt, endedAt);
     }
-    if (!err && parsed && !busRefused(parsed) && onBus !== uri && !Object.prototype.hasOwnProperty.call(busAlias, uri)) {
+    busSilent = 0;
+    if (!parsed) {
+      sendWithLunaSend(uri, 'unreadable answer through palmbus');
+      return read ? viaLunaSend(job) : unanswered(job, raw, startedAt, endedAt);
+    }
+    // Refused under one name: the other, where the service has one, before luna-send.
+    if (busRefused(parsed) && !alias && onBus === uri) {
+      var other = otherName(uri);
+      if (other && !own(busState.lunaSend, other)) return runBus(job, other);
+    }
+    if (busRefused(parsed)) {
+      sendWithLunaSend(uri, 'refused: ' + parsed.errorText);
+      return viaLunaSend(job);
+    }
+    if (onBus !== uri && !own(busAlias, uri)) {
       busAlias[uri] = onBus;
       console.log('luna: ' + uri + ' goes through palmbus as ' + onBus);
     }
-    if (!err && parsed && parsed.returnValue === false && !busRefused(parsed) &&
-        !Object.prototype.hasOwnProperty.call(busChecked, uri)) {
+    // A false the bus gives a method for the first time: luna-send asked too.
+    if (parsed.returnValue === false && !own(busChecked, uri)) {
       var busSaid = parsed.errorText || ('error ' + parsed.errorCode);
       var givenCb = job.cb;
       job.cb = function (lsParsed) {
-        if (lsParsed && lsParsed.returnValue !== false) sendWithLunaSend(uri, 'refused: ' + busSaid, true);
+        if (lsParsed && lsParsed.returnValue !== false) sendWithLunaSend(uri, 'refused: ' + busSaid);
         else busChecked[uri] = true;
         if (givenCb) givenCb.apply(null, arguments);
       };
-      if (job.urgent) {
-        var checked = job.cb;
-        job.cb = function () { try { checked.apply(null, arguments); } finally { busUrgentDone(); } };
-      }
-      enqueue(job);
-      return startWaiting();
-    }
-    if (err || !parsed || busRefused(parsed)) {
-      sendWithLunaSend(uri, err ? 'no answer through palmbus' : parsed ? 'refused: ' + parsed.errorText : 'unreadable answer', true);
-      if (job.urgent) {
-        // The press goes on through luna-send, still ahead of the others
-        // waiting, and the next press waits for its answer, as it would there.
-        var answered = job.cb;
-        job.cb = function () {
-          try { if (answered) answered.apply(null, arguments); } finally { busUrgentDone(); }
-        };
-      }
-      enqueue(job);
-      return startWaiting();
+      return viaLunaSend(job);
     }
     if (job.urgent) busUrgentDone();
+    if (parsed.returnValue !== false) compareOnce(job, uri, parsed);
     settle(job, parsed, raw, startedAt, endedAt, dispatch);
   });
 }
@@ -701,6 +890,9 @@ function createCache(callFn) {
 module.exports = {
   setDebug: setDebug,
   usePalmbus: usePalmbus,
+  configurePalmbus: configurePalmbus,
+  setPalmbus: setPalmbus,
+  palmbusStatus: palmbusStatus,
   setParallel: setParallel,
   hasService: hasService,
   call: call,

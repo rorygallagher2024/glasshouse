@@ -2850,6 +2850,15 @@
           </div>
           <div class="prot-status"><button type="button" class="pill idle" id="exp-homelayout" onclick="toggleHomeLayoutAllowed('exp-homelayout')">&mdash;</button></div>
         </div>
+        <div class="prot-row" id="exp-palmbus-row" hidden>
+          <div class="prot-main">
+            <div class="prot-title" data-t="server.experimental.palmbus">Luna calls through palmbus</div>
+            <div class="prot-desc" data-t="server.experimental.palmbus.short">Talks to the TV&rsquo;s services through LG&rsquo;s own bus binding, without starting a process for each call, which saves CPU and memory. A call the TV refuses this way goes the usual way.</div>
+            <div class="prot-desc" id="exp-palmbus-note"></div>
+            <div id="exp-palmbus-compat"></div>
+          </div>
+          <div class="prot-status"><button type="button" class="pill idle" id="exp-palmbus" onclick="toggleExpPalmbus()">&mdash;</button></div>
+        </div>
         <div class="prot-row" id="exp-screensaver-row" hidden>
           <div class="prot-main">
             <div class="prot-title" data-t="server.experimental.screensaver">Custom screen savers (webOS 12+)</div>

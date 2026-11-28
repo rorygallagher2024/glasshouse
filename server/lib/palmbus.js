@@ -105,8 +105,11 @@ function call(uri, payload, waitMs, cb) {
   }
   inFlight.push(finish);
   timer = setTimeout(function () {
-    finish(new Error('no answer in ' + waitMs + ' ms'));
+    // The handle goes first, so a call made from this one's callback opens the new one.
+    var at = inFlight.indexOf(finish);
+    if (at !== -1) inFlight.splice(at, 1);
     retire(h);
+    finish(new Error('no answer in ' + waitMs + ' ms'));
   }, waitMs);
   c.addListener('response', function (m) {
     var raw = '';
