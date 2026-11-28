@@ -4019,6 +4019,7 @@
  "ha.bar.duplicate": {"from": "Already on the bar.", "text": "Już jest na pasku."},
  "ha.bar.labelPlaceholder": {"from": "Optional label", "text": "Opcjonalna etykieta"},
  "ha.bar.control": {"text": "Sterowanie", "from": "Control"},
+ "ha.bar.readOnly": {"text": "Tylko odczyt", "from": "Read only"},
  "ha.bar.controlHint": {"text": "Sterowanie: odznacz przy encji, która ma być tylko do odczytu, bez możliwości kontroli.", "from": "Control: clear it for an entity the TV should only show, without changing it."},
  "ha.bar.openFailed": {"from": "Could not open on the TV.", "text": "Nie udało się otworzyć na TV."},
  "ha.bar.openOnTv": {"from": "Open on TV", "text": "Otwórz na TV"},

@@ -1,6 +1,10 @@
 // Home Assistant control bar settings and TV launch on the HA & MQTT tab.
 
 const HA_BAR_MAX = 16;
+// What the bar can act on, as lib/habar.js formatTile has it: any other
+// entity is a reading on the TV already, so its Control button has nothing
+// to switch. test-habar.js checks the two agree.
+const HA_BAR_CONTROLLED = ['light', 'switch', 'input_boolean', 'fan', 'climate', 'cover', 'lock', 'scene', 'script', 'button', 'input_button'];
 let haBarEntities = [];
 let haBarConfigured = false;
 let haBarShowHints = true;
@@ -92,18 +96,23 @@ function renderHaBar() {
   const dnLbl = esc(t('common.moveDown', 'Move down'));
   const rmLbl = esc(t('common.remove', 'Remove'));
   const ctlLbl = esc(t('ha.bar.control', 'Control'));
+  const roLbl = esc(t('ha.bar.readOnly', 'Read only'));
   const dis = cfgHaWritable ? '' : ' disabled';
   listEl.innerHTML = haBarEntities.map((item, i) => {
     const info = typeof haEntityLookup === 'function' ? haEntityLookup(item.id) : null;
     const title = (info && info.name) ? info.name : item.id;
     const dom = haBarDomainName(item.id);
     const meta = dom ? dom + ' · ' + item.id : item.id;
+    const controlled = HA_BAR_CONTROLLED.indexOf(item.id.split('.')[0]) !== -1;
+    const ctl = controlled
+      ? '<button type="button" class="ha-bar-ctl" aria-pressed="' + (item.control !== false) + '" aria-label="' + ctlLbl + '" title="' + ctlLbl +
+          '" onclick="haBarControl(' + i + ', ' + (item.control === false) + ')"' + dis + '>&#10003;</button>'
+      : '<button type="button" class="ha-bar-ctl" aria-pressed="false" aria-label="' + roLbl + '" title="' + roLbl + '" disabled>&#10003;</button>';
     return '<div class="ha-bar-row">' +
       '<div class="ha-bar-ent"><div class="nm">' + esc(title) + '</div><div class="id">' + esc(meta) + '</div></div>' +
       '<input type="text" class="ha-bar-label" value="' + esc(item.label || '') + '" placeholder="' + placeholder + '" onchange="haBarLabel(' + i + ', this.value)"' + dis + '>' +
       '<div class="ss-li-acts">' +
-        '<button type="button" class="ha-bar-ctl" aria-pressed="' + (item.control !== false) + '" aria-label="' + ctlLbl + '" title="' + ctlLbl +
-          '" onclick="haBarControl(' + i + ', ' + (item.control === false) + ')"' + dis + '>&#10003;</button>' +
+        ctl +
         '<button type="button" aria-label="' + upLbl + '" title="' + upLbl + '" onclick="haBarMove(' + i + ', -1)"' + (i === 0 || !cfgHaWritable ? ' disabled' : '') + '>&uarr;</button>' +
         '<button type="button" aria-label="' + dnLbl + '" title="' + dnLbl + '" onclick="haBarMove(' + i + ', 1)"' + (i === haBarEntities.length - 1 || !cfgHaWritable ? ' disabled' : '') + '>&darr;</button>' +
         '<button type="button" aria-label="' + rmLbl + '" title="' + rmLbl + '" onclick="haBarRemove(' + i + ')"' + dis + '>&times;</button>' +

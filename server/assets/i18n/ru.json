@@ -3959,6 +3959,7 @@
  "ha.bar.duplicate": {"from": "Already on the bar.", "text": "Уже на панели."},
  "ha.bar.labelPlaceholder": {"from": "Optional label", "text": "Необязательная подпись"},
  "ha.bar.control": {"text": "Управление", "from": "Control"},
+ "ha.bar.readOnly": {"text": "Только чтение", "from": "Read only"},
  "ha.bar.controlHint": {"text": "Управление: снимите отметку у объекта, который телевизор должен только показывать, не меняя его.", "from": "Control: clear it for an entity the TV should only show, without changing it."},
  "ha.bar.openFailed": {"from": "Could not open on the TV.", "text": "Не удалось открыть на ТВ."},
  "ha.bar.openOnTv": {"from": "Open on TV", "text": "Открыть на ТВ"},

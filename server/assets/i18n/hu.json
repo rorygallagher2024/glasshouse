@@ -3959,6 +3959,7 @@
  "ha.bar.duplicate": {"from": "Already on the bar.", "text": "Már szerepel a sávban."},
  "ha.bar.labelPlaceholder": {"from": "Optional label", "text": "Opcionális címke"},
  "ha.bar.control": {"text": "Vezérlés", "from": "Control"},
+ "ha.bar.readOnly": {"text": "Csak olvasható", "from": "Read only"},
  "ha.bar.controlHint": {"text": "Vezérlés: kapcsold ki annál az entitásnál, amelyet a TV csak megjeleníthet, módosítani nem.", "from": "Control: clear it for an entity the TV should only show, without changing it."},
  "ha.bar.openFailed": {"from": "Could not open on the TV.", "text": "Nem sikerült megnyitni a TV-n."},
  "ha.bar.openOnTv": {"from": "Open on TV", "text": "Megnyitás a TV-n"},

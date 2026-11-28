@@ -215,6 +215,17 @@ server.listen(0, '127.0.0.1', function () {
   assert.strictEqual(haBar.saveConfig(saved.entities).ok, true);
   console.log('  \u2713 an entity with control withheld shows as a reading and its changes are refused');
 
+  // The dashboard offers Control only where the bar can act: its list of
+  // domains has to match what formatTile treats as a reading.
+  var uiSrc = fs.readFileSync(path.join(__dirname, '..', 'server', 'assets', 'ui', 'habar.js'), 'utf8');
+  var controlled = JSON.parse(/HA_BAR_CONTROLLED = (\[[^\]]*\])/.exec(uiSrc)[1].replace(/'/g, '"'));
+  ['light', 'switch', 'input_boolean', 'fan', 'climate', 'cover', 'lock', 'scene', 'script', 'button', 'input_button',
+    'sensor', 'binary_sensor', 'weather', 'person', 'number', 'select', 'media_player', 'camera'].forEach(function (domain) {
+    var readOnly = haBar.formatTile({ id: domain + '.x', label: '' }, { state: 'on', attributes: {} }, '').readOnly;
+    assert.strictEqual(readOnly, controlled.indexOf(domain) === -1, domain + ': the dashboard and formatTile agree on control');
+  });
+  console.log('  \u2713 the dashboard offers Control only for the domains the bar acts on');
+
   // 2. Preload lifecycle
   haBar.start();
   haBar.runningChanged({ running: [] });

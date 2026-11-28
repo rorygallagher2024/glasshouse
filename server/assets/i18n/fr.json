@@ -3945,6 +3945,7 @@
  "ha.bar.duplicate": {"from": "Already on the bar.", "text": "Déjà présent dans la barre."},
  "ha.bar.labelPlaceholder": {"from": "Optional label", "text": "Libellé facultatif"},
  "ha.bar.control": {"text": "Contrôle", "from": "Control"},
+ "ha.bar.readOnly": {"text": "Lecture seule", "from": "Read only"},
  "ha.bar.controlHint": {"text": "Contrôle : décochez-le pour une entité que la TV doit seulement afficher, sans la modifier.", "from": "Control: clear it for an entity the TV should only show, without changing it."},
  "ha.bar.openFailed": {"from": "Could not open on the TV.", "text": "Impossible d'ouvrir sur le téléviseur."},
  "ha.bar.openOnTv": {"from": "Open on TV", "text": "Ouvrir sur la TV"},

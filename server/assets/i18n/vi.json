@@ -3961,6 +3961,7 @@
  "ha.bar.duplicate": {"from": "Already on the bar.", "text": "Đã có trên thanh."},
  "ha.bar.labelPlaceholder": {"from": "Optional label", "text": "Nhãn tùy chọn"},
  "ha.bar.control": {"text": "Điều khiển", "from": "Control"},
+ "ha.bar.readOnly": {"text": "Chỉ đọc", "from": "Read only"},
  "ha.bar.controlHint": {"text": "Điều khiển: bỏ chọn với thực thể mà TV chỉ nên hiển thị, không thay đổi.", "from": "Control: clear it for an entity the TV should only show, without changing it."},
  "ha.bar.openFailed": {"from": "Could not open on the TV.", "text": "Không thể mở trên TV."},
  "ha.bar.openOnTv": {"from": "Open on TV", "text": "Mở trên TV"},

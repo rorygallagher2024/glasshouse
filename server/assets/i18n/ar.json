@@ -3945,6 +3945,7 @@
  "ha.bar.duplicate": {"from": "Already on the bar.", "text": "موجود بالفعل في الشريط."},
  "ha.bar.labelPlaceholder": {"from": "Optional label", "text": "تسمية اختيارية"},
  "ha.bar.control": {"text": "التحكم", "from": "Control"},
+ "ha.bar.readOnly": {"text": "للقراءة فقط", "from": "Read only"},
  "ha.bar.controlHint": {"text": "التحكم: ألغِ تحديده لكيان يجب أن يعرضه التلفزيون فقط دون تغييره.", "from": "Control: clear it for an entity the TV should only show, without changing it."},
  "ha.bar.openFailed": {"from": "Could not open on the TV.", "text": "تعذر الفتح على التلفاز."},
  "ha.bar.openOnTv": {"from": "Open on TV", "text": "فتح على التلفاز"},
