@@ -157,18 +157,6 @@ function runningChanged(r) {
   var now = r.running.some(function (a) { return a && a.id === APP; });
   var was = running;
   running = now;
-  /*
-   * The app loads assets/habar.html from this server once, as it starts, and
-   * a preloaded copy outlives a server restart. Found running when this
-   * server starts, it may be the page an earlier version served, so it is
-   * closed and preloaded again, rather than run old code until the TV
-   * restarts. Closing is what makes the next message see it gone, and
-   * lib/barpress leaves that close alone, as no press has shown the bar.
-   */
-  if (was === null && now && lunaFn) {
-    lunaFn('com.webos.applicationManager/closeByAppId', { id: APP }, function () {});
-    return;
-  }
   // Closed by the TV just as it showed: lib/barpress opens it again.
   if (was === true && !now) barPress.exited(APP);
   if (now) {
@@ -322,15 +310,16 @@ function formatTile(item, ent, err) {
 }
 
 /*
- * Whether lib/haentity answers from a cache kept current by Home Assistant's
- * push or its own background refresh. Then an ask costs Home Assistant
- * nothing, so the open bar and Glasshouse Home's row ask every second and a
- * change made elsewhere shows within about that. Otherwise every ask is a
- * request per tile to Home Assistant, and they keep to their own pace.
+ * Whether lib/haentity answers from a cache Home Assistant's push keeps
+ * current: while its socket is up. Then an ask costs Home Assistant nothing,
+ * so the open bar and Glasshouse Home's row ask every second and a change
+ * made elsewhere shows within about that. Otherwise (the socket down, or
+ * updateMode "polling") every ask is a request per tile to Home Assistant,
+ * and they keep to their own pace.
  */
 function cached() {
   var st = haEntityFn && typeof haEntityFn.status === 'function' ? haEntityFn.status() : null;
-  return !!(st && (st.updateMode === 'websocket' || st.pollIntervalMs > 0));
+  return !!(st && st.updateMode === 'websocket' && st.wsConnected === true);
 }
 
 function refreshMs() {

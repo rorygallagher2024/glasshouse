@@ -132,7 +132,6 @@ var server = http.createServer(function (req, res) {
 });
 
 var preloads = 0;
-var closes = 0;
 var sub = null;
 function FakeSub() { this.handlers = {}; }
 FakeSub.prototype.start = function () { sub = this; };
@@ -141,7 +140,7 @@ server.listen(0, '127.0.0.1', function () {
   var port = server.address().port;
   haEntity.init({
     config: {
-      homeAssistant: { enabled: true, url: 'http://127.0.0.1:' + port, token: 'test-token' }
+      homeAssistant: { enabled: true, url: 'http://127.0.0.1:' + port, token: 'test-token', updateMode: 'polling' }
     }
   });
   haBar.init({
@@ -154,7 +153,6 @@ server.listen(0, '127.0.0.1', function () {
     on: function () { return true; },
     luna: function (uri, params, cb) {
       if (uri === 'com.webos.applicationManager/launch' && params.preload === 'full') preloads++;
-      if (uri === 'com.webos.applicationManager/closeByAppId' && params.id === haBar.APP) closes++;
       setImmediate(function () { cb({ returnValue: true }); });
     }
   });
@@ -195,18 +193,11 @@ server.listen(0, '127.0.0.1', function () {
   assert.strictEqual(hintsOn.showHints, true);
   console.log('  \u2713 saveConfig validates, deduplicates, persists entities, and preserves showHints');
 
-  // 2. Preload lifecycle. Found running as the server starts, the app may
-  // hold a page an earlier server version served: it is closed, then
-  // preloaded again once it is reported gone.
+  // 2. Preload lifecycle
   haBar.start();
-  haBar.runningChanged({ running: [{ id: haBar.APP }] });
-  assert.strictEqual(closes, 1, 'a copy running before this server started is closed');
-  assert.strictEqual(preloads, 0);
-  haBar.runningChanged({ running: [{ id: haBar.APP }] });
-  assert.strictEqual(closes, 1, 'only the copy found at start is closed');
   haBar.runningChanged({ running: [] });
   waitFor(function () { return preloads === 1 && !!sub; }, function () {
-    console.log('  \u2713 an app running from before the server started is reloaded, then preloaded when key-mapped');
+    console.log('  \u2713 preloads when key-mapped and configured');
 
     // 3. callService validation & state formatting
     haEntity.callService('bad domain', 'turn_on', {}, function (rBad) {

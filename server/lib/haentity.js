@@ -20,16 +20,24 @@ var MAX_BYTES = 65536;
 // Every entity with all its attributes: 2.2 MB for one install, under 4 MB for
 // 4,557 entities in another. Parsed whole, so it is held in memory at once.
 var MAX_LIST_BYTES = 8 * 1024 * 1024;
-var MIN_POLL_MS = 250;
-var MAX_POLL_MS = 60000;
 var WS_BACKOFF_MS = 2000;
 var WS_MAX_BACKOFF_MS = 30000;
 // How long a watched entity's cache entry is kept once nothing has asked for
 // it: long enough to survive a slow screen saver tick, short enough that a
-// removed bar entity stops being polled or pushed to.
+// removed bar entity stops being pushed to.
 var WATCH_TTL_MS = 10 * 60 * 1000;
+// A bar or a screen saver asks for its entities together, so a change to
+// what is watched waits this long before the subscription is made again.
+var RESUBSCRIBE_MS = 200;
 
-var cfg = { enabled: true, url: '', token: '', tlsRejectUnauthorized: true, updateMode: 'polling', pollIntervalMs: 0 };
+/*
+ * updateMode: "websocket" (the default) keeps a connection open to Home
+ * Assistant, which pushes each change to the entities Glasshouse uses, with
+ * REST answering until it is up and while it reconnects. "polling", set only
+ * in config.json, never opens it: every read is a REST request, as before
+ * the socket existed, for a setup where it misbehaves.
+ */
+var cfg = { enabled: true, url: '', token: '', tlsRejectUnauthorized: true, updateMode: 'websocket' };
 var lastStatus = { ok: null, message: '', error: '', checkedAt: 0 };
 // For the HA & MQTT tab's Connection box, as the MQTT one shows its broker:
 // how long Home Assistant last took to answer, and when an entity was last read.
@@ -37,23 +45,31 @@ var lastLatencyMs = null;
 var lastReadAt = 0;
 
 /*
- * Entities read() or readMany() has ever been asked for, each with when it was
- * last asked for (watchedAt) and, once known, its state (cache). In polling
- * mode with pollIntervalMs set, a background tick refreshes every watched id
- * on its own, rather than read() always making Home Assistant wait on a fresh
- * request; in websocket mode the cache is kept by Home Assistant's own
- * state_changed push. Either way read() serves a watched id from the cache
- * once there is one, only falling back to a direct request to seed it.
+ * Entities read() or readMany() has been asked for, each with when it was
+ * last asked for (watchedAt) and, once known, its state (cache). The socket
+ * subscribes to state triggers for the watched ids only, so Home Assistant
+ * filters its changes rather than sending every entity's to the TV, and the
+ * push keeps the cache current. read() answers from the cache only for an id
+ * the confirmed subscription covers (wsSubscribed); any other read, and every
+ * read while the socket is down, is a REST request. The cache is dropped with
+ * the socket, as changes made while it was down never arrive.
  */
 var watchedAt = {};
 var cache = {};
-var pollTimer = null;
 var wsBackoffMs = WS_BACKOFF_MS;
 var ws = null;
 var wsAuthed = false;
 var wsReconnectTimer = null;
 var wsNextId = 1;
+// The subscription in force, and the one asked for and not yet answered.
 var wsSubscribeId = 0;
+var wsSubscribed = {};
+var wsPending = null;
+var wsResubTimer = null;
+// A change to the watched ids while a subscription is unanswered waits for
+// it; a refused one is not asked again until the socket reconnects.
+var wsResubAgain = false;
+var wsRefused = false;
 // Home Assistant's own ping, for the Connection box's response time where
 // reads come from the push and no longer measure it, and to notice a
 // connection that died without closing.
@@ -65,14 +81,12 @@ var wsPingId = 0;
 function init(opts) {
   opts = opts || {};
   var ha = (opts.config && opts.config.homeAssistant) || {};
-  var pollMs = parseInt(ha.pollIntervalMs, 10);
   cfg = {
     enabled: ha.enabled !== false,
     url: typeof ha.url === 'string' ? ha.url.replace(/\/+$/, '') : '',
     token: typeof ha.token === 'string' ? ha.token : '',
     tlsRejectUnauthorized: ha.tlsRejectUnauthorized !== false,
-    updateMode: ha.updateMode === 'websocket' ? 'websocket' : 'polling',
-    pollIntervalMs: (pollMs >= MIN_POLL_MS && pollMs <= MAX_POLL_MS) ? pollMs : 0
+    updateMode: ha.updateMode === 'polling' ? 'polling' : 'websocket'
   };
   lastStatus = { ok: null, message: '', error: '', checkedAt: 0 };
   lastLatencyMs = null;
@@ -81,8 +95,6 @@ function init(opts) {
   cache = {};
   wsBackoffMs = typeof opts.wsBackoffMs === 'number' ? opts.wsBackoffMs : WS_BACKOFF_MS;
   wsStop();
-  clearTimeout(pollTimer);
-  pollTimer = null;
   applyUpdateMode();
 }
 
@@ -238,18 +250,16 @@ function fromCache(entityId) {
 }
 
 // Whether read() may answer entityId from the cache rather than asking Home
-// Assistant: polling once pollIntervalMs is set (the background tick keeps it
-// current), websocket once authenticated (Home Assistant pushes the change
-// itself). Either way a cache entry has to exist first; the first ever read()
-// for an id always goes to Home Assistant, which seeds it.
-function cacheIsLive() {
-  return cfg.updateMode === 'websocket' ? wsAuthed : cfg.pollIntervalMs > 0;
+// Assistant: only while the socket's subscription covers it, so the push
+// keeps it current. A cache entry has to exist too; the subscription seeds one.
+function cacheIsLive(entityId) {
+  return cfg.updateMode === 'websocket' && wsAuthed && wsSubscribed[entityId] === true;
 }
 
 /*
  * Fetches entityId from Home Assistant directly, bypassing the cache, and
- * caches a successful answer. Shared by read()'s cache miss and the
- * background poll tick.
+ * caches a successful answer. Shared by read()'s cache miss and the seed
+ * reads once a subscription is confirmed.
  */
 function fetchAndCache(entityId, cb) {
   requestHaJson(cfg.url + '/api/states/' + entityId, cfg.token, { maxBytes: MAX_BYTES, label: entityId, entityId: entityId }, function (r) {
@@ -271,6 +281,9 @@ function fetchAndCache(entityId, cb) {
       attributes: body.attributes && typeof body.attributes === 'object' ? body.attributes : {},
       updated: typeof body.last_updated === 'string' ? body.last_updated : ''
     };
+    // A change pushed while this request was out is newer than its answer.
+    var held = cache[entityId];
+    if (held && held.updated && entity.updated && held.updated > entity.updated) return cb(fromCache(entityId));
     cache[entityId] = { state: entity.state, attributes: entity.attributes, updated: entity.updated };
     cb(entity);
   });
@@ -292,14 +305,16 @@ function read(entityId, cb) {
       error: 'Home Assistant is not configured: set it in the MQTT tab or config.json'
     });
   }
+  var known = Object.prototype.hasOwnProperty.call(watchedAt, entityId);
   watchedAt[entityId] = Date.now();
-  if (cacheIsLive()) {
+  if (cacheIsLive(entityId)) {
     var hit = fromCache(entityId);
     if (hit) {
       lastReadAt = Date.now();
       return cb(hit);
     }
   }
+  if (!known || (wsAuthed && !wsSubscribed[entityId])) wsScheduleResubscribe();
   fetchAndCache(entityId, cb);
 }
 
@@ -310,54 +325,35 @@ function update(ha) {
   if (typeof ha.token === 'string') cfg.token = ha.token;
   if (typeof ha.tlsRejectUnauthorized === 'boolean') cfg.tlsRejectUnauthorized = ha.tlsRejectUnauthorized;
   if (ha.updateMode === 'websocket' || ha.updateMode === 'polling') cfg.updateMode = ha.updateMode;
-  if (ha.pollIntervalMs !== undefined) {
-    var pollMs = parseInt(ha.pollIntervalMs, 10);
-    cfg.pollIntervalMs = (pollMs >= MIN_POLL_MS && pollMs <= MAX_POLL_MS) ? pollMs : 0;
-  }
   lastStatus = { ok: null, message: '', error: '', checkedAt: 0 };
   lastLatencyMs = null;
   lastReadAt = 0;
-  cache = {};
+  // A new address or token: the open socket was made with the old ones.
+  wsStop();
+  wsBackoffMs = WS_BACKOFF_MS;
   applyUpdateMode();
 }
 
 // Drops a watched id nothing has asked for in a while, so a removed bar
-// entity or an old screen saver's reading stops being polled or pushed to.
+// entity or an old screen saver's reading stops being pushed to. Returns
+// whether any was dropped.
 function forgetStaleWatches() {
   var cutoff = Date.now() - WATCH_TTL_MS;
+  var dropped = false;
   for (var id in watchedAt) {
     if (watchedAt[id] < cutoff) {
       delete watchedAt[id];
       delete cache[id];
+      dropped = true;
     }
   }
+  return dropped;
 }
 
 function watchedIds() {
   var ids = [];
   for (var id in watchedAt) ids.push(id);
   return ids;
-}
-
-function pollTick() {
-  pollTimer = null;
-  if (cfg.updateMode !== 'polling' || !(cfg.pollIntervalMs > 0) || !configured()) return;
-  forgetStaleWatches();
-  var ids = watchedIds();
-  var left = ids.length;
-  if (!left) return schedulePoll();
-  for (var i = 0; i < ids.length; i++) {
-    fetchAndCache(ids[i], function () {
-      if (--left === 0) schedulePoll();
-    });
-  }
-}
-
-function schedulePoll() {
-  clearTimeout(pollTimer);
-  if (cfg.updateMode !== 'polling' || !(cfg.pollIntervalMs > 0) || !configured()) { pollTimer = null; return; }
-  pollTimer = setTimeout(pollTick, cfg.pollIntervalMs);
-  if (pollTimer.unref) pollTimer.unref();
 }
 
 // ------------------------------------------------------------ websocket push
@@ -446,6 +442,7 @@ function wsSend(socket, message) {
 function wsPing() {
   if (!ws || !wsAuthed) return;
   if (wsPingSentAt) return wsScheduleReconnect();
+  if (forgetStaleWatches()) wsScheduleResubscribe();
   wsPingId = wsNextId++;
   wsPingSentAt = Date.now();
   wsSend(ws, { id: wsPingId, type: 'ping' });
@@ -458,6 +455,16 @@ function wsStop() {
   wsPingTimer = null;
   wsPingSentAt = 0;
   wsAuthed = false;
+  clearTimeout(wsResubTimer);
+  wsResubTimer = null;
+  wsSubscribeId = 0;
+  wsSubscribed = {};
+  wsPending = null;
+  wsResubAgain = false;
+  wsRefused = false;
+  // Changes made while the socket was down never arrive, so nothing cached
+  // before it is trusted after it: reads go to REST until it is back.
+  cache = {};
   if (ws) {
     var socket = ws;
     ws = null;
@@ -478,16 +485,68 @@ function wsScheduleReconnect() {
 }
 
 /*
- * cache[entity_id] from a state_changed event's new_state, only for an
- * already-watched id: subscribe_events carries every entity on the install,
- * and most are of no interest here.
+ * Subscribes to a state trigger for every watched id, so Home Assistant sends
+ * a change to one of those (its state or any attribute) and nothing else. The
+ * new subscription is asked for before the old one is dropped, so no change
+ * falls between them. subscribe_trigger is in Home Assistant's documented
+ * WebSocket API; "platform" is accepted by every version that has it.
  */
+function wsResubscribe() {
+  wsResubTimer = null;
+  if (!ws || !wsAuthed || wsRefused) return;
+  if (wsPending) { wsResubAgain = true; return; }
+  forgetStaleWatches();
+  var ids = watchedIds();
+  var old = wsSubscribeId;
+  if (!ids.length) {
+    if (old) wsSend(ws, { id: wsNextId++, type: 'unsubscribe_events', subscription: old });
+    wsSubscribeId = 0;
+    wsSubscribed = {};
+    wsPending = null;
+    return;
+  }
+  var id = wsNextId++;
+  wsPending = { id: id, ids: ids, old: old };
+  wsSend(ws, { id: id, type: 'subscribe_trigger', trigger: { platform: 'state', entity_id: ids } });
+}
+
+function wsScheduleResubscribe() {
+  if (!ws || !wsAuthed || wsRefused || wsResubTimer) return;
+  wsResubTimer = setTimeout(wsResubscribe, RESUBSCRIBE_MS);
+  if (wsResubTimer.unref) wsResubTimer.unref();
+}
+
+// Home Assistant's answer to a subscribe_trigger.
+function wsSubscribeResult(message) {
+  var pending = wsPending;
+  wsPending = null;
+  var again = wsResubAgain;
+  wsResubAgain = false;
+  if (!message.success) {
+    var why = message.error && message.error.message ? message.error.message : 'no reason given';
+    console.error('haentity: Home Assistant refused the state subscription (' + why + '); reads stay with REST');
+    wsRefused = true;
+    return;
+  }
+  if (again) wsScheduleResubscribe();
+  var was = wsSubscribed;
+  wsSubscribeId = pending.id;
+  wsSubscribed = {};
+  for (var i = 0; i < pending.ids.length; i++) wsSubscribed[pending.ids[i]] = true;
+  if (pending.old) wsSend(ws, { id: wsNextId++, type: 'unsubscribe_events', subscription: pending.old });
+  // An id read over REST before it was covered may have changed since:
+  // read once more, now that a later change will be pushed.
+  for (var j = 0; j < pending.ids.length; j++) {
+    if (!was[pending.ids[j]]) fetchAndCache(pending.ids[j], function () {});
+  }
+}
+
+// cache[entity_id] from a state trigger's to_state, for a watched id.
 function wsHandleEvent(message) {
-  if (!message || message.type !== 'event' || !message.event || message.event.event_type !== 'state_changed') return;
-  var data = message.event.data;
-  var entityId = data && data.entity_id;
-  if (!entityId || !Object.prototype.hasOwnProperty.call(watchedAt, entityId)) return;
-  var newState = data.new_state;
+  var trigger = message && message.event && message.event.variables && message.event.variables.trigger;
+  var entityId = trigger && trigger.entity_id;
+  if (typeof entityId !== 'string' || !Object.prototype.hasOwnProperty.call(watchedAt, entityId)) return;
+  var newState = trigger.to_state;
   if (!newState || typeof newState.state !== 'string') { delete cache[entityId]; return; }
   cache[entityId] = {
     state: newState.state,
@@ -506,7 +565,8 @@ function wsConnect() {
   var reqOpts = {
     hostname: parsed.hostname,
     port: parsed.port || (isHttps ? 443 : 80),
-    path: '/api/websocket',
+    // Behind a reverse proxy at a path, as the REST calls are (cfg.url + '/api/...').
+    path: (parsed.pathname || '').replace(/\/+$/, '') + '/api/websocket',
     headers: {
       Connection: 'Upgrade', Upgrade: 'websocket', 'Sec-WebSocket-Version': '13',
       'Sec-WebSocket-Key': crypto.randomBytes(16).toString('base64')
@@ -532,8 +592,7 @@ function wsConnect() {
       } else if (message.type === 'auth_ok') {
         wsAuthed = true;
         wsBackoffMs = WS_BACKOFF_MS;
-        wsSubscribeId = wsNextId++;
-        wsSend(ws, { id: wsSubscribeId, type: 'subscribe_events', event_type: 'state_changed' });
+        wsResubscribe();
         wsPing();
         clearInterval(wsPingTimer);
         wsPingTimer = setInterval(wsPing, WS_PING_MS);
@@ -546,6 +605,8 @@ function wsConnect() {
         console.error('haentity: Home Assistant refused the websocket token');
         wsScheduleReconnect();
         return false;
+      } else if (message.type === 'result' && wsPending && message.id === wsPending.id) {
+        wsSubscribeResult(message);
       } else if (message.type === 'event') {
         wsHandleEvent(message);
       }
@@ -564,17 +625,10 @@ function wsConnect() {
   req.end();
 }
 
-// Starts or stops the background cache mechanism this cfg.updateMode needs.
+// Opens the socket where cfg.updateMode wants it, or closes it.
 function applyUpdateMode() {
-  if (cfg.updateMode === 'websocket') {
-    clearTimeout(pollTimer);
-    pollTimer = null;
-    if (configured()) { if (!ws && !wsReconnectTimer) wsConnect(); } else wsStop();
-  } else {
-    wsStop();
-    if (configured() && cfg.pollIntervalMs > 0) schedulePoll();
-    else { clearTimeout(pollTimer); pollTimer = null; }
-  }
+  if (cfg.updateMode === 'websocket' && configured()) { if (!ws && !wsReconnectTimer) wsConnect(); }
+  else wsStop();
 }
 
 function test(opts, cb) {
@@ -633,7 +687,6 @@ function status() {
     // How long ago a screen saver last read an entity, as the MQTT box's last publish.
     lastReadMs: lastReadAt ? Date.now() - lastReadAt : null,
     updateMode: cfg.updateMode,
-    pollIntervalMs: cfg.pollIntervalMs,
     // Only meaningful in websocket mode: whether Home Assistant is pushing
     // state changes right now, or a request/reconnect is still in flight.
     wsConnected: cfg.updateMode === 'websocket' ? wsAuthed : null
@@ -752,7 +805,5 @@ module.exports = {
   hasCredentials: hasCredentials,
   update: update,
   test: test,
-  status: status,
-  MIN_POLL_MS: MIN_POLL_MS,
-  MAX_POLL_MS: MAX_POLL_MS
+  status: status
 };

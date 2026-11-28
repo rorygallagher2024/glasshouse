@@ -64,15 +64,12 @@ var server = http.createServer(function (req, res) {
   res.end('{}');
 });
 
-// 10. Polling cache (#1795): with pollIntervalMs set, a background tick keeps
-// a watched entity's state current, so read() need not wait on a fresh
-// request every time the TV app asks again.
-function testPollingCache(done) {
-  // lib/haentity.js's own floor (MIN_POLL_MS): below it pollIntervalMs is
-  // treated as unset and the background tick never starts.
-  var pollIntervalMs = 250;
+// 10. updateMode "polling" (config.json only): no socket is opened, and
+// every read is a REST request.
+function testPollingOnly(done) {
   var pollState = { state: 'on' };
   var pollHits = 0;
+  var upgrades = 0;
   var pollServer = http.createServer(function (req, res) {
     if (req.url === '/api/states/light.cached') {
       pollHits++;
@@ -82,28 +79,26 @@ function testPollingCache(done) {
     res.writeHead(404);
     res.end('{}');
   });
+  pollServer.on('upgrade', function (req, socket) { upgrades++; socket.destroy(); });
   pollServer.listen(0, '127.0.0.1', function () {
     var base = 'http://127.0.0.1:' + pollServer.address().port;
-    haEntity.init({ config: { homeAssistant: { url: base, token: 'tok', pollIntervalMs: pollIntervalMs } } });
+    haEntity.init({ config: { homeAssistant: { url: base, token: 'tok', updateMode: 'polling' } }, wsBackoffMs: 20 });
     haEntity.read('light.cached', function (r1) {
-      assert.strictEqual(r1.ok, true);
       assert.strictEqual(r1.state, 'on');
-      var afterFirst = pollHits;
       pollState.state = 'off';
-      // The background tick, not this read, has to notice the change.
-      setTimeout(function () {
-        assert.ok(pollHits > afterFirst, 'the background tick polled the watched entity on its own');
-        var beforeRead = pollHits;
-        haEntity.read('light.cached', function (r2) {
-          assert.strictEqual(r2.ok, true);
-          assert.strictEqual(r2.state, 'off', 'served the state the background tick already fetched');
-          assert.strictEqual(pollHits, beforeRead, 'read() served the cache rather than asking Home Assistant again');
-          console.log('  ✓ polling with pollIntervalMs set keeps a watched entity current in the background');
+      haEntity.read('light.cached', function (r2) {
+        assert.strictEqual(r2.state, 'off', 'each read asks Home Assistant');
+        assert.strictEqual(pollHits, 2);
+        setTimeout(function () {
+          assert.strictEqual(upgrades, 0, 'no socket was opened');
+          assert.strictEqual(haEntity.status().updateMode, 'polling');
+          assert.strictEqual(haEntity.status().wsConnected, null);
+          console.log('  ✓ updateMode "polling" opens no socket and asks over REST each time');
           haEntity.init({ config: {} });
           pollServer.close();
           done();
-        });
-      }, pollIntervalMs * 3);
+        }, 100);
+      });
     });
   });
 }
@@ -143,30 +138,35 @@ function wsServerDecodeNext(buffer) {
   return { message: message, rest: buffer.slice(offset + length) };
 }
 
-// 11 & 12. Websocket mode (#1795): a pushed state_changed is cached without a
-// fresh request, and a dropped connection reconnects while read() falls back
-// to a direct request meanwhile.
+// 11 to 15. The socket, on by default: Home Assistant's state triggers for
+// the watched ids only, at the configured URL's path; a pushed change is
+// served without a request; a dropped socket reconnects, REST answers
+// meanwhile, and nothing cached before the drop is trusted after it.
 function testWebSocket(done) {
-  var wsRestState = { state: 'on' };
-  var wsRestHits = 0;
+  var rest = { 'light.pushed': 'on', 'switch.other': 'off' };
+  var restHits = 0;
   var clientSocket = null;
-  var wsSubId = null;
+  var subscriptions = [];
+  var unsubscribed = [];
+  var upgradePaths = [];
+  var pendingPing = null;
 
   var httpServer = http.createServer(function (req, res) {
-    if (req.url === '/api/states/light.pushed') {
-      wsRestHits++;
+    var m = /^\/ha\/api\/states\/(.+)$/.exec(req.url);
+    if (m && rest[m[1]] !== undefined) {
+      restHits++;
       res.writeHead(200, { 'Content-Type': 'application/json' });
-      return res.end(JSON.stringify({ entity_id: 'light.pushed', state: wsRestState.state, attributes: {} }));
+      return res.end(JSON.stringify({ entity_id: m[1], state: rest[m[1]], attributes: {}, last_updated: '2026-11-27T00:00:00+00:00' }));
     }
     res.writeHead(404);
     res.end('{}');
   });
   httpServer.on('upgrade', function (req, socket) {
+    upgradePaths.push(req.url);
     var key = req.headers['sec-websocket-key'];
     var accept = crypto.createHash('sha1').update(key + '258EAFA5-E914-47DA-95CA-C5AB0DC85B11').digest('base64');
     socket.write('HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: ' + accept + '\r\n\r\n');
     clientSocket = socket;
-    wsSubId = null;
     var buffer = new Buffer(0);
     socket.write(wsServerFrame({ type: 'auth_required' }));
     socket.on('data', function (chunk) {
@@ -179,9 +179,14 @@ function testWebSocket(done) {
         if (!message) continue;
         if (message.type === 'auth') {
           socket.write(wsServerFrame(message.access_token === 'tok' ? { type: 'auth_ok' } : { type: 'auth_invalid' }));
-        } else if (message.type === 'subscribe_events') {
-          wsSubId = message.id;
+        } else if (message.type === 'subscribe_trigger') {
+          subscriptions.push({ id: message.id, ids: message.trigger.entity_id.slice().sort(), platform: message.trigger.platform });
           socket.write(wsServerFrame({ id: message.id, type: 'result', success: true, result: null }));
+        } else if (message.type === 'unsubscribe_events') {
+          unsubscribed.push(message.subscription);
+          socket.write(wsServerFrame({ id: message.id, type: 'result', success: true, result: null }));
+        } else if (message.type === 'subscribe_events') {
+          throw new Error('the socket asked for every event on the install');
         } else if (message.type === 'ping') {
           // Answered only when the test says, after the REST seed read has
           // set its own response time, which would otherwise overwrite it.
@@ -192,59 +197,82 @@ function testWebSocket(done) {
     socket.on('error', function () {});
   });
 
-  var pendingPing = null;
   function releasePong() {
     clientSocket.write(wsServerFrame({ id: pendingPing, type: 'pong' }));
     pendingPing = null;
   }
-
-  function pushEvent(entityId, state) {
+  function lastSub() { return subscriptions[subscriptions.length - 1]; }
+  function pushEvent(entityId, state, updated) {
     clientSocket.write(wsServerFrame({
-      id: wsSubId,
+      id: lastSub().id,
       type: 'event',
-      event: { event_type: 'state_changed', data: { entity_id: entityId, new_state: { state: state, attributes: {}, last_updated: '2026-11-27T00:00:00Z' } } }
+      event: { variables: { trigger: { platform: 'state', entity_id: entityId,
+        to_state: { entity_id: entityId, state: state, attributes: {}, last_updated: updated || '2026-11-27T00:00:01+00:00' } } } }
     }));
   }
 
   httpServer.listen(0, '127.0.0.1', function () {
-    var base = 'http://127.0.0.1:' + httpServer.address().port;
-    haEntity.init({ config: { homeAssistant: { url: base, token: 'tok', updateMode: 'websocket' } }, wsBackoffMs: 20 });
+    // Behind a proxy at /ha: REST and the socket both keep the path.
+    var base = 'http://127.0.0.1:' + httpServer.address().port + '/ha';
+    haEntity.init({ config: { homeAssistant: { url: base, token: 'tok' } }, wsBackoffMs: 20 });
 
     // Before the socket has authenticated, read() falls back to a direct request.
     haEntity.read('light.pushed', function (r1) {
       assert.strictEqual(r1.ok, true);
       assert.strictEqual(r1.state, 'on');
-      waitFor(function () { return haEntity.status().wsConnected === true; }, function () {
-        assert.strictEqual(haEntity.status().updateMode, 'websocket');
+      waitFor(function () { return haEntity.status().wsConnected === true && subscriptions.length > 0; }, function () {
+        assert.strictEqual(haEntity.status().updateMode, 'websocket', 'the socket is the default');
+        assert.deepEqual(upgradePaths, ['/ha/api/websocket'], 'the socket keeps the URL\'s path');
+        assert.deepEqual(lastSub().ids, ['light.pushed'], 'only the watched entity is subscribed to');
+        assert.strictEqual(lastSub().platform, 'state');
+        console.log('  ✓ the socket is on by default, at the URL\'s path, subscribed to the watched entities only');
         waitFor(function () { return pendingPing !== null; }, function () {
         // Held 40 ms, far longer than the local seed read, so a response
         // time of at least that has come from the ping.
         setTimeout(releasePong, 40);
         waitFor(function () { return haEntity.status().latencyMs >= 40; }, function () {
-        console.log('  ✓ websocket mode takes the response time from Home Assistant\'s ping');
-        var beforeEvent = wsRestHits;
+        console.log('  ✓ the response time comes from Home Assistant\'s ping');
+        var beforeEvent = restHits;
         pushEvent('light.pushed', 'off');
         (function checkPushed() {
           haEntity.read('light.pushed', function (r2) {
             if (r2.state !== 'off') return setTimeout(checkPushed, 5);
-            assert.strictEqual(wsRestHits, beforeEvent, 'the pushed state came from the socket, not a fresh request');
-            console.log('  ✓ websocket mode serves a pushed state_changed without a fresh request');
+            assert.strictEqual(restHits, beforeEvent, 'the pushed state came from the socket, not a fresh request');
+            console.log('  ✓ a pushed change is served without a fresh request');
 
-            // A dropped connection reconnects, with read() falling back meanwhile.
-            clientSocket.destroy();
-            waitFor(function () { return haEntity.status().wsConnected === false; }, function () {
-              var duringDrop = wsRestHits;
-              haEntity.read('light.pushed', function (r3) {
-                assert.strictEqual(r3.ok, true, 'a direct request still answers while the socket is down');
-                assert.ok(wsRestHits > duringDrop, 'read() asked Home Assistant directly while disconnected');
-                waitFor(function () { return haEntity.status().wsConnected === true; }, function () {
-                  console.log('  ✓ a dropped websocket reconnects, with a direct request answering meanwhile');
-                  haEntity.init({ config: {} });
-                  // close() would wait on the server's side of the socket
-                  // init() just dropped, which need not end before the
-                  // loop drains.
-                  httpServer.close();
-                  done();
+            // A second entity: subscribed to with the first, the old subscription dropped after.
+            var firstSub = lastSub().id;
+            haEntity.read('switch.other', function (r4) {
+              assert.strictEqual(r4.state, 'off');
+              waitFor(function () { return lastSub().ids.length === 2 && unsubscribed.indexOf(firstSub) !== -1; }, function () {
+                assert.deepEqual(lastSub().ids, ['light.pushed', 'switch.other']);
+                console.log('  ✓ a newly watched entity is subscribed to again with the others, the old subscription dropped');
+
+                // A drop: light.pushed changes back while the socket is down.
+                clientSocket.destroy();
+                rest['light.pushed'] = 'on';
+                waitFor(function () { return haEntity.status().wsConnected === false; }, function () {
+                  var duringDrop = restHits;
+                  haEntity.read('light.pushed', function (r3) {
+                    assert.strictEqual(r3.state, 'on', 'REST answers while the socket is down');
+                    assert.ok(restHits > duringDrop, 'read() asked Home Assistant directly while disconnected');
+                    waitFor(function () { return haEntity.status().wsConnected === true && upgradePaths.length === 2; }, function () {
+                      waitFor(function () { return lastSub().ids.length === 2 && subscriptions.length >= 3; }, function () {
+                        var afterReconnect = restHits;
+                        haEntity.read('light.pushed', function (r5) {
+                          assert.strictEqual(r5.state, 'on', 'the state from before the drop is not served after it');
+                          console.log('  ✓ a dropped socket reconnects, with REST answering meanwhile and nothing cached before it trusted after');
+                          assert.ok(restHits >= afterReconnect);
+                          haEntity.init({ config: {} });
+                          // close() would wait on the server's side of the socket
+                          // init() just dropped, which need not end before the
+                          // loop drains.
+                          httpServer.close();
+                          done();
+                        });
+                      });
+                    });
+                  });
                 });
               });
             });
@@ -257,11 +285,75 @@ function testWebSocket(done) {
   });
 }
 
+// 16. A subscription Home Assistant refuses leaves reads with REST, and is
+// not asked for again on every read.
+function testRefusedSubscription(done) {
+  var subs = 0;
+  var restHits = 0;
+  var srv = http.createServer(function (req, res) {
+    if (req.url === '/api/states/light.refused') {
+      restHits++;
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify({ entity_id: 'light.refused', state: 'on', attributes: {} }));
+    }
+    res.writeHead(404);
+    res.end('{}');
+  });
+  srv.on('upgrade', function (req, socket) {
+    var accept = crypto.createHash('sha1').update(req.headers['sec-websocket-key'] + '258EAFA5-E914-47DA-95CA-C5AB0DC85B11').digest('base64');
+    socket.write('HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: ' + accept + '\r\n\r\n');
+    var buffer = new Buffer(0);
+    socket.write(wsServerFrame({ type: 'auth_required' }));
+    socket.on('data', function (chunk) {
+      buffer = Buffer.concat([buffer, chunk]);
+      for (;;) {
+        var decoded = wsServerDecodeNext(buffer);
+        if (!decoded) break;
+        buffer = decoded.rest;
+        var message = decoded.message;
+        if (!message) continue;
+        if (message.type === 'auth') socket.write(wsServerFrame({ type: 'auth_ok' }));
+        else if (message.type === 'subscribe_trigger') {
+          subs++;
+          socket.write(wsServerFrame({ id: message.id, type: 'result', success: false, error: { code: 'unknown_command', message: 'Unknown command.' } }));
+        }
+      }
+    });
+    socket.on('error', function () {});
+  });
+  srv.listen(0, '127.0.0.1', function () {
+    var base = 'http://127.0.0.1:' + srv.address().port;
+    var logged = [];
+    var origError = console.error;
+    console.error = function (m) { logged.push(String(m)); };
+    haEntity.init({ config: { homeAssistant: { url: base, token: 'tok' } }, wsBackoffMs: 20 });
+    haEntity.read('light.refused', function () {
+      waitFor(function () { return subs === 1; }, function () {
+        haEntity.read('light.refused', function (r) {
+          haEntity.read('light.refused', function () {
+            setTimeout(function () {
+              console.error = origError;
+              assert.strictEqual(r.state, 'on');
+              assert.strictEqual(subs, 1, 'not asked for again on each read');
+              assert.ok(restHits >= 3, 'every read went to REST');
+              assert.ok(logged.some(function (l) { return /refused the state subscription/.test(l); }), logged.join(' | '));
+              console.log('  ✓ a refused subscription leaves reads with REST, asked for once');
+              haEntity.init({ config: {} });
+              srv.close();
+              done();
+            }, 400);
+          });
+        });
+      });
+    });
+  });
+}
+
 server.listen(0, '127.0.0.1', function () {
   var base = 'http://127.0.0.1:' + server.address().port;
 
   function config(extra) {
-    var ha = { url: base, token: 'tok' };
+    var ha = { url: base, token: 'tok', updateMode: 'polling' };
     for (var k in extra) ha[k] = extra[k];
     return { homeAssistant: ha };
   }
@@ -317,7 +409,7 @@ server.listen(0, '127.0.0.1', function () {
                 console.log('  \u2713 an unconfigured TV asks nothing and says why');
 
                 // 7. update() applies new credentials and test() checks /api/
-                haEntity.update({ url: base, token: 'tok' });
+                haEntity.update({ url: base, token: 'tok', updateMode: 'polling' });
                 assert.strictEqual(haEntity.configured(), true);
                 haEntity.test({}, function (r8) {
                   assert.strictEqual(r8.ok, true, r8.error);
@@ -433,7 +525,7 @@ server.listen(0, '127.0.0.1', function () {
                                       return req;
                                     };
 
-                                    haEntity.init({ config: { homeAssistant: { url: 'https://ha.local:8123', token: 'tok' } } });
+                                    haEntity.init({ config: { homeAssistant: { url: 'https://ha.local:8123', token: 'tok', updateMode: 'polling' } } });
                                     haEntity.read('sensor.outdoor_temperature', function (h1) {
                                       assert.strictEqual(h1.ok, true);
                                       assert.strictEqual(httpsOpts[0].rejectUnauthorized, true, 'verify certificate defaults to true');
@@ -501,9 +593,10 @@ server.listen(0, '127.0.0.1', function () {
                                                         https.request = realHttpsRequest;
                                                         console.log('  \u2713 HTTPS passes rejectUnauthorized and turns socket/TLS errors into readable messages');
                                                         server.close(function () {
-                                                          testPollingCache(function () {
-                                                            testWebSocket(function () {
+                                                          testPollingOnly(function () {
+                                                            testWebSocket(function () { testRefusedSubscription(function () {
                                                               console.log('ALL test-haentity.js assertions passed!');
+                                                            });
                                                             });
                                                           });
                                                         });
