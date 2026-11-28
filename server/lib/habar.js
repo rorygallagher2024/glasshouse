@@ -14,6 +14,7 @@
  * Strict ES5: runs on node 0.12.
  */
 var fs = require('fs');
+var crypto = require('crypto');
 var path = require('path');
 var luna = require('./luna');
 var runningApps = require('./running');
@@ -52,6 +53,22 @@ var Subscription = luna.Subscription;
 var sub = null, running = null, timer = null, failures = 0;
 
 function stateFile() { return path.join(stateDir, 'habar.json'); }
+
+/*
+ * The page the bar's app shows, as this server serves it, by a hash of its
+ * text. The app loads it once and a preloaded copy outlives a server
+ * restart, so the page compares this with what it first saw and loads
+ * itself again, out of sight, where they differ: after an update, and not
+ * after a watchdog restart, which serves the same page.
+ */
+var pageFile = path.join(__dirname, '..', 'assets', 'habar.html');
+var pageHash = null;
+function pageVersion() {
+  if (pageHash === null) {
+    try { pageHash = crypto.createHash('sha1').update(fs.readFileSync(pageFile)).digest('hex').slice(0, 12); } catch (e) { pageHash = ''; }
+  }
+  return pageHash;
+}
 
 function listConfig() {
   var j = util.readJson(stateFile(), null);
@@ -178,6 +195,7 @@ function init(opts) {
   if (typeof opts.hour12 === 'function') hour12Fn = opts.hour12;
   if (opts.Subscription) Subscription = opts.Subscription;
   if (opts.delaysMs) afterCloseMs = afterStartMs = afterSwitchOnMs = confirmRetryMs = opts.delaysMs;
+  if (opts.pageFile) { pageFile = opts.pageFile; pageHash = null; }
 }
 
 function lightSupportsBrightness(attrs) {
@@ -332,7 +350,7 @@ function state(cb) {
   var list = cfg.entities;
   var configured = !!(haEntityFn && haEntityFn.configured());
   if (!configured || !list.length) {
-    return cb({ ok: true, configured: configured, hour12: !!hour12Fn(), showHints: cfg.showHints, refreshMs: REFRESH_MS, tiles: [] });
+    return cb({ ok: true, configured: configured, hour12: !!hour12Fn(), showHints: cfg.showHints, refreshMs: REFRESH_MS, page: pageVersion(), tiles: [] });
   }
   var ids = list.map(function (it) { return it.id; });
   haEntityFn.readMany(ids, function (r) {
@@ -341,7 +359,7 @@ function state(cb) {
     var tiles = list.map(function (it) {
       return formatTile(it, ents[it.id] || null, errs[it.id] || '');
     });
-    cb({ ok: true, configured: true, hour12: !!hour12Fn(), showHints: cfg.showHints, cached: cached(), refreshMs: refreshMs(), tiles: tiles });
+    cb({ ok: true, configured: true, hour12: !!hour12Fn(), showHints: cfg.showHints, cached: cached(), refreshMs: refreshMs(), page: pageVersion(), tiles: tiles });
   });
 }
 
@@ -533,5 +551,6 @@ module.exports = {
   act: act,
   open: open,
   runningChanged: runningChanged,
+  pageVersion: pageVersion,
   APP: APP
 };

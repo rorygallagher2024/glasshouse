@@ -1187,6 +1187,16 @@ with a growing wait, five times at most until the server starts again. The
 measurements behind each choice are in
 [TV-RESEARCH.md](development/TV-RESEARCH.md#overlay-web-apps-and-the-input-bar-webos-653-c1).
 
+The Home Assistant bar's app (`assets/habar-app/`) carries no page of its
+own: it loads `assets/habar.html` from the server once, as it starts, and a
+preloaded copy outlives a server restart. So `lib/habar.js` names the page
+it serves by a hash of its text, in `/api/ha/bar/state` and in
+`/api/ha/bar/page`, which the hidden page reads each minute without Home
+Assistant being asked. Where the hash differs from the one the page first
+saw, the page loads itself again as preloaded: at once while hidden, else
+once it closes, so a bar on screen is never taken away. A watchdog restart
+serves the same page, so it reloads nothing.
+
 ## Older hardware capabilities (webOS 3.x and LCD models)
 
 Testing against 2016 hardware (such as 43UH610V-ZB and 55UH6030-UC on webOS 3.4.3) highlights several differences between older LCD platforms and modern OLED sets:

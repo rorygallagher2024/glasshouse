@@ -2391,6 +2391,11 @@ function handleRequest(req, res) {
       send(res, 200, JSON.stringify(r || { ok: false, error: 'failed' }));
     });
   }
+  // The bar's page asks this while out of sight, without Home Assistant being asked.
+  if (pathname === '/api/ha/bar/page' && req.method === 'GET' && haBarModule) {
+    if (!fromTV(req) && !authed(u.query, req)) return send(res, 401, JSON.stringify({ ok: false, error: 'unauthorized' }));
+    return send(res, 200, JSON.stringify({ ok: true, page: haBarModule.pageVersion() }));
+  }
 
   // Glasshouse Home: a Home Assistant tile that steps is in focus, so Channel
   // up and down set to Brightness go to Home (lib/remotekeys.js). The TV's own pages only.
