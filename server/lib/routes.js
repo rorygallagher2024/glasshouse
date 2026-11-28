@@ -141,6 +141,8 @@ var ntpModule = null;
 var historyModule = null;
 var perfHistoryModule = null;
 var barPressModule = null;
+// The palmbus switch's state and report links (palmbusInfo in tvweb.js).
+var palmbusInfoFn = null;
 var storageScanModule = null;
 /** @type {typeof import('./sysinfo')} */
 var sysinfoModule = null;
@@ -938,6 +940,7 @@ function updateSummary() {
   s.allowNetworkDebugger = !!(config && config.allowNetworkDebugger);
   s.allowTileHiding = !!(appsModule && appsModule.tileHidingAllowed && appsModule.tileHidingAllowed());
   s.allowExperimentalScreensavers = !!(screensaversModule && screensaversModule.allowedAnyway && screensaversModule.allowedAnyway());
+  s.palmbus = palmbusInfoFn ? palmbusInfoFn() : null;
   s.pointer = {
     supported: !!(pointerModule && pointerModule.isSupported()),
     enabled: !!(pointerModule && pointerModule.isEnabled()),
@@ -3347,6 +3350,7 @@ function init(opts) {
   if (opts.history) historyModule = opts.history;
   if (opts.perfHistory) perfHistoryModule = opts.perfHistory;
   if (opts.barPress) barPressModule = opts.barPress;
+  if (typeof opts.palmbus === 'function') palmbusInfoFn = opts.palmbus;
   if (opts.storageScan) storageScanModule = opts.storageScan;
   if (opts.sysinfo) sysinfoModule = opts.sysinfo;
   if (opts.screenColour) screenColourModule = opts.screenColour;

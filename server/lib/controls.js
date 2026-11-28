@@ -1385,6 +1385,17 @@ function doControl(action, value, cb) {
         cb({ ok: true, minutes: offMin });
       });
 
+    // Luna calls through palmbus (lib/luna.js): on, off, or 'default' for what the webOS version gets.
+    case 'setLunaViaPalmbus':
+      var pbSetting = value === true || value === 'on' ? true : value === false || value === 'off' ? false : null;
+      if (!writeSettingsFn) return cb({ ok: false, error: 'no writeSettings handler configured' });
+      return writeSettingsFn({ lunaViaPalmbus: pbSetting }, function (err) {
+        if (err) return cb({ ok: false, error: 'could not save setting: ' + err.message });
+        config.lunaViaPalmbus = pbSetting;
+        require('./luna').setPalmbus(pbSetting);
+        cb(getUpdateSummary());
+      });
+
     case 'setPointerEnabled':
       var pointerOn = value === true || value === 'on' || value === 'true';
       if (!writeSettingsFn) return cb({ ok: false, error: 'no writeSettings handler configured' });

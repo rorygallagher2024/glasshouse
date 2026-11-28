@@ -183,6 +183,9 @@ Glasshouse Home and the launchers in its place, and the overlay bars the remote 
 | :------ | :--------------- | :---------------------- | :---------- |
 | Glasshouse Home, Minimal and custom launchers | 2, 3, 4, 5, 6, 7, 9, 10, 11 | 1 and earlier, 8, 12 and later | None |
 | Glasshouse Bar and the input bar | 4, 5, 6, 7, 9, 10 | 8 | 3 and earlier, 11 and later |
+| Faster communication with the TV (palmbus) | 4, 9 | 3 and earlier, 5, 6, 7, 8, 10 and later | None |
+
+[Faster communication with the TV](experimental.md#faster-communication-with-the-tv-palmbus) is on by default where reported working. Elsewhere the Server tab offers it as a switch, off until switched on, with the same links to report how it went.
 
 On webOS 2 and 3, Glasshouse Home runs as an app beside LG's Home, and reads the Home press from the remote itself. Tile hiding, and custom screen savers on webOS 12 and later, can leave a TV needing a restart when they go wrong, so they stay [experimental](experimental.md) with their own switches.
 

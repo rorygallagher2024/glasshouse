@@ -1,6 +1,6 @@
 # Experimental features
 
-Three features are experimental and off by default, turned on under **Server** → **Advanced** → **Experimental features**: each can leave a TV needing a restart when it goes wrong. Glasshouse Home, its launchers and the overlay bars are not among them: they are offered on every webOS version they can work on, with a warning where no one has reported them working yet; see [Launchers and overlays by webOS version](tested-tvs.md#launchers-and-overlays-by-webos-version).
+Three features are experimental and off by default, turned on under **Server** → **Advanced** → **Experimental features**: each can leave a TV needing a restart when it goes wrong. A fourth, [faster communication with the TV](#faster-communication-with-the-tv-palmbus), is on by default on the webOS versions it has been tried on. Glasshouse Home, its launchers and the overlay bars are not among them: they are offered on every webOS version they can work on, with a warning where no one has reported them working yet; see [Launchers and overlays by webOS version](tested-tvs.md#launchers-and-overlays-by-webos-version).
 
 ## Hiding home screen system apps
 
@@ -17,6 +17,32 @@ On webOS 10 and 11 they were experimental too, until TVs had run them. Switching
 Switches off parts of LG's Home screen, chosen on the **Home** tab under **Home screen layout**, which also has the switch, with its warning. On webOS 9 it works without turning anything on. It is not offered on other versions.
 
 webOS 10's home app keeps its layout on the TV's read-only system and looks nowhere else for it, so Glasshouse lays its own over LG's with an overlay mount and restarts the home app to read it. The mount does not survive a restart of the TV, so it is put back when Glasshouse starts, and LG's Home screen can show for a moment before that. It has been tried through Glasshouse on a C2 with webOS 10.3.1, and on a few other webOS 10 TVs outside it. **Put back LG's Home screen**, or switching it off, takes the overlay away and brings LG's Home screen back. It does not restart the app manager, so the problem below does not apply to it.
+
+## Faster communication with the TV (palmbus)
+
+Glasshouse talks to the TV's own services many times a minute, and each time it has started a separate `luna-send` process. With this on, it talks to them through palmbus, the connection LG's own apps use, which starts no process. The server starts faster, uses less CPU and memory, and Home Assistant gets the TV's state sooner.
+
+On an OLED65B8SLC (webOS 4.4.3):
+* **Processes:** 5 started in 2 minutes instead of 87, while idle.
+* **CPU:** the server's own use fell from 1.65% to 1.1% of a core.
+* **Home Assistant:** the full set of entities arrived 6 s after a start instead of 15 s.
+
+Ongoing updates the TV sends still use `luna-send`.
+
+It is on by default on webOS 4 and 9, where it has been tried, and off elsewhere. Its switch, **Faster, lighter communication with the TV**, is under **Server** → **Advanced** → **Experimental features**, with **Use the default** to go back to what the TV's webOS version gets, and, on a version not yet tried, links to report that it works or that something went wrong. It can also be set as `"lunaViaPalmbus": true` or `false` in `/var/lib/tvweb/config.json`.
+
+LG refuses some calls to palmbus that it answers for `luna-send`, and leaves others unanswered. Glasshouse sends such a call through `luna-send` from then on:
+* **Refused:** checked once with `luna-send`, however LG words the refusal.
+* **Answered differently:** a read whose first answer differs in shape from `luna-send`'s.
+* **Unanswered.**
+
+Each one is logged (`luna: ... goes through luna-send`) and kept in `/var/lib/tvweb/palmbus.json`, so the next start does the same; deleting that file has them tried again. Only a read is ever made a second time: a key press or a launch that goes unanswered may still have been carried out, so it is not sent again.
+
+It switches itself off for the TV, until the next Glasshouse version or until it is switched on again, when:
+* five calls in a row go unanswered;
+* the server stops without exiting twice in one boot while palmbus is on.
+
+LG's binding is native code, and one that crashed or hung the server would otherwise do so at every start.
 
 ## Why tile hiding is experimental
 

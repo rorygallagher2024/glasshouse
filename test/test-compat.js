@@ -53,7 +53,7 @@ function covers(cell, v) {
   });
 }
 var docs = fs.readFileSync(path.join(__dirname, '..', 'docs', 'tested-tvs.md'), 'utf8');
-var rows = { home: 'Glasshouse Home, Minimal and custom launchers', inputBar: 'Glasshouse Bar and the input bar' };
+var rows = { home: 'Glasshouse Home, Minimal and custom launchers', inputBar: 'Glasshouse Bar and the input bar', palmbus: 'Faster communication with the TV (palmbus)' };
 var STANDINGS = ['tried', 'untried', 'unsupported'];
 Object.keys(rows).forEach(function (id) {
   var line = docs.split('\n').filter(function (l) { return l.indexOf('| ' + rows[id] + ' |') === 0; })[0];
