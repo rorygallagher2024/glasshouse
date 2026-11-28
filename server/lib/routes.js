@@ -2422,6 +2422,15 @@ function handleRequest(req, res) {
     barPressModule.closed(String(u.query.app || ''), Number(u.query.press));
     return send(res, 200, JSON.stringify({ ok: true }));
   }
+  // The key filter's Brightness keys: a step made here, as the compositor's own call cannot read the level on webOS 4 (#1815). The TV only.
+  if (pathname === '/api/remotekeys/brightness' && req.method === 'POST' && remoteKeysModule) {
+    if (!fromTV(req)) return send(res, 403, JSON.stringify({ ok: false, error: 'from the TV only' }));
+    return readJsonBody(req, res, function (body) {
+      remoteKeysModule.brightnessFromFilter(body && body.delta, body && body.from, function (r) {
+        send(res, r && r.ok ? 200 : 502, JSON.stringify(r || { ok: false }));
+      });
+    });
+  }
   // The key filter's Ambient light key: PicCap toggled here, as the dashboard does. The TV only.
   if (pathname === '/api/remotekeys/piccap' && req.method === 'POST' && remoteKeysModule) {
     if (!fromTV(req)) return send(res, 403, JSON.stringify({ ok: false, error: 'from the TV only' }));
