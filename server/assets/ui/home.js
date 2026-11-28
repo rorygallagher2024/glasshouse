@@ -178,6 +178,9 @@ function renderLauncherPreview(kind, st) {
     const alt = !!(homeLayout && homeLayout.view === 'alternative');
     const hl = (homeLayout && homeLayout.tileHighlight) || homeHighlightDefault();
     const bottom = !!(homeLayout && homeLayout.rowsBottom);
+    const centred = !!(homeLayout && homeLayout.centerRows);
+    const clockAt = ['left', 'center', 'right'].includes(homeLayout && homeLayout.clockPosition) ? ` clock-${homeLayout.clockPosition}` : '';
+    const shape = ['square', 'squircle', 'circle', 'leaf', 'arch', 'drop'].includes(homeLayout && homeLayout.iconShape) ? ` shape-${homeLayout.iconShape}` : '';
     const preview = !!(homeLayout && homeLayout.livePreview);
     const showClock = !homeLayout || homeLayout.showClock !== false;
     const apps = homePreviewTiles(4);
@@ -189,7 +192,7 @@ function renderLauncherPreview(kind, st) {
         : `<span class="${cls}"><i class="hm-gh-glyph"></i></span>`;
     }).join('');
     const inputs = [0, 1, 2].map(() => `<span class="hm-gh-tile inp"><i></i></span>`).join('');
-    return `<span class="hm-s hm-s-gh${alt ? ' alt' : ''}${bottom ? ' bottom' : ''}" style="--look-text:${c.text};--look-accent:${c.accent};--look-highlight:${hl}">
+    return `<span class="hm-s hm-s-gh${alt ? ' alt' : ''}${bottom ? ' bottom' : ''}${centred ? ' centred' : ''}${clockAt}${shape}" style="--look-text:${c.text};--look-accent:${c.accent};--look-highlight:${hl}">
       <span class="hm-gh-head">
         ${showClock ? `<span class="hm-gh-clock">${clock}</span>` : '<span></span>'}
         ${preview ? `<span class="hm-gh-pip"><i></i></span>` : ''}
@@ -350,6 +353,20 @@ function renderHome() {
     batterySel.value = (st.layout && st.layout.remoteBattery) || 'low';
     batterySel.disabled = !homeWritable();
   }
+  const clockRow = q('home-clock-position-row');
+  if (clockRow) clockRow.hidden = !st.supported.ok;
+  const shapeRow = q('home-icon-shape-row');
+  if (shapeRow) shapeRow.hidden = !st.supported.ok;
+  const shapeSel = q('home-icon-shape-sel');
+  if (shapeSel) {
+    shapeSel.value = (st.layout && st.layout.iconShape) || 'auto';
+    shapeSel.disabled = !homeWritable();
+  }
+  const clockSel = q('home-clock-position-sel');
+  if (clockSel) {
+    clockSel.value = (st.layout && st.layout.clockPosition) || 'auto';
+    clockSel.disabled = !homeWritable();
+  }
   const sizeSel = q('home-preview-size-sel');
   if (sizeSel) {
     sizeSel.value = (st.layout && st.layout.previewSize) || 'small';
@@ -428,7 +445,7 @@ function renderHome() {
     wakeBtn.disabled = !homeWritable();
   }
   // Fading, as Picture details.
-  [['home-fade', 'fade'], ['home-rows-bottom', 'rowsBottom']].forEach(([id, field]) => {
+  [['home-fade', 'fade'], ['home-rows-bottom', 'rowsBottom'], ['home-center-rows', 'centerRows']].forEach(([id, field]) => {
     const row = q(id + '-row');
     if (row) row.hidden = !st.supported.ok;
     const btn = q(id);
@@ -2176,6 +2193,18 @@ function homeReopenWake() {
 
 function homeRowsBottom() {
   homeSaveLayout({ rowsBottom: homeLayout.rowsBottom !== true });
+}
+
+function homeCenterRows() {
+  homeSaveLayout({ centerRows: homeLayout.centerRows !== true });
+}
+
+function homeClockPosition(value) {
+  homeSaveLayout({ clockPosition: value });
+}
+
+function homeIconShape(value) {
+  homeSaveLayout({ iconShape: value });
 }
 
 function homeFade() {

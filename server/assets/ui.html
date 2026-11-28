@@ -1644,6 +1644,40 @@
       </div>
       <div class="prot-status"><button type="button" class="pill idle" id="home-rows-bottom" onclick="homeRowsBottom()">&mdash;</button></div>
     </div>
+    <div class="prot-row home-gh-row" id="home-center-rows-row" hidden>
+      <div class="prot-main">
+        <div class="prot-title" data-t="home.centerRows">Centre the rows</div>
+        <div class="prot-desc" data-t="home.centerRowsDesc">The apps and inputs of a row that fits on the screen sit in the middle of it, rather than from the left. A longer row still starts at the left.</div>
+      </div>
+      <div class="prot-status"><button type="button" class="pill idle" id="home-center-rows" onclick="homeCenterRows()">&mdash;</button></div>
+    </div>
+    <div class="prot-row home-gh-row" id="home-clock-position-row" hidden>
+      <div class="prot-main">
+        <div class="prot-title" data-t="home.clockPosition">Clock position</div>
+        <div class="prot-desc" data-t="home.clockPositionDesc">Where the clock and date sit at the top of Glasshouse Home. Default puts them on the left, or on the right in Alternative View.</div>
+      </div>
+      <div class="prot-status"><select class="pill-sel" id="home-clock-position-sel" onchange="homeClockPosition(this.value)" aria-label="Clock position" data-t-aria-label="home.clockPosition">
+        <option value="auto" data-t="home.clockPosition.auto">Default</option>
+        <option value="left" data-t="home.clockPosition.left">Left</option>
+        <option value="center" data-t="home.clockPosition.center">Centre</option>
+        <option value="right" data-t="home.clockPosition.right">Right</option>
+      </select></div>
+    </div>
+    <div class="prot-row home-gh-row" id="home-icon-shape-row" hidden>
+      <div class="prot-main">
+        <div class="prot-title" data-t="home.iconShape">Icon shape</div>
+        <div class="prot-desc" data-t="home.iconShapeDesc">The outline of each app’s icon, and of its tile too when app labels are off. Default is Glasshouse Home’s own rounded square. Not used with apps as cards.</div>
+      </div>
+      <div class="prot-status"><select class="pill-sel" id="home-icon-shape-sel" onchange="homeIconShape(this.value)" aria-label="Icon shape" data-t-aria-label="home.iconShape">
+        <option value="auto" data-t="home.iconShape.auto">Default</option>
+        <option value="square" data-t="home.iconShape.square">Square</option>
+        <option value="squircle" data-t="home.iconShape.squircle">Squircle</option>
+        <option value="circle" data-t="home.iconShape.circle">Circle</option>
+        <option value="leaf" data-t="home.iconShape.leaf">Leaf</option>
+        <option value="arch" data-t="home.iconShape.arch">Arch</option>
+        <option value="drop" data-t="home.iconShape.drop">Drop</option>
+      </select></div>
+    </div>
   </div>
   </div>
   <div class="home-group" id="home-g-shown" data-home-sub="behavior">

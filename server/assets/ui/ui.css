@@ -2375,6 +2375,18 @@ button.hm-card.warn .hm-name{color:var(--cand)}
 .hm-gh-pip i{position:absolute;right:3px;bottom:3px;width:3px;height:3px;border-radius:50%;background:#30de61}
 .hm-gh-rows{display:flex;flex-direction:column;gap:2.5px;margin:auto 0}
 .hm-s-gh.bottom .hm-gh-rows{margin:auto 0 0}
+.hm-s-gh.centred .hm-gh-row{justify-content:center}
+.hm-s-gh.centred .hm-gh-lbl{text-align:center}
+.hm-s-gh.clock-left .hm-gh-head{flex-direction:row}
+.hm-s-gh.clock-right .hm-gh-head{flex-direction:row-reverse}
+.hm-s-gh.clock-center .hm-gh-head{position:relative;flex-direction:row;justify-content:flex-end}
+.hm-s-gh.clock-center .hm-gh-clock{position:absolute;left:50%;transform:translateX(-50%)}
+.hm-s-gh.shape-square .hm-gh-tile:not(.inp){border-radius:4%}
+.hm-s-gh.shape-squircle .hm-gh-tile:not(.inp){border-radius:34%}
+.hm-s-gh.shape-circle .hm-gh-tile:not(.inp){border-radius:50%}
+.hm-s-gh.shape-leaf .hm-gh-tile:not(.inp){border-radius:50% 8%}
+.hm-s-gh.shape-arch .hm-gh-tile:not(.inp){border-radius:50% 50% 12% 12%}
+.hm-s-gh.shape-drop .hm-gh-tile:not(.inp){border-radius:50% 50% 50% 6%}
 .hm-gh-lbl{font-size:5.5px;letter-spacing:.05em;line-height:1.1;color:var(--look-text,#ece7df);opacity:.65}
 .hm-s-gh.alt .hm-gh-lbl{display:none}
 .hm-gh-row{display:flex;gap:3.5px}

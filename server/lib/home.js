@@ -76,6 +76,11 @@ var REMOTE_BATTERY_LOW = 20;
 var REMOTE_BATTERY_STEPS = ['high', 'mid', 'low'];
 // The live preview beside the clock: 356x200, 512x288 or 640x360 on the 1920x1080 view.
 var PREVIEW_SIZES = ['small', 'medium', 'large'];
+// Where the clock sits in the top strip: auto is each view's own place (left, or
+// right in Alternative View).
+var CLOCK_POSITIONS = ['auto', 'left', 'center', 'right'];
+// The outline of the apps' icons: auto is Glasshouse Home's own rounded square.
+var ICON_SHAPES = ['auto', 'square', 'squircle', 'circle', 'leaf', 'arch', 'drop'];
 // Each kind of motion on the view, on unless switched off: the wallpaper's
 // slow drift and its cross-fade between parts of the day, rows easing to the
 // chosen tile, and Recent apps, search and the folder sliding in.
@@ -577,6 +582,12 @@ function defaults() {
     wallShuffleMinutes: 10,
     // The rows centred below the top strip, or along the bottom as on LG's Home.
     rowsBottom: false,
+    // The tiles of a row that fits on screen centred across it, rather than from the left.
+    centerRows: false,
+    // One of CLOCK_POSITIONS.
+    clockPosition: 'auto',
+    // One of ICON_SHAPES.
+    iconShape: 'auto',
     // standard, or alternative: a smaller clock on the right, and the rows
     // as rounded, translucent tiles without their titles.
     view: 'standard',
@@ -706,6 +717,9 @@ function normalise(raw) {
   d.newsSpeed = raw.newsSpeed === 'normal' || raw.newsSpeed === 'fast' ? 'normal' : 'slow';
   d.newsStyle = raw.newsStyle === 'scroll' ? 'scroll' : 'flip';
   d.rowsBottom = raw.rowsBottom === true;
+  d.centerRows = raw.centerRows === true;
+  d.clockPosition = CLOCK_POSITIONS.indexOf(raw.clockPosition) !== -1 ? raw.clockPosition : 'auto';
+  d.iconShape = ICON_SHAPES.indexOf(raw.iconShape) !== -1 ? raw.iconShape : 'auto';
   d.reopenAfterWake = raw.reopenAfterWake !== false;
   d.view = raw.view === 'alternative' ? 'alternative' : 'standard';
   d.previewAlways = raw.previewAlways === true;
@@ -935,6 +949,9 @@ function setLayout(body, cb) {
     livePreview: typeof body.livePreview === 'boolean' ? body.livePreview : c.livePreview,
     showClock: typeof body.showClock === 'boolean' ? body.showClock : c.showClock,
     rowsBottom: typeof body.rowsBottom === 'boolean' ? body.rowsBottom : c.rowsBottom,
+    centerRows: typeof body.centerRows === 'boolean' ? body.centerRows : c.centerRows,
+    clockPosition: body.clockPosition !== undefined ? body.clockPosition : c.clockPosition,
+    iconShape: body.iconShape !== undefined ? body.iconShape : c.iconShape,
     view: body.view !== undefined ? body.view : c.view,
     showLastOn: typeof body.showLastOn === 'boolean' ? body.showLastOn : c.showLastOn,
     showAppCount: typeof body.showAppCount === 'boolean' ? body.showAppCount : c.showAppCount,
@@ -1108,7 +1125,7 @@ function layoutOf(c) {
     searchHintSeen: c.searchHintSeen, picture: c.picture, livePreview: c.livePreview, search: c.search, recommended: c.recommended,
     haRow: c.haRow === true, haBarInHomeBar: c.haBarInHomeBar === true,
     fade: c.fade, wallDrift: c.wallDrift, wallCrossfade: c.wallCrossfade, smoothScroll: c.smoothScroll, slidePanels: c.slidePanels,
-    darkening: c.darkening, hideUnused: c.hideUnused, showMediaServers: c.showMediaServers, deviceNames: devNamesNow(c.deviceNames), appNames: c.appNames, appCards: c.appCards, focusPulse: c.focusPulse, navSound: c.navSound, pointerSound: c.pointerSound, ownSound: ownSoundInfo(), cardFade: c.cardFade, appIcons: c.appIcons, inputBarTransparent: c.inputBarTransparent, inputBarSwitchOnOk: c.inputBarSwitchOnOk, showClock: c.showClock, rowsBottom: c.rowsBottom, view: c.view,
+    darkening: c.darkening, hideUnused: c.hideUnused, showMediaServers: c.showMediaServers, deviceNames: devNamesNow(c.deviceNames), appNames: c.appNames, appCards: c.appCards, focusPulse: c.focusPulse, navSound: c.navSound, pointerSound: c.pointerSound, ownSound: ownSoundInfo(), cardFade: c.cardFade, appIcons: c.appIcons, inputBarTransparent: c.inputBarTransparent, inputBarSwitchOnOk: c.inputBarSwitchOnOk, showClock: c.showClock, rowsBottom: c.rowsBottom, centerRows: c.centerRows, clockPosition: c.clockPosition, iconShape: c.iconShape, view: c.view,
     showLastOn: c.showLastOn, showAppCount: c.showAppCount, showAppLabels: c.showAppLabels, showCec: c.showCec, showTvLogos: c.showTvLogos, showPointer: c.showPointer, reopenAfterWake: c.reopenAfterWake, weather: c.weather, weatherPlace: c.weatherPlace, info: c.info, infoLines: c.infoLines, board: c.board, boardStrip: c.boardStrip, news: c.news, newsFeeds: c.newsFeeds, newsSpeed: c.newsSpeed, newsStyle: c.newsStyle, previewAlways: c.previewAlways, previewInTile: c.previewInTile, previewSize: c.previewSize, previewSound: c.previewSound, wallAnim: c.wallAnim,
     remoteBattery: c.remoteBattery,
     animTheme: c.animTheme, animSky: c.animSky, animLight: c.animLight, animThemes: ANIM_THEMES,
