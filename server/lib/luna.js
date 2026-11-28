@@ -451,6 +451,7 @@ function configurePalmbus(opts) {
   busState = { lunaSend: {}, checked: {} };
   busChecked = {};
   busComparing = {};
+  compareFailed = {};
   busAlias = {};
   busSilent = 0;
   if (busStateFile) {
@@ -564,13 +565,29 @@ function shape(v, depth) {
   return typeof v;
 }
 
-// The first answer a read method gets on the bus, checked against luna-send's.
+/*
+ * The first answer a read method gets on the bus, checked against luna-send's.
+ * Only two answers that both succeeded are compared: on the OLED42C24LA
+ * luna-send once failed getSoundOut while the bus answered it, which says
+ * nothing about the bus. A method luna-send fails COMPARE_TRIES times is left
+ * to the bus, as luna-send cannot answer it any better.
+ */
+var COMPARE_TRIES = 3;
+var compareFailed = {};
+
 function compareOnce(job, uri, busParsed) {
   if (own(busState.checked, uri) || own(busComparing, uri) || !isRead(uri)) return;
   busComparing[uri] = true;
   enqueue({ args: job.args.slice(), urgent: false, first: false, slow: false, appId: null, cb: function (lsParsed) {
     delete busComparing[uri];
-    if (!lsParsed) return;
+    if (!lsParsed || lsParsed.returnValue === false) {
+      compareFailed[uri] = (compareFailed[uri] || 0) + 1;
+      if (compareFailed[uri] >= COMPARE_TRIES) {
+        busState.checked[uri] = true;
+        saveBusState();
+      }
+      return;
+    }
     var a = shape(busParsed, 2), b = shape(lsParsed, 2);
     if (a === b) {
       busState.checked[uri] = true;

@@ -104,6 +104,27 @@ step(function (next) {
   });
 });
 
+// 3b. luna-send failing the comparison says nothing about the bus: tried again, then left to the bus.
+step(function (next) {
+  var u = 'com.webos.audio/getSoundOutNow';
+  bus.answers[u] = { returnValue: true, muted: false, volume: 9 };
+  lsAnswers[u] = { returnValue: false, errorCode: -1, errorText: 'Internal error' };
+  var n = 0;
+  (function again() {
+    luna.call(u, {}, function (r) {
+      assert.strictEqual(r.volume, 9, 'the bus\'s answer each time');
+      setTimeout(function () {
+        if (++n < 4) return again();
+        assert.ok(!state().lunaSend[u], 'not moved to luna-send');
+        assert.strictEqual(state().checked[u], true, 'left to the bus after three comparisons luna-send failed');
+        assert.strictEqual(sentTo(u), 3, 'compared three times, then no more');
+        console.log('  ✓ a comparison luna-send fails moves nothing, and after three the bus keeps the method');
+        next();
+      }, 300);
+    });
+  })();
+});
+
 // 4. Refused, in so many words: through luna-send, from then on, kept.
 step(function (next) {
   var u = 'com.webos.audio/getSoundOut';
