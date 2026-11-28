@@ -112,6 +112,8 @@ var lgSettings = null;
 var updater = null;
 /** @type {typeof import('./updateask')} */
 var updateAsk = null;
+/** @type {typeof import('./inputbanner')} */
+var inputBanner = null;
 /** @type {typeof import('./devtools')} */
 var devtoolsModule = null;
 /** @type {typeof import('./ntp')} */
@@ -1345,6 +1347,12 @@ function doControl(action, value, cb) {
         cb(typeof updateSummaryFn === 'function' ? getUpdateSummary() : updater.updateSummary());
       });
 
+    case 'closeInputBanner':
+      if (!inputBanner) return cb({ ok: false, error: 'not available' });
+      return inputBanner.setEnabled(value === true || value === 'on' || value === 'true', function (r) {
+        cb(r && r.ok ? { ok: true, inputBanner: inputBanner.summary() } : r);
+      });
+
     case 'updateRollback':
       return updater.rollbackUpdate(function (r) {
         if (r && r.ok) setTimeout(function () { doRestartSelf(); }, 600);
@@ -1606,6 +1614,7 @@ function init(opts) {
   if (opts.lgSettings) lgSettings = opts.lgSettings;
   if (opts.updater) updater = opts.updater;
   if (opts.updateAsk) updateAsk = opts.updateAsk;
+  if (opts.inputBanner) inputBanner = opts.inputBanner;
   if (opts.devtools) devtoolsModule = opts.devtools;
   if (opts.ntp) ntpModule = opts.ntp;
   if (opts.history) historyModule = opts.history;

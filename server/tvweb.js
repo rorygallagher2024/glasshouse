@@ -68,6 +68,7 @@ var remoteKeys = require('./lib/remotekeys');
 var inputBar = require('./lib/inputbar');
 var askQuestion = require('./lib/ask');
 var updateAsk = require('./lib/updateask');
+var inputBanner = require('./lib/inputbanner');
 var compat = require('./lib/compat');
 
 /*
@@ -836,7 +837,10 @@ var liveState = stateModule.init({
   },
   onTvChange: function (ev) {
     // Leaving an input drops game.js's bind, without waiting for someone to ask.
-    if (ev.group === 'application' && ev.key === 'app_id') game.appChanged(ev.value);
+    if (ev.group === 'application' && ev.key === 'app_id') {
+      game.appChanged(ev.value);
+      inputBanner.onAppChanged(ev.value, ev.snapshot);
+    }
     if (ev.group === 'power' && ev.key === 'state') {
       screensavers.onPowerChange(ev.value);
       pictureOnChanged(ev.value);
@@ -941,6 +945,7 @@ controls.init({
   lgSettings: lgSettings,
   updater: updater,
   updateAsk: updateAsk,
+  inputBanner: inputBanner,
   devtools: devtools,
   ntp: ntpClient,
   history: history,
@@ -1209,6 +1214,8 @@ updateAsk.init({
   },
   screenOn: function () { return pictureOn; }
 });
+// LG's input banner closed for the remote to reach an HDMI device at once (Inputs tab).
+inputBanner.init({ config: CONFIG, luna: luna, writeSettings: routes.writeSettings });
 
 // Bare in the user agent: a catalog has no use for the commit.
 fetchLib.init({ config: CONFIG, version: TVWEB_VERSION });
@@ -1253,6 +1260,7 @@ routes.init({
   audioLevels: audioLevels,
   pointer: pointer,
   inputBar: inputBar,
+  inputBanner: inputBanner,
   ask: askQuestion,
   audio: audioCapabilities,
   btAudio: btAudio,

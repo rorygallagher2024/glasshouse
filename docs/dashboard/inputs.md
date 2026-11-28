@@ -62,6 +62,10 @@ Offered on TVs whose No Signal overlay Glasshouse knows how to replace (tried on
 
 Switching modes takes effect immediately when an idle input is already on screen, and otherwise the next time no HDMI input is active (such as at Home), so restarting the input app never interrupts what you are watching. An input left open behind an app also holds the change back until it is closed, as on some TVs (a C9 with webOS 4.10) such an input stayed blank after the restart until the TV was rebooted. The Inputs tab names the input it is waiting for. LG's other messages, such as a scrambled channel notice, remain untouched. The chosen mode is preserved across restarts and is also available in the TV app under **Screen saver**.
 
+## Input banner
+
+Switching to an HDMI input shows LG's banner with the input and device name, such as "HDMI 1 / Formuler Z11 P", for 5 seconds (10 with audio guidance). Until it goes, the remote's keys stay with the TV and do not reach the device over HDMI-CEC (SIMPLINK); OK or Back closes it. With **Close the input banner at once** on, Glasshouse sends that Back itself 2 seconds after the input comes to the front, so the remote works on the device straight away. It does this only for an HDMI input with a player or set-top box on SIMPLINK, not one with nothing on it or only a sound bar, where Back would reach the TV instead. A Back that came after the banner had already been closed by hand would go to the device as one step back. Off by default; tried on a C6 running webOS 11.1.
+
 ## webOS versions
 
 **Glasshouse Input bar** is offered on webOS 4 to 10, and on webOS 11 for the TVs described above; [why not elsewhere](../tested-tvs.md#why-some-versions-are-not-offered). Where no one has yet reported it working on the TV's version, a note above the choice says so, with links to report a problem or that it works; see [Launchers and overlays by webOS version](../tested-tvs.md#launchers-and-overlays-by-webos-version).

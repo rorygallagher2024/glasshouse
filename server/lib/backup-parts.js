@@ -452,7 +452,7 @@ var NOT_CARRIED = {
   // config.json's, in backup.js's GLASSHOUSE.
   // The adBlock part's control under its other names.
   adblock: 'carried', toggleAdBlock: 'carried',
-  updateAutoCheck: 'carried', updateAskOnTv: 'carried', setPrometheusEnabled: 'carried', setNtpServer: 'carried', setNtpEnabled: 'carried',
+  updateAutoCheck: 'carried', updateAskOnTv: 'carried', closeInputBanner: 'carried', setPrometheusEnabled: 'carried', setNtpServer: 'carried', setNtpEnabled: 'carried',
   setHistoryEnabled: 'carried', setBackupDaily: 'carried', setScreenGlowAllowed: 'carried',
   // One of lgsettings.js's rows: carried by its section.
   lgSetting: 'carried'

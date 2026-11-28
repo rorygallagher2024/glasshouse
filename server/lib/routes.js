@@ -117,6 +117,8 @@ var haEntityModule = null;
 var haBarModule = null;
 /** @type {typeof import('./inputbar')} */
 var inputBarModule = null;
+/** @type {typeof import('./inputbanner')} */
+var inputBannerModule = null;
 /** @type {typeof import('./ask')} */
 var askModule = null;
 /** @type {typeof import('./updater')} */
@@ -2056,7 +2058,8 @@ function handleRequest(req, res) {
       ok: true,
       writable: !!config.allowControl,
       noSignal: nosignal.status(),
-      inputBar: inputBarModule ? inputBarModule.summary() : null
+      inputBar: inputBarModule ? inputBarModule.summary() : null,
+      inputBanner: inputBannerModule ? inputBannerModule.summary() : null
     }));
   }
 
@@ -3330,6 +3333,7 @@ function init(opts) {
   if (opts.haEntity) haEntityModule = opts.haEntity;
   if (opts.haBar) haBarModule = opts.haBar;
   if (opts.inputBar) inputBarModule = opts.inputBar;
+  if (opts.inputBanner) inputBannerModule = opts.inputBanner;
   if (opts.ask) askModule = opts.ask;
   if (opts.updater) updaterModule = opts.updater;
   if (opts.logs) logsModule = opts.logs;

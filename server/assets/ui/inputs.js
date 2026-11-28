@@ -18,7 +18,7 @@ async function loadInputs() {
 }
 
 function renderInputs() {
-  const shown = [renderInputBar(), renderInputList(), renderNoSignal()];
+  const shown = [renderInputBar(), renderInputList(), renderNoSignal(), renderInputBanner()];
   q('inputs-none').hidden = shown.some(Boolean);
 }
 
@@ -337,6 +337,29 @@ function renderNoSignal() {
       ? t('ss.noSignal.pendingBehind', 'It takes effect once {input} is closed: it is open behind another app, and the TV\u2019s input app restarts to show the new screen, which could leave that input blank.', { input: ns.heldBy })
       : t('ss.noSignal.pending', 'It takes effect once no input with a picture is on screen, such as at the Home screen.');
   return true;
+}
+
+// Closing LG's input banner, for the remote to reach an HDMI device at once.
+function renderInputBanner() {
+  const grp = q('inputs-grp-banner');
+  const ib = inputsData && inputsData.inputBanner;
+  grp.hidden = !ib;
+  if (!ib) return false;
+  const btn = q('btn_close_banner');
+  btn.textContent = ib.closeBanner ? t('common.on', 'On') : t('common.off', 'Off');
+  btn.className = 'pill ' + (ib.closeBanner ? 'good' : 'idle');
+  btn.disabled = !(inputsData && inputsData.writable);
+  return true;
+}
+
+async function toggleCloseBanner() {
+  const ib = inputsData && inputsData.inputBanner;
+  if (!ib) return;
+  const btn = q('btn_close_banner');
+  btn.disabled = true;
+  const r = await sendCommand('closeInputBanner', !ib.closeBanner);
+  if (r && r.ok && r.inputBanner) inputsData.inputBanner = r.inputBanner;
+  renderInputBanner();
 }
 
 async function setNoSignal(mode) {

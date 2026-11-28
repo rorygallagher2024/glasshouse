@@ -59,6 +59,7 @@ var GLASSHOUSE = {
   history: { enabled: isBool },
   screenGlow: { allowed: isBool },
   backup: { daily: isBool },
+  inputs: { closeBanner: isBool },
   screenTime: screentime.VALID,
   prometheus: { enabled: isBool },
   update: { check: isBool, askOnTv: isBool }
