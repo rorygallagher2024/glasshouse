@@ -1356,6 +1356,10 @@ button.pill.flash.idle[disabled]:hover{color:var(--w60);border-color:var(--edge)
 .ha-bar-ent .id{font-size:12px;color:var(--w60);font-family:ui-monospace,SFMono-Regular,Menlo,monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .ha-bar-label{width:100%;min-width:0;box-sizing:border-box;height:34px;font-family:'Manrope';font-size:13px;color:var(--w100);background:transparent;border:1px solid var(--edge);padding:0 10px;border-radius:var(--r-sm);outline:none}
 .ha-bar-label:focus{border-color:var(--w100)}
+.ha-bar-ctl[aria-pressed="false"]{color:transparent}
+.ha-bar-legend{margin-top:10px;max-width:none;display:flex;align-items:center;gap:8px}
+/* The Control button as the rows draw it, smaller, so the note points at it. */
+.ha-bar-legend-box{flex:none;display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border:1px solid var(--edge);border-radius:var(--r-sm);color:var(--w80);font-size:13px;line-height:1}
 .ha-bar-remote-hint{margin:0}
 .ha-bar-actions{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:10px}
 .ha-bar-preview{text-decoration:none}

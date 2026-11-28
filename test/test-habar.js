@@ -193,6 +193,39 @@ server.listen(0, '127.0.0.1', function () {
   assert.strictEqual(hintsOn.showHints, true);
   console.log('  \u2713 saveConfig validates, deduplicates, persists entities, and preserves showHints');
 
+  // Control withheld for an entity (a child's TV): kept as control: false and
+  // only then, shown as a reading, and refused before Home Assistant is asked.
+  var withheld = haBar.saveConfig([{ id: 'climate.living', label: '', control: false }, { id: 'light.desk', label: 'Desk', control: true }]);
+  assert.strictEqual(withheld.ok, true);
+  assert.deepEqual(haBar.listConfig().entities, [{ id: 'climate.living', label: '', control: false }, { id: 'light.desk', label: 'Desk' }],
+    'control is written only where it is withheld');
+  var heldTile = haBar.formatTile(haBar.listConfig().entities[0], { state: 'heat', attributes: { temperature: 21, hvac_modes: ['off', 'heat'] } }, '');
+  assert.strictEqual(heldTile.readOnly, true, 'a withheld entity is a reading');
+  assert.strictEqual(heldTile.adjustable, false, 'and has no steps');
+  assert.strictEqual(heldTile.viewOnly, true);
+  assert.strictEqual(heldTile.valueText, '21\u00b0 \u00b7 heat', 'its state still shows');
+  assert.strictEqual(haBar.formatTile(haBar.listConfig().entities[1], { state: 'on', attributes: { brightness: 128 } }, '').readOnly, false);
+  var callsBefore = serviceCalls.length, refused = null;
+  ['toggle', 'step'].forEach(function (action) {
+    haBar.act('climate.living', action, 1, function (r) { refused = r; });
+    assert.strictEqual(refused.ok, false, action + ' is refused');
+    assert.ok(/only be viewed/.test(refused.error), refused.error);
+  });
+  assert.strictEqual(serviceCalls.length, callsBefore, 'Home Assistant was not asked');
+  assert.strictEqual(haBar.saveConfig(saved.entities).ok, true);
+  console.log('  \u2713 an entity with control withheld shows as a reading and its changes are refused');
+
+  // The dashboard offers Control only where the bar can act: its list of
+  // domains has to match what formatTile treats as a reading.
+  var uiSrc = fs.readFileSync(path.join(__dirname, '..', 'server', 'assets', 'ui', 'habar.js'), 'utf8');
+  var controlled = JSON.parse(/HA_BAR_CONTROLLED = (\[[^\]]*\])/.exec(uiSrc)[1].replace(/'/g, '"'));
+  ['light', 'switch', 'input_boolean', 'fan', 'climate', 'cover', 'lock', 'scene', 'script', 'button', 'input_button',
+    'sensor', 'binary_sensor', 'weather', 'person', 'number', 'select', 'media_player', 'camera'].forEach(function (domain) {
+    var readOnly = haBar.formatTile({ id: domain + '.x', label: '' }, { state: 'on', attributes: {} }, '').readOnly;
+    assert.strictEqual(readOnly, controlled.indexOf(domain) === -1, domain + ': the dashboard and formatTile agree on control');
+  });
+  console.log('  \u2713 the dashboard offers Control only for the domains the bar acts on');
+
   // 2. Preload lifecycle
   haBar.start();
   haBar.runningChanged({ running: [] });
@@ -291,6 +324,8 @@ server.listen(0, '127.0.0.1', function () {
                         assert.ok(part);
                         assert.strictEqual(part.valid([{ id: 'light.desk', label: 'Desk' }]), true);
                         assert.strictEqual(part.valid([{ id: 'bad' }]), false);
+                        assert.strictEqual(part.valid([{ id: 'light.desk', label: '', control: false }]), true, 'a backup keeps control withheld');
+                        assert.strictEqual(part.valid([{ id: 'light.desk', control: 'no' }]), false);
                         part.read(function (readEnts) {
                           assert.strictEqual(readEnts.length, 9);
                           part.write([{ id: 'switch.kettle', label: 'Tea' }], function (wr) {

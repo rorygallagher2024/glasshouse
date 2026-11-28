@@ -64,7 +64,9 @@ function listConfig() {
     if (!/^[a-z0-9_]+\.[a-z0-9_]+$/.test(id) || seen[id]) continue;
     seen[id] = true;
     var label = typeof item.label === 'string' ? item.label.replace(/\s+/g, ' ').trim().slice(0, MAX_LABEL) : '';
-    out.push({ id: id, label: label });
+    var entry = { id: id, label: label };
+    if (item.control === false) entry.control = false;
+    out.push(entry);
     if (out.length >= MAX_ENTITIES) break;
   }
   return { entities: out, showHints: !(j && j.showHints === false) };
@@ -80,11 +82,13 @@ function saveConfig(list, opts) {
     var raw = list[i];
     var id = '';
     var label = '';
+    var control = true;
     if (typeof raw === 'string') {
       id = raw.trim();
     } else if (raw && typeof raw === 'object') {
       id = String(raw.id || '').trim();
       label = typeof raw.label === 'string' ? raw.label.replace(/\s+/g, ' ').trim().slice(0, MAX_LABEL) : '';
+      control = raw.control !== false;
     } else {
       continue;
     }
@@ -97,7 +101,10 @@ function saveConfig(list, opts) {
       return { ok: false, error: msg('srv.habar.tooMany', 'too many entities (max {max})', { max: MAX_ENTITIES }) };
     }
     seen[id] = true;
-    out.push({ id: id, label: label });
+    // Kept only where control is withheld, so a list saved before stays as it was.
+    var entry = { id: id, label: label };
+    if (!control) entry.control = false;
+    out.push(entry);
   }
   try {
     if (!out.length) {
@@ -201,7 +208,22 @@ function formatTemp(n, unit) {
   return s + (unit || '°');
 }
 
+/*
+ * An entity whose control is switched off on the dashboard (control: false)
+ * shows here as a reading: OK and the steps do nothing and act() refuses it,
+ * so a child's TV can show the heating or a light without changing them.
+ */
 function formatTile(item, ent, err) {
+  var tile = tileFor(item, ent, err);
+  if (item && item.control === false) {
+    tile.readOnly = true;
+    tile.adjustable = false;
+    tile.viewOnly = true;
+  }
+  return tile;
+}
+
+function tileFor(item, ent, err) {
   var id = item.id;
   var domain = domainOf(id);
   var attrs = (ent && ent.attributes && typeof ent.attributes === 'object') ? ent.attributes : {};
@@ -381,6 +403,11 @@ function act(entityId, action, value, prevState, cb) {
   var item = findConfigured(String(entityId || ''));
   if (!item) {
     return cb({ ok: false, error: msg('srv.habar.notListed', 'entity is not on the Home Assistant bar') });
+  }
+  // Checked here, where every change made from the TV passes: the bar, Glasshouse
+  // Home's row, and a remote key stepping its tile.
+  if (item.control === false) {
+    return cb({ ok: false, error: msg('srv.habar.viewOnly', 'this entity can only be viewed on this TV') });
   }
   var domain = domainOf(item.id);
   var mode = String(action || 'toggle');
