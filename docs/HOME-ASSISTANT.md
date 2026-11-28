@@ -128,6 +128,10 @@ Node-RED, Telegraf into InfluxDB, or scripts subscribing to that topic work the 
 3. Enter your **Home Assistant address** (for example `http://192.168.1.10:8123` or `http://homeassistant.local:8123`) and paste the **Long-Lived Access Token** (or set `homeAssistant.url` and `homeAssistant.token` in `config.json`). If your address uses `https://` with a self-signed certificate or a LAN IP address, switch **Verify certificate** off (or set `homeAssistant.tlsRejectUnauthorized` to `false` in `config.json`).
 4. Click **Save**. The settings apply at once, without restarting the server, and Glasshouse checks the connection. The **Connection** box beside the settings draws the TV and Home Assistant as the MQTT bridge's box draws the TV and its broker: the link reads **Reachable** with Home Assistant's response time and how long ago Glasshouse last read an entity, **Off**, or **Unreachable** with the reason. You can switch the **Home Assistant API** button off at any time to disable Home Assistant screen savers while keeping your saved address and token.
 
+Glasshouse keeps a connection open to Home Assistant's WebSocket API, `/api/websocket`, and Home Assistant sends it each change to the entities the control bar, Glasshouse Home and the screen savers use, as it happens. A change made elsewhere, such as a wall switch or another app, shows on the open control bar and Glasshouse Home's Home Assistant row within about a second. Until the connection is up, and while it reconnects after a drop, Glasshouse asks over HTTP instead, every five seconds on the bar and every ten on Glasshouse Home. The **Connection** box adds **pushing changes** or **reconnecting…**.
+
+If your setup can't keep a WebSocket open, set `homeAssistant.updateMode` to `"polling"` in `config.json` and Glasshouse only ever asks over HTTP.
+
 ![Home Assistant API settings showing the toggle, address, saved token, and the Connection box with Home Assistant reachable](screenshots/ha-api.png)
 
 Once enabled and connected, the API is used in three places. While it is off or unconfigured, none of them offers it.

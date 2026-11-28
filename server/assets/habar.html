@@ -100,6 +100,10 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
   var closeTimer = null;
   var clockTimer = null;
   var refreshTimer = null;
+  // How often the open bar asks this server again: the server's answer says,
+  // shorter where it serves a cache kept by Home Assistant's push or its own
+  // background refresh, so asking costs Home Assistant nothing.
+  var refreshMs = 5000;
   var seq = 0;
   var keyToken = (/[?&]k=([^&]+)/.exec(location.search) || [])[1] || '';
 
@@ -285,11 +289,14 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
     clearInterval(clockTimer);
     tick();
     clockTimer = setInterval(tick, 15000);
+    armRefresh();
+    document.body.className = 'on';
+  }
+  function armRefresh() {
     clearInterval(refreshTimer);
     refreshTimer = setInterval(function () {
       if (!busyId && !closing && document.body.className === 'on') loadState(true);
-    }, 5000);
-    document.body.className = 'on';
+    }, refreshMs);
   }
   function close() {
     if (closing) return;
@@ -319,6 +326,11 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
       }
       useHour12 = !!j.hour12;
       showHints = j.showHints !== false;
+      var nextRefresh = j.refreshMs >= 500 ? j.refreshMs : 5000;
+      if (nextRefresh !== refreshMs) {
+        refreshMs = nextRefresh;
+        if (refreshTimer) armRefresh();
+      }
       tick();
       if (!j.configured) {
         if (!silent) showFallback('Home Assistant is not configured', 'Set it up on the HA & MQTT tab');

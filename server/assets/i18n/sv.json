@@ -588,6 +588,8 @@
  "ha.token.set": {"from": "A token is set. Leave blank to keep it.", "text": "En token är angiven. Lämna tomt för att behålla den."},
  "ha.url": {"from": "Home Assistant address", "text": "Home Assistant-adress"},
  "ha.url.hint": {"from": "Address and port of your Home Assistant instance.", "text": "Adress och port till din Home Assistant-instans."},
+ "ha.updateMode.wsPushing": {"from": "pushing changes", "text": "skickar ändringar"},
+ "ha.updateMode.wsReconnecting": {"from": "reconnecting…", "text": "ansluter igen…"},
  "header.remote": {"from": "Remote", "text": "Fjärrkontroll"},
  "header.sleep": {"from": "Sleep timer {n} min", "text": "Insomningstimer {n} min"},
  "header.switchInput": {"from": "Switch input", "text": "Byt ingång"},

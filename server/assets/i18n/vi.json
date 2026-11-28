@@ -588,6 +588,8 @@
  "ha.token.set": {"text": "Đã đặt mã truy cập. Để trống nếu muốn giữ nguyên.", "from": "A token is set. Leave blank to keep it."},
  "ha.url": {"text": "Địa chỉ Home Assistant", "from": "Home Assistant address"},
  "ha.url.hint": {"text": "Địa chỉ và cổng của máy chủ Home Assistant.", "from": "Address and port of your Home Assistant instance."},
+ "ha.updateMode.wsPushing": {"text": "đang gửi thay đổi", "from": "pushing changes"},
+ "ha.updateMode.wsReconnecting": {"text": "đang kết nối lại…", "from": "reconnecting…"},
  "header.remote": {"text": "Điều khiển từ xa", "from": "Remote"},
  "header.sleep": {"text": "Hẹn giờ ngủ {n} phút", "from": "Sleep timer {n} min"},
  "header.switchInput": {"text": "Chuyển đầu vào", "from": "Switch input"},

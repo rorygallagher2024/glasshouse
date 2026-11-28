@@ -3217,6 +3217,8 @@
  "ha.token.set": {"text": "Токен задан. Оставьте поле пустым, чтобы сохранить его.", "from": "A token is set. Leave blank to keep it."},
  "ha.url": {"text": "Адрес Home Assistant", "from": "Home Assistant address"},
  "ha.url.hint": {"text": "Адрес и порт вашего сервера Home Assistant.", "from": "Address and port of your Home Assistant instance."},
+ "ha.updateMode.wsPushing": {"text": "передаёт изменения", "from": "pushing changes"},
+ "ha.updateMode.wsReconnecting": {"text": "переподключение…", "from": "reconnecting…"},
  "srv.saver.badEntities": {"text": "{file}: entities требует коротких имен, каждое с ID сущности Home Assistant, например sensor.outdoor_temperature, до {max} штук.", "from": "{file}: entities needs short names, each with a Home Assistant entity id such as sensor.outdoor_temperature, up to {max} of them."},
  "srv.saver.haUses": {"text": "{file}: entities и \"ha\" или \"ha-all\" в uses используются вместе.", "from": "{file}: entities and \"ha\" or \"ha-all\" in uses go together."},
  "srv.saver.undeclaredHa": {"text": "{main} использует {placeholder}, а saver.json не указывает эту сущность в entities.", "from": "{main} uses {placeholder}, and saver.json does not name that entity under entities."},

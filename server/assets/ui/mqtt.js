@@ -612,6 +612,11 @@ function formatHaLinkMetric(st, statusObj) {
     let metric = t('mqtt.net.reachable', 'Reachable');
     if (statusObj && statusObj.latencyMs != null) metric += ' · ' + t('mqtt.net.latency', '{ms} ms', { ms: statusObj.latencyMs });
     if (statusObj && statusObj.lastReadMs != null) metric += ' · ' + t('ha.net.readAge', 'read {age}', { age: cfgAge(statusObj.lastReadMs) });
+    if (statusObj && statusObj.updateMode === 'websocket') {
+      metric += ' · ' + (statusObj.wsConnected
+        ? t('ha.updateMode.wsPushing', 'pushing changes')
+        : t('ha.updateMode.wsReconnecting', 'reconnecting…'));
+    }
     return { text: metric, title: '' };
   }
   if (st === 'error') {

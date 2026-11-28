@@ -140,7 +140,7 @@ server.listen(0, '127.0.0.1', function () {
   var port = server.address().port;
   haEntity.init({
     config: {
-      homeAssistant: { enabled: true, url: 'http://127.0.0.1:' + port, token: 'test-token' }
+      homeAssistant: { enabled: true, url: 'http://127.0.0.1:' + port, token: 'test-token', updateMode: 'polling' }
     }
   });
   haBar.init({
@@ -208,6 +208,8 @@ server.listen(0, '127.0.0.1', function () {
         assert.strictEqual(st.configured, true);
         assert.strictEqual(st.hour12, true);
         assert.strictEqual(st.showHints, true);
+        assert.strictEqual(st.refreshMs, 5000, 'every ask reaches Home Assistant without a cache, so the bar keeps to 5 s');
+        assert.strictEqual(st.cached, false, 'Glasshouse Home\'s row keeps its own pace without a cache');
         assert.strictEqual(st.tiles.length, 9);
         assert.strictEqual(st.tiles[0].label, 'Desk');
         assert.strictEqual(st.tiles[0].pct, 50);

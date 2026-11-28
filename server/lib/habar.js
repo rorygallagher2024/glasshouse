@@ -28,6 +28,8 @@ var AFTER_CLOSE_MS = 1200;
 var AFTER_START_MS = 5000;
 var AFTER_SWITCH_ON_MS = 5000;
 var MAX_FAILURES = 5;
+var REFRESH_MS = 5000;
+var CACHED_REFRESH_MS = 1000;
 // A toggle's service call can return before Home Assistant's own state
 // catches up with the device (an MQTT round trip, a HomeKit bridge poll),
 // so a light already off on the TV screen can still read back as "on" for a
@@ -307,13 +309,30 @@ function formatTile(item, ent, err) {
   return tile;
 }
 
+/*
+ * Whether lib/haentity answers from a cache Home Assistant's push keeps
+ * current: while its socket is up. Then an ask costs Home Assistant nothing,
+ * so the open bar and Glasshouse Home's row ask every second and a change
+ * made elsewhere shows within about that. Otherwise (the socket down, or
+ * updateMode "polling") every ask is a request per tile to Home Assistant,
+ * and they keep to their own pace.
+ */
+function cached() {
+  var st = haEntityFn && typeof haEntityFn.status === 'function' ? haEntityFn.status() : null;
+  return !!(st && st.updateMode === 'websocket' && st.wsConnected === true);
+}
+
+function refreshMs() {
+  return cached() ? CACHED_REFRESH_MS : REFRESH_MS;
+}
+
 function state(cb) {
   cb = cb || function () {};
   var cfg = listConfig();
   var list = cfg.entities;
   var configured = !!(haEntityFn && haEntityFn.configured());
   if (!configured || !list.length) {
-    return cb({ ok: true, configured: configured, hour12: !!hour12Fn(), showHints: cfg.showHints, tiles: [] });
+    return cb({ ok: true, configured: configured, hour12: !!hour12Fn(), showHints: cfg.showHints, refreshMs: REFRESH_MS, tiles: [] });
   }
   var ids = list.map(function (it) { return it.id; });
   haEntityFn.readMany(ids, function (r) {
@@ -322,7 +341,7 @@ function state(cb) {
     var tiles = list.map(function (it) {
       return formatTile(it, ents[it.id] || null, errs[it.id] || '');
     });
-    cb({ ok: true, configured: true, hour12: !!hour12Fn(), showHints: cfg.showHints, tiles: tiles });
+    cb({ ok: true, configured: true, hour12: !!hour12Fn(), showHints: cfg.showHints, cached: cached(), refreshMs: refreshMs(), tiles: tiles });
   });
 }
 
