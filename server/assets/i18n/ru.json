@@ -4081,5 +4081,12 @@
  "srv.remoteKeys.glasshouseHome": {"text": "Glasshouse Home", "from": "Glasshouse Home"},
  "srv.remoteKeys.inputOnlyApps": {"text": "На этом телевизоре кнопка выбора входа может открывать приложение, вход или панель входов", "from": "On this TV the Input key can open an app, an input or the input bar"},
  "srv.remoteKeys.lgHome": {"text": "Главный экран LG", "from": "LG's Home"},
- "ss.noSignal.pendingBehind": {"text": "Изменение вступит в силу после закрытия {input}: сейчас этот вход открыт позади другого приложения. Для показа нового экрана приложение входа перезапускается, из-за чего изображение на нём может ненадолго пропасть.", "from": "It takes effect once {input} is closed: it is open behind another app, and the TV’s input app restarts to show the new screen, which could leave that input blank."}
+ "ss.noSignal.pendingBehind": {"text": "Изменение вступит в силу после закрытия {input}: сейчас этот вход открыт позади другого приложения. Для показа нового экрана приложение входа перезапускается, из-за чего изображение на нём может ненадолго пропасть.", "from": "It takes effect once {input} is closed: it is open behind another app, and the TV’s input app restarts to show the new screen, which could leave that input blank."},
+ "srv.updateAsk.progressTitle": {"from": "Updating Glasshouse to {version}", "text": "Glasshouse обновляется до {version}"},
+ "srv.updateAsk.checking": {"from": "Checking the release", "text": "Проверка версии"},
+ "srv.updateAsk.downloading": {"from": "Downloading the release", "text": "Загрузка версии"},
+ "srv.updateAsk.unpacking": {"from": "Installing the files", "text": "Установка файлов"},
+ "srv.updateAsk.restarting": {"from": "Restarting Glasshouse", "text": "Перезапуск Glasshouse"},
+ "srv.updateAsk.done": {"from": "Glasshouse {version} is installed", "text": "Glasshouse {version} установлен"},
+ "srv.updateAsk.current": {"from": "Glasshouse is already up to date", "text": "Glasshouse уже обновлён"}
 }

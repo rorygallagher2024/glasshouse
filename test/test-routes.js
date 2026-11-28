@@ -1630,7 +1630,8 @@ function createMockRes(cb) {
     clock: { hour12: function () { return false; }, qtLocale: function () { return 'sv_SE'; } },
     ask: {
       current: function (token) { asked.push(['current', token]); return token === 'abc' ? { seq: 1, title: 'Q', options: [] } : null; },
-      answer: function (token, choice, how) { asked.push(['answer', token, choice, how]); return token === 'abc'; }
+      answer: function (token, choice, how) { asked.push(['answer', token, choice, how]); return token === 'abc'; },
+      progressFor: function (token) { return token === 'abc' ? { title: 'Updating', step: 2, steps: 4, state: 'working' } : null; }
     }
   });
   routes.handleRequest(createMockReq({ url: '/api/ask/current?token=abc', remoteAddress: '192.168.1.50' }), createMockRes(function (r) {
@@ -1652,9 +1653,19 @@ function createMockRes(cb) {
   routes.handleRequest(post, createMockRes(function (r) { answered = JSON.parse(r.body); }));
   post.emit('data', JSON.stringify({ token: 'abc', choice: 'yes' }));
   post.emit('end');
-  assert.deepEqual(answered, { ok: true, taken: true });
+  assert.deepEqual(answered, { ok: true, taken: true, progress: true }, 'the answer says the card follows what it set going');
   assert.deepEqual(asked, [['current', 'abc'], ['answer', 'abc', 'yes', '']]);
-  console.log('  ✓ the question app reads with its token and answers with a JSON POST, from the TV only');
+  routes.handleRequest(createMockReq({ url: '/api/ask/progress?token=abc' }), createMockRes(function (r) {
+    assert.strictEqual(r.statusCode, 200);
+    assert.strictEqual(JSON.parse(r.body).progress.step, 2);
+  }));
+  routes.handleRequest(createMockReq({ url: '/api/ask/progress?token=zzz' }), createMockRes(function (r) {
+    assert.strictEqual(JSON.parse(r.body).progress, null, 'another token reads nothing');
+  }));
+  routes.handleRequest(createMockReq({ url: '/api/ask/progress?token=abc', remoteAddress: '192.168.1.50' }), createMockRes(function (r) {
+    assert.ok(r.statusCode === 401 || r.statusCode === 403, 'progress is not read from the network');
+  }));
+  console.log('  ✓ the question app reads with its token, answers with a JSON POST and follows the answer, from the TV only');
 })();
 
 // Switching from Glasshouse Bar to Glasshouse Home: on takeover TVs, Glasshouse

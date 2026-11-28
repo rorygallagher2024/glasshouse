@@ -4023,5 +4023,12 @@
  "audio.bar.tone": {"from": "Tone controls", "text": "Tonkontroller"},
  "audio.bar.device": {"from": "Device settings", "text": "Enhetsinställningar"},
  "audio.bar.volume": {"from": "Soundbar volume", "text": "Soundbarens volym"},
- "audio.bar.tvVolume": {"from": "TV-reported volume: {value}", "text": "Volym enligt TV:n: {value}"}
+ "audio.bar.tvVolume": {"from": "TV-reported volume: {value}", "text": "Volym enligt TV:n: {value}"},
+ "srv.updateAsk.progressTitle": {"from": "Updating Glasshouse to {version}", "text": "Glasshouse uppdateras till {version}"},
+ "srv.updateAsk.checking": {"from": "Checking the release", "text": "Kontrollerar versionen"},
+ "srv.updateAsk.downloading": {"from": "Downloading the release", "text": "Laddar ner versionen"},
+ "srv.updateAsk.unpacking": {"from": "Installing the files", "text": "Installerar filerna"},
+ "srv.updateAsk.restarting": {"from": "Restarting Glasshouse", "text": "Startar om Glasshouse"},
+ "srv.updateAsk.done": {"from": "Glasshouse {version} is installed", "text": "Glasshouse {version} är installerad"},
+ "srv.updateAsk.current": {"from": "Glasshouse is already up to date", "text": "Glasshouse är redan uppdaterad"}
 }

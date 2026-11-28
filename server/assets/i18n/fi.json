@@ -4081,5 +4081,12 @@
  "tv.update.serverHealth.hint": {"from": "Memory footprint and uptime of the Glasshouse background process on this TV.", "text": "Glasshousen taustaprosessin muistinkäyttö ja käyntiaika tässä TV:ssä."},
  "tv.update.slow": {"from": "Restart is taking longer than expected", "text": "Uudelleenkäynnistys kestää odotettua pidempään"},
  "tv.update.whatsNew.more.hint": {"from": "Their notes are on GitHub, under Glasshouse’s releases.", "text": "Niiden tiedotteet ovat GitHubissa Glasshousen julkaisujen alla."},
- "tv.viewOnly": {"from": "View only", "text": "Vain katselu"}
+ "tv.viewOnly": {"from": "View only", "text": "Vain katselu"},
+ "srv.updateAsk.progressTitle": {"from": "Updating Glasshouse to {version}", "text": "Glasshouse päivitetään versioon {version}"},
+ "srv.updateAsk.checking": {"from": "Checking the release", "text": "Tarkistetaan julkaisua"},
+ "srv.updateAsk.downloading": {"from": "Downloading the release", "text": "Ladataan julkaisua"},
+ "srv.updateAsk.unpacking": {"from": "Installing the files", "text": "Asennetaan tiedostoja"},
+ "srv.updateAsk.restarting": {"from": "Restarting Glasshouse", "text": "Glasshouse käynnistyy uudelleen"},
+ "srv.updateAsk.done": {"from": "Glasshouse {version} is installed", "text": "Glasshouse {version} on asennettu"},
+ "srv.updateAsk.current": {"from": "Glasshouse is already up to date", "text": "Glasshouse on jo ajan tasalla"}
 }

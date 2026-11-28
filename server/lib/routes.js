@@ -2985,17 +2985,23 @@ function handleRequest(req, res) {
   // The question app (lib/ask.js), only from the TV and only with the
   // question's token. The card is worded in the TV's language: it shows over
   // the picture, not on a dashboard that says which it wants.
-  if ((pathname === '/api/ask/current' || pathname === '/api/ask/answer') && askModule) {
+  if ((pathname === '/api/ask/current' || pathname === '/api/ask/answer' || pathname === '/api/ask/progress') && askModule) {
     if (!fromTV(req)) return send(res, 403, JSON.stringify({ ok: false, error: 'only from the TV' }));
-    if (pathname === '/api/ask/current') {
+    if (pathname === '/api/ask/current' || pathname === '/api/ask/progress') {
       var askLang = tvLang();
       if (askLang) /** @type {any} */ (res).glasshouseLang = askLang;
-      return send(res, 200, JSON.stringify({ ok: true, question: askModule.current(String((u.query || {}).token || '')) }));
+      var askToken = String((u.query || {}).token || '');
+      if (pathname === '/api/ask/progress') {
+        return send(res, 200, JSON.stringify({ ok: true, progress: askModule.progressFor(askToken) }));
+      }
+      return send(res, 200, JSON.stringify({ ok: true, question: askModule.current(askToken) }));
     }
     if (req.method !== 'POST') return send(res, 405, JSON.stringify({ ok: false, error: 'POST only' }));
     return readJsonBody(req, res, function (body) {
-      var taken = askModule.answer(String(body.token || ''), String(body.choice || ''), String(body.how || ''));
-      send(res, 200, JSON.stringify({ ok: true, taken: taken }));
+      var answerToken = String(body.token || '');
+      var taken = askModule.answer(answerToken, String(body.choice || ''), String(body.how || ''));
+      // The answer set something going that the card follows.
+      send(res, 200, JSON.stringify({ ok: true, taken: taken, progress: !!askModule.progressFor(answerToken) }));
     });
   }
 

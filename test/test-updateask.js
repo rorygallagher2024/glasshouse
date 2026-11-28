@@ -1,7 +1,8 @@
 /**
  * test-updateask.js - lib/updateask.js: a new release asked about on the TV
- * after a wake, with Later focused, installed on Update now with a toast, and
- * asked about again only when left unanswered.
+ * after a wake, with Later focused, installed on Update now and followed on
+ * the card a step at a time (a toast where the card cannot), and asked about
+ * again only when left unanswered.
  */
 var assert = require('assert');
 var updateAsk = require('../server/lib/updateask');
@@ -165,6 +166,54 @@ step(function (done) {
       done();
     });
   }, 5);
+});
+
+// Update now followed on the card: a step for each of the updater's states.
+step(function (done) {
+  var shown = [], finishInstall = null;
+  setup({
+    ask: {
+      ask: function (q, cb) { asked.push(q); cb({ ok: true }); },
+      busy: function () { return false; },
+      progress: function (id, p) { assert.strictEqual(id, 'glasshouse-update'); shown.push(p); return true; }
+    },
+    install: function (cb) { installed++; finishInstall = cb; },
+    progressMs: 1
+  });
+  summary.state = 'checking';
+  updateAsk.maybeAsk();
+  answer('answer', 'install');
+  assert.strictEqual(toasts.length, 0, 'no toast while the card follows it');
+  assert.strictEqual(shown[0].title, 'Updating Glasshouse to 0.160.0');
+  assert.strictEqual(shown[0].step, 1);
+  assert.strictEqual(shown[0].steps, 4);
+  assert.strictEqual(shown[0].doneText, 'Glasshouse 0.160.0 is installed');
+  summary.state = 'downloading';
+  waitFor(function () { return shown[shown.length - 1].step === 2; }, function () {
+    summary.state = 'installing';
+    waitFor(function () { return shown[shown.length - 1].step === 3; }, function () {
+      summary.state = 'installed';
+      finishInstall({ ok: true, updated: true });
+      var last = shown[shown.length - 1];
+      assert.strictEqual(last.step, 4);
+      assert.strictEqual(last.state, 'restarting');
+
+      // A failed install says so on the card, and in a toast for a card closed with Back.
+      shown = [];
+      setup({
+        ask: { ask: function (q, cb) { cb({ ok: true }); }, busy: function () { return false; },
+               progress: function (id, p) { shown.push(p); return true; } },
+        install: function (cb) { cb({ ok: false, error: 'download failed' }); },
+        progressMs: 1
+      });
+      updateAsk.maybeAsk();
+      answer('answer', 'install');
+      assert.strictEqual(shown[shown.length - 1].state, 'failed');
+      assert.ok(/download failed/.test(shown[shown.length - 1].message));
+      assert.strictEqual(toasts.length, 1);
+      done();
+    });
+  });
 });
 
 next();
