@@ -50,7 +50,7 @@ var FEATURES = {
   // default where tried, offered with a switch elsewhere. Never refused: where
   // the binding is not there, calls stay with luna-send.
   palmbus: {
-    title: 'Luna calls through palmbus',
+    title: 'Faster communication with the TV (palmbus)',
     tried: [4, 9]
   }
 };
